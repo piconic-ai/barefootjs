@@ -1,3 +1,4 @@
+import { fixture as conditionalSiblingRoots } from './conditional-sibling-roots'
 import { fixture as clientTemplateStaticDelimiters } from './client-template-static-delimiters'
 import { fixture as jsxPropTemplateDelimiters } from './jsx-prop-template-delimiters'
 import { fixture as childrenNullishFallback } from './children-nullish-fallback'
@@ -1197,6 +1198,7 @@ import { fixture as loopKeyToStringNumberComponentRowClient } from './loop-key-t
 import type { JSXFixture } from '../src/types'
 
 export const jsxFixtures: JSXFixture[] = [
+  conditionalSiblingRoots,
   counter,
   reactiveFactoryObjectReturn,
   counterShared,

@@ -10683,7 +10683,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (match) {
         const tag = match[1]
         const trimmed = content.trim()
-        const isSingle = new RegExp(`</${tag}>\\s*$`).test(trimmed) || /^<\w+[^>]*\/>$/.test(trimmed)
+        const isSingle = trimmed.endsWith(`</${tag}>`) ||
+          (trimmed.endsWith('/>') && trimmed.indexOf('>') === trimmed.length - 1)
         if (isSingle) {
           return content.replace(`<${match[1]}`, `<${match[1]} ${this.renderCondMarker(condId)}`)
         }
