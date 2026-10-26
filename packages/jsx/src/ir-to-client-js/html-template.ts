@@ -1635,6 +1635,33 @@ export function addCondAttrToTemplate(html: string, condId: string): string {
   return `<!--bf-cond-start:${condId}-->${html}<!--bf-cond-end:${condId}-->`
 }
 
+function* templateHtmlTags(html: string): Generator<{ raw: string; end: number }> {
+  let cursor = 0
+  let noCommentEnd = false
+  while (cursor < html.length) {
+    const start = html.indexOf('<', cursor)
+    if (start < 0) break
+    cursor = start + 1
+    if (html.startsWith('<!--', start) && !noCommentEnd) {
+      const commentEnd = html.indexOf('-->', start + 4)
+      if (commentEnd >= 0) {
+        cursor = commentEnd + 3
+        continue
+      }
+      // A failed search covers the entire remaining suffix, not just this opener.
+      noCommentEnd = true
+    }
+    const nameStart = html[start + 1] === '/' ? start + 2 : start + 1
+    if (nameStart >= html.length || /[\s/>]/.test(html[nameStart])) continue
+    const end = html.indexOf('>', nameStart + 1)
+    if (end < 0) break
+    cursor = end + 1
+    const raw = html.slice(start, cursor)
+    if (raw.startsWith('<!--')) continue
+    yield { raw, end: cursor }
+  }
+}
+
 /**
  * Check if HTML string has a single root element (not multiple siblings).
  *
@@ -1662,44 +1689,14 @@ function isSingleRootElement(html: string): boolean {
   // BOTH the `bf-c` stamp and the comment-wrap fallback for those roots.
   const match = trimmed.match(/^<(\w+)[\s>]/)
   if (!match) return false
-  // Self-closing tags like <br/>, <input/> with nothing else.
-  if (/^<\w+[^>]*\/>$/.test(trimmed)) return true
-
-  // Walk top-level tags tracking nesting depth — see the docstring above
-  // for why (#2960). The comment alternative must come first so it wins at a `<!--`
-  // position — without it, a BarefootJS marker comment like
-  // `<!--bf:s1-->`/`<!--/-->` (a reactive text slot nested inside a
-  // genuine single root) matches the generic tag alternative too (its
-  // body has no `\s`, `/` or `>` before the closing `-->`) and gets
-  // miscounted as an opening tag, throwing off the depth count for
-  // perfectly ordinary single-root branches.
-  const tagPattern = /<!--[\s\S]*?-->|<\/?[^\s/>]+[^>]*>/g
   let depth = 0
-  let tagMatch: RegExpExecArray | null
-  while ((tagMatch = tagPattern.exec(trimmed))) {
-    const raw = tagMatch[0]
-    if (raw.startsWith('<!--')) continue // HTML comment, not a tag: depth unchanged
+  for (const { raw, end } of templateHtmlTags(trimmed)) {
     if (raw.endsWith('/>')) {
-      // Self-closing/void tag (e.g. `<input .../>`). The whole-string
-      // check above only catches a self-closing tag with NOTHING else in
-      // the string — a self-closing root FOLLOWED by more content (e.g.
-      // `<input .../><label>...</label>`, a genuine two-root branch) still
-      // reaches here with the guard above already satisfied (it only
-      // looks at the tag name and the very next character, not whether
-      // the tag turns out to self-close). At depth 0 this tag completes a
-      // whole top-level unit by itself, so treat it exactly like any
-      // other tag's closing point: single root only if nothing follows.
-      // Nested inside another element (depth > 0) it's just an ordinary
-      // child and doesn't affect depth.
-      if (depth === 0) return tagPattern.lastIndex === trimmed.length
+      if (depth === 0) return end === trimmed.length
       continue
     }
     depth += raw.startsWith('</') ? -1 : 1
-    if (depth === 0) {
-      // Back to depth 0: the root element's own closing tag. Single root
-      // only if nothing else follows it.
-      return tagPattern.lastIndex === trimmed.length
-    }
+    if (depth === 0) return end === trimmed.length
   }
   return false
 }

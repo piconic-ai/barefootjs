@@ -139,3 +139,21 @@ describe('#2960: multi-root cond branch whose roots share a tag name', () => {
     expect(result).not.toContain('bf-c=')
   })
 })
+
+for (const entry of [
+  { name: 'long single-root tag name', html: `<${'a'.repeat(20_000)}></${'a'.repeat(20_000)}>`, single: true },
+  { name: 'unterminated long nested tag', html: `<div><${'a'.repeat(20_000)}`, single: false },
+  { name: 'many comment-like tokens without terminators', html: `<div>${'<!--x>'.repeat(5_000)}</div>`, single: true },
+  { name: 'many marker comments', html: `<div>${'<!--bf:s0--><!--/-->'.repeat(5_000)}</div>`, single: true },
+  { name: 'spaced self-closing root', html: '<input />', single: true },
+]) {
+  test(`conditional root classification: ${entry.name}`, () => {
+    const result = addCondAttrToTemplate(entry.html, 'probe')
+    if (entry.single) {
+      expect(result).toContain(' bf-c="probe"')
+      expect(result).not.toContain('<!--bf-cond-start:probe-->')
+    } else {
+      expect(result).toBe(`<!--bf-cond-start:probe-->${entry.html}<!--bf-cond-end:probe-->`)
+    }
+  })
+}
