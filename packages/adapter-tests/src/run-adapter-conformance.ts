@@ -38,6 +38,7 @@ import {
 } from './cases/template-primitives'
 import { assertRenderContract } from './render.contract'
 import { fixture as counterButtonsFixture } from '../fixtures/counter-buttons'
+import { memoizeRender } from './render-memo'
 
 export interface RunAdapterConformanceOptions {
   /** Short lowercase label used in `describe` headings. */
@@ -115,9 +116,14 @@ export interface RunAdapterConformanceOptions {
 export function runAdapterConformanceTests(
   opts: RunAdapterConformanceOptions,
 ): void {
+  // One render per distinct input across every suite below (#3667): the
+  // JSX suite, claim-plan conformance, the data-point gate and the render
+  // contract all render some fixtures with the same props.
+  const render = memoizeRender(opts.render)
+
   runJSXConformanceTests({
     createAdapter: opts.factory,
-    render: opts.render,
+    render,
     referenceAdapter: opts.referenceAdapter,
     referenceRender: opts.referenceRender,
     onRenderError: opts.onRenderError,
@@ -146,7 +152,7 @@ export function runAdapterConformanceTests(
   runClaimPlanConformance({
     name: opts.name,
     factory: opts.factory,
-    render: opts.render,
+    render,
     onRenderError: opts.onRenderError,
     // Fixtures the adapter already refuses at compile time (`skipJsx` /
     // `expectedDiagnostics`) can't render at all — mirrors
@@ -162,7 +168,7 @@ export function runAdapterConformanceTests(
   runDataPointConformance({
     name: opts.name,
     factory: opts.factory,
-    render: opts.render,
+    render,
     onRenderError: opts.onRenderError,
     skipFixtures: new Set([
       ...(opts.skipJsx ?? []),
@@ -187,7 +193,7 @@ export function runAdapterConformanceTests(
         const adapter = opts.factory()
         let html: string
         try {
-          html = await opts.render({
+          html = await render({
             source: counterButtonsFixture.source,
             adapter,
             components: counterButtonsFixture.components,
