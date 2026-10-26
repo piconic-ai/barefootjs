@@ -304,15 +304,20 @@ function isAssignmentOperator(kind: ts.SyntaxKind): boolean {
  * Strips type annotations and default values.
  */
 export function extractFunctionParams(value: string): string {
-  const source = ts.createSourceFile('function.ts', `(${value})`, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
-  const statement = source.statements[0]
-  if (!statement || !ts.isExpressionStatement(statement)) return ''
+  for (const kind of [ts.ScriptKind.TSX, ts.ScriptKind.TS]) {
+    const source = ts.createSourceFile('function.tsx', `(${value}\n)`, ts.ScriptTarget.Latest, true, kind)
+    const diagnostics = 'parseDiagnostics' in source ? source.parseDiagnostics : undefined
+    if (Array.isArray(diagnostics) && diagnostics.length > 0) continue
+    const statement = source.statements[0]
+    if (!statement || !ts.isExpressionStatement(statement)) return ''
 
-  let expression = statement.expression
-  while (ts.isParenthesizedExpression(expression)) expression = expression.expression
-  if (!ts.isArrowFunction(expression) && !ts.isFunctionExpression(expression)) return ''
+    let expression = statement.expression
+    while (ts.isParenthesizedExpression(expression)) expression = expression.expression
+    if (!ts.isArrowFunction(expression) && !ts.isFunctionExpression(expression)) return ''
 
-  return expression.parameters
-    .map(parameter => `${parameter.dotDotDotToken ? '...' : ''}${parameter.name.getText(source)}`)
-    .join(', ')
+    return expression.parameters
+      .map(parameter => `${parameter.dotDotDotToken ? '...' : ''}${parameter.name.getText(source)}`)
+      .join(', ')
+  }
+  return ''
 }
