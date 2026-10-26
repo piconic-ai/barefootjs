@@ -26,3 +26,6 @@ export const GO_TEMPLATE_PRIMITIVES: Record<string, PrimitiveSpec> = {
 
 /** Go element types a scalar array prop's row can range as (`[]string` …), so the row value itself is the `item`. */
 export const SCALAR_ROW_GO_TYPES: ReadonlySet<string> = new Set(['string', 'int', 'float64', 'bool'])
+
+/** The wrapper field that carries a scalar wrapper row's bare value (`wrapperRowScalarItemGoType`). */
+export const SCALAR_ROW_ITEM_FIELD = 'BfLoopItem'
