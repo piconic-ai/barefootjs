@@ -445,7 +445,10 @@ ${propsLines.length > 0 ? propsLines.join('\n') + '\n' : ''}	if err := tmpl.Exec
     // (e.g. `GOTOOLCHAIN=go1.25.6 bun test`).
     const env = { ...process.env, GOTOOLCHAIN: process.env.GOTOOLCHAIN ?? 'local' }
     const binPath = resolve(tempDir, 'render')
-    const build = await spawnCollect(['go', 'build', '-o', binPath, '.'], tempDir, env)
+    // `-s -w` skips writing the symbol table and DWARF, which this run-once
+    // binary never reads (~0.37 s → ~0.28 s per build, measured in #3671).
+    // Panic traces still carry file:line, which come from pclntab, not DWARF.
+    const build = await spawnCollect(['go', 'build', '-ldflags=-s -w', '-o', binPath, '.'], tempDir, env)
     if (build.exitCode !== 0) {
       throw new Error(`go build failed (exit ${build.exitCode}):\n${build.stderr}${typesGoContext(build.stderr, goTypes)}`)
     }
