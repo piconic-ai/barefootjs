@@ -1,5 +1,17 @@
 # @barefootjs/jinja
 
+## 0.40.0
+
+### Patch Changes
+
+- 9cb7c89: Record a loop plan's refusals in one place across the eight DSL adapters (#3473). `DslTemplateAdapter.recordLoopPlanRefusals` reports BF104 for a destructure pattern no template binds and BF101 for a loop source that names an unresolvable computed const. Each adapter now supplies only the wording, as a `LoopRefusalSpelling`. ERB, Xslate and Mojolicious also move their loop headers into small private methods, which brings every DSL adapter's `renderLoop` to cognitive complexity 25 or below. The generated templates and diagnostics do not change.
+- 807cd26: Share a loop row's window across the eight DSL adapters (#3473). `DslTemplateAdapter.renderLoopRow` now enters the row's scope around the preamble locals, the children and the whole-item-conditional key anchor, sets and restores `inLoop` around the children, and computes the row's root-prop aliases. `DslTemplateAdapter.loopPlanFor` calls `planLoop` against the current scope. Each adapter's `renderLoop` passes only its spelling. The generated templates do not change.
+- 03c85ea: Use the existing parsed-expression support gate for DSL attribute and spread refusals, removing the redundant regex precheck and its unsupportedAttrExpression / unsupportedAttrExpressionError adapter-helper exports.
+- dc65a91: Keep literal template text separate from interpolation expressions in compiler IR, preserving escaped delimiters and lowering expressions without reparsing string placeholders.
+  
+  IR consumers must handle the new `expression` template-part variant (`expr`, optional `templateExpr`, and `parsed`). The `string` variant now contains only literal text and no longer has `templateValue`.
+- @barefootjs/shared@0.40.0
+
 ## 0.39.9
 
 ### Patch Changes

@@ -1,5 +1,18 @@
 # @barefootjs/go-template
 
+## 0.40.0
+
+### Patch Changes
+
+- 9433987: Internal refactor of the Go template adapter: the lowering of a child component's props into its `New<Child>Props(<Child>Input{...})` literal (the `{...props}` spread plan, the per-kind value lowering, the loop-row refusal and the source-row fields of a bodyless prop-array loop) moves out of `go-template-adapter.ts` into `props/child-input-fields.ts`, and the constructor-time value helpers it uses move into `value/child-prop-value.ts`. Generated templates and Go are unchanged for every fixture and component.
+- 2e2cc38: Test-only: the conformance harness now refuses to compile a fixture whose `@barefootjs/client` import does not resolve (an unbuilt `dist`), instead of compiling it with every reactive primitive typed `any`. That silent fallback made go-template output for the same fixture change between runs (`map-key-index` printed `{{bf_text .}}` instead of `{{.}}`, and `loop-row-scalar-member-length` failed with `can't evaluate field Length in type interface {}`), which looked like a dependence on compile order (#3637). A new go-template test pins that output does not depend on compile order. Generated templates and Go are unchanged for every fixture and component.
+- 4e0c1cc: Preserve backslashes and control characters when serializing string-array props in the Go test renderer.
+- 3db51d4: Avoid regex backtracking when classifying conditional branch HTML for root markers, preserving existing marker decisions.
+- dc65a91: Keep literal template text separate from interpolation expressions in compiler IR, preserving escaped delimiters and lowering expressions without reparsing string placeholders.
+  
+  IR consumers must handle the new `expression` template-part variant (`expr`, optional `templateExpr`, and `parsed`). The `string` variant now contains only literal text and no longer has `templateValue`.
+- @barefootjs/shared@0.40.0
+
 ## 0.39.9
 
 ### Patch Changes
