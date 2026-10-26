@@ -16,7 +16,6 @@ import type {
   IRComponent,
   IRFragment,
   IRSlot,
-  IRTemplatePart,
   TypeInfo,
   TypeDefinition,
   PropertyInfo,
@@ -53,16 +52,11 @@ import {
   type EmitIRNode,
   type AttrValueEmitter,
   type SupportResult,
-  isBooleanAttr,
   collectNullableSignalGetters,
-  nullableSignalAttrGetter,
   arithmeticOperandCoercion,
-  attrValueMayBeNullish,
   collectNullishAttrContext,
   parseExpression,
   stringifyParsedExpr,
-  planStyleObject,
-  type ExpressionAttr,
   isSupported,
   exprToString,
   identifierPath,
@@ -160,7 +154,6 @@ import {
   GO_REMEDIATION_OPTIONS,
   goPropDefault,
   applyGoFallback,
-  goAttrNameToken,
 } from "./lib/go-emit.ts"
 import type {
   GoRenderCtx,
@@ -181,7 +174,7 @@ import { analyzeBakeableStaticElementLoop, classifyBakedCondition } from "./anal
 import type { GoEmitContext } from "./emit-context.ts"
 import { inlineLocalHelperCall } from "./expr/helper-inline.ts"
 import { freeTemplateVars } from "./lib/template-scope.ts"
-import { lowerRegisteredAttrCall, lowerRegisteredCall, lowerRegisteredCallNode, lowerTemplateLiteralValue, lowerTernary, lowerValueOperand } from "./expr/url-builder.ts"
+import { lowerRegisteredCall, lowerRegisteredCallNode, lowerTemplateLiteralValue, lowerTernary, lowerValueOperand } from "./expr/url-builder.ts"
 import {
   convertInitialValue,
   jsLiteralToGo,
@@ -205,6 +198,7 @@ import { collectStringValueNames } from "./props/prop-classes.ts"
 import { emitMemoFieldInits, emitPropFallbackLocals, emitPropFieldInits, emitSignalFieldInits, hoistSiblingMemoLocals } from "./props/ctor-field-inits.ts"
 import { lowerChildInputFields, lowerLoopRowChildInputFields, sourceRowChildInputFields, type ChildInputHost } from "./props/child-input-fields.ts"
 import { resolveLocalGetterAsGo } from "./value/child-prop-value.ts"
+import { emitParsedExpressionAttr, emitSpreadAttr, emitStyleOrPresenceAttr, emitTemplateAttr, type ElementAttrHost } from "./attr/element-attrs.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
 
@@ -9414,339 +9408,50 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     emitExpression: (source, name) => {
       // A computed const reads as its initializer (#3494).
       const value = inlineComputedConstAttr(source, this.state.computedConsts)
-      // `style={{ … }}` object literal → a CSS string with dynamic values
-      // interpolated, instead of refusing the bare object with BF101.
-      if (name === 'style') {
-        const css = this.tryLowerStyleObject(value)
-        if (css !== null) return `style="${css}"`
-      }
-      if (isBooleanAttr(name) || value.presenceOrUndefined) {
-        // Every boolean-attribute value routes through `convertConditionToGo`
-        // even when it's a plain item-bound expression (`disabled={item.x}`),
-        // not a `conditional` IR node — so #2898's `staticLoopItemStack` check
-        // there also fixes this path inside an unrolled static loop row (was
-        // a pre-existing silent divergence; `static-loop-item-boolean-attr`
-        // is its regression fixture).
-        const { condition: goCond, preamble } = this.convertConditionToGo(value.expr, value.parsed)
-        // ARIA attributes are string-valued ("true"/"false"), not HTML5 presence
-        // booleans — the truthy presence form renders as `aria-x="true"`
-        // (`aria-disabled={isDisabled() || undefined}`).
-        const body = name.startsWith('aria-') ? `${name}="true"` : name
-        return `${preamble}{{if ${goCond}}}${body}{{end}}`
-      }
+      const unparsed = emitStyleOrPresenceAttr(this.elementAttrHost, value, name)
+      if (unparsed !== null) return unparsed
       const parsed = value.parsed ?? parseExpression(value.expr.trim())
-      // #3309 / #3326: a `data-…` name html/template would classify as
-      // script / URL / CSS (`data-on…`, `data-src`, `data-style`) is emitted
-      // as a `bf_attr_name` action so the value below is escaped as plain text.
-      const nameTok = goAttrNameToken(name)
-      if (parsed.kind === 'conditional') {
-        // A ternary whose falsy branch is `undefined` / `null` OMITS the
-        // attribute entirely (`aria-current={props.isActive ? 'page' :
-        // undefined}`) — wrap the whole attribute in the condition instead of
-        // rendering `attr=""`.
-        const undef = (e: ParsedExpr): boolean =>
-          (e.kind === 'identifier' && (e.name === 'undefined' || e.name === 'null')) ||
-          (e.kind === 'literal' && (e.value === null || e.value === undefined))
-        const test = parsed.test
-        if (undef(parsed.alternate) && !undef(parsed.consequent)) {
-          // Lower the parsed test. If it renders as a self-contained action
-          // block, lower the whole ternary instead, as before. Never re-read
-          // the test from `value.expr`: slicing at the first `?` cuts a
-          // `?.`, `??` or `'?'` in the test short (#3511).
-          const condTree = this.isTemplateFragment(this.renderParsedExpr(test), test.kind) ? parsed : test
-          const { condition: goCond, preamble } = this.convertConditionToGo(
-            stringifyParsedExpr(condTree),
-            condTree,
-          )
-          // #2842 / #2743: a `query` guard-list consequent (queryHref) takes
-          // the whole-attribute `bf_attr` route INSIDE the `{{if}}`, so
-          // html/template's URL-context inference never percent-encodes it —
-          // the same route the direct-call and non-undefined-ternary shapes
-          // take. The consequent is passed alone (not the ternary): omission
-          // needs this `{{if}}` wrapper, which `bf_attr` can't express on its
-          // own. Any other consequent (a `helper-call` plugin, an unmatched
-          // call, a member/literal) keeps the ordinary `name="{{…}}"` form —
-          // `call()` now consults the registry too, so a plugin call renders
-          // its `bf_<helper>` pipeline there instead of invalid Go syntax.
-          const attrConsequent = lowerRegisteredAttrCall(this.emitCtx, name, parsed.consequent)
-          const body = attrConsequent !== null
-            ? attrConsequent
-            : `${nameTok}="{{${this.numericTextExpression(this.renderParsedExpr(parsed.consequent), parsed.consequent)}}}"`
-          return `${preamble}{{if ${goCond}}}${body}{{end}}`
-        }
-        // #2743 follow-up (pullfrog review on #2841): a `query` guard-list
-        // value (queryHref) reachable through EITHER branch of this ternary
-        // still needs the whole-attribute `bf_attr` route — otherwise the
-        // pipeline below lands inside the ordinary `name="{{...}}"` wrapper
-        // and html/template's URL-context inference still percent-encodes
-        // whichever branch wins at render time. See `lowerRegisteredAttrCall`.
-        const attrTernary = lowerRegisteredAttrCall(this.emitCtx, name, parsed)
-        if (attrTernary !== null) return attrTernary
-        // #2335: the ternary lowers to the pipeline-position `(bf_ternary …)`
-        // value (no longer a `{{if}}…{{end}}` fragment), so wrap it in a single
-        // `{{…}}` action inside the attribute string — `name="{{bf_ternary …}}"`.
-        const ternary = this.renderParsedExpr(parsed)
-        const ternaryText = this.numericTextExpression(ternary, parsed)
-        // A branch that can be nullish (#3322, `attrValueMayBeNullish`) omits
-        // the attribute when the taken branch is nil.
-        if (attrValueMayBeNullish(parsed, this.state.nullishAttrCtx, n => this.scope.isBound(n))) {
-          return `{{if ne ${ternary} nil}}${nameTok}="{{${ternaryText}}}"{{end}}`
-        }
-        return `${nameTok}="{{${ternaryText}}}"`
-      }
-      if (parsed.kind === 'template-literal') {
-        // Inline Go template syntax with embedded `{{...}}` actions.
-        return `${nameTok}="${this.renderParsedExpr(parsed)}"`
-      }
-      // #2743: a `query` guard-list value (queryHref) emits the WHOLE
-      // attribute via `bf_attr` (template.HTMLAttr) so html/template's
-      // URL-context inference on the attribute name never percent-encodes
-      // the base. See `lowerRegisteredAttrCall`.
-      const attrAction = lowerRegisteredAttrCall(this.emitCtx, name, parsed)
-      if (attrAction !== null) return attrAction
-      // Nullish-attribute omission: when the attribute value is a BARE reference
-      // to a nillable (`interface{}`) prop field, guard emission on `ne .X nil`
-      // so an unset optional prop drops the attribute entirely instead of
-      // rendering `attr=""`. Scope is deliberately narrow — bare identifiers only
-      // — so member exprs, calls, ternaries, template literals, and
-      // concrete-typed props (never nil) still emit `attr=""` / `attr="0"`.
+      // The reads of the attribute's source text for the nil-guarded omission
+      // paths (`attr/element-attrs.ts`) stay here, next to the parse above.
+      // A props-object access (`props.id`) is normalized to its bare prop name
+      // (`id`); a closed-type `{...rest}` key (#3057) is a bare `rest.key`.
       const bareId = value.expr.trim()
-      // Normalize a props-object access (`props.id`) to its bare prop name
-      // (`id`) so the nillable set — keyed by bare prop name — matches the
-      // SolidJS-style props-object pattern too, not just destructured params.
       const propName =
         this.state.propsObjectName && bareId.startsWith(`${this.state.propsObjectName}.`)
           ? bareId.slice(this.state.propsObjectName.length + 1)
           : bareId
-      const field = /^[A-Za-z_$][\w$]*$/.test(propName) ? this.nillablePropFieldRef(propName, propName !== bareId) : null
-      if (field !== null) {
-        return `{{if ne ${field} nil}}${nameTok}="{{${this.convertExpressionToGo(value.expr, undefined, value.parsed)}}}"{{end}}`
-      }
-      // The same omission for a bare read of a nullable signal (`title={s()}`
-      // with `s()` undefined, #3304): its `interface{}` field holds `nil`.
-      if (nullableSignalAttrGetter(value.parsed, this.state.nillableSignalGetters) !== null) {
-        const goExpr = this.convertExpressionToGo(value.expr, undefined, value.parsed)
-        return `{{if ne (${goExpr}) nil}}${nameTok}="{{${goExpr}}}"{{end}}`
-      }
-      // A closed-type `{...rest}` key (#3057) reads off the rest bag's
-      // `map[string]any` field via `bf_get` (see the `restPropsName` member-
-      // access route above), never a capitalized Props-struct field, so it
-      // can't reuse the `nillablePropNames`/`capitalizeFieldName` route
-      // above. `bf_get` returns Go's untyped `nil` for a key the caller
-      // omitted, so the same nil-check omission still applies — value and
-      // guard share the identical `bf_get` expression.
-      if (
+      const restKeyRead = Boolean(
         this.state.restPropsName &&
         bareId.startsWith(`${this.state.restPropsName}.`) &&
-        /^[A-Za-z_$][\w$]*$/.test(bareId.slice(this.state.restPropsName.length + 1))
-      ) {
-        const goExpr = this.convertExpressionToGo(value.expr, undefined, value.parsed)
-        return `{{if ne (${goExpr}) nil}}${nameTok}="{{${goExpr}}}"{{end}}`
-      }
-      // Lower once; if the result is already a self-contained action block (e.g.
-      // an inlined `sortClass(k)` → `{{if …}}…{{end}}`), embed it as-is rather
-      // than double-wrapping it in another `{{…}}`.
-      const exprOut: { parsed?: ParsedExpr } = {}
-      const go = this.convertExpressionToGo(value.expr, exprOut, value.parsed)
-      if (this.isTemplateFragment(go, exprOut.parsed?.kind)) return `${nameTok}="${go}"`
-      // #3359: an arithmetic result or numeric memo is a boxed `float64`
-      // here as in text position, so the attribute string takes the same
-      // JS number spelling (`1234567890.5`, not `1.2345678905e+09`).
-      const goText = this.numericTextExpression(go, exprOut.parsed ?? value.parsed)
-      // A value that reaches `undefined`/`null` through a memo, an optional
-      // member read or a ternary branch (#3322, `attrValueMayBeNullish`)
-      // omits the attribute on a nil value, as Hono does. `ne x nil` is
-      // false only for an untyped nil, so a typed field always renders.
-      if (attrValueMayBeNullish(value.parsed, this.state.nullishAttrCtx, n => this.scope.isBound(n))) {
-        return `{{if ne (${go}) nil}}${nameTok}="{{${goText}}}"{{end}}`
-      }
-      return `${nameTok}="{{${goText}}}"`
+        /^[A-Za-z_$][\w$]*$/.test(bareId.slice(this.state.restPropsName.length + 1)),
+      )
+      return emitParsedExpressionAttr(this.elementAttrHost, value, name, parsed, {
+        nillablePropName: /^[A-Za-z_$][\w$]*$/.test(propName) ? propName : null,
+        viaPropsObject: propName !== bareId,
+        restKeyRead,
+      })
     },
     emitBooleanAttr: (_value, name) => name,
-    // Spread attributes (`<div {...attrs()} />`) lower through the
-    // `bf_spread_attrs` runtime helper. Two paths:
-    //   - Top-level spread: the bag was plumbed onto the component's Props struct
-    //     as `.Spread_<slotId>`; emit a reference to it.
-    //   - Loop-internal spread: the bag lives in the loop iteration variable
-    //     (Go template's `.` plus property access). Translate the JS expression
-    //     via `convertExpressionToGo` and emit `{{bf_spread_attrs <e>}}` inline.
-    // Slot IDs are assigned at IR build time so identity is stable across
-    // re-emits; a missing one falls back to BF101.
-    emitSpread: (value) => {
-      if (!value.slotId) {
-        this.state.errors.push({
-          code: 'BF101',
-          severity: 'error',
-          message: `JSX spread '{...${value.expr}}' on an intrinsic element has no Go template lowering (missing slot id)`,
-          loc: this.makeLoc(),
-          suggestion: {
-            message: 'This usually means a closed-type rest-prop spread was unexpectedly routed through the bag path — file a bug with the source.',
-          },
-        })
-        return ''
-      }
-      if (this.inLoop) {
-        // Inside `{{range $_, $t := .Tasks}}`, the iteration value surfaces as Go
-        // template's `.` (current context). A bare reference to the loop param
-        // therefore translates to `.`, not `.T` (the generic identifier path).
-        // Property access through the loop param (`t.attrs`) is already handled
-        // by the member-expression path that returns `.Attrs`.
-        //
-        // A per-item spread whose operand is a plain object/array field read
-        // (not a destructure-rest binding) is otherwise gated on whether the
-        // enclosing signal's literal initial value bakes at all — see
-        // `parsed-literal-to-go.ts`'s nested object/array property support
-        // (#2087), which lifted the flat-object-only restriction for the
-        // destructure-residual fixtures below.
-        const trimmed = value.expr.trim()
-        if (this.isCurrentLoopItem(trimmed)) {
-          // The row's keys are Go-cased by the field-access contract: the
-          // same lowering that makes `attrs.id` emit `{{.ID}}`
-          // (`goFieldNameForKey` → `capitalizeFieldName`) requires the
-          // seeded row map/struct to be keyed `ID`/`Title`/`DataKind`.
-          // `bf_js_keys` (bf.go) undoes just that capitalization — struct
-          // via json tag, map via the `capitalizeFieldName` inverse —
-          // before `toAttrName`'s UNCHANGED camelCase→kebab conversion
-          // sees the real JS names (#2490).
-          return `{{bf_spread_attrs (bf_js_keys .)}}`
-        }
-        // Destructure object-rest spread onto an element (`{...rest}`, #2087
-        // Phase B): `rest` alone would spread the WHOLE item (every field,
-        // including the ones the pattern already destructured out as `id` /
-        // `title`) — route through `bf_omit` instead so the residual excludes
-        // exactly those sibling keys. Only a spread whose expr is the BARE
-        // rest name matches (`isLowerableLoopDestructure`'s admitted shape);
-        // anything else (`{...fn(rest)}`) already refused at the IR gate.
-        // `Omit` already recovers original names via json tag (struct) /
-        // passthrough (map), so this arm does NOT need `bf_js_keys`.
-        const restInfo = this.lookupRestExclude(trimmed)
-        if (restInfo) {
-          const excludeArgs = restInfo.excludeKeys.map(k => JSON.stringify(k)).join(' ')
-          const parent = this.noteWrapperRowRead(trimmed, restInfo.parent)
-          const omitArgs = excludeArgs ? `${parent} ${excludeArgs}` : parent
-          return `{{bf_spread_attrs (bf_omit ${omitArgs})}}`
-        }
-        // A field/member read off the loop row (`{...g.extra}`) — same
-        // Go-casing exposure as the bare-item case above, PLUS an
-        // ambiguity the compiler can't resolve at compile time: a
-        // `Record<string, string>` field's runtime map could have been
-        // seeded with JS-native data keys (`data-kind`) OR Go-cased
-        // field-name keys, and nothing in the TYPE says which. `bf_js_keys`
-        // is a no-op on an already-lowercase-first-rune key (lowercasing
-        // `data-kind`'s first rune changes nothing) and corrective on a
-        // Go-cased one, so wrapping here is safe for both conventions
-        // rather than betting on one (#2490).
-        const goExpr = this.convertExpressionToGo(value.expr)
-        // `convertExpressionToGo` already pushes BF101 for unsupported
-        // expressions and returns `""`; pass through so the template still
-        // compiles.
-        // `goExpr` is not necessarily a single token — a member spread can
-        // lower to a pipeline (`bf_get . $.K`), which the template parser
-        // would otherwise read as extra ARGUMENTS to `bf_js_keys`.
-        return `{{bf_spread_attrs (bf_js_keys ${wrapIfMultiToken(goExpr)})}}`
-      }
-      return `{{bf_spread_attrs .${value.slotId}}}`
-    },
-    emitTemplate: (value, name) => `${goAttrNameToken(name)}="${this.renderTemplateLiteralParts(value.parts)}"`,
+    emitSpread: (value) => emitSpreadAttr(this.elementAttrHost, value),
+    emitTemplate: (value, name) => emitTemplateAttr(this.elementAttrHost, value, name),
     // Neither variant is legal on intrinsic elements.
     emitBooleanShorthand: () => '',
     emitJsxChildren: () => '',
   }
 
-  /**
-   * Lower a `style={{ … }}` object-literal value to a CSS string with dynamic
-   * values interpolated as Go template actions, e.g.
-   * `{ backgroundColor: color, padding: '8px' }` →
-   * `background-color:{{.Color}};padding:8px`. Returns null when the object
-   * shape is unsupported or any value expression can't be lowered (the caller
-   * then falls through to the generic BF101 path).
-   */
-  private tryLowerStyleObject(value: ExpressionAttr): string | null {
-    const entries = planStyleObject(value)
-    if (!entries) return null
-    // Routed through the single `bf_style_object` runtime call (#2261)
-    // rather than per-pair `key:value` template interpolation — a dynamic
-    // value that fails the ported `hasUnsafeStyleValue` CSS-injection scan
-    // must DROP its entire pair to match Hono's oracle behavior, which
-    // isn't expressible as a per-pair inline substitution (a dropped
-    // MIDDLE pair would otherwise leave a dangling `key:` / stray `;;` in
-    // a `.map().join(';')` splice). `String()` (already returns "" for
-    // nil) also has an established zero-value contract for numbers/bools,
-    // avoiding html/template's own contextual CSS auto-escaper (whose
-    // `ZgotmplZ` sentinel — the pre-#2261 divergence — is bypassed by the
-    // call returning a trusted `template.CSS`, not a plain `string`).
-    const args = entries.flatMap(e => [
-      JSON.stringify(e.cssKey),
-      e.kind === 'literal' ? JSON.stringify(e.value) : wrapIfMultiToken(this.convertExpressionToGo(e.expr, undefined, e.parsed)),
-    ])
-    return `{{bf_style_object ${args.join(' ')}}}`
-  }
-  private renderTemplateExpression(expr: JsSourceText, parsed: ParsedExpr): string {
-    if (parsed.kind === 'template-literal') {
-      return parsed.parts.map(part => {
-        if (part.type === 'string') return this.escapeAttrText(part.value)
-        const rendered = this.renderParsedExpr(part.expr)
-        return this.isTemplateFragment(rendered, part.expr.kind) ? rendered : '{{' + rendered + '}}'
-      }).join('')
-    }
-    const rendered = this.convertExpressionToGo(expr, undefined, parsed)
-    return this.isTemplateFragment(rendered, parsed.kind) ? rendered : '{{' + rendered + '}}'
-  }
-
-
-  /**
-   * HTML-attribute-safe escaping for double-quoted attribute values. `&`/`"`/`<`
-   * are non-negotiable — without them the surrounding `class="..."` quoting
-   * breaks (e.g. UnoCSS's `[class*="size-"]`). `>`/`'` are belt-and-suspenders:
-   * HTML5 permits both inside double-quoted attrs, but Go's `html/template`
-   * lexer is contextual, so escape them too.
-   */
-  private escapeAttrText(s: string): string {
-    return s
-      .replace(/&/g, '&amp;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-  }
-
-  private renderTemplateLiteralParts(parts: IRTemplatePart[]): string {
-    let output = ''
-    for (const part of parts) {
-      if (part.type === 'string') {
-        output += this.escapeAttrText(part.value)
-      } else if (part.type === 'expression') {
-        output += this.renderTemplateExpression(part.expr, part.parsed)
-      } else if (part.type === 'ternary') {
-        const { condition: goCond, preamble } = this.convertConditionToGo(part.condition)
-        output += `${preamble}{{if ${goCond}}}${part.whenTrue}{{else}}${part.whenFalse}{{end}}`
-      } else if (part.type === 'lookup') {
-        // `${MAP[KEY]}` against a Record<T, string> literal — emit a chained
-        // `{{if eq .Key "<case>"}}<value>{{else if ...}}{{end}}` so the right
-        // case lights up at SSR time. Empty when no case matches; consumers
-        // shouldn't rely on a default fallback here (the JSX-side
-        // `variant = 'default'` default already shows up via the per-prop
-        // fallback in `NewXxxProps`).
-        const rawKeyExpr = this.convertExpressionToGo(part.key)
-        // A compound key (`props.placement ?? 'top'` → `or .Placement "top"`)
-        // must be parenthesized inside `eq` — unwrapped, Go's template parser
-        // reads `eq or .Placement "top" "left"` as four arguments with a zero-arg
-        // `or`.
-        const keyExpr = /\s/.test(rawKeyExpr) ? `(${rawKeyExpr})` : rawKeyExpr
-        const caseEntries = Object.entries(part.cases)
-        if (caseEntries.length === 0) continue
-        const branches = caseEntries.map(([k, v], i) => {
-          const head = i === 0 ? '{{if' : '{{else if'
-          // The case value is a static Record<T,string> literal emitted straight
-          // into attribute-value text, so HTML-escape it like `string` parts
-          // (via escapeAttrText). Otherwise UnoCSS
-          // tokens like `has-[>svg]:px-2.5` would leak a raw `>`.
-          return `${head} eq ${keyExpr} ${JSON.stringify(k)}}}${this.escapeAttrText(v)}`
-        })
-        output += branches.join('') + '{{end}}'
-      }
-    }
-    return output
+  /** The adapter-owned renders and lookups the attribute emission (`attr/element-attrs.ts`) reads. */
+  private readonly elementAttrHost: ElementAttrHost = {
+    ctx: this.emitCtx,
+    renderParsedExpr: (expr) => this.renderParsedExpr(expr),
+    isTemplateFragment: (go, kind) => this.isTemplateFragment(go, kind),
+    numericTextExpression: (goExpr, expr) => this.numericTextExpression(goExpr, expr),
+    nillablePropFieldRef: (propName, viaPropsObject) => this.nillablePropFieldRef(propName, viaPropsObject),
+    isBound: (name) => this.scope.isBound(name),
+    inLoop: () => this.inLoop,
+    isCurrentLoopItem: (name) => this.isCurrentLoopItem(name),
+    lookupRestExclude: (name) => this.lookupRestExclude(name),
+    noteWrapperRowRead: (name, rendered) => this.noteWrapperRowRead(name, rendered),
+    makeLoc: () => this.makeLoc(),
   }
 
   renderScopeMarker(_instanceIdExpr: string): string {
