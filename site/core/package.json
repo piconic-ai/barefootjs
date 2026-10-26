@@ -16,6 +16,7 @@
     "@barefootjs/site-shared": "workspace:*",
     "@cf-wasm/resvg": "^0.3.3",
     "hono": "^4",
+    "entities": "^7.0.1",
     "@shikijs/langs": "^3.21.0",
     "@shikijs/themes": "^3.21.0",
     "marked": "^15",

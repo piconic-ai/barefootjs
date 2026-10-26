@@ -6,6 +6,8 @@
  */
 
 import { Marked } from 'marked'
+import { decodeHTML } from 'entities'
+import { html as htmlTemplate } from 'hono/html'
 import { headingSlug } from './heading-slug.ts'
 import { createHighlighterCore, type HighlighterCore } from 'shiki/core'
 import { createJavaScriptRegexEngine } from 'shiki/engine/javascript'
@@ -144,8 +146,9 @@ function createMarked(): Marked {
 
       heading({ text, depth }: { text: string; depth: number }) {
         const id = headingSlug(text)
+        const label = decodeHTML(text.replace(/<[^>]*>/g, ''))
         const anchor = depth >= 2
-          ? `<a href="#${id}" class="heading-anchor" aria-label="Link to ${text.replace(/<[^>]*>/g, '')}">#</a>`
+          ? htmlTemplate`<a href="#${id}" class="heading-anchor" aria-label="Link to ${label}">#</a>`.toString()
           : ''
         return `<h${depth} id="${id}">${anchor}${text}</h${depth}>\n`
       },
