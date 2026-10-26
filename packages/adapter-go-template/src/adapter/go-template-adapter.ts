@@ -180,6 +180,7 @@ import { resolveLocalGetterAsGo } from "./value/child-prop-value.ts"
 import { emitParsedExpressionAttr, emitSpreadAttr, emitStyleOrPresenceAttr, emitTemplateAttr, type ElementAttrHost } from "./attr/element-attrs.ts"
 import { renderConditionExpr, renderFilterExpr, type ConditionExprHost } from "./expr/condition-expr.ts"
 import { loopRowChildPropOverrides, renderLoop as renderLoopWithHost, type LoopRenderHost } from "./loop/render-loop.ts"
+import { collectBodyChildInstances, collectStaticChildInstances, type StaticChildrenHost } from "./children/static-children.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
 
@@ -2207,7 +2208,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   ): void {
     const wrapperName = this.loopBodyWrapperName(parentComponentName, nested)
     const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
-    const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!)
+    const bodyChildInstances = collectBodyChildInstances(this.staticChildrenHost, nested.bodyChildren!)
     // #2822 follow-up: this is a Go EMBEDDED (anonymous) field — its field
     // name IS its type name, so unlike `child.fieldName` the alias-keyed
     // field name can't be kept separate from the type here. The whole
@@ -2375,24 +2376,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (literal) return literal
     const source = this.propArrayLoopRowSource(ir, nested)
     return source?.shape.scalar ? 'interface{}' : null
-  }
-
-  /**
-   * Collect static child instances from loop body children for the wrapper
-   * struct. `rowScope` is the loop-body component's own row scope
-   * (`NestedComponentInfo.rowScope`), so each instance's `rowScope` covers
-   * the row it is forwarded into as well as any loop nested below it.
-   */
-  private collectBodyChildInstances(
-    bodyChildren: IRNode[],
-    propsParams: ReadonlyArray<{ name: string }> = [],
-    rowScope: BindingScope = BindingScope.EMPTY,
-  ): StaticChildInstance[] {
-    const result: StaticChildInstance[] = []
-    for (const child of bodyChildren) {
-      this.collectStaticChildInstancesRecursive(child, result, false, new Map(), propsParams, rowScope)
-    }
-    return result
   }
 
   /** Generate the NewXxxProps function. */
@@ -2740,7 +2723,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     ir: ComponentIR,
     propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   ): void {
-    const staticChildren = this.collectStaticChildInstances(ir.root, ir.metadata.propsParams)
+    const staticChildren = collectStaticChildInstances(this.staticChildrenHost, ir.root, ir.metadata.propsParams)
     for (const child of staticChildren) {
       // #2822: the constructor/type names and every cross-file shape lookup
       // below must resolve to the child's own DECLARED name — `New<Name>Props`
@@ -3013,7 +2996,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const varName = this.nestedRowsVar(nested)
       const wrapperType = this.loopBodyWrapperName(componentName, nested)
       const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
-      const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!, ir.metadata.propsParams, nested.rowScope)
+      const bodyChildInstances = collectBodyChildInstances(this.staticChildrenHost, nested.bodyChildren!, ir.metadata.propsParams, nested.rowScope)
       this.emitLoopRowBodyChildInstances(lines, ir, bodyChildInstances, propFallbackVars)
 
       const dataVar = `${varName}Data`
@@ -3072,7 +3055,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const wrapperType = this.loopBodyWrapperName(componentName, nested)
       const varName = this.nestedRowsVar(nested)
       const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
-      const bodyChildInstances = this.collectBodyChildInstances(nested.bodyChildren!, ir.metadata.propsParams, nested.rowScope)
+      const bodyChildInstances = collectBodyChildInstances(this.staticChildrenHost, nested.bodyChildren!, ir.metadata.propsParams, nested.rowScope)
       // Child sub-component instances created once (identical scope IDs per row).
       this.emitLoopRowBodyChildInstances(lines, ir, bodyChildInstances, propFallbackVars)
 
@@ -4127,7 +4110,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
 
-    const staticChildren = this.collectStaticChildInstances(ir.root, ir.metadata.propsParams)
+    const staticChildren = collectStaticChildInstances(this.staticChildrenHost, ir.root, ir.metadata.propsParams)
     for (const child of staticChildren) {
       // #2822: the field's NAME stays keyed by the caller-local alias
       // (`child.fieldName`, declared and read consistently within this
@@ -4162,20 +4145,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /** Convert a field name to its JSON tag (camelCase). */
   private toJsonTag(name: string): string {
     return name.charAt(0).toLowerCase() + name.slice(1)
-  }
-
-  /**
-   * Collect all static child component instances from the IR tree. Excludes
-   * components inside loops (handled by nestedComponents). Each instance carries
-   * its component `name`, `slotId`, `props`, and Go `fieldName`.
-   */
-  private collectStaticChildInstances(
-    node: IRNode,
-    propsParams: ReadonlyArray<{ name: string }> = [],
-  ): Array<StaticChildInstance> {
-    const result: StaticChildInstance[] = []
-    this.collectStaticChildInstancesRecursive(node, result, false, new Map(), propsParams)
-    return result
   }
 
   /**
@@ -4324,133 +4293,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       .split(GoTemplateAdapter.SCOPE_SENTINEL)
       .map(seg => JSON.stringify(seg))
       .join(' + scopeID + ')
-  }
-
-  private collectStaticChildInstancesRecursive(
-    node: IRNode,
-    result: StaticChildInstance[],
-    inLoop: boolean,
-    providerCtx: ReadonlyMap<string, string>,
-    propsParams: ReadonlyArray<{ name: string }> = [],
-    scope: BindingScope = BindingScope.EMPTY,
-  ): void {
-    if (node.type === 'component') {
-      const comp = node as IRComponent
-      // Dynamic-tag locals (`const Tag = children.tag`) have no registrable
-      // template, so they get no `.<Name>SlotN` struct field. Recurse into
-      // their children (which lower as a passthrough) so any real static
-      // child components nested inside still get their slot fields.
-      if (comp.dynamicTag) {
-        for (const child of comp.children) {
-          this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams, scope)
-        }
-        return
-      }
-      // Skip Portal (handled via PortalCollector) and loop-internal components
-      // (handled by nestedComponents).
-      if (comp.name !== 'Portal' && !inLoop && comp.slotId) {
-        const suffix = slotIdToFieldSuffix(comp.slotId)
-        // Children handed in as a `children={<…/>}` attribute land as a
-        // `jsx-children` prop rather than nested between the tags; treat them as
-        // the child's effective children when no nested ones exist, so the bake
-        // paths below see them.
-        const effectiveChildren = comp.children.length > 0
-          ? comp.children
-          : resolveJsxChildrenProp(comp.props)
-        result.push({
-          name: comp.name,
-          slotId: comp.slotId,
-          props: comp.props,
-          fieldName: `${comp.name}${suffix}`,
-          childrenText: this.extractTextChildren(effectiveChildren),
-          childrenHtml: this.extractHtmlChildren(effectiveChildren),
-          childrenScopedHtmlExpr: this.extractScopedHtmlChildren(effectiveChildren),
-          contextBindings: providerCtx.size > 0 ? providerCtx : undefined,
-          rowScope: scope,
-        })
-        // Action-bearing JSX children render through a companion define with the
-        // PARENT's data (see `queueDynamicChildrenDefine`), so component
-        // instances nested inside them need their own `<Name>SlotN` fields +
-        // constructor inits on THIS component's props. Statically-baked children
-        // never contain components (any nested component renders a `{{template}}`
-        // action, which the bake extractors reject), so recursing is a no-op.
-        for (const child of effectiveChildren) {
-          this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams, scope)
-        }
-      }
-      // Recurse into Portal's children to find nested components
-      if (comp.name === 'Portal' && comp.children) {
-        for (const child of comp.children) {
-          this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams, scope)
-        }
-      }
-    } else if (node.type === 'loop') {
-      const loop = node as IRLoop
-      // A loop whose body IS a single component is the nestedComponents /
-      // wrapper-slice machinery's case — mark its subtree as in-loop so the
-      // component (and its body children, which live on the wrapper struct)
-      // are skipped here. A component merely nested inside an element item
-      // (`<li><Badge/></li>`, #2130) gets NO wrapper slice: keep collecting,
-      // so it registers a normal once-per-slot instance (shared across rows,
-      // like the wrapper's `bodyChildInstances`); per-item content reaches it
-      // through the loop-body children define (see `renderComponent`).
-      const rowScope = scope.enterLoopRow(loop)
-      for (const child of loop.children) {
-        this.collectStaticChildInstancesRecursive(
-          child,
-          result,
-          inLoop || !!loop.childComponent,
-          providerCtx,
-          propsParams,
-          rowScope,
-        )
-      }
-    } else if (node.type === 'element') {
-      const element = node as IRElement
-      for (const child of element.children) {
-        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams, scope)
-      }
-    } else if (node.type === 'fragment') {
-      const fragment = node as IRFragment
-      for (const child of fragment.children) {
-        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams, scope)
-      }
-    } else if (node.type === 'conditional') {
-      const cond = node as IRConditional
-      this.collectStaticChildInstancesRecursive(cond.whenTrue, result, inLoop, providerCtx, propsParams, scope)
-      if (cond.whenFalse) {
-        this.collectStaticChildInstancesRecursive(cond.whenFalse, result, inLoop, providerCtx, propsParams, scope)
-      }
-    } else if (node.type === 'if-statement') {
-      // An early-return if-statement root (e.g. an asChild split) keeps its
-      // subtrees in consequent/alternate — the non-asChild branch's nested icon
-      // needs its slot field like any other static child.
-      const stmt = node as IRIfStatement
-      this.collectStaticChildInstancesRecursive(stmt.consequent, result, inLoop, providerCtx, propsParams, scope)
-      if (stmt.alternate) {
-        this.collectStaticChildInstancesRecursive(stmt.alternate, result, inLoop, providerCtx, propsParams, scope)
-      }
-    } else if (node.type === 'provider') {
-      // SSR context propagation: record the provider's value against its context
-      // name and extend the active binding map for descendants. A literal value
-      // lowers to a Go literal; an object-literal value lowers to a Go map when
-      // every member is a supported shape (#2087 — see `extendProviderContext`);
-      // anything else is left unbound (the consumer keeps its default).
-      const p = node as IRProvider
-      const childCtx = this.extendProviderContext(providerCtx, p, propsParams)
-      for (const child of p.children) {
-        this.collectStaticChildInstancesRecursive(child, result, inLoop, childCtx, propsParams, scope)
-      }
-    } else if (node.type === 'async') {
-      // Async fallback + children render server-side via the OOS
-      // protocol; static child components inside them still need slot
-      // fields on the parent struct.
-      const a = node as IRAsync
-      this.collectStaticChildInstancesRecursive(a.fallback, result, inLoop, providerCtx, propsParams, scope)
-      for (const child of a.children) {
-        this.collectStaticChildInstancesRecursive(child, result, inLoop, providerCtx, propsParams, scope)
-      }
-    }
   }
 
   /**
@@ -8091,6 +7933,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     childPropFieldName: (declaredName, propName) => this.childPropFieldNames.get(declaredName)?.get(propName),
     repropsOwner: () => this.repropsOwner,
     isTemplateFragment: (go, kind) => this.isTemplateFragment(go, kind),
+  }
+
+  /** The adapter-owned children bakes and provider-context lowering the static child-instance collection (`children/static-children.ts`) reads. */
+  private readonly staticChildrenHost: StaticChildrenHost = {
+    ctx: this.emitCtx,
+    extractTextChildren: (children) => this.extractTextChildren(children),
+    extractHtmlChildren: (children) => this.extractHtmlChildren(children),
+    extractScopedHtmlChildren: (children) => this.extractScopedHtmlChildren(children),
+    extendProviderContext: (current, p, propsParams) => this.extendProviderContext(current, p, propsParams),
   }
 
   renderScopeMarker(_instanceIdExpr: string): string {
