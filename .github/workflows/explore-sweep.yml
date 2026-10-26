@@ -104,6 +104,8 @@ jobs:
         uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           go-version: '1.25'
+          # No root go.sum to key on, and no cross-run cache (see ci-go-template.yml).
+          cache: false
 
       - name: Setup Ruby
         if: matrix.adapter == 'erb'
