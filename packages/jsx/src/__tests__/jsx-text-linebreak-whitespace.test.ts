@@ -78,3 +78,14 @@ describe('JSX text whitespace across line breaks (#3237)', () => {
     expect(js).toContain('<div><b>a</b> <i>b</i></div>')
   })
 })
+
+test('long interior space runs survive line cleanup', () => {
+  const text = `start${' '.repeat(30_000)}end`
+  const source = `'use client'; export function Probe() { return <pre>\n${text}   \n</pre> }`
+  expect(getClientJs(source)).toContain(`<pre>${text}</pre>`)
+})
+
+test('line cleanup removes ASCII indentation but preserves nonbreaking spaces', () => {
+  const source = `'use client'; export function Probe() { return <pre>\n  \u00a0text\u00a0  \n</pre> }`
+  expect(getClientJs(source)).toContain('<pre>\u00a0text\u00a0</pre>')
+})
