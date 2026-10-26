@@ -713,7 +713,7 @@ function buildPerlProps(
         // (data-point conformance, optional-chaining-prop:null-user).
         literal = 'undef'
       } else if (typeof value === 'string') {
-        literal = `'${value.replace(/'/g, "\\'")}'`
+        literal = perlSingleQuote(value)
       } else if (typeof value === 'number') {
         literal = `${value}`
       } else if (typeof value === 'boolean') {
