@@ -47,10 +47,10 @@ jobs:
   test:
     if: github.event_name != 'pull_request' || (github.base_ref == 'main' && (github.event.pull_request.stack == null || github.event.pull_request.stack.position <= 1)) || (github.event.pull_request.stack.base.ref == 'main' && github.event.pull_request.stack.position >= github.event.pull_request.stack.size)
     runs-on: ubuntu-latest
-    # The adapter's unit + conformance suite runs 16-25 min on a shared
-    # runner and grows with the fixture corpus; a 25-minute cap cancelled
-    # passing runs mid-suite (#3627).
-    timeout-minutes: 40
+    # Since the harness stopped re-parsing declarations per compile (#3666)
+    # the job takes ~9-10 min (~26 min before). 25 is the cap it had before
+    # #3627 raised it.
+    timeout-minutes: 25
     # PR/push run the fast sampled data-point tier; the nightly `schedule`
     # (and a manual `workflow_dispatch`) run the full generated-point matrix
     # (#2278).

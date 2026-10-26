@@ -51,9 +51,11 @@ jobs:
   test:
     if: github.event_name != 'pull_request' || (github.base_ref == 'main' && (github.event.pull_request.stack == null || github.event.pull_request.stack.position <= 1)) || (github.event.pull_request.stack.base.ref == 'main' && github.event.pull_request.stack.position >= github.event.pull_request.stack.size)
     runs-on: ubuntu-latest
-    # The unit-test step alone ran 31.6 min and the whole job 33.5 min
-    # against a 35-minute cap, and it grows with the fixture corpus (#3627).
-    timeout-minutes: 50
+    # Since the harness stopped re-parsing declarations per compile (#3666)
+    # the job takes ~15-17 min on the `pr` tier (~31 min before); the
+    # nightly `full` tier renders ~1.5x the data points. 35 is the cap it
+    # had before #3627 raised it.
+    timeout-minutes: 35
     # PR/push run the fast sampled data-point tier; the nightly `schedule`
     # (and a manual `workflow_dispatch`) run the full generated-point matrix
     # (#2278).
