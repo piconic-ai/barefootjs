@@ -8,20 +8,22 @@ const cases = [
   { heading: '<em>bold</em> "title"', label: 'bold "title"' },
   { heading: 'A &amp; B &quot;quoted&quot; &copy; &NotEqualTilde;', label: 'A & B "quoted" © ≂̸' },
   { heading: 'prefix <script', label: 'prefix <script' },
+  { heading: 'prefix <scr<script>ipt> suffix', label: 'prefix ipt> suffix' },
+  { heading: '<<script>script>', label: 'script>' },
 ]
 
 for (const entry of cases) {
   test(`heading anchor keeps ${JSON.stringify(entry.heading)} in its label`, async () => {
     const { html } = await renderMarkdown(`## ${entry.heading}`)
     const anchors: { names: string[]; label: string }[] = []
-    await new HTMLRewriter().on('a.heading-anchor', {
+    new HTMLRewriter().on('a.heading-anchor', {
       element(element) {
         anchors.push({
           names: [...element.attributes].map(([name]) => name).sort(),
           label: decodeHTML(element.getAttribute('aria-label') ?? ''),
         })
       },
-    }).transform(new Response(html)).text()
+    }).transform(html)
     expect(anchors).toEqual([{ names: ['aria-label', 'class', 'href'], label: `Link to ${entry.label}` }])
   })
 }
