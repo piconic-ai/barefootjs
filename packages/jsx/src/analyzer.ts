@@ -250,24 +250,28 @@ export function createAnchoredProgram(source: string, filename: string, anchorDi
 }
 
 /**
- * Parsed SourceFiles shared by consecutive Programs, keyed by file name and
- * the parse options the Program asks for. An entry is reused only while the
- * text it was parsed from is the text the caller has now, so a file that
- * changed on disk (a rebuilt `@barefootjs/client` `dist`) or a different
- * source under the same virtual name is parsed again, never served stale.
+ * Parsed SourceFiles shared by consecutive Programs, keyed by file name, the
+ * parse options the Program asks for, and the text. A file is parsed once per
+ * distinct text: a file that changed on disk (a rebuilt `@barefootjs/client`
+ * `dist`) is parsed again, never served stale, and the many different sources
+ * a harness compiles under one virtual name (`component.tsx`) each keep their
+ * own entry.
  *
  * A reused SourceFile also keeps its binding, so a Program built from cached
  * files costs module resolution and checker setup, not a parse of
  * `lib.*.d.ts` and every imported declaration (~430 ms → ~30 ms per Program
  * in the conformance harness, #3666). Sharing SourceFiles between Programs
  * with the same compiler options is how TypeScript's own DocumentRegistry
- * serves language services.
+ * serves language services. The Programs themselves are not shared: a
+ * checker assigns type ids in the order it is queried, so one reused across
+ * compiles could make a compile's output depend on what ran before it.
  *
  * Only for Programs built with the same compiler options: the cache does not
- * key on them.
+ * key on them. Entries are never evicted, which suits a test process over a
+ * fixed corpus, not a long-running watcher.
  */
 export class SourceFileCache {
-  private readonly files = new Map<string, ts.SourceFile>()
+  private readonly files = new Map<string, Map<string, ts.SourceFile>>()
 
   get(
     fileName: string,
@@ -276,13 +280,18 @@ export class SourceFileCache {
     scriptKind?: ts.ScriptKind,
   ): ts.SourceFile {
     const key = `${fileName}\0${parseOptionsKey(languageVersion)}\0${scriptKind ?? ''}`
-    const cached = this.files.get(key)
-    if (cached && cached.text === text) return cached
+    let byText = this.files.get(key)
+    if (!byText) {
+      byText = new Map()
+      this.files.set(key, byText)
+    }
+    const cached = byText.get(text)
+    if (cached) return cached
     // The virtual source (an explicit `scriptKind`) gets parent pointers, as
     // `createProgramForFile` always parsed it; a file read from disk is parsed
     // the way the default compiler host parses it.
     const parsed = ts.createSourceFile(fileName, text, languageVersion, scriptKind !== undefined, scriptKind)
-    this.files.set(key, parsed)
+    byText.set(text, parsed)
     return parsed
   }
 }

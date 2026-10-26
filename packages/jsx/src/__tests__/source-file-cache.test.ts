@@ -6,7 +6,8 @@
  *
  * Pinned here: a declaration file is parsed once across Programs, a
  * different source under the same virtual name is parsed again (never
- * served stale), and a Program built from cached files still types a
+ * served stale) and then kept alongside the first, every Program is still
+ * new, and a Program built from cached files still types a
  * `@barefootjs/client` import with its real declarations.
  */
 import { describe, expect, test } from 'bun:test'
@@ -46,6 +47,15 @@ describe('createAnchoredProgram SourceFile sharing', () => {
     expect(b.getSourceFile('Counter.tsx')).not.toBe(a.getSourceFile('Counter.tsx'))
   })
 
+  test('each source under one virtual name is parsed once, even when they alternate', () => {
+    const a = createAnchoredProgram(counterSource('0'), 'Counter.tsx', ANCHOR)!
+    createAnchoredProgram(counterSource("'x'"), 'Counter.tsx', ANCHOR)
+    const again = createAnchoredProgram(counterSource('0'), 'Counter.tsx', ANCHOR)!
+    expect(again.getSourceFile('Counter.tsx')).toBe(a.getSourceFile('Counter.tsx'))
+    // A new Program each time, though: only parsed files are shared.
+    expect(again).not.toBe(a)
+  })
+
   test('a Program built from cached files still resolves @barefootjs/client types', () => {
     createAnchoredProgram(counterSource('0'), 'Counter.tsx', ANCHOR)
     const program = createAnchoredProgram(counterSource('0'), 'Counter.tsx', ANCHOR)!
@@ -61,13 +71,14 @@ describe('createAnchoredProgram SourceFile sharing', () => {
 })
 
 describe('SourceFileCache', () => {
-  test('reuses an entry only while its text is unchanged', () => {
+  test('parses each text of a file once', () => {
     const cache = new SourceFileCache()
     const first = cache.get('/x/a.d.ts', 99, 'export declare const a: number')
     expect(cache.get('/x/a.d.ts', 99, 'export declare const a: number')).toBe(first)
     const changed = cache.get('/x/a.d.ts', 99, 'export declare const a: string')
     expect(changed).not.toBe(first)
     expect(changed.text).toBe('export declare const a: string')
+    expect(cache.get('/x/a.d.ts', 99, 'export declare const a: number')).toBe(first)
   })
 })
 
