@@ -8,6 +8,9 @@
 import { describe, expect, test } from 'bun:test'
 import { HonoAdapter } from '@barefootjs/hono'
 import type { RenderOptions } from '../jsx-runner'
+import { renderHonoComponent } from '@barefootjs/hono/test-render'
+import { fixture as objectEntriesMap } from '../../fixtures/object-entries-map'
+import { normalizeHTML } from '../html-normalize'
 import { memoizeRender, renderKey, stableKey } from '../render-memo'
 
 const SOURCE = 'export function A() { return <p /> }'
@@ -71,6 +74,16 @@ describe('memoizeRender', () => {
     expect(calls()).toBe(5)
   })
 
+  test('reordered object props render separately (object-entries-map, real Hono render)', async () => {
+    const render = memoizeRender(renderHonoComponent)
+    const run = (counts: Record<string, number>) =>
+      render({ source: objectEntriesMap.source, adapter: new HonoAdapter(), props: { counts } })
+    const appleFirst = normalizeHTML(await run({ apple: 3, banana: 5 }))
+    const bananaFirst = normalizeHTML(await run({ banana: 5, apple: 3 }))
+    expect(bananaFirst).not.toBe(appleFirst)
+    expect(bananaFirst.indexOf('banana')).toBeLessThan(bananaFirst.indexOf('apple'))
+  })
+
   test('an input the key cannot serialize renders every time', async () => {
     const { render, calls } = counting()
     await render(opts({ props: { m: new Map() } }))
@@ -98,8 +111,10 @@ describe('stableKey tells apart what a render can tell apart', () => {
     })
   }
 
-  test('object key order does not matter', () => {
-    expect(stableKey({ a: 1, b: 2 })).toBe(stableKey({ b: 2, a: 1 }))
+  test('object key order is part of the key, since a render can enumerate it', () => {
+    expect(stableKey({ a: 1, b: 2 })).not.toBe(stableKey({ b: 2, a: 1 }))
+    expect(stableKey({ c: { a: 1, b: 2 } })).not.toBe(stableKey({ c: { b: 2, a: 1 } }))
+    expect(stableKey({ a: 1, b: 2 })).toBe(stableKey({ a: 1, b: 2 }))
   })
 
   test('NaN and the infinities have keys of their own', () => {

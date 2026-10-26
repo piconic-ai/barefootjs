@@ -57,8 +57,9 @@ export function renderKey(options: RenderOptions): string | undefined {
 /**
  * A serialization that tells apart the values a render can tell apart:
  * `-0` from `0`, a `Date` from its ISO string, an absent key from one set to
- * `undefined`, an array hole from `undefined`. Object keys are sorted, so key
- * order does not matter. Returns `undefined` for anything it cannot represent
+ * `undefined`, an array hole from `undefined`, and two objects whose keys
+ * enumerate in a different order (`Object.entries(counts).map(...)` renders
+ * them in that order, so the key keeps `Object.keys` order). Returns `undefined` for anything it cannot represent
  * that faithfully: functions, Maps, class instances, symbol-keyed objects,
  * arrays or Dates carrying extra own properties, and cyclic values.
  */
@@ -117,7 +118,7 @@ function objectKey(value: object, path: Set<object>): string | undefined {
   }
   if (proto !== Object.prototype && proto !== null) return undefined
   const entries: string[] = []
-  for (const k of Object.keys(value).sort()) {
+  for (const k of Object.keys(value)) {
     const item = keyOf((value as Record<string, unknown>)[k], path)
     if (item === undefined) return undefined
     entries.push(`${JSON.stringify(k)}:${item}`)

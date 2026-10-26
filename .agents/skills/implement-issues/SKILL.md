@@ -69,6 +69,9 @@ connector, or delegated agent is required.
      only one of them takes the new representation.
    - **Names:** shadowing by a loop row or a nested loop, a sibling loop, a
      filter callback capture, and string literals that contain the renamed name.
+   - **Order:** two objects with the same entries in a different insertion
+     order. `Object.entries` / `Object.keys` expose it, so a cache key or a
+     dedup that sorts keys treats inputs that render differently as equal.
 
    This list is built from findings that escaped earlier PRs. When a review finding
    or a revert names a class of shape that is not here, add it to this list in the
