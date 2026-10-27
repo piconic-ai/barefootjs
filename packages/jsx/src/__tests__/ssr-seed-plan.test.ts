@@ -486,4 +486,47 @@ describe('computeSsrSeedPlan', () => {
     `)
     expect(plan.steps.map(s => s.name)).toEqual(['b', 'c'])
   })
+
+  test('a computed default reading no earlier prop re-binds the prop; literal data does not', () => {
+    const plan = planFor(`
+      'use client'
+      const DEFAULT = 'm'
+      function C({
+        rows = ['y', ''].filter((rows) => rows !== ''),
+        n = 'abc'.length,
+        m = DEFAULT,
+        lit = 'x',
+        neg = -1,
+        list = ['p', { q: 1 }],
+        tpl = \`t\`,
+        fn = () => 1,
+      }: { rows?: string[]; n?: number; m?: string; lit?: string; neg?: number; list?: unknown[]; tpl?: string; fn?: () => number }) {
+        return <p>{rows.length}{n}{m}{lit}{neg}{list.length}{tpl}{fn()}</p>
+      }
+    `)
+    expect(plan.steps.map(s => s.name)).toEqual(['rows', 'n', 'm'])
+    const rows = step(plan, 'rows')
+    expect(rows.kind).toBe('derived')
+    if (rows.kind === 'derived') {
+      expect(rows.origin).toBe('prop')
+      // The callback's own `rows` parameter is not a read of the prop.
+      expect(rows.frees).toEqual(['rows'])
+      expect(rows.constant).toBe(false)
+    }
+  })
+
+  test('a computed default reading a module const that a component local shadows gets no step', () => {
+    const plan = planFor(`
+      const DEF = 'm'
+      const OTHER = 'o'
+      function C(props: { b?: string; c?: string }) {
+        const { b = DEF.toUpperCase(), c = OTHER.toUpperCase() } = props
+        const DEF = 'z'
+        return <p>{b}{c}</p>
+      }
+    `)
+    // \`DEF\` in the default is the component's own const (declared after
+    // the destructure, so a TDZ read in JS), never the module one.
+    expect(plan.steps.map(s => s.name)).toEqual(['c'])
+  })
 })
