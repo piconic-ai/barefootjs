@@ -34,6 +34,7 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   nestedCallbackRefusal,
   filterPredicateShapeRefusal,
   isUnloweredCall,
+  isRootPropsObject,
   unloweredCallRefusal,
   type CallbackLoweringOptions,
   type PredicateMethod,
@@ -73,12 +74,13 @@ const PERL_ARITHMETIC_HELPER: Readonly<Record<ArithmeticHelper, string>> = {
  * (#2886) — `XslateFilterEmitter` lacked this decision entirely (#2879's
  * cross-adapter follow-up), silently reaching `$props.x`, and `$props` is
  * nil at runtime (silent — every row is kept instead of filtered). Returns
- * null for any other receiver so callers fall through to their generic
- * member lowering — `props.a.b` flattens only the inner hop. Returns the
+ * null for any other receiver, including a `props` a binding shadows
+ * (`isBound`, #3693), so callers fall through to their generic member
+ * lowering — `props.a.b` flattens only the inner hop. Returns the
  * variable's name; the caller spells it through its `kolonVar`.
  */
-function flattenPropsMember(object: ParsedExpr, property: string): string | null {
-  if (object.kind === 'identifier' && object.name === 'props') return property
+function flattenPropsMember(object: ParsedExpr, property: string, isBound: (name: string) => boolean): string | null {
+  if (isRootPropsObject(object, isBound)) return property
   return null
 }
 
@@ -143,6 +145,8 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
   private readonly paramLocal: string
   // Told each template variable the predicate reads (`kolonVar`).
   private readonly onRead?: (name: string) => void
+  // Whether a binding enclosing the predicate (a loop row) binds `name`.
+  private readonly isOuterBound: (name: string) => boolean
 
   constructor(
     param: string,
@@ -153,6 +157,7 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     rowLocalName: (name: string) => string = name => name,
     paramLocal = param,
     onRead?: (name: string) => void,
+    isOuterBound: (name: string) => boolean = () => false,
   ) {
     this.param = param
     this.localVarMap = localVarMap
@@ -162,6 +167,7 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     this.rowLocalName = rowLocalName
     this.paramLocal = paramLocal
     this.onRead = onRead
+    this.isOuterBound = isOuterBound
   }
 
   identifier(name: string): string {
@@ -179,7 +185,9 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
-    const flat = flattenPropsMember(object, property)
+    // This predicate's own param or an enclosing loop row's binding spelled
+    // `props` is that binding (#3693).
+    const flat = flattenPropsMember(object, property, n => n === this.param || this.isOuterBound(n))
     if (flat !== null) return kolonVar(flat, this.onRead)
     // `.length` — route through `$bf.length` (handles both array element
     // count and string char count, JS-compatibly). Kolon's builtin `.size()`
@@ -404,10 +412,9 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
 
   member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     // `props.X` reads the root prop even where a loop binding shadows `X`
-    // (#3314) — through the alias the loop header assigned.
-    if (object.kind === 'identifier' && object.name === 'props') return kolonVar(this.ctx._rootPropReadName(property), this.onRead)
-    const flat = flattenPropsMember(object, property)
-    if (flat !== null) return kolonVar(flat, this.onRead)
+    // (#3314) — through the alias the loop header assigned — unless a
+    // binding shadows `props` itself (#3693).
+    if (this.ctx._isRootPropsObject(object)) return kolonVar(this.ctx._rootPropReadName(property), this.onRead)
     // Static property access on a module object-literal const
     // (`variantClasses.ghost`, #1897) resolves at compile time — the
     // generic dot lowering below would reference a Kolon var that

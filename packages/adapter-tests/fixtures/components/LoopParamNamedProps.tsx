@@ -14,7 +14,8 @@
 //     the whole handler, so the read after the block is that local.
 // `Tag` is a props-object child: its own `props` is the renamed object.
 // The rendered row reads its `props` item bare (string rows): a
-// `props.<member>` read in a rendered row is `loop-param-named-props-member`.
+// `props.<member>` read in a rendered row is covered by the
+// `loop-param-named-props-member` fixtures.
 
 import { createSignal } from '@barefootjs/client'
 

@@ -4753,56 +4753,6 @@
           }
         }
       },
-      "loop-param-named-props-member": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-named-props-member"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-named-props-member"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-named-props-member"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-named-props-member"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-named-props-member"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-named-props-member"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-named-props-member"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "loop-param-named-props-member"
-          ]
-        }
-      },
       "loop-row-child-caller-rows-outer-state-key": {
         "go-template": {
           "kind": "refusal",
@@ -8331,10 +8281,6 @@
         "description": "A component loop row over a number array keyed by n.toString() renders data-key",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-key-to-string-number-component-row.ts"
       },
-      "loop-param-named-props-member": {
-        "description": "A .map() row parameter named props reads its own item members, not the component props",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-param-named-props-member.ts"
-      },
       "loop-row-child-caller-rows-outer-state-key": {
         "description": "A component loop row with a computed prop, keyed by an expression reading outer state, carries its…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-caller-rows-outer-state-key.ts"
@@ -9089,26 +9035,6 @@
         "blade",
         "erb",
         "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
-    "loop-param-named-props-member": {
-      "title": "A member read of a loop row parameter named `props`",
-      "kind": "silent",
-      "given": "a `.map()` row whose parameter is named `props` reading a member of it (`rows.map((props) => <li>{props.label}</li>)`)",
-      "expected": "each row renders its own item's member (`props.label` of that row)",
-      "actual": "renders the component's prop of that name instead (empty when there is none): the template reads `props.<member>` as a root prop",
-      "fixtures": [
-        "loop-param-named-props-member"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
         "jinja",
         "minijinja",
         "mojolicious",

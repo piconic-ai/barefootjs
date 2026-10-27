@@ -35,6 +35,7 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   nestedCallbackRefusal,
   filterPredicateShapeRefusal,
   isUnloweredCall,
+  isRootPropsObject,
   unloweredCallRefusal,
   type CallbackLoweringOptions,
   type PredicateMethod,
@@ -95,12 +96,13 @@ const PREDICATE_METHODS: ReadonlySet<string> = new Set([
  * below (#2886) — `MojoFilterEmitter` lacked this decision entirely
  * (#2879's cross-adapter follow-up), silently reaching `$props->{x}`, a
  * Perl variable never declared under `use strict`. Returns null for any
- * other receiver so callers fall through to their generic member
- * lowering — `props.a.b` flattens only the inner hop, then the caller's
- * own recursion appends `.b`.
+ * other receiver, including a `props` a binding shadows (`isBound`,
+ * #3693), so callers fall through to their generic member lowering —
+ * `props.a.b` flattens only the inner hop, then the caller's own recursion
+ * appends `.b`.
  */
-function flattenPropsMember(object: ParsedExpr, property: string): string | null {
-  if (object.kind === 'identifier' && object.name === 'props') return `$${property}`
+function flattenPropsMember(object: ParsedExpr, property: string, isBound: (name: string) => boolean): string | null {
+  if (isRootPropsObject(object, isBound)) return `$${property}`
   return null
 }
 
@@ -211,6 +213,8 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   private readonly enclosingParams: ReadonlyMap<string, string>
   // The Perl variable this predicate's own param reads as.
   private readonly paramVar: string
+  // Whether a binding enclosing the predicate (a loop row) binds `name`.
+  private readonly isOuterBound: (name: string) => boolean
 
   constructor(
     param: string,
@@ -219,6 +223,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     onUnsupported?: (message: string, reason?: string) => void,
     enclosingParams: ReadonlyMap<string, string> = new Map(),
     paramVar = `$${param}`,
+    isOuterBound: (name: string) => boolean = () => false,
   ) {
     this.param = param
     this.localVarMap = localVarMap
@@ -226,6 +231,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     this.onUnsupported = onUnsupported
     this.enclosingParams = enclosingParams
     this.paramVar = paramVar
+    this.isOuterBound = isOuterBound
   }
 
   identifier(name: string): string {
@@ -245,7 +251,9 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
-    const flat = flattenPropsMember(object, property)
+    // This predicate's own param, an enclosing callback's or an enclosing
+    // loop row's binding spelled `props` is that binding (#3693).
+    const flat = flattenPropsMember(object, property, n => n === this.param || this.enclosingParams.has(n) || this.isOuterBound(n))
     if (flat !== null) return flat
     // `.length` goes through the runtime's `bf->length`, which counts an
     // array ref's elements and a string's UTF-16 code units. That covers a
@@ -362,7 +370,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     const paramVar = grepLexical(param, enclosing)
     const predBody = emitParsedExpr(
       predicate,
-      new MojoFilterEmitter(param, this.localVarMap, this.isStringName, this.onUnsupported, enclosing, paramVar),
+      new MojoFilterEmitter(param, this.localVarMap, this.isStringName, this.onUnsupported, enclosing, paramVar, this.isOuterBound),
     )
     const grep = grepPredicate(method, paramVar, predBody, arrayExpr)
     if (grep !== null) return grep
@@ -517,10 +525,9 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
 
   member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     // `props.X` reads the root prop even where a loop binding shadows `X`
-    // (#3314) — through the alias the loop header assigned.
-    if (object.kind === 'identifier' && object.name === 'props') return `$${this.ctx.rootPropReadName(property)}`
-    const flat = flattenPropsMember(object, property)
-    if (flat !== null) return flat
+    // (#3314) — through the alias the loop header assigned — unless a
+    // binding shadows `props` itself (#3693).
+    if (this.ctx.isRootPropsObject(object)) return `$${this.ctx.rootPropReadName(property)}`
     // Static property access on a module object-literal const
     // (`variantClasses.ghost`, #1897) resolves at compile time — the
     // generic hash lowering below would dereference a Perl var that

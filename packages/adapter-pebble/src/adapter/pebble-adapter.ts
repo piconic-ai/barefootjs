@@ -246,6 +246,7 @@ import {
   planComponentProps,
   spellComponentProps,
   rootPropReadName,
+  isRootPropsObject,
   attrValueMayBeNullish,
   isAriaBooleanAttr,
   isBooleanResultExpr,
@@ -1249,6 +1250,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
         // scalar form — surface BF101 (#2038) instead of silently
         // degrading it to its receiver.
         (message, reason) => this._recordExprBF101(message, reason),
+        n => this.scope.isBound(n),
       ),
     )
   }
@@ -1321,12 +1323,13 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),
       _rootPropReadName: (name) => rootPropReadName(name, this.scope, this.rootPropAliases),
+      _isRootPropsObject: (expr) => isRootPropsObject(expr, n => this.scope.isBound(n)),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _arithmeticCoercion: (op, operand, other) => arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderPebbleFilterExprPublic: (e, p) => this._renderPebbleFilterExprPublic(e, p),
-      _isStringValueName: (name) => this._isStringValueName(name),
+      _isStringValueName: (name, property) => this._isStringValueName(name, property),
     }
   }
 
@@ -1452,8 +1455,11 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
    *  a string value — consumed by `isStringConcatBinary` (via
    *  `_isStringValueName` on the `PebbleEmitContext` seam) to pick `~` over
    *  JS `+`'s (unverified) numeric fallback. See this file's header,
-   *  divergence tied to `expr/emitters.ts`'s divergence 7. */
-  private _isStringValueName(name: string): boolean {
+   *  divergence tied to `expr/emitters.ts`'s divergence 7.
+   *  `componentProperty`: `name` is read as `props.<name>`, which has no
+   *  typing while a binding shadows `props` (#3693). */
+  private _isStringValueName(name: string, componentProperty = false): boolean {
+    if (componentProperty) return this.scope.isStringValueName(name, n => this.stringValueNames.has(n), true)
     return this.stringValueNames.has(name)
   }
 
