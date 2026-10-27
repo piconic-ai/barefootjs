@@ -24,7 +24,7 @@
  */
 
 import { keyAttrName, mapArrayKeyArgs, profileBindingId, varSlotId } from '../../utils.ts'
-import { emitComponentAndEventSetup } from '../shared.ts'
+import { emitComponentAndEventSetup, emitRowEventListener } from '../shared.ts'
 import { emitDedupedAttrUpdate, DEDUP_STORE_DECL } from '../../emit-reactive.ts'
 import { emitMultiRootTemplateCloneLines, namespaceWrapForTemplate } from './template-parse.ts'
 import { emitLoopChildRefs } from './loop.ts'
@@ -86,19 +86,20 @@ function emitReactive(lines: string[], inner: InnerLoopPlan, indent: string, pc:
   if (emit.wrappedKey) {
     lines.push(`${indent}  __innerEl${uid}.setAttribute('${keyAttrName(inner.keyDepth)}', String(${emit.wrappedKey}))`)
   }
-  if (emit.components.length > 0 || emit.events.length > 0) {
+  if (emit.components.length > 0) {
     emitComponentAndEventSetup(
       lines,
       `${indent}  `,
       `__innerEl${uid}`,
       [...emit.components],
-      [...emit.events],
+      [],
       inner.outerLoopParam,
       inner.outerLoopParamBindings,
       false,
       inner.outerLoopIndex,
     )
   }
+  for (const ev of emit.events) emitRowEventListener(lines, `${indent}  `, `__innerEl${uid}`, ev)
   if (inner.childLevels.length > 0) {
     stringifyInnerLoops(lines, inner.childLevels, `${indent}  `, pc)
   }

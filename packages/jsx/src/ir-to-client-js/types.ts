@@ -527,6 +527,14 @@ export interface NestedLoop extends LoopCore {
   insideConditional?: boolean
   /** Offset of this loop's items past its preceding container siblings (#1693). */
   offset?: LoopOffset
+  /**
+   * The inner `.map()`'s `.filter()` / `.toSorted()` chain (#3694), so a
+   * reactive inner `mapArray` reconciles the rows the template rendered
+   * rather than the base array's.
+   */
+  filterPredicate?: { param: string; raw: string }
+  sortComparator?: { paramA: string; paramB: string; raw: string }
+  chainOrder?: 'filter-sort' | 'sort-filter'
   // Per-item bindings (events / reactiveAttrs / reactiveTexts / refs / conditionals)
   // now live on `LoopCore.bindings` — see issue #1244 §B.
 }

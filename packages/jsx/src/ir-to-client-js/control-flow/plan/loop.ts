@@ -241,6 +241,14 @@ interface ComponentLoopVariant extends DynamicLoopCommon {
    */
   rowEvents: readonly LoopRowEventBinding[]
   /**
+   * Inner loops of the ROOT component's forwarded `children` that carry an
+   * event handler (#3694), planned once per row element: `hydrated` over
+   * `__existing`, `created` over `__csrEl`. Each row runs them after its own
+   * `rowEvents`, so the handlers reach the inner rows. Empty when no inner
+   * loop carries an event; non-empty forces the SSR/CSR split shape.
+   */
+  innerLoops: { hydrated: InnerLoopsPlan; created: InnerLoopsPlan }
+  /**
    * Reactive-effects plan for the loop ROOT component's own reactive attrs /
    * texts / conditionals — i.e. bindings on elements forwarded as the root
    * component's `children` (`<Chip><a href={...}>...</a></Chip>`, #3143),
@@ -254,6 +262,8 @@ interface ComponentLoopVariant extends DynamicLoopCommon {
    * `mapArray`. Undefined off → byte-identical (SR8).
    */
   profileLoopId?: string
+  /** Owning component name in profile mode, threaded to `stringifyInnerLoops`. */
+  profileComponentName?: string
 }
 
 /**

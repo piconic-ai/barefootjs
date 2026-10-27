@@ -32,6 +32,7 @@ import {
 } from '../shared.ts'
 import { irChildrenToJsExpr, renderPreamble } from '../../html-template.ts'
 import { buildReactiveEffectsPlan } from './build-reactive-effects.ts'
+import { buildForwardedInnerLoopsPlan } from './build-inner-loop.ts'
 import type { ComponentLoopPlan, NestedComponentInit } from './types.ts'
 import { internalInvariant } from '../../../errors.ts'
 
@@ -146,10 +147,21 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
   // loop has no delegation pass (`loopEventDelegationVariant` returns null
   // for it), so each row attaches its handlers directly, exactly like the
   // composite row's `outerEvents`. Events inside an inner loop of the
-  // forwarded children (`nestedLoops` non-empty) are not reached here.
+  // forwarded children (`nestedLoops` non-empty) go to `innerLoops` below.
   const rowEvents = elem.bindings.events
     .filter(ev => ev.nestedLoops.length === 0)
     .map(ev => buildRowEventBinding(ev, elem.param, elem.paramBindings, elem.index))
+  // #3694: an event inside an inner loop of the forwarded children is wired
+  // by running that inner loop's composite-row emission over each row's
+  // element, hydrated and client-built alike.
+  const forwardedInnerLoops = (parentElVar: '__existing' | '__csrEl') => buildForwardedInnerLoopsPlan({
+    innerLoops: elem.innerLoops,
+    events: elem.bindings.events,
+    parentElVar,
+    outerLoopParam: elem.param,
+    outerLoopParamBindings: elem.paramBindings,
+    outerLoopIndex: elem.index,
+  })
 
   return {
     kind: 'component',
@@ -170,6 +182,7 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
     keyExpr,
     nestedComps,
     rowEvents,
+    innerLoops: { hydrated: forwardedInnerLoops('__existing'), created: forwardedInnerLoops('__csrEl') },
     // #3612: refs on elements forwarded as the root component's own
     // `children` (`<Chip><input ref={el => …} /></Chip>`), collected by the
     // same `collectLoopChildBindings` walk as `rowEvents` above and resolved
@@ -179,6 +192,7 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
     // binding here: it goes to the component through `componentPropsExpr`.
     childRefs: buildChildRefBindings(elem.bindings.refs, elem.param, elem.paramBindings, elem.index),
     profileLoopId: profileComponentName ? `${profileComponentName}#binding:${elem.slotId}` : undefined,
+    profileComponentName,
     reactiveEffects: hasReactiveEffects
       ? buildReactiveEffectsPlan({
           attrs: elem.bindings.reactiveAttrs,

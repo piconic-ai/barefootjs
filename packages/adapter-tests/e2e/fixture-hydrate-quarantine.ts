@@ -63,9 +63,4 @@ export const FIXTURE_HYDRATE_QUARANTINE: Readonly<Record<string, HydrateQuaranti
       "a handler on an element forwarded through a child component nested below the loop row element is never attached: the row's slot lookup skips the nested child's scope",
     limitation: 'loop-row-nested-forwarded-children-handler',
   },
-  'loop-row-child-children-inner-loop-handler': {
-    reason:
-      "a handler on an element of an inner loop inside a loop-row child component's forwarded children is never attached",
-    limitation: 'loop-row-child-children-inner-loop-handler',
-  },
 }
