@@ -39,9 +39,6 @@
       "bodyChildrenReferenceOuterReactiveState": [
         38
       ],
-      "buildLocalTypeTables": [
-        40
-      ],
       "callbackMethod": [
         39
       ],
@@ -65,12 +62,6 @@
       ],
       "resolveDynamicPropValue": [
         40
-      ],
-      "resolveNestedLoopItemTypes": [
-        46
-      ],
-      "synthesizeStructsFromElements": [
-        55
       ]
     },
     "packages/adapter-go-template/src/adapter/lib/template-scope.ts": {
