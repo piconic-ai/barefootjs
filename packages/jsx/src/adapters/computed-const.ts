@@ -38,6 +38,12 @@ export interface ComputedConstContext {
   propReads: ReadonlyMap<string, string>
   /** Component-scope local functions, which shadow a module const of the same name. */
   localFunctions: ReadonlySet<string>
+  /**
+   * Names the component scope binds (props, the props object, its consts,
+   * local functions, signals, memos), which shadow a module binding of the
+   * same name. A module const's initializer never reads one of them.
+   */
+  componentNames: ReadonlySet<string>
   /** Whether a loop row or callback binds `name` where the expression is read. */
   isShadowed(name: string): boolean
   /** Whether the adapter binds the const `name` itself, so a read of it stays as written. */
@@ -64,6 +70,7 @@ export function computedConstContext(
     propsBindings: propsBindingNames(metadata),
     propReads: propReadKeys(metadata, bindings),
     localFunctions: new Set(metadata.localFunctions.filter(f => !f.isModule).map(f => f.name)),
+    componentNames: new Set([...bindings].filter(([, kind]) => kind !== 'module-local' && kind !== 'module-import').map(([n]) => n)),
     isShadowed,
     isAdapterBound,
     isGlobal: name => !bindings.has(name) && name !== metadata.restPropsName && !isShadowed(name),
@@ -183,28 +190,34 @@ function arrowParamNames(expr: ParsedExpr): Set<string> {
   return names
 }
 
+/** The scope a const's initializer is written in, which its free names resolve against. */
+type InitScope = 'component' | 'module'
+
 /**
- * `init`, a component-scope initializer, with each free name `captured`
- * holds at the read site replaced by what that name holds in the component
- * scope: a computed or literal const by its own initializer, resolved the
- * same way (`const a = children; const b = a` read in `rows.map(a => …{b}…)`
- * reads `children`), and a name bound to a prop by `props.<key>`, which the
- * adapters read as the prop wherever a row rebinds its bare name (#3696).
- * `null` when a captured name holds anything else, or when `props` itself is
- * captured.
+ * `init`, an initializer written in `scope`, with each free name replaced
+ * where reading it at the use site would reach a different binding: one
+ * `captured` holds there (a loop row or callback binds it), or, for a module
+ * const's initializer, one the component scope binds. The name becomes what
+ * it holds in `scope`: a computed or literal const its own initializer,
+ * resolved the same way (`const a = children; const b = a` read in
+ * `rows.map(a => …{b}…)` reads `children`), and a component-scope prop
+ * binding `props.<key>`, which the adapters read as the prop wherever a row
+ * rebinds its bare name (#3696). `null` when such a name holds anything
+ * else, or when `props` itself is captured.
  */
-function resolveInComponentScope(
+function resolveInitializer(
   init: ParsedExpr,
   ctx: ComputedConstContext,
   captured: (name: string) => boolean,
+  scope: InitScope,
   depth = 0,
 ): ParsedExpr | null {
   const free = freeIdentifiers(init)
   if (!free || depth >= MAX_DEPTH) return null
   let result = init
   for (const name of free) {
-    if (!captured(name)) continue
-    const value = componentScopeValue(name, ctx, captured, depth)
+    if (!captured(name) && !(scope === 'module' && ctx.componentNames.has(name))) continue
+    const value = scope === 'module' ? moduleScopeValue(name, ctx, captured, depth) : componentScopeValue(name, ctx, captured, depth)
     const next = value ? inlineBinding(result, name, value) : null
     if (!next) return null
     result = next
@@ -212,7 +225,12 @@ function resolveInComponentScope(
   return result
 }
 
-/** What the component-scope name `name` holds, for {@link resolveInComponentScope}. */
+/** {@link resolveInitializer} for an initializer written in the component scope. */
+function resolveInComponentScope(init: ParsedExpr, ctx: ComputedConstContext, captured: (name: string) => boolean): ParsedExpr | null {
+  return resolveInitializer(init, ctx, captured, 'component')
+}
+
+/** What the component-scope name `name` holds, for {@link resolveInitializer}. */
 function componentScopeValue(
   name: string,
   ctx: ComputedConstContext,
@@ -226,13 +244,47 @@ function componentScopeValue(
     if (captured(PROPS_OBJECT_IDENTIFIER)) return null
     return { kind: 'member', object: { kind: 'identifier', name: PROPS_OBJECT_IDENTIFIER }, property: key, computed: false, optional: false }
   }
-  // A component-scope const shadows a module const of the same name.
-  const constant = ctx.constants?.find(c => c.name === name && !c.isModule) ?? ctx.constants?.find(c => c.name === name)
+  // Any other component binding of the name is not a const this can read.
+  if (ctx.componentNames.has(name) && !componentConst(name, ctx)) return null
+  return constValue(componentConst(name, ctx) ?? moduleConst(name, ctx), ctx, captured, depth)
+}
+
+/**
+ * What the module-scope name `name` holds, for {@link resolveInitializer}:
+ * only a module const, whatever the component scope binds by that name.
+ * `isAdapterBound` names a component-scope binding, so it does not apply.
+ */
+function moduleScopeValue(
+  name: string,
+  ctx: ComputedConstContext,
+  captured: (name: string) => boolean,
+  depth: number,
+): ParsedExpr | null {
+  return constValue(moduleConst(name, ctx), ctx, captured, depth)
+}
+
+/** A const's initializer resolved in the scope it is declared in, or `null` when it is not one a template can inline. */
+function constValue(
+  constant: ConstantInfo | undefined,
+  ctx: ComputedConstContext,
+  captured: (name: string) => boolean,
+  depth: number,
+): ParsedExpr | null {
   const init = constant?.parsed
-  if (!constant || !init || ctx.propsBindings.has(name)) return null
-  const literal = lookupLiteralConst(name, [constant], () => false) !== null
-  if (!literal && !(isPlainComputedConst(constant, init) && callsOnlyGetters(init, ctx.getters))) return null
-  return resolveInComponentScope(init, ctx, captured, depth + 1)
+  if (!constant || !init || ctx.propsBindings.has(constant.name)) return null
+  const literal = lookupLiteralConst(constant.name, [constant], () => false) !== null
+  if (!literal && !(isPlainComputedConst(constant, init) && callsOnlyGetters(init, constant.isModule ? new Set() : ctx.getters))) return null
+  return resolveInitializer(init, ctx, captured, constant.isModule ? 'module' : 'component', depth + 1)
+}
+
+/** The component-scope const `name`. */
+function componentConst(name: string, ctx: ComputedConstContext): ConstantInfo | undefined {
+  return ctx.constants?.find(c => c.name === name && !c.isModule)
+}
+
+/** The module-scope const `name`. */
+function moduleConst(name: string, ctx: ComputedConstContext): ConstantInfo | undefined {
+  return ctx.constants?.find(c => c.name === name && c.isModule)
 }
 
 /**
@@ -253,7 +305,8 @@ export function inlineComputedConstAttr(value: ExpressionAttr, ctx: ComputedCons
 
 /** The initializer of a const read `name` stands for, or `null` when the read stays as it is. */
 function inlinableInitializer(name: string, ctx: ComputedConstContext): ParsedExpr | null {
-  const constant = ctx.constants?.find(c => c.name === name)
+  // A component-scope binding of the name shadows a module const.
+  const constant = componentConst(name, ctx) ?? (ctx.componentNames.has(name) ? undefined : moduleConst(name, ctx))
   const init = constant?.parsed
   if (!constant || !init || !isPlainComputedConst(constant, init)) return null
   if (ctx.isShadowed(name) || ctx.getters.has(name) || ctx.contextConsumers.has(name) || ctx.propsBindings.has(name)) return null
@@ -262,8 +315,8 @@ function inlinableInitializer(name: string, ctx: ComputedConstContext): ParsedEx
   if (lookupLiteralConst(name, ctx.constants, ctx.isShadowed) !== null) return null
   if (!callsOnlyGetters(init, ctx.getters)) return null
   // A free name the read site rebinds would be captured by the substitution:
-  // it is read as what it holds in the component scope instead.
-  return resolveInComponentScope(init, ctx, n => ctx.isShadowed(n))
+  // it is read as what it holds where the const is declared instead.
+  return resolveInitializer(init, ctx, n => ctx.isShadowed(n), constant.isModule ? 'module' : 'component')
 }
 
 /**

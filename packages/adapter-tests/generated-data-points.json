@@ -5705,6 +5705,14 @@
       }
     }
   ],
+  "module-const-hop-loop-shadow": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "module-const-loop-source-computed-precomputed": [
     {
       "name": "gen:items:empty",
