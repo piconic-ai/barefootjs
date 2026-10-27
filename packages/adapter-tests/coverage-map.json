@@ -2745,6 +2745,45 @@
         "text"
       ]
     },
+    "const-alias-default-prop-loop-shadow": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "const-alias-hop-loop-shadow": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "literal:null",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "const-boolean-conditional-test": {
       "kinds": [
         "literal"
@@ -2753,6 +2792,21 @@
         "literal:boolean"
       ],
       "contexts": []
+    },
+    "const-getter-read-loop-shadowed": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
     },
     "const-string-conditional-test": {
       "kinds": [
@@ -8034,6 +8088,22 @@
       ],
       "contexts": []
     },
+    "module-const-hop-loop-shadow": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "module-const-loop-source": {
       "kinds": [
         "array-literal",
@@ -8096,6 +8166,23 @@
         "member"
       ],
       "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-named-like-object-prop": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
       "contexts": [
         "attribute",
         "loop",

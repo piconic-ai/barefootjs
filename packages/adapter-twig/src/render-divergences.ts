@@ -57,11 +57,10 @@ export const renderDivergences: RenderDivergences = {
   // A memo reading an ordinary const declared after it, named like a typed
   // prop: the server render does not read the const.
   'memo-const-declared-after-named-like-prop': { limitation: 'local-function-named-like-prop' },
-  // A const alias chain (`const a = children; const b = a`) read in a loop
-  // row that binds a name the chain passes through (`rows.map(a => …{b}…)`):
-  // the template cannot inline the const through the shadowed name, and the
-  // const itself is never set, so the read renders nothing.
-  'children-alias-hop-shadowed-intermediate': { limitation: 'loop-shadowed-const-alias-hop' },
+  // A const reading a signal getter (`const b = count()`) read in a loop row
+  // that binds the getter's name (`rows.map(count => …{b}…)`): the template
+  // reads `b` as a variable that is never set.
+  'const-getter-read-loop-shadowed': { limitation: 'loop-shadowed-const-alias-hop' },
   // `omitted-optional-number-arithmetic` used to sit here: an omitted
   // optional number prop read as `0` in arithmetic. A prop that can only be
   // absent now reads its nil as `undefined`, giving `NaN` (#3533).

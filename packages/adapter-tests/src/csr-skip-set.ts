@@ -185,6 +185,12 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   'loop-row-child-children-nested-client-prop',
   'loop-row-child-children-nested-client-row-prop',
   'loop-element-row-child-client-row-prop',
+  // A component const named like a module const the component reads
+  // (`const x = 'module'` beside a component `const x = 'local'`): the
+  // client JS copies the module consts into the init body next to the
+  // component's own, so loading it throws `"x" has already been declared`.
+  // Per-adapter render conformance pins the SSR contract (#3696).
+  'module-const-hop-loop-shadow',
 ])
 
 /**
@@ -197,4 +203,8 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
  * and that the entry lists the fixture.
  */
 export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: string }>> = {
+  // `{ label = 'd' }` read through `const a = label`: the CSR template reads
+  // `_p.label` without the default, so an omitted prop renders empty (the
+  // init body's `const a` keeps the default).
+  'const-alias-default-prop-loop-shadow': { limitation: 'const-alias-signature-default' },
 }
