@@ -58,9 +58,4 @@ export const FIXTURE_HYDRATE_QUARANTINE: Readonly<Record<string, HydrateQuaranti
   // first re-run saw one memo stale. Fixed by the runtime's push-then-pull
   // propagation (`packages/client/src/reactive.ts`); the fixture's
   // `interactions` now pass and it is the fix's regression test.
-  'loop-row-child-children-inner-loop-handler': {
-    reason:
-      "a handler on an element of an inner loop inside a loop-row child component's forwarded children is never attached",
-    limitation: 'loop-row-child-children-inner-loop-handler',
-  },
 }

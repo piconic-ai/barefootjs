@@ -4790,6 +4790,14 @@
           ]
         }
       },
+      "loop-row-child-children-inner-loop-handler": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "signal-loop-row-child-children-unseeded"
+          ]
+        }
+      },
       "loop-row-child-children-inner-loop-shadow": {
         "go-template": {
           "kind": "render",
@@ -8301,6 +8309,10 @@
         "description": "An event handler on an element forwarded as a loop-row child component's children reads the row…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-handler.ts"
       },
+      "loop-row-child-children-inner-loop-handler": {
+        "description": "An event handler in an inner loop of a loop-row child component's forwarded children reads the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-inner-loop-handler.ts"
+      },
       "loop-row-child-children-inner-loop-shadow": {
         "description": "An inner loop in a loop-row child's forwarded children shadows the outer row's index, item and…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-inner-loop-shadow.ts"
@@ -9071,28 +9083,6 @@
         "BF101"
       ]
     },
-    "loop-row-child-children-inner-loop-handler": {
-      "title": "An event handler in an inner loop of a loop-row child component's forwarded children",
-      "kind": "silent",
-      "given": "a `.map()` row that is a child component whose forwarded `children` hold an inner `.map()` with an event handler (`<Chip key={o.id}><ul>{o.tags.map((tag) => <li key={tag}><button onClick={…}/></li>)}</ul></Chip>`)",
-      "expected": "each click runs the handler for its own inner item and row, in a hydrated row and in a row built on the client",
-      "actual": "drops the click: no handler is attached to the element",
-      "fixtures": [
-        "loop-row-child-children-inner-loop-handler"
-      ],
-      "adapters": [
-        "hono",
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
     "loop-row-child-scalar-row-nested-component": {
       "title": "A scalar loop row's forwarded children can't nest a component at SSR",
       "kind": "refusal",
@@ -9505,6 +9495,7 @@
       "actual": "renders the loop container with no rows",
       "fixtures": [
         "loop-row-child-children-handler",
+        "loop-row-child-children-inner-loop-handler",
         "loop-row-child-children-inner-loop-shadow",
         "loop-row-child-children-ref",
         "loop-row-nested-child-children-handler",

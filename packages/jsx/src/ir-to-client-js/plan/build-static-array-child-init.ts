@@ -35,6 +35,7 @@ function staticPreludeStatements(preamble: MapCallbackPreamble | undefined): str
     : []
 }
 import { buildCompSelector, buildStaticChildRefBindings } from '../control-flow/shared.ts'
+import { buildForwardedInnerLoopsPlan } from '../control-flow/plan/build-inner-loop.ts'
 
 /** The inline prop shape carried on `IRLoopChildComponent.props`. */
 type LoopChildCompProp = IRLoopChildComponent['props'][number]
@@ -137,6 +138,15 @@ function buildSingleCompPlan(
     rowEvents: elem.bindings.events
       .filter(ev => ev.nestedLoops.length === 0)
       .map(ev => ({ childSlotId: ev.childSlotId, eventName: ev.eventName, handler: ev.handler, receiverSlotIds: ev.receiverSlotIds })),
+    // #3694: the static twin of the component-root loop's `innerLoops` —
+    // events inside an inner loop of the forwarded children, wired through
+    // the composite row's inner-loop emission over each hydrated row. No
+    // outer accessor: the forEach binds `param` to the plain item.
+    innerLoops: buildForwardedInnerLoopsPlan({
+      innerLoops: elem.innerLoops,
+      events: elem.bindings.events,
+      parentElVar: 'childScope',
+    }),
   }
 }
 

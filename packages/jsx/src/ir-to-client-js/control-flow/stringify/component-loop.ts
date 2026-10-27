@@ -42,6 +42,7 @@ import type { ComponentLoopPlan, NestedComponentInit } from '../plan/types.ts'
 import { nameForRegistryRef } from '../../component-scope.ts'
 import { stringifyChildrenTextEffect, emitRowEventListener } from '../shared.ts'
 import { emitLoopChildRefs } from './loop.ts'
+import { stringifyInnerLoops } from './inner-loop.ts'
 
 export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan): void {
   const {
@@ -57,9 +58,11 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
     keyExpr,
     nestedComps,
     rowEvents,
+    innerLoops,
     childRefs,
     reactiveEffects,
     profileLoopId,
+    profileComponentName,
     mapPreambleWrapped,
   } = plan
 
@@ -88,8 +91,9 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
   //
   // #3607: the same holds for a handler on a forwarded element — it needs
   // the row element to attach to, and (#3612) for a `ref` callback on one —
-  // it needs the row element to look the target up in.
-  if (nestedComps.length === 0 && !reactiveEffects && rowEvents.length === 0 && childRefs.length === 0) {
+  // it needs the row element to look the target up in. So does (#3694) an
+  // inner loop of the forwarded children that carries a handler.
+  if (nestedComps.length === 0 && !reactiveEffects && rowEvents.length === 0 && innerLoops.hydrated.length === 0 && childRefs.length === 0) {
     lines.push(`    if (__existing) { initChild('${scopedComp}', __existing, ${componentPropsExpr}); return __existing }`)
     lines.push(`    return createComponent('${scopedComp}', ${componentPropsExpr}, ${keyExpr})`)
     lines.push(`  }, '${markerId}'${loopBfId})`)
@@ -101,6 +105,7 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
   lines.push(`      initChild('${scopedComp}', __existing, ${componentPropsExpr})`)
   for (const nc of nestedComps) emitNestedInit(lines, '      ', '__existing', nc)
   for (const ev of rowEvents) emitRowEventListener(lines, '      ', '__existing', ev)
+  stringifyInnerLoops(lines, innerLoops.hydrated, '      ', profileComponentName)
   if (reactiveEffects) {
     stringifyReactiveEffects(lines, reactiveEffects, { indent: '      ', elVar: '__existing' })
   }
@@ -116,6 +121,7 @@ export function stringifyComponentLoop(lines: string[], plan: ComponentLoopPlan)
   lines.push(`    const __csrEl = createComponent('${scopedComp}', ${componentPropsExpr}, ${keyExpr})`)
   for (const nc of nestedComps) emitNestedInit(lines, '    ', '__csrEl', nc)
   for (const ev of rowEvents) emitRowEventListener(lines, '    ', '__csrEl', ev)
+  stringifyInnerLoops(lines, innerLoops.created, '    ', profileComponentName)
   if (reactiveEffects) {
     stringifyReactiveEffects(lines, reactiveEffects, { indent: '    ', elVar: '__csrEl' })
   }

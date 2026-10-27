@@ -13,5 +13,6 @@ export default defineLimitation({
     'loop-row-child-children-handler',
     'loop-row-child-children-ref',
     'loop-row-nested-child-children-handler',
+    'loop-row-child-children-inner-loop-handler',
   ],
 })
