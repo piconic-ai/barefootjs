@@ -1,13 +1,13 @@
 /**
- * An event handler on an element of an inner loop inside a loop-row child
- * component's forwarded children. Source lives in the fixture-only root
- * (`fixtures/components/LoopRowChildChildrenInnerLoopHandler.tsx`).
+ * #3694: an event handler on an element of an inner loop inside a loop-row
+ * child component's forwarded children. Source lives in the fixture-only
+ * root (`fixtures/components/LoopRowChildChildrenInnerLoopHandler.tsx`).
  *
- * The interactions are written to the contract (each click picks its own
- * inner item of its own row);
- * the fixture is quarantined in `e2e/fixture-hydrate-quarantine.ts` under
- * `loop-row-child-children-inner-loop-handler` until the handler is wired.
- * The handler outside an inner loop is `loop-row-child-children-handler`.
+ * The interactions click the hydrated rows of a module-const array and of a
+ * signal array, then click `add`, which prepends a signal row built on the
+ * client and shifts the outer index of the others. Each click picks its own
+ * inner item of its own row. The handler outside an inner loop is
+ * `loop-row-child-children-handler`.
  *
  * Snapshots in
  * `__snapshots__/loop-row-child-children-inner-loop-handler.{html,client.js}`
@@ -22,13 +22,20 @@ export const spec: SharedFixtureSpec = {
   componentName: 'LoopRowChildChildrenInnerLoopHandler',
   sourceRoot: 'fixture',
   description:
-    "An event handler in an inner loop of a loop-row child component's forwarded children reads the inner and the outer item",
+    "An event handler in an inner loop of a loop-row child component's forwarded children reads the inner and the outer item, in a hydrated and a client-built row",
   interactions: [
     { type: 'expectText', selector: '.picked', text: 'none' },
     { type: 'click', selector: '.rows > .chip:nth-child(1) li:nth-child(2) .pick' },
     { type: 'expectText', selector: '.picked', text: 'a-y' },
     { type: 'click', selector: '.rows > .chip:nth-child(2) li:nth-child(1) .pick' },
     { type: 'expectText', selector: '.picked', text: 'b-z' },
+    { type: 'click', selector: '.live > .chip:nth-child(1) li:nth-child(2) .pick' },
+    { type: 'expectText', selector: '.picked', text: 'a-y@0.1' },
+    { type: 'click', selector: '.add' },
+    { type: 'click', selector: '.live > .chip:nth-child(1) li:nth-child(2) .pick' },
+    { type: 'expectText', selector: '.picked', text: 'c-q@0.1' },
+    { type: 'click', selector: '.live > .chip:nth-child(3) li:nth-child(1) .pick' },
+    { type: 'expectText', selector: '.picked', text: 'b-z@2.0' },
   ],
 }
 

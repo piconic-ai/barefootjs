@@ -445,6 +445,11 @@ export function collectInnerLoops(
           childComponents,
           insideConditional: !flat && scope.insideCond ? true : undefined,
           offset: flat ? undefined : resolveLoopOffset(siblingOffsets.get(n)),
+          filterPredicate: n.filterPredicate ? { param: n.filterPredicate.param, raw: n.filterPredicate.raw } : undefined,
+          sortComparator: n.sortComparator
+            ? { paramA: n.sortComparator.paramA, paramB: n.sortComparator.paramB, raw: n.sortComparator.raw }
+            : undefined,
+          chainOrder: n.chainOrder,
           bindings,
         })
         // Branch-mode callers handle deeper nesting via their own collection paths.
@@ -502,6 +507,18 @@ function decideLoopRendering(
   const useElementReconciliation =
     !loop.childComponent && (!loop.isStaticArray || (branchScope && hasInnerLoops)) && (hasNestedComps || hasInnerLoops)
   return { useElementReconciliation, innerLoops }
+}
+
+/**
+ * Whether a top-level loop carries its collected inner loops to the client
+ * JS plans: a reconciled (composite) row, a static array's row, and a
+ * component-root row (#3694), whose forwarded children's inner loops get
+ * their event handlers wired per row (`buildForwardedInnerLoopsPlan`).
+ */
+function keepsInnerLoops(loop: IRLoop, useElementReconciliation: boolean, innerLoops: NestedLoop[] | undefined): boolean {
+  if (useElementReconciliation) return true
+  if (!innerLoops || innerLoops.length === 0) return false
+  return loop.isStaticArray || !!loop.childComponent
 }
 
 /** Check whether an array of IR nodes contains any component nodes (recursively). */
@@ -1011,7 +1028,7 @@ export function collectElements(
         nestedComponents: l.nestedComponents,
         isStaticArray: clientIsStaticArray,
         useElementReconciliation,
-        innerLoops: (useElementReconciliation || (l.isStaticArray && innerLoops?.length)) ? innerLoops : undefined,
+        innerLoops: keepsInnerLoops(l, useElementReconciliation, innerLoops) ? innerLoops : undefined,
         offset: resolveLoopOffset(siblingOffsets.get(l)),
         filterPredicate: l.filterPredicate ? {
           param: l.filterPredicate.param,

@@ -26,7 +26,7 @@
  */
 
 import type { LoopRowEventBinding } from '../control-flow/plan/loop.ts'
-import type { PreludeStatements } from '../control-flow/plan/inner-loop.ts'
+import type { InnerLoopsPlan, PreludeStatements } from '../control-flow/plan/inner-loop.ts'
 import type { LoopChildRefBinding } from '../control-flow/plan/loop.ts'
 import type { LoopChildReactiveAttr, LoopChildReactiveText } from '../types.ts'
 
@@ -79,6 +79,12 @@ export interface SingleCompInitPlan {
    * plain item, as for `propsExpr`.
    */
   rowEvents: readonly LoopRowEventBinding[]
+  /**
+   * Inner loops of the row component's forwarded `children` that carry an
+   * event handler (#3694), run over each hydrated row (`childScope`) after
+   * `rowEvents`. Empty when no inner loop carries an event.
+   */
+  innerLoops: InnerLoopsPlan
 }
 
 /** Plan for one depth-0 component inside `loop.nestedComponents`. */

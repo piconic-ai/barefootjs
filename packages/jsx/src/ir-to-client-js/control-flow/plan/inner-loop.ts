@@ -16,13 +16,12 @@
  * reactivity in the row. See `build-inner-loop.ts`'s module docstring.
  */
 
-import type { LoopChildEvent } from '../../types.ts'
 import type {
   AttrMeta,
   IRLoopChildComponent,
   LoopParamBinding,
 } from '../../../types.ts'
-import type { LoopChildRefBinding } from './loop.ts'
+import type { LoopChildRefBinding, LoopRowEventBinding } from './loop.ts'
 import type { LoopChildConditionalPlan } from './loop-child-arm.ts'
 
 /**
@@ -142,8 +141,8 @@ export interface InnerLoopReactiveEmit {
   wrappedKey: string | null
   /** Inner-wrapped components for emitComponentAndEventSetup. */
   components: readonly IRLoopChildComponent[]
-  /** Inner-wrapped events for emitComponentAndEventSetup. */
-  events: readonly LoopChildEvent[]
+  /** Events resolved against the inner and every enclosing row, attached directly to each inner row. */
+  events: readonly LoopRowEventBinding[]
   /** Pre-wrapped reactive text effects for the inner-item body. */
   reactiveTexts: readonly InnerLoopText[]
   /** Pre-wrapped reactive attribute effects for the inner-item body. */

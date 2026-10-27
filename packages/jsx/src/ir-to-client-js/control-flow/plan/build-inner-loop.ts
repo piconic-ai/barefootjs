@@ -24,6 +24,7 @@
  */
 
 import type {
+  LoopChildConditional,
   LoopChildEvent,
   NestedLoop,
 } from '../../types.ts'
@@ -42,6 +43,7 @@ import {
   attrValueToString,
 } from '../../utils.ts'
 import { buildChildRefBindings } from '../shared.ts'
+import { buildLoopChainExpr } from '../../../loop-chain.ts'
 import { renderPreamble, irToHtmlTemplate } from '../../html-template.ts'
 import { buildLoopChildConditionalsPlan } from './build-loop-child-arm.ts'
 import type { LoopChildConditionalPlan } from './loop-child-arm.ts'
@@ -71,7 +73,9 @@ function wrapAttrValueExpression(value: AttrValue, wrap: (s: string) => string):
   }
 }
 import type { DepthLevel } from '../shared.ts'
+import type { LoopRowEventBinding } from './loop.ts'
 import {
+  buildDepthLevels,
   destructureLoopParam,
   loopKeyFn,
   nestedLoopIndexAlias,
@@ -143,7 +147,14 @@ export function buildInnerLoopsPlan(args: BuildInnerLoopsArgs): InnerLoopsPlan {
     // shortcut was unsound.
     const emit: InnerLoopReactiveEmit = buildReactiveEmit(inner, level, wrapOuter, uidSuffix, outerLoopParam, outerLoopParamBindings, outerLoopIndex)
 
-    const arrayExpr = wrapOuter(inner.array)
+    // The inner `.filter()` / `.toSorted()` chain (#3694), so the rows
+    // reconciled are the rows the template rendered.
+    const arrayExpr = wrapOuter(buildLoopChainExpr({
+      base: inner.array,
+      filterPredicate: inner.filterPredicate,
+      sortComparator: inner.sortComparator,
+      chainOrder: inner.chainOrder,
+    }))
 
     const childLevelsPlan = childLevels.length > 0
       ? buildInnerLoopsPlan({
@@ -231,9 +242,13 @@ function buildReactiveEmit(
     props: comp.props.map(p => ({ ...p, value: wrapAttrValueExpression(p.value, wrapInner) })),
     children: comp.children?.map(wrapIRNode),
   }))
-  const events: LoopChildEvent[] = level.events.map(ev => ({
-    ...ev,
-    handler: wrapInner(ev.handler),
+  // Resolved against every enclosing row, like the texts below (#3694): an
+  // inner-wrap-only handler left a grandparent row's item two loops up
+  // unwrapped (`o.id` on the accessor reads `undefined`).
+  const events: LoopRowEventBinding[] = level.events.map(ev => ({
+    childSlotId: ev.childSlotId,
+    eventName: ev.eventName,
+    handler: wrapBoth(ev.handler),
   }))
 
   const reactiveTexts: InnerLoopText[] = inner.bindings.reactiveTexts.map(text => ({
@@ -319,4 +334,63 @@ function buildReactiveEmit(
     conditionals,
     childRefs,
   }
+}
+
+export interface BuildForwardedInnerLoopsArgs {
+  /** The row's inner loops, DFS-ordered (`TopLevelLoop.innerLoops`). */
+  innerLoops: readonly NestedLoop[] | undefined
+  /** The row's collected events (`TopLevelLoop.bindings.events`). */
+  events: readonly LoopChildEvent[]
+  /** The row element the inner loop containers are looked up in. */
+  parentElVar: string
+  /** The outer row's param, or `undefined` when the row binds it as a plain value (a static array). */
+  outerLoopParam?: string
+  outerLoopParamBindings?: readonly LoopParamBinding[]
+  outerLoopIndex?: string | null
+}
+
+/**
+ * The inner-loop plan for the inner loops of a component-root row's
+ * forwarded children (`<Chip key={o.id}><ul>{o.tags.map(tag => <li><button
+ * onClick={…}/></li>)}</ul></Chip>`, #3694). The child component renders its
+ * `children` once, so nothing else reaches an element inside such an inner
+ * loop: a handler there was dropped. Each row now runs the composite row's
+ * inner-loop emission (`buildInnerLoopsPlan`) over its own element, which
+ * claims the rendered inner rows and attaches the handlers with the inner
+ * and the outer bindings resolved the same way as on a composite row.
+ *
+ * Only inner loops that carry an event, and the enclosing loops they need,
+ * are planned; the others keep their output unchanged. Child components
+ * inside an inner loop are left to their existing pass (`comps` empty), so
+ * none is initialised twice.
+ */
+export function buildForwardedInnerLoopsPlan(args: BuildForwardedInnerLoopsArgs): InnerLoopsPlan {
+  const { innerLoops, events, parentElVar, outerLoopParam, outerLoopParamBindings, outerLoopIndex } = args
+  if (!innerLoops || innerLoops.length === 0) return []
+  const levels = buildDepthLevels([...innerLoops], [], [...events])
+  const kept = levels.filter((_, i) => levelCarriesEvent(levels, i))
+  if (kept.length === 0) return []
+  return buildInnerLoopsPlan({ levels: kept, parentElVar, outerLoopParam, outerLoopParamBindings, outerLoopIndex })
+}
+
+/**
+ * Whether `levels[i]` or a loop nested inside it (the deeper levels right
+ * after it) carries an event, on its row or inside a conditional of its row.
+ */
+function levelCarriesEvent(levels: readonly DepthLevel[], i: number): boolean {
+  const depth = levels[i].loopInfo?.depth ?? 0
+  for (let j = i; j < levels.length; j++) {
+    if (j > i && (levels[j].loopInfo?.depth ?? 0) <= depth) break
+    if (levels[j].events.length > 0) return true
+    if (conditionalsCarryEvent(levels[j].loopInfo?.bindings.conditionals ?? [])) return true
+  }
+  return false
+}
+
+function conditionalsCarryEvent(conditionals: readonly LoopChildConditional[]): boolean {
+  return conditionals.some(c => [c.whenTrue, c.whenFalse].some(branch =>
+    (branch.events?.length ?? 0) > 0
+    || conditionalsCarryEvent(branch.conditionals ?? [])
+    || (branch.innerLoops ?? []).some(l => l.bindings.events.length > 0 || conditionalsCarryEvent(l.bindings.conditionals)),
+  ))
 }
