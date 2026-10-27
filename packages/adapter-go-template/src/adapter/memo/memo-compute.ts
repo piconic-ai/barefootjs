@@ -32,7 +32,7 @@ import {
   unwrapNullableUnion,
 } from '../value/value-lowering.ts'
 import { embeddedPropMemberChain } from '../value/prop-member-seed.ts'
-import { defaultedBindingGo, resolvePropGoType } from '../props/prop-types.ts'
+import { appliesDefaultOnNil, defaultedBindingGo, resolvePropGoType } from '../props/prop-types.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
 import { parsedLiteralToGo } from '../value/parsed-literal-to-go.ts'
 import { computeTemplateLiteralMemoInitialValue } from './template-interp.ts'
@@ -461,7 +461,8 @@ function isComputedNullishSeed(
 
 /**
  * Whether `parsed` reads a destructured scalar prop whose default reads an
- * earlier prop (`ParamInfo.defaultParts`, #3531). The constructor has already
+ * earlier prop (`ParamInfo.defaultParts`, #3531) or is a non-zero literal
+ * (`appliesDefaultOnNil`). The constructor has already
  * applied that default to `in.<Field>` (`dependentDefaultNormalization`), but
  * the field is boxed as `interface{}` so an absent prop stays nil, and a
  * concrete destination (a `bool` signal, a `string` memo, a child's typed
@@ -475,7 +476,7 @@ export function readsBoxedDependentDefaultProp(ctx: GoEmitContext, parsed: Parse
   const frees = freeIdentifiers(parsed)
   if (frees === null) return false
   return ctx.state.currentPropsParams.some(p =>
-    p.defaultParts !== undefined && frees.has(p.name) &&
+    appliesDefaultOnNil(p) && frees.has(p.name) &&
     resolvePropGoType(ctx, p, ctx.state.propTypeOverrides) === 'interface{}',
   )
 }
