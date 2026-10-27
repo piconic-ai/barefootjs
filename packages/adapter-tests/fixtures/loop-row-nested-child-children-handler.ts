@@ -1,17 +1,13 @@
 /**
  * An event handler on an element forwarded through a child component nested
- * below the loop row element: inside the row's root component (`.nested`,
- * a module-const array) or inside a plain-element row of a signal array
- * (`.composite`). Source lives in the
- * fixture-only root
- * (`fixtures/components/LoopRowNestedChildChildrenHandler.tsx`).
+ * below the loop row element (#3695): inside the row's root component
+ * (`.nested` over a module-const array, `.sig-nested` over a signal array)
+ * and inside a plain-element row (`.composite`). Source lives in the
+ * fixture-only root (`fixtures/components/LoopRowNestedChildChildrenHandler.tsx`).
  *
- * The interactions are written to the contract (each click picks its row,
- * in a hydrated row and, for `.composite`, in a client-built one); the
- * fixture is quarantined
- * in `e2e/fixture-hydrate-quarantine.ts` under
- * `loop-row-nested-forwarded-children-handler` until the handler is wired.
- * The root-component twin is `loop-row-child-children-handler`.
+ * Each click picks its own row, in a hydrated row and, for the signal-array
+ * lists, in a row built on the client by `add`. The root-component twin is
+ * `loop-row-child-children-handler`.
  *
  * Snapshots in
  * `__snapshots__/loop-row-nested-child-children-handler.{html,client.js}`
@@ -33,9 +29,13 @@ export const spec: SharedFixtureSpec = {
     { type: 'expectText', selector: '.picked', text: 'n-b' },
     { type: 'click', selector: '.composite .row:nth-child(2) .pick' },
     { type: 'expectText', selector: '.picked', text: 'c-b' },
+    { type: 'click', selector: '.sig-nested > .chip:nth-child(2) .pick' },
+    { type: 'expectText', selector: '.picked', text: 's-b' },
     { type: 'click', selector: '.add' },
     { type: 'click', selector: '.composite .row:nth-child(1) .pick' },
     { type: 'expectText', selector: '.picked', text: 'c-c' },
+    { type: 'click', selector: '.sig-nested > .chip:nth-child(1) .pick' },
+    { type: 'expectText', selector: '.picked', text: 's-c' },
   ],
 }
 

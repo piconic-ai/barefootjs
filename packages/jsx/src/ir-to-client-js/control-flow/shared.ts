@@ -385,7 +385,7 @@ function emitEventSetup(
 ): void {
   const binding = loopParam
     ? buildRowEventBinding(ev, loopParam, loopParamBindings, loopIndex)
-    : { childSlotId: ev.childSlotId, eventName: ev.eventName, handler: ev.handler }
+    : { childSlotId: ev.childSlotId, eventName: ev.eventName, handler: ev.handler, receiverSlotIds: ev.receiverSlotIds }
   emitRowEventListener(ls, indent, elVar, binding, bodyIsMultiRoot)
 }
 
@@ -405,6 +405,7 @@ export function buildRowEventBinding(
     childSlotId: ev.childSlotId,
     eventName: ev.eventName,
     handler: wrapLoopParamAsAccessor(ev.handler, loopParam, loopParamBindings, loopIndex),
+    receiverSlotIds: ev.receiverSlotIds,
   }
 }
 
@@ -422,7 +423,7 @@ export function emitRowEventListener(
   binding: LoopRowEventBinding,
   bodyIsMultiRoot: boolean = false,
 ): void {
-  emitListenerBlock(ls, indent, elVar, binding.childSlotId, '__e', binding.eventName, binding.handler, 'dom', bodyIsMultiRoot)
+  emitListenerBlock(ls, indent, elVar, binding.childSlotId, '__e', binding.eventName, binding.handler, 'dom', bodyIsMultiRoot, binding.receiverSlotIds)
 }
 
 /**

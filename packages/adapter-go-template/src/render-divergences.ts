@@ -128,6 +128,7 @@ export const renderDivergences: RenderDivergences = {
   'loop-row-child-children-inner-loop-shadow': { limitation: 'signal-loop-row-child-children-unseeded' },
   'loop-row-child-children-handler': { limitation: 'signal-loop-row-child-children-unseeded' },
   'loop-row-child-children-ref': { limitation: 'signal-loop-row-child-children-unseeded' },
+  'loop-row-nested-child-children-handler': { limitation: 'signal-loop-row-child-children-unseeded' },
   'loop-row-child-children-inner-loop-handler': { limitation: 'signal-loop-row-child-children-unseeded' },
   // A const reading a signal getter (`const b = count()`) read in a loop row
   // that binds the getter's name (`rows.map(count => …{b}…)`): the template

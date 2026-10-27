@@ -137,7 +137,7 @@ function buildSingleCompPlan(
     // handlers on its forwarded children directly.
     rowEvents: elem.bindings.events
       .filter(ev => ev.nestedLoops.length === 0)
-      .map(ev => ({ childSlotId: ev.childSlotId, eventName: ev.eventName, handler: ev.handler })),
+      .map(ev => ({ childSlotId: ev.childSlotId, eventName: ev.eventName, handler: ev.handler, receiverSlotIds: ev.receiverSlotIds })),
     // #3694: the static twin of the component-root loop's `innerLoops` —
     // events inside an inner loop of the forwarded children, wired through
     // the composite row's inner-loop emission over each hydrated row. No

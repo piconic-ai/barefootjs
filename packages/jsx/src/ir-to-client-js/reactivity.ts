@@ -594,12 +594,16 @@ export function collectLoopChildEventsWithNesting(
     nestingStack: NestedLoop[]
     lastElementSlotId: string | null
     domDepth: number
+    /** Slot ids of the components below the row root whose `children`
+     *  enclose the current node (#3695) — see `LoopChildEvent.receiverSlotIds`. */
+    receivers: readonly string[]
   }
   const events: LoopChildEvent[] = []
   const initialScope: Scope = {
     nestingStack: initialNestingStack,
     lastElementSlotId: null,
     domDepth: 0,
+    receivers: [],
   }
   walkIR(node, initialScope, {
     element: ({ node: el, scope, descend }) => {
@@ -611,6 +615,7 @@ export function collectLoopChildEventsWithNesting(
             handler: event.handler,
             nestedLoops: [...scope.nestingStack],
             domDepth: scope.domDepth,
+            ...(el.slotId.startsWith('^') && scope.receivers.length > 0 && { receiverSlotIds: scope.receivers }),
           })
         }
       }
@@ -620,13 +625,21 @@ export function collectLoopChildEventsWithNesting(
         domDepth: scope.domDepth + 1,
       })
     },
+    component: ({ node: c, scope, descend }) => {
+      // The row's own root component is the lookup root, never a scope
+      // between the element and it; a component nested below it renders the
+      // forwarded element inside its own scope (#3695).
+      descend(c !== node && c.slotId ? { ...scope, receivers: [...scope.receivers, c.slotId] } : scope)
+    },
     loop: ({ node: l, scope, descend }) => {
       // Enter nested loop — push nesting info with container element's slotId.
       // `bindings` is required on every loop variant; populate as empty here
       // because this NestedLoop sub-record is only used as event-delegation
       // metadata (nestedLoops chain), not as a structurally-complete loop.
+      // An inner row is its own lookup root, so the receivers restart.
       descend({
         ...scope,
+        receivers: [],
         nestingStack: [
           ...scope.nestingStack,
           {
