@@ -69,6 +69,9 @@ export const renderDivergences: RenderDivergences = {
   'destructure-default-body-renamed-callback': { limitation: 'destructure-default-callback-unseeded' },
   'destructure-default-body-callback': { limitation: 'destructure-default-callback-unseeded' },
   'destructure-default-param-renamed-callback': { limitation: 'destructure-default-callback-unseeded' },
+  // The parameter form read through a memo: the memo reads the binding
+  // without the default too.
+  'destructure-default-param-renamed-callback-memo': { limitation: 'destructure-default-callback-unseeded' },
   // `omitted-optional-number-arithmetic` used to sit here: an omitted
   // optional number prop read as `0` in arithmetic. A prop that can only be
   // absent now reads its nil as `undefined`, giving `NaN` (#3533).

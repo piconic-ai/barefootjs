@@ -43,6 +43,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -185,6 +191,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -321,13 +333,25 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
               ]
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -535,6 +559,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -672,6 +702,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -819,6 +855,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -956,6 +998,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -1103,6 +1151,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -1240,6 +1294,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -1540,6 +1600,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
+              "limitations": [
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -2103,6 +2169,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2239,6 +2311,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2363,9 +2441,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -2381,7 +2459,19 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -2523,6 +2613,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2654,6 +2750,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -2795,6 +2897,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2908,6 +3016,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -3049,6 +3163,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3180,6 +3300,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -3325,6 +3451,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3444,6 +3576,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -3579,9 +3717,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -3597,7 +3735,19 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -3751,6 +3901,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3870,6 +4026,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -3999,6 +4161,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4111,6 +4279,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4218,6 +4392,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -4342,6 +4522,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -4544,6 +4730,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4800,6 +4992,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5050,9 +5248,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -5068,7 +5266,19 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -5396,6 +5606,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5641,6 +5857,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -5896,6 +6118,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6129,6 +6357,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -6373,6 +6607,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -6629,6 +6869,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -7234,6 +7480,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7556,6 +7808,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7866,9 +8124,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -7881,6 +8139,12 @@
               "fixture": "destructure-default-body-renamed-callback-shadow",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -7897,6 +8161,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -8320,6 +8590,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8637,6 +8913,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -8964,6 +9246,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -9263,6 +9551,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -9573,6 +9867,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -9895,6 +10195,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -10341,6 +10647,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -10562,6 +10874,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -10805,9 +11123,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -10820,6 +11138,12 @@
               "fixture": "destructure-default-body-renamed-callback-shadow",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -10836,6 +11160,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -11145,6 +11475,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -11371,6 +11707,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -11592,6 +11934,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -11829,6 +12177,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12038,6 +12392,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -12264,6 +12624,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -12597,9 +12963,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -12612,6 +12978,12 @@
               "fixture": "destructure-default-body-renamed-callback-shadow",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -13045,6 +13417,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -13319,6 +13697,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -13569,9 +13953,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -13584,6 +13968,12 @@
               "fixture": "destructure-default-body-renamed-callback-shadow",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -13600,6 +13990,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -13969,6 +14365,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -14238,6 +14640,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -14517,6 +14925,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -14768,6 +15182,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -15036,6 +15456,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -15310,6 +15736,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -17314,6 +17746,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -18528,6 +18966,12 @@
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
             }
           ]
         },
@@ -18547,6 +18991,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -18580,9 +19030,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -18598,7 +19048,19 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -18624,6 +19086,12 @@
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
             }
           ]
         },
@@ -18643,6 +19111,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -18668,6 +19142,12 @@
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
             }
           ]
         },
@@ -18687,6 +19167,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -18712,6 +19198,12 @@
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
             }
           ]
         },
@@ -18731,6 +19223,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -19218,7 +19716,16 @@
           ]
         },
         "erb": {},
-        "go-template": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            }
+          ]
+        },
         "jinja": {},
         "minijinja": {},
         "mojolicious": {
@@ -20610,6 +21117,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-renamed-callback-positions",
               "limitations": [
                 "destructure-default-computed-array"
@@ -21449,6 +21962,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -21598,6 +22117,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -21775,9 +22300,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -21793,7 +22318,19 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -22019,6 +22556,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -22174,6 +22717,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -22339,6 +22888,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -22499,6 +23054,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -22642,6 +23203,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -22796,6 +23363,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -23157,9 +23730,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -23172,6 +23745,12 @@
               "fixture": "destructure-default-body-renamed-callback-shadow",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
               ]
             },
             {

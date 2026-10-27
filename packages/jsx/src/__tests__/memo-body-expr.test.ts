@@ -118,3 +118,68 @@ describe('MemoInfo.bodyExpr (#3510)', () => {
     expect(template({})).toContain('-->0<!--')
   })
 })
+
+describe('template text over a body destructure binding in a (props)-arg component', () => {
+  function analyze(body: string) {
+    return analyzeComponent(`
+      'use client'
+      import { createSignal, createMemo } from '@barefootjs/client'
+      export function C(props: { b?: string[] }) {
+        ${body}
+        return <p>{n()}</p>
+      }
+    `, 'C.tsx')
+  }
+  const read = "(_p.b ?? (['y', ''].filter((x) => x !== '')))"
+
+  test('a memo body reads a renamed binding with a callback default as its prop', () => {
+    const ctx = analyze(`
+      const { b: local = ['y', ''].filter((x) => x !== '') } = props
+      const n = createMemo(() => local.length)
+    `)
+    expect(ctx.memos.find(m => m.name === 'n')?.templateBodyExpr).toBe(`${read}.length`)
+  })
+
+  test('a memo body reads an un-renamed binding with a callback default as its prop', () => {
+    const ctx = analyze(`
+      const { b = ['y', ''].filter((x) => x !== '') } = props
+      const n = createMemo(() => b.length)
+    `)
+    expect(ctx.memos.find(m => m.name === 'n')?.templateBodyExpr).toBe(`${read}.length`)
+  })
+
+  test('a signal seed reads the binding as its prop', () => {
+    const ctx = analyze(`
+      const { b: local = ['y', ''].filter((x) => x !== '') } = props
+      const [n] = createSignal(local.length)
+    `)
+    expect(ctx.signals.find(s => s.getter === 'n')?.templateInitialValue).toBe(`${read}.length`)
+  })
+
+  test('a binding the component mutates later keeps its local read', () => {
+    const ctx = analyze(`
+      const { b: local = ['y', ''].filter((x) => x !== '') } = props
+      local.push('z')
+      const n = createMemo(() => local.length)
+    `)
+    expect(ctx.memos.find(m => m.name === 'n')?.templateBodyExpr).toBeUndefined()
+  })
+
+  test('the CSR template renders the memo over the default', () => {
+    const result = compileJSX(`
+      'use client'
+      import { createMemo } from '@barefootjs/client'
+      export function C(props: { b?: string[] }) {
+        const { b: local = ['y', ''].filter((x) => x !== '') } = props
+        const n = createMemo(() => local.length)
+        return <p>{n()}</p>
+      }
+    `, 'C.tsx', { adapter: new TestAdapter() })
+    const line = result.files.find((f) => f.type === 'clientJs')!.content.split('\n').find((l) => l.includes('hydrate('))!
+    const lambda = line.match(/template: (\(_p\) => `.*`) \}\)$/)![1]
+    const template = new Function('escapeTextOrMarkup', 'escapeText', 'escapeAttr', `return ${lambda}`)(String, String, String)
+    expect(template({})).toContain('-->1<!--')
+    expect(template({ b: ['p', 'q', 'r'] })).toContain('-->3<!--')
+    expect(template({ b: [] })).toContain('-->0<!--')
+  })
+})

@@ -54,6 +54,9 @@ export const renderDivergences: RenderDivergences = {
   'destructure-default-body-renamed-callback': { limitation: 'destructure-default-callback-unseeded' },
   'destructure-default-body-callback': { limitation: 'destructure-default-callback-unseeded' },
   'destructure-default-param-renamed-callback': { limitation: 'destructure-default-callback-unseeded' },
+  // The parameter form read through a memo: the memo reads the binding
+  // without the default too.
+  'destructure-default-param-renamed-callback-memo': { limitation: 'destructure-default-callback-unseeded' },
   // A const alias chain (`const a = children; const b = a`) read in a loop
   // row that binds a name the chain passes through (`rows.map(a => …{b}…)`):
   // the template cannot inline the const through the shadowed name, and the

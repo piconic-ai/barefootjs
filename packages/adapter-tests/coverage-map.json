@@ -3440,6 +3440,26 @@
         "text"
       ]
     },
+    "destructure-default-body-callback-memo": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "destructure-default-body-chain-order": {
       "kinds": [
         "identifier",
@@ -3548,6 +3568,31 @@
         "text"
       ]
     },
+    "destructure-default-body-renamed-callback-memo-chain": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:!==",
+        "binary:/",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "destructure-default-body-renamed-callback-positions": {
       "kinds": [
         "arrow",
@@ -3572,6 +3617,26 @@
     },
     "destructure-default-body-renamed-callback-shadow": {
       "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-body-renamed-callback-signal": {
+      "kinds": [
+        "array-literal",
         "arrow",
         "binary",
         "call",
@@ -3685,6 +3750,24 @@
       ]
     },
     "destructure-default-param-renamed-callback": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-param-renamed-callback-memo": {
       "kinds": [
         "array-literal",
         "arrow",

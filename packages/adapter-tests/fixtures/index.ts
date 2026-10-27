@@ -1079,6 +1079,10 @@ import { fixture as destructureDefaultBodyRenamedCallbackChild } from './destruc
 import { fixture as destructureDefaultBodyRenamedCallbackShadow } from './destructure-default-body-renamed-callback-shadow'
 import { fixture as destructureDefaultBodyRenamedCallbackEarlier } from './destructure-default-body-renamed-callback-earlier'
 import { fixture as destructureDefaultBodyRenamedCallbackMemo } from './destructure-default-body-renamed-callback-memo'
+import { fixture as destructureDefaultBodyRenamedCallbackMemoChain } from './destructure-default-body-renamed-callback-memo-chain'
+import { fixture as destructureDefaultBodyRenamedCallbackSignal } from './destructure-default-body-renamed-callback-signal'
+import { fixture as destructureDefaultBodyCallbackMemo } from './destructure-default-body-callback-memo'
+import { fixture as destructureDefaultParamRenamedCallbackMemo } from './destructure-default-param-renamed-callback-memo'
 import { fixture as destructureDefaultBodyCallback } from './destructure-default-body-callback'
 import { fixture as destructureDefaultParamRenamedCallback } from './destructure-default-param-renamed-callback'
 import { fixture as capturedMarkupEscaping } from './captured-markup-escaping'
@@ -1913,6 +1917,10 @@ export const jsxFixtures: JSXFixture[] = [
   destructureDefaultBodyRenamedCallbackShadow,
   destructureDefaultBodyRenamedCallbackEarlier,
   destructureDefaultBodyRenamedCallbackMemo,
+  destructureDefaultBodyRenamedCallbackMemoChain,
+  destructureDefaultBodyRenamedCallbackSignal,
+  destructureDefaultBodyCallbackMemo,
+  destructureDefaultParamRenamedCallbackMemo,
   destructureDefaultBodyCallback,
   destructureDefaultParamRenamedCallback,
   capturedMarkupEscaping,

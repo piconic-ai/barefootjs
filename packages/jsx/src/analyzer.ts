@@ -14,7 +14,7 @@ import { CALLBACK_METHODS, parseExpression, parseBlockBodyTolerant, foldBlockToE
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { collectAssignmentTargets, rewriteBarePropRefs, splitScopedValueRefs } from './prop-rewrite.ts'
 import { isEventHandlerName } from './event-handler-name.ts'
-import { buildPropAliasMap, coalesceDefaultText, livePropReadExpr, signalPropSeed } from './props-binding.ts'
+import { buildPropAliasMap, coalesceDefaultText, keepsDeclaredValue, livePropReadExpr, signalPropSeed, templatePropReadParams } from './props-binding.ts'
 import { incrementCounter } from './instrumentation.ts'
 import {
   type AnalyzerContext,
@@ -1615,21 +1615,15 @@ function collectSignal(node: ts.VariableDeclaration, ctx: AnalyzerContext): void
   // the binding actually in scope rather than a hardcoded canonical name (#2057).
   const envFactory = envReader ? callExpr.expression.getText(ctx.sourceFile) : undefined
 
-  // Destructured-arg components only (#2265): a signal's initial value
-  // referencing a bare destructured prop (`createSignal(size ?? 1)` with
-  // `{ size }: { size?: number }`) needs `_p.size` for the CSR
-  // `template:` arrow's module-scope SSR fallback — that arrow isn't a
-  // closure over `initXxx`'s `const size = _p.size` extraction. Mirrors
-  // the local-constant rewrite a few hundred lines up (`propNames` built
-  // the same way from `ctx.propsParams`).
-  let templateInitialValue: string | undefined
-  if (!ctx.propsObjectName && callExpr.arguments[0]) {
-    const propNames = new Set(ctx.propsParams.map(p => p.name))
-    if (propNames.size > 0) {
-      const propAliases = buildPropAliasMap(ctx.propsParams)
-      templateInitialValue = rewriteBarePropRefs(initialValue, callExpr.arguments[0], propNames, undefined, propAliases, destructuredPropTemplateRead(ctx))
-    }
-  }
+  // A signal's initial value referencing a bare destructured prop
+  // (`createSignal(size ?? 1)` with `{ size }: { size?: number }`, #2265,
+  // or a `(props)`-arg component's body destructure binding) needs
+  // `_p.size` for the CSR `template:` arrow's module-scope SSR fallback —
+  // that arrow isn't a closure over `initXxx`'s `const size = _p.size`
+  // extraction (`templatePropReadText`).
+  const templateInitialValue = callExpr.arguments[0]
+    ? templatePropReadText(initialValue, callExpr.arguments[0], ctx)
+    : undefined
 
   ctx.signals.push({
     getter,
@@ -1711,17 +1705,12 @@ function collectFactorySignal(
     type = inferTypeFromValue(initialValue)
   }
 
-  // Destructured-arg components (#2265): the CSR `template:` arrow's
-  // module-scope fallback needs `_p.<name>` for a bare destructured prop in
-  // `initial`, same as a `createSignal` initial value.
-  let templateInitialValue: string | undefined
-  if (!ctx.propsObjectName && initialNode.kind === 'expression') {
-    const propNames = new Set(ctx.propsParams.map(p => p.name))
-    if (propNames.size > 0) {
-      const propAliases = buildPropAliasMap(ctx.propsParams)
-      templateInitialValue = rewriteBarePropRefs(initialValue, initialNode.node, propNames, undefined, propAliases, destructuredPropTemplateRead(ctx))
-    }
-  }
+  // The CSR `template:` arrow's module-scope fallback needs `_p.<name>` for
+  // a bare destructured prop in `initial`, same as a `createSignal` initial
+  // value (#2265).
+  const templateInitialValue = initialNode.kind === 'expression'
+    ? templatePropReadText(initialValue, initialNode.node, ctx)
+    : undefined
 
   const argTexts = callExpr.arguments.map(arg => ctx.getJS(arg))
   const requestArg = callExpr.arguments[0]
@@ -2157,7 +2146,7 @@ function memoBodyFields(
   body: { node: ts.Node; call: boolean },
   ctx: AnalyzerContext,
 ): Pick<MemoInfo, 'bodyExpr' | 'bodyExprIsCall' | 'templateBodyExpr'> {
-  // Destructured-arg components only — the memo twin of the signal
+  // The memo twin of the signal
   // `templateInitialValue` rewrite (#2265) a few hundred lines up: a memo
   // body referencing a bare destructured prop (`createMemo(() => value *
   // 10)` with `{ value }: { value: number }`) is inlined into the CSR
@@ -2167,15 +2156,8 @@ function memoBodyFields(
   // (adapter-tests scope-gate, #2468 sweep).
   const asBodyExpr = (text: string): string => (body.call ? `(${text})()` : text)
   const bodyExpr = asBodyExpr(ctx.getJS(body.node))
-  let templateBodyExpr: string | undefined
-  if (!ctx.propsObjectName) {
-    const propNames = new Set(ctx.propsParams.map(p => p.name))
-    if (propNames.size > 0) {
-      const propAliases = buildPropAliasMap(ctx.propsParams)
-      const rewritten = rewriteBarePropRefs(ctx.getJS(body.node), body.node, propNames, undefined, propAliases, destructuredPropTemplateRead(ctx))
-      templateBodyExpr = rewritten === undefined ? undefined : asBodyExpr(rewritten)
-    }
-  }
+  const rewritten = templatePropReadText(ctx.getJS(body.node), body.node, ctx)
+  const templateBodyExpr = rewritten === undefined ? undefined : asBodyExpr(rewritten)
   return { bodyExpr, bodyExprIsCall: body.call || undefined, templateBodyExpr }
 }
 
@@ -3765,6 +3747,43 @@ function destructuredPropTemplateRead(ctx: AnalyzerContext): (localName: string,
 }
 
 /**
+ * `text` (the source of `node`, a signal seed or memo body) with each read of
+ * a props binding the template reads live (`templatePropReadParams`)
+ * rewritten to that read; undefined when it reads none. In a `(props)`-arg
+ * component that is a body destructure binding holding its prop
+ * (`const { b: local = d } = props`), so a memo over it reads the default
+ * just as markup does. Only bindings declared so far are known here; one
+ * that a later statement writes is dropped by
+ * `dropTemplateReadsOfWrittenBindings` once the whole body is walked.
+ */
+function templatePropReadText(text: string, node: ts.Node, ctx: AnalyzerContext): string | undefined {
+  const readable = templatePropReadParams(ctx)
+  if (readable.length === 0) return undefined
+  const propNames = new Set(readable.map(p => p.name))
+  return rewriteBarePropRefs(text, node, propNames, undefined, buildPropAliasMap(readable), destructuredPropTemplateRead(ctx))
+}
+
+/**
+ * Drop a `(props)`-arg component's signal-seed / memo-body template text
+ * (`templatePropReadText`) that reads a body destructure binding the
+ * component writes after all (`markMutatedConstants`, `markWrittenBindings`):
+ * such a binding no longer holds its prop, so the template falls back to the
+ * local's own path like a markup read of it does.
+ */
+function dropTemplateReadsOfWrittenBindings(ctx: AnalyzerContext): void {
+  if (!ctx.propsObjectName) return
+  const written = new Set(ctx.localConstants.filter(c => c.propsDestructure && !keepsDeclaredValue(c)).map(c => c.name))
+  if (written.size === 0) return
+  const readsWritten = (ids: ReadonlySet<string> | undefined) => ids !== undefined && [...ids].some(id => written.has(id))
+  for (const s of ctx.signals) {
+    if (s.templateInitialValue !== undefined && readsWritten(s.initialFreeIdentifiers)) s.templateInitialValue = undefined
+  }
+  for (const m of ctx.memos) {
+    if (m.templateBodyExpr !== undefined && readsWritten(m.computationFreeIdentifiers)) m.templateBodyExpr = undefined
+  }
+}
+
+/**
  * The default-value-shaped fields a binding element's own `initializer`
  * contributes to a `ParamInfo` — `defaultValue`'s source text, `parsed`'s
  * structured mirror (from the initializer's OWN AST node, no re-parse),
@@ -4795,6 +4814,7 @@ function validateContext(ctx: AnalyzerContext): void {
   // downstream inlining never re-embeds their stale initializer text (#2910).
   markMutatedConstants(ctx)
   markWrittenBindings(ctx)
+  dropTemplateReadsOfWrittenBindings(ctx)
 
   // BF052: init statements that write to an identifier with no visible
   // declaration cause a ReferenceError in ESM strict mode. Flag them
