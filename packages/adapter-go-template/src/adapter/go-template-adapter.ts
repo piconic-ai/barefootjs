@@ -1,7 +1,6 @@
 /** BarefootJS adapter: BarefootJS IR → Go `html/template` files. */
 
 import ts from 'typescript'
-import { readFileSync } from 'node:fs'
 
 import type {
   ComponentIR,
@@ -33,7 +32,6 @@ import type {
   TemplatePrimitiveRegistry,
   LoopBindingPathSegment,
   ConstantInfo,
-  ImportInfo,
   JsSourceText,
 } from '@barefootjs/jsx'
 import {
@@ -85,10 +83,6 @@ import {
   collectAliasableGetterNames,
   resolveBodyDestructuredPropAliases,
   isChildrenPropParam,
-  analyzeComponent,
-  buildMetadata,
-  listComponentFunctions,
-  resolveRelativeImportToFile,
   isOpaqueLocalAccessorName,
   renderElementAttributes,
   renderFragmentScope,
@@ -103,7 +97,6 @@ import {
 import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import {
-  GO_IDENTIFIER,
   capitalize,
   capitalizeFieldName,
   goFieldNameForKey,
@@ -167,7 +160,6 @@ import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, signalFie
 import { propsFieldName, propsFieldNames } from './lib/props-field-names.ts'
 import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
-import { resolveBlockBodyMemoModuleConst } from "./memo/memo-value.ts"
 import { computeMemoInitialValue, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evaluatedAsGoType, computedPropSeedGo } from "./memo/memo-compute.ts"
 import { collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
@@ -181,6 +173,7 @@ import { emitParsedExpressionAttr, emitSpreadAttr, emitStyleOrPresenceAttr, emit
 import { renderConditionExpr, renderFilterExpr, type ConditionExprHost } from "./expr/condition-expr.ts"
 import { loopRowChildPropOverrides, renderLoop as renderLoopWithHost, type LoopRenderHost } from "./loop/render-loop.ts"
 import { collectBodyChildInstances, collectStaticChildInstances, type StaticChildrenHost } from "./children/static-children.ts"
+import { buildLocalTypeTables, resolveNestedLoopItemTypes, synthesizeStructsFromElements, synthSliceTypeInfo, type TypeSynthesisHost } from "./type/type-synthesis.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
 
@@ -219,20 +212,6 @@ const STRING_METHODS: ReadonlySet<string> = new Set([
   'replace', 'trim', 'trimStart', 'trimEnd', 'toLowerCase', 'toUpperCase',
   'slice', 'substring', 'substr', 'padStart', 'padEnd', 'concat', 'repeat', 'get',
 ])
-
-/**
- * Whether every row of an object-literal array names the same keys, in any
- * order. Only picks the BF101 wording when `resolveNestedLoopItemTypes`
- * can't synthesize a struct for an untyped loop array (#3178).
- */
-function rowsShareKeys(rows: ParsedExpr[]): boolean {
-  const keySet = (row: ParsedExpr) =>
-    row.kind === 'object-literal'
-      ? row.properties.flatMap(p => (p.kind === 'prop' ? [p.key] : [])).sort().join('\0')
-      : null
-  const first = keySet(rows[0])
-  return rows.every(row => keySet(row) === first)
-}
 
 /** Binary operators whose Go lowering yields a boxed number (`+` may also be
  * a string concat, which `bf_string` passes through unchanged). */
@@ -789,7 +768,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // harness) resolving structs against another component's sets, and
     // `generate()` itself computing nillability against the PREVIOUS
     // compile's type tables.
-    this.buildLocalTypeTables(ir, ir.metadata.componentName)
+    buildLocalTypeTables(this.typeSynthesisHost, ir, ir.metadata.componentName)
     // Template-time readers (`nillablePropNameOf`, `resolvePropMemberSeed`
     // via memo/getter lowering) run before `generateTypes`, so they need
     // the overrides now — computed against the same freshly built tables
@@ -1574,7 +1553,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     const componentName = ir.metadata.componentName
 
-    this.buildLocalTypeTables(ir, componentName)
+    buildLocalTypeTables(this.typeSynthesisHost, ir, componentName)
 
     // #2674 Plan A: synthesize named structs for anonymous object types
     // BEFORE emitting named-type structs — a nested anonymous property
@@ -1588,7 +1567,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     const nestedComponents = findNestedComponents(ir.root)
 
-    this.resolveNestedLoopItemTypes(lines, ir, componentName, nestedComponents)
+    resolveNestedLoopItemTypes(this.typeSynthesisHost, lines, ir, componentName, nestedComponents)
 
     for (const nested of nestedComponents) {
       if (!nested.bodyChildren || nested.bodyChildren.length === 0) continue
@@ -1855,134 +1834,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (!node || node.kind !== 'array-literal' || node.elements.length === 0) return null
 
     const name = `${componentName}${capitalizeFieldName(signal.getter)}Item`
-    return this.synthesizeStructsFromElements(node.elements, name)
-  }
-
-  /**
-   * The recursive core of `synthesizeStructFromSignal`: given a list of
-   * object-literal elements known to share ONE shape, and the Go struct
-   * name to assign that shape, returns the synthesized struct(s) — this
-   * shape's own struct last, any nested array-of-objects field's struct(s)
-   * before it — or `null` on any shape this fast path doesn't bake.
-   *
-   * A nested array-of-objects field is validated and shaped from the FLAT
-   * concatenation of that key's elements across every row (not just the
-   * first row) — a later row's own object shape for that key must still
-   * agree, but the nested struct's field set is inferred from every row's
-   * contribution so no row's data is silently dropped from the type.
-   */
-  private synthesizeStructsFromElements(
-    elements: ParsedExpr[],
-    name: string,
-  ): Array<{ name: string; fields: Array<{ tsName: string; goName: string; goType: string }>; properties: PropertyInfo[] }> | null {
-    // Don't shadow an existing (user-defined or already-synthesised) type.
-    if (this.state.localTypeNames.has(name)) return null
-
-    type PropShape = { kind: 'scalar'; goType: string } | { kind: 'nested-array' }
-
-    // Field order + per-key shape from the first element; every other
-    // element must match exactly (same keys, same shape KIND per key).
-    const order: string[] = []
-    const shapes = new Map<string, PropShape>()
-    const nestedElements = new Map<string, ParsedExpr[]>()
-
-    for (let i = 0; i < elements.length; i++) {
-      const el = elements[i]
-      if (el.kind !== 'object-literal') return null
-      const seen = new Set<string>()
-      for (const prop of el.properties) {
-        // A spread (`{ ...t, a: 1 }`, #2696 Step 2) isn't a plain per-key
-        // scalar shape this fast path bakes — fall back (the caller's
-        // `ts.createSourceFile` path, or refusal) rather than mis-baking.
-        if (prop.kind === 'spread') return null
-        if (prop.shorthand) return null
-        const key = prop.key
-        if (!GO_IDENTIFIER.test(key)) return null
-        seen.add(key)
-
-        const isNestedArray =
-          prop.value.kind === 'array-literal' &&
-          prop.value.elements.every(e => e.kind === 'object-literal')
-
-        if (isNestedArray) {
-          const prevShape = shapes.get(key)
-          if (prevShape === undefined) {
-            if (i !== 0) return null // key absent from the first element → shape differs
-            order.push(key)
-            shapes.set(key, { kind: 'nested-array' })
-            nestedElements.set(key, [])
-          } else if (prevShape.kind !== 'nested-array') {
-            return null // this key is a scalar in some rows, a nested array in others
-          }
-          nestedElements.get(key)!.push(...(prop.value as { elements: ParsedExpr[] }).elements)
-          continue
-        }
-
-        const goType = this.scalarParsedGoType(prop.value)
-        if (!goType) return null
-        const prevShape = shapes.get(key)
-        if (prevShape === undefined) {
-          if (i !== 0) return null
-          order.push(key)
-          shapes.set(key, { kind: 'scalar', goType })
-        } else if (prevShape.kind !== 'scalar') {
-          return null
-        } else {
-          if (prevShape.goType !== goType) return null
-        }
-      }
-      // A first-element key missing here → shape differs.
-      if (seen.size !== order.length) return null
-    }
-
-    const nestedStructs: Array<{ name: string; fields: Array<{ tsName: string; goName: string; goType: string }>; properties: PropertyInfo[] }> = []
-    const fields: Array<{ tsName: string; goName: string; goType: string }> = []
-    const properties: PropertyInfo[] = []
-
-    for (const key of order) {
-      const shape = shapes.get(key)!
-      if (shape.kind === 'scalar') {
-        fields.push({ tsName: key, goName: capitalizeFieldName(key), goType: shape.goType })
-        properties.push({ name: key, type: this.scalarGoTypeToTypeInfo(shape.goType), optional: false, readonly: false })
-        continue
-      }
-      const nestedList = nestedElements.get(key)!
-      // Every row's array for this key was empty — no row's data to infer
-      // a shape from (distinct from a MISSING key, already ruled out
-      // above); matches the top-level empty-array rule this function
-      // already applies to the signal's own outer array.
-      if (nestedList.length === 0) return null
-      const nestedName = `${name}${capitalizeFieldName(key)}Item`
-      const nested = this.synthesizeStructsFromElements(nestedList, nestedName)
-      if (!nested) return null
-      nestedStructs.push(...nested)
-      fields.push({ tsName: key, goName: capitalizeFieldName(key), goType: `[]${nestedName}` })
-      properties.push({ name: key, type: this.synthSliceTypeInfo(nestedName), optional: false, readonly: false })
-    }
-
-    return [...nestedStructs, { name, fields, properties }]
-  }
-
-  /** `PropertyInfo.type` for a scalar Go field type — consumed only as a
-   * defensive/consistent fill; `parsedLiteralToGo`'s object branch never
-   * looks up a SCALAR property's declared type (only array/object ones),
-   * so this never actually gates a bake, unlike `synthSliceTypeInfo`. */
-  private scalarGoTypeToTypeInfo(goType: string): TypeInfo {
-    if (goType === 'string') return { kind: 'primitive', raw: 'string', primitive: 'string' }
-    if (goType === 'bool') return { kind: 'primitive', raw: 'boolean', primitive: 'boolean' }
-    return { kind: 'primitive', raw: 'number', primitive: 'number' }
-  }
-
-  /**
-   * `TypeInfo` for "an array of the named synthesized struct" — the exact
-   * shape both `emitSynthStructs`'s `synthStructTypes` entry (the signal's
-   * OWN field type) and a nested array-of-objects field's `PropertyInfo`
-   * need, so `parsed-literal-to-go.ts`'s `structPropertyType` resolves a
-   * nested array property the identical way it resolves the signal's own
-   * top-level type.
-   */
-  private synthSliceTypeInfo(name: string): TypeInfo {
-    return { kind: 'array', raw: `${name}[]`, elementType: { kind: 'interface', raw: name } }
+    return synthesizeStructsFromElements(this.emitCtx, node.elements, name)
   }
 
   /**
@@ -2014,24 +1866,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push(comment)
     lines.push(`type ${name} struct {\n${goFields.join('\n')}\n}`)
     lines.push('')
-  }
-
-  /**
-   * Go type for a scalar-literal `ParsedExpr` field value, else `null` (caller
-   * bails out of synthesis). string/no-substitution template → `string`;
-   * numeric (optionally negated) → `float64`, a TS `number` whatever its
-   * literal; boolean → `bool`.
-   */
-  private scalarParsedGoType(value: ParsedExpr): string | null {
-    // `-5` is a unary minus over a numeric literal; classify by the inner one.
-    if (value.kind === 'unary' && value.op === '-' && value.argument.kind === 'literal') {
-      return value.argument.literalType === 'number' ? 'float64' : null
-    }
-    if (value.kind !== 'literal') return null
-    if (value.literalType === 'string') return 'string'
-    if (value.literalType === 'number') return 'float64'
-    if (value.literalType === 'boolean') return 'bool'
-    return null
   }
 
   /**
@@ -3079,230 +2913,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Populate the cross-file type registry from one file's own declared
-   * types (#2984). Shared by `buildLocalTypeTables`'s same-file loop and
-   * `ensureCrossFileTypes`'s on-demand scan (#2992) so the two paths can
-   * never register a type differently. Always overwrites — a later (real)
-   * compile is authoritative over an earlier speculative one.
-   */
-  private registerCrossFileTypes(typeDefinitions: readonly TypeDefinition[], componentName: string): void {
-    for (const td of typeDefinitions) {
-      if (td.name === 'Props' || td.name === `${componentName}Props`) continue
-      if (td.name.endsWith('Props')) continue
-      if (td.stringLiteralUnion) {
-        this.crossFileTypeAliases.set(td.name, 'string')
-      } else {
-        const fields = this.structFieldsFor(td.name, td)
-        if (fields.length > 0) {
-          this.crossFileStructFields.set(td.name, new Map(fields.map(f => [f.tsName, f.goName])))
-          this.crossFileTypeDefinitions.set(td.name, td)
-        }
-      }
-    }
-  }
-
-  /**
-   * #2992: for each relative import whose specifier isn't registered into
-   * the cross-file type registry yet (typically because the defining file
-   * sorts after this consumer in `@barefootjs/vite`'s alphabetical
-   * discovery order, `packages/vite/src/discover.ts`), resolve it on disk
-   * and register its types via `registerCrossFileTypes` directly — the same
-   * registration a real compile of that file performs, so resolution no
-   * longer depends on discovery order.
-   *
-   * Narrow by design: only scans a definer exporting at least one component
-   * (`listComponentFunctions`) — a component-less file never gets a Go
-   * struct emitted anywhere. No shared `ts.Program`/checker: `structFieldsFor`
-   * needs the analyzer's syntactic shape, and a checker-based second path
-   * for the same question would risk diverging from it.
-   */
-  private ensureCrossFileTypes(imports: readonly ImportInfo[]): void {
-    for (const imp of imports) {
-      if (!imp.source.startsWith('.')) continue
-      const stillUnresolved = imp.specifiers.some(spec =>
-        !spec.isDefault && !spec.isNamespace &&
-        !this.crossFileTypeAliases.has(spec.name) &&
-        !this.crossFileStructFields.has(spec.name),
-      )
-      if (!stillUnresolved) continue
-      const resolved = resolveRelativeImportToFile(imp.source, imp.loc.file)
-      if (!resolved || this.scannedCrossFileSources.has(resolved)) continue
-      this.scannedCrossFileSources.add(resolved)
-      let source: string
-      try {
-        source = readFileSync(resolved, 'utf8')
-      } catch {
-        continue
-      }
-      const componentNames = listComponentFunctions(source, resolved)
-      if (componentNames.length === 0) continue
-      for (const compName of componentNames) {
-        const meta = buildMetadata(analyzeComponent(source, resolved, compName))
-        // Seed the definer's own anonymous-object synth names (#2674) and
-        // named-type tables (`seedLocalTypeTables` below) — both are needed
-        // for `structFieldsFor`/`registerCrossFileTypes` to resolve a
-        // nested field correctly, whichever shape it is. All swapped back
-        // after so nothing leaks into the CONSUMER's own type tables.
-        const prevSynthNames = this.state.synthObjectStructNames
-        const prevLocalTypeNames = this.state.localTypeNames
-        const prevLocalTypeAliases = this.state.localTypeAliases
-        const prevLocalStructFields = this.state.localStructFields
-
-        this.state.synthObjectStructNames = new Map()
-        for (const entry of planSynthPropStructs(meta, compName)) {
-          this.state.synthObjectStructNames.set(entry.typeInfo, entry.name)
-        }
-        this.seedLocalTypeTables(meta.typeDefinitions, compName)
-        this.registerCrossFileTypes(meta.typeDefinitions, compName)
-
-        this.state.synthObjectStructNames = prevSynthNames
-        this.state.localTypeNames = prevLocalTypeNames
-        this.state.localTypeAliases = prevLocalTypeAliases
-        this.state.localStructFields = prevLocalStructFields
-      }
-    }
-  }
-
-  /**
-   * Seed `state.localTypeNames`/`localTypeAliases`/`localStructFields` from
-   * one file's own type definitions. `typeInfoToGo`'s `'interface'` case
-   * (`type/type-codegen.ts`) resolves a named-type field only against these
-   * three maps, never the class-private `crossFile*` registry — so this
-   * must run before resolving any field that names another type the same
-   * file declares (`Dashboard.widget: Widget`). Shared by
-   * `buildLocalTypeTables`'s same-file path and `ensureCrossFileTypes`'s
-   * speculative scan (#2992 review) — one implementation.
-   */
-  private seedLocalTypeTables(typeDefinitions: readonly TypeDefinition[], componentName: string): void {
-    this.state.localTypeNames = new Set<string>()
-    this.state.localTypeAliases = new Map<string, string>()
-    this.state.localStructFields = new Map<string, Map<string, string>>()
-    for (const td of typeDefinitions) {
-      // Skip the Props type (not reusable) and child Props (emitted by the child).
-      if (td.name === 'Props' || td.name === `${componentName}Props`) continue
-      if (td.name.endsWith('Props')) continue
-      this.state.localTypeNames.add(td.name)
-      if (td.stringLiteralUnion) {
-        this.state.localTypeAliases.set(td.name, 'string')
-      } else {
-        // Source-key → Go-field-name map for the baker, from the same field
-        // derivation the struct emitter uses.
-        const fields = this.structFieldsFor(td.name, td)
-        if (fields.length > 0) {
-          this.state.localStructFields.set(td.name, new Map(fields.map(f => [f.tsName, f.goName])))
-        }
-      }
-    }
-  }
-
-  private buildLocalTypeTables(ir: ComponentIR, componentName: string): void {
-    // Resolve any not-yet-registered cross-file type first, so this
-    // component's resolution below doesn't depend on discovery order (#2992).
-    this.ensureCrossFileTypes(ir.metadata.imports)
-
-    this.seedLocalTypeTables(ir.metadata.typeDefinitions, componentName)
-    // Register this component's OWN types too, so a sibling compiled later
-    // resolves them the ordinary way (#2984).
-    this.registerCrossFileTypes(ir.metadata.typeDefinitions, componentName)
-
-    // A type merely IMPORTED (never declared) in this file — most often a
-    // child component's own prop-shape type — resolves against the
-    // cross-file registry. Relative imports only: a bare specifier can't
-    // name a BarefootJS component module, and matching an ecosystem
-    // package's export by name alone risks a false-positive collision.
-    for (const imp of ir.metadata.imports) {
-      if (!imp.source.startsWith('.')) continue
-      for (const spec of imp.specifiers) {
-        if (spec.isDefault || spec.isNamespace) continue
-        const localName = spec.alias ?? spec.name
-        // A same-named local declaration always wins — never overwritten by
-        // an unrelated import that merely shares the name.
-        if (this.state.localTypeNames.has(localName)) continue
-        const aliasBacking = this.crossFileTypeAliases.get(spec.name)
-        if (aliasBacking !== undefined) {
-          this.state.localTypeNames.add(localName)
-          this.state.localTypeAliases.set(localName, aliasBacking)
-          continue
-        }
-        const fieldMap = this.crossFileStructFields.get(spec.name)
-        if (fieldMap) {
-          this.state.localTypeNames.add(localName)
-          this.state.localStructFields.set(localName, fieldMap)
-          // Make the borrowed struct's OWN property types visible to
-          // `structPropertyType` too, so a composite-literal initial value
-          // (`createSignal<Dashboard>({ title: 'hello', ... })`) bakes its
-          // scalar fields against the real declared types instead of the
-          // zero-value struct fallback (`Dashboard{}`) `jsLiteralToGo`
-          // returns for an object type it can't find any properties for.
-          // `primeCompileState` assigns `currentTypeDefinitions` the SAME
-          // array reference as `ir.metadata.typeDefinitions` (no clone,
-          // #2674's own docstring on `emitSynthPropStructs`) — rebuild the
-          // array rather than pushing in place, or this would mutate the
-          // CONSUMER's own IR metadata, corrupting it for any later re-read.
-          const td = this.crossFileTypeDefinitions.get(spec.name)
-          if (td) {
-            if (!this.state.currentTypeDefinitions.some(t => t.name === localName)) {
-              this.state.currentTypeDefinitions = [
-                ...this.state.currentTypeDefinitions,
-                localName === td.name ? td : { ...td, name: localName },
-              ]
-            }
-            // A property of the borrowed type may itself name ANOTHER type
-            // the same definer declares (`Dashboard.widget: Widget`) that
-            // this consumer never imports directly — pull those in too, or
-            // baking falls back to `map[string]interface{}` (#2992 review).
-            //
-            // Deliberately outside the dedup guard above: `buildLocalTypeTables`
-            // runs twice per compile, and the second run's `seedLocalTypeTables`
-            // reset would otherwise wipe what the first run added here. This
-            // walk re-checks `localTypeNames` itself, so it's safely idempotent
-            // to run unconditionally.
-            for (const prop of td.properties ?? []) {
-              this.registerTransitiveCrossFileTypes(prop.type, new Set([localName, td.name]))
-            }
-          }
-        }
-      }
-    }
-  }
-
-  /**
-   * Recursively register a borrowed type's own nested named-type
-   * references into the consumer's local type tables (#2992 review) — see
-   * the call site above for why.
-   */
-  private registerTransitiveCrossFileTypes(typeInfo: TypeInfo | undefined, visited: Set<string>): void {
-    if (!typeInfo) return
-    if (typeInfo.kind === 'array') {
-      this.registerTransitiveCrossFileTypes(typeInfo.elementType, visited)
-      return
-    }
-    if (typeInfo.kind !== 'interface' || !typeInfo.raw) return
-    const name = typeInfo.raw
-    if (visited.has(name)) return
-    visited.add(name)
-    if (this.state.localTypeNames.has(name)) return
-
-    const aliasBacking = this.crossFileTypeAliases.get(name)
-    if (aliasBacking !== undefined) {
-      this.state.localTypeNames.add(name)
-      this.state.localTypeAliases.set(name, aliasBacking)
-      return
-    }
-    const fieldMap = this.crossFileStructFields.get(name)
-    if (!fieldMap) return
-    this.state.localTypeNames.add(name)
-    this.state.localStructFields.set(name, fieldMap)
-    const td = this.crossFileTypeDefinitions.get(name)
-    if (td && !this.state.currentTypeDefinitions.some(t => t.name === name)) {
-      this.state.currentTypeDefinitions = [...this.state.currentTypeDefinitions, td]
-      for (const prop of td.properties ?? []) {
-        this.registerTransitiveCrossFileTypes(prop.type, visited)
-      }
-    }
-  }
-
-  /**
    * #2674 Plan A: synthesize a deterministically-named, json-tagged struct
    * for every ANONYMOUS (`kind: 'object'`) type reachable from the
    * component's type surface, so `typeInfoToGo`'s `'object'` case (consulted
@@ -3434,7 +3044,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         )
       }
       const top = synth[synth.length - 1]
-      this.state.synthStructTypes.set(signal.getter, this.synthSliceTypeInfo(top.name))
+      this.state.synthStructTypes.set(signal.getter, synthSliceTypeInfo(top.name))
     }
   }
 
@@ -3704,127 +3314,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push('')
   }
 
-  private resolveNestedLoopItemTypes(
-    lines: string[],
-    ir: ComponentIR,
-    componentName: string,
-    nestedComponents: NestedComponentInfo[],
-  ): void {
-    // When a loop's `itemType` is null, resolve the element type from the source
-    // array so wrapper structs get correct datum fields. Three cases:
-    //   1. Memo-derived: `sortedData()` → resolve through the memo's SSR path to
-    //      the module const it returns (block-body memo baking).
-    //   2. Direct module const with a DECLARED element type (`const opts: Opt[]`)
-    //      → look up the constant directly.
-    //   3. Direct module const with NO declared type at all (`const opts = [{…}]`,
-    //      #3178) → same shape as (2) structurally, but nothing already resolved
-    //      an element type to borrow — synthesize one from the literal itself.
-    for (const nested of nestedComponents) {
-      if (nested.loopItemType || !nested.loopArray) continue
-
-      // Case 0: an array prop's own element type (`propArrayLoopRowSource`).
-      // A bodyless row has no wrapper to carry datum fields.
-      const propRows = nested.bodyChildren?.length ? this.propArrayLoopRowSource(ir, nested) : null
-      if (propRows) {
-        nested.loopItemType = propRows.itemType
-        continue
-      }
-
-      // Case 1: memo-derived loop array (`sortedData()`)
-      const memoName = this.extractMemoNameFromLoopArray(nested.loopArray)
-      if (memoName) {
-        const memo = ir.metadata.memos.find(m => m.name === memoName)
-        if (memo) {
-          const blockReturn = resolveBlockBodyMemoModuleConst(this.emitCtx,
-            memo, ir.metadata.signals,
-          )
-          if (blockReturn) {
-            const constant = this.findModuleScopeConst(blockReturn.constName)
-            if (constant?.type?.elementType) {
-              nested.loopItemType = constant.type.elementType
-            }
-          }
-        }
-        continue
-      }
-
-      // Case 2/3: direct module-const array reference (`opts`/`payments`)
-      const directConst = this.findModuleScopeConst(nested.loopArray)
-      if (directConst?.type?.elementType) {
-        nested.loopItemType = directConst.type.elementType
-        continue
-      }
-
-      // Case 3 (#3178): an UNTYPED object-literal array const has no
-      // declared element type for (2) to borrow — `inferTypeFromValue`
-      // (the analyzer's text-shaped fallback for an unannotated
-      // declaration) only ever produces the bare `{kind:'array', raw:
-      // 'unknown[]'}`, never a per-row shape. But when every row IS an
-      // object literal sharing the same keys, that shape is just as
-      // inferrable as a typed one — the same fast path `emitSynthStructs`
-      // already applies to an untyped object-array SIGNAL (#2800).
-      // Synthesizing + registering a named struct here (a) gives
-      // `resolveLoopDatumFields` real datum fields for the wrapper struct,
-      // and (b) — by folding the synthesized type back onto the constant's
-      // OWN `type.elementType` below — gives `emitStaticBodyWrappers`'s
-      // `convertInitialValue` → `parsedLiteralToGo` a concrete struct to
-      // bake each row's object literal against. Without this, that bake
-      // requires a pre-registered struct, finds none, defers the WHOLE
-      // array to `nil`, and the loop silently drops from SSR with no
-      // diagnostic. A non-uniform shape (mismatched keys, a spread, …)
-      // still returns `null` here and falls through to that same
-      // pre-existing `nil` fallback, unchanged.
-      if (directConst && directConst.type?.kind === 'array' && !directConst.type.elementType) {
-        const elementType = this.synthesizeModuleConstArrayItemType(lines, directConst, componentName)
-        const parsed = directConst.parsed
-        if (
-          !elementType &&
-          parsed?.kind === 'array-literal' &&
-          parsed.elements.length > 0 &&
-          parsed.elements.every(e => e.kind === 'object-literal')
-        ) {
-          // No Go struct to bake the rows against, so the array would bake to
-          // `nil` and the loop would silently render empty. Skipped when
-          // `renderLoop` already refused this loop array (a spread, shorthand
-          // or function-valued row reads as a computed value there).
-          if (this.state.refusedLoopArrayConsts.has(directConst.name)) continue
-          const sharedKeys = rowsShareKeys(parsed.elements)
-          this.state.errors.push({
-            code: 'BF101',
-            severity: 'error',
-            message: sharedKeys
-              ? `Loop array \`${directConst.name}\` is an object-literal array with a field the Go template adapter can't give one Go type across its rows (for example a nested object, a \`null\`, a non-identifier key, an empty nested array, or a value whose type differs between rows), so it can't render its rows at SSR.`
-              : `Loop array \`${directConst.name}\` is an object-literal array whose rows don't share one shape, so the Go template adapter can't infer an element type to render its rows at SSR.`,
-            loc: this.makeLoc(),
-            suggestion: {
-              message: sharedKeys
-                ? `Annotate \`${directConst.name}\` with an explicit element type (\`const ${directConst.name}: Item[] = [...]\`), or give each field a plain string, number or boolean literal of the same type in every row.`
-                : `Give every row the same keys, or annotate \`${directConst.name}\` with an explicit element type (\`const ${directConst.name}: Item[] = [...]\`).`,
-            },
-          })
-          continue
-        }
-        if (elementType) {
-          nested.loopItemType = elementType
-          // Rebuild rather than mutate `directConst` in place (#2674's own
-          // rule for `ir.metadata`-backed structures): `this.state
-          // .localConstants` still aliases `ir.metadata.localConstants`
-          // (`primeCompileState`) at this point, and mutating an element of
-          // it in place would corrupt the CALLER's IR for any later re-read
-          // (`generateTypes` can run more than once over the same `ir`, for
-          // siblings). A fresh array with a fresh entry keeps every OTHER
-          // consumer's reference to the original object (and array)
-          // intact, while every LATER lookup through `this.state
-          // .localConstants` — the only place `resolveLoopArraySourceConst`
-          // ever reads from — sees the augmented type.
-          this.state.localConstants = this.state.localConstants.map(c =>
-            c === directConst ? { ...c, type: { ...c.type!, elementType } } : c,
-          )
-        }
-      }
-    }
-  }
-
   /**
    * A module-scope const by name, read through `this.state.localConstants`
    * so a type `resolveNestedLoopItemTypes` already folded onto an untyped
@@ -3840,42 +3329,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /** A non-module local const that has an initializer, by name (`findValuedLocalConst`). */
   private findValuedLocalConst(name: string): ConstantInfo | undefined {
     return findValuedLocalConst(this.state, name)
-  }
-
-  /**
-   * The module-const twin of `synthesizeStructFromSignal`/#2800 (#3178):
-   * synthesize + register a named Go struct for an UNTYPED module-const
-   * array's per-row shape, reusing the exact same `synthesizeStructsFromElements`
-   * fast path and `registerSynthStruct` emission so the two synthesis call
-   * sites — one for an untyped object-array SIGNAL, one for an untyped
-   * object-array module CONST — can't independently drift on what counts as
-   * a safely-synthesizable shape. Returns the top-level struct's `TypeInfo`
-   * (an `interface` reference by name, the same shape `resolveNestedLoopItemTypes`'s
-   * other two cases hand back) for the caller to fold onto the constant's
-   * own `type.elementType`, or `null` when the elements don't share one
-   * bakeable shape — the caller's existing `nil`-bake fallback covers that
-   * case unchanged.
-   */
-  private synthesizeModuleConstArrayItemType(
-    lines: string[],
-    constant: ConstantInfo,
-    componentName: string,
-  ): TypeInfo | null {
-    const node = constant.parsed
-    if (!node || node.kind !== 'array-literal' || node.elements.length === 0) return null
-    const name = `${componentName}${capitalizeFieldName(constant.name)}Item`
-    const synth = this.synthesizeStructsFromElements(node.elements, name)
-    if (!synth) return null
-    for (const s of synth) {
-      this.registerSynthStruct(
-        lines,
-        s.name,
-        s.fields,
-        s.properties,
-        `// ${s.name} is a synthesised element type for the ${constant.name} constant.`,
-      )
-    }
-    return { kind: 'interface', raw: name }
   }
 
   private composeFileHeader(lines: string[]): string {
@@ -7942,6 +7395,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     extractHtmlChildren: (children) => this.extractHtmlChildren(children),
     extractScopedHtmlChildren: (children) => this.extractScopedHtmlChildren(children),
     extendProviderContext: (current, p, propsParams) => this.extendProviderContext(current, p, propsParams),
+  }
+
+  /** The adapter-owned cross-file type registry, struct derivation and loop-array lookups the type synthesis (`type/type-synthesis.ts`) reads. */
+  private readonly typeSynthesisHost: TypeSynthesisHost = {
+    ctx: this.emitCtx,
+    crossFileTypeAliases: () => this.crossFileTypeAliases,
+    crossFileStructFields: () => this.crossFileStructFields,
+    crossFileTypeDefinitions: () => this.crossFileTypeDefinitions,
+    scannedCrossFileSources: () => this.scannedCrossFileSources,
+    structFieldsFor: (owner, td) => this.structFieldsFor(owner, td),
+    registerSynthStruct: (lines, name, fields, properties, comment) =>
+      this.registerSynthStruct(lines, name, fields, properties, comment),
+    propArrayLoopRowSource: (ir, nested) => this.propArrayLoopRowSource(ir, nested),
+    extractMemoNameFromLoopArray: (loopArray) => this.extractMemoNameFromLoopArray(loopArray),
+    makeLoc: () => this.makeLoc(),
   }
 
   renderScopeMarker(_instanceIdExpr: string): string {
