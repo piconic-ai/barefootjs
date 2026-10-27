@@ -61,9 +61,16 @@ export function emitListenerBlock(
   handler: JsSourceText,
   mode: EventNameMode = 'dom',
   bodyIsMultiRoot: boolean = false,
+  receiverSlotIds?: readonly string[],
 ): void {
   const wrapped = handler.trim()
   const name = mode === 'dom' ? toDomEventName(eventName) : eventName
   const lookup = bodyIsMultiRoot ? 'qsaItem' : 'qsa'
-  lines.push(`${indent}{ const ${elementLocal} = ${lookup}(${scopeVar}, '[bf="${slotId}"]'); if (${elementLocal}) ${elementLocal}.addEventListener('${name}', ${wrapped}) }`)
+  // A parent-owned element forwarded through components nested below the
+  // row root (#3695) renders inside their scopes, which `qsa` crosses only
+  // for the nominated receivers hosted by this component (`__scopeId`).
+  const receiverArgs = !bodyIsMultiRoot && receiverSlotIds && receiverSlotIds.length > 0
+    ? `, ${JSON.stringify(receiverSlotIds)}, __scopeId`
+    : ''
+  lines.push(`${indent}{ const ${elementLocal} = ${lookup}(${scopeVar}, '[bf="${slotId}"]'${receiverArgs}); if (${elementLocal}) ${elementLocal}.addEventListener('${name}', ${wrapped}) }`)
 }

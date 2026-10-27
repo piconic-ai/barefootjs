@@ -547,6 +547,14 @@ export interface LoopChildEvent {
   nestedLoops: NestedLoop[]
   /** DOM nesting depth (0 = loop body root). Deepest-first sorting for event delegation (#774). */
   domDepth: number
+  /**
+   * For a parent-owned (`^sN`) element forwarded as the `children` of a
+   * component nested BELOW the row root (#3695): those components' slot
+   * ids, outermost first. The per-row lookup crosses into their scopes only
+   * (see `ConditionalBranchReactiveAttr.receiverSlotIds`, #3324). Absent
+   * when no such component encloses the element.
+   */
+  receiverSlotIds?: readonly string[]
 }
 
 export interface LoopChildReactiveAttr extends AttrMeta {

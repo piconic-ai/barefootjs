@@ -1601,7 +1601,15 @@ function irNodeToJsExprs(node: IRNode, brandMarkup = false): string[] {
       }
 
       const propsExpr = propsEntries.length > 0 ? `{ ${propsEntries.join(', ')} }` : '{}'
-      return [`createComponent('${nameForRegistryRef(node.name)}', ${propsExpr})`]
+      // A slotted child gets the same slot identity SSR stamps on it
+      // (`bf-h` = the authoring component, `bf-m` = its slot), so a
+      // client-built tree matches the server's and a lookup of content
+      // forwarded through it can tell it is a receiver (#3695). A loop row
+      // root never takes a slot (`createComponent`'s own contract).
+      const slotArg = node.slotId && !node.loopItemRoot
+        ? `, undefined, { parent: __scopeId, mount: '${node.slotId}' }`
+        : ''
+      return [`createComponent('${nameForRegistryRef(node.name)}', ${propsExpr}${slotArg})`]
     }
 
     case 'expression':

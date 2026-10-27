@@ -18,7 +18,7 @@ export function initLoopRowNestedChildChildrenHandler(__scope, _p = {}) {
   ])
   const [picked, setPicked] = createSignal('none')
 
-  const [_s2, _s7, _s11] = $(__scope, 's2', 's7', 's11')
+  const [_s2, _s7, _s11, _s16] = $(__scope, 's2', 's7', 's11', 's16')
 
   const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
@@ -45,11 +45,26 @@ export function initLoopRowNestedChildChildrenHandler(__scope, _p = {}) {
       return __tpl.content.firstElementChild.cloneNode(true)
     })())
     upsertChild(__el, 'Chip__8c71a327', 's10', { get children() { return `<button type="button" class="pick" bf="^s9"><!--bf:^s8-->${escapeText(o().label)}<!--/--></button>` } }, undefined, __scope)
-    { const __e = qsa(__el, '[bf="^s9"]'); if (__e) __e.addEventListener('click', () => setPicked(`c-${o().id}`)) }
+    { const __e = qsa(__el, '[bf="^s9"]', ["s10"], __scopeId); if (__e) __e.addEventListener('click', () => setPicked(`c-${o().id}`)) }
     const __bfw_s8 = lazySlots(__el, [{ id: '^s8', kind: 'text', path: [] }])
     createEffect(() => { __bfw_s8('^s8', String(o().label)) })
     return __el
   }, 'l1')
+
+  mapArray(() => rows(), _s16, (o) => String(o.id), (o, __idx, __existing) => {
+    if (__existing) {
+      initChild('Chip__8c71a327', __existing, { get children() { return createComponent('Chip__8c71a327', { get children() { return `<button type="button" class="pick" bf="^s13"><!--bf:^s12-->${escapeText(o().label)}<!--/--></button>` } }, undefined, { parent: __scopeId, mount: 's14' }) } })
+      { const __e = qsa(__existing, '[bf="^s13"]', ["s14"], __scopeId); if (__e) __e.addEventListener('click', () => setPicked(`s-${o().id}`)) }
+      const __bfw_s12 = lazySlots(__existing, [{ id: '^s12', kind: 'text', path: [] }])
+      createEffect(() => { __bfw_s12('^s12', String(o().label)) })
+      return __existing
+    }
+    const __csrEl = createComponent('Chip__8c71a327', { get children() { return createComponent('Chip__8c71a327', { get children() { return `<button type="button" class="pick" bf="^s13"><!--bf:^s12-->${escapeText(o().label)}<!--/--></button>` } }, undefined, { parent: __scopeId, mount: 's14' }) } }, o().id)
+    { const __e = qsa(__csrEl, '[bf="^s13"]', ["s14"], __scopeId); if (__e) __e.addEventListener('click', () => setPicked(`s-${o().id}`)) }
+    const __bfw_s12 = lazySlots(__csrEl, [{ id: '^s12', kind: 'text', path: [] }])
+    createEffect(() => { __bfw_s12('^s12', String(o().label)) })
+    return __csrEl
+  }, 'l2')
 
   // Initialize static array children (hydrate skips nested instances)
   if (_s7) {
@@ -57,7 +72,7 @@ export function initLoopRowNestedChildChildrenHandler(__scope, _p = {}) {
     __childScopes.forEach((childScope, __idx) => {
       const o = NESTED[__idx]
       initChild('Chip__8c71a327', childScope, {})
-      { const __e = qsa(childScope, '[bf="^s4"]'); if (__e) __e.addEventListener('click', () => setPicked(`n-${o.id}`)) }
+      { const __e = qsa(childScope, '[bf="^s4"]', ["s5"], __scopeId); if (__e) __e.addEventListener('click', () => setPicked(`n-${o.id}`)) }
     })
   }
 
@@ -69,5 +84,8 @@ hydrate('LoopRowNestedChildChildrenHandler', { init: initLoopRowNestedChildChild
 ]).map((o) => `${renderChild('Chip__8c71a327', {children: `${renderChild('Chip__8c71a327', {children: `<button type="button" class="pick" bf="^s4"><!--bf:^s3-->${escapeText(o.label)}<!--/--></button>`}, undefined, 's5')}`}, o.id, 's6', true)}`).join('')}<!--bf-/loop:l0--></div><div class="composite" bf="s11"><!--bf-loop:l1-->${([
     { id: 'a', label: 'A' },
     { id: 'b', label: 'B' },
-  ]).map((o) => `<div data-key="${escapeAttr(o.id)}" class="row">${renderChild('Chip__8c71a327', {children: `<button type="button" class="pick" bf="^s9"><!--bf:^s8-->${escapeText(o.label)}<!--/--></button>`}, undefined, 's10')}</div>`).join('')}<!--bf-/loop:l1--></div></div>` })
+  ]).map((o) => `<div data-key="${escapeAttr(o.id)}" class="row">${renderChild('Chip__8c71a327', {children: `<button type="button" class="pick" bf="^s9"><!--bf:^s8-->${escapeText(o.label)}<!--/--></button>`}, undefined, 's10')}</div>`).join('')}<!--bf-/loop:l1--></div><div class="sig-nested" bf="s16"><!--bf-loop:l2-->${([
+    { id: 'a', label: 'A' },
+    { id: 'b', label: 'B' },
+  ]).map((o) => `${renderChild('Chip__8c71a327', {children: `${renderChild('Chip__8c71a327', {children: `<button type="button" class="pick" bf="^s13"><!--bf:^s12-->${escapeText(o.label)}<!--/--></button>`}, undefined, 's14')}`}, o.id, 's15', true)}`).join('')}<!--bf-/loop:l2--></div></div>` })
 export function LoopRowNestedChildChildrenHandler(_p, __bfKey) { return createComponent('LoopRowNestedChildChildrenHandler', _p, __bfKey) }

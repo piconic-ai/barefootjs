@@ -953,6 +953,57 @@ describe('qsa', () => {
     expect(qsa(scope, '[bf="^s1"]', ['s2'])?.textContent).toBe('own')
   })
 
+  test('#3695: a loop row matches its receivers against the authoring scope', () => {
+    // A plain-element row (no bf-s of its own) and a row whose root is a
+    // child component's scope: the forwarded `^s1` renders inside a
+    // receiver hosted by Parent, not by the row root.
+    document.body.innerHTML = `
+      <div bf-s="Parent_abc">
+        <div class="row">
+          <section bf-s="Parent_abc_s2" bf-h="Parent_abc" bf-m="s2">
+            <strong bf="^s1">plain row</strong>
+          </section>
+        </div>
+        <span class="comp-row" bf-s="Chip_xyz" bf-h="Parent_abc" bf-m="s6">
+          <section bf-s="Parent_abc_s5" bf-h="Parent_abc" bf-m="s5">
+            <strong bf="^s4">component row</strong>
+          </section>
+        </span>
+      </div>
+    `
+    const plainRow = document.querySelector('.row')!
+    const compRow = document.querySelector('.comp-row')!
+    expect(qsa(plainRow, '[bf="^s1"]', ['s2'], 'Parent_abc')?.textContent).toBe('plain row')
+    expect(qsa(compRow, '[bf="^s4"]', ['s5'], 'Parent_abc')?.textContent).toBe('component row')
+    // Without the host, the row root is no authoring scope: nothing.
+    expect(qsa(plainRow, '[bf="^s1"]', ['s2'])).toBeNull()
+    expect(qsa(compRow, '[bf="^s4"]', ['s5'])).toBeNull()
+    // Another host, or a slot the compiler did not name: nothing.
+    expect(qsa(plainRow, '[bf="^s1"]', ['s2'], 'Other_abc')).toBeNull()
+    expect(qsa(compRow, '[bf="^s4"]', ['s7'], 'Parent_abc')).toBeNull()
+  })
+
+  test("#3695: a loop row never resolves a slot inside a receiver's own component or a host-less scope", () => {
+    // The receiver (slot s2) holds a component of its own and a client-built
+    // row of its own loop (no slot identity), each with an independently
+    // authored `^s1`, before the parent's forwarded `^s1`.
+    document.body.innerHTML = `
+      <div bf-s="Parent_abc">
+        <div class="row">
+          <section bf-s="Parent_abc_s2" bf-h="Parent_abc" bf-m="s2">
+            <aside bf-s="Parent_abc_s2_s1" bf-h="Parent_abc_s2" bf-m="s1"><em bf="^s1">receiver's</em></aside>
+            <aside bf-s="Inner_rand"><em bf="^s1">receiver's row</em></aside>
+            <strong bf="^s1">parent's</strong>
+          </section>
+        </div>
+      </div>
+    `
+    const row = document.querySelector('.row')!
+    expect(qsa(row, '[bf="^s1"]', ['s2'], 'Parent_abc')?.textContent).toBe("parent's")
+    document.querySelector('strong')!.remove()
+    expect(qsa(row, '[bf="^s1"]', ['s2'], 'Parent_abc')).toBeNull()
+  })
+
   // qsa() doubles as the child-scope-resolution lookup for compiled
   // component-loop / branch-nested-child code (feeding initChild()) — its
   // target legitimately carries bf-s itself. The nested-child-scope skip

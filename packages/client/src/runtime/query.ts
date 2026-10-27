@@ -489,7 +489,12 @@ function findInPortals(scope: Element, selector: string, ignoreScope?: boolean):
  * Used by compiler-generated code for event binding and attribute updates
  * on loop items where the target may be the loop item's root element itself.
  */
-export function qsa(el: Element | null, selector: string, receiverSlotIds?: readonly string[]): Element | null {
+export function qsa(
+  el: Element | null,
+  selector: string,
+  receiverSlotIds?: readonly string[],
+  hostScopeId?: string | null,
+): Element | null {
   if (!el) return null
 
   // Comma-separated selectors are tried in priority order (left-to-right)
@@ -501,7 +506,7 @@ export function qsa(el: Element | null, selector: string, receiverSlotIds?: read
     for (const clause of splitTopLevelCommas(selector)) {
       const c = clause.trim()
       if (!c) continue
-      const hit = qsa(el, c, receiverSlotIds)
+      const hit = qsa(el, c, receiverSlotIds, hostScopeId)
       if (hit) return hit
     }
     return null
@@ -536,12 +541,30 @@ export function qsa(el: Element | null, selector: string, receiverSlotIds?: read
   // component nested in `el` — may hold its own, independently authored
   // `^sN`, and the DOM cannot tell that from forwarded content, so such a
   // candidate is never taken.
+  //
+  // A loop row (#3695) is not itself the authoring scope: its root is a
+  // plain element (no `bf-s`) or a child component's scope, while the
+  // receivers nested inside it are hosted by the component whose template
+  // holds the `.map()`. The compiler passes that component's scope id
+  // (`hostScopeId`, its `__scopeId`) so the receivers are matched against
+  // the real author rather than against the row root.
   if (receiverSlotIds && receiverSlotIds.length > 0 && PARENT_OWNED_SLOT_SELECTOR.test(selector)) {
-    const scopeId = el.getAttribute(BF_SCOPE)
-    if (!scopeId) return null
-    for (const candidate of el.querySelectorAll(selector)) {
-      if (isForwardedThroughReceivers(candidate, el, scopeId, receiverSlotIds)) return candidate
-    }
+    return findForwardedThroughReceivers(el, selector, receiverSlotIds, hostScopeId ?? el.getAttribute(BF_SCOPE))
+  }
+  return null
+}
+
+/** The first `selector` match under `el` forwarded through receivers
+ *  `hostScopeId` hosts (see `qsa`'s parent-owned slot branch). */
+function findForwardedThroughReceivers(
+  el: Element,
+  selector: string,
+  receiverSlotIds: readonly string[],
+  hostScopeId: string | null,
+): Element | null {
+  if (!hostScopeId) return null
+  for (const candidate of el.querySelectorAll(selector)) {
+    if (isForwardedThroughReceivers(candidate, el, hostScopeId, receiverSlotIds)) return candidate
   }
   return null
 }

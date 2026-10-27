@@ -130,6 +130,8 @@ export interface LoopRowEventBinding {
   eventName: string
   /** Handler expression, as the row's binding of the item reads it. */
   handler: JsSourceText
+  /** See `LoopChildEvent.receiverSlotIds` (#3695). */
+  receiverSlotIds?: readonly string[]
 }
 
 /**
