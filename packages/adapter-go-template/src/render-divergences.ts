@@ -128,6 +128,7 @@ export const renderDivergences: RenderDivergences = {
   'loop-row-child-children-inner-loop-shadow': { limitation: 'signal-loop-row-child-children-unseeded' },
   'loop-row-child-children-handler': { limitation: 'signal-loop-row-child-children-unseeded' },
   'loop-row-child-children-ref': { limitation: 'signal-loop-row-child-children-unseeded' },
+  'loop-row-nested-child-children-handler': { limitation: 'signal-loop-row-child-children-unseeded' },
   // A const alias chain (`const a = children; const b = a`) read in a loop
   // row that binds a name the chain passes through (`rows.map(a => …{b}…)`):
   // the template cannot inline the const through the shadowed name, and the

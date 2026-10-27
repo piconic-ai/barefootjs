@@ -4885,6 +4885,14 @@
           }
         }
       },
+      "loop-row-nested-child-children-handler": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "signal-loop-row-child-children-unseeded"
+          ]
+        }
+      },
       "map-array-builder-body": {
         "blade": {
           "kind": "refusal",
@@ -8321,6 +8329,10 @@
         "description": "A loop row calling a child component over an untyped object-literal array const whose rows carry a…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-untyped-array-nested-field.ts"
       },
+      "loop-row-nested-child-children-handler": {
+        "description": "An event handler on an element forwarded through a child component nested below the loop row element",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-nested-child-children-handler.ts"
+      },
       "map-array-builder-body": {
         "description": "imperative array-builder .map() body — JS-runtime verbatim, DSL refuses (BF021)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-array-builder-body.ts"
@@ -9114,28 +9126,6 @@
         "BF101"
       ]
     },
-    "loop-row-nested-forwarded-children-handler": {
-      "title": "An event handler forwarded through a child component nested below a loop row element",
-      "kind": "silent",
-      "given": "a `.map()` row whose element with an event handler is forwarded as the `children` of a child component that is not the row's root — nested inside the row's root component (`<Chip key={o.id}><Chip><button onClick={…}/></Chip></Chip>`) or inside a plain-element row (`<div key={o.id}><Chip><button onClick={…}/></Chip></div>`)",
-      "expected": "each click runs the handler for its own row, in a hydrated row and in a row built on the client",
-      "actual": "drops the click: no handler is attached to the element",
-      "fixtures": [
-        "loop-row-nested-child-children-handler"
-      ],
-      "adapters": [
-        "hono",
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
     "loop-shadowed-const-alias-hop": {
       "title": "A const alias hop read in a loop row that shadows a name the hop passes through",
       "kind": "silent",
@@ -9517,6 +9507,7 @@
         "loop-row-child-children-handler",
         "loop-row-child-children-inner-loop-shadow",
         "loop-row-child-children-ref",
+        "loop-row-nested-child-children-handler",
         "signal-loop-row-child-children"
       ],
       "adapters": [

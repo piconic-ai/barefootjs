@@ -136,7 +136,7 @@ function buildSingleCompPlan(
     // handlers on its forwarded children directly.
     rowEvents: elem.bindings.events
       .filter(ev => ev.nestedLoops.length === 0)
-      .map(ev => ({ childSlotId: ev.childSlotId, eventName: ev.eventName, handler: ev.handler })),
+      .map(ev => ({ childSlotId: ev.childSlotId, eventName: ev.eventName, handler: ev.handler, receiverSlotIds: ev.receiverSlotIds })),
   }
 }
 

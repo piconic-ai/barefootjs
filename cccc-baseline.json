@@ -338,9 +338,6 @@
     "packages/client/src/runtime/query.ts": {
       "$t": [
         30
-      ],
-      "qsa": [
-        28
       ]
     },
     "packages/client/src/runtime/scope.ts": {

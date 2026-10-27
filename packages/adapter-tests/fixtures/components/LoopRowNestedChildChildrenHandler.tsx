@@ -1,11 +1,12 @@
 'use client'
 
-// Test fixture: an event handler on an element forwarded through a child
-// component that is NOT the loop row's root — nested inside the row's root
-// component (`.nested`, over a module const), or inside a plain-element row
-// of a signal array (`.composite`; `add` prepends a row built on the
-// client). The forwarded element renders inside that child's scope, below
-// the row element, and the click is never handled.
+// Test fixture (#3695): an event handler on an element forwarded through a
+// child component that is NOT the loop row's root — nested inside the row's
+// root component (`.nested` over a module const, `.sig-nested` over a signal
+// array), or inside a plain-element row of a signal array (`.composite`).
+// `add` prepends a row, so every signal-array list also has a row built on
+// the client. The forwarded element renders inside the nested child's
+// scope, below the row element.
 
 import { createSignal } from '@barefootjs/client'
 
@@ -48,6 +49,15 @@ export function LoopRowNestedChildChildrenHandler() {
               <button type="button" className="pick" onClick={() => setPicked(`c-${o.id}`)}>{o.label}</button>
             </Chip>
           </div>
+        ))}
+      </div>
+      <div className="sig-nested">
+        {rows().map((o) => (
+          <Chip key={o.id}>
+            <Chip>
+              <button type="button" className="pick" onClick={() => setPicked(`s-${o.id}`)}>{o.label}</button>
+            </Chip>
+          </Chip>
         ))}
       </div>
     </div>

@@ -417,6 +417,12 @@
               ]
             },
             {
+              "fixture": "loop-row-nested-child-children-handler",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -4846,6 +4852,12 @@
               ]
             },
             {
+              "fixture": "loop-row-nested-child-children-handler",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -7812,6 +7824,12 @@
               ]
             },
             {
+              "fixture": "loop-row-nested-child-children-handler",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -10745,6 +10763,12 @@
               ]
             },
             {
+              "fixture": "loop-row-nested-child-children-handler",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -13443,6 +13467,12 @@
               ]
             },
             {
+              "fixture": "loop-row-nested-child-children-handler",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -15148,6 +15178,12 @@
               "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
+              ]
+            },
+            {
+              "fixture": "loop-row-nested-child-children-handler",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -21427,6 +21463,12 @@
               "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
+              ]
+            },
+            {
+              "fixture": "loop-row-nested-child-children-handler",
+              "limitations": [
+                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
