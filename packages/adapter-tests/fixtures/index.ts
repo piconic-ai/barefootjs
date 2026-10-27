@@ -1071,6 +1071,9 @@ import { fixture as destructureDefaultArrayChild } from './destructure-default-a
 import { fixture as destructureDefaultArrayMemo } from './destructure-default-array-memo'
 import { fixture as destructureDefaultBodyRenamed } from './destructure-default-body-renamed'
 import { fixture as destructureDefaultParamRenamed } from './destructure-default-param-renamed'
+import { fixture as destructureDefaultExplicitFalsy } from './destructure-default-explicit-falsy'
+import { fixture as destructureDefaultLiteralSpelling } from './destructure-default-literal-spelling'
+import { fixture as destructureDefaultLargeNumber } from './destructure-default-large-number'
 import { fixture as destructureDefaultBodyRenamedComputedArray } from './destructure-default-body-renamed-computed-array'
 import { fixture as destructureDefaultParamComputedArray } from './destructure-default-param-computed-array'
 import { fixture as destructureDefaultBodyRenamedCallback } from './destructure-default-body-renamed-callback'
@@ -1910,6 +1913,9 @@ export const jsxFixtures: JSXFixture[] = [
   destructureDefaultArrayMemo,
   destructureDefaultBodyRenamed,
   destructureDefaultParamRenamed,
+  destructureDefaultExplicitFalsy,
+  destructureDefaultLiteralSpelling,
+  destructureDefaultLargeNumber,
   destructureDefaultBodyRenamedComputedArray,
   destructureDefaultParamComputedArray,
   destructureDefaultBodyRenamedCallback,

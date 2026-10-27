@@ -24,7 +24,6 @@ import type { ComponentIR, ParsedExpr, ParsedStatement, TypeInfo, JsSourceText }
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
-import { goPropDefault } from '../lib/go-emit.ts'
 import { GO_KEYWORDS, capitalizeFieldName } from '../lib/go-naming.ts'
 import type { PropFallbackVar } from '../lib/types.ts'
 import { propsFieldName } from '../lib/props-field-names.ts'
@@ -33,7 +32,7 @@ import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from '../memo/me
 import { resolveBlockBodyMemoModuleConst } from '../memo/memo-value.ts'
 import { isIntegerValued } from '../memo/memo-compute.ts'
 import { memoSeedRepresentation } from '../memo/memo-seed-shape.ts'
-import { NULLISH_SCALAR_GO_TYPES, bareSeedPropName, buildPropTypeOverrides, resolvePropGoType, seedPassthroughPropName } from '../props/prop-types.ts'
+import { NULLISH_SCALAR_GO_TYPES, bareSeedPropName, buildPropTypeOverrides, propLiteralDefaultGo, resolvePropGoType, seedPassthroughPropName } from '../props/prop-types.ts'
 import { isMathMinMax, propMemberSeedGoType } from '../value/prop-member-seed.ts'
 import { convertInitialValue, seedFallbackVar } from '../value/value-lowering.ts'
 import { typeInfoToGo } from './type-codegen.ts'
@@ -330,7 +329,7 @@ export function collectPropFallbackVars(ctx: GoEmitContext, ir: ComponentIR): Ma
     const param = ir.metadata.propsParams.find(p => p.name === match.propName)
     if (!param) continue
     // A destructure default already wins via applyGoFallback.
-    if (goPropDefault(param.defaultValue) !== null) continue
+    if (propLiteralDefaultGo(param) !== null) continue
     // `PropFallbackVar.fieldName` is read off the INPUT struct (every
     // consumer does `in.${fieldName}`, #2525) — caller-facing, not
     // `match.propName`'s local binding.

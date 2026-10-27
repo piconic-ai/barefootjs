@@ -3685,6 +3685,26 @@
         "text"
       ]
     },
+    "destructure-default-explicit-falsy": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:boolean",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "destructure-default-expression": {
       "kinds": [
         "call",
@@ -3698,6 +3718,36 @@
         "literal:boolean",
         "logical:??",
         "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "destructure-default-large-number": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "destructure-default-literal-spelling": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:number",
+        "literal:string"
       ],
       "contexts": [
         "attribute",

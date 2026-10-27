@@ -1126,10 +1126,11 @@ export function Label({ label }: { label?: string }) {
       expect(types).not.toContain('\\\\')
     })
 
-    test('destructure DEFAULT keeps the concrete-typed applyGoFallback baking (#2259)', () => {
+    test('destructure DEFAULT applies on a nil field only, not on an explicit zero', () => {
       // `{ size = 5 }` never sees a nullish binding in JS (the default
-      // already applied), so it must stay excluded from the nillable flip
-      // and keep the zero-check baking on the concrete field.
+      // already applied), but the default applies to an absent prop only:
+      // an explicit `0` stays `0`. The field is nillable so the two differ,
+      // and the constructor applies the default to a nil field.
       const adapter = new GoTemplateAdapter()
       const ir = compileToIR(`
 "use client"
@@ -1142,9 +1143,9 @@ export function Counter({ size = 5 }: { size?: number }) {
 `)
       const result = adapter.generate(ir)
       const types = result.types!
-      expect(types).toContain('Size float64')
-      expect(types).not.toContain('Size interface{}')
-      expect(types).toContain('Size: func() float64 { if in.Size == 0 { return 5 }; return in.Size }(),')
+      expect(types).toContain('Size interface{}')
+      expect(types).toContain('if in.Size == nil {\n\t\tin.Size = 5.0\n\t}')
+      expect(types).not.toContain('in.Size == 0')
     })
 
     test('skips hoist for zero-equivalent string and float fallbacks (#1423 review)', () => {
@@ -2802,9 +2803,10 @@ function C({ rows }: { rows?: number }) {
 }
 `
       const { template } = compileAndGenerate(source)
-      expect(template).toContain('{{if ne .Rows nil}}rows="{{.Rows}}"{{end}}')
+      // A boxed number is spelled through `bf_text` (JS `String(n)`).
+      expect(template).toContain('{{if ne .Rows nil}}rows="{{bf_text .Rows}}"{{end}}')
       // Must NOT emit the bare unconditional form.
-      expect(template).not.toMatch(/(?<!if ne \.Rows nil}})rows="\{\{\.Rows\}\}"/)
+      expect(template).not.toMatch(/(?<!if ne \.Rows nil}})rows="\{\{bf_text \.Rows\}\}"/)
     })
 
     test('leaves a concrete/defaulted attr unconditional (scope did not widen)', () => {

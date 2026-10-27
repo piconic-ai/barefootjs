@@ -54,7 +54,7 @@ type BodyLiveChildInput struct {
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
 	Value float64
-	Label string
+	Label interface{}
 	OnPick interface{}
 }
 
@@ -70,7 +70,7 @@ type BodyLiveChildProps struct {
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Value float64 `json:"value"`
-	Label string `json:"label"`
+	Label interface{} `json:"label"`
 	OnPick interface{} `json:"onPick"`
 	Seen float64 `json:"-"`
 	Doubled interface{} `json:"-"`
@@ -174,7 +174,7 @@ type LiveChildInput struct {
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
 	Value float64
-	Label string
+	Label interface{}
 	OnPick interface{}
 }
 
@@ -190,7 +190,7 @@ type LiveChildProps struct {
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Value float64 `json:"value"`
-	Label string `json:"label"`
+	Label interface{} `json:"label"`
 	OnPick interface{} `json:"onPick"`
 	Seen float64 `json:"-"`
 	Doubled interface{} `json:"-"`
@@ -1015,9 +1015,16 @@ func NewBodyLiveChildProps(in BodyLiveChildInput) BodyLiveChildProps {
 		scopeID = "BodyLiveChild_" + randomID(6)
 	}
 
+	bfCallerLabel := in.Label
+	if in.Label == nil {
+		in.Label = "none"
+	}
+
 	bfCallerProps := map[string]interface{}{}
 	bfCallerProps["value"] = in.Value
-	bfCallerProps["label"] = in.Label
+	if bfCallerLabel != nil {
+		bfCallerProps["label"] = bfCallerLabel
+	}
 	bfCallerProps["onPick"] = in.OnPick
 
 	return BodyLiveChildProps{
@@ -1026,7 +1033,7 @@ func NewBodyLiveChildProps(in BodyLiveChildInput) BodyLiveChildProps {
 		BfMount: in.BfMount,
 		BfCallerProps: bfCallerProps,
 		Value: in.Value,
-		Label: func() string { if in.Label == "" { return "none" }; return in.Label }(),
+		Label: func() interface{} { if in.Label == nil { return "none" }; return in.Label }(),
 		OnPick: in.OnPick,
 		Seen: 0,
 		Doubled: in.Value * 2,
@@ -1055,7 +1062,7 @@ func NewBodyDestructuredPropsLiveProps(in BodyDestructuredPropsLiveInput) BodyDe
 			BfParent: scopeID,
 			BfMount: "s6",
 			Value: 1,
-			Label: bf.String(bf.EvalExpr("{\"kind\":\"conditional\",\"test\":{\"kind\":\"identifier\",\"name\":\"named\"},\"consequent\":{\"kind\":\"literal\",\"value\":\"named\"},\"alternate\":{\"kind\":\"identifier\",\"name\":\"undefined\"}}", map[string]any{"named": false})),
+			Label: bf.EvalExpr("{\"kind\":\"conditional\",\"test\":{\"kind\":\"identifier\",\"name\":\"named\"},\"consequent\":{\"kind\":\"literal\",\"value\":\"named\"},\"alternate\":{\"kind\":\"identifier\",\"name\":\"undefined\"}}", map[string]any{"named": false}),
 		}),
 	}
 }
@@ -1126,9 +1133,16 @@ func NewLiveChildProps(in LiveChildInput) LiveChildProps {
 		scopeID = "LiveChild_" + randomID(6)
 	}
 
+	bfCallerLabel := in.Label
+	if in.Label == nil {
+		in.Label = "none"
+	}
+
 	bfCallerProps := map[string]interface{}{}
 	bfCallerProps["value"] = in.Value
-	bfCallerProps["label"] = in.Label
+	if bfCallerLabel != nil {
+		bfCallerProps["label"] = bfCallerLabel
+	}
 	bfCallerProps["onPick"] = in.OnPick
 
 	return LiveChildProps{
@@ -1137,7 +1151,7 @@ func NewLiveChildProps(in LiveChildInput) LiveChildProps {
 		BfMount: in.BfMount,
 		BfCallerProps: bfCallerProps,
 		Value: in.Value,
-		Label: func() string { if in.Label == "" { return "none" }; return in.Label }(),
+		Label: func() interface{} { if in.Label == nil { return "none" }; return in.Label }(),
 		OnPick: in.OnPick,
 		Seen: 0,
 		Doubled: in.Value * 2,
@@ -1166,7 +1180,7 @@ func NewDestructuredPropsLiveProps(in DestructuredPropsLiveInput) DestructuredPr
 			BfParent: scopeID,
 			BfMount: "s6",
 			Value: 1,
-			Label: bf.String(bf.EvalExpr("{\"kind\":\"conditional\",\"test\":{\"kind\":\"identifier\",\"name\":\"named\"},\"consequent\":{\"kind\":\"literal\",\"value\":\"named\"},\"alternate\":{\"kind\":\"identifier\",\"name\":\"undefined\"}}", map[string]any{"named": false})),
+			Label: bf.EvalExpr("{\"kind\":\"conditional\",\"test\":{\"kind\":\"identifier\",\"name\":\"named\"},\"consequent\":{\"kind\":\"literal\",\"value\":\"named\"},\"alternate\":{\"kind\":\"identifier\",\"name\":\"undefined\"}}", map[string]any{"named": false}),
 		}),
 	}
 }

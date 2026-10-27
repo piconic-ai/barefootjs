@@ -9324,6 +9324,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-large-number",
+              "limitations": [
+                "bare-number-prop-perl-precision"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-renamed-callback",
               "limitations": [
                 "destructure-default-callback-unseeded"
@@ -10293,6 +10299,12 @@
               "fixture": "destructure-default-body-renamed-callback",
               "limitations": [
                 "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-large-number",
+              "limitations": [
+                "bare-number-prop-perl-precision"
               ]
             },
             {
@@ -12041,6 +12053,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-large-number",
+              "limitations": [
+                "bare-number-prop-perl-precision"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-renamed-callback",
               "limitations": [
                 "destructure-default-callback-unseeded"
@@ -12728,6 +12746,12 @@
               "fixture": "destructure-default-body-renamed-callback",
               "limitations": [
                 "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-large-number",
+              "limitations": [
+                "bare-number-prop-perl-precision"
               ]
             },
             {
@@ -21579,6 +21603,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-large-number",
+              "limitations": [
+                "bare-number-prop-perl-precision"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -21894,6 +21924,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "destructure-default-large-number",
+              "limitations": [
+                "bare-number-prop-perl-precision"
               ]
             },
             {

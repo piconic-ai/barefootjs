@@ -3028,6 +3028,20 @@
           }
         }
       },
+      "destructure-default-large-number": {
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "bare-number-prop-perl-precision"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "bare-number-prop-perl-precision"
+          ]
+        }
+      },
       "destructure-default-param-computed-array": {
         "go-template": {
           "kind": "refusal",
@@ -8229,6 +8243,10 @@
         "description": "A renamed body destructure default computing an array from an earlier binding takes the computed…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-computed-array.ts"
       },
+      "destructure-default-large-number": {
+        "description": "An integral destructure default past int64 applies 100000000000000000000 when absent and keeps an…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-large-number.ts"
+      },
       "destructure-default-param-computed-array": {
         "description": "A parameter destructure default computing an array from an earlier binding takes the computed array",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-computed-array.ts"
@@ -8771,6 +8789,20 @@
         "BF056"
       ]
     },
+    "bare-number-prop-perl-precision": {
+      "title": "A bare number prop with more than 15 significant digits",
+      "kind": "silent",
+      "given": "a number prop (or its literal destructure default) of 1e15 or more, such as `{ b = 1e20 }`, read bare in text or attribute position",
+      "expected": "JS stringifies it with `Number::toString` (`100000000000000000000`)",
+      "actual": "renders Perl's `%.15g` spelling (`1e+20`)",
+      "fixtures": [
+        "destructure-default-large-number"
+      ],
+      "adapters": [
+        "mojolicious",
+        "xslate"
+      ]
+    },
     "boolean-in-static-loop-item": {
       "title": "Boolean field in a static loop item",
       "kind": "refusal",
@@ -8943,27 +8975,6 @@
         "pebble",
         "twig",
         "xslate"
-      ]
-    },
-    "defaulted-prop-explicit-empty": {
-      "title": "An explicitly empty value for a prop with a destructure default",
-      "kind": "silent",
-      "given": "a destructured prop with a default (`{ tag = 'z' }`, `{ n = 2 }`) passed its type's empty value explicitly (`tag: ''`, `n: 0`)",
-      "expected": "the explicit value wins: the default applies only to an absent prop, so the binding is `''` / `0`",
-      "actual": "renders the default (`'z'` / `2`), since the input struct field cannot tell an explicit empty string or zero from an absent prop",
-      "fixtures": [
-        "destructure-default-body-chain-order",
-        "destructure-default-body-renamed",
-        "destructure-default-chain",
-        "destructure-default-param-chain-order",
-        "destructure-default-param-renamed",
-        "number-prop-fraction-default",
-        "signal-computed-seed-sibling-fallbacks-destructured",
-        "signal-seed-dependent-default-nullish-literal",
-        "signal-seed-dependent-default-nullish-literal-body"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "derived-object-literal-signal": {

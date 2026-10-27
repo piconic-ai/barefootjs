@@ -441,7 +441,10 @@ export function goPropDefault(defaultValue: string | undefined): string | null {
  * the input is the zero value for its type; the comparison is picked from the
  * fallback literal's shape.
  *
- * Asymmetry on bool/zero defaults is intentional (Go has no
+ * Only for a concrete field: an optional scalar prop with a non-zero literal
+ * default takes a nillable field instead and a nil check
+ * (`appliesDefaultOnNil`, `defaultedBindingGo`). On a concrete field the
+ * asymmetry on bool/zero defaults is unavoidable (Go has no
  * unset-vs-explicit-false distinction at the struct-field level):
  *   - `true` default → `(in.X || true)`, which is ALWAYS `true`; a caller
  *     wanting `false` must set it after `NewXxxProps`, not via the input struct.
@@ -453,8 +456,10 @@ export function applyGoFallback(ref: string, fallback: string): string {
   if (fallback === 'true' || fallback === 'false') {
     return fallback === 'true' ? `(${ref} || true)` : ref
   }
-  if (/^-?\d+(\.\d+)?$/.test(fallback)) {
-    if (fallback === '0') return ref
+  // A number spelled from its parsed value (`propLiteralDefaultGo`) is a
+  // float constant and may take an exponent (`0.0`, `1e+21`).
+  if (/^-?\d+(\.\d+)?(e[+-]?\d+)?$/.test(fallback)) {
+    if (Number(fallback) === 0) return ref
     return `func() float64 { if ${ref} == 0 { return ${fallback} }; return ${ref} }()`
   }
   // String fallback (quoted).
