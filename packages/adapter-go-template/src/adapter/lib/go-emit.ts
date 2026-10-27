@@ -456,7 +456,9 @@ export function applyGoFallback(ref: string, fallback: string): string {
   if (fallback === 'true' || fallback === 'false') {
     return fallback === 'true' ? `(${ref} || true)` : ref
   }
-  if (/^-?\d+(\.\d+)?$/.test(fallback)) {
+  // A number spelled from its parsed value (`propLiteralDefaultGo`) may take
+  // an exponent (`1e+21`).
+  if (/^-?\d+(\.\d+)?(e[+-]?\d+)?$/.test(fallback)) {
     if (fallback === '0') return ref
     return `func() float64 { if ${ref} == 0 { return ${fallback} }; return ${ref} }()`
   }

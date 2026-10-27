@@ -71,3 +71,27 @@ export function Box({ tag = 'z', n = 2, on = true, blank = '', zero = 0, off = f
     expect(goTypes).toContain('if bfCallerTag != nil {\n\t\tbfCallerProps["tag"] = bfCallerTag')
   })
 })
+
+describe('a literal default is emitted from its parsed value, not its spelling', () => {
+  // Every spelling the nil-boxing decision accepts must also be emitted: a
+  // source-text translation that knew only decimal numbers refused `1e3`
+  // with BF101 ("reads an earlier prop") and spelled `'xA'` verbatim.
+  test.each([
+    ['1e3', 'number', '1000'],
+    ['0x10', 'number', '16'],
+    ['.5', 'number', '0.5'],
+    ['1_000', 'number', '1000'],
+    ['-1e3', 'number', '-1000'],
+    ["'x\\u0041'", 'string', '"xA"'],
+    ['`tpl`', 'string', '"tpl"'],
+  ])('`n = %s` compiles and applies its value to a nil field', (spelling, tsType, goValue) => {
+    const goTypes = types(`
+export function T({ n = ${spelling} }: { n?: ${tsType} }) {
+  return <p>{n}</p>
+}
+`)
+    expect(inputStruct(goTypes)).toMatch(/\bN interface\{\}/)
+    expect(goTypes).toContain(`if in.N == nil {\n\t\tin.N = ${goValue}\n\t}`)
+    expect(goTypes).toContain(`N: func() interface{} { if in.N == nil { return ${goValue} }; return in.N }(),`)
+  })
+})

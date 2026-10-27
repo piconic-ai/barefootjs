@@ -18,7 +18,7 @@ import {
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
-import { applyGoFallback, goPropDefault } from '../lib/go-emit.ts'
+import { applyGoFallback } from '../lib/go-emit.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { literalNumberValue, typeInfoToGo } from '../type/type-codegen.ts'
 import { evalExprGo, evaluatedAsGoType } from '../memo/memo-compute.ts'
@@ -613,7 +613,7 @@ export function defaultedBindingGo(
   propsParams: IRMetadata['propsParams'],
   propTypeOverrides: Map<string, string>,
 ): string | null {
-  const paramDefault = goPropDefault(param.defaultValue)
+  const paramDefault = propLiteralDefaultGo(param)
   if (paramDefault === null) return sharedDependentDefaultGo(ctx, param, propsParams, propTypeOverrides)
   const inputField = capitalizeFieldName(param.sourceName ?? param.name)
   const outputType = resolvePropGoType(ctx, param, propTypeOverrides)
@@ -736,7 +736,7 @@ function dependentDefaultGo(
 ): string | null {
   const parsed = param.parsed!
   // A literal default (`{ a = 'x' }`) is its own Go literal.
-  if (param.defaultParts === undefined) return goPropDefault(param.defaultValue)
+  if (param.defaultParts === undefined) return propLiteralDefaultGo(param)
   if (parsed.kind === 'identifier') {
     const ref = propsParams.find(p => !p.isRest && p.name === parsed.name)
     if (!ref) return null
@@ -846,14 +846,42 @@ export function appliesDefaultOnNil(param: IRMetadata['propsParams'][number]): b
  * absent prop and the default render the same.
  */
 function hasNonZeroLiteralDefault(param: IRMetadata['propsParams'][number]): boolean {
+  if (param.defaultValue == null) return false
+  const value = scalarLiteralDefault(param)
+  return value !== null && value !== '' && value !== 0 && value !== false
+}
+
+/**
+ * The value of `param`'s destructure default when it is a scalar literal
+ * (`'x'`, `2`, `-1e3`, `0x10`, `true`), read off the parsed tree; null for
+ * any other shape. The single classification both the nil-boxing decision
+ * ({@link hasNonZeroLiteralDefault}) and the Go literal it applies
+ * ({@link propLiteralDefaultGo}) read, so a spelling one accepts the other
+ * can always emit.
+ */
+function scalarLiteralDefault(param: IRMetadata['propsParams'][number]): string | number | boolean | null {
   const parsed = param.parsed
-  if (param.defaultValue == null || !parsed) return false
+  if (!parsed) return null
   const number = literalNumberValue(parsed)
-  if (number !== null) return number !== 0
-  if (parsed.kind !== 'literal') return false
-  if (parsed.literalType === 'string') return parsed.value !== ''
-  if (parsed.literalType === 'boolean') return parsed.value === true
-  return false
+  if (number !== null) return number
+  if (parsed.kind !== 'literal') return null
+  if (parsed.literalType === 'string' || parsed.literalType === 'boolean') return parsed.value
+  return null
+}
+
+/**
+ * The Go literal of `param`'s scalar literal destructure default, spelled from
+ * its parsed value rather than its source text: `1e3`, `0x10`, `.5`, `1_000`
+ * all yield the same number, and a string default carries its decoded value
+ * (`'a\nb'` holds a newline), re-quoted for Go. Null when the default is not
+ * a scalar literal or has no finite Go spelling.
+ */
+export function propLiteralDefaultGo(param: IRMetadata['propsParams'][number]): string | null {
+  const value = scalarLiteralDefault(param)
+  if (typeof value === 'string') return JSON.stringify(value)
+  if (typeof value === 'boolean') return value ? 'true' : 'false'
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value)
+  return null
 }
 
 /**

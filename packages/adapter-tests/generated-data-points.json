@@ -2982,6 +2982,112 @@
       }
     }
   ],
+  "destructure-default-literal-spelling": [
+    {
+      "name": "gen:n:absent",
+      "props": {
+        "h": 0,
+        "f": 0,
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7,
+        "h": 0,
+        "f": 0,
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890,
+        "h": 0,
+        "f": 0,
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:h:absent",
+      "props": {
+        "n": 0,
+        "f": 0,
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:h:negative",
+      "props": {
+        "n": 0,
+        "h": -7,
+        "f": 0,
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:h:large",
+      "props": {
+        "n": 0,
+        "h": 1234567890,
+        "f": 0,
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:f:absent",
+      "props": {
+        "n": 0,
+        "h": 0,
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:f:negative",
+      "props": {
+        "n": 0,
+        "h": 0,
+        "f": -7,
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:f:large",
+      "props": {
+        "n": 0,
+        "h": 0,
+        "f": 1234567890,
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:s:absent",
+      "props": {
+        "n": 0,
+        "h": 0,
+        "f": 0
+      }
+    },
+    {
+      "name": "gen:s:markup",
+      "props": {
+        "n": 0,
+        "h": 0,
+        "f": 0,
+        "s": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:s:multibyte",
+      "props": {
+        "n": 0,
+        "h": 0,
+        "f": 0,
+        "s": "日本語"
+      }
+    }
+  ],
   "destructure-default-param-chain-order": [
     {
       "name": "gen:a:absent",
