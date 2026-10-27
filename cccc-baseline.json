@@ -48,9 +48,6 @@
       "checkImportedLoopChildComponents/visit": [
         32
       ],
-      "collectStaticChildInstancesRecursive": [
-        59
-      ],
       "convertExpressionToGo": [
         27
       ],
