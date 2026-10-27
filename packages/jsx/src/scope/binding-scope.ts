@@ -30,6 +30,13 @@
  */
 
 /**
+ * The identifier a template reads as the component's props object:
+ * `props.X` is the component's prop `X` while no binding shadows `props`
+ * (#3693).
+ */
+export const PROPS_OBJECT_IDENTIFIER = 'props'
+
+/**
  * How a name inside a `ScopeFrame` came to be bound — the row shapes
  * (`'item'`/`'index'`/`'destructure'`/`'preamble'`) for `'loop-row'` frames,
  * `'param'` for `'callback'` frames. One shared type because both frame
@@ -206,9 +213,25 @@ export class BindingScope {
     return false
   }
 
-  /** Resolve string typing at this position, respecting the nearest binding. */
+  /**
+   * Whether a binding here shadows the component's props object
+   * ({@link PROPS_OBJECT_IDENTIFIER}): a `.map((props) => …)` row, a
+   * destructured `({ props })` field, a preamble local or a callback param.
+   * `props.X` then reads that binding's member, not the component's prop
+   * `X` (#3693).
+   */
+  shadowsPropsObject(): boolean {
+    return this.isBound(PROPS_OBJECT_IDENTIFIER)
+  }
+
+  /**
+   * Resolve string typing at this position, respecting the nearest binding.
+   * `componentProperty`: `name` is read as `props.<name>`, which is the
+   * component's prop only while no binding shadows `props`; a shadowing
+   * binding's member has no typing here.
+   */
   isStringValueName(name: string, outer: (name: string) => boolean, componentProperty = false): boolean {
-    if (componentProperty) return outer(name)
+    if (componentProperty) return !this.shadowsPropsObject() && outer(name)
     const hit = this.lookup(name)
     return hit ? hit.binding.stringValue === true : outer(name)
   }

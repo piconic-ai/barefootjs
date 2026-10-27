@@ -171,7 +171,14 @@ function renderBindingMemberRead(
 ): string | null {
   // SolidJS-style props pattern: props.xxx -> .Xxx (or $.Xxx inside a loop,
   // since props live on the root data struct, not the iteration element).
-  if (object.kind === 'identifier' && host.ctx.state.propsObjectName && object.name === host.ctx.state.propsObjectName) {
+  // A loop row or callback binding of the same name shadows the props
+  // object (`props.rows.map((props) => …)`, #3693).
+  if (
+    object.kind === 'identifier' &&
+    host.ctx.state.propsObjectName &&
+    object.name === host.ctx.state.propsObjectName &&
+    !host.isBound(object.name)
+  ) {
     return host.propKeyFieldRef(property)
   }
 

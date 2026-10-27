@@ -4337,6 +4337,229 @@
       }
     }
   ],
+  "loop-param-named-props-member-props-object": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": [],
+        "groups": [
+          {
+            "id": "g1",
+            "props": {
+              "label": "x"
+            }
+          },
+          {
+            "id": "g2",
+            "props": {
+              "label": "y"
+            }
+          }
+        ],
+        "label": "ROOT"
+      }
+    },
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "rows": [
+          {
+            "label": "a",
+            "tone": "warm"
+          },
+          {
+            "label": "b",
+            "tone": "cool"
+          }
+        ],
+        "groups": [],
+        "label": "ROOT"
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "rows": [
+          {
+            "label": "a",
+            "tone": "warm"
+          },
+          {
+            "label": "b",
+            "tone": "cool"
+          }
+        ],
+        "groups": [
+          {
+            "id": "g1",
+            "props": {
+              "label": "x"
+            }
+          },
+          {
+            "id": "g2",
+            "props": {
+              "label": "y"
+            }
+          }
+        ],
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "rows": [
+          {
+            "label": "a",
+            "tone": "warm"
+          },
+          {
+            "label": "b",
+            "tone": "cool"
+          }
+        ],
+        "groups": [
+          {
+            "id": "g1",
+            "props": {
+              "label": "x"
+            }
+          },
+          {
+            "id": "g2",
+            "props": {
+              "label": "y"
+            }
+          }
+        ],
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "rows": [
+          {
+            "label": "a",
+            "tone": "warm"
+          },
+          {
+            "label": "b",
+            "tone": "cool"
+          }
+        ],
+        "groups": [
+          {
+            "id": "g1",
+            "props": {
+              "label": "x"
+            }
+          },
+          {
+            "id": "g2",
+            "props": {
+              "label": "y"
+            }
+          }
+        ],
+        "label": "日本語"
+      }
+    },
+    {
+      "name": "gen:tone:empty",
+      "props": {
+        "rows": [
+          {
+            "label": "a",
+            "tone": "warm"
+          },
+          {
+            "label": "b",
+            "tone": "cool"
+          }
+        ],
+        "groups": [
+          {
+            "id": "g1",
+            "props": {
+              "label": "x"
+            }
+          },
+          {
+            "id": "g2",
+            "props": {
+              "label": "y"
+            }
+          }
+        ],
+        "label": "ROOT",
+        "tone": ""
+      }
+    },
+    {
+      "name": "gen:tone:markup",
+      "props": {
+        "rows": [
+          {
+            "label": "a",
+            "tone": "warm"
+          },
+          {
+            "label": "b",
+            "tone": "cool"
+          }
+        ],
+        "groups": [
+          {
+            "id": "g1",
+            "props": {
+              "label": "x"
+            }
+          },
+          {
+            "id": "g2",
+            "props": {
+              "label": "y"
+            }
+          }
+        ],
+        "label": "ROOT",
+        "tone": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:tone:multibyte",
+      "props": {
+        "rows": [
+          {
+            "label": "a",
+            "tone": "warm"
+          },
+          {
+            "label": "b",
+            "tone": "cool"
+          }
+        ],
+        "groups": [
+          {
+            "id": "g1",
+            "props": {
+              "label": "x"
+            }
+          },
+          {
+            "id": "g2",
+            "props": {
+              "label": "y"
+            }
+          }
+        ],
+        "label": "ROOT",
+        "tone": "日本語"
+      }
+    }
+  ],
   "loop-param-prop-alias-name-collision": [
     {
       "name": "gen:values:empty",

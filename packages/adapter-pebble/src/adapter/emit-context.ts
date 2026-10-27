@@ -59,6 +59,9 @@ export interface PebbleEmitContext {
    */
   _rootPropReadName(name: string): string
 
+  /** Whether `expr` reads the component's props object here (`isRootPropsObject`, #3693). */
+  _isRootPropsObject(expr: ParsedExpr): boolean
+
   /**
    * Resolve a static property access on a module object-literal const
    * (`variantClasses.ghost`) to its Pebble value at compile time, or null.
@@ -92,7 +95,7 @@ export interface PebbleEmitContext {
    * need; see `pebble-adapter.ts`'s file header for why this is a real
    * divergence here, unlike Jinja, which never needed this gate).
    */
-  _isStringValueName(name: string): boolean
+  _isStringValueName(name: string, componentProperty?: boolean): boolean
 }
 
 /**

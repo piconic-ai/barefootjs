@@ -5970,6 +5970,40 @@
         "text"
       ]
     },
+    "loop-param-named-props-member-positions": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:null",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-param-named-props-member-props-object": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-param-prop-alias-name-collision": {
       "kinds": [
         "identifier",

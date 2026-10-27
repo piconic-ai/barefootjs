@@ -55,6 +55,7 @@ import {
   nestedCallbackRefusal,
   filterPredicateShapeRefusal,
   isUnloweredCall,
+  isRootPropsObject,
   unloweredCallRefusal,
   type CallbackLoweringOptions,
   type PredicateMethod,
@@ -93,11 +94,12 @@ function unusedIsStringName(_n: string): boolean {
  * (#2886) — `ErbFilterEmitter` lacked this decision entirely (#2879's
  * cross-adapter follow-up), silently reaching `v[:props][:x]`, which is
  * `nil[...]` at runtime (`NoMethodError`). Returns null for any other
- * receiver so callers fall through to their generic member lowering —
- * `props.a.b` flattens only the inner hop.
+ * receiver, including a `props` a binding shadows (`isBound`, #3693), so
+ * callers fall through to their generic member lowering — `props.a.b`
+ * flattens only the inner hop.
  */
-function flattenPropsMember(object: ParsedExpr, property: string): string | null {
-  if (object.kind === 'identifier' && object.name === 'props') return `v[${rubySymbolLiteral(property)}]`
+function flattenPropsMember(object: ParsedExpr, property: string, isBound: (name: string) => boolean): string | null {
+  if (isRootPropsObject(object, isBound)) return `v[${rubySymbolLiteral(property)}]`
   return null
 }
 
@@ -208,7 +210,9 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
-    const flat = flattenPropsMember(object, property)
+    // This predicate's own param, an enclosing callback's or an enclosing
+    // loop row's binding spelled `props` is that binding (#3693).
+    const flat = flattenPropsMember(object, property, n => n === this.param || this.outerLocals.has(n) || this.isLoopBoundOuter(n))
     if (flat !== null) return flat
     // `.length` needs no special higher-order form here — see the file
     // docstring's simplification (2): `.select { ... }.length` just works
@@ -466,7 +470,7 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
-    const flat = flattenPropsMember(object, property)
+    const flat = flattenPropsMember(object, property, n => this.ctx.isLoopBoundName(n))
     if (flat !== null) return flat
     // Static property access on a module object-literal const
     // (`variantClasses.ghost`) resolves at compile time — the generic Hash

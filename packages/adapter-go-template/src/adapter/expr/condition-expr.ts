@@ -292,7 +292,11 @@ function renderFilterMember(
   if (
     expr.object.kind === 'identifier' &&
     host.ctx.state.propsObjectName &&
-    expr.object.name === host.ctx.state.propsObjectName
+    expr.object.name === host.ctx.state.propsObjectName &&
+    // The predicate's own param or an enclosing binding of that name
+    // shadows the props object (#3693).
+    expr.object.name !== param &&
+    !host.hasScopeBinding(expr.object.name)
   ) {
     return host.filterRootFieldRef(expr.property)
   }
@@ -634,7 +638,13 @@ function renderConditionMember(
     }
   }
 
-  if (expr.object.kind === 'identifier' && host.ctx.state.propsObjectName && expr.object.name === host.ctx.state.propsObjectName) {
+  if (
+    expr.object.kind === 'identifier' &&
+    host.ctx.state.propsObjectName &&
+    expr.object.name === host.ctx.state.propsObjectName &&
+    // A loop row binding of that name shadows the props object (#3693).
+    !host.hasScopeBinding(expr.object.name)
+  ) {
     return plain(host.propKeyFieldRef(expr.property))
   }
 

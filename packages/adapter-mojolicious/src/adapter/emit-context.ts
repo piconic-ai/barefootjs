@@ -58,6 +58,9 @@ export interface MojoEmitContext {
    */
   rootPropReadName(name: string): string
 
+  /** Whether `expr` reads the component's props object here (`isRootPropsObject`, #3693). */
+  isRootPropsObject(expr: ParsedExpr): boolean
+
   /**
    * Resolve a static property access on a module object-literal const
    * (`variantClasses.ghost`) to its Perl value at compile time, or null.

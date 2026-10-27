@@ -4775,7 +4775,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private nillablePropFieldRef(propName: string, viaPropsObject: boolean): string | null {
     if (!this.state.nillablePropNames.has(propName)) return null
-    if (viaPropsObject) return this.propKeyFieldRef(propName)
+    if (viaPropsObject) {
+      // A loop row or callback binding of the props object's name shadows
+      // it (#3693): `props.<key>` reads that binding's member.
+      if (this.state.propsObjectName !== null && this.scope.isBound(this.state.propsObjectName)) return null
+      return this.propKeyFieldRef(propName)
+    }
     if (this.scope.lookup(propName) !== null) return null
     return this.rootFieldRef(propName)
   }
