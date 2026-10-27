@@ -5398,6 +5398,20 @@
           }
         }
       },
+      "memo-division-zero-divisor": {
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "memo-non-finite-quotient"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "memo-non-finite-quotient"
+          ]
+        }
+      },
       "memo-prop-read-beside-signal-nullish-seed": {
         "go-template": {
           "kind": "render",
@@ -8231,6 +8245,10 @@
         "description": "A `.map()` projection calling an unlowered method — DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-opaque-projection.ts"
       },
+      "memo-division-zero-divisor": {
+        "description": "A memo dividing by a literal or runtime zero renders Infinity, -Infinity or NaN",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-division-zero-divisor.ts"
+      },
       "memo-prop-read-beside-signal-nullish-seed": {
         "description": "a memo reading a prop raw does not take a sibling signal seed’s `??` fallback",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-prop-read-beside-signal-nullish-seed.ts"
@@ -9081,6 +9099,20 @@
         "mojolicious",
         "pebble",
         "twig",
+        "xslate"
+      ]
+    },
+    "memo-non-finite-quotient": {
+      "title": "A memo whose quotient is an infinity",
+      "kind": "silent",
+      "given": "a `createMemo` dividing a nonzero number by a literal or runtime zero (`count() / 0`, `count() / props.zero`), read directly or through another memo, in text or attribute position",
+      "expected": "JS stringifies the quotient as `Infinity` / `-Infinity`",
+      "actual": "renders the host spelling `Inf` / `-Inf`",
+      "fixtures": [
+        "memo-division-zero-divisor"
+      ],
+      "adapters": [
+        "mojolicious",
         "xslate"
       ]
     },

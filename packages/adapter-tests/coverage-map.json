@@ -7431,6 +7431,26 @@
         "text"
       ]
     },
+    "memo-division-zero-divisor": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:/",
+        "literal:number",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "memo-function-expression": {
       "kinds": [
         "binary",

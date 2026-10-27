@@ -4047,6 +4047,12 @@
               ]
             },
             {
+              "fixture": "memo-division-zero-divisor",
+              "limitations": [
+                "memo-non-finite-quotient"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -4398,6 +4404,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "memo-division-zero-divisor",
+              "limitations": [
+                "memo-non-finite-quotient"
               ]
             },
             {
@@ -5950,6 +5962,12 @@
               ]
             },
             {
+              "fixture": "memo-division-zero-divisor",
+              "limitations": [
+                "memo-non-finite-quotient"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -6691,6 +6709,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-division-zero-divisor",
+              "limitations": [
+                "memo-non-finite-quotient"
               ]
             },
             {
@@ -9042,6 +9066,12 @@
               ]
             },
             {
+              "fixture": "memo-division-zero-divisor",
+              "limitations": [
+                "memo-non-finite-quotient"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -9981,6 +10011,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-division-zero-divisor",
+              "limitations": [
+                "memo-non-finite-quotient"
               ]
             },
             {
@@ -11633,6 +11669,12 @@
               ]
             },
             {
+              "fixture": "memo-division-zero-divisor",
+              "limitations": [
+                "memo-non-finite-quotient"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -12296,6 +12338,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-division-zero-divisor",
+              "limitations": [
+                "memo-non-finite-quotient"
               ]
             },
             {
@@ -14565,6 +14613,12 @@
               ]
             },
             {
+              "fixture": "memo-division-zero-divisor",
+              "limitations": [
+                "memo-non-finite-quotient"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -15366,6 +15420,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-division-zero-divisor",
+              "limitations": [
+                "memo-non-finite-quotient"
               ]
             },
             {
@@ -16150,6 +16210,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "memo-division-zero-divisor",
+              "limitations": [
+                "memo-non-finite-quotient"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -16201,6 +16267,12 @@
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "memo-division-zero-divisor",
+              "limitations": [
+                "memo-non-finite-quotient"
               ]
             },
             {
@@ -18783,6 +18855,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "memo-division-zero-divisor",
+              "limitations": [
+                "memo-non-finite-quotient"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -18812,6 +18890,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "memo-division-zero-divisor",
+              "limitations": [
+                "memo-non-finite-quotient"
+              ]
+            },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
@@ -19137,7 +19221,16 @@
         "go-template": {},
         "jinja": {},
         "minijinja": {},
-        "mojolicious": {},
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "memo-division-zero-divisor",
+              "limitations": [
+                "memo-non-finite-quotient"
+              ]
+            }
+          ]
+        },
         "pebble": {},
         "twig": {
           "gaps": [
@@ -19149,7 +19242,16 @@
             }
           ]
         },
-        "xslate": {}
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "memo-division-zero-divisor",
+              "limitations": [
+                "memo-non-finite-quotient"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -20880,6 +20982,12 @@
               ]
             },
             {
+              "fixture": "memo-division-zero-divisor",
+              "limitations": [
+                "memo-non-finite-quotient"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -21189,6 +21297,12 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-division-zero-divisor",
+              "limitations": [
+                "memo-non-finite-quotient"
               ]
             },
             {
@@ -23869,7 +23983,16 @@
         "go-template": {},
         "jinja": {},
         "minijinja": {},
-        "mojolicious": {},
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "memo-division-zero-divisor",
+              "limitations": [
+                "memo-non-finite-quotient"
+              ]
+            }
+          ]
+        },
         "pebble": {},
         "twig": {
           "gaps": [
@@ -23881,7 +24004,16 @@
             }
           ]
         },
-        "xslate": {}
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "memo-division-zero-divisor",
+              "limitations": [
+                "memo-non-finite-quotient"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",

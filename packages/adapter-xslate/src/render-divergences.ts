@@ -35,6 +35,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 instead of silently rendering empty — see
 // `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A memo whose quotient is an infinity (`count() / 0`, or a runtime zero
+  // divisor), read directly or through another memo: renders Perl's `Inf` /
+  // `-Inf` where JS renders `Infinity` / `-Infinity`. `NaN` matches (#3711).
+  'memo-division-zero-divisor': { limitation: 'memo-non-finite-quotient' },
   // `.at(i)` on half of a surrogate pair: the runtime string can't hold a
   // lone surrogate, so it returns U+FFFD (halves compare equal, and
   // rejoining them renders `��` instead of the emoji).

@@ -4686,6 +4686,43 @@
       }
     }
   ],
+  "memo-division-zero-divisor": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0,
+        "zero": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7,
+        "zero": 0
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890,
+        "zero": 0
+      }
+    },
+    {
+      "name": "gen:zero:negative",
+      "props": {
+        "n": 2,
+        "zero": -7
+      }
+    },
+    {
+      "name": "gen:zero:large",
+      "props": {
+        "n": 2,
+        "zero": 1234567890
+      }
+    }
+  ],
   "memo-function-expression": [
     {
       "name": "gen:base:zero",
