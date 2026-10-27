@@ -146,6 +146,14 @@ export const renderDivergences: RenderDivergences = {
   // A memo calling a local function named like a typed prop the body never
   // destructures: the server render reads the prop for the call.
   'memo-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
+  // The same shape from markup: the server render reads the prop for the
+  // call. From a signal seed it renders nothing.
+  'markup-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
+  'signal-seed-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
+  // A memo reading an ordinary const declared after it, or a module-scope
+  // binding, named like a typed prop: the server render reads the prop.
+  'memo-const-declared-after-named-like-prop': { limitation: 'local-function-named-like-prop' },
+  'memo-module-binding-named-like-prop': { limitation: 'local-function-named-like-prop' },
   // A signal seeded from the binding (`createSignal(local.length)`), and an
   // identity memo over it (`createMemo(() => local)`): the Go seed reads the
   // Input field without the default. A memo the runtime evaluator computes

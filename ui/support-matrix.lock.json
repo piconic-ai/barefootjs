@@ -4820,6 +4820,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -4895,6 +4907,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -5070,6 +5088,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -5139,6 +5169,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -5416,7 +5452,25 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-module-binding-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
               ]
@@ -5515,6 +5569,12 @@
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -5714,6 +5774,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -5783,6 +5855,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -5976,6 +6054,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -6045,6 +6135,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -6220,6 +6316,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-division-zero-divisor",
               "limitations": [
                 "memo-non-finite-quotient"
@@ -6295,6 +6403,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -6488,6 +6602,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -6557,6 +6683,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -6744,6 +6876,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -6819,6 +6963,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -7006,6 +7156,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-division-zero-divisor",
               "limitations": [
                 "memo-non-finite-quotient"
@@ -7081,6 +7243,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -7660,6 +7828,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -7753,6 +7933,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -7982,6 +8168,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -8057,6 +8255,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -8424,7 +8628,25 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-module-binding-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
               ]
@@ -8529,6 +8751,12 @@
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -8794,6 +9022,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -8881,6 +9121,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -9128,6 +9374,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -9215,6 +9473,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -9444,6 +9708,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-division-zero-divisor",
               "limitations": [
                 "memo-non-finite-quotient"
@@ -9525,6 +9801,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -9778,6 +10060,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -9865,6 +10159,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -10100,6 +10400,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -10193,6 +10505,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -10434,6 +10752,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-division-zero-divisor",
               "limitations": [
                 "memo-non-finite-quotient"
@@ -10515,6 +10845,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -10851,6 +11187,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -11080,6 +11428,18 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -11411,6 +11771,24 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-module-binding-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-prop-read-beside-signal-nullish-seed",
               "limitations": [
                 "memo-prop-read-takes-signal-nullish-fallback"
@@ -11685,6 +12063,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -11917,6 +12307,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -12140,6 +12542,18 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -12387,6 +12801,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -12604,6 +13030,18 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -12836,6 +13274,18 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -21067,6 +21517,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -21170,6 +21632,18 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -21309,6 +21783,24 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-module-binding-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-prop-read-beside-signal-nullish-seed",
               "limitations": [
                 "memo-prop-read-takes-signal-nullish-fallback"
@@ -21427,6 +21919,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -21524,6 +22028,18 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -21630,6 +22146,18 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -21751,6 +22279,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -21842,6 +22382,18 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -21954,6 +22506,18 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {

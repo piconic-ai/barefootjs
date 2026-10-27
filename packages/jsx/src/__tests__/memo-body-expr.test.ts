@@ -184,79 +184,74 @@ describe('template text over a body destructure binding in a (props)-arg compone
   })
 })
 
+// The rendered values for these shapes (the colliding prop supplied) are
+// asserted by the CSR conformance fixtures `memo-local-function-named-like-prop`,
+// `signal-seed-local-function-named-like-prop`, `memo-module-binding-named-like-prop`,
+// `memo-const-declared-after-named-like-prop` and `markup-local-function-named-like-prop`.
+// Here only the analyzer's template fields and the emitted template text.
 describe('template text keeps a local named like a typed prop (props)-arg component', () => {
-  function csrTemplate(body: string, jsx = '<p>{n()}</p>', preamble = '') {
-    const result = compileJSX(`
+  function analyze(body: string, preamble = '') {
+    return analyzeComponent(`
       'use client'
       import { createSignal, createMemo } from '@barefootjs/client'
       ${preamble}
       export function C(props: { value?: number }) {
         ${body}
-        return ${jsx}
-      }
-    `, 'C.tsx', { adapter: new TestAdapter() })
-    // The whole module: a local function is hoisted to module scope
-    // (`var value = value ?? function () {...}`) next to the template.
-    const moduleJs = result.files.find((f) => f.type === 'clientJs')!.content
-      .split('\n').filter((l) => !l.startsWith('import ')).join('\n').replace(/^export /gm, '')
-    let template: ((p: object) => string) | undefined
-    const hydrate = (_name: string, def: { template: (p: object) => string }) => { template = def.template }
-    new Function('hydrate', 'escapeTextOrMarkup', 'escapeTextOrNode', 'createComponent', 'createEffect', 'createMemo', 'lazySlots', 'createSignal', moduleJs)(
-      hydrate, String, String, () => {}, () => {}, () => {}, () => {}, () => {})
-    return template!
-  }
-
-  test('a memo body calls a local function, not the prop', () => {
-    const template = csrTemplate(`
-      function value() { return 1 }
-      const n = createMemo(() => value())
-    `)
-    expect(template({ value: 9 })).toContain('-->1<!--')
-    expect(template({})).toContain('-->1<!--')
-  })
-
-  test('a signal seed calls a local function, not the prop', () => {
-    const template = csrTemplate(`
-      function value() { return 1 }
-      const [n] = createSignal(value())
-    `)
-    expect(template({ value: 9 })).toContain('-->1<!--')
-  })
-
-  test('a memo body reads an ordinary const declared after it, not the prop', () => {
-    const ctx = analyzeComponent(`
-      'use client'
-      import { createMemo } from '@barefootjs/client'
-      export function C(props: { value?: number }) {
-        const n = createMemo(() => value)
-        const value = 1
         return <p>{n()}</p>
       }
     `, 'C.tsx')
+  }
+
+  test('a memo body calling a local function keeps the call', () => {
+    const ctx = analyze(`
+      function value() { return 1 }
+      const n = createMemo(() => value())
+    `)
     expect(ctx.memos.find(m => m.name === 'n')?.templateBodyExpr).toBeUndefined()
   })
 
-  test('a memo body reads a module-scope binding, not the prop', () => {
-    const template = csrTemplate(`
-      const n = createMemo(() => value)
-    `, '<p>{n()}</p>', 'const value = 1')
-    expect(template({ value: 9 })).toContain('-->1<!--')
+  test('a signal seed calling a local function keeps the call', () => {
+    const ctx = analyze(`
+      function value() { return 1 }
+      const [n] = createSignal(value())
+    `)
+    expect(ctx.signals.find(s => s.getter === 'n')?.templateInitialValue).toBeUndefined()
   })
 
-  test('markup calls a local function, not the prop', () => {
-    const template = csrTemplate(`
-      function value() { return 1 }
-      const [n] = createSignal(0)
-    `, '<p>{value()}|{n()}</p>')
-    expect(template({ value: 9 })).toContain('-->1<!--')
+  test('a memo body reading an ordinary const declared after it keeps the read', () => {
+    const ctx = analyze(`
+      const n = createMemo(() => value)
+      const value = 1
+    `)
+    expect(ctx.memos.find(m => m.name === 'n')?.templateBodyExpr).toBeUndefined()
+  })
+
+  test('a memo body reading a module-scope binding keeps the read', () => {
+    const ctx = analyze(`
+      const n = createMemo(() => value)
+    `, 'const value = 1')
+    expect(ctx.memos.find(m => m.name === 'n')?.templateBodyExpr).toBeUndefined()
+  })
+
+  test('markup calling a local function does not read the prop', () => {
+    const result = compileJSX(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function C(props: { value?: number }) {
+        function value() { return 1 }
+        const [n] = createSignal(0)
+        return <p>{value()}|{n()}</p>
+      }
+    `, 'C.tsx', { adapter: new TestAdapter() })
+    const clientJs = result.files.find((f) => f.type === 'clientJs')!.content
+    expect(clientJs).not.toContain('_p.value')
   })
 
   test('a memo body still reads a body destructure binding as its prop', () => {
-    const template = csrTemplate(`
+    const ctx = analyze(`
       const { value = 4 } = props
       const n = createMemo(() => value * 2)
     `)
-    expect(template({ value: 9 })).toContain('-->18<!--')
-    expect(template({})).toContain('-->8<!--')
+    expect(ctx.memos.find(m => m.name === 'n')?.templateBodyExpr).toBe('(_p.value ?? 4) * 2')
   })
 })

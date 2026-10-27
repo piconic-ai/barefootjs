@@ -7447,6 +7447,19 @@
         "text"
       ]
     },
+    "markup-local-function-named-like-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "math-methods": {
       "kinds": [
         "call",
@@ -7542,6 +7555,19 @@
       "axes": [
         "binary:*",
         "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-const-declared-after-named-like-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
         "literal:number"
       ],
       "contexts": [
@@ -7696,6 +7722,19 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "memo-module-binding-named-like-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
         "text"
       ]
     },
@@ -11749,6 +11788,16 @@
       ],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "signal-seed-local-function-named-like-prop": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
         "text"
       ]
     },

@@ -5476,6 +5476,118 @@
           }
         }
       },
+      "markup-local-function-named-like-prop": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        }
+      },
+      "memo-const-declared-after-named-like-prop": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        }
+      },
       "memo-division-zero-divisor": {
         "mojolicious": {
           "kind": "render",
@@ -5540,6 +5652,14 @@
           ]
         },
         "xslate": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        }
+      },
+      "memo-module-binding-named-like-prop": {
+        "go-template": {
           "kind": "render",
           "limitations": [
             "local-function-named-like-prop"
@@ -7185,6 +7305,62 @@
           }
         }
       },
+      "signal-seed-local-function-named-like-prop": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        }
+      },
       "some-typeof-predicate": {
         "blade": {
           "kind": "refusal",
@@ -8391,6 +8567,14 @@
         "description": "A `.map()` projection calling an unlowered method — DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-opaque-projection.ts"
       },
+      "markup-local-function-named-like-prop": {
+        "description": "Markup calling a local function named like a typed prop calls the function, not the prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/markup-local-function-named-like-prop.ts"
+      },
+      "memo-const-declared-after-named-like-prop": {
+        "description": "A memo reading a const declared after it and named like a typed prop reads the const, not the prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-const-declared-after-named-like-prop.ts"
+      },
       "memo-division-zero-divisor": {
         "description": "A memo dividing by a literal or runtime zero renders Infinity, -Infinity or NaN",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-division-zero-divisor.ts"
@@ -8398,6 +8582,10 @@
       "memo-local-function-named-like-prop": {
         "description": "A memo calling a local function named like a typed prop calls the function, not the prop",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-local-function-named-like-prop.ts"
+      },
+      "memo-module-binding-named-like-prop": {
+        "description": "A memo reading a module-scope binding named like a typed prop reads the binding, not the prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-module-binding-named-like-prop.ts"
       },
       "memo-prop-read-beside-signal-nullish-seed": {
         "description": "a memo reading a prop raw does not take a sibling signal seed’s `??` fallback",
@@ -8486,6 +8674,10 @@
       "signal-object-spread-init": {
         "description": "Signal initializer spreads a prop-derived object directly, in value position",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-object-spread-init.ts"
+      },
+      "signal-seed-local-function-named-like-prop": {
+        "description": "A signal seed calling a local function named like a typed prop calls the function, not the prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-local-function-named-like-prop.ts"
       },
       "some-typeof-predicate": {
         "description": "Off-subset `.some()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
@@ -9093,13 +9285,17 @@
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
     },
     "local-function-named-like-prop": {
-      "title": "A memo calling a local function named like a typed prop",
+      "title": "A local or module binding named like a typed prop",
       "kind": "silent",
-      "given": "a (props)-arg component whose body declares a function named like a typed prop it never destructures (`function value() { return 1 }` with `props: { value?: number }`), called from a memo (`createMemo(() => value())`), with the colliding prop supplied",
-      "expected": "the memo calls the local function",
-      "actual": "renders the supplied prop instead of the function result",
+      "given": "a (props)-arg component with a typed prop it never destructures (`props: { value?: number }`) and a binding of the same name it reads: a local function (`function value() { return 1 }`) called from a memo, a signal seed or markup, an ordinary const declared after the memo that reads it, or a module-scope const read by a memo; the colliding prop supplied",
+      "expected": "the read resolves to the binding",
+      "actual": "renders the supplied prop, or nothing, instead of the binding",
       "fixtures": [
-        "memo-local-function-named-like-prop"
+        "markup-local-function-named-like-prop",
+        "memo-const-declared-after-named-like-prop",
+        "memo-local-function-named-like-prop",
+        "memo-module-binding-named-like-prop",
+        "signal-seed-local-function-named-like-prop"
       ],
       "adapters": [
         "blade",
