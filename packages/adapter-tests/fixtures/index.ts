@@ -1,5 +1,7 @@
 import { fixture as conditionalSiblingRoots } from './conditional-sibling-roots'
 import { fixture as templateLiteralAttributeQuotes } from './template-literal-attribute-quotes'
+import { fixture as templateLiteralAttributeEscape } from './template-literal-attribute-escape'
+import { fixture as templateLiteralTextEscape } from './template-literal-text-escape'
 import { fixture as templateLiteralStaticDelimiters } from './template-literal-static-delimiters'
 import { fixture as clientTemplateStaticDelimiters } from './client-template-static-delimiters'
 import { fixture as jsxPropTemplateDelimiters } from './jsx-prop-template-delimiters'
@@ -1203,6 +1205,8 @@ export const jsxFixtures: JSXFixture[] = [
   conditionalSiblingRoots,
   templateLiteralStaticDelimiters,
   templateLiteralAttributeQuotes,
+  templateLiteralAttributeEscape,
+  templateLiteralTextEscape,
   counter,
   reactiveFactoryObjectReturn,
   counterShared,

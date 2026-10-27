@@ -106,8 +106,12 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // children prop renamed in the parameter destructure (`{ children: kids }`)
 // is held in the `Children` field the parent's children populate, not in a
 // never-set field named after the local (`Kids`).
+//
+// #3706 graduated `template-literal-attribute-quotes`: the literal segments
+// of a template literal (outer and nested) are HTML-escaped where they land
+// in markup outside a `{{…}}` action, so a `"` no longer closes the
+// surrounding attribute.
 export const renderDivergences: RenderDivergences = {
-  'template-literal-attribute-quotes': { limitation: 'template-literal-attribute-quotes' },
   'jsx-prop-template-delimiters': { limitation: 'nested-component-in-jsx-prop' },
   // `.at(i)` on half of a surrogate pair: the runtime string can't hold a
   // lone surrogate, so it returns U+FFFD (halves compare equal, and

@@ -12940,6 +12940,16 @@
         "attribute"
       ]
     },
+    "template-literal-attribute-escape": {
+      "kinds": [
+        "identifier",
+        "template-literal"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "template-literal-attribute-quotes": {
       "kinds": [
         "identifier",
@@ -12979,6 +12989,16 @@
       ],
       "contexts": [
         "attribute"
+      ]
+    },
+    "template-literal-text-escape": {
+      "kinds": [
+        "identifier",
+        "template-literal"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
       ]
     },
     "ternary": {
