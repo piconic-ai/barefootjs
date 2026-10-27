@@ -5448,14 +5448,6 @@
           ]
         }
       },
-      "memo-prop-read-beside-signal-nullish-seed": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "memo-prop-read-takes-signal-nullish-fallback"
-          ]
-        }
-      },
       "module-const-arrow-helper": {
         "blade": {
           "kind": "refusal",
@@ -8377,10 +8369,6 @@
         "description": "A memo reading a module-scope binding named like a typed prop reads the binding, not the prop",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-module-binding-named-like-prop.ts"
       },
-      "memo-prop-read-beside-signal-nullish-seed": {
-        "description": "a memo reading a prop raw does not take a sibling signal seed’s `??` fallback",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-prop-read-beside-signal-nullish-seed.ts"
-      },
       "module-const-arrow-helper": {
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-arrow-helper.ts"
@@ -9149,19 +9137,6 @@
       "adapters": [
         "mojolicious",
         "xslate"
-      ]
-    },
-    "memo-prop-read-takes-signal-nullish-fallback": {
-      "title": "A memo reading a prop takes a sibling signal seed’s `??` fallback",
-      "kind": "silent",
-      "given": "a memo that reads an optional prop raw (`createMemo(() => props.b)`, `createMemo(() => props.n * 2)`) beside a signal seeded by `props.b ?? <literal>` / `props.n ?? <literal>`, with the prop omitted",
-      "expected": "the memo reads the omitted prop as `undefined`: the bare read renders empty text and the arithmetic renders `NaN`",
-      "actual": "renders the signal seed’s fallback literal: the memo reads it in place of the omitted prop",
-      "fixtures": [
-        "memo-prop-read-beside-signal-nullish-seed"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "module-scope-helper-call": {

@@ -7867,6 +7867,29 @@
         "text"
       ]
     },
+    "memo-prop-arithmetic-beside-signal-nullish-seed": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:/",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "memo-prop-read-beside-signal-nullish-seed": {
       "kinds": [
         "binary",
@@ -7884,6 +7907,30 @@
       ],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "memo-prop-read-beside-signal-nullish-seed-destructured": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:/",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
         "text"
       ]
     },

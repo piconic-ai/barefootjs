@@ -10,6 +10,7 @@
 
 import type { MemoInfo, ParsedExpr, ParsedStatement, TypeInfo, JsSourceText } from '@barefootjs/jsx'
 import {
+  arithmeticOperandCoercion,
   asCallbackMethodCall,
   freeIdentifiers,
   freeVarsInBody,
@@ -190,9 +191,8 @@ export function filterArmEarlierSiblingRefs(
  * `() => count() * 2` → `in.Initial * 2`, `() => props.value * 10` →
  * `in.Value * 10`. Unresolved computations default to the memo's Go zero value.
  *
- * @param propFallbackVars when a hoisted fallback var exists for a referenced
- *   prop, it is substituted for `in.FieldName` so the memo inherits the
- *   signal-time `??` fallback
+ * @param propFallbackVars the hoisted `props.X ?? N` locals, which a signal
+ *   seed read through the memo takes; a raw prop read is `in.FieldName`
  * @param goType Go type of the memo field, used to pick the zero-value fallback
  */
 export function computeMemoInitialValue(
@@ -657,9 +657,10 @@ export function memoInitialFromParsedBody(
   currentMemoName: string,
   resolving: ReadonlySet<string> = new Set(),
 ): string | null {
+  // A raw prop read is the prop itself, never a sibling signal's hoisted
+  // `props.X ?? N` local: that local is the signal's value, and JS reads an
+  // omitted prop as `undefined` whatever a signal seeded from it falls back to.
   const propRef = (propName: string): string => {
-    const hoisted = propFallbackVars.get(propName)
-    if (hoisted) return hoisted.varName
     const param = propsParams.find(p => p.name === propName)
     return `in.${capitalizeFieldName(param?.sourceName ?? propName)}`
   }
@@ -694,12 +695,9 @@ function emitBoxedArithmetic(env: SeedEmitEnv, seed: BoxedArithmeticSeed): SeedA
     case 'literal-division':
       return literalDivisionGo(env, seed.dividend, String(seed.divisor))
     case 'nillable-prop-literal': {
-      // A hoisted fallback var is a concrete number, so a prop that has one
-      // keeps the plain arithmetic ({@link literalArithmeticArm}).
-      if (env.propFallbackVars.has(seed.propName)) return undefined
       const param = env.propsParams.find(p => p.name === seed.propName)
       const field = capitalizeFieldName(propsMemberName(seed.left) ?? param?.sourceName ?? seed.propName)
-      return `bf.${BOXED_ARITHMETIC_HELPER[seed.op]}(in.${field}, ${String(seed.operand)})`
+      return `bf.${BOXED_ARITHMETIC_HELPER[seed.op]}(${undefinedOperandGo(env, seed.op, seed.left, seed.right, `in.${field}`)}, ${String(seed.operand)})`
     }
     case 'boxed-memo-identity':
       // The dependency's boxed value passes through ({@link identityGetterArm}).
@@ -737,11 +735,30 @@ function literalDivisionGo(env: SeedEmitEnv, dividend: ParsedExpr, operand: stri
   }
   const propName = propsMemberName(dividend)
   if (propName && env.propsParams.some(p => p.name === propName)) {
-    const hoisted = env.propFallbackVars.get(propName)
-    return `bf.Div(${hoisted ? hoisted.varName : `in.${capitalizeFieldName(propName)}`}, ${operand})`
+    return `bf.Div(${undefinedOperandGo(env, '/', dividend, undefined, env.propRef(propName))}, ${operand})`
   }
   const param = dividend.kind === 'identifier' ? env.propsParams.find(p => p.name === dividend.name) : undefined
-  return param ? `bf.Div(in.${capitalizeFieldName(param.sourceName ?? param.name)}, ${operand})` : null
+  if (!param) return null
+  return `bf.Div(${undefinedOperandGo(env, '/', dividend, undefined, `in.${capitalizeFieldName(param.sourceName ?? param.name)}`)}, ${operand})`
+}
+
+/**
+ * Spell `arithmeticOperandCoercion` (#3474) on a memo seed's arithmetic
+ * operand, as the template path does: an operand whose nil reads as
+ * `undefined` (an omitted optional number prop) goes through `bf.Number`,
+ * which maps nil to `NaN` as JS `ToNumber(undefined)` does. The arithmetic
+ * helpers already read a `null` operand as `0`.
+ */
+function undefinedOperandGo(
+  env: SeedEmitEnv,
+  op: string,
+  operand: ParsedExpr,
+  other: ParsedExpr | undefined,
+  goExpr: string,
+): string {
+  return arithmeticOperandCoercion(op, operand, other, env.ctx.state.nullishAttrCtx) === 'undefined'
+    ? `bf.Number(${goExpr})`
+    : goExpr
 }
 
 /**
@@ -874,13 +891,34 @@ function selectionArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
 
 /**
  * () => props.X ?? false — a boolean passthrough memo. Go's bool zero value
- * IS the `?? false` fallback, so the raw input field carries it exactly.
+ * IS the `?? false` fallback, so the raw input field carries it exactly; a
+ * nillable (`interface{}`) boolean field holds `nil` for an omitted prop,
+ * which `bf.Truthy` reads as that `false`.
  */
 function boolPassthroughArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
   if (body.kind !== 'logical' || body.op !== '??') return undefined
   if (body.right.kind !== 'literal' || body.right.value !== false) return undefined
   const propName = propsMemberName(body.left)
-  return propName ? env.propRef(propName) : undefined
+  if (!propName) return undefined
+  if (!isNillablePropField(env.ctx, propName)) return env.propRef(propName)
+  const param = env.propsParams.find(p => p.name === propName)
+  const isBoolean = param?.type?.kind === 'primitive' && param.type.primitive === 'boolean'
+  return isBoolean ? `bf.Truthy(${env.propRef(propName)})` : undefined
+}
+
+/**
+ * A prop leaf of a string-concatenation chain: its concrete input field. A
+ * nillable (`interface{}`) field is no Go string operand, so it declines
+ * (null) and the evaluator computes the chain over the prop's own value.
+ */
+function concatPropLeafGo(ctx: GoEmitContext, propName: string, propRef: (propName: string) => string): string | null {
+  return isNillablePropField(ctx, propName) ? null : propRef(propName)
+}
+
+/** Whether prop `propName`'s input field lowers to the nillable `interface{}`. */
+function isNillablePropField(ctx: GoEmitContext, propName: string): boolean {
+  const binding = ctx.state.currentPropsParams.find(p => p.name === propName)
+  return binding !== undefined && resolvePropGoType(ctx, binding, ctx.state.propTypeOverrides) === 'interface{}'
 }
 
 /**
@@ -898,11 +936,7 @@ function boolPassthroughArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
  * `collectPresenceCheckedPropNames`'s primitive-only / no-default gate)
  * can't be tested this way (`x != nil` doesn't even compile against a
  * `string`/`bool` field) — the caller's zero-value default applies instead
- * of invalid Go. Reads the RAW `in.<Field>` directly — NOT through
- * `propRef`, which prefers a hoisted `?? <fallback>` local when one exists:
- * that local already collapsed "absent" into the fallback value at hoist
- * time, so it's never nil and testing it here would be nonsensical (and,
- * being concretely typed, wouldn't compile against `nil` either).
+ * of invalid Go. Reads the RAW `in.<Field>` directly.
  */
 function presenceCheckArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
   if (body.kind !== 'binary' || !EQUALITY_OPS.has(body.op)) return undefined
@@ -1052,16 +1086,13 @@ function getterLiteralArithmeticGo(env: SeedEmitEnv, left: ParsedExpr, operator:
 }
 
 /**
- * props.X <op> N — hoisted var if any, else the input field (asserting int
- * when the field lowers to interface{}); var <op> N — a destructured prop's
- * input field (no hoisted-var lookup).
+ * props.X <op> N / var <op> N — the prop's input field (asserting int when
+ * the field lowers to interface{}).
  */
 function propLiteralArithmeticGo(env: SeedEmitEnv, left: ParsedExpr, operator: string, operand: string): string | null {
   const propName = propsMemberName(left)
   const memberParam = propName ? env.propsParams.find(p => p.name === propName) : undefined
   if (propName && memberParam) {
-    const hoisted = env.propFallbackVars.get(propName)
-    if (hoisted) return `${hoisted.varName} ${operator} ${operand}`
     return `${intFieldRead(env.ctx, memberParam, capitalizeFieldName(propName))} ${operator} ${operand}`
   }
   const param = left.kind === 'identifier' ? env.propsParams.find(p => p.name === left.name) : undefined
@@ -1094,7 +1125,7 @@ function identityGetterArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
   return resolveGetterValueAsGo(env.ctx, simpleDep, env.signals, env.propsParams, env.propFallbackVars, env.resolving) ?? undefined
 }
 
-/** () => props.X — the prop value (hoisted-aware). */
+/** () => props.X — the prop's input field. */
 function propReadArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
   const simpleProp = propsMemberName(body)
   return simpleProp && env.propsParams.some(p => p.name === simpleProp) ? env.propRef(simpleProp) : undefined
@@ -1161,7 +1192,7 @@ const PARSED_BODY_ARMS: readonly ((env: SeedEmitEnv, body: ParsedExpr) => SeedAr
 
 /**
  * `<expr> + <expr> + …` chain whose every leaf resolves to a Go string
- * expression: a string literal, a prop reference (`propRef`, hoisted-aware),
+ * expression: a string literal, a concrete prop field (`propRef`),
  * or a `.map(cb).join(sep)` chain ({@link matchMapJoinChain} /
  * {@link mapJoinChainToGo} — `value-lowering.ts`, #2492). Recurses on nested
  * `+` so a left-associative chain (`a + b + c` parses as `(a + b) + c`)
@@ -1234,9 +1265,7 @@ function resolveStringConcatChainGo(
   }
 
   const propName = propsMemberName(expr) ?? (expr.kind === 'identifier' ? expr.name : null)
-  if (propName && propsParams.some(p => p.name === propName)) {
-    return propRef(propName)
-  }
+  if (propName && propsParams.some(p => p.name === propName)) return concatPropLeafGo(ctx, propName, propRef)
 
   const chain = matchMapJoinChain(expr)
   if (chain) {
