@@ -189,7 +189,7 @@ export type BoxedArithmeticSeed =
    * through the runtime helper (`bf.Mul(in.N, 2)`). A prop whose declared
    * type already lowers to `interface{}` keeps its `.(int)` assertion.
    */
-  | { kind: 'nillable-prop-literal'; op: string; left: ParsedExpr; propName: string; operand: number }
+  | { kind: 'nillable-prop-literal'; op: string; left: ParsedExpr; right: ParsedExpr; propName: string; operand: number }
   /** An identity read of a boxed memo (`() => eighth()`): passes the boxed value through. */
   | { kind: 'boxed-memo-identity'; dep: string }
   /**
@@ -285,7 +285,7 @@ function nillablePropLiteralSeed(
   const param = name ? propsParams.find(p => p.name === name) : undefined
   if (!param?.type || !ctx.state.nillablePropNames.has(param.name)) return null
   if (typeInfoToGo(ctx, param.type, param.defaultValue, param.parsed) === 'interface{}') return null
-  return { kind: 'nillable-prop-literal', op: body.op, left: body.left, propName: param.name, operand }
+  return { kind: 'nillable-prop-literal', op: body.op, left: body.left, right: body.right, propName: param.name, operand }
 }
 
 function boxedMemoChainSeed(

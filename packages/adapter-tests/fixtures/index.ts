@@ -174,6 +174,8 @@ import { fixture as signalSeedPropNullishPropFallback } from './signal-seed-prop
 import { fixture as signalSeedPropNullishPropFallbackDestructured } from './signal-seed-prop-nullish-prop-fallback-destructured'
 import { fixture as signalSeedRenamedDefaultBesideRawNullish } from './signal-seed-renamed-default-beside-raw-nullish'
 import { fixture as memoPropReadBesideSignalNullishSeed } from './memo-prop-read-beside-signal-nullish-seed'
+import { fixture as memoPropReadBesideSignalNullishSeedDestructured } from './memo-prop-read-beside-signal-nullish-seed-destructured'
+import { fixture as memoPropArithmeticBesideSignalNullishSeed } from './memo-prop-arithmetic-beside-signal-nullish-seed'
 import { fixture as signalSeedDependentDefaultNullishLiteral } from './signal-seed-dependent-default-nullish-literal'
 import { fixture as signalSeedDependentDefaultNullishLiteralBody } from './signal-seed-dependent-default-nullish-literal-body'
 import { fixture as signalSeedLocalHelperCall } from './signal-seed-local-helper-call'
@@ -1273,6 +1275,8 @@ export const jsxFixtures: JSXFixture[] = [
   signalSeedPropNullishPropFallbackDestructured,
   signalSeedRenamedDefaultBesideRawNullish,
   memoPropReadBesideSignalNullishSeed,
+  memoPropReadBesideSignalNullishSeedDestructured,
+  memoPropArithmeticBesideSignalNullishSeed,
   signalSeedDependentDefaultNullishLiteral,
   signalSeedDependentDefaultNullishLiteralBody,
   signalSeedLocalHelperCall,

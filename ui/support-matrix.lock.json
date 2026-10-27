@@ -3435,12 +3435,6 @@
               ]
             },
             {
-              "fixture": "memo-prop-read-beside-signal-nullish-seed",
-              "limitations": [
-                "memo-prop-read-takes-signal-nullish-fallback"
-              ]
-            },
-            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -4897,12 +4891,6 @@
               "fixture": "memo-module-binding-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-prop-read-beside-signal-nullish-seed",
-              "limitations": [
-                "memo-prop-read-takes-signal-nullish-fallback"
               ]
             },
             {
@@ -7890,12 +7878,6 @@
               ]
             },
             {
-              "fixture": "memo-prop-read-beside-signal-nullish-seed",
-              "limitations": [
-                "memo-prop-read-takes-signal-nullish-fallback"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -10817,12 +10799,6 @@
               ]
             },
             {
-              "fixture": "memo-prop-read-beside-signal-nullish-seed",
-              "limitations": [
-                "memo-prop-read-takes-signal-nullish-fallback"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -12465,12 +12441,6 @@
               ]
             },
             {
-              "fixture": "memo-prop-read-beside-signal-nullish-seed",
-              "limitations": [
-                "memo-prop-read-takes-signal-nullish-fallback"
-              ]
-            },
-            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -13518,12 +13488,6 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "memo-prop-read-beside-signal-nullish-seed",
-              "limitations": [
-                "memo-prop-read-takes-signal-nullish-fallback"
               ]
             },
             {
@@ -18285,12 +18249,6 @@
         "go-template": {
           "gaps": [
             {
-              "fixture": "memo-prop-read-beside-signal-nullish-seed",
-              "limitations": [
-                "memo-prop-read-takes-signal-nullish-fallback"
-              ]
-            },
-            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -20199,12 +20157,6 @@
               ]
             },
             {
-              "fixture": "memo-prop-read-beside-signal-nullish-seed",
-              "limitations": [
-                "memo-prop-read-takes-signal-nullish-fallback"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -21520,12 +21472,6 @@
               ]
             },
             {
-              "fixture": "memo-prop-read-beside-signal-nullish-seed",
-              "limitations": [
-                "memo-prop-read-takes-signal-nullish-fallback"
-              ]
-            },
-            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -22689,12 +22635,6 @@
               "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
-              ]
-            },
-            {
-              "fixture": "memo-prop-read-beside-signal-nullish-seed",
-              "limitations": [
-                "memo-prop-read-takes-signal-nullish-fallback"
               ]
             },
             {

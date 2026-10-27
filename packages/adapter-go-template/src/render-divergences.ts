@@ -183,11 +183,10 @@ export const renderDivergences: RenderDivergences = {
   // `remainder-nan-operand` used to sit here: `bf_mod` converted both
   // operands to `int`, so `NaN % 2` rendered an integer. It now computes
   // JS's truncated remainder (#3474).
-  // A memo reading an optional prop raw (`props.b`, `props.n * 2`) beside a
-  // signal seeded by `props.b ?? 'y'`: the memo seed reads the hoisted
-  // fallback local (`propFallbackVars`), so an omitted prop renders the
-  // signal's fallback instead of `undefined` / `NaN`.
-  'memo-prop-read-beside-signal-nullish-seed': { limitation: 'memo-prop-read-takes-signal-nullish-fallback' },
+  // `memo-prop-read-beside-signal-nullish-seed` used to sit here: a memo
+  // reading an optional prop raw beside a signal seeded by `props.b ?? 'y'`
+  // read the signal's hoisted fallback local. It now reads the prop's input
+  // field, so an omitted prop is `undefined` / `NaN` (#3697).
   // `object-signal-field-length` used to sit here: `.length` on a loop
   // item's field inside a `.filter()` predicate never matched. It now reads
   // through `bf_length` inline and the evaluator counts a typed slice (#3447).
