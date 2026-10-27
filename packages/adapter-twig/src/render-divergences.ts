@@ -62,10 +62,6 @@ export const renderDivergences: RenderDivergences = {
   // the template cannot inline the const through the shadowed name, and the
   // const itself is never set, so the read renders nothing.
   'children-alias-hop-shadowed-intermediate': { limitation: 'loop-shadowed-const-alias-hop' },
-  // A loop row parameter named `props` read through a member
-  // (`rows.map((props) => …{props.label}…)`): the template reads
-  // `props.label` as the root prop `label`, not the row item's member.
-  'loop-param-named-props-member': { limitation: 'loop-param-named-props-member' },
   // `omitted-optional-number-arithmetic` used to sit here: an omitted
   // optional number prop read as `0` in arithmetic. A prop that can only be
   // absent now reads its nil as `undefined`, giving `NaN` (#3533).

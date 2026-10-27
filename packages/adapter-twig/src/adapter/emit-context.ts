@@ -58,6 +58,9 @@ export interface TwigEmitContext {
    */
   _rootPropReadName(name: string): string
 
+  /** Whether `expr` reads the component's props object here (`isRootPropsObject`, #3693). */
+  _isRootPropsObject(expr: ParsedExpr): boolean
+
   /**
    * Resolve a static property access on a module object-literal const
    * (`variantClasses.ghost`) to its Twig value at compile time, or null.

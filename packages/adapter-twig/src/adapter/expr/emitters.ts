@@ -85,6 +85,7 @@ import {
   nestedCallbackRefusal,
   filterPredicateShapeRefusal,
   isUnloweredCall,
+  isRootPropsObject,
   unloweredCallRefusal,
   type CallbackLoweringOptions,
 } from '@barefootjs/jsx'
@@ -123,8 +124,10 @@ export function truthyTest(node: ParsedExpr, rendered: string): string {
  * receiver so callers fall through to their generic member lowering —
  * `props.a.b` flattens only the inner hop.
  */
-function flattenPropsMember(object: ParsedExpr, property: string): string | null {
-  if (object.kind === 'identifier' && object.name === 'props') return twigIdent(property)
+function flattenPropsMember(object: ParsedExpr, property: string, isBound: (name: string) => boolean): string | null {
+  // A `props` a binding shadows (`isBound`) is that binding, not the
+  // component's props object (#3693).
+  if (isRootPropsObject(object, isBound)) return twigIdent(property)
   return null
 }
 
@@ -196,17 +199,21 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
   // (#2038). Optional so emitter construction stays possible without an
   // adapter; a missing hook keeps the old silent-degrade emit.
   private readonly onUnsupported?: (message: string, reason?: string) => void
+  // Whether a binding enclosing the predicate (a loop row) binds `name`.
+  private readonly isOuterBound: (name: string) => boolean
 
   constructor(
     param: string,
     localVarMap: Map<string, string>,
     isStringName: (n: string, componentProperty?: boolean) => boolean = () => false,
     onUnsupported?: (message: string, reason?: string) => void,
+    isOuterBound: (name: string) => boolean = () => false,
   ) {
     this.param = param
     this.localVarMap = localVarMap
     this.isStringName = isStringName
     this.onUnsupported = onUnsupported
+    this.isOuterBound = isOuterBound
   }
 
   identifier(name: string): string {
@@ -225,9 +232,9 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
 
   member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     // A callback param spelled `props` (a `.map((props) => …)` row the
-    // filter param was renamed to) is the row item, not the component
-    // props (#3404).
-    const flat = object.kind === 'identifier' && object.name === this.param ? null : flattenPropsMember(object, property)
+    // filter param was renamed to, #3404) or an enclosing binding of that
+    // name (#3693) is that binding, not the component props.
+    const flat = flattenPropsMember(object, property, n => n === this.param || this.isOuterBound(n))
     if (flat !== null) return flat
     // `.length` — route through `bf.length` (handles both array element
     // count and string char count, JS-compatibly). Twig's builtin
@@ -457,10 +464,9 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
 
   member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     // `props.X` reads the root prop even where a loop binding shadows `X`
-    // (#3314) — through the alias the loop header assigned.
-    if (object.kind === 'identifier' && object.name === 'props') return twigIdent(this.ctx._rootPropReadName(property))
-    const flat = flattenPropsMember(object, property)
-    if (flat !== null) return flat
+    // (#3314) — through the alias the loop header assigned — unless a
+    // binding shadows `props` itself (#3693).
+    if (this.ctx._isRootPropsObject(object)) return twigIdent(this.ctx._rootPropReadName(property))
     // Static property access on a module object-literal const
     // (`variantClasses.ghost`, #1897) resolves at compile time — the
     // generic dot lowering below would reference a context var that

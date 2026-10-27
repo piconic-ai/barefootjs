@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'bun:test'
 import { BindingScope } from '../scope/binding-scope'
-import { rootPropAliasNames, rootPropAliasesForLoop, rootPropReadName } from '../scope/root-prop-alias'
+import { isRootPropsObject, rootPropAliasNames, rootPropAliasesForLoop, rootPropReadName } from '../scope/root-prop-alias'
+import type { ParsedExpr } from '../expression-parser'
 import type { ComponentIR } from '../types'
 
 function irWith(opts: { localConstants?: string[]; loopParam?: string } = {}): ComponentIR {
@@ -58,5 +59,37 @@ describe('root-prop aliases (#3314)', () => {
     // `value` (bumped past the prop) and `value_` would otherwise share `__bf_root_value_`.
     const both = rootPropAliasNames(irWith(), ['value', '__bf_root_value', 'value_'])
     expect(new Set(both.values()).size).toBe(3)
+  })
+})
+
+describe('the props object a binding named props shadows (#3693)', () => {
+  const props: ParsedExpr = { kind: 'identifier', name: 'props' }
+  const isBoundIn = (scope: BindingScope) => (name: string) => scope.isBound(name)
+
+  test('props is the component props object until a binding of that name shadows it', () => {
+    expect(isRootPropsObject(props, isBoundIn(BindingScope.EMPTY))).toBe(true)
+    expect(isRootPropsObject(props, isBoundIn(BindingScope.EMPTY.enterLoopRow({ param: 'row' })))).toBe(true)
+    expect(isRootPropsObject(props, isBoundIn(BindingScope.EMPTY.enterLoopRow({ param: 'props' })))).toBe(false)
+    const destructured = BindingScope.EMPTY.enterLoopRow({ param: '{ props }', paramBindings: [{ name: 'props' }] })
+    expect(isRootPropsObject(props, isBoundIn(destructured))).toBe(false)
+    const preamble = BindingScope.EMPTY.enterLoopRow({ param: 'row', preamble: { declaredNames: ['props'] } })
+    expect(isRootPropsObject(props, isBoundIn(preamble))).toBe(false)
+    expect(isRootPropsObject(props, isBoundIn(BindingScope.EMPTY.enterCallback(['props'])))).toBe(false)
+  })
+
+  test('only the bare identifier props reads the props object', () => {
+    expect(isRootPropsObject({ kind: 'identifier', name: 'row' }, () => false)).toBe(false)
+    expect(isRootPropsObject({ kind: 'member', object: props, property: 'a', computed: false, optional: false }, () => false)).toBe(false)
+  })
+
+  test('a props.<name> read has no component typing while props is shadowed', () => {
+    const outer = BindingScope.EMPTY
+    const row = outer.enterLoopRow({ param: 'props' })
+    expect(outer.shadowsPropsObject()).toBe(false)
+    expect(row.shadowsPropsObject()).toBe(true)
+    expect(outer.isStringValueName('label', () => true, true)).toBe(true)
+    expect(row.isStringValueName('label', () => true, true)).toBe(false)
+    // A bare `label` is untouched: only the `props.<name>` form changes.
+    expect(row.isStringValueName('label', () => true)).toBe(true)
   })
 })

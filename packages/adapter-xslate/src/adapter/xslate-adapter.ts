@@ -78,6 +78,7 @@ import {
   spellComponentProps,
   type ScopeFrame,
   rootPropReadName,
+  isRootPropsObject,
   attrValueMayBeNullish,
   isAriaBooleanAttr,
   isBooleanResultExpr,
@@ -1186,6 +1187,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
         name => this.rowLocalName(name),
         paramLocal,
         onRead,
+        n => this.scope.isBound(n),
       ),
     )
   }
@@ -1237,9 +1239,10 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),
       _rootPropReadName: (name) => rootPropReadName(name, this.scope, this.rootPropAliases),
+      _isRootPropsObject: (expr) => isRootPropsObject(expr, n => this.scope.isBound(n)),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
-      _isBooleanValueName: (name, property) => property ? this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
+      _isBooleanValueName: (name, property) => property ? !this.scope.shadowsPropsObject() && this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
       _arithmeticCoercion: (op, operand, other) => arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _memoKolonName: (name) => this.memoKolonNames.get(name) ?? name,

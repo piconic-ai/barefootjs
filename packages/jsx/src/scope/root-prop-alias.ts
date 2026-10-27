@@ -1,6 +1,7 @@
 import { collectLoopBoundNames } from '../adapters/loop-bound-names.ts'
+import type { ParsedExpr } from '../expression-parser.ts'
 import type { ComponentIR } from '../types.ts'
-import type { BindingScope } from './binding-scope.ts'
+import { PROPS_OBJECT_IDENTIFIER, type BindingScope } from './binding-scope.ts'
 
 /**
  * Root-prop aliases for template engines that flatten `props.X` to the bare
@@ -78,4 +79,19 @@ export function rootPropReadName(
 ): string {
   if (!scope.isBound(name)) return name
   return aliases.get(name) ?? name
+}
+
+/**
+ * Whether `expr` reads the component's props object at a position where
+ * `isBound` answers which names a binding shadows: the bare identifier
+ * `props` that no binding shadows (#3693). A `.map((props) => …)` row, a
+ * destructured `({ props })` field, a preamble local or a callback param
+ * named `props` is that binding instead, so `props.X` reads its member
+ * rather than flattening to the component's prop `X`. Template emitters
+ * flatten a `props.X` read only when this holds; `isBound` is the
+ * adapter's current `BindingScope` (`scope.isBound`), or, in a filter
+ * predicate, the predicate's own params plus the enclosing scope.
+ */
+export function isRootPropsObject(expr: ParsedExpr, isBound: (name: string) => boolean): boolean {
+  return expr.kind === 'identifier' && expr.name === PROPS_OBJECT_IDENTIFIER && !isBound(expr.name)
 }

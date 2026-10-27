@@ -87,8 +87,12 @@ function nullableBareRead(value: ExpressionAttr, ctx: AttrPlanContext): { restKe
   const bare = value.expr.trim()
   const restKey = ctx.restPropsName !== null && bare.startsWith(`${ctx.restPropsName}.`)
   let normalized = bare
-  if (ctx.propsObjectName && bare.startsWith(`${ctx.propsObjectName}.`)) normalized = bare.slice(ctx.propsObjectName.length + 1)
-  else if (restKey) normalized = bare.slice(ctx.restPropsName!.length + 1)
+  if (ctx.propsObjectName && bare.startsWith(`${ctx.propsObjectName}.`)) {
+    // A binding of the props object's name shadows it (#3693): the read is
+    // that binding's member, no component prop.
+    if (ctx.isLoopBound(ctx.propsObjectName)) return null
+    normalized = bare.slice(ctx.propsObjectName.length + 1)
+  } else if (restKey) normalized = bare.slice(ctx.restPropsName!.length + 1)
   const prop = IDENTIFIER.test(normalized) && ctx.nullableOptionalProps.has(normalized) && !ctx.isLoopBound(normalized)
   const signal = nullableSignalAttrGetter(value.parsed, ctx.nullableSignalGetters)
   if (prop || (signal !== null && !ctx.isLoopBound(signal))) return { restKey }

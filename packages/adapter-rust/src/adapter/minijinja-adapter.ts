@@ -168,6 +168,7 @@ import {
   planComponentProps,
   spellComponentProps,
   rootPropReadName,
+  isRootPropsObject,
   attrValueMayBeNullish,
   isAriaBooleanAttr,
   isBooleanResultExpr,
@@ -1161,6 +1162,7 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
         // form — surface BF101 (#2038) instead of silently degrading it to
         // its receiver.
         (message, reason) => this._recordExprBF101(message, reason),
+        n => this.scope.isBound(n),
       ),
     )
   }
@@ -1224,6 +1226,7 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),
       _rootPropReadName: (name) => rootPropReadName(name, this.scope, this.rootPropAliases),
+      _isRootPropsObject: (expr) => isRootPropsObject(expr, n => this.scope.isBound(n)),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _arithmeticCoercion: (op, operand, other) => arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, n => this.isLoopBoundName(n)),

@@ -63,6 +63,7 @@ import {
   planComponentProps,
   spellComponentProps,
   rootPropReadName,
+  isRootPropsObject,
   attrValueMayBeNullish,
   isAriaBooleanAttr,
   isBooleanResultExpr,
@@ -1199,6 +1200,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
         (message, reason) => this._recordExprBF101(message, reason),
         new Map(),
         paramVar,
+        n => this.scope.isBound(n),
       ),
     )
   }
@@ -1253,9 +1255,10 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       resolveModuleStringConst: (name) => this.resolveModuleStringConst(name),
       resolveLiteralConst: (name) => this.resolveLiteralConst(name),
       rootPropReadName: (name) => rootPropReadName(name, this.scope, this.rootPropAliases),
+      isRootPropsObject: (expr) => isRootPropsObject(expr, n => this.scope.isBound(n)),
       resolveStaticRecordLiteral: (o, k) => this.resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
-      _isBooleanValueName: (name, property) => property ? this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
+      _isBooleanValueName: (name, property) => property ? !this.scope.shadowsPropsObject() && this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
       _arithmeticCoercion: (op, operand, other) => arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, n => this.scope.isBound(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
