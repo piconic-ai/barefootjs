@@ -829,3 +829,24 @@ export function C(props: { tags: string[] }) {
     expect(template).not.toMatch(/\$bf->eq\(\$__bf_loop, \$__bf_loop\)/)
   })
 })
+
+// #3698: the PHP runtime's `mod` keeps JS's `-0` for `-4 % 2` as the float
+// `-0.0`, which `data_get` spells as the key "-0" and misses. A computed
+// index reads its key through `$bf->index_key`, which reads `-0.0` as `0`;
+// a literal index keeps its member spelling. The rendered output is pinned by
+// the shared fixture `remainder-negative-zero-quotient`.
+describe('BladeAdapter - computed index key (#3698)', () => {
+  test('a computed index goes through index_key, a literal index does not', () => {
+    const { template } = compileAndGenerate(`
+function Widget({ items, n }: { items: string[]; n: number }) {
+  return <p>
+    <span>{items[n % 2]}</span>
+    <span>{items[1]}</span>
+  </p>
+}
+`)
+    expect(template).toContain('data_get($items, $bf->index_key($bf->mod($n, 2)))')
+    expect(template).toContain("data_get($items, '1')")
+    expect(template).not.toContain('index_key(1')
+  })
+})

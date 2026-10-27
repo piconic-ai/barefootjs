@@ -242,7 +242,7 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     // `data_get` is polymorphic (list index or hash key), mirroring JS — no
     // list/hash split is needed. #1897 (data-table's `selected()[index]`).
-    return bladeIndexAccess(emit(object), emit(index))
+    return bladeIndexAccess(emit(object), emit(index), index.kind !== 'literal')
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
@@ -465,7 +465,7 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     // `data_get` is polymorphic (list index or hash key), mirroring JS.
     // #1897 (data-table's `selected()[index]`).
-    return bladeIndexAccess(emit(object), emit(index))
+    return bladeIndexAccess(emit(object), emit(index), index.kind !== 'literal')
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {

@@ -3151,12 +3151,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3959,12 +3953,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4325,12 +4313,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
               ]
             },
             {
@@ -6258,12 +6240,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
-              ]
-            },
-            {
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
@@ -7159,12 +7135,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
               ]
             },
             {
@@ -9572,12 +9542,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
-              ]
-            },
-            {
               "fixture": "reserved-name-and-internal-twin",
               "limitations": [
                 "reserved-name-collides-with-internal-name"
@@ -10284,12 +10248,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
               ]
             },
             {
@@ -12004,12 +11962,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
               ]
             },
             {
@@ -12925,12 +12877,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
-              ]
-            },
-            {
               "fixture": "reserved-name-and-internal-twin",
               "limitations": [
                 "reserved-name-collides-with-internal-name"
@@ -14804,12 +14750,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
               ]
             },
             {
@@ -15750,12 +15690,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
-              ]
             }
           ]
         },
@@ -15861,12 +15795,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
               ]
             }
           ]
@@ -18219,32 +18147,14 @@
     "binary:%": {
       "cells": {
         "hono": {},
-        "blade": {
-          "gaps": [
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
-              ]
-            }
-          ]
-        },
+        "blade": {},
         "erb": {},
         "go-template": {},
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},
         "pebble": {},
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
-              ]
-            }
-          ]
-        },
+        "twig": {},
         "xslate": {}
       },
       "source": {
@@ -18673,16 +18583,7 @@
     "binary:/": {
       "cells": {
         "hono": {},
-        "blade": {
-          "gaps": [
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
-              ]
-            }
-          ]
-        },
+        "blade": {},
         "erb": {},
         "go-template": {
           "gaps": [
@@ -18707,16 +18608,7 @@
           ]
         },
         "pebble": {},
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
-              ]
-            }
-          ]
-        },
+        "twig": {},
         "xslate": {
           "gaps": [
             {
@@ -19975,12 +19867,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
-              ]
-            },
-            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -20846,12 +20732,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
               ]
             },
             {
@@ -23402,16 +23282,7 @@
     "unary:-": {
       "cells": {
         "hono": {},
-        "blade": {
-          "gaps": [
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
-              ]
-            }
-          ]
-        },
+        "blade": {},
         "erb": {},
         "go-template": {},
         "jinja": {},
@@ -23427,16 +23298,7 @@
           ]
         },
         "pebble": {},
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
-              ]
-            }
-          ]
-        },
+        "twig": {},
         "xslate": {
           "gaps": [
             {
