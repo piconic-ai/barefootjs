@@ -16178,10 +16178,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L179"
       },
       "example": {
-        "fixture": "template-literal-attribute-quotes",
-        "description": "An attribute template expression escapes quotes in outer and nested literal segments",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/template-literal-attribute-quotes.ts",
-        "code": "`a-[\"y\"] ${tag}`"
+        "fixture": "template-literal-attribute-escape",
+        "description": "Flat and nested attribute template literals HTML-escape `\"`, `<`, `>`, `&` in their literal segments",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/template-literal-attribute-escape.ts",
+        "code": "`n-<\"y\"> ${tag}`"
       }
     },
     "unary": {

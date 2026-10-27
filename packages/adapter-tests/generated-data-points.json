@@ -10350,6 +10350,29 @@
       }
     }
   ],
+  "template-literal-attribute-escape": [
+    {
+      "name": "gen:tag:empty",
+      "props": {
+        "tag": "",
+        "__instanceId": "TemplateLiteralAttributeEscape_test"
+      }
+    },
+    {
+      "name": "gen:tag:markup",
+      "props": {
+        "tag": "<b>&\"'</b>",
+        "__instanceId": "TemplateLiteralAttributeEscape_test"
+      }
+    },
+    {
+      "name": "gen:tag:multibyte",
+      "props": {
+        "tag": "日本語",
+        "__instanceId": "TemplateLiteralAttributeEscape_test"
+      }
+    }
+  ],
   "template-literal-attribute-quotes": [
     {
       "name": "gen:tag:empty",
@@ -10417,6 +10440,29 @@
         "active": true,
         "__instanceId": "TemplateLiteralStaticDelimiters_test",
         "suffix": "日本語"
+      }
+    }
+  ],
+  "template-literal-text-escape": [
+    {
+      "name": "gen:tag:empty",
+      "props": {
+        "tag": "",
+        "__instanceId": "TemplateLiteralTextEscape_test"
+      }
+    },
+    {
+      "name": "gen:tag:markup",
+      "props": {
+        "tag": "<b>&\"'</b>",
+        "__instanceId": "TemplateLiteralTextEscape_test"
+      }
+    },
+    {
+      "name": "gen:tag:multibyte",
+      "props": {
+        "tag": "日本語",
+        "__instanceId": "TemplateLiteralTextEscape_test"
       }
     }
   ],
