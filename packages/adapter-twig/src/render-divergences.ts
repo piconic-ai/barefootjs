@@ -47,6 +47,16 @@ export const renderDivergences: RenderDivergences = {
   // A signal seeded from its own same-named prop keeps the prop's template
   // variable, so a raw `props.<name>` read beside it sees the derived value.
   'signal-from-same-named-prop-raw-read': { limitation: 'signal-from-same-named-prop-raw-read' },
+  // A memo calling a local function named like a typed prop the body never
+  // destructures: the server render reads the prop for the call.
+  'memo-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
+  // The same shape from a signal seed and from markup: the server render
+  // reads the prop for the call.
+  'signal-seed-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
+  'markup-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
+  // A memo reading an ordinary const declared after it, named like a typed
+  // prop: the server render does not read the const.
+  'memo-const-declared-after-named-like-prop': { limitation: 'local-function-named-like-prop' },
   // A const alias chain (`const a = children; const b = a`) read in a loop
   // row that binds a name the chain passes through (`rows.map(a => …{b}…)`):
   // the template cannot inline the const through the shadowed name, and the

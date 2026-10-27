@@ -514,4 +514,19 @@ describe('computeSsrSeedPlan', () => {
       expect(rows.constant).toBe(false)
     }
   })
+
+  test('a computed default reading a module const that a component local shadows gets no step', () => {
+    const plan = planFor(`
+      const DEF = 'm'
+      const OTHER = 'o'
+      function C(props: { b?: string; c?: string }) {
+        const { b = DEF.toUpperCase(), c = OTHER.toUpperCase() } = props
+        const DEF = 'z'
+        return <p>{b}{c}</p>
+      }
+    `)
+    // \`DEF\` in the default is the component's own const (declared after
+    // the destructure, so a TDZ read in JS), never the module one.
+    expect(plan.steps.map(s => s.name)).toEqual(['c'])
+  })
 })

@@ -44,6 +44,7 @@ import {
   stringifyParsedExpr,
   type ParsedExpr,
 } from './expression-parser.ts'
+import { templatePropReadParams } from './props-binding.ts'
 import type { IRMetadata, ParamInfo } from './types.ts'
 import { isElidedFactoryGetter } from './types.ts'
 
@@ -267,19 +268,42 @@ function isLiteralData(e: ParsedExpr): boolean {
  * `b` after its own step re-bound it. A default the plan cannot lower adds
  * no step and keeps the static ssr-defaults seed.
  */
-function dependentPropDefaultSteps(
-  metadata: IRMetadata,
-  available: ReadonlySet<string>,
-  inlined: ReadonlySet<string>,
-): SsrSeedStep[] {
+function dependentPropDefaultSteps(metadata: IRMetadata, inlined: ReadonlySet<string>): SsrSeedStep[] {
+  const { readable, available, unshadowed } = propDefaultScope(metadata, inlined)
   const steps: SsrSeedStep[] = []
   for (const p of inDefaultReadOrder(metadata.propsParams)) {
-    if (!hasComputedDefault(p) || !p.parsed) continue
+    if (!hasComputedDefault(p) || !p.parsed || !readable.has(p.name)) continue
     const parsed: ParsedExpr = { kind: 'logical', op: '??', left: { kind: 'identifier', name: p.name }, right: p.parsed }
-    const step = classify(p.name, 'prop', stringifyParsedExpr(parsed), parsed, available, inlined)
+    const step = classify(p.name, 'prop', stringifyParsedExpr(parsed), parsed, available, unshadowed)
     if (step.kind === 'derived') steps.push(step)
   }
   return steps
+}
+
+/**
+ * The names a prop default step may read: the props a template reads as
+ * their live prop (`templatePropReadParams`, so a binding that a local of
+ * the same name shadows gets no step), the props object, and the module
+ * string consts no component-scope binding shadows (`const DEF = 'z'` in
+ * the body hides a module `DEF`, whatever the declaration order).
+ */
+function propDefaultScope(
+  metadata: IRMetadata,
+  inlined: ReadonlySet<string>,
+): { readable: ReadonlySet<string>; available: ReadonlySet<string>; unshadowed: ReadonlySet<string> } {
+  const readable = new Set(templatePropReadParams(metadata).map(p => p.name))
+  const locals = new Set<string>()
+  for (const c of metadata.localConstants ?? []) if (!c.isModule) locals.add(c.name)
+  for (const f of metadata.localFunctions ?? []) if (!f.isModule) locals.add(f.name)
+  for (const s of metadata.signals) {
+    locals.add(s.getter)
+    if (s.setter) locals.add(s.setter)
+  }
+  for (const m of metadata.memos) locals.add(m.name)
+  const unshadowed = new Set([...inlined].filter(name => !locals.has(name)))
+  const available = new Set([...readable, ...unshadowed])
+  if (metadata.propsObjectName) available.add(metadata.propsObjectName)
+  return { readable, available, unshadowed }
 }
 
 /**
@@ -319,7 +343,7 @@ export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
   const localConsts = localConstExprsByName(metadata)
   const steps: SsrSeedStep[] = []
 
-  steps.push(...dependentPropDefaultSteps(metadata, available, inlined))
+  steps.push(...dependentPropDefaultSteps(metadata, inlined))
 
   for (const signal of metadata.signals) {
     if (signal.envReader) {

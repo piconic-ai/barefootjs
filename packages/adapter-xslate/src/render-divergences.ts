@@ -59,6 +59,16 @@ export const renderDivergences: RenderDivergences = {
   // (`rows.map((props) => …{props.label}…)`): the template reads
   // `props.label` as the root prop `label`, not the row item's member.
   'loop-param-named-props-member': { limitation: 'loop-param-named-props-member' },
+  // A memo calling a local function named like a typed prop the body never
+  // destructures: the server render reads the prop for the call.
+  'memo-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
+  // The same shape from a signal seed and from markup: the server render
+  // reads the prop for the call.
+  'signal-seed-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
+  'markup-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
+  // A memo reading an ordinary const declared after it, named like a typed
+  // prop: the server render does not read the const.
+  'memo-const-declared-after-named-like-prop': { limitation: 'local-function-named-like-prop' },
   // `omitted-optional-number-arithmetic` used to sit here: an omitted
   // optional number prop read as `0` in arithmetic. A prop that can only be
   // absent now reads its nil as `undefined`, giving `NaN` (#3533).

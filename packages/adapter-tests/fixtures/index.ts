@@ -1082,6 +1082,15 @@ import { fixture as destructureDefaultBodyRenamedCallbackChild } from './destruc
 import { fixture as destructureDefaultBodyRenamedCallbackShadow } from './destructure-default-body-renamed-callback-shadow'
 import { fixture as destructureDefaultBodyRenamedCallbackEarlier } from './destructure-default-body-renamed-callback-earlier'
 import { fixture as destructureDefaultBodyRenamedCallbackMemo } from './destructure-default-body-renamed-callback-memo'
+import { fixture as destructureDefaultBodyRenamedCallbackMemoChain } from './destructure-default-body-renamed-callback-memo-chain'
+import { fixture as destructureDefaultBodyRenamedCallbackSignal } from './destructure-default-body-renamed-callback-signal'
+import { fixture as destructureDefaultBodyCallbackMemo } from './destructure-default-body-callback-memo'
+import { fixture as memoLocalFunctionNamedLikeProp } from './memo-local-function-named-like-prop'
+import { fixture as signalSeedLocalFunctionNamedLikeProp } from './signal-seed-local-function-named-like-prop'
+import { fixture as memoModuleBindingNamedLikeProp } from './memo-module-binding-named-like-prop'
+import { fixture as memoConstDeclaredAfterNamedLikeProp } from './memo-const-declared-after-named-like-prop'
+import { fixture as markupLocalFunctionNamedLikeProp } from './markup-local-function-named-like-prop'
+import { fixture as destructureDefaultParamRenamedCallbackMemo } from './destructure-default-param-renamed-callback-memo'
 import { fixture as destructureDefaultBodyCallback } from './destructure-default-body-callback'
 import { fixture as destructureDefaultBodyCallbackShadow } from './destructure-default-body-callback-shadow'
 import { fixture as destructureDefaultComputedScalar } from './destructure-default-computed-scalar'
@@ -1921,6 +1930,15 @@ export const jsxFixtures: JSXFixture[] = [
   destructureDefaultBodyRenamedCallbackShadow,
   destructureDefaultBodyRenamedCallbackEarlier,
   destructureDefaultBodyRenamedCallbackMemo,
+  destructureDefaultBodyRenamedCallbackMemoChain,
+  destructureDefaultBodyRenamedCallbackSignal,
+  destructureDefaultBodyCallbackMemo,
+  memoLocalFunctionNamedLikeProp,
+  signalSeedLocalFunctionNamedLikeProp,
+  memoModuleBindingNamedLikeProp,
+  memoConstDeclaredAfterNamedLikeProp,
+  markupLocalFunctionNamedLikeProp,
+  destructureDefaultParamRenamedCallbackMemo,
   destructureDefaultBodyCallback,
   destructureDefaultBodyCallbackShadow,
   destructureDefaultComputedScalar,

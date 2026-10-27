@@ -728,6 +728,29 @@ function sharedDependentDefaultGo(
   return `func() ${outputType} { if ${field} == nil { return ${value} }; return ${read} }()`
 }
 
+/**
+ * A binding's value as an evaluator environment entry when only the runtime
+ * evaluator can build its destructure default (one that passes a callback,
+ * `{ b: local = ['y', ''].filter((x) => x !== '') }`): the caller's value,
+ * or the evaluated default when the Input field is nil. Null for a binding
+ * without such a default, or when the field can't tell an absent prop apart.
+ */
+export function evaluatedDefaultBindingGo(
+  ctx: GoEmitContext,
+  param: IRMetadata['propsParams'][number],
+  propsParams: IRMetadata['propsParams'],
+  propTypeOverrides: Map<string, string>,
+): string | null {
+  if (param.defaultValue === undefined || !param.parsed || param.defaultParts) return null
+  const key = param.sourceName ?? param.name
+  const owner = propsParams.find(p => !p.isRest && (p.sourceName ?? p.name) === key) ?? param
+  if (!isNillableGoType(resolvePropGoType(ctx, owner, propTypeOverrides))) return null
+  const value = evalExprGo(ctx, param.parsed, [], propsParams, new Map(), new Set())
+  if (value === null) return null
+  const field = `in.${capitalizeFieldName(key)}`
+  return `func() any { if ${field} == nil { return ${value} }; return ${field} }()`
+}
+
 function isNillableGoType(goType: string): boolean {
   return goType === 'interface{}' || goType === 'any' || goType.startsWith('[]') || goType.startsWith('map[') || goType.startsWith('*')
 }

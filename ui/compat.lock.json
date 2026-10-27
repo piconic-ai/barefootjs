@@ -2882,11 +2882,11 @@
           }
         }
       },
-      "destructure-default-body-renamed-callback-memo": {
+      "destructure-default-body-renamed-callback-memo-chain": {
         "go-template": {
           "kind": "render",
           "limitations": [
-            "destructure-default-callback-memo-read"
+            "destructure-default-callback-unseeded"
           ]
         }
       },
@@ -2916,6 +2916,14 @@
           "escape": {
             "state": "debt"
           }
+        }
+      },
+      "destructure-default-body-renamed-callback-signal": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
         }
       },
       "destructure-default-body-renamed-computed-array": {
@@ -2961,6 +2969,14 @@
         }
       },
       "destructure-default-param-renamed-callback": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-callback-unseeded"
+          ]
+        }
+      },
+      "destructure-default-param-renamed-callback-memo": {
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -5276,6 +5292,118 @@
           }
         }
       },
+      "markup-local-function-named-like-prop": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        }
+      },
+      "memo-const-declared-after-named-like-prop": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        }
+      },
       "memo-division-zero-divisor": {
         "mojolicious": {
           "kind": "render",
@@ -5287,6 +5415,70 @@
           "kind": "render",
           "limitations": [
             "memo-non-finite-quotient"
+          ]
+        }
+      },
+      "memo-local-function-named-like-prop": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        }
+      },
+      "memo-module-binding-named-like-prop": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
           ]
         }
       },
@@ -6929,6 +7121,62 @@
           }
         }
       },
+      "signal-seed-local-function-named-like-prop": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        }
+      },
       "some-typeof-predicate": {
         "blade": {
           "kind": "refusal",
@@ -7971,9 +8219,9 @@
         "description": "A renamed body destructure default filtering an earlier binding with a callback takes the filtered…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback-earlier.ts"
       },
-      "destructure-default-body-renamed-callback-memo": {
-        "description": "A renamed body destructure default holding a callback, read through a memo, renders its value",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback-memo.ts"
+      "destructure-default-body-renamed-callback-memo-chain": {
+        "description": "A renamed body destructure default holding a callback, read through a memo of a memo, renders its…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback-memo-chain.ts"
       },
       "destructure-default-body-renamed-callback-positions": {
         "description": "A renamed body destructure default holding a callback renders in an attribute and a condition",
@@ -7982,6 +8230,10 @@
       "destructure-default-body-renamed-callback-shadow": {
         "description": "A callback parameter in a renamed body destructure default shadows a signal getter of the same name",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback-shadow.ts"
+      },
+      "destructure-default-body-renamed-callback-signal": {
+        "description": "A renamed body destructure default holding a callback seeds a signal with its value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback-signal.ts"
       },
       "destructure-default-body-renamed-computed-array": {
         "description": "A renamed body destructure default computing an array from an earlier binding takes the computed…",
@@ -7998,6 +8250,10 @@
       "destructure-default-param-renamed-callback": {
         "description": "A renamed parameter destructure default holding a callback renders its value when the prop is…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-renamed-callback.ts"
+      },
+      "destructure-default-param-renamed-callback-memo": {
+        "description": "A renamed parameter destructure default holding a callback, read through a memo, renders its value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-renamed-callback-memo.ts"
       },
       "embedded-prop-member-signal-seed": {
         "description": "a signal seeded from an expression over an object prop member renders the computed seed at SSR",
@@ -8131,9 +8387,25 @@
         "description": "A `.map()` projection calling an unlowered method — DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-opaque-projection.ts"
       },
+      "markup-local-function-named-like-prop": {
+        "description": "Markup calling a local function named like a typed prop calls the function, not the prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/markup-local-function-named-like-prop.ts"
+      },
+      "memo-const-declared-after-named-like-prop": {
+        "description": "A memo reading a const declared after it and named like a typed prop reads the const, not the prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-const-declared-after-named-like-prop.ts"
+      },
       "memo-division-zero-divisor": {
         "description": "A memo dividing by a literal or runtime zero renders Infinity, -Infinity or NaN",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-division-zero-divisor.ts"
+      },
+      "memo-local-function-named-like-prop": {
+        "description": "A memo calling a local function named like a typed prop calls the function, not the prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-local-function-named-like-prop.ts"
+      },
+      "memo-module-binding-named-like-prop": {
+        "description": "A memo reading a module-scope binding named like a typed prop reads the binding, not the prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-module-binding-named-like-prop.ts"
       },
       "memo-prop-read-beside-signal-nullish-seed": {
         "description": "a memo reading a prop raw does not take a sibling signal seed’s `??` fallback",
@@ -8222,6 +8494,10 @@
       "signal-object-spread-init": {
         "description": "Signal initializer spreads a prop-derived object directly, in value position",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-object-spread-init.ts"
+      },
+      "signal-seed-local-function-named-like-prop": {
+        "description": "A signal seed calling a local function named like a typed prop calls the function, not the prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-local-function-named-like-prop.ts"
       },
       "some-typeof-predicate": {
         "description": "Off-subset `.some()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
@@ -8729,39 +9005,20 @@
         "BF101"
       ]
     },
-    "destructure-default-callback-memo-read": {
-      "title": "A destructure default holding a callback, read through a memo",
-      "kind": "silent",
-      "given": "a renamed body destructure binding whose default passes a callback to a call (`const { b: local = ['y', ''].filter((x) => x !== '') } = props`), read only through a memo (`createMemo(() => local.length)`), with the prop omitted",
-      "expected": "the memo reads the default value",
-      "actual": "renders the memo read without the default: empty, or computed over the omitted prop",
-      "fixtures": [
-        "destructure-default-body-renamed-callback-memo"
-      ],
-      "adapters": [
-        "hono",
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
     "destructure-default-callback-unseeded": {
       "title": "A destructure default that calls a callback and reads no earlier prop",
       "kind": "silent",
-      "given": "a props destructure default that passes a callback to a call and reads no earlier binding of the pattern (`{ b = ['y', ''].filter((x) => x !== '') }`), in the parameter, body or renamed body destructure, with the prop omitted",
+      "given": "a props destructure default that passes a callback to a call and reads no earlier binding of the pattern (`{ b = ['y', ''].filter((x) => x !== '') }`), in the parameter, body or renamed body destructure, with the prop omitted: read directly, or through a memo or signal seed that the backend computes from the binding (`createMemo(() => local.length)`, `createSignal(local.length)`)",
       "expected": "the omitted prop takes the default value",
       "actual": "renders the omitted prop as an empty value, without its default",
       "fixtures": [
         "destructure-default-body-callback",
         "destructure-default-body-callback-shadow",
         "destructure-default-body-renamed-callback",
-        "destructure-default-param-renamed-callback"
+        "destructure-default-body-renamed-callback-memo-chain",
+        "destructure-default-body-renamed-callback-signal",
+        "destructure-default-param-renamed-callback",
+        "destructure-default-param-renamed-callback-memo"
       ],
       "adapters": [
         "go-template"
@@ -8839,6 +9096,31 @@
         "BF021"
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
+    },
+    "local-function-named-like-prop": {
+      "title": "A local or module binding named like a typed prop",
+      "kind": "silent",
+      "given": "a (props)-arg component with a typed prop it never destructures (`props: { value?: number }`) and a binding of the same name it reads: a local function (`function value() { return 1 }`) called from a memo, a signal seed or markup, an ordinary const declared after the memo that reads it, or a module-scope const read by a memo; the colliding prop supplied",
+      "expected": "the read resolves to the binding",
+      "actual": "renders the supplied prop, or nothing, instead of the binding",
+      "fixtures": [
+        "markup-local-function-named-like-prop",
+        "memo-const-declared-after-named-like-prop",
+        "memo-local-function-named-like-prop",
+        "memo-module-binding-named-like-prop",
+        "signal-seed-local-function-named-like-prop"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
     },
     "loop-param-named-props-member": {
       "title": "A member read of a loop row parameter named `props`",

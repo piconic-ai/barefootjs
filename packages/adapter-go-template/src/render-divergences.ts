@@ -134,16 +134,33 @@ export const renderDivergences: RenderDivergences = {
   // const itself is never set, so the read renders nothing.
   'children-alias-hop-shadowed-intermediate': { limitation: 'loop-shadowed-const-alias-hop' },
   // A destructure default that calls a callback and reads no earlier prop
-  // (`{ b = ['y', ''].filter((x) => x !== '') }`): the runtime evaluator
-  // can't run the callback, so the props constructor applies no default and
-  // an omitted prop renders empty.
+  // (`{ b = ['y', ''].filter((x) => x !== '') }`): the props constructor
+  // has no conversion from the evaluated array to the field's slice type,
+  // so it applies no default and an omitted prop renders empty.
   'destructure-default-body-renamed-callback': { limitation: 'destructure-default-callback-unseeded' },
   'destructure-default-body-callback': { limitation: 'destructure-default-callback-unseeded' },
   'destructure-default-param-renamed-callback': { limitation: 'destructure-default-callback-unseeded' },
   'destructure-default-body-callback-shadow': { limitation: 'destructure-default-callback-unseeded' },
-  // The same default read only through a memo: the memo reads the prop
-  // without it.
-  'destructure-default-body-renamed-callback-memo': { limitation: 'destructure-default-callback-memo-read' },
+  // The parameter form read through a memo: the memo reads the binding
+  // without the default too.
+  'destructure-default-param-renamed-callback-memo': { limitation: 'destructure-default-callback-unseeded' },
+  // A memo calling a local function named like a typed prop the body never
+  // destructures: the server render reads the prop for the call.
+  'memo-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
+  // The same shape from markup: the server render reads the prop for the
+  // call. From a signal seed it renders nothing.
+  'markup-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
+  'signal-seed-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
+  // A memo reading an ordinary const declared after it, or a module-scope
+  // binding, named like a typed prop: the server render reads the prop.
+  'memo-const-declared-after-named-like-prop': { limitation: 'local-function-named-like-prop' },
+  'memo-module-binding-named-like-prop': { limitation: 'local-function-named-like-prop' },
+  // A signal seeded from the binding (`createSignal(local.length)`), and an
+  // identity memo over it (`createMemo(() => local)`): the Go seed reads the
+  // Input field without the default. A memo the runtime evaluator computes
+  // (`createMemo(() => local.length)`) applies it.
+  'destructure-default-body-renamed-callback-signal': { limitation: 'destructure-default-callback-unseeded' },
+  'destructure-default-body-renamed-callback-memo-chain': { limitation: 'destructure-default-callback-unseeded' },
   // `omitted-optional-number-arithmetic` used to sit here: an omitted
   // optional number prop read as `0` in arithmetic. A prop that can only be
   // absent now reads its nil as `undefined`, giving `NaN` (#3533).
