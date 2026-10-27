@@ -1615,12 +1615,6 @@
               ]
             },
             {
-              "fixture": "string-index-non-finite",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            },
-            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -3699,18 +3693,6 @@
               ]
             },
             {
-              "fixture": "nullish-operand-division-remainder",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            },
-            {
-              "fixture": "number-division-zero-divisor",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            },
-            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -3729,12 +3711,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3750,12 +3726,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "string-index-non-finite",
-              "limitations": [
-                "division-zero-divisor"
               ]
             }
           ]
@@ -5248,18 +5218,6 @@
               ]
             },
             {
-              "fixture": "nullish-operand-division-remainder",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            },
-            {
-              "fixture": "number-division-zero-divisor",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -5299,12 +5257,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
               ]
             },
             {
@@ -8148,18 +8100,6 @@
               ]
             },
             {
-              "fixture": "nullish-operand-division-remainder",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            },
-            {
-              "fixture": "number-division-zero-divisor",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            },
-            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -8205,12 +8145,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
               ]
             },
             {
@@ -8277,12 +8211,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "string-index-non-finite",
-              "limitations": [
-                "division-zero-divisor"
               ]
             },
             {
@@ -11021,18 +10949,6 @@
               ]
             },
             {
-              "fixture": "nullish-operand-division-remainder",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            },
-            {
-              "fixture": "number-division-zero-divisor",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            },
-            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -11072,12 +10988,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
               ]
             },
             {
@@ -11138,12 +11048,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "string-index-non-finite",
-              "limitations": [
-                "division-zero-divisor"
               ]
             },
             {
@@ -13833,18 +13737,6 @@
               ]
             },
             {
-              "fixture": "nullish-operand-division-remainder",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            },
-            {
-              "fixture": "number-division-zero-divisor",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            },
-            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -13884,12 +13776,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
               ]
             },
             {
@@ -13950,12 +13836,6 @@
               "fixture": "static-nested-loop-ref",
               "limitations": [
                 "signal-read-in-nested-static-loop"
-              ]
-            },
-            {
-              "fixture": "string-index-non-finite",
-              "limitations": [
-                "division-zero-divisor"
               ]
             },
             {
@@ -16228,27 +16108,9 @@
               ]
             },
             {
-              "fixture": "number-division-zero-divisor",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
-              ]
-            },
-            {
-              "fixture": "string-index-non-finite",
-              "limitations": [
-                "division-zero-divisor"
               ]
             }
           ]
@@ -17060,12 +16922,6 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
-            },
-            {
-              "fixture": "string-index-non-finite",
-              "limitations": [
-                "division-zero-divisor"
-              ]
             }
           ]
         },
@@ -17163,16 +17019,7 @@
         "hono": {},
         "blade": {},
         "erb": {},
-        "go-template": {
-          "gaps": [
-            {
-              "fixture": "string-index-non-finite",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            }
-          ]
-        },
+        "go-template": {},
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},
@@ -18147,12 +17994,6 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
-            },
-            {
-              "fixture": "string-index-non-finite",
-              "limitations": [
-                "division-zero-divisor"
-              ]
             }
           ]
         },
@@ -18851,22 +18692,7 @@
           ]
         },
         "erb": {},
-        "go-template": {
-          "gaps": [
-            {
-              "fixture": "nullish-operand-division-remainder",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
-              ]
-            }
-          ]
-        },
+        "go-template": {},
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},
@@ -19308,34 +19134,7 @@
           ]
         },
         "erb": {},
-        "go-template": {
-          "gaps": [
-            {
-              "fixture": "nullish-operand-division-remainder",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            },
-            {
-              "fixture": "number-division-zero-divisor",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
-              ]
-            },
-            {
-              "fixture": "string-index-non-finite",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            }
-          ]
-        },
+        "go-template": {},
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},
@@ -20443,12 +20242,6 @@
               "limitations": [
                 "conditional-nested-const-loop-source"
               ]
-            },
-            {
-              "fixture": "nullish-operand-division-remainder",
-              "limitations": [
-                "division-zero-divisor"
-              ]
             }
           ]
         },
@@ -20793,18 +20586,6 @@
               ]
             },
             {
-              "fixture": "nullish-operand-division-remainder",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            },
-            {
-              "fixture": "number-division-zero-divisor",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            },
-            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -20841,12 +20622,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
-              ]
-            },
-            {
               "fixture": "static-loop-client-only-nested",
               "limitations": [
                 "client-only-loop-in-static-loop"
@@ -20862,12 +20637,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "string-index-non-finite",
-              "limitations": [
-                "division-zero-divisor"
               ]
             },
             {
@@ -22087,12 +21856,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "string-index-non-finite",
-              "limitations": [
-                "division-zero-divisor"
               ]
             },
             {
@@ -24103,28 +23866,7 @@
           ]
         },
         "erb": {},
-        "go-template": {
-          "gaps": [
-            {
-              "fixture": "number-division-zero-divisor",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-quotient",
-              "limitations": [
-                "negative-zero-remainder-quotient"
-              ]
-            },
-            {
-              "fixture": "string-index-non-finite",
-              "limitations": [
-                "division-zero-divisor"
-              ]
-            }
-          ]
-        },
+        "go-template": {},
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},

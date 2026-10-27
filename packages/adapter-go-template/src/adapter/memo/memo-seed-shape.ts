@@ -174,9 +174,10 @@ export type BoxedArithmeticSeed =
   | { kind: 'numeric-operands'; op: string; left: ParsedExpr; right: ParsedExpr }
   /**
    * `<getter()> / N`, `props.X / N` or `<destructured prop> / N` (`N` a
-   * positive integer literal): Go's `/` on an int operand truncates where JS
-   * yields a fraction (`1234567890 / 8` is `154320986.25`), so it computes
-   * through `bf.Div` (#3379).
+   * non-negative integer literal): Go's `/` on an int operand truncates where
+   * JS yields a fraction (`1234567890 / 8` is `154320986.25`), and a zero `N`
+   * is IEEE division (`Infinity`, #3692), so it computes through `bf.Div`
+   * (#3379).
    */
   | { kind: 'literal-division'; dividend: ParsedExpr; divisor: number }
   /**
@@ -265,7 +266,7 @@ function numericOperandsSeed(
 function literalDivisionSeed(body: ParsedExpr, propsParams: { name: string }[]): BoxedArithmeticSeed | null {
   if (body.kind !== 'binary' || body.op !== '/') return null
   const divisor = nonNegativeIntLiteral(body.right)
-  if (divisor === null || divisor === 0) return null
+  if (divisor === null) return null
   const left = body.left
   if (getterCallName(left)) return { kind: 'literal-division', dividend: left, divisor }
   const propName = propsMemberName(left) ?? (left.kind === 'identifier' ? left.name : null)
@@ -302,8 +303,7 @@ function boxedMemoChainSeed(
   }
   if (body.kind !== 'binary' || !(body.op in BOXED_ARITHMETIC_HELPER)) return null
   const operand = nonNegativeIntLiteral(body.right)
-  // JS `x / 0` is `Infinity`; `bf.Div` returns 0. Not the same value.
-  if (operand === null || (body.op === '/' && operand === 0)) return null
+  if (operand === null) return null
   const dep = getterCallName(body.left)
   return dep && isBoxedMemoRead(ctx, dep, signals, propsParams, seen)
     ? { kind: 'boxed-memo-literal', op: body.op, dep, operand }

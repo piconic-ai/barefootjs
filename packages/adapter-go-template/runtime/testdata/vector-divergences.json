@@ -4,10 +4,6 @@
   "runner": "packages/adapter-go-template/runtime/vectors_test.go",
   "spec": "spec/template-helpers.md",
   "divergences": {
-    "div/zero divisor yields Infinity": {
-      "expect": 0,
-      "reason": "bf.Div degrades to 0 so a template render survives instead of emitting +Inf"
-    },
     "number/empty string coerces to 0": {
       "expect": { "$num": "NaN" },
       "reason": "deliberate: empty input must not silently zero downstream arithmetic"
