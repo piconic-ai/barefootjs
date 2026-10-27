@@ -189,6 +189,13 @@ export interface AnalyzerContext {
    * extraction. Flushed into `signals` at the end of visitComponentBody.
    */
   signalTupleRefs: Map<string, PendingSignalTuple>
+  /**
+   * Writers of a signal seed's / memo body's client template text
+   * (`SignalInfo.templateInitialValue`, `MemoInfo.templateBodyExpr`), run
+   * once the whole component body is walked so the props bindings they read
+   * live are decided against every body binding (`templatePropReadParams`).
+   */
+  templatePropReadWriters: Array<() => void>
 
   // Props
   propsType: TypeInfo | null
@@ -291,6 +298,7 @@ export function createAnalyzerContext(
     reactiveShapedHelpers: new Set(),
     cleanFactoryImports: new Set(),
     signalTupleRefs: new Map(),
+    templatePropReadWriters: [],
 
     propsType: null,
     propsParams: [],

@@ -143,6 +143,9 @@ export const renderDivergences: RenderDivergences = {
   // The parameter form read through a memo: the memo reads the binding
   // without the default too.
   'destructure-default-param-renamed-callback-memo': { limitation: 'destructure-default-callback-unseeded' },
+  // A memo calling a local function named like a typed prop the body never
+  // destructures: the server render reads the prop for the call.
+  'memo-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
   // A signal seeded from the binding (`createSignal(local.length)`), and an
   // identity memo over it (`createMemo(() => local)`): the Go seed reads the
   // Input field without the default. A memo the runtime evaluator computes

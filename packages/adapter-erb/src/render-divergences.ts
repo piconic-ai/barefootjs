@@ -70,6 +70,9 @@ export const renderDivergences: RenderDivergences = {
   // The parameter form read through a memo: the memo reads the binding
   // without the default too.
   'destructure-default-param-renamed-callback-memo': { limitation: 'destructure-default-callback-unseeded' },
+  // A memo calling a local function named like a typed prop the body never
+  // destructures: the server render reads the prop for the call.
+  'memo-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
   // `omitted-optional-number-arithmetic` used to sit here: an omitted
   // optional number prop read as `0` in arithmetic. A prop that can only be
   // absent now reads its nil as `undefined`, giving `NaN` (#3533).

@@ -1,5 +1,5 @@
 import ts from 'typescript'
-import type { ConstantInfo, MemoInfo, ParamInfo, PropUsage, SignalInfo, SignalPropSeed } from './types.ts'
+import type { ConstantInfo, FunctionInfo, MemoInfo, ParamInfo, PropUsage, SignalInfo, SignalPropSeed } from './types.ts'
 import type { ParsedExpr } from './expression-parser.ts'
 import { propHasPropertyAccess } from './ir-to-client-js/compute-prop-usage.ts'
 import { parsePropReadInitializer } from './ir-to-client-js/prune-unused-prop-extractions.ts'
@@ -115,8 +115,8 @@ export function isPropsAliasConst(
  * binding into a live prop read: the init body's alias rewrite
  * (`resolveBodyPropAliases`) and parameter rewrite
  * (`rewriteDestructuredPropReads`), the reactive attribute rewrite
- * (`rewriteDestructuredPropsInExpr`), and the template's prop shadow guard
- * (`propShadowingNames`, #3579).
+ * (`rewriteDestructuredPropsInExpr`), and the template's prop read set
+ * (`templatePropReadParams`, #3579).
  */
 export function keepsDeclaredValue(
   b: { declarationKind?: ConstantInfo['declarationKind']; mutatedAfterDeclaration?: boolean; reassigned?: boolean },
@@ -167,55 +167,55 @@ export function isRenamedBodyPropParam(
   return propsParams.some(p => !p.isRest && p.name === c.name && p.sourceName === key)
 }
 
-/** The component bindings {@link propShadowingNames} and {@link templatePropReadParams} read. */
-export interface PropShadowingBindings {
+/** The component bindings {@link templatePropReadParams} reads. */
+export interface TemplatePropReadBindings {
   propsObjectName: string | null
   propsParams: readonly ParamInfo[]
   signals: readonly Pick<SignalInfo, 'getter' | 'setter'>[]
   memos: readonly Pick<MemoInfo, 'name'>[]
+  localFunctions: readonly Pick<FunctionInfo, 'name'>[]
   localConstants: readonly ConstantInfo[]
 }
 
 /**
- * The component-scope names that shadow a prop of the same name in a
- * `(props)`-arg component: its signals, memos and locals, except a local that
- * is the prop itself. Empty for a destructured-parameter component.
+ * The props bindings a client `template:` reads as their live prop
+ * (`livePropReadExpr`, default included). The one set the Phase-1 markup
+ * rewrite and a signal seed's or memo body's template text share, so a
+ * binding read through a memo takes the same default as one read in markup.
+ *
+ * In a destructured-parameter component that is every parameter. In a
+ * `(props)`-arg component a bare name is a prop only where the body binds it
+ * as one, so the set is exactly the body bindings that hold their prop
+ * ({@link holdsProp}) and that no other component binding (a signal, memo,
+ * local function or other local) shares a name with. A typed prop the body
+ * does not bind is not in scope as a bare name: a bare `value` there is a
+ * local function, a module binding or a global, never `_p.value`.
  */
-export function propShadowingNames(b: PropShadowingBindings): Set<string> {
-  const shadowed = new Set<string>()
-  if (!b.propsObjectName) return shadowed
+export function templatePropReadParams(b: TemplatePropReadBindings): ParamInfo[] {
+  if (!b.propsObjectName) return [...b.propsParams]
+  const held = new Set<string>()
+  const other = new Set<string>()
   for (const s of b.signals) {
-    shadowed.add(s.getter)
-    if (s.setter) shadowed.add(s.setter)
+    other.add(s.getter)
+    if (s.setter) other.add(s.setter)
   }
-  for (const m of b.memos) shadowed.add(m.name)
-  for (const c of b.localConstants) {
-    // A body destructure binding that is reassigned or mutated no longer
-    // holds its prop, renamed or not, so the template keeps it a local.
-    if (c.propsDestructure && !keepsDeclaredValue(c)) {
-      shadowed.add(c.name)
-      continue
-    }
-    if (isPropsAliasConst(c, b.propsObjectName)) continue
-    // A renamed body binding with a default reads as its own prop entry,
-    // like the parameter form (#3579).
-    if (isRenamedBodyPropParam(c, b.propsParams)) continue
-    shadowed.add(c.name)
-  }
-  return shadowed
+  for (const m of b.memos) other.add(m.name)
+  for (const f of b.localFunctions) other.add(f.name)
+  for (const c of b.localConstants) (holdsProp(c, b.propsObjectName, b.propsParams) ? held : other).add(c.name)
+  return b.propsParams.filter(p => held.has(p.name) && !other.has(p.name))
 }
 
 /**
- * The props bindings a client `template:` reads as their live prop
- * (`livePropReadExpr`, default included): every destructured parameter, and
- * in a `(props)`-arg component each body destructure binding that holds its
- * prop ({@link propShadowingNames}). The one set the Phase-1 markup rewrite
- * and a signal seed's or memo body's template text share, so a binding read
- * through a memo takes the same default as one read in markup.
+ * Whether a `(props)`-arg component's body binding is the prop itself: an
+ * alias (`const { b } = props`, `const b = props.b`) or a renamed body
+ * binding with a default, which reads as its own prop entry like the
+ * parameter form (#3579). A body destructure binding that is reassigned or
+ * mutated no longer holds its prop, renamed or not, so the template keeps it
+ * a local.
  */
-export function templatePropReadParams(b: PropShadowingBindings): ParamInfo[] {
-  const shadowed = propShadowingNames(b)
-  return b.propsParams.filter(p => !shadowed.has(p.name))
+function holdsProp(c: ConstantInfo, propsObjectName: string, propsParams: readonly ParamInfo[]): boolean {
+  if (c.propsDestructure && !keepsDeclaredValue(c)) return false
+  return isPropsAliasConst(c, propsObjectName) || isRenamedBodyPropParam(c, propsParams)
 }
 
 /**

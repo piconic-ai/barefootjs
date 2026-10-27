@@ -1082,6 +1082,7 @@ import { fixture as destructureDefaultBodyRenamedCallbackMemo } from './destruct
 import { fixture as destructureDefaultBodyRenamedCallbackMemoChain } from './destructure-default-body-renamed-callback-memo-chain'
 import { fixture as destructureDefaultBodyRenamedCallbackSignal } from './destructure-default-body-renamed-callback-signal'
 import { fixture as destructureDefaultBodyCallbackMemo } from './destructure-default-body-callback-memo'
+import { fixture as memoLocalFunctionNamedLikeProp } from './memo-local-function-named-like-prop'
 import { fixture as destructureDefaultParamRenamedCallbackMemo } from './destructure-default-param-renamed-callback-memo'
 import { fixture as destructureDefaultBodyCallback } from './destructure-default-body-callback'
 import { fixture as destructureDefaultParamRenamedCallback } from './destructure-default-param-renamed-callback'
@@ -1920,6 +1921,7 @@ export const jsxFixtures: JSXFixture[] = [
   destructureDefaultBodyRenamedCallbackMemoChain,
   destructureDefaultBodyRenamedCallbackSignal,
   destructureDefaultBodyCallbackMemo,
+  memoLocalFunctionNamedLikeProp,
   destructureDefaultParamRenamedCallbackMemo,
   destructureDefaultBodyCallback,
   destructureDefaultParamRenamedCallback,

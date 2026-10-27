@@ -4820,6 +4820,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -5061,6 +5067,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -5404,6 +5416,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-prop-read-beside-signal-nullish-seed",
               "limitations": [
                 "memo-prop-read-takes-signal-nullish-fallback"
@@ -5696,6 +5714,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -5952,6 +5976,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -6193,6 +6223,12 @@
               "fixture": "memo-division-zero-divisor",
               "limitations": [
                 "memo-non-finite-quotient"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -6452,6 +6488,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -6699,6 +6741,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -6961,6 +7009,12 @@
               "fixture": "memo-division-zero-divisor",
               "limitations": [
                 "memo-non-finite-quotient"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -7606,6 +7660,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -7919,6 +7979,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -8358,6 +8424,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-prop-read-beside-signal-nullish-seed",
               "limitations": [
                 "memo-prop-read-takes-signal-nullish-fallback"
@@ -8722,6 +8794,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -9050,6 +9128,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -9357,6 +9441,12 @@
               "fixture": "memo-division-zero-divisor",
               "limitations": [
                 "memo-non-finite-quotient"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -9682,6 +9772,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -9995,6 +10091,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -10323,6 +10425,12 @@
               "fixture": "memo-division-zero-divisor",
               "limitations": [
                 "memo-non-finite-quotient"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {

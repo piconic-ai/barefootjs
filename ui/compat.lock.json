@@ -5476,6 +5476,62 @@
           ]
         }
       },
+      "memo-local-function-named-like-prop": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "local-function-named-like-prop"
+          ]
+        }
+      },
       "memo-prop-read-beside-signal-nullish-seed": {
         "go-template": {
           "kind": "render",
@@ -8321,6 +8377,10 @@
         "description": "A memo dividing by a literal or runtime zero renders Infinity, -Infinity or NaN",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-division-zero-divisor.ts"
       },
+      "memo-local-function-named-like-prop": {
+        "description": "A memo calling a local function named like a typed prop calls the function, not the prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-local-function-named-like-prop.ts"
+      },
       "memo-prop-read-beside-signal-nullish-seed": {
         "description": "a memo reading a prop raw does not take a sibling signal seed’s `??` fallback",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-prop-read-beside-signal-nullish-seed.ts"
@@ -9020,6 +9080,27 @@
         "BF021"
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
+    },
+    "local-function-named-like-prop": {
+      "title": "A memo calling a local function named like a typed prop",
+      "kind": "silent",
+      "given": "a (props)-arg component whose body declares a function named like a typed prop it never destructures (`function value() { return 1 }` with `props: { value?: number }`), called from a memo (`createMemo(() => value())`), with the colliding prop supplied",
+      "expected": "the memo calls the local function",
+      "actual": "renders the supplied prop instead of the function result",
+      "fixtures": [
+        "memo-local-function-named-like-prop"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
     },
     "loop-param-named-props-member": {
       "title": "A member read of a loop row parameter named `props`",

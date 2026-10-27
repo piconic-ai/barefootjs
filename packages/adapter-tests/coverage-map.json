@@ -7618,6 +7618,16 @@
         "text"
       ]
     },
+    "memo-local-function-named-like-prop": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "memo-loop-param-collision": {
       "kinds": [
         "array-method",

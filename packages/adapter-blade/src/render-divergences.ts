@@ -58,6 +58,9 @@ export const renderDivergences: RenderDivergences = {
   // The parameter form read through a memo: the memo reads the binding
   // without the default too.
   'destructure-default-param-renamed-callback-memo': { limitation: 'destructure-default-callback-unseeded' },
+  // A memo calling a local function named like a typed prop the body never
+  // destructures: the server render reads the prop for the call.
+  'memo-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
   // A const alias chain (`const a = children; const b = a`) read in a loop
   // row that binds a name the chain passes through (`rows.map(a => …{b}…)`):
   // the template cannot inline the const through the shadowed name, and the
