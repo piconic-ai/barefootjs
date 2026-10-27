@@ -222,7 +222,11 @@ function emitNilGuardedAttr(host: ElementAttrHost, value: ExpressionAttr, nameTo
   // SolidJS-style props-object pattern too, not just destructured params.
   const field = bare.nillablePropName !== null ? host.nillablePropFieldRef(bare.nillablePropName, bare.viaPropsObject) : null
   if (field !== null) {
-    return `{{if ne ${field} nil}}${nameTok}="{{${ctx.convertExpressionToGo(value.expr, undefined, value.parsed)}}}"{{end}}`
+    // A boxed number (a JSON-decoded caller value, a literal default) is a
+    // `float64`: `bf_text` spells it as JS `String(n)` does (`1500000`, not
+    // `fmt`'s `1.5e+06`).
+    const goText = host.numericTextExpression(ctx.convertExpressionToGo(value.expr, undefined, value.parsed), value.parsed)
+    return `{{if ne ${field} nil}}${nameTok}="{{${goText}}}"{{end}}`
   }
   // The same omission for a bare read of a nullable signal (`title={s()}`
   // with `s()` undefined, #3304): its `interface{}` field holds `nil`.

@@ -2982,6 +2982,20 @@
       }
     }
   ],
+  "destructure-default-large-number": [
+    {
+      "name": "gen:b:negative",
+      "props": {
+        "b": -7
+      }
+    },
+    {
+      "name": "gen:b:large",
+      "props": {
+        "b": 1234567890
+      }
+    }
+  ],
   "destructure-default-literal-spelling": [
     {
       "name": "gen:n:absent",

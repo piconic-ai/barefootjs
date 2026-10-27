@@ -3659,6 +3659,19 @@
         "text"
       ]
     },
+    "destructure-default-large-number": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "destructure-default-literal-spelling": {
       "kinds": [
         "binary",

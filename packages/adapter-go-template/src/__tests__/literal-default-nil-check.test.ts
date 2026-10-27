@@ -24,6 +24,13 @@ function types(src: string): string {
   return adapter.generate(JSON.parse(irFile.content) as ComponentIR).types ?? ''
 }
 
+function template(src: string): string {
+  const result = compileJSX(src.trimStart(), 'T.tsx', { adapter: new GoTemplateAdapter() })
+  const file = result.files.find(f => f.type === 'markedTemplate')
+  if (!file) throw new Error('no template')
+  return file.content
+}
+
 function inputStruct(goTypes: string): string {
   const match = goTypes.match(/type \w+Input struct \{[\s\S]*?\n\}/)
   if (!match) throw new Error('no Input struct')
@@ -56,7 +63,7 @@ export function Box({ tag = 'z', n = 2, on = true, blank = '', zero = 0, off = f
   test('the constructor applies the default to a nil field only', () => {
     const goTypes = types(SRC)
     expect(goTypes).toContain('if in.Tag == nil {\n\t\tin.Tag = "z"\n\t}')
-    expect(goTypes).toContain('if in.N == nil {\n\t\tin.N = 2\n\t}')
+    expect(goTypes).toContain('if in.N == nil {\n\t\tin.N = 2.0\n\t}')
     expect(goTypes).toContain('if in.On == nil {\n\t\tin.On = true\n\t}')
     // The zero test of a concrete field would read an explicit `''` / `0` /
     // `false` as absent.
@@ -77,11 +84,15 @@ describe('a literal default is emitted from its parsed value, not its spelling',
   // source-text translation that knew only decimal numbers refused `1e3`
   // with BF101 ("reads an earlier prop") and spelled `'xA'` verbatim.
   test.each([
-    ['1e3', 'number', '1000'],
-    ['0x10', 'number', '16'],
+    ['1e3', 'number', '1000.0'],
+    ['0x10', 'number', '16.0'],
     ['.5', 'number', '0.5'],
-    ['1_000', 'number', '1000'],
-    ['-1e3', 'number', '-1000'],
+    ['1_000', 'number', '1000.0'],
+    ['-1e3', 'number', '-1000.0'],
+    // Past int64: an integer constant boxed into `interface{}` overflows
+    // `int` and fails `go build`; a float constant boxes as `float64`.
+    ['1e20', 'number', '100000000000000000000.0'],
+    ['1e21', 'number', '1e+21'],
     ["'x\\u0041'", 'string', '"xA"'],
     ['`tpl`', 'string', '"tpl"'],
   ])('`n = %s` compiles and applies its value to a nil field', (spelling, tsType, goValue) => {
@@ -93,5 +104,20 @@ export function T({ n = ${spelling} }: { n?: ${tsType} }) {
     expect(inputStruct(goTypes)).toMatch(/\bN interface\{\}/)
     expect(goTypes).toContain(`if in.N == nil {\n\t\tin.N = ${goValue}\n\t}`)
     expect(goTypes).toContain(`N: func() interface{} { if in.N == nil { return ${goValue} }; return in.N }(),`)
+  })
+})
+
+describe('a boxed numeric default renders with the JS number spelling', () => {
+  // The default boxes as `float64`, like a JSON-decoded caller number; `fmt`
+  // spells a float64 `1e20` as `1e+20` and `1500000` as `1.5e+06`, so the
+  // nil-guarded attribute takes `bf_text` as text position does.
+  test('a nil-guarded attribute reads the value through bf_text', () => {
+    const tpl = template(`
+export function T({ n = 1e20, s = 'x' }: { n?: number; s?: string }) {
+  return <p data-n={n} data-s={s}>{n}</p>
+}
+`)
+    expect(tpl).toContain('{{if ne .N nil}}data-n="{{bf_text .N}}"{{end}}')
+    expect(tpl).toContain('{{if ne .S nil}}data-s="{{.S}}"{{end}}')
   })
 })

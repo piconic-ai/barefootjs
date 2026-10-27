@@ -456,10 +456,10 @@ export function applyGoFallback(ref: string, fallback: string): string {
   if (fallback === 'true' || fallback === 'false') {
     return fallback === 'true' ? `(${ref} || true)` : ref
   }
-  // A number spelled from its parsed value (`propLiteralDefaultGo`) may take
-  // an exponent (`1e+21`).
+  // A number spelled from its parsed value (`propLiteralDefaultGo`) is a
+  // float constant and may take an exponent (`0.0`, `1e+21`).
   if (/^-?\d+(\.\d+)?(e[+-]?\d+)?$/.test(fallback)) {
-    if (fallback === '0') return ref
+    if (Number(fallback) === 0) return ref
     return `func() float64 { if ${ref} == 0 { return ${fallback} }; return ${ref} }()`
   }
   // String fallback (quoted).

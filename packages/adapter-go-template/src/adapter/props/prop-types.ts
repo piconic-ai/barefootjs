@@ -875,13 +875,26 @@ function scalarLiteralDefault(param: IRMetadata['propsParams'][number]): string 
  * all yield the same number, and a string default carries its decoded value
  * (`'a\nb'` holds a newline), re-quoted for Go. Null when the default is not
  * a scalar literal or has no finite Go spelling.
+ *
+ * A number is spelled as an untyped FLOAT constant (`2.0`, `0.5`,
+ * `100000000000000000000.0`, `1e+21`): boxed into an `interface{}` field it
+ * holds a `float64`, the type a JSON-decoded caller number takes and the one
+ * `bf.Text` / `bf.String` spell as JS `String(n)` does. An integer
+ * constant would box as `int`, and one past int64 (`1e20`) would not
+ * compile at all.
  */
 export function propLiteralDefaultGo(param: IRMetadata['propsParams'][number]): string | null {
   const value = scalarLiteralDefault(param)
   if (typeof value === 'string') return JSON.stringify(value)
   if (typeof value === 'boolean') return value ? 'true' : 'false'
-  if (typeof value === 'number' && Number.isFinite(value)) return String(value)
+  if (typeof value === 'number' && Number.isFinite(value)) return goFloatConstant(value)
   return null
+}
+
+/** `value` as a Go untyped float constant: JS `String` spelling, with `.0` when it has neither a point nor an exponent. */
+function goFloatConstant(value: number): string {
+  const text = String(value)
+  return /[.e]/.test(text) ? text : `${text}.0`
 }
 
 /**

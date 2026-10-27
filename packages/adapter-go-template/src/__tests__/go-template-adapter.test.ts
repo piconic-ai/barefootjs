@@ -1144,7 +1144,7 @@ export function Counter({ size = 5 }: { size?: number }) {
       const result = adapter.generate(ir)
       const types = result.types!
       expect(types).toContain('Size interface{}')
-      expect(types).toContain('if in.Size == nil {\n\t\tin.Size = 5\n\t}')
+      expect(types).toContain('if in.Size == nil {\n\t\tin.Size = 5.0\n\t}')
       expect(types).not.toContain('in.Size == 0')
     })
 
@@ -2803,9 +2803,10 @@ function C({ rows }: { rows?: number }) {
 }
 `
       const { template } = compileAndGenerate(source)
-      expect(template).toContain('{{if ne .Rows nil}}rows="{{.Rows}}"{{end}}')
+      // A boxed number is spelled through `bf_text` (JS `String(n)`).
+      expect(template).toContain('{{if ne .Rows nil}}rows="{{bf_text .Rows}}"{{end}}')
       // Must NOT emit the bare unconditional form.
-      expect(template).not.toMatch(/(?<!if ne \.Rows nil}})rows="\{\{\.Rows\}\}"/)
+      expect(template).not.toMatch(/(?<!if ne \.Rows nil}})rows="\{\{bf_text \.Rows\}\}"/)
     })
 
     test('leaves a concrete/defaulted attr unconditional (scope did not widen)', () => {

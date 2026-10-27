@@ -3020,6 +3020,20 @@
           }
         }
       },
+      "destructure-default-large-number": {
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "bare-number-prop-perl-precision"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "bare-number-prop-perl-precision"
+          ]
+        }
+      },
       "destructure-default-param-computed-array": {
         "go-template": {
           "kind": "refusal",
@@ -8105,6 +8119,10 @@
         "description": "A renamed body destructure default computing an array from an earlier binding takes the computed…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-computed-array.ts"
       },
+      "destructure-default-large-number": {
+        "description": "An integral destructure default past int64 applies 100000000000000000000 when absent and keeps an…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-large-number.ts"
+      },
       "destructure-default-param-computed-array": {
         "description": "A parameter destructure default computing an array from an earlier binding takes the computed array",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-computed-array.ts"
@@ -8637,6 +8655,20 @@
       ],
       "diagnostics": [
         "BF056"
+      ]
+    },
+    "bare-number-prop-perl-precision": {
+      "title": "A bare number prop with more than 15 significant digits",
+      "kind": "silent",
+      "given": "a number prop (or its literal destructure default) of 1e15 or more, such as `{ b = 1e20 }`, read bare in text or attribute position",
+      "expected": "JS stringifies it with `Number::toString` (`100000000000000000000`)",
+      "actual": "renders Perl's `%.15g` spelling (`1e+20`)",
+      "fixtures": [
+        "destructure-default-large-number"
+      ],
+      "adapters": [
+        "mojolicious",
+        "xslate"
       ]
     },
     "boolean-in-static-loop-item": {
