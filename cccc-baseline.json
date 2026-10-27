@@ -33,14 +33,8 @@
       ]
     },
     "packages/adapter-go-template/src/adapter/go-template-adapter.ts": {
-      "arrayMethod": [
-        33
-      ],
       "bodyChildrenReferenceOuterReactiveState": [
         38
-      ],
-      "callbackMethod": [
-        39
       ],
       "checkImportedLoopChildComponents/visit": [
         32
@@ -50,9 +44,6 @@
       ],
       "isStringExpr": [
         29
-      ],
-      "member": [
-        33
       ],
       "renderComponent": [
         36
