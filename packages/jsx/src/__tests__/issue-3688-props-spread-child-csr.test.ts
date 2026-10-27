@@ -89,10 +89,30 @@ describe('#3688 — the client JS merges a props-object spread in source order',
 
   test("initChild reads an explicit prop written before the spread from the caller's props first", () => {
     const js = clientJs(source)
-    expect(js).toContain(`get tone() { return "tone" in _p ? _p["tone"] : "first" }`)
-    expect(js).toContain(`get size() { return "size" in _p ? _p["size"] : "s" }`)
+    expect(js).toContain(`get tone() { return ("tone" in _p ? _p["tone"] : "first") }`)
+    expect(js).toContain(`get size() { return ("size" in _p ? _p["size"] : "s") }`)
     // A prop after the spread always wins: a plain override.
     expect(js).toContain(`label: "last" }`)
+  })
+
+  test('both reactive DOM mirrors read an overridden explicit prop caller-first, like initChild', () => {
+    const js = clientJs(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      import { Tag } from './tag'
+      export function Live(props: { title?: string }) {
+        const [title, setTitle] = createSignal('first')
+        return <p onClick={() => setTitle('second')}><Tag title={title()} {...props} last={title()} /></p>
+      }
+    `)
+    const callerFirst = `("title" in _p ? _p["title"] : bfSignal_title())`
+    expect(js).toContain(`get title() { return ${callerFirst} }`)
+    // The signal-getter mirror (`ctx.reactiveProps`) and the child-prop
+    // mirror (`ctx.reactiveChildProps`) write the same merged value.
+    expect(js).toContain(`const __v = ${callerFirst};`)
+    expect(js).toContain(`const __x = ${callerFirst}`)
+    // A prop after the spread is never shadowed.
+    expect(js).not.toContain(`"last" in _p`)
   })
 
   test('a conditional branch template keeps the spread too', () => {

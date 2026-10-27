@@ -732,7 +732,7 @@ export function emitReactivePropBindings(lines: string[], ctx: ClientJsContext):
       const ref = slotId === ctx.commentScopeRootSlotId ? '__scope' : `_${varSlotId(slotId)}`
       lines.push(`    if (${ref}) {`)
       for (const prop of props) {
-        const value = `${prop.expression}()`
+        const value = prop.expression
         if (prop.propName === 'selected') {
           if (prop.componentName === 'TabsContent') {
             lines.push(`      ${ref}.setAttribute('data-state', ${value} ? 'active' : 'inactive')`)

@@ -61,6 +61,23 @@ export function RestParent3688(props: { label?: string; title?: string; own?: st
   return <p><RestTag3688 {...props} /></p>
 }`
 
+// A reactive explicit prop written before the spread: the parent's signal
+// drives `title` only while the caller did not pass one. Both the child's
+// own text and the parent's mirror of `title` onto the child's root must
+// follow the same merged value across updates.
+const SIGNAL_TAG = `'use client'
+export function SignalTag3688(props: { title?: string }) {
+  return <b title={props.title}>{props.title}</b>
+}`
+
+const SIGNAL_PARENT = `'use client'
+import { createSignal } from '@barefootjs/client'
+import { SignalTag3688 } from './SignalTag3688'
+export function SignalParent3688(props: { title?: string }) {
+  const [title, setTitle] = createSignal('first')
+  return <p><button onClick={() => setTitle('second')}>go</button><SignalTag3688 title={title()} {...props} /></p>
+}`
+
 function clientJsFor(source: string, filename: string): string {
   const result = compileJSX(source, filename, { adapter })
   const errors = result.errors.filter(e => e.severity === 'error')
@@ -78,7 +95,7 @@ let loaded = false
 async function loadComponents(): Promise<void> {
   if (loaded) return
   const dir = mkdtempSync(join(tmpdir(), 'bf-3688-'))
-  const modules = [[TAG, 'Tag3688'], [PARENT, 'Parent3688'], [REST_TAG, 'RestTag3688'], [REST_PARENT, 'RestParent3688']] as const
+  const modules = [[TAG, 'Tag3688'], [PARENT, 'Parent3688'], [REST_TAG, 'RestTag3688'], [REST_PARENT, 'RestParent3688'], [SIGNAL_TAG, 'SignalTag3688'], [SIGNAL_PARENT, 'SignalParent3688']] as const
   for (const [source, name] of modules) {
     const file = join(dir, `${name}.mjs`)
     writeFileSync(file, clientJsFor(source, `${name}.tsx`))
@@ -140,5 +157,32 @@ describe('#3688 — a {...props} spread onto a child merges with explicit props 
     expect(b.getAttribute('title')).toBe('T')
     expect(b.hasAttribute('own')).toBe(false)
     expect(b.textContent).toBe('hi')
+  })
+
+  async function mountSignalParent(callerProps: Record<string, unknown>): Promise<HTMLElement> {
+    await loadComponents()
+    const { createComponent } = await import(runtimePath)
+    const el = createComponent('SignalParent3688', callerProps) as HTMLElement
+    document.body.appendChild(el)
+    return el
+  }
+
+  function titleState(root: ParentNode): { attr: string | null; text: string | null } {
+    const b = root.querySelector('b')!
+    return { attr: b.getAttribute('title'), text: b.textContent }
+  }
+
+  test("a signal update to an explicit prop the spread overrides leaves the caller's value in place", async () => {
+    const el = await mountSignalParent({ title: 'warm' })
+    expect(titleState(el)).toEqual({ attr: 'warm', text: 'warm' })
+    el.querySelector('button')!.click()
+    expect(titleState(el)).toEqual({ attr: 'warm', text: 'warm' })
+  })
+
+  test('a signal update reaches the child when the caller did not pass the key', async () => {
+    const el = await mountSignalParent({})
+    expect(titleState(el)).toEqual({ attr: 'first', text: 'first' })
+    el.querySelector('button')!.click()
+    expect(titleState(el)).toEqual({ attr: 'second', text: 'second' })
   })
 })

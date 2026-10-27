@@ -550,6 +550,43 @@ function componentInitPropValue(prop: IRProp, ctx: ClientJsContext): { expr: str
   }
 }
 
+/**
+ * Index of the last spread of the component's own props object in a child
+ * component call (`<Tag tone="first" {...props} />`), or -1. An explicit
+ * prop written before it is only a default: the spread overrides it when
+ * the caller passed that key, as in JS (#3688). This is the one source-order
+ * decision `initChild`'s props and both reactive DOM mirrors
+ * (`ctx.reactiveProps`, `ctx.reactiveChildProps`) read, so an overridden
+ * explicit expression can't overwrite the spread-selected value on update.
+ */
+function lastPropsObjectSpreadIndex(props: IRProp[]): number {
+  let at = -1
+  props.forEach((p, index) => {
+    if (p.value.kind === 'spread' && p.value.propsObject === true) at = index
+  })
+  return at
+}
+
+/**
+ * The value of an explicit prop a later props-object spread overrides (see
+ * `lastPropsObjectSpreadIndex`): the caller's own value when it passed the
+ * key, `expr` otherwise. `forwardProps` lets every override win, so the
+ * merge is spelled into the value itself.
+ */
+function callerFirstPropExpr(name: string, expr: string): string {
+  const key = JSON.stringify(name)
+  return `(${key} in ${PROPS_PARAM} ? ${PROPS_PARAM}[${key}] : ${expr})`
+}
+
+/**
+ * The merged value of the explicit prop at `index` for a reactive DOM
+ * mirror: caller-first when a later props-object spread (at `spreadAt`, see
+ * `lastPropsObjectSpreadIndex`) overrides it, `expr` as written otherwise.
+ */
+function mergedMirrorExpr(name: string, expr: string, index: number, spreadAt: number): string {
+  return index < spreadAt ? callerFirstPropExpr(name, expr) : expr
+}
+
 /** Build propsExpr for a child component from its IR props. */
 function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string {
   const knownSpreadProp = props.find(p => {
@@ -561,15 +598,7 @@ function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string 
     return resolveRestSpreadOrigin(ctx, expr) !== null
   })
   const spreadSource = knownSpreadProp ? PROPS_PARAM : null
-  // An explicit prop written before a spread of the props object
-  // (`<Tag tone="first" {...props} />`) is only a default: the spread
-  // overrides it when the caller passed that key, as in JS (#3688).
-  // `forwardProps` lets every override win, so such a prop reads the
-  // caller's value first.
-  let lastPropsObjectSpread = -1
-  props.forEach((p, index) => {
-    if (p.value.kind === 'spread' && p.value.propsObject === true) lastPropsObjectSpread = index
-  })
+  const spreadAt = lastPropsObjectSpreadIndex(props)
 
   const propsForInit: string[] = []
   const explicitPropNames: string[] = []
@@ -578,9 +607,8 @@ function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string 
     explicitPropNames.push(prop.name)
     const key = quotePropName(prop.name)
     const { expr, getter } = componentInitPropValue(prop, ctx)
-    if (index < lastPropsObjectSpread) {
-      const name = JSON.stringify(prop.name)
-      propsForInit.push(`get ${key}() { return ${name} in ${PROPS_PARAM} ? ${PROPS_PARAM}[${name}] : ${expr} }`)
+    if (index < spreadAt) {
+      propsForInit.push(`get ${key}() { return ${callerFirstPropExpr(prop.name, expr)} }`)
     } else {
       propsForInit.push(getter ? `get ${key}() { return ${expr} }` : `${key}: ${expr}`)
     }
@@ -600,7 +628,8 @@ function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string 
  * side-effect helper so `buildComponentPropsExpr` stays a pure function.
  */
 function collectReactiveChildProps(node: IRComponent, ctx: ClientJsContext): void {
-  for (const prop of node.props) {
+  const spreadAt = lastPropsObjectSpreadIndex(node.props)
+  for (const [index, prop] of node.props.entries()) {
     if (prop.name === '...' || prop.name.startsWith('...')) continue
     if (prop.value.kind === 'jsx-children') continue
     // `classifyDOMProp` is the single source of truth for "how does this prop
@@ -640,7 +669,7 @@ function collectReactiveChildProps(node: IRComponent, ctx: ClientJsContext): voi
       slotId: node.slotId,
       propName: prop.name,
       attrName,
-      expression: expandedValue,
+      expression: mergedMirrorExpr(prop.name, expandedValue, index, spreadAt),
       ...pickAttrMetaFromIR(prop),
     })
   }
@@ -1015,7 +1044,8 @@ export function collectElements(
     component: ({ node: c, descend, descendJsxChildren }) => {
       if (c.slotId) {
         // Reactive props need effects to update the element when values change.
-        for (const prop of c.props) {
+        const spreadAt = lastPropsObjectSpreadIndex(c.props)
+        for (const [index, prop] of c.props.entries()) {
           if (prop.value.kind === 'jsx-children') continue
           if (isEventHandlerName(prop.name)) continue
           // Only `expression` variants reach the signal/memo getter heuristic
@@ -1031,7 +1061,7 @@ export function collectElements(
               ctx.reactiveProps.push({
                 slotId: c.slotId,
                 propName: prop.name,
-                expression: fnName,
+                expression: mergedMirrorExpr(prop.name, value, index, spreadAt),
                 componentName: c.name,
               })
             }
