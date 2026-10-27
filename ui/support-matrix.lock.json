@@ -8292,12 +8292,6 @@
               ]
             },
             {
-              "fixture": "template-literal-attribute-quotes",
-              "limitations": [
-                "template-literal-attribute-quotes"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -16011,12 +16005,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "template-literal-attribute-quotes",
-              "limitations": [
-                "template-literal-attribute-quotes"
               ]
             }
           ]

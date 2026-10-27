@@ -5403,7 +5403,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     let result = ''
     for (const part of parts) {
       if (part.type === 'string') {
-        result += part.value
+        // The literal text lands in markup OUTSIDE any `{{…}}` action, so
+        // html/template never escapes it. Escape it here, or a `"` in a
+        // nested literal segment (`content-["x"]`) closes the surrounding
+        // `class="…"` and a `<` opens a tag in text position (#3706).
+        result += escapeHtml(part.value)
       } else {
         // A nested ternary emits a complete `{{if …}}…{{end}}` action chain (see
         // `conditional` above) — wrapping it again produces `{{{{if …}}` and a
