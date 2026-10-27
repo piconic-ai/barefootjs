@@ -43,6 +43,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -185,6 +191,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -321,13 +333,25 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
               ]
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -535,6 +559,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -672,6 +702,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -819,6 +855,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -956,6 +998,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -1103,6 +1151,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -1240,6 +1294,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -1540,6 +1600,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
+              "limitations": [
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -2103,6 +2169,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2239,6 +2311,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2363,9 +2441,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -2381,7 +2459,19 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -2523,6 +2613,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2654,6 +2750,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -2795,6 +2897,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2908,6 +3016,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -3049,6 +3163,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3180,6 +3300,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -3325,6 +3451,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3444,6 +3576,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -3579,9 +3717,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -3597,7 +3735,19 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -3751,6 +3901,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3870,6 +4026,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -3999,6 +4161,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4111,6 +4279,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4218,6 +4392,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -4342,6 +4522,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -4544,6 +4730,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4628,6 +4820,24 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -4697,6 +4907,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -4800,6 +5016,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4866,6 +5088,24 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -4929,6 +5169,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -5050,9 +5296,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -5068,7 +5314,19 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -5194,6 +5452,30 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-module-binding-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-prop-read-beside-signal-nullish-seed",
               "limitations": [
                 "memo-prop-read-takes-signal-nullish-fallback"
@@ -5287,6 +5569,12 @@
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -5396,6 +5684,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5480,6 +5774,24 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -5543,6 +5855,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -5646,6 +5964,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5730,6 +6054,24 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -5793,6 +6135,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -5896,6 +6244,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5962,9 +6316,27 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-division-zero-divisor",
               "limitations": [
                 "memo-non-finite-quotient"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -6031,6 +6403,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -6134,6 +6512,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6218,6 +6602,24 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -6281,6 +6683,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -6378,6 +6786,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6462,6 +6876,24 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -6531,6 +6963,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -6634,6 +7072,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6712,9 +7156,27 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-division-zero-divisor",
               "limitations": [
                 "memo-non-finite-quotient"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -6781,6 +7243,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -7234,6 +7702,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7354,6 +7828,24 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -7441,6 +7933,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -7556,6 +8054,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7664,6 +8168,24 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -7733,6 +8255,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -7866,9 +8394,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -7881,6 +8409,12 @@
               "fixture": "destructure-default-body-renamed-callback-shadow",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -7897,6 +8431,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -8088,6 +8628,30 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-module-binding-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-prop-read-beside-signal-nullish-seed",
               "limitations": [
                 "memo-prop-read-takes-signal-nullish-fallback"
@@ -8187,6 +8751,12 @@
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -8320,6 +8890,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8446,6 +9022,24 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -8527,6 +9121,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -8642,6 +9242,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8768,6 +9374,24 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -8849,6 +9473,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -8970,6 +9600,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -9072,9 +9708,27 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-division-zero-divisor",
               "limitations": [
                 "memo-non-finite-quotient"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -9147,6 +9801,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -9274,6 +9934,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -9394,6 +10060,24 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -9475,6 +10159,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -9584,6 +10274,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -9704,6 +10400,24 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -9791,6 +10505,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -9912,6 +10632,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -10026,9 +10752,27 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-division-zero-divisor",
               "limitations": [
                 "memo-non-finite-quotient"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -10101,6 +10845,12 @@
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -10353,6 +11103,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -10428,6 +11184,18 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -10579,6 +11347,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -10654,6 +11428,18 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -10817,9 +11603,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -10832,6 +11618,12 @@
               "fixture": "destructure-default-body-renamed-callback-shadow",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -10848,6 +11640,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -10970,6 +11768,24 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-module-binding-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -11157,6 +11973,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -11238,6 +12060,18 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -11383,6 +12217,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -11464,6 +12304,18 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -11615,6 +12467,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -11684,6 +12542,18 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -11847,6 +12717,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -11922,6 +12798,18 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -12061,6 +12949,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12136,6 +13030,18 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -12293,6 +13199,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12362,6 +13274,18 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -12621,9 +13545,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -12636,6 +13560,12 @@
               "fixture": "destructure-default-body-renamed-callback-shadow",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -13069,6 +13999,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -13343,6 +14279,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -13593,9 +14535,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -13608,6 +14550,12 @@
               "fixture": "destructure-default-body-renamed-callback-shadow",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -13624,6 +14572,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -13993,6 +14947,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -14262,6 +15222,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -14541,6 +15507,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -14792,6 +15764,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -15060,6 +16038,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -15334,6 +16318,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -17338,6 +18328,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -18552,6 +19548,12 @@
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
             }
           ]
         },
@@ -18571,6 +19573,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -18604,9 +19612,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -18622,7 +19630,19 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -18648,6 +19668,12 @@
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
             }
           ]
         },
@@ -18667,6 +19693,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -18692,6 +19724,12 @@
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
             }
           ]
         },
@@ -18711,6 +19749,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -18736,6 +19780,12 @@
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
             }
           ]
         },
@@ -18755,6 +19805,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -19242,7 +20298,16 @@
           ]
         },
         "erb": {},
-        "go-template": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            }
+          ]
+        },
         "jinja": {},
         "minijinja": {},
         "mojolicious": {
@@ -20452,6 +21517,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -20558,6 +21635,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -20634,6 +21723,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-renamed-callback-positions",
               "limitations": [
                 "destructure-default-computed-array"
@@ -20685,6 +21780,24 @@
               "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-module-binding-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -20806,6 +21919,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -20903,6 +22028,18 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -21009,6 +22146,18 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -21130,6 +22279,18 @@
               ]
             },
             {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -21221,6 +22382,18 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -21333,6 +22506,18 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -21480,6 +22665,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -21634,6 +22825,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -21811,9 +23008,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -21829,7 +23026,19 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -22055,6 +23264,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -22210,6 +23425,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -22375,6 +23596,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -22535,6 +23762,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-param-renamed-callback-memo",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -22678,6 +23911,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -22832,6 +24071,12 @@
             },
             {
               "fixture": "destructure-default-param-renamed-callback",
+              "limitations": [
+                "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
@@ -23193,9 +24438,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo",
+              "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
-                "destructure-default-callback-memo-read"
+                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -23208,6 +24453,12 @@
               "fixture": "destructure-default-body-renamed-callback-shadow",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-renamed-callback-signal",
+              "limitations": [
+                "destructure-default-callback-unseeded"
               ]
             },
             {

@@ -32,7 +32,7 @@ import {
   unwrapNullableUnion,
 } from '../value/value-lowering.ts'
 import { embeddedPropMemberChain } from '../value/prop-member-seed.ts'
-import { appliesDefaultOnNil, defaultedBindingGo, resolvePropGoType } from '../props/prop-types.ts'
+import { appliesDefaultOnNil, defaultedBindingGo, evaluatedDefaultBindingGo, resolvePropGoType } from '../props/prop-types.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
 import { parsedLiteralToGo } from '../value/parsed-literal-to-go.ts'
 import { computeTemplateLiteralMemoInitialValue } from './template-interp.ts'
@@ -519,8 +519,10 @@ function evalEnvValueGo(
     // `propFallbackVars` local is a sibling signal's `x ?? d` seed, whose
     // fallback is not this expression's (#3540).
     const binding = ctx.state.currentPropsParams.find(p => p.name === name)
+    // A default only the evaluator can build (a callback) goes in evaluated.
     const defaulted = binding
-      ? defaultedBindingGo(ctx, binding, ctx.state.currentPropsParams, ctx.state.propTypeOverrides)
+      ? (defaultedBindingGo(ctx, binding, ctx.state.currentPropsParams, ctx.state.propTypeOverrides) ??
+        evaluatedDefaultBindingGo(ctx, binding, ctx.state.currentPropsParams, ctx.state.propTypeOverrides))
       : null
     goExpr = defaulted ?? `in.${capitalizeFieldName(param.sourceName ?? name)}`
   } else if (name === ctx.state.propsObjectName) {
