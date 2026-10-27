@@ -5721,6 +5721,54 @@
       }
     }
   ],
+  "module-const-named-like-object-prop": [
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "rows": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "rows": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "rows": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "rows": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "label": "caller",
+        "rows": []
+      }
+    }
+  ],
   "module-function-helper-chain": [
     {
       "name": "gen:label:empty",

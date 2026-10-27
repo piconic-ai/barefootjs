@@ -39,9 +39,11 @@ export interface ComputedConstContext {
   /** Component-scope local functions, which shadow a module const of the same name. */
   localFunctions: ReadonlySet<string>
   /**
-   * Names the component scope binds (props, the props object, its consts,
-   * local functions, signals, memos), which shadow a module binding of the
-   * same name. A module const's initializer never reads one of them.
+   * Names the component scope lexically binds (the props object, destructured
+   * and rest props, its consts, local functions, signals, memos), which
+   * shadow a module binding of the same name. A module const's initializer
+   * never reads one of them. A prop reachable only through the props object
+   * (`function C(props: { label: string })`) binds no name.
    */
   componentNames: ReadonlySet<string>
   /** Whether a loop row or callback binds `name` where the expression is read. */
@@ -70,7 +72,7 @@ export function computedConstContext(
     propsBindings: propsBindingNames(metadata),
     propReads: propReadKeys(metadata, bindings),
     localFunctions: new Set(metadata.localFunctions.filter(f => !f.isModule).map(f => f.name)),
-    componentNames: new Set([...bindings].filter(([, kind]) => kind !== 'module-local' && kind !== 'module-import').map(([n]) => n)),
+    componentNames: componentScopeNames(metadata),
     isShadowed,
     isAdapterBound,
     isGlobal: name => !bindings.has(name) && name !== metadata.restPropsName && !isShadowed(name),
@@ -99,6 +101,27 @@ function propsBindingNames(metadata: IRMetadata): Set<string> {
       names.add(constant.name)
     }
   }
+  return names
+}
+
+/**
+ * {@link ComputedConstContext.componentNames}. Not `componentBindings`, which
+ * also lists every typed prop of a props object as a `prop` binding.
+ */
+function componentScopeNames(metadata: IRMetadata): Set<string> {
+  const names = new Set<string>()
+  if (metadata.propsObjectName !== null) names.add(metadata.propsObjectName)
+  // With no props object the signature destructures, so every param is bound.
+  else for (const p of metadata.propsParams) names.add(p.name)
+  if (metadata.restPropsName) names.add(metadata.restPropsName)
+  for (const c of metadata.localConstants) if (!c.isModule) names.add(c.name)
+  for (const f of metadata.localFunctions) if (!f.isModule) names.add(f.name)
+  for (const s of metadata.signals) {
+    if (s.isModule) continue
+    names.add(s.getter)
+    if (s.setter) names.add(s.setter)
+  }
+  for (const m of metadata.memos) if (!m.isModule) names.add(m.name)
   return names
 }
 
@@ -271,7 +294,8 @@ function constValue(
   depth: number,
 ): ParsedExpr | null {
   const init = constant?.parsed
-  if (!constant || !init || ctx.propsBindings.has(constant.name)) return null
+  // A props destructure const is the component's; a module const of that name is not one.
+  if (!constant || !init || (!constant.isModule && ctx.propsBindings.has(constant.name))) return null
   const literal = lookupLiteralConst(constant.name, [constant], () => false) !== null
   if (!literal && !(isPlainComputedConst(constant, init) && callsOnlyGetters(init, constant.isModule ? new Set() : ctx.getters))) return null
   return resolveInitializer(init, ctx, captured, constant.isModule ? 'module' : 'component', depth + 1)
@@ -312,7 +336,7 @@ function inlinableInitializer(name: string, ctx: ComputedConstContext): ParsedEx
   if (ctx.isShadowed(name) || ctx.getters.has(name) || ctx.contextConsumers.has(name) || ctx.propsBindings.has(name)) return null
   if (ctx.isAdapterBound(name)) return null
   // An adapter already inlines a literal const in its own syntax.
-  if (lookupLiteralConst(name, ctx.constants, ctx.isShadowed) !== null) return null
+  if (lookupLiteralConst(name, [constant], ctx.isShadowed) !== null) return null
   if (!callsOnlyGetters(init, ctx.getters)) return null
   // A free name the read site rebinds would be captured by the substitution:
   // it is read as what it holds where the const is declared instead.

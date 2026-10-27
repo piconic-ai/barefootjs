@@ -1194,6 +1194,7 @@ import { fixture as constAliasHopLoopShadow } from './const-alias-hop-loop-shado
 import { fixture as constAliasDefaultPropLoopShadow } from './const-alias-default-prop-loop-shadow'
 import { fixture as constGetterReadLoopShadowed } from './const-getter-read-loop-shadowed'
 import { fixture as moduleConstHopLoopShadow } from './module-const-hop-loop-shadow'
+import { fixture as moduleConstNamedLikeObjectProp } from './module-const-named-like-object-prop'
 import { fixture as childrenNamedLoopRowKey } from './children-named-loop-row-key'
 import { fixture as childrenLocalNullableAttr } from './children-local-nullable-attr'
 import { fixture as childrenPreambleLocalEscaped } from './children-preamble-local-escaped'
@@ -2082,6 +2083,7 @@ export const jsxFixtures: JSXFixture[] = [
   constAliasDefaultPropLoopShadow,
   constGetterReadLoopShadowed,
   moduleConstHopLoopShadow,
+  moduleConstNamedLikeObjectProp,
   childrenNamedLoopRowKey,
   childrenLocalNullableAttr,
   childrenPreambleLocalEscaped,

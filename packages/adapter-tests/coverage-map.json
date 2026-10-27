@@ -8125,6 +8125,23 @@
         "text"
       ]
     },
+    "module-const-named-like-object-prop": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "module-function-helper-chain": {
       "kinds": [
         "call",

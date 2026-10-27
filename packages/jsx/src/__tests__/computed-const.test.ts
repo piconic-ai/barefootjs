@@ -149,3 +149,38 @@ describe('a const hop resolved where each const is declared (#3696)', () => {
     expect(inliner(source, ['viaHelper'])('e')).toBe('e')
   })
 })
+
+describe('only names the component scope binds shadow a module const (#3696)', () => {
+  const source = `
+    'use client'
+    const label = 'module' + '!'
+    const tagged = label + '?'
+    const title = 'm-title'
+    const viaTitle = title
+    const n = 1
+    export function C(props: { label: string; title: string; n: number; rows: string[] }) {
+      const { title } = props
+      const n = props.n * 2
+      const shown = label
+      const hop = tagged
+      const t = viaTitle
+      const m = n
+      return <ul>{props.rows.map(tagged => <li key={tagged}>{shown}{hop}{t}{m}</li>)}</ul>
+    }
+  `
+
+  test('a prop reached only through the props object does not shadow a module const', () => {
+    const inline = inliner(source)
+    expect(inline('shown')).toBe('"module" + "!"')
+    expect(inline('label')).toBe('"module" + "!"')
+    expect(inliner(source, ['tagged'])('hop')).toBe('"module" + "!" + "?"')
+  })
+
+  test('a module const named like a props destructure binding is still the module const', () => {
+    expect(inliner(source, ['viaTitle'])('t')).toBe('"m-title"')
+  })
+
+  test('a computed component const shadows a literal module const of the same name', () => {
+    expect(inliner(source)('m')).toBe('props.n * 2')
+  })
+})
