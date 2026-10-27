@@ -216,15 +216,56 @@ function memoSeedExpr(memo: IRMetadata['memos'][number]): string {
 }
 
 /**
- * A `derived` step per prop whose destructure default reads an earlier prop of
- * the same pattern (`ParamInfo.defaultParts`, #3531): `on ?? <default>`, where
- * the default's identifiers are the earlier props' template variables. Every
- * prop is already in `available` (baseScope), and the steps run in dependency
- * order ({@link inDefaultReadOrder}), so a chain (`{ a = 1, b = a, c = b }`)
- * reads `b` after its own step re-bound it. A default the plan cannot lower
- * (or a function default) adds no step and keeps the static ssr-defaults
- * seed. A callback inside the default (`a.filter((x) => …)`) does not make
- * it a function default.
+ * Whether `p`'s destructure default is computed when the prop is absent: a
+ * default that is neither a function nor literal data
+ * ({@link isLiteralData}). A default reading an earlier prop
+ * (`ParamInfo.defaultParts`, `{ a, b = a }`) is one, and so is one that
+ * calls or reads anything else (`{ b = ['y', ''].filter((x) => x !== '') }`,
+ * `{ n = 'abc'.length }`, `{ m = DEFAULT }`). A callback inside the default
+ * does not make it a function default.
+ *
+ * Every backend applies such a default when it renders (the SSR seed plan's
+ * prop steps, Go's props constructor) instead of a value fixed at compile
+ * time, which only literal data has.
+ */
+export function hasComputedDefault(p: ParamInfo): boolean {
+  if (p.isRest || p.defaultValue === undefined || !p.parsed || p.parsed.kind === 'arrow') return false
+  return p.defaultParts !== undefined || !isLiteralData(p.parsed)
+}
+
+/**
+ * A literal (`'x'`, `-1`, `null`, `undefined`), a template literal with no
+ * substitution, or an array / object literal of literal data: a value that
+ * reads and calls nothing.
+ */
+function isLiteralData(e: ParsedExpr): boolean {
+  switch (e.kind) {
+    case 'literal':
+      return true
+    case 'identifier':
+      return e.name === 'undefined'
+    case 'unary':
+      return (e.op === '-' || e.op === '+') && e.argument.kind === 'literal' && e.argument.literalType === 'number'
+    case 'template-literal':
+      return e.parts.every(part => part.type === 'string')
+    case 'array-literal':
+      return e.elements.every(isLiteralData)
+    case 'object-literal':
+      return e.properties.every(prop => prop.kind !== 'spread' && isLiteralData(prop.value))
+    default:
+      return false
+  }
+}
+
+/**
+ * A `derived` step per prop with a computed destructure default
+ * ({@link hasComputedDefault}): `on ?? <default>`. A default reading an
+ * earlier prop of the same pattern (`ParamInfo.defaultParts`, #3531) reads
+ * the earlier props' template variables. Every prop is already in
+ * `available` (baseScope), and the steps run in dependency order
+ * ({@link inDefaultReadOrder}), so a chain (`{ a = 1, b = a, c = b }`) reads
+ * `b` after its own step re-bound it. A default the plan cannot lower adds
+ * no step and keeps the static ssr-defaults seed.
  */
 function dependentPropDefaultSteps(
   metadata: IRMetadata,
@@ -233,7 +274,7 @@ function dependentPropDefaultSteps(
 ): SsrSeedStep[] {
   const steps: SsrSeedStep[] = []
   for (const p of inDefaultReadOrder(metadata.propsParams)) {
-    if (p.isRest || !p.defaultParts || !p.parsed || p.parsed.kind === 'arrow') continue
+    if (!hasComputedDefault(p) || !p.parsed) continue
     const parsed: ParsedExpr = { kind: 'logical', op: '??', left: { kind: 'identifier', name: p.name }, right: p.parsed }
     const step = classify(p.name, 'prop', stringifyParsedExpr(parsed), parsed, available, inlined)
     if (step.kind === 'derived') steps.push(step)

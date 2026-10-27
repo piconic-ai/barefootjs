@@ -2888,6 +2888,116 @@
       }
     }
   ],
+  "destructure-default-computed-scalar": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890
+      }
+    },
+    {
+      "name": "gen:s:empty",
+      "props": {
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:s:markup",
+      "props": {
+        "s": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:s:multibyte",
+      "props": {
+        "s": "日本語"
+      }
+    },
+    {
+      "name": "gen:k:zero",
+      "props": {
+        "k": 0
+      }
+    },
+    {
+      "name": "gen:k:negative",
+      "props": {
+        "k": -7
+      }
+    },
+    {
+      "name": "gen:k:large",
+      "props": {
+        "k": 1234567890
+      }
+    },
+    {
+      "name": "gen:j:empty",
+      "props": {
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:j:markup",
+      "props": {
+        "j": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:j:multibyte",
+      "props": {
+        "j": "日本語"
+      }
+    },
+    {
+      "name": "gen:m:zero",
+      "props": {
+        "m": 0
+      }
+    },
+    {
+      "name": "gen:m:negative",
+      "props": {
+        "m": -7
+      }
+    },
+    {
+      "name": "gen:m:large",
+      "props": {
+        "m": 1234567890
+      }
+    },
+    {
+      "name": "gen:t:empty",
+      "props": {
+        "t": ""
+      }
+    },
+    {
+      "name": "gen:t:markup",
+      "props": {
+        "t": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:t:multibyte",
+      "props": {
+        "t": "日本語"
+      }
+    }
+  ],
   "destructure-default-explicit-falsy": [
     {
       "name": "gen:tag:absent",

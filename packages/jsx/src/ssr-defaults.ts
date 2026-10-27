@@ -176,10 +176,14 @@ function addPropSsrDefaults(
   // A prop whose default reads an earlier prop (`{ off = false, on = !off }`,
   // #3531) and that the seed plan re-binds in-template: its value depends on
   // what the caller passed, so no static value is right, and a non-null seed
-  // would read as caller-supplied to the template's own `on ?? !off`.
+  // would read as caller-supplied to the template's own `on ?? !off`. A
+  // computed default that reads no earlier prop (`{ b = 'abc'.length }`)
+  // keeps its static value when it has one: that value is the default
+  // itself, so the template's `b ?? <default>` yields the same.
   const plan = metadata.ssrSeedPlan ?? computeSsrSeedPlan(metadata)
+  const readsEarlier = new Set(metadata.propsParams.filter(p => p.defaultParts).map(p => p.name))
   const templateDefaulted = new Set(
-    plan.steps.filter(s => s.kind === 'derived' && s.origin === 'prop').map(s => s.name),
+    plan.steps.filter(s => s.kind === 'derived' && s.origin === 'prop' && readsEarlier.has(s.name)).map(s => s.name),
   )
   for (const p of metadata.propsParams) {
     if (p.isRest) continue

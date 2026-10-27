@@ -3440,6 +3440,30 @@
         "text"
       ]
     },
+    "destructure-default-body-callback-shadow": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "destructure-default-body-chain-order": {
       "kinds": [
         "identifier",
@@ -3620,6 +3644,31 @@
         "text"
       ]
     },
+    "destructure-default-computed-scalar": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "array-method:toUpperCase",
+        "binary:+",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "destructure-default-explicit-falsy": {
       "kinds": [
         "binary",
@@ -3742,11 +3791,13 @@
         "call",
         "identifier",
         "literal",
+        "logical",
         "member"
       ],
       "axes": [
         "binary:!==",
-        "literal:string"
+        "literal:string",
+        "logical:??"
       ],
       "contexts": [
         "text"

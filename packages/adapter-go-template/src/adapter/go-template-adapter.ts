@@ -2457,10 +2457,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * a prop's field (`nestedRowsFieldName`, #3603/#3616).
    */
   /**
-   * Apply each destructure default that reads an earlier prop to the Input
-   * before anything reads it (`dependentDefaultNormalization`, #3531), and
-   * refuse one this adapter can't apply instead of rendering the prop
-   * without its default.
+   * Apply each computed destructure default (one reading an earlier prop,
+   * #3531, or any other non-literal one, `hasComputedDefault`) to the Input
+   * before anything reads it (`dependentDefaultNormalization`), and refuse
+   * one reading an earlier prop that this adapter can't apply instead of
+   * rendering the prop without its default.
    */
   private emitDependentDefaults(
     lines: string[],

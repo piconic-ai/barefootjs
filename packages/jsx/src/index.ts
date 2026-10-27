@@ -39,7 +39,7 @@ export { resolveGetterAliases, collectAliasableGetterNames } from './ir-to-clien
 export { buildImportAliasMap } from './ir-to-client-js/component-scope.ts'
 
 // Backend-neutral SSR seed plan (in-template derived signal/memo seeding)
-export { computeSsrSeedPlan, inDefaultReadOrder } from './ssr-seed-plan.ts'
+export { computeSsrSeedPlan, hasComputedDefault, inDefaultReadOrder } from './ssr-seed-plan.ts'
 export type { SsrSeedPlan, SsrSeedStep } from './ssr-seed-plan.ts'
 
 // Pure IR types

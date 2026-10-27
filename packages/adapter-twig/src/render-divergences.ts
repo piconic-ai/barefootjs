@@ -47,13 +47,6 @@ export const renderDivergences: RenderDivergences = {
   // A signal seeded from its own same-named prop keeps the prop's template
   // variable, so a raw `props.<name>` read beside it sees the derived value.
   'signal-from-same-named-prop-raw-read': { limitation: 'signal-from-same-named-prop-raw-read' },
-  // A destructure default that calls a callback and reads no earlier prop
-  // (`{ b = ['y', ''].filter((x) => x !== '') }`): the SSR seed has no
-  // static value for it and the template applies no default, so an omitted
-  // prop renders empty.
-  'destructure-default-body-renamed-callback': { limitation: 'destructure-default-callback-unseeded' },
-  'destructure-default-body-callback': { limitation: 'destructure-default-callback-unseeded' },
-  'destructure-default-param-renamed-callback': { limitation: 'destructure-default-callback-unseeded' },
   // A const alias chain (`const a = children; const b = a`) read in a loop
   // row that binds a name the chain passes through (`rows.map(a => …{b}…)`):
   // the template cannot inline the const through the shadowed name, and the

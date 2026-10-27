@@ -1083,6 +1083,8 @@ import { fixture as destructureDefaultBodyRenamedCallbackShadow } from './destru
 import { fixture as destructureDefaultBodyRenamedCallbackEarlier } from './destructure-default-body-renamed-callback-earlier'
 import { fixture as destructureDefaultBodyRenamedCallbackMemo } from './destructure-default-body-renamed-callback-memo'
 import { fixture as destructureDefaultBodyCallback } from './destructure-default-body-callback'
+import { fixture as destructureDefaultBodyCallbackShadow } from './destructure-default-body-callback-shadow'
+import { fixture as destructureDefaultComputedScalar } from './destructure-default-computed-scalar'
 import { fixture as destructureDefaultParamRenamedCallback } from './destructure-default-param-renamed-callback'
 import { fixture as capturedMarkupEscaping } from './captured-markup-escaping'
 import { fixture as optionalChainMethodCall } from './optional-chain-method-call'
@@ -1920,6 +1922,8 @@ export const jsxFixtures: JSXFixture[] = [
   destructureDefaultBodyRenamedCallbackEarlier,
   destructureDefaultBodyRenamedCallbackMemo,
   destructureDefaultBodyCallback,
+  destructureDefaultBodyCallbackShadow,
+  destructureDefaultComputedScalar,
   destructureDefaultParamRenamedCallback,
   capturedMarkupEscaping,
   optionalChainMethodCall,
