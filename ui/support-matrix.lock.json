@@ -3429,12 +3429,6 @@
               ]
             },
             {
-              "fixture": "memo-prop-read-beside-signal-nullish-seed",
-              "limitations": [
-                "memo-prop-read-takes-signal-nullish-fallback"
-              ]
-            },
-            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -4148,6 +4142,12 @@
               ]
             },
             {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -4404,6 +4404,12 @@
               ]
             },
             {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -4654,6 +4660,12 @@
               ]
             },
             {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -4882,12 +4894,6 @@
               ]
             },
             {
-              "fixture": "memo-prop-read-beside-signal-nullish-seed",
-              "limitations": [
-                "memo-prop-read-takes-signal-nullish-fallback"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -5063,6 +5069,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -5322,6 +5334,12 @@
               ]
             },
             {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -5578,6 +5596,12 @@
               ]
             },
             {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -5819,6 +5843,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -6069,6 +6099,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -6325,6 +6361,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -6904,12 +6946,6 @@
               ]
             },
             {
-              "fixture": "children-alias-hop-shadowed-intermediate",
-              "limitations": [
-                "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -6931,6 +6967,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -7220,12 +7262,6 @@
               ]
             },
             {
-              "fixture": "children-alias-hop-shadowed-intermediate",
-              "limitations": [
-                "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -7247,6 +7283,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -7512,12 +7554,6 @@
               ]
             },
             {
-              "fixture": "children-alias-hop-shadowed-intermediate",
-              "limitations": [
-                "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -7551,6 +7587,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -7860,12 +7902,6 @@
               ]
             },
             {
-              "fixture": "memo-prop-read-beside-signal-nullish-seed",
-              "limitations": [
-                "memo-prop-read-takes-signal-nullish-fallback"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -8044,12 +8080,6 @@
               ]
             },
             {
-              "fixture": "children-alias-hop-shadowed-intermediate",
-              "limitations": [
-                "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -8071,6 +8101,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -8366,12 +8402,6 @@
               ]
             },
             {
-              "fixture": "children-alias-hop-shadowed-intermediate",
-              "limitations": [
-                "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -8393,6 +8423,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -8688,12 +8724,6 @@
               ]
             },
             {
-              "fixture": "children-alias-hop-shadowed-intermediate",
-              "limitations": [
-                "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -8715,6 +8745,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -8998,12 +9034,6 @@
               ]
             },
             {
-              "fixture": "children-alias-hop-shadowed-intermediate",
-              "limitations": [
-                "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -9025,6 +9055,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -9308,12 +9344,6 @@
               ]
             },
             {
-              "fixture": "children-alias-hop-shadowed-intermediate",
-              "limitations": [
-                "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -9335,6 +9365,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -9624,12 +9660,6 @@
               ]
             },
             {
-              "fixture": "children-alias-hop-shadowed-intermediate",
-              "limitations": [
-                "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -9651,6 +9681,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -10107,6 +10143,12 @@
               ]
             },
             {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -10318,6 +10360,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -10544,6 +10592,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -10775,12 +10829,6 @@
               ]
             },
             {
-              "fixture": "memo-prop-read-beside-signal-nullish-seed",
-              "limitations": [
-                "memo-prop-read-takes-signal-nullish-fallback"
-              ]
-            },
-            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -10938,6 +10986,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -11161,6 +11215,12 @@
               ]
             },
             {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -11378,6 +11438,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -11613,6 +11679,12 @@
               ]
             },
             {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -11818,6 +11890,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -12032,6 +12110,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -12417,12 +12501,6 @@
               ]
             },
             {
-              "fixture": "memo-prop-read-beside-signal-nullish-seed",
-              "limitations": [
-                "memo-prop-read-takes-signal-nullish-fallback"
-              ]
-            },
-            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -12703,12 +12781,6 @@
               ]
             },
             {
-              "fixture": "children-alias-hop-shadowed-intermediate",
-              "limitations": [
-                "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -12947,12 +13019,6 @@
               ]
             },
             {
-              "fixture": "children-alias-hop-shadowed-intermediate",
-              "limitations": [
-                "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -13164,12 +13230,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "children-alias-hop-shadowed-intermediate",
-              "limitations": [
-                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -13467,12 +13527,6 @@
               ]
             },
             {
-              "fixture": "memo-prop-read-beside-signal-nullish-seed",
-              "limitations": [
-                "memo-prop-read-takes-signal-nullish-fallback"
-              ]
-            },
-            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -13600,12 +13654,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "children-alias-hop-shadowed-intermediate",
-              "limitations": [
-                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -13853,12 +13901,6 @@
               ]
             },
             {
-              "fixture": "children-alias-hop-shadowed-intermediate",
-              "limitations": [
-                "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -14103,12 +14145,6 @@
               ]
             },
             {
-              "fixture": "children-alias-hop-shadowed-intermediate",
-              "limitations": [
-                "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -14332,12 +14368,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "children-alias-hop-shadowed-intermediate",
-              "limitations": [
-                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -14579,12 +14609,6 @@
               ]
             },
             {
-              "fixture": "children-alias-hop-shadowed-intermediate",
-              "limitations": [
-                "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
               "fixture": "component-spread-explicit-null",
               "limitations": [
                 "props-spread-explicit-null-override"
@@ -14820,12 +14844,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "children-alias-hop-shadowed-intermediate",
-              "limitations": [
-                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -18195,12 +18213,6 @@
         "go-template": {
           "gaps": [
             {
-              "fixture": "memo-prop-read-beside-signal-nullish-seed",
-              "limitations": [
-                "memo-prop-read-takes-signal-nullish-fallback"
-              ]
-            },
-            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -19777,6 +19789,12 @@
               ]
             },
             {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -19886,6 +19904,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -20001,6 +20025,12 @@
               ]
             },
             {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "destructure-default-body-callback-shadow",
               "limitations": [
                 "destructure-default-callback-unseeded"
@@ -20082,12 +20112,6 @@
               "fixture": "memo-module-binding-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-prop-read-beside-signal-nullish-seed",
-              "limitations": [
-                "memo-prop-read-takes-signal-nullish-fallback"
               ]
             },
             {
@@ -20176,6 +20200,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -20291,6 +20321,12 @@
               ]
             },
             {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -20400,6 +20436,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -20539,6 +20581,12 @@
               ]
             },
             {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -20642,6 +20690,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -20754,6 +20808,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
               ]
             },
             {
@@ -21397,12 +21457,6 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "memo-prop-read-beside-signal-nullish-seed",
-              "limitations": [
-                "memo-prop-read-takes-signal-nullish-fallback"
               ]
             },
             {
@@ -22569,12 +22623,6 @@
               "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
-              ]
-            },
-            {
-              "fixture": "memo-prop-read-beside-signal-nullish-seed",
-              "limitations": [
-                "memo-prop-read-takes-signal-nullish-fallback"
               ]
             },
             {

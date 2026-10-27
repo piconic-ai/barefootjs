@@ -28,5 +28,7 @@ export function MemoPropReadBesideSignalNullishSeed(props: { b?: string; n?: num
   `,
   dataPoints: [
     { name: 'omitted', props: {} },
+    { name: 'zero-empty', props: { b: '', n: 0 } },
+    { name: 'fraction', props: { b: 'B', n: 2.5 } },
   ],
 })

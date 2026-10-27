@@ -174,6 +174,8 @@ import { fixture as signalSeedPropNullishPropFallback } from './signal-seed-prop
 import { fixture as signalSeedPropNullishPropFallbackDestructured } from './signal-seed-prop-nullish-prop-fallback-destructured'
 import { fixture as signalSeedRenamedDefaultBesideRawNullish } from './signal-seed-renamed-default-beside-raw-nullish'
 import { fixture as memoPropReadBesideSignalNullishSeed } from './memo-prop-read-beside-signal-nullish-seed'
+import { fixture as memoPropReadBesideSignalNullishSeedDestructured } from './memo-prop-read-beside-signal-nullish-seed-destructured'
+import { fixture as memoPropArithmeticBesideSignalNullishSeed } from './memo-prop-arithmetic-beside-signal-nullish-seed'
 import { fixture as signalSeedDependentDefaultNullishLiteral } from './signal-seed-dependent-default-nullish-literal'
 import { fixture as signalSeedDependentDefaultNullishLiteralBody } from './signal-seed-dependent-default-nullish-literal-body'
 import { fixture as signalSeedLocalHelperCall } from './signal-seed-local-helper-call'
@@ -1190,6 +1192,11 @@ import { fixture as childrenAliasHopFragmentRoot } from './children-alias-hop-fr
 import { fixture as childrenRenamedBesideChildrenLocal } from './children-renamed-beside-children-local'
 import { fixture as childrenAliasLoopShadow } from './children-alias-loop-shadow'
 import { fixture as childrenAliasHopShadowedIntermediate } from './children-alias-hop-shadowed-intermediate'
+import { fixture as constAliasHopLoopShadow } from './const-alias-hop-loop-shadow'
+import { fixture as constAliasDefaultPropLoopShadow } from './const-alias-default-prop-loop-shadow'
+import { fixture as constGetterReadLoopShadowed } from './const-getter-read-loop-shadowed'
+import { fixture as moduleConstHopLoopShadow } from './module-const-hop-loop-shadow'
+import { fixture as moduleConstNamedLikeObjectProp } from './module-const-named-like-object-prop'
 import { fixture as childrenNamedLoopRowKey } from './children-named-loop-row-key'
 import { fixture as childrenLocalNullableAttr } from './children-local-nullable-attr'
 import { fixture as childrenPreambleLocalEscaped } from './children-preamble-local-escaped'
@@ -1273,6 +1280,8 @@ export const jsxFixtures: JSXFixture[] = [
   signalSeedPropNullishPropFallbackDestructured,
   signalSeedRenamedDefaultBesideRawNullish,
   memoPropReadBesideSignalNullishSeed,
+  memoPropReadBesideSignalNullishSeedDestructured,
+  memoPropArithmeticBesideSignalNullishSeed,
   signalSeedDependentDefaultNullishLiteral,
   signalSeedDependentDefaultNullishLiteralBody,
   signalSeedLocalHelperCall,
@@ -2074,6 +2083,11 @@ export const jsxFixtures: JSXFixture[] = [
   childrenRenamedBesideChildrenLocal,
   childrenAliasLoopShadow,
   childrenAliasHopShadowedIntermediate,
+  constAliasHopLoopShadow,
+  constAliasDefaultPropLoopShadow,
+  constGetterReadLoopShadowed,
+  moduleConstHopLoopShadow,
+  moduleConstNamedLikeObjectProp,
   childrenNamedLoopRowKey,
   childrenLocalNullableAttr,
   childrenPreambleLocalEscaped,

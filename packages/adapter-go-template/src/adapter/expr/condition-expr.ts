@@ -22,6 +22,7 @@ import {
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { goBinaryHelperCall, GO_REMEDIATION_OPTIONS, isElementIndex, lowerJsNot, wrapIfMultiToken } from '../lib/go-emit.ts'
+import { isPropsObjectName } from '../lib/compile-state.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import type { HigherOrderShape } from '../lib/types.ts'
 import { lowerTemplateLiteralValue, lowerTernary } from './url-builder.ts'
@@ -291,8 +292,7 @@ function renderFilterMember(
   // the generic recursion below.
   if (
     expr.object.kind === 'identifier' &&
-    host.ctx.state.propsObjectName &&
-    expr.object.name === host.ctx.state.propsObjectName &&
+    isPropsObjectName(host.ctx.state, expr.object.name) &&
     // The predicate's own param or an enclosing binding of that name
     // shadows the props object (#3693).
     expr.object.name !== param &&
@@ -640,8 +640,7 @@ function renderConditionMember(
 
   if (
     expr.object.kind === 'identifier' &&
-    host.ctx.state.propsObjectName &&
-    expr.object.name === host.ctx.state.propsObjectName &&
+    isPropsObjectName(host.ctx.state, expr.object.name) &&
     // A loop row binding of that name shadows the props object (#3693).
     !host.hasScopeBinding(expr.object.name)
   ) {

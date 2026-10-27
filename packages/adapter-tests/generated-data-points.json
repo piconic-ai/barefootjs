@@ -1932,6 +1932,53 @@
       }
     }
   ],
+  "const-alias-default-prop-loop-shadow": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "rows": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "rows": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "rows": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "label": "L<x>",
+        "rows": []
+      }
+    }
+  ],
+  "const-getter-read-loop-shadowed": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "controlled-signal": [
     {
       "name": "gen:value:zero",
@@ -5658,11 +5705,67 @@
       }
     }
   ],
+  "module-const-hop-loop-shadow": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "module-const-loop-source-computed-precomputed": [
     {
       "name": "gen:items:empty",
       "props": {
         "items": []
+      }
+    }
+  ],
+  "module-const-named-like-object-prop": [
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "rows": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "rows": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "rows": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "rows": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "label": "caller",
+        "rows": []
       }
     }
   ],

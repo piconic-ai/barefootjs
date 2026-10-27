@@ -99,3 +99,88 @@ describe('inlineComputedConsts (#3494)', () => {
     expect(inline('label')).toBe('props.label ?? "Default"')
   })
 })
+
+describe('a const hop resolved where each const is declared (#3696)', () => {
+  const source = `
+    'use client'
+    import { createSignal } from '@barefootjs/client'
+    const x = 'module'
+    const a = x
+    const base = 'm-base'
+    const tag = base + '!'
+    const alias = tag
+    const k = 'mk'
+    const ka = k
+    function helper() { return 'h' }
+    const viaHelper = helper
+    export function C({ rows, base }: { rows: string[]; base: string }) {
+      const [k] = createSignal('sig')
+      const x = 'local'
+      const b = a
+      const c = alias
+      const d = ka
+      const helper = 'local-helper'
+      const e = viaHelper
+      return <ul>{rows.map((a, x) => <li key={a}>{b}{c}{d}{e}</li>)}</ul>
+    }
+  `
+
+  test('a module const read under a row that shadows its name reads the module binding', () => {
+    const inline = inliner(source, ['a', 'x'])
+    expect(inline('b')).toBe('"module"')
+  })
+
+  test('a module const initializer reads module consts, not the component prop or const of the same name', () => {
+    expect(inliner(source, ['alias', 'tag'])('c')).toBe('"m-base" + "!"')
+    expect(inliner(source, ['ka'])('d')).toBe('"mk"')
+  })
+
+  test('the same module const read with nothing shadowed still reads the module binding', () => {
+    const inline = inliner(source)
+    expect(inline('b')).toBe('"module"')
+    expect(inline('c')).toBe('"m-base" + "!"')
+  })
+
+  test('a component const shadows a module const of the same name', () => {
+    expect(inliner(source)('x')).toBe('x')
+  })
+
+  test('a module binding with no const to read is left alone when the component rebinds its name', () => {
+    expect(inliner(source, ['viaHelper'])('e')).toBe('e')
+  })
+})
+
+describe('only names the component scope binds shadow a module const (#3696)', () => {
+  const source = `
+    'use client'
+    const label = 'module' + '!'
+    const tagged = label + '?'
+    const title = 'm-title'
+    const viaTitle = title
+    const n = 1
+    export function C(props: { label: string; title: string; n: number; rows: string[] }) {
+      const { title } = props
+      const n = props.n * 2
+      const shown = label
+      const hop = tagged
+      const t = viaTitle
+      const m = n
+      return <ul>{props.rows.map(tagged => <li key={tagged}>{shown}{hop}{t}{m}</li>)}</ul>
+    }
+  `
+
+  test('a prop reached only through the props object does not shadow a module const', () => {
+    const inline = inliner(source)
+    expect(inline('shown')).toBe('"module" + "!"')
+    expect(inline('label')).toBe('"module" + "!"')
+    expect(inliner(source, ['tagged'])('hop')).toBe('"module" + "!" + "?"')
+  })
+
+  test('a module const named like a props destructure binding is still the module const', () => {
+    expect(inliner(source, ['viaTitle'])('t')).toBe('"m-title"')
+  })
+
+  test('a computed component const shadows a literal module const of the same name', () => {
+    expect(inliner(source)('m')).toBe('props.n * 2')
+  })
+})
