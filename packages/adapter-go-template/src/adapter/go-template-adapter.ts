@@ -58,7 +58,6 @@ import {
   exprToString,
   identifierPath,
   asCallbackMethodCall,
-  sortComparatorFromArrow,
   emitParsedExpr,
   groupObjectLiteralSegments,
   emitIRNode,
@@ -113,14 +112,8 @@ import {
   lowerJsTruthyTest,
   isBareValueRead,
   wrapGoArg,
-  emitBfSort,
-  emitSortEval,
-  emitReduceEval,
   emitPredicateEval,
-  emitFlatMapEval,
-  emitMapEval,
   goBinaryHelperCall,
-  isElementIndex,
   buildUnsupportedSuggestion,
   GO_REMEDIATION_OPTIONS,
   goPropDefault,
@@ -171,6 +164,7 @@ import { lowerChildInputFields, lowerLoopRowChildInputFields, sourceRowChildInpu
 import { resolveLocalGetterAsGo } from "./value/child-prop-value.ts"
 import { emitParsedExpressionAttr, emitSpreadAttr, emitStyleOrPresenceAttr, emitTemplateAttr, type ElementAttrHost } from "./attr/element-attrs.ts"
 import { renderConditionExpr, renderFilterExpr, type ConditionExprHost } from "./expr/condition-expr.ts"
+import { PREDICATE_METHODS, renderArrayMethod, renderCallbackMethod, renderMember, type MemberAndMethodsHost } from "./expr/member-and-methods.ts"
 import { loopRowChildPropOverrides, renderLoop as renderLoopWithHost, type LoopRenderHost } from "./loop/render-loop.ts"
 import { collectBodyChildInstances, collectStaticChildInstances, type StaticChildrenHost } from "./children/static-children.ts"
 import { buildLocalTypeTables, resolveNestedLoopItemTypes, synthesizeStructsFromElements, synthSliceTypeInfo, type TypeSynthesisHost } from "./type/type-synthesis.ts"
@@ -5085,6 +5079,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return `${calleeStr} ${argsStr}`
   }
 
+  /** Lower a member access (`expr/member-and-methods.ts`). */
   member(
     object: ParsedExpr,
     property: string,
@@ -5092,157 +5087,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     optional: boolean,
     emit: (e: ParsedExpr) => string,
   ): string {
-    // .length on a `.filter(...)` callback call → len (bf_filter ...)
-    const objHO = this.higherOrderShapeOf(object)
-    if (property === 'length' && objHO) {
-      const result = this.renderFilterLengthExpr(objHO, emit)
-      if (result) return result
-    }
-
-    // `<memo>().length` where the memo's `.map()` feeds a handler-filled loop
-    // slice → `len .<Slice>` (`visible().length` → `len .PostListItems`). The
-    // slice holds the rendered (filtered) items, so its length is the count —
-    // unlike the memo's own field, which is unset.
-    if (
-      property === 'length' &&
-      object.kind === 'call' &&
-      object.callee.kind === 'identifier' &&
-      object.args.length === 0
-    ) {
-      const slice = this.state.memoBackedLoopSlice.get(object.callee.name)
-      if (slice) {
-        // Root field, so reach it through `$.` inside a loop.
-        const prefix = this.inLoop ? '$.' : '.'
-        return `len ${prefix}${slice}`
-      }
-    }
-
-    // find().property / findLast().property → {{with bf_find ...}}{{.Property}}{{end}}
-    if (objHO && (objHO.method === 'find' || objHO.method === 'findLast')) {
-      const findResult = this.renderHigherOrderExpr(objHO, emit)
-      if (findResult) {
-        return `{{with ${findResult}}}{{.${goFieldNameForKey(property)}}}{{end}}`
-      }
-      const templateBlock = this.renderFindTemplateBlock(
-        objHO, emit, goFieldNameForKey(property),
-      )
-      if (templateBlock) return templateBlock
-    }
-
-    // SolidJS-style props pattern: props.xxx -> .Xxx (or $.Xxx inside a loop,
-    // since props live on the root data struct, not the iteration element).
-    if (object.kind === 'identifier' && this.state.propsObjectName && object.name === this.state.propsObjectName) {
-      return this.propKeyFieldRef(property)
-    }
-
-    // A member access on the component's own destructured rest binding
-    // (`function({ children, ...rest }) { ... rest.header ... }`) reads off
-    // the rest-bag's `map[string]any` field (#2805) — case-tolerant
-    // `bf_get`, the same route `isMapRootedPropChain` below uses for an
-    // inline-object-typed prop, since a source-cased key is what both the
-    // static bake (`emitChildField`) and the dynamic-delivery route
-    // (`queueDynamicPropDefine`) write. `scope.isBound` guards against an
-    // INNER `.map(({ ...rest }) => ...)` binding of the same name shadowing
-    // the outer rest bag (the shared shadow-guard predicate — see
-    // `spec/compiler.md`'s `BindingScope` section).
-    if (
-      object.kind === 'identifier' &&
-      this.state.restPropsName &&
-      object.name === this.state.restPropsName &&
-      !this.scope.isBound(object.name)
-    ) {
-      return `bf_get ${this.rootFieldRef(object.name)} ${JSON.stringify(property)}`
-    }
-
-    // A member chain rooted in a `useContext` local whose `createContext`
-    // default is object-shaped (#2087 — `defaultKind === 'object'`) reads off
-    // a `map[string]interface{}` field, not a struct: plain Go template dot
-    // access (`.Ctx.Config`) does an EXACT-string `MapIndex`, so it would
-    // only resolve a capitalized key the provider never bakes (see
-    // `providerObjectValueToGoMap`, which keeps SOURCE/JS-cased keys). Route
-    // through `bf_get` (the runtime's case-tolerant `getFieldValue`, bf.go)
-    // instead, recursively — once a chain is map-rooted every further
-    // `.property` is ALSO opaque (the map's value type is `interface{}`, so
-    // there's no static struct to fall back to), hence checking the object
-    // rather than just the top-level identifier.
-    if (this.isMapRootedContextChain(object)) {
-      const objGo = emit(object)
-      return `bf_get ${wrapIfMultiToken(objGo)} ${JSON.stringify(property)}`
-    }
-
-    // Static property access on a module object-literal const
-    // (`variantClasses.ghost` in a class template literal) resolves at compile
-    // time — same lookup as the bracket-index form in
-    // `resolveStaticRecordLiteralIndex`, reached here when the access is nested
-    // inside a larger ParsedExpr tree.
-    if (object.kind === 'identifier') {
-      const staticValue = this.resolveStaticRecordLiteralIndex(
-        `${object.name}.${property}`,
-      )
-      if (staticValue !== null) return staticValue
-    }
-
-    // A numeric index (`row[0]`, `pair[1]`, #3497) reads an element, not a
-    // struct field: `.Field0` is no field of a `[]string`, and html/template
-    // fails the render. It takes the `bf_get` arm below (the row itself
-    // rendering as `.`), which indexes a slice and still finds a map key or
-    // a generated struct's JSON-tagged field spelled the same, as JS
-    // `obj[0]` reads `obj["0"]`.
-    const elementIndex = isElementIndex(computed, property)
-    // Inside a loop, the loop param variable refers to the current item
-    // (dot). e.g. `msg.role` inside `{{range $_, $msg := .Messages}}` → `.Role`
-    //
-    // Field names route through `goFieldNameForKey` — the same sanitizer the
-    // struct/map bake side uses — NOT bare `capitalizeFieldName`: a
-    // non-identifier property (`meta["data-x"]`, parsed as computed member
-    // access) would otherwise emit `.Data-x`, which is not even valid Go
-    // template syntax, let alone a reachable field (PR #2089 review). For
-    // identifier keys (snake_case included) the two functions agree, so
-    // nothing previously reachable changes shape.
-    if (object.kind === 'identifier' && this.isCurrentLoopRecord(object.name) && !elementIndex) {
-      return `.${goFieldNameForKey(property)}`
-    }
-
-    const obj = emit(object)
-    // JS `.length`: array element count OR, for a string, UTF-16 code-unit
-    // count (#2255) — NOT Go's native `len`, which is byte count for a
-    // string. `Length`/`bf_length` (bf.go) dispatches on the runtime value's
-    // shape to match. The specialized array-only `.length` shapes above
-    // (filter-result count, memo-backed loop slice count) stay on `len`,
-    // since arrays never hit the UTF-16 divergence.
-    if (property === 'length') {
-      const read = `bf_length ${wrapIfMultiToken(obj)}`
-      // `x?.length` (#3332) is `undefined` for an absent receiver, not
-      // `bf_length nil`'s 0: a bare read renders empty (html/template prints
-      // a nil value as nothing) and a `??` fallback takes over. `bf_eq`
-      // treats a typed nil (an absent slice) as nil.
-      return optional ? `bf_ternary (bf_eq ${wrapIfMultiToken(obj)} nil) nil (${read})` : read
-    }
-    // A `?.`-written access (`user?.name`, #2168 optional-chaining-prop):
-    // a plain `.Field` dot-chain panics evaluating a field on a nil
-    // interface/pointer (`nil pointer evaluating interface {}.Name`), so
-    // route through the runtime's existing nil-safe reflection-based
-    // getter instead — `bf_get`/`getFieldValue` (bf.go), already used for
-    // map-rooted context chains above, guards the nil case and returns Go
-    // `nil` (which `or`/`bf.truthy?`-style fallbacks treat as falsy) —
-    // preserve the source key so computed indices and punctuation are not
-    // rewritten. The getter also handles Go struct casing. Only guards the
-    // single written `?.` hop, not
-    // a JS-style whole-chain short-circuit — see the `ParsedExpr` `member`
-    // variant's docstring for the multi-hop caveat.
-    //
-    // A plain member access rooted in an inline-object-typed prop
-    // (`props.cfg.id`, #2299) reads off a `map[string]interface{}` field:
-    // route through the case-tolerant `bf_get` with the JS-cased key (the map
-    // is baked with source-cased keys), not the exact-case `.Cfg.ID` dot path
-    // below that would `MapIndex("ID")` a `"id"` map and render empty. Placed
-    // after the `length` special case so it only intercepts the otherwise-
-    // untyped dot access. A numeric index takes the same getter (see
-    // `elementIndex` above).
-    if (optional || elementIndex || this.isMapRootedPropChain(object) || this.isMapSeededSignalChain(object)) {
-      return this.renderOptionalMember(obj, property)
-    }
-    return `${obj}.${goFieldNameForKey(property)}`
+    return renderMember(this.memberAndMethodsHost, object, property, computed, optional, emit)
   }
 
   /** Shared by value and condition emitters: optional hops need nil-safe,
@@ -5653,11 +5498,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return `""`
   }
 
-  /** Set of predicate (boolean-callback) higher-order methods. */
-  private static readonly PREDICATE_METHODS: ReadonlySet<string> = new Set([
-    'filter', 'find', 'findIndex', 'findLast', 'findLastIndex', 'every', 'some',
-  ])
-
   /**
    * Recover the (removed) `higher-order` destructured shape from a generic
    * `call` that is a recognised callback method whose method is a *predicate*
@@ -5668,7 +5508,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private higherOrderShapeOf(node: ParsedExpr): HigherOrderShape | null {
     const cb = asCallbackMethodCall(node)
     if (!cb) return null
-    if (!GoTemplateAdapter.PREDICATE_METHODS.has(cb.method)) return null
+    if (!PREDICATE_METHODS.has(cb.method)) return null
     return {
       method: cb.method as HigherOrderMethod,
       object: cb.object,
@@ -5677,31 +5517,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
   }
 
-  /**
-   * Push BF101 for a callback method whose shape has no Go template form.
-   *
-   * `selfContained` callbacks (`reduce` / `flatMap` off the eval-lowerable
-   * catalogue — a `.reduce` with no init, a tuple `.flatMap` with a non-leaf
-   * element) carry the self-contained "no SSR" remedy and must NOT get the
-   * generic Options block appended (mirrors `isSupported`'s `selfContained`
-   * flag for `UNSUPPORTED_METHODS`). Predicate callbacks that exhaust their
-   * template-block fallbacks keep the generic Options remediation.
-   */
-  private pushCallbackBF101(method: string, selfContained = false): string {
-    this.state.errors.push({
-      code: 'BF101',
-      severity: 'error',
-      message: `Higher-order method '.${method}' shape cannot be lowered to a Go template action`,
-      loc: this.makeLoc(),
-      suggestion: {
-        message: selfContained
-          ? `'${method}()' can't render on the server. Pre-compute the value, or add /* @client */ for client-only (no SSR).`
-          : GO_REMEDIATION_OPTIONS,
-      },
-    })
-    return `""`
-  }
-
+  /** Lower a higher-order callback method (`expr/member-and-methods.ts`). */
   callbackMethod(
     method: string,
     object: ParsedExpr,
@@ -5709,268 +5525,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     restArgs: ParsedExpr[],
     emit: (e: ParsedExpr) => string,
   ): string {
-    const recv = emit(object)
-    const body = arrow.body
-    const params = arrow.params
-
-    if (GoTemplateAdapter.PREDICATE_METHODS.has(method)) {
-      const shape: HigherOrderShape = {
-        method: method as HigherOrderMethod,
-        object,
-        param: params[0] ?? '_',
-        predicate: body,
-      }
-      const result = this.renderHigherOrderExpr(shape, emit)
-      if (result) return result
-      if (
-        method === 'find' || method === 'findIndex' ||
-        method === 'findLast' || method === 'findLastIndex'
-      ) {
-        const templateBlock = this.renderFindTemplateBlock(shape, emit)
-        if (templateBlock) return templateBlock
-      }
-      if (method === 'every' || method === 'some') {
-        const templateBlock = this.renderEverySomeTemplateBlock(shape, emit)
-        if (templateBlock) return templateBlock
-      }
-      return this.pushCallbackBF101(method)
-    }
-
-    if (method === 'sort' || method === 'toSorted') {
-      // Evaluator-first (#2018): the comparator body is serialized and evaluated
-      // per comparison. Falls back to the structured `bf_sort` for a comparator
-      // the evaluator can't model (e.g. localeCompare).
-      const evalForm = emitSortEval(recv, body, params, emit)
-      if (evalForm !== null) return evalForm
-      const cmp = sortComparatorFromArrow(arrow)
-      if (cmp !== null) return emitBfSort(recv, cmp)
-      return this.pushCallbackBF101(method)
-    }
-
-    if (method === 'reduce' || method === 'reduceRight') {
-      // `.reduce(fn, init)` / `.reduceRight(fn, init)` fold via the evaluator.
-      // The arithmetic-fold catalogue always serializes, so there's no
-      // structured fallback — a body / init the evaluator can't model is BF101.
-      const direction = method === 'reduceRight' ? 'right' : 'left'
-      const init = restArgs[0]
-      if (init) {
-        const evalForm = emitReduceEval(recv, body, params, init, direction, emit)
-        if (evalForm !== null) return evalForm
-      }
-      return this.pushCallbackBF101(method, true)
-    }
-
-    if (method === 'flatMap') {
-      const evalForm = emitFlatMapEval(recv, body, params[0] ?? '_', emit)
-      if (evalForm !== null) return evalForm
-      return this.pushCallbackBF101(method, true)
-    }
-
-    // Value-producing `.map(cb)` (#2073): eval-only. (The JSX-returning
-    // `.map` is an IRLoop upstream and never reaches this dispatch.)
-    if (method === 'map') {
-      const evalForm = emitMapEval(recv, body, params[0] ?? '_', emit)
-      if (evalForm !== null) return evalForm
-      return this.pushCallbackBF101(method, true)
-    }
-
-    return this.pushCallbackBF101(method, true)
+    return renderCallbackMethod(this.memberAndMethodsHost, method, object, arrow, restArgs, emit)
   }
 
+  /** Lower a non-callback array / string method (`expr/member-and-methods.ts`). */
   arrayMethod(
     method: ArrayMethod,
     object: ParsedExpr,
     args: ParsedExpr[],
     rawEmit: (e: ParsedExpr) => string,
   ): string {
-    // Every `emit(...)` call below lowers an ARGUMENT position (the
-    // receiver or a `.method(...)` arg) that feeds a prefix-call Go form
-    // (`bf_join (...) ...`, `bf_replace ... ... ...`, …) — shadow the
-    // dispatcher's own `emit` with `emitOperand` (#2863) so a
-    // template-literal receiver/argument (e.g. `items.join(\`${a}-${b}\`)`)
-    // folds through `bf_concat_str` instead of leaking the TEXT-position
-    // `templateLiteral()` form into another action's argument list.
-    const emit = (e: ParsedExpr): string => this.emitOperand(e, rawEmit)
-    // `bf_join` etc. are registered in the runtime FuncMap. The exhaustive
-    // switch on `method` mirrors the IR-level discriminator — adding a new
-    // `ArrayMethod` variant becomes a TS compile error until every adapter
-    // declares its lowering.
-    switch (method) {
-      case 'join': {
-        const obj = emit(object)
-        // `.join()` defaults the separator to `,`; extra arguments are ignored.
-        const sep = args.length >= 1 ? emit(args[0]) : '","'
-        // Paren-wrap a multi-token separator so Go template doesn't fold its
-        // tokens into `bf_join`'s argument list.
-        return `bf_join (${obj}) ${wrapIfMultiToken(sep)}`
-      }
-      case 'includes': {
-        // Both `arr.includes(x)` and `str.includes(sub)` route here — the parser
-        // can't disambiguate the receiver type. The runtime `Includes` helper
-        // inspects `reflect.Kind()`: slices/arrays use DeepEqual element search,
-        // strings use `strings.Contains`.
-        const obj = emit(object)
-        const needle = emit(args[0])
-        return `bf_includes ${wrapIfMultiToken(obj)} ${wrapIfMultiToken(needle)}`
-      }
-      case 'indexOf':
-      case 'lastIndexOf': {
-        // Value-equality search (DeepEqual), for the bare `.indexOf(x)` /
-        // `.lastIndexOf(x)` shape with no `.field` accessor on the elements
-        // (unlike `bf_find_index`, which keys on struct-field equality).
-        const fn = method === 'indexOf' ? 'bf_index_of' : 'bf_last_index_of'
-        const obj = emit(object)
-        const needle = emit(args[0])
-        return `${fn} ${wrapIfMultiToken(obj)} ${wrapIfMultiToken(needle)}`
-      }
-      case 'at': {
-        // `.at(i)` supports negative indices (`.at(-1)` → last element). No
-        // argument is `.at(0)`; extra arguments are ignored.
-        const obj = emit(object)
-        const idx = args.length >= 1 ? emit(args[0]) : '0'
-        return `bf_at ${wrapIfMultiToken(obj)} ${wrapIfMultiToken(idx)}`
-      }
-      case 'concat': {
-        // `.concat(other)` merges two arrays; `bf_concat` reflects over both
-        // operands so callers can mix `[]string` + `[]any` etc. `.concat()` with
-        // no argument is a shallow copy, indistinguishable from the receiver in
-        // an SSR snapshot, so it lowers to the receiver.
-        if (args.length === 0) {
-          return emit(object)
-        }
-        const a = emit(object)
-        const b = emit(args[0])
-        return `bf_concat ${wrapIfMultiToken(a)} ${wrapIfMultiToken(b)}`
-      }
-      case 'slice': {
-        // `.slice()` / `.slice(start)` / `.slice(start, end)`. Missing `start`
-        // defaults to 0; an absent `end` means "to length". Out-of-bounds
-        // indices clamp (JS-compat); `start > end` returns empty. Only
-        // `args[0]` / `args[1]` are read.
-        const recv = emit(object)
-        const start = args.length >= 1 ? emit(args[0]) : '0'
-        if (args.length <= 1) {
-          return `bf_slice ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(start)}`
-        }
-        const end = emit(args[1])
-        return `bf_slice ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(start)} ${wrapIfMultiToken(end)}`
-      }
-      case 'reverse':
-      case 'toReversed': {
-        // SSR renders a state snapshot, so JS's mutate-receiver (`reverse`) vs
-        // return-new (`toReversed`) distinction has no template-level meaning.
-        // Both route through `bf_reverse`, which always returns a fresh `[]any`.
-        const recv = emit(object)
-        return `bf_reverse ${wrapIfMultiToken(recv)}`
-      }
-      case 'toLowerCase': {
-        const recv = emit(object)
-        return `bf_lower ${wrapIfMultiToken(recv)}`
-      }
-      case 'toUpperCase': {
-        const recv = emit(object)
-        return `bf_upper ${wrapIfMultiToken(recv)}`
-      }
-      case 'trim': {
-        const recv = emit(object)
-        return `bf_trim ${wrapIfMultiToken(recv)}`
-      }
-      case 'trimStart':
-      case 'trimEnd': {
-        // `.trimStart()` / `.trimEnd()` — the one-sided siblings of `.trim()`
-        // (#2183 follow-up). Dedicated `bf_trim_start` / `bf_trim_end`
-        // helpers, not `bf_trim` with a flag.
-        const fn = method === 'trimStart' ? 'bf_trim_start' : 'bf_trim_end'
-        const recv = emit(object)
-        return `${fn} ${wrapIfMultiToken(recv)}`
-      }
-      case 'toFixed': {
-        // `.toFixed(digits?)` → `bf_to_fixed` (`fmt.Sprintf("%.*f", …)`); default
-        // 0 digits when the argument is omitted.
-        const recv = emit(object)
-        const digits = args.length >= 1 ? emit(args[0]) : '0'
-        return `bf_to_fixed ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(digits)}`
-      }
-      case 'split': {
-        // `.split()` / `.split(sep)` / `.split(sep, limit)` — string → `[]any`.
-        // No separator → the whole string as a single element (`bf_arr`).
-        // Otherwise `bf_split`; a second `limit` argument caps the pieces. A
-        // third+ argument is ignored.
-        const recv = emit(object)
-        if (args.length === 0) {
-          return `bf_arr ${wrapIfMultiToken(recv)}`
-        }
-        const sep = emit(args[0])
-        if (args.length === 1) {
-          return `bf_split ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(sep)}`
-        }
-        const limit = emit(args[1])
-        return `bf_split ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(sep)} ${wrapIfMultiToken(limit)}`
-      }
-      case 'startsWith':
-      case 'endsWith': {
-        // `.startsWith(prefix, position?)` / `.endsWith(suffix, endPosition?)` —
-        // string → boolean via `bf_starts_with` / `bf_ends_with`. The optional
-        // second argument re-anchors the test; a third+ argument is ignored.
-        const fn = method === 'startsWith' ? 'bf_starts_with' : 'bf_ends_with'
-        const recv = emit(object)
-        const arg = emit(args[0])
-        const base = `${fn} ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(arg)}`
-        if (args.length >= 2) {
-          return `${base} ${wrapIfMultiToken(emit(args[1]))}`
-        }
-        return base
-      }
-      case 'replace': {
-        // `.replace(old, new)` — string-pattern form, first occurrence only, via
-        // `bf_replace` (`strings.Replace` with n=1). The regex-pattern form is
-        // refused upstream at the parser.
-        const recv = emit(object)
-        const oldS = emit(args[0])
-        const newS = emit(args[1])
-        return `bf_replace ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(oldS)} ${wrapIfMultiToken(newS)}`
-      }
-      case 'replaceAll': {
-        // `.replaceAll(old, new)` — string-pattern form, EVERY occurrence, via
-        // `bf_replace_all` (`strings.ReplaceAll`). A dedicated helper, not
-        // `bf_replace` with a different n — the regex-pattern form is refused
-        // upstream at the parser, same as `.replace`.
-        const recv = emit(object)
-        const oldS = emit(args[0])
-        const newS = emit(args[1])
-        return `bf_replace_all ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(oldS)} ${wrapIfMultiToken(newS)}`
-      }
-      case 'repeat': {
-        // `.repeat(n)` — string repeated `n` times. `bf_repeat` clamps a negative
-        // count to "" instead of letting `strings.Repeat` panic. No argument is
-        // `repeat(0)` → ""; a second+ argument is ignored.
-        const recv = emit(object)
-        const count = args.length === 0 ? '0' : emit(args[0])
-        return `bf_repeat ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(count)}`
-      }
-      case 'padStart':
-      case 'padEnd': {
-        // `.padStart(target, pad?)` / `.padEnd(target, pad?)` — pad to `target`
-        // runes with `pad` (default a single space, supplied by the variadic
-        // helper). No argument is `padStart(0)` → the receiver unchanged; a
-        // third+ argument is ignored.
-        const fn = method === 'padStart' ? 'bf_pad_start' : 'bf_pad_end'
-        const recv = emit(object)
-        if (args.length === 0) {
-          return `${fn} ${wrapIfMultiToken(recv)} 0`
-        }
-        const target = emit(args[0])
-        if (args.length === 1) {
-          return `${fn} ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(target)}`
-        }
-        const pad = emit(args[1])
-        return `${fn} ${wrapIfMultiToken(recv)} ${wrapIfMultiToken(target)} ${wrapIfMultiToken(pad)}`
-      }
-      default: {
-        const _exhaustive: never = method
-        throw new Error(`Go arrayMethod: unhandled ArrayMethod '${(_exhaustive as string)}'`)
-      }
-    }
+    return renderArrayMethod(this.memberAndMethodsHost, method, object, args, rawEmit)
   }
 
   flatMethod(
@@ -7340,6 +6905,28 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     isMapSeededSignalChain: (node) => this.isMapSeededSignalChain(node),
     isNillableNullishLeft: (expr) => this.isNillableNullishLeft(expr),
     isTemplatePrimitive: (path) => Boolean(this.templatePrimitives[path]),
+  }
+
+  /** The adapter-owned renders and lookups the member and array-method lowering (`expr/member-and-methods.ts`) reads. */
+  private readonly memberAndMethodsHost: MemberAndMethodsHost = {
+    ctx: this.emitCtx,
+    makeLoc: () => this.makeLoc(),
+    inLoop: () => this.inLoop,
+    isBound: (name) => this.scope.isBound(name),
+    higherOrderShapeOf: (node) => this.higherOrderShapeOf(node),
+    renderFilterLengthExpr: (filterExpr, renderArray) => this.renderFilterLengthExpr(filterExpr, renderArray),
+    renderHigherOrderExpr: (expr, renderArray) => this.renderHigherOrderExpr(expr, renderArray),
+    renderFindTemplateBlock: (expr, renderArray, propertyAccess) => this.renderFindTemplateBlock(expr, renderArray, propertyAccess),
+    renderEverySomeTemplateBlock: (expr, renderArray) => this.renderEverySomeTemplateBlock(expr, renderArray),
+    propKeyFieldRef: (key) => this.propKeyFieldRef(key),
+    rootFieldRef: (name) => this.rootFieldRef(name),
+    isMapRootedContextChain: (node) => this.isMapRootedContextChain(node),
+    isMapRootedPropChain: (node) => this.isMapRootedPropChain(node),
+    isMapSeededSignalChain: (node) => this.isMapSeededSignalChain(node),
+    resolveStaticRecordLiteralIndex: (jsExpr) => this.resolveStaticRecordLiteralIndex(jsExpr),
+    isCurrentLoopRecord: (name) => this.isCurrentLoopRecord(name),
+    renderOptionalMember: (object, property) => this.renderOptionalMember(object, property),
+    emitOperand: (n, emit) => this.emitOperand(n, emit),
   }
 
   /** The adapter-owned renders, render-position state and lookups the loop lowering (`loop/render-loop.ts`) reads. */
