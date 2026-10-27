@@ -8989,7 +8989,7 @@ function processComponentProps(
       // rewrite, so `IRProp` declares no such field. Strip it here rather
       // than letting the shared helper's per-key marking leak into IRProp
       // as an inert flag nothing reads.
-      props.push(...expandSpreadAttribute(attr, ctx).map(({ restExpandedKey: _restExpandedKey, ...prop }) => prop))
+      props.push(...expandSpreadAttribute(attr, ctx).map(({ restExpandedKey: _restExpandedKey, ...prop }) => markPropsObjectSpread(prop, ctx)))
       continue
     }
 
@@ -9794,6 +9794,25 @@ function forwardsCallerRestProps(attrs: IRAttribute[], ctx: TransformContext): b
     }
   }
   return false
+}
+
+/**
+ * Mark a child-component spread of the component's own props object
+ * (`SpreadAttr.propsObject`, #3688). Resolved with the same rule — and the
+ * same `expr` / `templateExpr` pair — as `forwardsCallerRestProps`, narrowed
+ * to the `'props'` origin: a `{...rest}` bag leaves out the keys the
+ * component destructured, so it does not merge as the caller's props.
+ */
+function markPropsObjectSpread<T extends { value: AttrValue }>(prop: T, ctx: TransformContext): T {
+  const value = prop.value
+  if (value.kind !== 'spread') return prop
+  const constants = constantValuesByName(ctx)
+  for (const name of new Set([value.expr, value.templateExpr])) {
+    if (name && resolveRestSpreadOriginCore(ctx.analyzer, constants, name) === 'props') {
+      return { ...prop, value: { ...value, propsObject: true } }
+    }
+  }
+  return prop
 }
 
 /** `ctx.analyzer.localConstants` indexed by name → value text, memoized per component walk. */

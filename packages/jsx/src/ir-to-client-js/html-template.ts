@@ -394,6 +394,26 @@ function renderTemplateAttrPart(
 }
 
 /**
+ * Whether a child-component call's prop reaches the CSR `renderChild(...)`
+ * props object. Explicit props do (`key` is the call's own identity, not a
+ * prop). A spread does when it is the component's own props object
+ * (`SpreadAttr.propsObject`, decided in Phase 1): kept in source order next
+ * to the explicit props, the object literal merges like the JSX call does
+ * (#3688) — a later key overrides an earlier one, and the spread overrides
+ * only the keys the caller passed. Any other spread stays out.
+ */
+function keepsTemplateComponentProp(p: IRProp): boolean {
+  if (p.name === 'key') return false
+  if (p.name === '...' || p.name.startsWith('...')) return p.value.kind === 'spread' && p.value.propsObject === true
+  return true
+}
+
+/** One `renderChild(...)` props-object entry: `name: value`, or `...value` for a spread. */
+function templatePropEntry(p: IRProp, valueExpr: string): string {
+  return p.name === '...' || p.name.startsWith('...') ? `...${valueExpr}` : `${quotePropName(p.name)}: ${valueExpr}`
+}
+
+/**
  * Source-of-truth predicates for the collision-safe spread-attrs merge
  * shared by all three CSR-side emit paths (`irToHtmlTemplate`,
  * `irToComponentTemplate`, `generateCsrTemplate`). (#1244)
@@ -873,7 +893,7 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
       // This allows stateless components in conditional branches to render their content
       // instead of emitting empty placeholders (#435).
       const propsEntries = node.props
-        .filter(p => p.name !== '...' && !p.name.startsWith('...') && p.name !== 'key')
+        .filter(keepsTemplateComponentProp)
         // `ref` joins the `on*` handlers here: a function prop cannot run
         // during module-scope string rendering, and a ref closing over an
         // init-scope setter would leak it into the template (#2468). The
@@ -927,7 +947,7 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
               // previously masked by the post-hoc `wrapLoopParamAsAccessor`
               // pass over the whole branch string, which #2868 removed.
               const expr = wrapExpr(attrValueToString(p.value, { useTemplate: true }) ?? 'undefined')
-              return `${quotePropName(p.name)}: ${expr}`
+              return templatePropEntry(p, expr)
             }
           }
         })
@@ -2031,7 +2051,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
 
       // Use renderChild() to render child component's template at runtime (#435)
       const propsEntries = node.props
-        .filter(p => p.name !== '...' && !p.name.startsWith('...') && p.name !== 'key')
+        .filter(keepsTemplateComponentProp)
         // `ref` joins the `on*` handlers here: a function prop cannot run
         // during module-scope string rendering, and a ref closing over an
         // init-scope setter would leak it into the template (#2468). The
@@ -2059,7 +2079,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
             case 'expression':
               return `${quotePropName(p.name)}: ${transformExpr(p.value.expr, p.value.templateExpr)}`
             case 'spread':
-              return `${quotePropName(p.name)}: ${transformExpr(p.value.expr, p.value.templateExpr)}`
+              return templatePropEntry(p, transformExpr(p.value.expr, p.value.templateExpr))
             case 'template': {
               const valueStr = attrValueToString(p.value, { useTemplate: true })!
               return `${quotePropName(p.name)}: ${transformExpr(valueStr)}`
@@ -2706,7 +2726,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       }
 
       const propsEntries = node.props
-        .filter(p => p.name !== '...' && !p.name.startsWith('...') && p.name !== 'key')
+        .filter(keepsTemplateComponentProp)
         // `ref` joins the `on*` handlers here: a function prop cannot run
         // during module-scope string rendering, and a ref closing over an
         // init-scope setter would leak it into the template (#2468). The
@@ -2742,7 +2762,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
               // reference (#1128), drop the prop from renderChild — initChild's
               // getter binding will populate it once init runs.
               if (transformed === UNSAFE_TEMPLATE_EXPR) return null
-              return `${quotePropName(p.name)}: ${transformed}`
+              return templatePropEntry(p, transformed)
             }
             case 'template': {
               const valueStr = attrValueToString(p.value, { useTemplate: true })

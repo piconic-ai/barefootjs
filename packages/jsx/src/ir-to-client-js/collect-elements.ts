@@ -517,6 +517,76 @@ function jsxChildrenContainComponent(nodes: IRNode[]): boolean {
   return false
 }
 
+/**
+ * One explicit prop's `initChild` props-object entry: its value expression,
+ * and whether it is read through a getter (deferred, so reactive) or is a
+ * plain data property.
+ */
+function componentInitPropValue(prop: IRProp, ctx: ClientJsContext): { expr: string; getter: boolean } {
+  if (isEventHandlerName(prop.name)) {
+    // Event handlers reach here only as `expression` variants.
+    return { expr: attrValueToString(prop.value) ?? prop.name, getter: false }
+  }
+  switch (prop.value.kind) {
+    case 'jsx-children':
+      if (jsxChildrenContainComponent(prop.value.children)) {
+        return { expr: `__slot(() => ${irChildrenToJsExpr(prop.value.children)})`, getter: true }
+      }
+      // Brand via the shared door (#2651/#2702) — see
+      // `jsxChildrenPropGetterExpr`'s docstring.
+      return { expr: jsxChildrenPropGetterExpr(prop.value.children, prop.name), getter: true }
+    case 'expression':
+    case 'template':
+    case 'spread':
+      return { expr: expandDynamicPropValue(attrValueToString(prop.value)!, ctx), getter: true }
+    case 'literal':
+      return { expr: JSON.stringify(prop.value.value), getter: false }
+    case 'boolean-shorthand':
+    case 'boolean-attr':
+      // `boolean-attr` should not reach here for component props
+      // (processComponentProps promotes it to boolean-shorthand), but handle
+      // it defensively.
+      return { expr: 'true', getter: false }
+  }
+}
+
+/**
+ * Index of the last spread of the component's own props object in a child
+ * component call (`<Tag tone="first" {...props} />`), or -1. An explicit
+ * prop written before it is only a default: the spread overrides it when
+ * the caller passed that key, as in JS (#3688). This is the one source-order
+ * decision `initChild`'s props and both reactive DOM mirrors
+ * (`ctx.reactiveProps`, `ctx.reactiveChildProps`) read, so an overridden
+ * explicit expression can't overwrite the spread-selected value on update.
+ */
+function lastPropsObjectSpreadIndex(props: IRProp[]): number {
+  let at = -1
+  props.forEach((p, index) => {
+    if (p.value.kind === 'spread' && p.value.propsObject === true) at = index
+  })
+  return at
+}
+
+/**
+ * The value of an explicit prop a later props-object spread overrides (see
+ * `lastPropsObjectSpreadIndex`): the caller's own value when it passed the
+ * key, `expr` otherwise. `forwardProps` lets every override win, so the
+ * merge is spelled into the value itself.
+ */
+function callerFirstPropExpr(name: string, expr: string): string {
+  const key = JSON.stringify(name)
+  return `(${key} in ${PROPS_PARAM} ? ${PROPS_PARAM}[${key}] : ${expr})`
+}
+
+/**
+ * The merged value of the explicit prop at `index` for a reactive DOM
+ * mirror: caller-first when a later props-object spread (at `spreadAt`, see
+ * `lastPropsObjectSpreadIndex`) overrides it, `expr` as written otherwise.
+ */
+function mergedMirrorExpr(name: string, expr: string, index: number, spreadAt: number): string {
+  return index < spreadAt ? callerFirstPropExpr(name, expr) : expr
+}
+
 /** Build propsExpr for a child component from its IR props. */
 function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string {
   const knownSpreadProp = props.find(p => {
@@ -528,52 +598,21 @@ function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string 
     return resolveRestSpreadOrigin(ctx, expr) !== null
   })
   const spreadSource = knownSpreadProp ? PROPS_PARAM : null
+  const spreadAt = lastPropsObjectSpreadIndex(props)
 
   const propsForInit: string[] = []
   const explicitPropNames: string[] = []
-  for (const prop of props) {
-    if (prop.name === '...' || prop.name.startsWith('...')) continue
+  props.forEach((prop, index) => {
+    if (prop.name === '...' || prop.name.startsWith('...')) return
     explicitPropNames.push(prop.name)
-    const isEventHandler = isEventHandlerName(prop.name)
-    if (isEventHandler) {
-      // Event handlers reach here only as `expression` variants.
-      propsForInit.push(`${quotePropName(prop.name)}: ${attrValueToString(prop.value) ?? prop.name}`)
-      continue
+    const key = quotePropName(prop.name)
+    const { expr, getter } = componentInitPropValue(prop, ctx)
+    if (index < spreadAt) {
+      propsForInit.push(`get ${key}() { return ${callerFirstPropExpr(prop.name, expr)} }`)
+    } else {
+      propsForInit.push(getter ? `get ${key}() { return ${expr} }` : `${key}: ${expr}`)
     }
-    switch (prop.value.kind) {
-      case 'jsx-children': {
-        if (jsxChildrenContainComponent(prop.value.children)) {
-          const jsxExpr = irChildrenToJsExpr(prop.value.children)
-          propsForInit.push(`get ${quotePropName(prop.name)}() { return __slot(() => ${jsxExpr}) }`)
-        } else {
-          // Brand via the shared door (#2651/#2702) — see
-          // `jsxChildrenPropGetterExpr`'s docstring.
-          const jsxExpr = jsxChildrenPropGetterExpr(prop.value.children, prop.name)
-          propsForInit.push(`get ${quotePropName(prop.name)}() { return ${jsxExpr} }`)
-        }
-        break
-      }
-      case 'expression':
-      case 'template':
-      case 'spread': {
-        const valueExpr = attrValueToString(prop.value)!
-        const expandedValue = expandDynamicPropValue(valueExpr, ctx)
-        propsForInit.push(`get ${quotePropName(prop.name)}() { return ${expandedValue} }`)
-        break
-      }
-      case 'literal':
-        propsForInit.push(`${quotePropName(prop.name)}: ${JSON.stringify(prop.value.value)}`)
-        break
-      case 'boolean-shorthand':
-        propsForInit.push(`${quotePropName(prop.name)}: true`)
-        break
-      case 'boolean-attr':
-        // Should not reach here for component props (processComponentProps
-        // promotes to boolean-shorthand), but handle defensively.
-        propsForInit.push(`${quotePropName(prop.name)}: true`)
-        break
-    }
-  }
+  })
 
   if (spreadSource) {
     const overrides = propsForInit.length > 0 ? `{ ${propsForInit.join(', ')} }` : '{}'
@@ -589,7 +628,8 @@ function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string 
  * side-effect helper so `buildComponentPropsExpr` stays a pure function.
  */
 function collectReactiveChildProps(node: IRComponent, ctx: ClientJsContext): void {
-  for (const prop of node.props) {
+  const spreadAt = lastPropsObjectSpreadIndex(node.props)
+  for (const [index, prop] of node.props.entries()) {
     if (prop.name === '...' || prop.name.startsWith('...')) continue
     if (prop.value.kind === 'jsx-children') continue
     // `classifyDOMProp` is the single source of truth for "how does this prop
@@ -629,7 +669,7 @@ function collectReactiveChildProps(node: IRComponent, ctx: ClientJsContext): voi
       slotId: node.slotId,
       propName: prop.name,
       attrName,
-      expression: expandedValue,
+      expression: mergedMirrorExpr(prop.name, expandedValue, index, spreadAt),
       ...pickAttrMetaFromIR(prop),
     })
   }
@@ -1004,7 +1044,8 @@ export function collectElements(
     component: ({ node: c, descend, descendJsxChildren }) => {
       if (c.slotId) {
         // Reactive props need effects to update the element when values change.
-        for (const prop of c.props) {
+        const spreadAt = lastPropsObjectSpreadIndex(c.props)
+        for (const [index, prop] of c.props.entries()) {
           if (prop.value.kind === 'jsx-children') continue
           if (isEventHandlerName(prop.name)) continue
           // Only `expression` variants reach the signal/memo getter heuristic
@@ -1020,7 +1061,7 @@ export function collectElements(
               ctx.reactiveProps.push({
                 slotId: c.slotId,
                 propName: prop.name,
-                expression: fnName,
+                expression: mergedMirrorExpr(prop.name, value, index, spreadAt),
                 componentName: c.name,
               })
             }
