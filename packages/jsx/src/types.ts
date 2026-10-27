@@ -1481,6 +1481,15 @@ export interface SpreadAttr {
    * per-key expansion earlier and leave this unset (#1407).
    */
   slotId?: string
+  /**
+   * Set on a child-component call's spread (`<Child {...props} />`) whose
+   * source is the component's own props object, through any alias hop
+   * (`resolveRestSpreadOriginCore` → `'props'`). Such a spread carries
+   * exactly the keys the caller passed, so the client JS merges it with the
+   * call's explicit props in source order, as JS does (#3688). Unset for
+   * any other spread, including a `{...rest}` bag.
+   */
+  propsObject?: true
 }
 
 export interface JsxChildrenAttr {

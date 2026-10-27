@@ -517,6 +517,39 @@ function jsxChildrenContainComponent(nodes: IRNode[]): boolean {
   return false
 }
 
+/**
+ * One explicit prop's `initChild` props-object entry: its value expression,
+ * and whether it is read through a getter (deferred, so reactive) or is a
+ * plain data property.
+ */
+function componentInitPropValue(prop: IRProp, ctx: ClientJsContext): { expr: string; getter: boolean } {
+  if (isEventHandlerName(prop.name)) {
+    // Event handlers reach here only as `expression` variants.
+    return { expr: attrValueToString(prop.value) ?? prop.name, getter: false }
+  }
+  switch (prop.value.kind) {
+    case 'jsx-children':
+      if (jsxChildrenContainComponent(prop.value.children)) {
+        return { expr: `__slot(() => ${irChildrenToJsExpr(prop.value.children)})`, getter: true }
+      }
+      // Brand via the shared door (#2651/#2702) — see
+      // `jsxChildrenPropGetterExpr`'s docstring.
+      return { expr: jsxChildrenPropGetterExpr(prop.value.children, prop.name), getter: true }
+    case 'expression':
+    case 'template':
+    case 'spread':
+      return { expr: expandDynamicPropValue(attrValueToString(prop.value)!, ctx), getter: true }
+    case 'literal':
+      return { expr: JSON.stringify(prop.value.value), getter: false }
+    case 'boolean-shorthand':
+    case 'boolean-attr':
+      // `boolean-attr` should not reach here for component props
+      // (processComponentProps promotes it to boolean-shorthand), but handle
+      // it defensively.
+      return { expr: 'true', getter: false }
+  }
+}
+
 /** Build propsExpr for a child component from its IR props. */
 function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string {
   const knownSpreadProp = props.find(p => {
@@ -528,52 +561,30 @@ function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string 
     return resolveRestSpreadOrigin(ctx, expr) !== null
   })
   const spreadSource = knownSpreadProp ? PROPS_PARAM : null
+  // An explicit prop written before a spread of the props object
+  // (`<Tag tone="first" {...props} />`) is only a default: the spread
+  // overrides it when the caller passed that key, as in JS (#3688).
+  // `forwardProps` lets every override win, so such a prop reads the
+  // caller's value first.
+  let lastPropsObjectSpread = -1
+  props.forEach((p, index) => {
+    if (p.value.kind === 'spread' && p.value.propsObject === true) lastPropsObjectSpread = index
+  })
 
   const propsForInit: string[] = []
   const explicitPropNames: string[] = []
-  for (const prop of props) {
-    if (prop.name === '...' || prop.name.startsWith('...')) continue
+  props.forEach((prop, index) => {
+    if (prop.name === '...' || prop.name.startsWith('...')) return
     explicitPropNames.push(prop.name)
-    const isEventHandler = isEventHandlerName(prop.name)
-    if (isEventHandler) {
-      // Event handlers reach here only as `expression` variants.
-      propsForInit.push(`${quotePropName(prop.name)}: ${attrValueToString(prop.value) ?? prop.name}`)
-      continue
+    const key = quotePropName(prop.name)
+    const { expr, getter } = componentInitPropValue(prop, ctx)
+    if (index < lastPropsObjectSpread) {
+      const name = JSON.stringify(prop.name)
+      propsForInit.push(`get ${key}() { return ${name} in ${PROPS_PARAM} ? ${PROPS_PARAM}[${name}] : ${expr} }`)
+    } else {
+      propsForInit.push(getter ? `get ${key}() { return ${expr} }` : `${key}: ${expr}`)
     }
-    switch (prop.value.kind) {
-      case 'jsx-children': {
-        if (jsxChildrenContainComponent(prop.value.children)) {
-          const jsxExpr = irChildrenToJsExpr(prop.value.children)
-          propsForInit.push(`get ${quotePropName(prop.name)}() { return __slot(() => ${jsxExpr}) }`)
-        } else {
-          // Brand via the shared door (#2651/#2702) — see
-          // `jsxChildrenPropGetterExpr`'s docstring.
-          const jsxExpr = jsxChildrenPropGetterExpr(prop.value.children, prop.name)
-          propsForInit.push(`get ${quotePropName(prop.name)}() { return ${jsxExpr} }`)
-        }
-        break
-      }
-      case 'expression':
-      case 'template':
-      case 'spread': {
-        const valueExpr = attrValueToString(prop.value)!
-        const expandedValue = expandDynamicPropValue(valueExpr, ctx)
-        propsForInit.push(`get ${quotePropName(prop.name)}() { return ${expandedValue} }`)
-        break
-      }
-      case 'literal':
-        propsForInit.push(`${quotePropName(prop.name)}: ${JSON.stringify(prop.value.value)}`)
-        break
-      case 'boolean-shorthand':
-        propsForInit.push(`${quotePropName(prop.name)}: true`)
-        break
-      case 'boolean-attr':
-        // Should not reach here for component props (processComponentProps
-        // promotes to boolean-shorthand), but handle defensively.
-        propsForInit.push(`${quotePropName(prop.name)}: true`)
-        break
-    }
-  }
+  })
 
   if (spreadSource) {
     const overrides = propsForInit.length > 0 ? `{ ${propsForInit.join(', ')} }` : '{}'

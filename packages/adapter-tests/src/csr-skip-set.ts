@@ -76,6 +76,12 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // allocates); the client half is pinned by
   // `packages/jsx/src/__tests__/issue-2754-rest-spread-needs-slot.test.ts`.
   'stateless-rest-spread-forward',
+  // #3688: the parent's `{...props}` reaches the child's `renderChild(...)`
+  // props, but `title` lands on the child's root only through its own
+  // `{...rest}` element spread — `applyRestAttrs` in `init`, which the
+  // harness stubs. A real mount is pinned by
+  // `packages/client/__tests__/runtime/issue-3688-props-spread-merge.test.ts`.
+  'component-spread-props-rest-bag',
   // The harness now mounts the fixture's `componentName` (the #1467
   // multi-export class — `__lastComponent` rendering the last demo export
   // instead of the pinned basic demo — is gone; radio-group, tabs, dialog,
@@ -191,14 +197,6 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
  * and that the entry lists the fixture.
  */
 export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: string }>> = {
-  'component-spread-props-then-explicit': { limitation: 'csr-component-prop-spread' },
-  'component-spread-explicit-then-props': { limitation: 'csr-component-prop-spread' },
-  'component-spread-props-subset': { limitation: 'csr-component-prop-spread' },
-  'component-spread-props-rest-bag': { limitation: 'csr-component-prop-spread' },
-  // The client template drops the spread (`csr-component-prop-spread`), so
-  // the earlier explicit prop is kept: the same output the template backends
-  // render for this fixture.
-  'component-spread-explicit-null': { limitation: 'props-spread-explicit-null-override' },
   // The memo body reads the binding as a const, which the client template
   // cannot inline while its default holds a callback.
   'destructure-default-body-renamed-callback-memo': { limitation: 'destructure-default-callback-memo-read' },
