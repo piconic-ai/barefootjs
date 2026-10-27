@@ -44,6 +44,7 @@ import {
   stringifyParsedExpr,
   type ParsedExpr,
 } from './expression-parser.ts'
+import { templatePropReadParams } from './props-binding.ts'
 import type { IRMetadata, ParamInfo } from './types.ts'
 import { isElidedFactoryGetter } from './types.ts'
 
@@ -216,29 +217,93 @@ function memoSeedExpr(memo: IRMetadata['memos'][number]): string {
 }
 
 /**
- * A `derived` step per prop whose destructure default reads an earlier prop of
- * the same pattern (`ParamInfo.defaultParts`, #3531): `on ?? <default>`, where
- * the default's identifiers are the earlier props' template variables. Every
- * prop is already in `available` (baseScope), and the steps run in dependency
- * order ({@link inDefaultReadOrder}), so a chain (`{ a = 1, b = a, c = b }`)
- * reads `b` after its own step re-bound it. A default the plan cannot lower
- * (or a function default) adds no step and keeps the static ssr-defaults
- * seed. A callback inside the default (`a.filter((x) => …)`) does not make
- * it a function default.
+ * Whether `p`'s destructure default is computed when the prop is absent: a
+ * default that is neither a function nor literal data
+ * ({@link isLiteralData}). A default reading an earlier prop
+ * (`ParamInfo.defaultParts`, `{ a, b = a }`) is one, and so is one that
+ * calls or reads anything else (`{ b = ['y', ''].filter((x) => x !== '') }`,
+ * `{ n = 'abc'.length }`, `{ m = DEFAULT }`). A callback inside the default
+ * does not make it a function default.
+ *
+ * Every backend applies such a default when it renders (the SSR seed plan's
+ * prop steps, Go's props constructor) instead of a value fixed at compile
+ * time, which only literal data has.
  */
-function dependentPropDefaultSteps(
-  metadata: IRMetadata,
-  available: ReadonlySet<string>,
-  inlined: ReadonlySet<string>,
-): SsrSeedStep[] {
+export function hasComputedDefault(p: ParamInfo): boolean {
+  if (p.isRest || p.defaultValue === undefined || !p.parsed || p.parsed.kind === 'arrow') return false
+  return p.defaultParts !== undefined || !isLiteralData(p.parsed)
+}
+
+/**
+ * A literal (`'x'`, `-1`, `null`, `undefined`), a template literal with no
+ * substitution, or an array / object literal of literal data: a value that
+ * reads and calls nothing.
+ */
+function isLiteralData(e: ParsedExpr): boolean {
+  switch (e.kind) {
+    case 'literal':
+      return true
+    case 'identifier':
+      return e.name === 'undefined'
+    case 'unary':
+      return (e.op === '-' || e.op === '+') && e.argument.kind === 'literal' && e.argument.literalType === 'number'
+    case 'template-literal':
+      return e.parts.every(part => part.type === 'string')
+    case 'array-literal':
+      return e.elements.every(isLiteralData)
+    case 'object-literal':
+      return e.properties.every(prop => prop.kind !== 'spread' && isLiteralData(prop.value))
+    default:
+      return false
+  }
+}
+
+/**
+ * A `derived` step per prop with a computed destructure default
+ * ({@link hasComputedDefault}): `on ?? <default>`. A default reading an
+ * earlier prop of the same pattern (`ParamInfo.defaultParts`, #3531) reads
+ * the earlier props' template variables. Every prop is already in
+ * `available` (baseScope), and the steps run in dependency order
+ * ({@link inDefaultReadOrder}), so a chain (`{ a = 1, b = a, c = b }`) reads
+ * `b` after its own step re-bound it. A default the plan cannot lower adds
+ * no step and keeps the static ssr-defaults seed.
+ */
+function dependentPropDefaultSteps(metadata: IRMetadata, inlined: ReadonlySet<string>): SsrSeedStep[] {
+  const { readable, available, unshadowed } = propDefaultScope(metadata, inlined)
   const steps: SsrSeedStep[] = []
   for (const p of inDefaultReadOrder(metadata.propsParams)) {
-    if (p.isRest || !p.defaultParts || !p.parsed || p.parsed.kind === 'arrow') continue
+    if (!hasComputedDefault(p) || !p.parsed || !readable.has(p.name)) continue
     const parsed: ParsedExpr = { kind: 'logical', op: '??', left: { kind: 'identifier', name: p.name }, right: p.parsed }
-    const step = classify(p.name, 'prop', stringifyParsedExpr(parsed), parsed, available, inlined)
+    const step = classify(p.name, 'prop', stringifyParsedExpr(parsed), parsed, available, unshadowed)
     if (step.kind === 'derived') steps.push(step)
   }
   return steps
+}
+
+/**
+ * The names a prop default step may read: the props a template reads as
+ * their live prop (`templatePropReadParams`, so a binding that a local of
+ * the same name shadows gets no step), the props object, and the module
+ * string consts no component-scope binding shadows (`const DEF = 'z'` in
+ * the body hides a module `DEF`, whatever the declaration order).
+ */
+function propDefaultScope(
+  metadata: IRMetadata,
+  inlined: ReadonlySet<string>,
+): { readable: ReadonlySet<string>; available: ReadonlySet<string>; unshadowed: ReadonlySet<string> } {
+  const readable = new Set(templatePropReadParams(metadata).map(p => p.name))
+  const locals = new Set<string>()
+  for (const c of metadata.localConstants ?? []) if (!c.isModule) locals.add(c.name)
+  for (const f of metadata.localFunctions ?? []) if (!f.isModule) locals.add(f.name)
+  for (const s of metadata.signals) {
+    locals.add(s.getter)
+    if (s.setter) locals.add(s.setter)
+  }
+  for (const m of metadata.memos) locals.add(m.name)
+  const unshadowed = new Set([...inlined].filter(name => !locals.has(name)))
+  const available = new Set([...readable, ...unshadowed])
+  if (metadata.propsObjectName) available.add(metadata.propsObjectName)
+  return { readable, available, unshadowed }
 }
 
 /**
@@ -278,7 +343,7 @@ export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
   const localConsts = localConstExprsByName(metadata)
   const steps: SsrSeedStep[] = []
 
-  steps.push(...dependentPropDefaultSteps(metadata, available, inlined))
+  steps.push(...dependentPropDefaultSteps(metadata, inlined))
 
   for (const signal of metadata.signals) {
     if (signal.envReader) {

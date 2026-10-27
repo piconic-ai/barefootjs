@@ -2831,55 +2831,15 @@
         }
       },
       "destructure-default-body-callback": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
             "destructure-default-callback-unseeded"
           ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "xslate": {
+        }
+      },
+      "destructure-default-body-callback-shadow": {
+        "go-template": {
           "kind": "render",
           "limitations": [
             "destructure-default-callback-unseeded"
@@ -2887,55 +2847,7 @@
         }
       },
       "destructure-default-body-renamed-callback": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "xslate": {
           "kind": "render",
           "limitations": [
             "destructure-default-callback-unseeded"
@@ -3057,55 +2969,7 @@
         }
       },
       "destructure-default-param-renamed-callback": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "xslate": {
           "kind": "render",
           "limitations": [
             "destructure-default-callback-unseeded"
@@ -3113,55 +2977,7 @@
         }
       },
       "destructure-default-param-renamed-callback-memo": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        },
-        "xslate": {
           "kind": "render",
           "limitations": [
             "destructure-default-callback-unseeded"
@@ -8337,6 +8153,10 @@
         "description": "A body destructure default holding a callback renders its value when the prop is omitted",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-callback.ts"
       },
+      "destructure-default-body-callback-shadow": {
+        "description": "A body destructure default whose callback parameter shadows the prop name renders the filtered array",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-callback-shadow.ts"
+      },
       "destructure-default-body-renamed-callback": {
         "description": "A renamed body destructure default holding a callback renders its value when the prop is omitted",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback.ts"
@@ -9090,31 +8910,6 @@
         "BF101"
       ]
     },
-    "csr-component-prop-spread": {
-      "title": "A props spread onto a child component in the client template",
-      "kind": "silent",
-      "given": "a child component call that spreads the props object, alone or next to explicit props (`<Child {...props} />`, `<Child {...props} tone=\"x\" />`, `<Child tone=\"x\" {...props} />`), rendered by the client template",
-      "expected": "the child receives the merged props in source order: a later explicit prop overrides the spread, a later spread overrides an earlier explicit prop for the keys it carries",
-      "actual": "drops the spread and passes only the explicit props, so its keys neither reach the child nor override an earlier explicit prop",
-      "fixtures": [
-        "component-spread-explicit-then-props",
-        "component-spread-props-rest-bag",
-        "component-spread-props-subset",
-        "component-spread-props-then-explicit"
-      ],
-      "adapters": [
-        "hono",
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
     "derived-object-literal-signal": {
       "title": "Derived object-literal signal initializer",
       "kind": "refusal",
@@ -9139,6 +8934,7 @@
       "actual": "renders the omitted prop as an empty value, without its default",
       "fixtures": [
         "destructure-default-body-callback",
+        "destructure-default-body-callback-shadow",
         "destructure-default-body-renamed-callback",
         "destructure-default-body-renamed-callback-memo-chain",
         "destructure-default-body-renamed-callback-signal",
@@ -9146,15 +8942,7 @@
         "destructure-default-param-renamed-callback-memo"
       ],
       "adapters": [
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
+        "go-template"
       ]
     },
     "destructure-default-computed-array": {
@@ -9615,7 +9403,6 @@
         "component-spread-explicit-null"
       ],
       "adapters": [
-        "hono",
         "blade",
         "erb",
         "go-template",

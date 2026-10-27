@@ -713,7 +713,10 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
       }
     }
     if (terms.length === 0) return `''`
-    return terms.join(' ~ ')
+    // Parenthesised: Twig's `~` binds looser than `??` and the comparison
+    // operators, so a bare concat as an operand (`t ?? 'a-' ~ x`) would
+    // split at the wrong place.
+    return terms.length === 1 ? terms.join('') : `(${terms.join(' ~ ')})`
   }
 
   arrow(_params: string[], _body: ParsedExpr): string {

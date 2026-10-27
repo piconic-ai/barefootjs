@@ -172,6 +172,11 @@ export interface InteractiveElement {
 export interface ReactiveComponentProp {
   slotId: string
   propName: string
+  /**
+   * The JS expression whose value the mirror writes: the signal/memo call
+   * (`count()`), read caller-first when a later `{...props}` spread
+   * overrides the prop (#3688).
+   */
   expression: string
   componentName: string
 }

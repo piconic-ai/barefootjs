@@ -1092,6 +1092,8 @@ import { fixture as memoConstDeclaredAfterNamedLikeProp } from './memo-const-dec
 import { fixture as markupLocalFunctionNamedLikeProp } from './markup-local-function-named-like-prop'
 import { fixture as destructureDefaultParamRenamedCallbackMemo } from './destructure-default-param-renamed-callback-memo'
 import { fixture as destructureDefaultBodyCallback } from './destructure-default-body-callback'
+import { fixture as destructureDefaultBodyCallbackShadow } from './destructure-default-body-callback-shadow'
+import { fixture as destructureDefaultComputedScalar } from './destructure-default-computed-scalar'
 import { fixture as destructureDefaultParamRenamedCallback } from './destructure-default-param-renamed-callback'
 import { fixture as capturedMarkupEscaping } from './captured-markup-escaping'
 import { fixture as optionalChainMethodCall } from './optional-chain-method-call'
@@ -1940,6 +1942,8 @@ export const jsxFixtures: JSXFixture[] = [
   markupLocalFunctionNamedLikeProp,
   destructureDefaultParamRenamedCallbackMemo,
   destructureDefaultBodyCallback,
+  destructureDefaultBodyCallbackShadow,
+  destructureDefaultComputedScalar,
   destructureDefaultParamRenamedCallback,
   capturedMarkupEscaping,
   optionalChainMethodCall,

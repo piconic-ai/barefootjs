@@ -11,6 +11,7 @@ import {
   asCallbackMethodCall,
   collectAbsentPropSeedReads,
   collectNullishAttrContext,
+  hasComputedDefault,
   inDefaultReadOrder,
   isBooleanAttr,
   isNullableSignal,
@@ -627,9 +628,10 @@ export function defaultedBindingGo(
 }
 
 /**
- * The constructor statements that apply a destructure default reading an
- * earlier prop (`{ a, b = a }`, `{ off = false, on = !off }`,
- * `ParamInfo.defaultParts`, #3531), or a non-zero literal one (`{ a = 'x' }`),
+ * The constructor statements that apply a computed destructure default
+ * (`hasComputedDefault`): one reading an earlier prop (`{ a, b = a }`,
+ * `{ off = false, on = !off }`, `ParamInfo.defaultParts`, #3531) or any other
+ * non-literal one (`{ n = 'abc'.length }`), or a non-zero literal one (`{ a = 'x' }`),
  * to the Input itself ({@link appliesDefaultOnNil}), before anything reads
  * it: `if in.B == nil { in.B = <default> }`, one prop at a time in the
  * defaults' read order (`inDefaultReadOrder`). Every later `in.B` read, a
@@ -644,8 +646,9 @@ export function defaultedBindingGo(
  * runtime evaluator, which takes a scalar, or anything into an `interface{}`
  * field. `rawLocals` keeps each caller value `bfCallerProps` reads
  * (`keepsCallerValue`), by Input field, and
- * `unsupported` names the props whose default can't be applied this way
- * (the caller refuses them loudly).
+ * `unsupported` names the props whose default reads an earlier prop and
+ * can't be applied this way (the caller refuses them loudly); any other
+ * computed default the evaluator can't build is left unapplied.
  */
 export function dependentDefaultNormalization(
   ctx: GoEmitContext,
@@ -671,10 +674,13 @@ export function dependentDefaultNormalization(
     const goType = resolvePropGoType(ctx, param, propTypeOverrides)
     // A literal default on a field that stays concrete (a string-union prop,
     // a required one) keeps `defaultedBindingGo`'s zero-value test.
-    if (param.defaultParts === undefined && !isNillableGoType(goType)) continue
+    if (!hasComputedDefault(param) && !isNillableGoType(goType)) continue
     const value = isNillableGoType(goType) ? dependentDefaultGo(ctx, param, goType, propsParams, propTypeOverrides) : null
     if (value === null) {
-      unsupported.push(param.name)
+      // A default reading an earlier prop is refused. Any other computed one
+      // the evaluator can't build (a callback, a module const) is left
+      // unapplied, as before, and tracked as a render divergence.
+      if (param.defaultParts) unsupported.push(param.name)
       continue
     }
     if (keepsCallerValue(param)) {
@@ -697,8 +703,8 @@ function sharesInputField(param: IRMetadata['propsParams'][number], propsParams:
 }
 
 /**
- * {@link defaultedBindingGo} for a binding whose default reads an earlier
- * prop but whose Input field another binding also reads, so the default is
+ * {@link defaultedBindingGo} for a binding with a computed default
+ * (`hasComputedDefault`) whose Input field another binding also reads, so the default is
  * not applied to `in` (`dependentDefaultNormalization`): the binding's own
  * value, the default when the field is nil. Null for any other binding, or
  * when the field can't tell an absent prop apart.
@@ -709,7 +715,7 @@ function sharedDependentDefaultGo(
   propsParams: IRMetadata['propsParams'],
   propTypeOverrides: Map<string, string>,
 ): string | null {
-  if (!param.defaultParts || !param.parsed || !sharesInputField(param, propsParams)) return null
+  if (!hasComputedDefault(param) || !param.parsed || !sharesInputField(param, propsParams)) return null
   const key = param.sourceName ?? param.name
   const owner = propsParams.find(p => !p.isRest && (p.sourceName ?? p.name) === key) ?? param
   const inputType = resolvePropGoType(ctx, owner, propTypeOverrides)
@@ -749,7 +755,7 @@ function isNillableGoType(goType: string): boolean {
   return goType === 'interface{}' || goType === 'any' || goType.startsWith('[]') || goType.startsWith('map[') || goType.startsWith('*')
 }
 
-/** The Go value of `param`'s dependent default, in its field's type `goType`; null when it can't be built. */
+/** The Go value of `param`'s literal or computed default, in its field's type `goType`; null when it can't be built. */
 function dependentDefaultGo(
   ctx: GoEmitContext,
   param: IRMetadata['propsParams'][number],
@@ -759,10 +765,9 @@ function dependentDefaultGo(
 ): string | null {
   const parsed = param.parsed!
   // A literal default (`{ a = 'x' }`) is its own Go literal.
-  if (param.defaultParts === undefined) return propLiteralDefaultGo(param)
-  if (parsed.kind === 'identifier') {
-    const ref = propsParams.find(p => !p.isRest && p.name === parsed.name)
-    if (!ref) return null
+  if (!hasComputedDefault(param)) return propLiteralDefaultGo(param)
+  const ref = parsed.kind === 'identifier' ? propsParams.find(p => !p.isRest && p.name === parsed.name) : undefined
+  if (ref) {
     const refType = resolvePropGoType(ctx, ref, propTypeOverrides)
     if (goType !== 'interface{}' && goType !== 'any' && refType !== goType) return null
     // An earlier dependent prop is already resolved on `in`; a literal
@@ -852,12 +857,13 @@ export function resolvePropGoType(
 /**
  * Whether the constructor applies `param`'s destructure default to its Input
  * field when the field is nil (`dependentDefaultNormalization`), which a
- * scalar field is boxed for ({@link resolvePropGoType}): a default reading an
- * earlier prop (`{ a, b = a }`, `ParamInfo.defaultParts`, #3531), or a literal
- * one other than the field's Go zero value ({@link hasNonZeroLiteralDefault}).
+ * scalar field is boxed for ({@link resolvePropGoType}): a computed default
+ * (`hasComputedDefault`: one reading an earlier prop, `{ a, b = a }`, #3531,
+ * or any other non-literal one, `{ n = 'abc'.length }`), or a literal one
+ * other than the field's Go zero value ({@link hasNonZeroLiteralDefault}).
  */
 export function appliesDefaultOnNil(param: IRMetadata['propsParams'][number]): boolean {
-  return param.defaultParts !== undefined || hasNonZeroLiteralDefault(param)
+  return hasComputedDefault(param) || hasNonZeroLiteralDefault(param)
 }
 
 /**

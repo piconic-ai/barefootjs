@@ -11,6 +11,7 @@ export default defineLimitation({
     'destructure-default-body-renamed-callback',
     'destructure-default-body-callback',
     'destructure-default-param-renamed-callback',
+    'destructure-default-body-callback-shadow',
     'destructure-default-param-renamed-callback-memo',
     'destructure-default-body-renamed-callback-signal',
     'destructure-default-body-renamed-callback-memo-chain',
