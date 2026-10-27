@@ -2888,6 +2888,69 @@
       }
     }
   ],
+  "destructure-default-explicit-falsy": [
+    {
+      "name": "gen:tag:absent",
+      "props": {
+        "n": 0,
+        "on": false
+      }
+    },
+    {
+      "name": "gen:tag:markup",
+      "props": {
+        "tag": "<b>&\"'</b>",
+        "n": 0,
+        "on": false
+      }
+    },
+    {
+      "name": "gen:tag:multibyte",
+      "props": {
+        "tag": "日本語",
+        "n": 0,
+        "on": false
+      }
+    },
+    {
+      "name": "gen:n:absent",
+      "props": {
+        "tag": "",
+        "on": false
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "tag": "",
+        "n": -7,
+        "on": false
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "tag": "",
+        "n": 1234567890,
+        "on": false
+      }
+    },
+    {
+      "name": "gen:on:absent",
+      "props": {
+        "tag": "",
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:on:true",
+      "props": {
+        "tag": "",
+        "n": 0,
+        "on": true
+      }
+    }
+  ],
   "destructure-default-expression": [
     {
       "name": "gen:off:absent",

@@ -279,21 +279,6 @@ export const renderDivergences: RenderDivergences = {
  * `go-template-adapter.test.ts`'s citation check until the skip goes too.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
-  // An explicit `''` for a prop with a string destructure default reads as
-  // absent, so the evaluated seed takes the default.
-  'signal-computed-seed-sibling-fallbacks-destructured:gen:tag:empty': { limitation: 'defaulted-prop-explicit-empty' },
-  // The same for the head of a destructure-default chain (`a = 'x'`): `a`
-  // takes `'x'`, and the defaults reading it (`b = a`) follow.
-  'destructure-default-chain:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
-  'destructure-default-body-chain-order:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
-  'destructure-default-param-chain-order:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
-  'destructure-default-body-renamed:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
-  'destructure-default-param-renamed:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
-  'signal-seed-dependent-default-nullish-literal:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
-  'signal-seed-dependent-default-nullish-literal-body:gen:a:empty': { limitation: 'defaulted-prop-explicit-empty' },
-  // An explicit `0` for a prop with a number destructure default (`n = 2`)
-  // reads as absent the same way, so the field takes the default.
-  'number-prop-fraction-default:gen:n:zero': { limitation: 'defaulted-prop-explicit-empty' },
   // `.at(-1)` on an empty string is `undefined`, which omits the attribute
   // in JS; the template renders `data-last=""`.
   'string-index-methods:gen:word:empty': { limitation: 'undefined-method-result-attr' },

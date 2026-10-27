@@ -3620,6 +3620,26 @@
         "text"
       ]
     },
+    "destructure-default-explicit-falsy": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:boolean",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "destructure-default-expression": {
       "kinds": [
         "call",
