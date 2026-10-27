@@ -1190,6 +1190,9 @@ import { fixture as childrenAliasHopFragmentRoot } from './children-alias-hop-fr
 import { fixture as childrenRenamedBesideChildrenLocal } from './children-renamed-beside-children-local'
 import { fixture as childrenAliasLoopShadow } from './children-alias-loop-shadow'
 import { fixture as childrenAliasHopShadowedIntermediate } from './children-alias-hop-shadowed-intermediate'
+import { fixture as constAliasHopLoopShadow } from './const-alias-hop-loop-shadow'
+import { fixture as constAliasDefaultPropLoopShadow } from './const-alias-default-prop-loop-shadow'
+import { fixture as constGetterReadLoopShadowed } from './const-getter-read-loop-shadowed'
 import { fixture as childrenNamedLoopRowKey } from './children-named-loop-row-key'
 import { fixture as childrenLocalNullableAttr } from './children-local-nullable-attr'
 import { fixture as childrenPreambleLocalEscaped } from './children-preamble-local-escaped'
@@ -2074,6 +2077,9 @@ export const jsxFixtures: JSXFixture[] = [
   childrenRenamedBesideChildrenLocal,
   childrenAliasLoopShadow,
   childrenAliasHopShadowedIntermediate,
+  constAliasHopLoopShadow,
+  constAliasDefaultPropLoopShadow,
+  constGetterReadLoopShadowed,
   childrenNamedLoopRowKey,
   childrenLocalNullableAttr,
   childrenPreambleLocalEscaped,

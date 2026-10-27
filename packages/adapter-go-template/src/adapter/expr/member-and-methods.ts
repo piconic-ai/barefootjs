@@ -33,6 +33,7 @@ import {
   isElementIndex,
   wrapIfMultiToken,
 } from '../lib/go-emit.ts'
+import { isPropsObjectName } from '../lib/compile-state.ts'
 import { goFieldNameForKey } from '../lib/go-naming.ts'
 import type { HigherOrderShape } from '../lib/types.ts'
 
@@ -175,8 +176,7 @@ function renderBindingMemberRead(
   // object (`props.rows.map((props) => …)`, #3693).
   if (
     object.kind === 'identifier' &&
-    host.ctx.state.propsObjectName &&
-    object.name === host.ctx.state.propsObjectName &&
+    isPropsObjectName(host.ctx.state, object.name) &&
     !host.isBound(object.name)
   ) {
     return host.propKeyFieldRef(property)

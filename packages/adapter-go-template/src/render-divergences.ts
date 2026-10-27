@@ -129,11 +129,10 @@ export const renderDivergences: RenderDivergences = {
   'loop-row-child-children-handler': { limitation: 'signal-loop-row-child-children-unseeded' },
   'loop-row-child-children-ref': { limitation: 'signal-loop-row-child-children-unseeded' },
   'loop-row-child-children-inner-loop-handler': { limitation: 'signal-loop-row-child-children-unseeded' },
-  // A const alias chain (`const a = children; const b = a`) read in a loop
-  // row that binds a name the chain passes through (`rows.map(a => …{b}…)`):
-  // the template cannot inline the const through the shadowed name, and the
-  // const itself is never set, so the read renders nothing.
-  'children-alias-hop-shadowed-intermediate': { limitation: 'loop-shadowed-const-alias-hop' },
+  // A const reading a signal getter (`const b = count()`) read in a loop row
+  // that binds the getter's name (`rows.map(count => …{b}…)`): the template
+  // reads `b` as a variable that is never set.
+  'const-getter-read-loop-shadowed': { limitation: 'loop-shadowed-const-alias-hop' },
   // A destructure default that calls a callback and reads no earlier prop
   // (`{ b = ['y', ''].filter((x) => x !== '') }`): the props constructor
   // has no conversion from the evaluated array to the field's slice type,

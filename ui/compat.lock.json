@@ -2266,62 +2266,6 @@
           }
         }
       },
-      "children-alias-hop-shadowed-intermediate": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "loop-shadowed-const-alias-hop"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "loop-shadowed-const-alias-hop"
-          ]
-        },
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "loop-shadowed-const-alias-hop"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "loop-shadowed-const-alias-hop"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "loop-shadowed-const-alias-hop"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "loop-shadowed-const-alias-hop"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "loop-shadowed-const-alias-hop"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "loop-shadowed-const-alias-hop"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "loop-shadowed-const-alias-hop"
-          ]
-        }
-      },
       "component-spread-explicit-null": {
         "blade": {
           "kind": "render",
@@ -2735,6 +2679,62 @@
           ],
           "limitations": [
             "fragment-wrapped-conditional-return-branch-scope"
+          ]
+        }
+      },
+      "const-getter-read-loop-shadowed": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "loop-shadowed-const-alias-hop"
           ]
         }
       },
@@ -8125,10 +8125,6 @@
         "description": "A `.map()` callback reading its index — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/callback-index-param.ts"
       },
-      "children-alias-hop-shadowed-intermediate": {
-        "description": "A children alias hop read in a loop row that shadows an intermediate alias keeps the children markup",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-alias-hop-shadowed-intermediate.ts"
-      },
       "component-spread-explicit-null": {
         "description": "A props spread whose explicit null overrides an earlier explicit prop",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-explicit-null.ts"
@@ -8152,6 +8148,10 @@
       "conditional-return-fragment-branch": {
         "description": "Conditional return whose default branch is fragment-wrapped now refuses to compile (BF029) instead…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-return-fragment-branch.ts"
+      },
+      "const-getter-read-loop-shadowed": {
+        "description": "A const reading a signal getter, read in a loop row that shadows the getter, keeps the signal value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/const-getter-read-loop-shadowed.ts"
       },
       "date-method-uncatalogued": {
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
@@ -8922,6 +8922,28 @@
         "BF101"
       ]
     },
+    "const-alias-signature-default": {
+      "title": "A const alias of a prop whose signature destructure has a default",
+      "kind": "silent",
+      "given": "a component-scope const alias (`const a = label`) of a prop the signature destructures with a default (`{ label = 'd' }`), rendered with the prop omitted",
+      "expected": "the read renders the default",
+      "actual": "renders empty: the read takes the passed prop without its default",
+      "fixtures": [
+        "const-alias-default-prop-loop-shadow"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
     "derived-object-literal-signal": {
       "title": "Derived object-literal signal initializer",
       "kind": "refusal",
@@ -9127,13 +9149,13 @@
       ]
     },
     "loop-shadowed-const-alias-hop": {
-      "title": "A const alias hop read in a loop row that shadows a name the hop passes through",
+      "title": "A const reading a signal getter, read in a loop row that shadows the getter",
       "kind": "silent",
-      "given": "a component-scope const alias chain (`const a = children; const b = a`, `const c = children`) read inside a `.map()` row whose parameter has a name the chain passes through (`rows.map(a => …{b}…)`, `rows.map((children, i) => …{c}…)`)",
-      "expected": "the read renders the value the const chain holds (here the passed children, as markup)",
+      "given": "a component-scope const whose initializer reads a signal getter (`const b = count()`) read inside a `.map()` row whose parameter has the getter's name (`rows.map(count => …{b}…)`)",
+      "expected": "the read renders the signal's value",
       "actual": "renders nothing, or fails to render: the template reads the const as a variable that is never set",
       "fixtures": [
-        "children-alias-hop-shadowed-intermediate"
+        "const-getter-read-loop-shadowed"
       ],
       "adapters": [
         "blade",

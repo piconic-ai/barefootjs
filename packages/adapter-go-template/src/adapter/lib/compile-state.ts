@@ -463,6 +463,18 @@ export function resolveSignalParsedThroughSeedPlan(
   return step?.kind === 'derived' ? step.parsed : signal.parsed
 }
 
+/**
+ * Whether the identifier `name`, read where no loop row or callback binds
+ * it, is the component's props object: its props param (`function C(props)`),
+ * or `props` in a component that binds no `props` itself. The shared const
+ * inlining spells a prop read a loop row shadows as `props.<key>` in either
+ * kind of component (`ComputedConstContext.propReads`, #3696).
+ */
+export function isPropsObjectName(state: CompileState, name: string): boolean {
+  if (name === state.propsObjectName) return true
+  return name === 'props' && state.computedConsts?.isGlobal(name) === true
+}
+
 /** A module-scope const, by name. */
 export function findModuleScopeConst(state: CompileState, name: string): ConstantInfo | undefined {
   return state.localConstants.find(c => c.name === name && c.origin?.scope === 'module')
