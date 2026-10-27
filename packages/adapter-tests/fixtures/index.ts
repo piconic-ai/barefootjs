@@ -250,6 +250,7 @@ import { fixture as numberPreambleAlias } from './number-preamble-alias'
 import { fixture as numberPropNamedLength } from './number-prop-named-length'
 import { fixture as remainderNegativeZeroQuotient } from './remainder-negative-zero-quotient'
 import { fixture as numberDivisionZeroDivisor } from './number-division-zero-divisor'
+import { fixture as memoDivisionZeroDivisor } from './memo-division-zero-divisor'
 import { fixture as unaryMinusCompoundOperand } from './unary-minus-compound-operand'
 import { fixture as omittedOptionalNumberNegation } from './omitted-optional-number-negation'
 import { fixture as omittedOptionalNullableNumberArithmetic } from './omitted-optional-nullable-number-arithmetic'
@@ -1326,6 +1327,7 @@ export const jsxFixtures: JSXFixture[] = [
   numberPropNamedLength,
   remainderNegativeZeroQuotient,
   numberDivisionZeroDivisor,
+  memoDivisionZeroDivisor,
   unaryMinusCompoundOperand,
   omittedOptionalNumberNegation,
   omittedOptionalNullableNumberArithmetic,

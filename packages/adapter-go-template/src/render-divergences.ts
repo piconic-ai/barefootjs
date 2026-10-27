@@ -155,14 +155,11 @@ export const renderDivergences: RenderDivergences = {
   // carries the key only when it is not nil and an earlier explicit prop
   // keeps its value where JS overrides it with `null`.
   'component-spread-explicit-null': { limitation: 'props-spread-explicit-null-override' },
-  // `/` over a zero divisor: `bf_div` gives `0` where JS gives `Infinity` /
-  // `-Infinity` / `NaN`, a `null` divisor and a `-0` remainder included.
-  'number-division-zero-divisor': { limitation: 'division-zero-divisor' },
-  'nullish-operand-division-remainder': { limitation: 'division-zero-divisor' },
-  // The same `bf_div` gives `0` for `±1 / zero` and `zero / zero`, so a
-  // string index computed that way reads index 0 instead of Infinity / NaN.
-  'string-index-non-finite': { limitation: 'division-zero-divisor' },
-  'remainder-negative-zero-quotient': { limitation: 'negative-zero-remainder-quotient' },
+  // `number-division-zero-divisor`, `nullish-operand-division-remainder`,
+  // `string-index-non-finite` and `remainder-negative-zero-quotient` used to
+  // sit here: `bf_div` gave `0` for a zero divisor. It is now IEEE division,
+  // `Infinity` / `-Infinity` / `NaN` as in JS, and keeps the sign of
+  // `bf_mod`'s `-0` (#3692).
   // `remainder-nan-operand` used to sit here: `bf_mod` converted both
   // operands to `int`, so `NaN % 2` rendered an integer. It now computes
   // JS's truncated remainder (#3474).

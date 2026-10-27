@@ -1305,14 +1305,14 @@ func Mul(a, b any) any {
 	return result
 }
 
-// Div returns a / b. Returns float64 to match JavaScript behavior.
-// Returns 0 if b is 0 (instead of panicking).
+// Div returns JS `a / b`, IEEE float64 division (#3692): a zero divisor
+// gives `+Inf` / `-Inf` by the signs of both operands (`1 / -0` is `-Inf`)
+// and `NaN` for a zero or NaN dividend, which `numberString` spells
+// "Infinity" / "-Infinity" / "NaN". Go's runtime float64 `/` does not
+// panic on a zero divisor. A nil operand reads as 0, as in the other
+// arithmetic helpers, so `2 / null` is `+Inf`.
 func Div(a, b any) any {
-	av, bv := toFloat64(a), toFloat64(b)
-	if bv == 0 {
-		return 0
-	}
-	return av / bv
+	return toFloat64(a) / toFloat64(b)
 }
 
 // Min returns the smaller of a and b (two-arg `Math.min`). Like Mul, it keeps

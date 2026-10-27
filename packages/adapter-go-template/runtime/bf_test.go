@@ -71,13 +71,47 @@ func TestDiv(t *testing.T) {
 	}{
 		{10, 2, 5.0},
 		{7, 2, 3.5},
-		{10, 0, 0}, // Division by zero returns 0
 	}
 
 	for _, tt := range tests {
 		got := Div(tt.a, tt.b)
 		if got != tt.want {
 			t.Errorf("Div(%v, %v) = %v, want %v", tt.a, tt.b, got, tt.want)
+		}
+	}
+
+	// A zero divisor is IEEE division, as in JS (#3692): `x / 0` is
+	// Infinity / -Infinity by the dividend's sign, and `0 / 0` is NaN. The
+	// divisor's sign counts too (`1 / -0` is -Infinity), and a nil operand
+	// reads as 0 (`2 / null` is Infinity, `null / null` is NaN).
+	zero := 0 // a runtime value, not a constant divisor
+	negZero := math.Copysign(0, -1)
+	infs := []struct {
+		a, b any
+		sign int
+	}{
+		{1, 0, 1}, {-1, 0, -1}, {7.5, zero, 1}, {-7.5, 0.0, -1},
+		{1, negZero, -1}, {-1, negZero, 1}, {2, nil, 1}, {-2, nil, -1},
+		{1, Mod(-4, 2), -1}, {1, Mod(4, 2), 1},
+	}
+	for _, tt := range infs {
+		got, ok := Div(tt.a, tt.b).(float64)
+		if !ok || !math.IsInf(got, tt.sign) {
+			t.Errorf("Div(%v, %v) = %v, want Inf(%d)", tt.a, tt.b, got, tt.sign)
+		}
+	}
+	for _, tt := range [][2]any{{0, 0}, {zero, zero}, {0.0, negZero}, {nil, nil}, {math.NaN(), 0}} {
+		if got, ok := Div(tt[0], tt[1]).(float64); !ok || !math.IsNaN(got) {
+			t.Errorf("Div(%v, %v) = %v, want NaN", tt[0], tt[1], got)
+		}
+	}
+	// The results spell as JS's `String(x)` does.
+	for _, tt := range []struct {
+		a, b any
+		want string
+	}{{1, 0, "Infinity"}, {-1, 0, "-Infinity"}, {0, 0, "NaN"}} {
+		if got := String(Div(tt.a, tt.b)); got != tt.want {
+			t.Errorf("String(Div(%v, %v)) = %q, want %q", tt.a, tt.b, got, tt.want)
 		}
 	}
 }
