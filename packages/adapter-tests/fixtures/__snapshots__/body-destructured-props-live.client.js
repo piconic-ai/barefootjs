@@ -49,7 +49,7 @@ export function initBodyLiveChild(__scope, _p = {}) {
   })
 }
 
-hydrate('BodyLiveChild__34ed26bf', { init: initBodyLiveChild, template: (_p) => `<div class="body-live-child" ${((_p.label ?? 'none')) != null ? 'data-label="' + escapeAttr((_p.label ?? 'none')) + '"' : ''} bf="s7"><span class="raw" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(_p.value)}<!--/--></span><span class="memo" bf="s3"><!--bf:s2-->${escapeTextOrMarkup(((_p.value) * 2))}<!--/--></span><span class="effect" bf="s5"><!--bf:s4-->${escapeTextOrMarkup((0))}<!--/--></span><button class="btn-pick" bf="s6">pick</button></div>`, name: 'BodyLiveChild' })
+hydrate('BodyLiveChild__34ed26bf', { init: initBodyLiveChild, template: (_p) => `<div class="body-live-child" ${((_p.label ?? 'none')) != null ? 'data-label="' + escapeAttr((_p.label ?? 'none')) + '"' : ''} bf="s7"><span class="raw" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(_p.value)}<!--/--></span><span class="memo" bf="s3"><!--bf:s2-->${escapeTextOrMarkup((_p.value * 2))}<!--/--></span><span class="effect" bf="s5"><!--bf:s4-->${escapeTextOrMarkup((0))}<!--/--></span><button class="btn-pick" bf="s6">pick</button></div>`, name: 'BodyLiveChild' })
 export function BodyLiveChild(_p, __bfKey) { return createComponent('BodyLiveChild__34ed26bf', _p, __bfKey) }
 export function initBodyDestructuredPropsLive(__scope, _p = {}) {
   if (!__scope) return

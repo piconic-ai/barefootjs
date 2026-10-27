@@ -197,7 +197,4 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
  * and that the entry lists the fixture.
  */
 export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: string }>> = {
-  // The memo body reads the binding as a const, which the client template
-  // cannot inline while its default holds a callback.
-  'destructure-default-body-renamed-callback-memo': { limitation: 'destructure-default-callback-memo-read' },
 }

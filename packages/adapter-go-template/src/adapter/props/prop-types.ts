@@ -18,9 +18,9 @@ import {
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
-import { applyGoFallback, goPropDefault } from '../lib/go-emit.ts'
+import { applyGoFallback } from '../lib/go-emit.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
-import { typeInfoToGo } from '../type/type-codegen.ts'
+import { literalNumberValue, typeInfoToGo } from '../type/type-codegen.ts'
 import { evalExprGo, evaluatedAsGoType } from '../memo/memo-compute.ts'
 
 /**
@@ -613,14 +613,15 @@ export function defaultedBindingGo(
   propsParams: IRMetadata['propsParams'],
   propTypeOverrides: Map<string, string>,
 ): string | null {
-  const paramDefault = goPropDefault(param.defaultValue)
+  const paramDefault = propLiteralDefaultGo(param)
   if (paramDefault === null) return sharedDependentDefaultGo(ctx, param, propsParams, propTypeOverrides)
   const inputField = capitalizeFieldName(param.sourceName ?? param.name)
   const outputType = resolvePropGoType(ctx, param, propTypeOverrides)
   const fieldOwner = propsParams.find(p => capitalizeFieldName(p.sourceName ?? p.name) === inputField)
   const inputType = fieldOwner ? resolvePropGoType(ctx, fieldOwner, propTypeOverrides) : undefined
-  if (outputType !== 'interface{}' && inputType === 'interface{}') {
-    return `func() ${outputType} { if in.${inputField} == nil { return ${paramDefault} }; return in.${inputField}.(${outputType}) }()`
+  if (inputType === 'interface{}') {
+    const read = outputType === 'interface{}' ? `in.${inputField}` : `in.${inputField}.(${outputType})`
+    return `func() ${outputType} { if in.${inputField} == nil { return ${paramDefault} }; return ${read} }()`
   }
   return applyGoFallback(`in.${inputField}`, paramDefault)
 }
@@ -628,7 +629,8 @@ export function defaultedBindingGo(
 /**
  * The constructor statements that apply a destructure default reading an
  * earlier prop (`{ a, b = a }`, `{ off = false, on = !off }`,
- * `ParamInfo.defaultParts`, #3531) to the Input itself, before anything reads
+ * `ParamInfo.defaultParts`, #3531), or a non-zero literal one (`{ a = 'x' }`),
+ * to the Input itself ({@link appliesDefaultOnNil}), before anything reads
  * it: `if in.B == nil { in.B = <default> }`, one prop at a time in the
  * defaults' read order (`inDefaultReadOrder`). Every later `in.B` read, a
  * signal seed, a memo, a child prop or the Props field, then sees the
@@ -655,18 +657,21 @@ export function dependentDefaultNormalization(
   const rawLocals = new Map<string, string>()
   const unsupported: string[] = []
   for (const param of inDefaultReadOrder(propsParams)) {
-    if (param.isRest || !param.defaultParts || !param.parsed) continue
+    if (param.isRest || !param.parsed || !appliesDefaultOnNil(param)) continue
     // A binding sharing its Input field with another one (a renamed body
     // destructure beside a raw `props.b` read) can't change `in`: the other
     // reads the caller's value. Its own reads take
     // `sharedDependentDefaultGo` instead, refused here like any other default
     // the constructor can't build.
     if (sharesInputField(param, propsParams)) {
-      if (sharedDependentDefaultGo(ctx, param, propsParams, propTypeOverrides) === null) unsupported.push(param.name)
+      if (param.defaultParts && sharedDependentDefaultGo(ctx, param, propsParams, propTypeOverrides) === null) unsupported.push(param.name)
       continue
     }
     const field = capitalizeFieldName(param.sourceName ?? param.name)
     const goType = resolvePropGoType(ctx, param, propTypeOverrides)
+    // A literal default on a field that stays concrete (a string-union prop,
+    // a required one) keeps `defaultedBindingGo`'s zero-value test.
+    if (param.defaultParts === undefined && !isNillableGoType(goType)) continue
     const value = isNillableGoType(goType) ? dependentDefaultGo(ctx, param, goType, propsParams, propTypeOverrides) : null
     if (value === null) {
       unsupported.push(param.name)
@@ -717,6 +722,29 @@ function sharedDependentDefaultGo(
   return `func() ${outputType} { if ${field} == nil { return ${value} }; return ${read} }()`
 }
 
+/**
+ * A binding's value as an evaluator environment entry when only the runtime
+ * evaluator can build its destructure default (one that passes a callback,
+ * `{ b: local = ['y', ''].filter((x) => x !== '') }`): the caller's value,
+ * or the evaluated default when the Input field is nil. Null for a binding
+ * without such a default, or when the field can't tell an absent prop apart.
+ */
+export function evaluatedDefaultBindingGo(
+  ctx: GoEmitContext,
+  param: IRMetadata['propsParams'][number],
+  propsParams: IRMetadata['propsParams'],
+  propTypeOverrides: Map<string, string>,
+): string | null {
+  if (param.defaultValue === undefined || !param.parsed || param.defaultParts) return null
+  const key = param.sourceName ?? param.name
+  const owner = propsParams.find(p => !p.isRest && (p.sourceName ?? p.name) === key) ?? param
+  if (!isNillableGoType(resolvePropGoType(ctx, owner, propTypeOverrides))) return null
+  const value = evalExprGo(ctx, param.parsed, [], propsParams, new Map(), new Set())
+  if (value === null) return null
+  const field = `in.${capitalizeFieldName(key)}`
+  return `func() any { if ${field} == nil { return ${value} }; return ${field} }()`
+}
+
 function isNillableGoType(goType: string): boolean {
   return goType === 'interface{}' || goType === 'any' || goType.startsWith('[]') || goType.startsWith('map[') || goType.startsWith('*')
 }
@@ -730,6 +758,8 @@ function dependentDefaultGo(
   propTypeOverrides: Map<string, string>,
 ): string | null {
   const parsed = param.parsed!
+  // A literal default (`{ a = 'x' }`) is its own Go literal.
+  if (param.defaultParts === undefined) return propLiteralDefaultGo(param)
   if (parsed.kind === 'identifier') {
     const ref = propsParams.find(p => !p.isRest && p.name === parsed.name)
     if (!ref) return null
@@ -795,12 +825,15 @@ export function resolvePropGoType(
   // spread onto a child component forwards (#3530) — see
   // `collectPropsSpreadForwardedParams`.
   // A default that reads an earlier prop (`{ off = false, on = off }`,
-  // #3531) applies to an absent prop only, which the constructor tells apart
-  // by nil (`dependentDefaultNormalization`).
+  // #3531), or a literal one other than the zero value (`{ tag = 'z' }`,
+  // `{ n = 2 }`, `{ on = true }`), applies to an absent prop only, which the
+  // constructor tells apart by nil (`appliesDefaultOnNil`,
+  // `dependentDefaultNormalization`): an explicit `''` / `0` / `false` stays
+  // the caller's value.
   if (
     param.optional &&
     param.type.kind === 'primitive' &&
-    (param.defaultParts !== undefined ||
+    (appliesDefaultOnNil(param) ||
       ctx.state.nullishConsumedPropNames.has(param.name) ||
       ctx.state.omittableAttrConsumedPropNames.has(param.name) ||
       ctx.state.textConsumedPropNames.has(param.name) ||
@@ -814,6 +847,77 @@ export function resolvePropGoType(
     return 'interface{}'
   }
   return base
+}
+
+/**
+ * Whether the constructor applies `param`'s destructure default to its Input
+ * field when the field is nil (`dependentDefaultNormalization`), which a
+ * scalar field is boxed for ({@link resolvePropGoType}): a default reading an
+ * earlier prop (`{ a, b = a }`, `ParamInfo.defaultParts`, #3531), or a literal
+ * one other than the field's Go zero value ({@link hasNonZeroLiteralDefault}).
+ */
+export function appliesDefaultOnNil(param: IRMetadata['propsParams'][number]): boolean {
+  return param.defaultParts !== undefined || hasNonZeroLiteralDefault(param)
+}
+
+/**
+ * Whether `param`'s destructure default is a literal other than its Go type's
+ * zero value (`{ a = 'x' }`, `{ n = 2 }`, `{ on = true }`). The default
+ * applies to an absent prop only, so an explicit `''` / `0` / `false` must stay
+ * the caller's value; a concrete field reads both as its zero value, which
+ * only a nil can tell apart. A zero default (`{ a = '' }`) needs no nil: an
+ * absent prop and the default render the same.
+ */
+function hasNonZeroLiteralDefault(param: IRMetadata['propsParams'][number]): boolean {
+  if (param.defaultValue == null) return false
+  const value = scalarLiteralDefault(param)
+  return value !== null && value !== '' && value !== 0 && value !== false
+}
+
+/**
+ * The value of `param`'s destructure default when it is a scalar literal
+ * (`'x'`, `2`, `-1e3`, `0x10`, `true`), read off the parsed tree; null for
+ * any other shape. The single classification both the nil-boxing decision
+ * ({@link hasNonZeroLiteralDefault}) and the Go literal it applies
+ * ({@link propLiteralDefaultGo}) read, so a spelling one accepts the other
+ * can always emit.
+ */
+function scalarLiteralDefault(param: IRMetadata['propsParams'][number]): string | number | boolean | null {
+  const parsed = param.parsed
+  if (!parsed) return null
+  const number = literalNumberValue(parsed)
+  if (number !== null) return number
+  if (parsed.kind !== 'literal') return null
+  if (parsed.literalType === 'string' || parsed.literalType === 'boolean') return parsed.value
+  return null
+}
+
+/**
+ * The Go literal of `param`'s scalar literal destructure default, spelled from
+ * its parsed value rather than its source text: `1e3`, `0x10`, `.5`, `1_000`
+ * all yield the same number, and a string default carries its decoded value
+ * (`'a\nb'` holds a newline), re-quoted for Go. Null when the default is not
+ * a scalar literal or has no finite Go spelling.
+ *
+ * A number is spelled as an untyped FLOAT constant (`2.0`, `0.5`,
+ * `100000000000000000000.0`, `1e+21`): boxed into an `interface{}` field it
+ * holds a `float64`, the type a JSON-decoded caller number takes and the one
+ * `bf.Text` / `bf.String` spell as JS `String(n)` does. An integer
+ * constant would box as `int`, and one past int64 (`1e20`) would not
+ * compile at all.
+ */
+export function propLiteralDefaultGo(param: IRMetadata['propsParams'][number]): string | null {
+  const value = scalarLiteralDefault(param)
+  if (typeof value === 'string') return JSON.stringify(value)
+  if (typeof value === 'boolean') return value ? 'true' : 'false'
+  if (typeof value === 'number' && Number.isFinite(value)) return goFloatConstant(value)
+  return null
+}
+
+/** `value` as a Go untyped float constant: JS `String` spelling, with `.0` when it has neither a point nor an exponent. */
+function goFloatConstant(value: number): string {
+  const text = String(value)
+  return /[.e]/.test(text) ? text : `${text}.0`
 }
 
 /**

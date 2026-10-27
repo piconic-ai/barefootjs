@@ -1071,6 +1071,9 @@ import { fixture as destructureDefaultArrayChild } from './destructure-default-a
 import { fixture as destructureDefaultArrayMemo } from './destructure-default-array-memo'
 import { fixture as destructureDefaultBodyRenamed } from './destructure-default-body-renamed'
 import { fixture as destructureDefaultParamRenamed } from './destructure-default-param-renamed'
+import { fixture as destructureDefaultExplicitFalsy } from './destructure-default-explicit-falsy'
+import { fixture as destructureDefaultLiteralSpelling } from './destructure-default-literal-spelling'
+import { fixture as destructureDefaultLargeNumber } from './destructure-default-large-number'
 import { fixture as destructureDefaultBodyRenamedComputedArray } from './destructure-default-body-renamed-computed-array'
 import { fixture as destructureDefaultParamComputedArray } from './destructure-default-param-computed-array'
 import { fixture as destructureDefaultBodyRenamedCallback } from './destructure-default-body-renamed-callback'
@@ -1079,6 +1082,15 @@ import { fixture as destructureDefaultBodyRenamedCallbackChild } from './destruc
 import { fixture as destructureDefaultBodyRenamedCallbackShadow } from './destructure-default-body-renamed-callback-shadow'
 import { fixture as destructureDefaultBodyRenamedCallbackEarlier } from './destructure-default-body-renamed-callback-earlier'
 import { fixture as destructureDefaultBodyRenamedCallbackMemo } from './destructure-default-body-renamed-callback-memo'
+import { fixture as destructureDefaultBodyRenamedCallbackMemoChain } from './destructure-default-body-renamed-callback-memo-chain'
+import { fixture as destructureDefaultBodyRenamedCallbackSignal } from './destructure-default-body-renamed-callback-signal'
+import { fixture as destructureDefaultBodyCallbackMemo } from './destructure-default-body-callback-memo'
+import { fixture as memoLocalFunctionNamedLikeProp } from './memo-local-function-named-like-prop'
+import { fixture as signalSeedLocalFunctionNamedLikeProp } from './signal-seed-local-function-named-like-prop'
+import { fixture as memoModuleBindingNamedLikeProp } from './memo-module-binding-named-like-prop'
+import { fixture as memoConstDeclaredAfterNamedLikeProp } from './memo-const-declared-after-named-like-prop'
+import { fixture as markupLocalFunctionNamedLikeProp } from './markup-local-function-named-like-prop'
+import { fixture as destructureDefaultParamRenamedCallbackMemo } from './destructure-default-param-renamed-callback-memo'
 import { fixture as destructureDefaultBodyCallback } from './destructure-default-body-callback'
 import { fixture as destructureDefaultParamRenamedCallback } from './destructure-default-param-renamed-callback'
 import { fixture as capturedMarkupEscaping } from './captured-markup-escaping'
@@ -1905,6 +1917,9 @@ export const jsxFixtures: JSXFixture[] = [
   destructureDefaultArrayMemo,
   destructureDefaultBodyRenamed,
   destructureDefaultParamRenamed,
+  destructureDefaultExplicitFalsy,
+  destructureDefaultLiteralSpelling,
+  destructureDefaultLargeNumber,
   destructureDefaultBodyRenamedComputedArray,
   destructureDefaultParamComputedArray,
   destructureDefaultBodyRenamedCallback,
@@ -1913,6 +1928,15 @@ export const jsxFixtures: JSXFixture[] = [
   destructureDefaultBodyRenamedCallbackShadow,
   destructureDefaultBodyRenamedCallbackEarlier,
   destructureDefaultBodyRenamedCallbackMemo,
+  destructureDefaultBodyRenamedCallbackMemoChain,
+  destructureDefaultBodyRenamedCallbackSignal,
+  destructureDefaultBodyCallbackMemo,
+  memoLocalFunctionNamedLikeProp,
+  signalSeedLocalFunctionNamedLikeProp,
+  memoModuleBindingNamedLikeProp,
+  memoConstDeclaredAfterNamedLikeProp,
+  markupLocalFunctionNamedLikeProp,
+  destructureDefaultParamRenamedCallbackMemo,
   destructureDefaultBodyCallback,
   destructureDefaultParamRenamedCallback,
   capturedMarkupEscaping,

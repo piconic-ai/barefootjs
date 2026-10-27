@@ -2888,6 +2888,69 @@
       }
     }
   ],
+  "destructure-default-explicit-falsy": [
+    {
+      "name": "gen:tag:absent",
+      "props": {
+        "n": 0,
+        "on": false
+      }
+    },
+    {
+      "name": "gen:tag:markup",
+      "props": {
+        "tag": "<b>&\"'</b>",
+        "n": 0,
+        "on": false
+      }
+    },
+    {
+      "name": "gen:tag:multibyte",
+      "props": {
+        "tag": "日本語",
+        "n": 0,
+        "on": false
+      }
+    },
+    {
+      "name": "gen:n:absent",
+      "props": {
+        "tag": "",
+        "on": false
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "tag": "",
+        "n": -7,
+        "on": false
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "tag": "",
+        "n": 1234567890,
+        "on": false
+      }
+    },
+    {
+      "name": "gen:on:absent",
+      "props": {
+        "tag": "",
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:on:true",
+      "props": {
+        "tag": "",
+        "n": 0,
+        "on": true
+      }
+    }
+  ],
   "destructure-default-expression": [
     {
       "name": "gen:off:absent",
@@ -2916,6 +2979,126 @@
         "off": true,
         "title": "t",
         "on": false
+      }
+    }
+  ],
+  "destructure-default-large-number": [
+    {
+      "name": "gen:b:negative",
+      "props": {
+        "b": -7
+      }
+    },
+    {
+      "name": "gen:b:large",
+      "props": {
+        "b": 1234567890
+      }
+    }
+  ],
+  "destructure-default-literal-spelling": [
+    {
+      "name": "gen:n:absent",
+      "props": {
+        "h": 0,
+        "f": 0,
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7,
+        "h": 0,
+        "f": 0,
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890,
+        "h": 0,
+        "f": 0,
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:h:absent",
+      "props": {
+        "n": 0,
+        "f": 0,
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:h:negative",
+      "props": {
+        "n": 0,
+        "h": -7,
+        "f": 0,
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:h:large",
+      "props": {
+        "n": 0,
+        "h": 1234567890,
+        "f": 0,
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:f:absent",
+      "props": {
+        "n": 0,
+        "h": 0,
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:f:negative",
+      "props": {
+        "n": 0,
+        "h": 0,
+        "f": -7,
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:f:large",
+      "props": {
+        "n": 0,
+        "h": 0,
+        "f": 1234567890,
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:s:absent",
+      "props": {
+        "n": 0,
+        "h": 0,
+        "f": 0
+      }
+    },
+    {
+      "name": "gen:s:markup",
+      "props": {
+        "n": 0,
+        "h": 0,
+        "f": 0,
+        "s": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:s:multibyte",
+      "props": {
+        "n": 0,
+        "h": 0,
+        "f": 0,
+        "s": "日本語"
       }
     }
   ],
@@ -4627,6 +4810,26 @@
       }
     }
   ],
+  "markup-local-function-named-like-prop": [
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
+      }
+    }
+  ],
   "member-seeded-nullable-signal-attr-inline": [
     {
       "name": "gen:initial:object:+label",
@@ -4675,6 +4878,26 @@
         "given": {
           "count": 0
         }
+      }
+    }
+  ],
+  "memo-const-declared-after-named-like-prop": [
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
       }
     }
   ],
@@ -4821,6 +5044,26 @@
       }
     }
   ],
+  "memo-local-function-named-like-prop": [
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
+      }
+    }
+  ],
   "memo-loop-param-collision": [
     {
       "name": "gen:rows:empty",
@@ -4844,6 +5087,26 @@
         ],
         "groups": [],
         "none": []
+      }
+    }
+  ],
+  "memo-module-binding-named-like-prop": [
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
       }
     }
   ],
@@ -9189,6 +9452,26 @@
       "name": "gen:c:multibyte",
       "props": {
         "c": "日本語"
+      }
+    }
+  ],
+  "signal-seed-local-function-named-like-prop": [
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
       }
     }
   ],

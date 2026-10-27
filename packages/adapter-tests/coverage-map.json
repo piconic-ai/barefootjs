@@ -3440,6 +3440,26 @@
         "text"
       ]
     },
+    "destructure-default-body-callback-memo": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "destructure-default-body-chain-order": {
       "kinds": [
         "identifier",
@@ -3548,6 +3568,31 @@
         "text"
       ]
     },
+    "destructure-default-body-renamed-callback-memo-chain": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:!==",
+        "binary:/",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "destructure-default-body-renamed-callback-positions": {
       "kinds": [
         "arrow",
@@ -3572,6 +3617,26 @@
     },
     "destructure-default-body-renamed-callback-shadow": {
       "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-body-renamed-callback-signal": {
+      "kinds": [
+        "array-literal",
         "arrow",
         "binary",
         "call",
@@ -3620,6 +3685,26 @@
         "text"
       ]
     },
+    "destructure-default-explicit-falsy": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:boolean",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "destructure-default-expression": {
       "kinds": [
         "call",
@@ -3633,6 +3718,36 @@
         "literal:boolean",
         "logical:??",
         "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "destructure-default-large-number": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "destructure-default-literal-spelling": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:number",
+        "literal:string"
       ],
       "contexts": [
         "attribute",
@@ -3685,6 +3800,24 @@
       ]
     },
     "destructure-default-param-renamed-callback": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-param-renamed-callback-memo": {
       "kinds": [
         "array-literal",
         "arrow",
@@ -7314,6 +7447,19 @@
         "text"
       ]
     },
+    "markup-local-function-named-like-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "math-methods": {
       "kinds": [
         "call",
@@ -7409,6 +7555,19 @@
       "axes": [
         "binary:*",
         "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-const-declared-after-named-like-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
         "literal:number"
       ],
       "contexts": [
@@ -7535,6 +7694,16 @@
         "text"
       ]
     },
+    "memo-local-function-named-like-prop": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "memo-loop-param-collision": {
       "kinds": [
         "array-method",
@@ -7553,6 +7722,19 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "memo-module-binding-named-like-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
         "text"
       ]
     },
@@ -11606,6 +11788,16 @@
       ],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "signal-seed-local-function-named-like-prop": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
         "text"
       ]
     },

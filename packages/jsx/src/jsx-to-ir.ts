@@ -55,7 +55,7 @@ import {
   collectAstPropRefs,
   rewriteScopedValueRefs,
 } from './prop-rewrite.ts'
-import { boundPropLocalNames, buildPropAliasMap, isPropsAliasConst, isRenamedBodyPropParam, keepsDeclaredValue, resolveAliasOrigin, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
+import { boundPropLocalNames, buildPropAliasMap, templatePropReadParams, resolveAliasOrigin, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
 import { walkIR } from './ir-to-client-js/walker.ts'
 import { resolveFreeRefs, rebindHelperParamRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
@@ -745,8 +745,7 @@ function collectBranchLocalPropRefsViaSubstitution(
  */
 function getDestructuredPropNames(ctx: TransformContext): Set<string> | null {
   if (ctx._destructuredPropNames === undefined) {
-    const shadowed = propShadowingNames(ctx.analyzer)
-    const eligible = ctx.analyzer.propsParams.filter(p => !shadowed.has(p.name))
+    const eligible = templatePropReadParams(ctx.analyzer)
     const names = eligible.map(p => p.name)
     ctx._destructuredPropNames = names.length > 0 ? new Set(names) : null
     ctx._destructuredPropAliases = buildPropAliasMap(eligible) ?? null
@@ -760,35 +759,6 @@ function getDestructuredPropNames(ctx: TransformContext): Set<string> | null {
     ctx._destructuredPropInfoByName = infoByName.size > 0 ? infoByName : null
   }
   return ctx._destructuredPropNames ?? null
-}
-
-/**
- * The component-scope names that shadow a prop of the same name in a
- * `(props)`-arg component (`getDestructuredPropNames`' shadow guard): its
- * signals, memos and locals, except a local that is the prop itself.
- */
-function propShadowingNames(analyzer: AnalyzerContext): Set<string> {
-  const shadowed = new Set<string>()
-  if (!analyzer.propsObjectName) return shadowed
-  for (const s of analyzer.signals) {
-    shadowed.add(s.getter)
-    if (s.setter) shadowed.add(s.setter)
-  }
-  for (const m of analyzer.memos) shadowed.add(m.name)
-  for (const c of analyzer.localConstants) {
-    // A body destructure binding that is reassigned or mutated no longer
-    // holds its prop, renamed or not, so the template keeps it a local.
-    if (c.propsDestructure && !keepsDeclaredValue(c)) {
-      shadowed.add(c.name)
-      continue
-    }
-    if (isPropsAliasConst(c, analyzer.propsObjectName)) continue
-    // A renamed body binding with a default reads as its own prop entry,
-    // like the parameter form (#3579).
-    if (isRenamedBodyPropParam(c, analyzer.propsParams)) continue
-    shadowed.add(c.name)
-  }
-  return shadowed
 }
 
 /**
