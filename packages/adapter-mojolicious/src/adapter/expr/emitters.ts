@@ -45,7 +45,7 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
 import type { MojoEmitContext } from '../emit-context.ts'
 import { MOJO_TEMPLATE_PRIMITIVES } from '../lib/constants.ts'
 import { escapePerlSingleQuoted } from '../lib/perl-naming.ts'
-import { emitIndexAccessPerl } from './operand.ts'
+import { emitIndexAccessPerl, emitPerlEquality } from './operand.ts'
 import {
   renderArrayMethod,
   renderSortMethod,
@@ -215,6 +215,9 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   private readonly paramVar: string
   // Whether a binding enclosing the predicate (a loop row) binds `name`.
   private readonly isOuterBound: (name: string) => boolean
+  // Whether a getter/prop name is declared `number`, so a strict equality
+  // against it keeps numeric `==` (`emitPerlEquality`).
+  private readonly isNumberName: (n: string, componentProperty?: boolean) => boolean
 
   constructor(
     param: string,
@@ -224,6 +227,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     enclosingParams: ReadonlyMap<string, string> = new Map(),
     paramVar = `$${param}`,
     isOuterBound: (name: string) => boolean = () => false,
+    isNumberName: (n: string, componentProperty?: boolean) => boolean = () => false,
   ) {
     this.param = param
     this.localVarMap = localVarMap
@@ -232,6 +236,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     this.enclosingParams = enclosingParams
     this.paramVar = paramVar
     this.isOuterBound = isOuterBound
+    this.isNumberName = isNumberName
   }
 
   identifier(name: string): string {
@@ -301,17 +306,8 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
     const l = groupBinaryOperand(left, emit(left))
     const r = groupBinaryOperand(right, emit(right))
-    // String equality: `eq`/`ne` when EITHER operand is string-typed — a string
-    // literal, a string signal getter, or a string prop. Numeric `==`/`!=`
-    // would coerce both sides to 0 and match unrelated non-numeric strings (#1672).
-    const isStr = (e: ParsedExpr) => isStringTypedOperand(e, this.isStringName)
-    const stringCmp = isStr(left) || isStr(right)
-    if ((op === '===' || op === '==') && stringCmp) {
-      return `${l} eq ${r}`
-    }
-    if ((op === '!==' || op === '!=') && stringCmp) {
-      return `${l} ne ${r}`
-    }
+    const equality = emitPerlEquality(op, left, right, l, r, { isStringName: this.isStringName, isNumberName: this.isNumberName })
+    if (equality !== null) return equality
     // JS `+` with a string-typed operand is CONCATENATION, not addition —
     // Perl's numeric `+` coerces `'Hello, ' + $name` to 0 (#2176). Lower
     // to Perl's `.` concat operator.
@@ -370,7 +366,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     const paramVar = grepLexical(param, enclosing)
     const predBody = emitParsedExpr(
       predicate,
-      new MojoFilterEmitter(param, this.localVarMap, this.isStringName, this.onUnsupported, enclosing, paramVar, this.isOuterBound),
+      new MojoFilterEmitter(param, this.localVarMap, this.isStringName, this.onUnsupported, enclosing, paramVar, this.isOuterBound, this.isNumberName),
     )
     const grep = grepPredicate(method, paramVar, predBody, arrayExpr)
     if (grep !== null) return grep
@@ -668,19 +664,12 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
     const l = this.coerceUndefinedOperand(op, left, right, groupBinaryOperand(left, emit(left)))
     const r = this.coerceUndefinedOperand(op, right, left, groupBinaryOperand(right, emit(right)))
-    // String equality: `eq`/`ne` when EITHER operand is string-typed — a string
-    // literal (`role() === 'admin'`), a string signal getter (`sel()`), or a
-    // string prop (`props.x`). Falling back to numeric `==`/`!=` would make
-    // Perl coerce both sides to 0 and match unrelated non-numeric strings
-    // (`"b" == "a"` → true), so all loop items render their true branch (#1672).
-    const isStr = (e: ParsedExpr) => isStringTypedOperand(e, (n: string, property?: boolean) => this.ctx._isStringValueName(n, property))
-    const stringCmp = isStr(left) || isStr(right)
-    if ((op === '===' || op === '==') && stringCmp) {
-      return `${l} eq ${r}`
-    }
-    if ((op === '!==' || op === '!=') && stringCmp) {
-      return `${l} ne ${r}`
-    }
+    const equality = emitPerlEquality(op, left, right, l, r, {
+      isStringName: (n: string, property?: boolean) => this.ctx._isStringValueName(n, property),
+      isNumberName: (n: string, property?: boolean) => this.ctx._isNumberValueName(n, property),
+      isBooleanName: (n: string, property?: boolean) => this.ctx._isBooleanValueName(n, property),
+    })
+    if (equality !== null) return equality
     // JS `+` with a string-typed operand is CONCATENATION, not addition —
     // Perl's numeric `+` coerces `'Hello, ' + $name` to 0 (#2176). Lower
     // to Perl's `.` concat operator.

@@ -10889,6 +10889,94 @@
       }
     }
   ],
+  "strict-equality-distinct-reference": [
+    {
+      "name": "gen:obj:object:minimal",
+      "props": {
+        "obj": {
+          "id": 0
+        },
+        "other": {
+          "id": 1
+        },
+        "arr": [
+          1
+        ],
+        "otherArr": [
+          1
+        ]
+      }
+    },
+    {
+      "name": "gen:other:object:minimal",
+      "props": {
+        "obj": {
+          "id": 1
+        },
+        "other": {
+          "id": 0
+        },
+        "arr": [
+          1
+        ],
+        "otherArr": [
+          1
+        ]
+      }
+    },
+    {
+      "name": "gen:arr:empty",
+      "props": {
+        "obj": {
+          "id": 1
+        },
+        "other": {
+          "id": 1
+        },
+        "arr": [],
+        "otherArr": [
+          1
+        ]
+      }
+    },
+    {
+      "name": "gen:otherArr:empty",
+      "props": {
+        "obj": {
+          "id": 1
+        },
+        "other": {
+          "id": 1
+        },
+        "arr": [
+          1
+        ],
+        "otherArr": []
+      }
+    }
+  ],
+  "strict-equality-same-reference": [
+    {
+      "name": "gen:obj:object:minimal",
+      "props": {
+        "obj": {
+          "id": 0
+        },
+        "arr": [
+          1
+        ]
+      }
+    },
+    {
+      "name": "gen:arr:empty",
+      "props": {
+        "obj": {
+          "id": 1
+        },
+        "arr": []
+      }
+    }
+  ],
   "string-concat-plus": [
     {
       "name": "gen:name:markup",

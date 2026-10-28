@@ -734,6 +734,30 @@ export function L() {
     expect(result.template).not.toContain('$sel eq $t->{n}')
   })
 
+  test('compares operands of unknown type with the runtime strict_eq, not numeric `==`', () => {
+    // `.at()` results and a union-typed prop may hold strings; Perl `==`
+    // reads `'p' == 'q'` as `0 == 0`. A number literal operand keeps `==`.
+    const result = compileAndGenerate(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function L({ a, b }: { a: string | number; b: string | number }) {
+  const [items] = createSignal(['p', 'q'])
+  return (
+    <div>
+      <p>{items().at(0) === items().at(1) ? 'same' : 'different'}</p>
+      <p>{a !== b ? 'ne' : 'eq'}</p>
+      <p>{items().length === 2 ? 'two' : 'other'}</p>
+    </div>
+  )
+}
+`)
+    expect(result.template).toContain('bf->strict_eq(bf->at($items, 0), bf->at($items, 1))')
+    expect(result.template).toContain('!bf->strict_eq($a, $b)')
+    expect(result.template).not.toContain('bf->at($items, 0) == bf->at($items, 1)')
+    expect(result.template).not.toContain('strict_eq(bf->length')
+  })
+
   test('compares a filter predicate against a renamed body-destructured prop with Perl `ne`, not numeric `!=` (#2883)', () => {
     // `MojoFilterEmitter.identifier()` correctly resolves `skipLabel` to
     // `$skipLabel` (Mojo seeds/derives that stash key for the #2788 alias
