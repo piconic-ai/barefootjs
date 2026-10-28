@@ -7,7 +7,7 @@
  * module-internal.
  */
 
-import { BindingScope } from '@barefootjs/jsx'
+import { BindingScope, isElidedFactoryGetter } from '@barefootjs/jsx'
 import type {
   ComponentIR,
   IRNode,
@@ -118,6 +118,28 @@ export function findNestedComponents(node: IRNode): NestedComponentInfo[] {
   return result
 }
 
+type ComponentSignal = ComponentIR['metadata']['signals'][number]
+
+/**
+ * The component signal a nested-component loop ranges over directly
+ * (`rows().map(o => <Chip …>…</Chip>)`), or null: the array is a bare call
+ * of one of the component's signal getters, or of a local alias of one
+ * (`getterAliases`: `const r = rows`), that no enclosing loop binding
+ * shadows. An env reader or an elided async-factory value has no seeded
+ * Props field, so it is no row source either.
+ */
+export function loopArraySignal(
+  nested: NestedComponentInfo,
+  signals: readonly ComponentSignal[],
+  getterAliases: ReadonlyMap<string, string>,
+): ComponentSignal | null {
+  const array = nested.loopArrayParsed
+  if (array?.kind !== 'call' || array.args.length > 0 || array.callee.kind !== 'identifier') return null
+  if (nested.arrayScope.isBound(array.callee.name)) return null
+  const getter = getterAliases.get(array.callee.name) ?? array.callee.name
+  return signals.find(s => s.getter === getter && !s.envReader && !isElidedFactoryGetter(s)) ?? null
+}
+
 /**
  * `scope` is the shared `BindingScope` of every loop enclosing `node`,
  * threaded as a parameter so each loop's row scope is exactly the loops above
@@ -147,6 +169,7 @@ function collectNestedComponents(node: IRNode, result: NestedComponentInfo[], sc
         loopMarkerId: loop.markerId,
         loopItemType: loop.itemType,
         rowScope,
+        arrayScope: scope,
         // `childComponent` is set only when the body is exactly this one
         // component, so `loop.children[0]` is its full IR node.
         rowProps: (loop.children[0] as IRComponent).props,
