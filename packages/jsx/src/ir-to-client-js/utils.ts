@@ -191,7 +191,21 @@ export function varSlotId(slotId: string): string {
  */
 export function profileBindingId(componentName: string | undefined, slotId: string): string {
   if (!componentName || slotId === '?') return ''
-  return `, ${JSON.stringify(`${componentName}#binding:${slotId}`)}`
+  return `, ${codeSafeStringLiteral(`${componentName}#binding:${slotId}`)}`
+}
+
+/**
+ * A double-quoted JS string literal that is safe to splice into emitted code
+ * wherever it lands. `JSON.stringify` alone leaves `<`, `>` and `/` raw (a
+ * `</script>` closes an inline script) and, before ES2019, U+2028 / U+2029
+ * ended a string literal. Those are escaped as `\uXXXX`, which evaluates to the
+ * same string, so a value without them prints exactly as `JSON.stringify` did.
+ */
+export function codeSafeStringLiteral(value: string): string {
+  return JSON.stringify(value).replace(
+    /[<>/\u2028\u2029]/g,
+    ch => `\\u${ch.charCodeAt(0).toString(16).padStart(4, '0')}`,
+  )
 }
 
 /**
