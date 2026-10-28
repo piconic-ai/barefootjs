@@ -91,8 +91,10 @@ export interface ConditionExprHost {
    * Refuse (BF101) the arithmetic in `expr` over a prop whose nil the
    * declared type cannot classify (`refuseAmbiguousNilArithmetic`, #3700):
    * this module lowers operators without the adapter's operand coercion.
+   * `params` are the enclosing callback's own bindings (a filter predicate's
+   * parameter and locals), entered over the current scope.
    */
-  refuseAmbiguousNilArithmetic(expr: ParsedExpr, isShadowed: (name: string) => boolean): void
+  refuseAmbiguousNilArithmetic(expr: ParsedExpr, params: readonly string[]): void
 }
 
 /**
@@ -142,7 +144,7 @@ export function renderFilterExpr(
   fieldlessParam = false,
 ): string | null {
   // The predicate's operators lower without the operand coercion (#3700).
-  host.refuseAmbiguousNilArithmetic(expr, n => n === param || localVarMap.has(n) || host.hasScopeBinding(n))
+  host.refuseAmbiguousNilArithmetic(expr, [param, ...localVarMap.keys()])
   return renderFilterExprNode(host, expr, param, localVarMap, datumField, fieldlessParam)
 }
 

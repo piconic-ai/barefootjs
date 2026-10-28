@@ -16,6 +16,7 @@
  */
 
 import type { ParsedExpr } from './expression-parser.ts'
+import { BindingScope } from './scope/binding-scope.ts'
 import type { ComponentIR, MemoInfo, SignalInfo, TypeInfo } from './types.ts'
 
 function isNullishType(type: TypeInfo): boolean {
@@ -458,28 +459,28 @@ export function arithmeticOperandNilIsAmbiguous(
  * matches, for a whole expression a template adapter lowers without visiting
  * each operator through its emitter (a memo body, a `.filter()` predicate, an
  * expression the runtime evaluator runs). Operands of binary operators and of
- * unary minus count. An arrow's params shadow within its body, on top of
- * `isShadowed`, the scope the expression is read in.
+ * unary minus count. `scope` is where the expression is read; each arrow in
+ * it enters its params as a callback frame (`BindingScope.enterCallback`),
+ * so they shadow within its body only.
  */
 export function ambiguousNilArithmeticOperands(
   expr: ParsedExpr,
   ctx: NullishAttrContext,
-  isShadowed: (name: string) => boolean = () => false,
+  scope: BindingScope = BindingScope.EMPTY,
 ): ParsedExpr[] {
   const found: ParsedExpr[] = []
-  const visit = (e: ParsedExpr, shadowed: (name: string) => boolean): void => {
+  const visit = (e: ParsedExpr, at: BindingScope): void => {
     if (e.kind === 'arrow') {
-      const params = new Set(e.params)
-      visit(e.body, n => params.has(n) || shadowed(n))
+      visit(e.body, at.enterCallback(e.params))
       return
     }
     for (const [op, operand, other] of arithmeticOperandsOf(e)) {
-      if (arithmeticOperandNilIsAmbiguous(op, operand, other, ctx, shadowed)) found.push(operand)
+      if (arithmeticOperandNilIsAmbiguous(op, operand, other, ctx, at.asShadowPredicate())) found.push(operand)
     }
-    for (const child of parsedExprChildren(e)) visit(child, shadowed)
+    for (const child of parsedExprChildren(e)) visit(child, at)
   }
   if (!ctx.nullableNumberProps?.size) return found
-  visit(expr, isShadowed)
+  visit(expr, scope)
   return found
 }
 
@@ -514,8 +515,6 @@ function parsedExprChildren(e: ParsedExpr): ParsedExpr[] {
       return [e.object, ...e.args, ...(e.method === 'flat' && e.depthExpr ? [e.depthExpr] : [])]
     case 'object-literal':
       return e.properties.map(p => (p.kind === 'spread' ? p.expr : p.value))
-    case 'arrow':
-      return [e.body]
     default:
       return []
   }

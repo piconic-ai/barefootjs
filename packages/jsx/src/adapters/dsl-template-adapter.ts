@@ -250,10 +250,12 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
   /**
    * Refuse the ambiguous-nil arithmetic (#3700) in a whole expression the
    * adapter lowers through its own renderer rather than per operator: a
-   * `.filter()` predicate. `isShadowed` is the scope it is read in.
+   * `.filter()` predicate, read in the current scope with the callback's
+   * own `params` (its parameter and block locals) entered as a callback
+   * frame.
    */
-  protected refuseAmbiguousNilArithmeticIn(expr: ParsedExpr, isShadowed: (name: string) => boolean): void {
-    refuseAmbiguousNilArithmetic(expr, this.nullishAttrCtx, isShadowed, this.ambiguousNilSink())
+  protected refuseAmbiguousNilArithmeticIn(expr: ParsedExpr, params: readonly string[]): void {
+    refuseAmbiguousNilArithmetic(expr, this.nullishAttrCtx, this.scope.enterCallback(params), this.ambiguousNilSink())
   }
 
   private ambiguousNilSink(): AmbiguousNilArithmeticSink {

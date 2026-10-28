@@ -13,6 +13,7 @@ import {
   collectNullishAttrContext,
   nullableSignalAttrGetter,
 } from '../nullable-signal-attr'
+import { BindingScope } from '../scope/binding-scope'
 import type { ComponentIR } from '../types'
 
 function nullableGetters(decls: string): Set<string> {
@@ -294,8 +295,8 @@ describe('ambiguousNilArithmeticOperands (#3700)', () => {
       'C.tsx',
     ),
   } as unknown as ComponentIR)
-  const found = (source: string, isShadowed?: (name: string) => boolean) =>
-    ambiguousNilArithmeticOperands(parseExpression(source), ctx, isShadowed).map(exprToString)
+  const found = (source: string, scope?: BindingScope) =>
+    ambiguousNilArithmeticOperands(parseExpression(source), ctx, scope).map(exprToString)
 
   test('finds the operands in nested positions', () => {
     expect(found("items.filter(i => i > n * 2).length")).toEqual(['n'])
@@ -305,6 +306,8 @@ describe('ambiguousNilArithmeticOperands (#3700)', () => {
   test('an arrow param or an enclosing binding of the same name shadows the prop', () => {
     expect(found("items.filter(n => n * 2 > 1).length")).toEqual([])
     expect(found("items.map(i => items.filter(n => n > i).length * n)")).toEqual(['n'])
-    expect(found('n * 2', name => name === 'n')).toEqual([])
+    expect(found('n * 2', BindingScope.EMPTY.enterCallback(['n']))).toEqual([])
+    // A sibling arrow's param does not leak out of its own body.
+    expect(found('items.filter(n => n > 1).length * n')).toEqual(['n'])
   })
 })

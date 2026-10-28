@@ -1353,7 +1353,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     renderParamAs?: string,
   ): string {
     // Arithmetic over a prop whose nil the type cannot classify (#3700).
-    this.refuseAmbiguousNilArithmeticIn(expr, n => n === param || localVarMap.has(n) || this.isLoopBoundName(n))
+    this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
     return emitParsedExpr(
       expr,
       new ErbFilterEmitter(

@@ -6248,7 +6248,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     // `renderConditionExpr` lowers operators without the operand coercion.
-    this.conditionExprHost.refuseAmbiguousNilArithmetic(parsed, n => this.scope.isBound(n))
+    this.conditionExprHost.refuseAmbiguousNilArithmetic(parsed, [])
     const { preamble, expr: condition } = renderConditionExpr(this.conditionExprHost, parsed)
     // A bare value read as the whole test (`{tags() ? … : …}`) gets JS
     // truthiness: `{{if}}` alone reads an empty slice or map as false, where
@@ -6916,8 +6916,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     renderParsedExpr: (expr) => this.renderParsedExpr(expr),
     makeLoc: () => this.makeLoc(),
     hasScopeBinding: (name) => Boolean(this.scope.lookup(name)),
-    refuseAmbiguousNilArithmetic: (expr, isShadowed) =>
-      refuseAmbiguousNilArithmetic(expr, this.state.nullishAttrCtx, isShadowed, this.state),
+    refuseAmbiguousNilArithmetic: (expr, params) =>
+      refuseAmbiguousNilArithmetic(expr, this.state.nullishAttrCtx, this.scope.enterCallback(params), this.state),
     filterCaptureAlias: (name) => this.filterCaptureAliases.get(name),
     lookupDestructureBinding: (name) => this.lookupDestructureBinding(name),
     noteWrapperRowRead: (name, rendered) => this.noteWrapperRowRead(name, rendered),

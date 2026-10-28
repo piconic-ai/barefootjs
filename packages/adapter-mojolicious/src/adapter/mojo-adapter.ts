@@ -1191,7 +1191,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     // the canonical case #1443 exists to enable, so the gate lives at
     // the exact degrade points inside `MojoFilterEmitter.callbackMethod`.
     // Arithmetic over a prop whose nil the type cannot classify (#3700).
-    this.refuseAmbiguousNilArithmeticIn(expr, n => n === param || localVarMap.has(n) || this.scope.isBound(n))
+    this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
     return emitParsedExpr(
       expr,
       new MojoFilterEmitter(

@@ -6,6 +6,7 @@ import {
   type ArithmeticCoercion,
   type NullishAttrContext,
 } from '../nullable-signal-attr.ts'
+import { BindingScope } from '../scope/binding-scope.ts'
 import type { CompilerError, MemoInfo } from '../types.ts'
 
 /**
@@ -47,15 +48,15 @@ export function arithmeticCoercionOrRefuse(
  * template adapter lowers without asking {@link arithmeticCoercionOrRefuse}
  * per operator: a `.filter()` predicate, an expression the runtime evaluator
  * runs, a condition lowered by its own renderer (`ambiguousNilArithmeticOperands`).
- * `isShadowed` is the scope the expression is read in.
+ * `scope` is the scope the expression is read in.
  */
 export function refuseAmbiguousNilArithmetic(
   expr: ParsedExpr,
   ctx: NullishAttrContext,
-  isShadowed: (name: string) => boolean,
+  scope: BindingScope,
   sink: AmbiguousNilArithmeticSink,
 ): void {
-  for (const operand of ambiguousNilArithmeticOperands(expr, ctx, isShadowed)) {
+  for (const operand of ambiguousNilArithmeticOperands(expr, ctx, scope)) {
     recordAmbiguousNilArithmetic(exprToString(operand), sink)
   }
 }
@@ -73,7 +74,7 @@ export function refuseAmbiguousNilMemoArithmetic(
   sink: AmbiguousNilArithmeticSink,
 ): void {
   for (const memo of memos) {
-    if (memo.parsed) refuseAmbiguousNilArithmetic(memo.parsed, ctx, () => false, sink)
+    if (memo.parsed) refuseAmbiguousNilArithmetic(memo.parsed, ctx, BindingScope.EMPTY, sink)
   }
 }
 

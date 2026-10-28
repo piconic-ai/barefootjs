@@ -12,6 +12,7 @@ import type { MemoInfo, ParsedExpr, ParsedStatement, TypeInfo, JsSourceText } fr
 import {
   arithmeticOperandCoercion,
   asCallbackMethodCall,
+  BindingScope,
   refuseAmbiguousNilArithmetic,
   freeIdentifiers,
   freeVarsInBody,
@@ -332,7 +333,7 @@ export function evalExprGo(
     ctx.state.ssrSeedPlan.steps.filter(s => s.kind !== 'env-reader').map(s => s.name),
   )
   // The evaluator applies no operand coercion (#3700).
-  refuseAmbiguousNilArithmetic(body, ctx.state.nullishAttrCtx, () => false, ctx.state)
+  refuseAmbiguousNilArithmetic(body, ctx.state.nullishAttrCtx, BindingScope.EMPTY, ctx.state)
   const materialized = materializeGetterCalls(body, knownGetterNames)
   const json = serializeParsedExpr(materialized)
   if (json === null) return null
