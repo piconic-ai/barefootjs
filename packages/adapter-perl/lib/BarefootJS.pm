@@ -6,6 +6,7 @@ use utf8;
 use feature 'signatures';
 no warnings 'experimental::signatures';
 
+use B ();
 use POSIX ();
 use Time::Local ();
 use Scalar::Util qw(looks_like_number weaken);
@@ -685,7 +686,24 @@ sub json ($self, $value) {
     # ergonomics: an unset prop becomes the string "null" rather than
     # the literal text "undefined" or an empty attribute. Matches the
     # `null` case of JS exactly; diverges from the `undefined` case.
-    return $self->backend->encode_json($value);
+    return $self->backend->encode_json(_json_zero($value));
+}
+
+# JS `JSON.stringify` writes a negative zero as `0` (`JSON.stringify(-0)`
+# is "0"). Perl's `mod` keeps `-0.0` for a negative dividend, and some
+# encoders (Mojo::JSON on newer Perls) spell it `-0.0`, so a value the
+# encoder would emit as a number is rewritten to the integer 0 when it is
+# zero. Returns a copy at every depth; the argument is never mutated.
+sub _json_zero ($value) {
+    my $ref = ref $value;
+    return [ map { _json_zero($_) } @$value ] if $ref eq 'ARRAY';
+    return { map { ($_ => _json_zero($value->{$_})) } keys %$value } if $ref eq 'HASH';
+    return $value if $ref || !defined $value;
+    my $flags = B::svref_2object(\$value)->FLAGS;
+    return $value unless $flags & (B::SVp_IOK | B::SVp_NOK);
+    no warnings qw(numeric);
+    return $value unless 0 + $value eq $value && $value == 0;
+    return 0;
 }
 
 sub string ($self, $value) {

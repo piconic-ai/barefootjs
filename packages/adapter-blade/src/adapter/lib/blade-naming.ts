@@ -33,9 +33,9 @@
  *    BOTH member access (`a.b` → `data_get($a, 'b')`) and index access
  *    (`a[i]` → `data_get($a, $i)`) — verified empirically (see
  *    `bladeMemberAccess`'s docstring) to be null-safe over the same
- *    {stdClass, array, null} value shapes Twig's dot/bracket cover, with NO
- *    runtime helper added to `packages/adapter-php` (the `data_get`
- *    lowering point is entirely on the TS emit side).
+ *    {stdClass, array, null} value shapes Twig's dot/bracket cover. The one
+ *    runtime helper on this path is `$bf->index_key`, which a computed
+ *    index's key goes through so the float `-0.0` reads as `0` (#3698).
  * 4. **Reserved-word set is COMPLETELY DIFFERENT, and for a different
  *    reason.** Twig keywords (`for`, `filter`, `if`, …) collide with Twig's
  *    OWN expression grammar — irrelevant here, since Blade variables are
@@ -143,13 +143,19 @@ export function bladeMemberAccess(objectExpr: string, property: string): string 
 }
 
 /**
- * Index access lowering: `a[i]` → `data_get($a, $i)`. `data_get` accepts a
- * non-string (int, or a PHP expression evaluating to int/string) segment
- * directly — verified empirically: `data_get(['a','b','c'], $i)` with
- * `$i = 1` → `'b'`. Same null-safety as `bladeMemberAccess`.
+ * Index access lowering: `a[i]` → `data_get($a, $bf->index_key($i))`.
+ * `data_get` accepts a non-string (int, or a PHP expression evaluating to
+ * int/string) segment directly — verified empirically:
+ * `data_get(['a','b','c'], $i)` with `$i = 1` → `'b'`. Same null-safety as
+ * `bladeMemberAccess`. A computed key goes through `$bf->index_key`, which
+ * reads the float `-0.0` (`-4 % 2`) as `0` as JS does; `data_get` spells it
+ * as the key `"-0"` and misses. A literal key is passed as written
+ * (`computed: false`).
  */
-export function bladeIndexAccess(objectExpr: string, indexExpr: string): string {
-  return `data_get(${objectExpr}, ${indexExpr})`
+export function bladeIndexAccess(objectExpr: string, indexExpr: string, computed = true): string {
+  return computed
+    ? `data_get(${objectExpr}, $bf->index_key(${indexExpr}))`
+    : `data_get(${objectExpr}, ${indexExpr})`
 }
 
 /**

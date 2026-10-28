@@ -112,6 +112,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // in markup outside a `{{…}}` action, so a `"` no longer closes the
 // surrounding attribute.
 export const renderDivergences: RenderDivergences = {
+  // `bf_json` (Go's `encoding/json`) writes the float `-0` that `bf_mod`
+  // gives for a negative dividend as `-0`, where JS's `JSON.stringify`
+  // writes `0`.
+  'remainder-negative-zero-json': { limitation: 'negative-zero-json-stringify' },
   'jsx-prop-template-delimiters': { limitation: 'nested-component-in-jsx-prop' },
   // `.at(i)` on half of a surrogate pair: the runtime string can't hold a
   // lone surrogate, so it returns U+FFFD (halves compare equal, and

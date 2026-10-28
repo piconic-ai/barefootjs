@@ -61,18 +61,32 @@ bf_test('mod', function () use ($bf) {
     bf_assert_eq($bf->mod(7, -2), 1.0);
     bf_assert_eq($bf->mod(-7.5, 2), -1.5);
     bf_assert_nan($bf->mod(7, 0));
-    // A zero remainder of two ints is the int 0, so it still indexes a list
-    // through Blade's `data_get`, which reads the float -0.0 as the key "-0".
-    bf_assert_eq($bf->mod(-4, 2), 0);
+    // A zero remainder of two ints with a non-negative dividend is the int 0.
     bf_assert_eq($bf->mod(4, 2), 0);
-    bf_assert_eq($bf->string($bf->mod(-4, 2)), '0');
-    // A float dividend keeps fmod's -0.0, which prints "0".
-    $negZero = $bf->mod(-4.0, 2);
-    bf_assert(is_float($negZero) && fdiv(1, $negZero) === -INF, 'expected -0.0 for -4.0 % 2');
-    bf_assert_eq($bf->string($negZero), '0');
+    bf_assert_eq($bf->mod(0, 2), 0);
+    // A negative dividend keeps fmod's -0.0, int or float, which prints "0"
+    // and signs a later quotient: JS `1 / (-4 % 2)` is -Infinity (#3698).
+    foreach ([-4, -4.0] as $dividend) {
+        $negZero = $bf->mod($dividend, 2);
+        bf_assert(is_float($negZero) && fdiv(1, $negZero) === -INF, 'expected -0.0 for ' . bf_fmt($dividend) . ' % 2');
+        bf_assert_eq($bf->string($negZero), '0');
+        bf_assert($bf->eq($negZero, 0), 'expected -0.0 === 0');
+    }
     // A nil operand reads as 0, as with `div` (#3474).
     bf_assert_eq($bf->mod(null, 2), 0.0);
     bf_assert_nan($bf->mod(2, null));
+});
+
+bf_test('index_key', function () use ($bf) {
+    // Blade's `data_get` spells the float -0.0 as the key "-0" and misses;
+    // JS reads the key -0 as "0" (#3698).
+    bf_assert_eq($bf->index_key($bf->mod(-4, 2)), 0);
+    bf_assert_eq($bf->index_key(0.0), 0);
+    // Any other key is returned as is.
+    bf_assert_eq($bf->index_key(1), 1);
+    bf_assert_eq($bf->index_key(1.0), 1.0);
+    bf_assert_eq($bf->index_key('a'), 'a');
+    bf_assert_eq($bf->index_key(null), null);
 });
 
 bf_test('div', function () use ($bf) {
@@ -87,6 +101,7 @@ bf_test('div', function () use ($bf) {
     bf_assert_eq($bf->div(-1, 0), -INF);
     bf_assert_eq($bf->div(1, -0.0), -INF);
     bf_assert_eq($bf->div(1, $bf->mod(-4.0, 2)), -INF);
+    bf_assert_eq($bf->div(1, $bf->mod(-4, 2)), -INF);
     bf_assert_nan($bf->div(0, 0));
     // A nil operand reads as 0, as with PHP's `/`: the adapters leave JS's
     // `null` operand to the engine.
@@ -100,6 +115,15 @@ bf_test('json', function () use ($bf) {
     bf_assert_eq($bf->json([1, 2, 3]), '[1,2,3]');
     bf_assert_eq($bf->json('hi'), '"hi"');
     bf_assert_eq($bf->json(null), 'null');
+    // JS writes -0 as 0, at any depth (#3698).
+    bf_assert_eq($bf->json($bf->mod(-4, 2)), '0');
+    bf_assert_eq($bf->json([$bf->mod(-4, 2), 1]), '[0,1]');
+    bf_assert_eq($bf->json(['z' => -0.0, 'k' => [-0.0]]), '{"k":[0],"z":0}');
+    $o = new \stdClass();
+    $o->z = -0.0;
+    bf_assert_eq($bf->json($o), '{"z":0}');
+    bf_assert(fdiv(1, $o->z) === -INF, 'json must not change its argument');
+    bf_assert_eq($bf->json([1.5, -2]), '[1.5,-2]');
 });
 
 bf_test('string', function () use ($bf) {
