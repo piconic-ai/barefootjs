@@ -9451,6 +9451,44 @@
       }
     }
   ],
+  "signal-from-same-named-prop-raw-read-element-access": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    },
+    {
+      "name": "gen:note:empty",
+      "props": {
+        "note": ""
+      }
+    },
+    {
+      "name": "gen:note:markup",
+      "props": {
+        "note": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:note:multibyte",
+      "props": {
+        "note": "日本語"
+      }
+    }
+  ],
   "signal-from-same-named-prop-raw-read-kinds": [
     {
       "name": "gen:count:zero",

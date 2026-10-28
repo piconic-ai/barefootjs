@@ -23073,10 +23073,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L169"
       },
       "example": {
-        "fixture": "optional-nested-object-signal-seed",
-        "description": "A signal seeded from an optional nested object retains its nullable field type",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-nested-object-signal-seed.ts",
-        "code": "meta()?.['active']"
+        "fixture": "signal-from-same-named-prop-raw-read-element-access-untyped",
+        "description": "A signal seeded from its same-named prop of an untyped props object, read beside the raw prop through a literal element access",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-from-same-named-prop-raw-read-element-access-untyped.ts",
+        "code": "props['label']"
       }
     },
     "member:optional": {

@@ -133,6 +133,59 @@ test('a read off a callback parameter that shadows props is no raw prop read', (
   expect(ctx.signals.map(s => s.getter)).toEqual(['label'])
 })
 
+test('a literal element-access read of the raw prop separates the binding', () => {
+  const ctx = analyzeComponent(`
+    'use client'
+    import { createSignal } from '@barefootjs/client'
+    export function App(props: { a?: string; b?: string; c?: string; d?: string }) {
+      const [a] = createSignal(props.a ?? 'A')
+      const [b] = createSignal(props.b ?? 'B')
+      const [c] = createSignal(props.c ?? 'C')
+      const [d] = createSignal(props.d ?? 'D')
+      return <p>{a()}{b()}{c()}{d()}{props['a']}{props?.['b']}{props[\`c\`]}{props[0]}</p>
+    }
+  `, 'test.tsx')
+  // A numeric key names no identifier prop, so `d` keeps its name.
+  expect(ctx.signals.map(s => s.getter)).toEqual(['bfSignal_a', 'bfSignal_b', 'bfSignal_c', 'd'])
+  expect(ctx.sourceFile.text).toContain("{props['a']}{props?.['b']}")
+})
+
+test('a computed-key read may read any prop, so it separates every self-derived binding', () => {
+  const ctx = analyzeComponent(`
+    'use client'
+    import { createSignal } from '@barefootjs/client'
+    export function App(props: { a?: string; k: 'a' | 'b' }) {
+      const [a] = createSignal(props.a ?? 'A')
+      return <p>{a()}{props[props.k]}</p>
+    }
+  `, 'test.tsx')
+  expect(ctx.signals.map(s => s.getter)).toEqual(['bfSignal_a'])
+})
+
+test('an untyped props object names its props by literal element-access reads too', () => {
+  const ctx = analyzeComponent(`
+    'use client'
+    import { createSignal } from '@barefootjs/client'
+    export function App(props) {
+      const [label] = createSignal(props.label ?? 'D')
+      return <p>{label()}{props['label']}</p>
+    }
+  `, 'test.tsx')
+  expect(ctx.signals.map(s => s.getter)).toEqual(['bfSignal_label'])
+})
+
+test('an element-access read off a callback parameter that shadows props is no raw prop read', () => {
+  const ctx = analyzeComponent(`
+    'use client'
+    import { createSignal } from '@barefootjs/client'
+    export function App(props: { label?: string; rows?: { label: string }[] }) {
+      const [label] = createSignal(props.label ?? 'D')
+      return <ul>{label()}{(props.rows ?? []).map(props => <li>{props['label']}{props[0]}</li>)}</ul>
+    }
+  `, 'test.tsx')
+  expect(ctx.signals.map(s => s.getter)).toEqual(['label'])
+})
+
 test('signed literal seeds are separated without a type-based program', () => {
   const ctx = analyzeComponent(`
     'use client'

@@ -11842,6 +11842,43 @@
         "text"
       ]
     },
+    "signal-from-same-named-prop-raw-read-element-access": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??",
+        "member:computed",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "signal-from-same-named-prop-raw-read-element-access-untyped": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "signal-from-same-named-prop-raw-read-kinds": {
       "kinds": [
         "binary",

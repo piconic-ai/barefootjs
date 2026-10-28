@@ -103,17 +103,44 @@ function collidingBindings(ctx: AnalyzerContext, propsObjectName: string, propNa
   return [...signals, ...memos]
 }
 
-/** A property read off the props object (`props.label`): its lower-cased name and position. */
+/**
+ * A property read off the props object (`props.label`): its lower-cased
+ * name and position. `name` is null for a computed key (`props[k]`), which
+ * may read any prop.
+ */
 interface PropsRead {
-  name: string
+  name: string | null
   pos: number
 }
 
 /**
- * Every property read off the props object (`props.label`) inside the
- * component. An untyped `props` parameter declares no `propsParams`, so
- * these reads are its only prop names. `isPropsObject` decides whether an
- * access's receiver is the props binding itself.
+ * The key a props read names: an identifier member (`props.label`), or an
+ * element access with a literal key (`props['label']`, `` props[`label`] ``,
+ * `props[0]`), each also optional (`props?.['label']`). The key is the
+ * literal's own text, so a numeric key names its number and never matches
+ * an identifier. Null for a computed key. Undefined when `node` is no
+ * member access off `propsObjectName`.
+ */
+function propsReadKey(node: ts.Node, propsObjectName: string): { receiver: ts.Identifier; key: string | null } | undefined {
+  if (ts.isPropertyAccessExpression(node) && ts.isIdentifier(node.name)) {
+    return isNamedReceiver(node.expression, propsObjectName) ? { receiver: node.expression, key: node.name.text } : undefined
+  }
+  if (!ts.isElementAccessExpression(node) || !isNamedReceiver(node.expression, propsObjectName)) return undefined
+  const arg = node.argumentExpression
+  const literal = ts.isStringLiteral(arg) || ts.isNoSubstitutionTemplateLiteral(arg) || ts.isNumericLiteral(arg)
+  return { receiver: node.expression, key: literal ? arg.text : null }
+}
+
+function isNamedReceiver(expr: ts.Expression, propsObjectName: string): expr is ts.Identifier {
+  return ts.isIdentifier(expr) && expr.text === propsObjectName
+}
+
+/**
+ * Every property read off the props object (`props.label`,
+ * `props['label']`) inside the component. An untyped `props` parameter
+ * declares no `propsParams`, so these reads are its only prop names.
+ * `isPropsObject` decides whether an access's receiver is the props
+ * binding itself.
  */
 function propsReads(
   component: ts.Node,
@@ -122,14 +149,9 @@ function propsReads(
 ): PropsRead[] {
   const reads: PropsRead[] = []
   function visit(node: ts.Node): void {
-    if (
-      ts.isPropertyAccessExpression(node) &&
-      ts.isIdentifier(node.expression) &&
-      node.expression.text === propsObjectName &&
-      ts.isIdentifier(node.name) &&
-      isPropsObject(node.expression)
-    ) {
-      reads.push({ name: node.name.text.toLowerCase(), pos: node.getStart() })
+    const read = propsReadKey(node, propsObjectName)
+    if (read && isPropsObject(read.receiver)) {
+      reads.push({ name: read.key === null ? null : read.key.toLowerCase(), pos: node.getStart() })
     }
     ts.forEachChild(node, visit)
   }
@@ -137,17 +159,23 @@ function propsReads(
   return reads
 }
 
+/** The prop names the reads spell; a computed-key read names none. */
+function readNames(reads: readonly PropsRead[]): string[] {
+  return reads.flatMap(r => (r.name === null ? [] : [r.name]))
+}
+
 /**
  * Whether `binding`, declared by `declaration`, must leave the prop's
  * name. A self-derived binding shares the prop's template variable only
  * while nothing else reads the raw prop: a `props.<name>` read outside its
- * own initializer would otherwise see the derived value.
+ * own initializer would otherwise see the derived value. A computed-key
+ * read (`props[k]`) may read that prop, so it counts too.
  */
 function needsSeparation(binding: SeparatedBinding, declaration: ts.VariableDeclaration, reads: readonly PropsRead[]): boolean {
   if (!binding.selfDerived) return true
   const init = declaration.initializer
   const name = binding.name.toLowerCase()
-  return reads.some(r => r.name === name && (!init || r.pos < init.getStart() || r.pos >= init.getEnd()))
+  return reads.some(r => (r.name === null || r.name === name) && (!init || r.pos < init.getStart() || r.pos >= init.getEnd()))
 }
 
 /**
@@ -174,7 +202,7 @@ export function separateSignalPropBindings(
   const declared = ctx.propsParams.map(p => p.name.toLowerCase())
   // Every same-spelled read is a candidate before binding resolution, so
   // the checker is built only when some binding can collide.
-  const spelled = propsReads(component, propsObjectName, () => true).map(r => r.name)
+  const spelled = readNames(propsReads(component, propsObjectName, () => true))
   if (collidingBindings(ctx, propsObjectName, new Set([...declared, ...spelled])).length === 0) return null
 
   const sf = ctx.sourceFile
@@ -189,7 +217,7 @@ export function separateSignalPropBindings(
   const reads = paramSymbol
     ? propsReads(component, propsObjectName, id => checker.getSymbolAtLocation(id) === paramSymbol)
     : []
-  const candidates = collidingBindings(ctx, propsObjectName, new Set([...declared, ...reads.map(r => r.name)]))
+  const candidates = collidingBindings(ctx, propsObjectName, new Set([...declared, ...readNames(reads)]))
   if (candidates.length === 0) return null
   const occupied = new Set<string>()
   function collectNames(node: ts.Node): void {
