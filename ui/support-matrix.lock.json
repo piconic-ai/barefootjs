@@ -3813,12 +3813,6 @@
               ]
             },
             {
-              "fixture": "memo-division-zero-divisor",
-              "limitations": [
-                "memo-non-finite-quotient"
-              ]
-            },
-            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -4134,12 +4128,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "memo-division-zero-divisor",
-              "limitations": [
-                "memo-non-finite-quotient"
               ]
             },
             {
@@ -5770,12 +5758,6 @@
               ]
             },
             {
-              "fixture": "memo-division-zero-divisor",
-              "limitations": [
-                "memo-non-finite-quotient"
-              ]
-            },
-            {
               "fixture": "memo-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -6535,12 +6517,6 @@
               "fixture": "memo-const-declared-after-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-division-zero-divisor",
-              "limitations": [
-                "memo-non-finite-quotient"
               ]
             },
             {
@@ -8802,12 +8778,6 @@
               ]
             },
             {
-              "fixture": "destructure-default-large-number",
-              "limitations": [
-                "bare-number-prop-perl-precision"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8913,12 +8883,6 @@
               "fixture": "memo-const-declared-after-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-division-zero-divisor",
-              "limitations": [
-                "memo-non-finite-quotient"
               ]
             },
             {
@@ -9726,12 +9690,6 @@
               ]
             },
             {
-              "fixture": "destructure-default-large-number",
-              "limitations": [
-                "bare-number-prop-perl-precision"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -9849,12 +9807,6 @@
               "fixture": "memo-const-declared-after-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-division-zero-divisor",
-              "limitations": [
-                "memo-non-finite-quotient"
               ]
             },
             {
@@ -11453,12 +11405,6 @@
               ]
             },
             {
-              "fixture": "destructure-default-large-number",
-              "limitations": [
-                "bare-number-prop-perl-precision"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -11540,12 +11486,6 @@
               "fixture": "memo-const-declared-after-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-division-zero-divisor",
-              "limitations": [
-                "memo-non-finite-quotient"
               ]
             },
             {
@@ -12113,12 +12053,6 @@
               ]
             },
             {
-              "fixture": "destructure-default-large-number",
-              "limitations": [
-                "bare-number-prop-perl-precision"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12200,12 +12134,6 @@
               "fixture": "memo-const-declared-after-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-division-zero-divisor",
-              "limitations": [
-                "memo-non-finite-quotient"
               ]
             },
             {
@@ -14091,12 +14019,6 @@
               ]
             },
             {
-              "fixture": "memo-division-zero-divisor",
-              "limitations": [
-                "memo-non-finite-quotient"
-              ]
-            },
-            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -14766,12 +14688,6 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "memo-division-zero-divisor",
-              "limitations": [
-                "memo-non-finite-quotient"
               ]
             },
             {
@@ -15556,12 +15472,6 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "memo-division-zero-divisor",
-              "limitations": [
-                "memo-non-finite-quotient"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -15607,12 +15517,6 @@
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "memo-division-zero-divisor",
-              "limitations": [
-                "memo-non-finite-quotient"
               ]
             },
             {
@@ -18144,12 +18048,6 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "memo-division-zero-divisor",
-              "limitations": [
-                "memo-non-finite-quotient"
-              ]
-            },
-            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -18197,12 +18095,6 @@
         },
         "xslate": {
           "gaps": [
-            {
-              "fixture": "memo-division-zero-divisor",
-              "limitations": [
-                "memo-non-finite-quotient"
-              ]
-            },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
@@ -18570,28 +18462,10 @@
         },
         "jinja": {},
         "minijinja": {},
-        "mojolicious": {
-          "gaps": [
-            {
-              "fixture": "memo-division-zero-divisor",
-              "limitations": [
-                "memo-non-finite-quotient"
-              ]
-            }
-          ]
-        },
+        "mojolicious": {},
         "pebble": {},
         "twig": {},
-        "xslate": {
-          "gaps": [
-            {
-              "fixture": "memo-division-zero-divisor",
-              "limitations": [
-                "memo-non-finite-quotient"
-              ]
-            }
-          ]
-        }
+        "xslate": {}
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -20565,12 +20439,6 @@
               ]
             },
             {
-              "fixture": "destructure-default-large-number",
-              "limitations": [
-                "bare-number-prop-perl-precision"
-              ]
-            },
-            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -20604,12 +20472,6 @@
               "fixture": "memo-const-declared-after-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-division-zero-divisor",
-              "limitations": [
-                "memo-non-finite-quotient"
               ]
             },
             {
@@ -20961,12 +20823,6 @@
               ]
             },
             {
-              "fixture": "destructure-default-large-number",
-              "limitations": [
-                "bare-number-prop-perl-precision"
-              ]
-            },
-            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -21000,12 +20856,6 @@
               "fixture": "memo-const-declared-after-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-division-zero-divisor",
-              "limitations": [
-                "memo-non-finite-quotient"
               ]
             },
             {
@@ -23317,28 +23167,10 @@
         "go-template": {},
         "jinja": {},
         "minijinja": {},
-        "mojolicious": {
-          "gaps": [
-            {
-              "fixture": "memo-division-zero-divisor",
-              "limitations": [
-                "memo-non-finite-quotient"
-              ]
-            }
-          ]
-        },
+        "mojolicious": {},
         "pebble": {},
         "twig": {},
-        "xslate": {
-          "gaps": [
-            {
-              "fixture": "memo-division-zero-divisor",
-              "limitations": [
-                "memo-non-finite-quotient"
-              ]
-            }
-          ]
-        }
+        "xslate": {}
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",

@@ -58,7 +58,7 @@ test('Counter compiles to a Kolon .tx template', () => {
   expect(content).toContain(`<: $bf.hydration_attrs() | mark_raw :>`)
   expect(content).toContain(`<: $bf.props_attr() | mark_raw :>`)
   // Text slots
-  expect(content).toContain(`<: $bf.text_start("s0") | mark_raw :><: $count :><: $bf.text_end() | mark_raw :>`)
+  expect(content).toContain(`<: $bf.text_start("s0") | mark_raw :><: $bf.string($count) :><: $bf.text_end() | mark_raw :>`)
   expect(content).toContain(`<: $bf.text_start("s2") | mark_raw :><: $doubled :><: $bf.text_end() | mark_raw :>`)
   // Button stays a plain element (onClick is client-only)
   expect(content).toContain(`+1</button>`)

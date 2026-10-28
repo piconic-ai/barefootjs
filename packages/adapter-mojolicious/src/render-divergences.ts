@@ -27,14 +27,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 at compile time instead of silently crashing
 // Perl `strict`-mode template execution — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
-  // A memo whose quotient is an infinity (`count() / 0`, or a runtime zero
-  // divisor), read directly or through another memo: renders Perl's `Inf` /
-  // `-Inf` where JS renders `Infinity` / `-Infinity`. `NaN` matches (#3711).
-  'memo-division-zero-divisor': { limitation: 'memo-non-finite-quotient' },
-  // A bare number prop past 15 significant digits (the `1e20` destructure
-  // default): Perl interpolates it with `%.15g` (`1e+20`) where JS prints
-  // `100000000000000000000`.
-  'destructure-default-large-number': { limitation: 'bare-number-prop-perl-precision' },
   // `.at(i)` on half of a surrogate pair: the runtime string can't hold a
   // lone surrogate, so it returns U+FFFD (halves compare equal, and
   // rejoining them renders `��` instead of the emoji).
