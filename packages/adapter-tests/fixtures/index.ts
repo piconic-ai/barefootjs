@@ -1156,6 +1156,7 @@ import { fixture as loopRowChildPropDestinations } from './loop-row-child-prop-d
 import { fixture as loopRowChildIndexKey } from './loop-row-child-index-key'
 import { fixture as loopRowChildComputedKey } from './loop-row-child-computed-key'
 import { fixture as loopRowChildConcatIndexKey } from './loop-row-child-concat-index-key'
+import { fixture as stringNumberPlusConcatPositions } from './string-number-plus-concat-positions'
 import { fixture as loopRowChildChildrenIndexKey } from './loop-row-child-children-index-key'
 import { fixture as loopRowChildChildrenComputedKey } from './loop-row-child-children-computed-key'
 import { fixture as loopRowChildBooleanKey } from './loop-row-child-boolean-key'
@@ -2015,6 +2016,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildIndexKey,
   loopRowChildComputedKey,
   loopRowChildConcatIndexKey,
+  stringNumberPlusConcatPositions,
   loopRowChildChildrenIndexKey,
   loopRowChildChildrenComputedKey,
   loopRowChildBooleanKey,

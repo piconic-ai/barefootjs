@@ -4806,26 +4806,6 @@
           ]
         }
       },
-      "loop-row-child-concat-index-key": {
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "string-number-plus-concat"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "string-number-plus-concat"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "string-number-plus-concat"
-          ]
-        }
-      },
       "loop-row-child-outer-state-key": {
         "go-template": {
           "kind": "refusal",
@@ -6934,26 +6914,6 @@
           ]
         }
       },
-      "remainder-negative-zero-concat": {
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "string-number-plus-concat"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "string-number-plus-concat"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "string-number-plus-concat"
-          ]
-        }
-      },
       "remainder-negative-zero-json": {
         "erb": {
           "kind": "render",
@@ -8523,10 +8483,6 @@
         "description": "A ref callback on an element forwarded as a loop-row child component's children runs with the row…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-ref.ts"
       },
-      "loop-row-child-concat-index-key": {
-        "description": "Component loop rows keyed by a row field concatenated with the index carry the joined string as…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-concat-index-key.ts"
-      },
       "loop-row-child-outer-state-key": {
         "description": "A component loop row keyed by an expression reading outer state carries its value as data-key",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-outer-state-key.ts"
@@ -8638,10 +8594,6 @@
       "ref-mount-attr": {
         "description": "A ref mount callback writing an attribute the JSX never renders refuses with BF063",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/ref-mount-attr.ts"
-      },
-      "remainder-negative-zero-concat": {
-        "description": "A string joined with the -0 remainder of a negative dividend spells it \"0\" ('r=' + (-4 % 2))",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/remainder-negative-zero-concat.ts"
       },
       "remainder-negative-zero-json": {
         "description": "JSON.stringify writes the -0 remainder of a negative dividend as 0 (JSON.stringify(-4 % 2))",
@@ -9837,22 +9789,6 @@
         "mojolicious",
         "twig",
         "xslate"
-      ]
-    },
-    "string-number-plus-concat": {
-      "title": "String and number joined with `+`",
-      "kind": "silent",
-      "given": "a template expression joining a string and a number with `+` (`r.id + '-' + i`)",
-      "expected": "the number is stringified and concatenated, as JS `+` does (`x-0`)",
-      "actual": "throws at render time: the template language raises a type error adding a string and an integer",
-      "fixtures": [
-        "loop-row-child-concat-index-key",
-        "remainder-negative-zero-concat"
-      ],
-      "adapters": [
-        "erb",
-        "jinja",
-        "minijinja"
       ]
     },
     "undefined-method-result-attr": {
