@@ -232,6 +232,7 @@ import { fixture as componentSpreadRest } from './component-spread-rest'
 import { fixture as componentSpreadPropsThenExplicit } from './component-spread-props-then-explicit'
 import { fixture as componentSpreadExplicitThenProps } from './component-spread-explicit-then-props'
 import { fixture as componentSpreadPropsSubset } from './component-spread-props-subset'
+import { fixture as componentChildTemplateLiteralModuleLines } from './component-child-template-literal-module-lines'
 import { fixture as componentSpreadPropsRestBag } from './component-spread-props-rest-bag'
 import { fixture as componentSpreadExplicitNull } from './component-spread-explicit-null'
 import { fixture as componentSpreadExplicitNullPositions } from './component-spread-explicit-null-positions'
@@ -354,6 +355,7 @@ import { fixture as signalSeedNumberPropViaConstNullish } from './signal-seed-nu
 import { fixture as signalFromSameNamedPropRawReadUntyped } from './signal-from-same-named-prop-raw-read-untyped'
 import { fixture as signalFromSameNamedPropRawReadElementAccess } from './signal-from-same-named-prop-raw-read-element-access'
 import { fixture as signalFromSameNamedPropRawReadElementAccessUntyped } from './signal-from-same-named-prop-raw-read-element-access-untyped'
+import { fixture as propsTemplateLiteralKeyRead } from './props-template-literal-key-read'
 import { fixture as memoNamedLikeProp } from './memo-named-like-prop'
 import { fixture as namespaceImportPrimitive } from './namespace-import-primitive'
 import { fixture as namespaceImportPrimitiveNamedEscape } from './namespace-import-primitive-named-escape'
@@ -1365,6 +1367,7 @@ export const jsxFixtures: JSXFixture[] = [
   componentSpreadPropsThenExplicit,
   componentSpreadExplicitThenProps,
   componentSpreadPropsSubset,
+  componentChildTemplateLiteralModuleLines,
   componentSpreadPropsRestBag,
   componentSpreadExplicitNull,
   componentSpreadExplicitNullPositions,
@@ -1485,6 +1488,7 @@ export const jsxFixtures: JSXFixture[] = [
   signalFromSameNamedPropRawReadUntyped,
   signalFromSameNamedPropRawReadElementAccess,
   signalFromSameNamedPropRawReadElementAccessUntyped,
+  propsTemplateLiteralKeyRead,
   memoNamedLikeProp,
   namespaceImportPrimitive,
   namespaceImportPrimitiveNamedEscape,

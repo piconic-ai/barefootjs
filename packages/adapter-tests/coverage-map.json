@@ -2014,6 +2014,22 @@
         "text"
       ]
     },
+    "component-child-template-literal-module-lines": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "component-prop-bare-getter": {
       "kinds": [
         "call",
@@ -10509,6 +10525,28 @@
       ],
       "axes": [],
       "contexts": [
+        "text"
+      ]
+    },
+    "props-template-literal-key-read": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:null",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
         "text"
       ]
     },
