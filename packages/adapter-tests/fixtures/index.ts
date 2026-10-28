@@ -689,6 +689,9 @@ import { fixture as childPrimitiveProps } from './child-primitive-props'
 import { fixture as preWhitespace } from './pre-whitespace'
 import { fixture as tableDynamicRows } from './table-dynamic-rows'
 import { fixture as adjacentDynamicText } from './adjacent-dynamic-text'
+import { fixture as atSignBeforeDynamicText } from './at-sign-before-dynamic-text'
+import { fixture as atSignBeforeDynamicTextPropsObject } from './at-sign-before-dynamic-text-props-object'
+import { fixture as atSignBesideBrace } from './at-sign-beside-brace'
 import { fixture as memoChain } from './memo-chain'
 import { fixture as memoMultiStatementBlock } from './memo-multi-statement-block'
 import { fixture as childPropFromPropsObject } from './child-prop-from-props-object'
@@ -755,6 +758,8 @@ import { fixture as moduleConstArraySeedNoGeneric } from './module-const-array-s
 // #2946: a module-scope const array `.map()`'d directly with no signal
 // wrapper — the shape `resolveStaticLoopSource` used to refuse outright.
 import { fixture as moduleConstLoopSource } from './module-const-loop-source'
+import { fixture as moduleConstMultilineTemplateLiteral } from './module-const-multiline-template-literal'
+import { fixture as moduleConstMultilineTemplateLiteralPropsObject } from './module-const-multiline-template-literal-props-object'
 import { fixture as moduleConstLoopSourceChildComponent } from './module-const-loop-source-child-component'
 import { fixture as moduleConstLoopSourceComputed } from './module-const-loop-source-computed'
 import { fixture as moduleConstLoopSourceComputedClient } from './module-const-loop-source-computed-client'
@@ -1022,6 +1027,10 @@ import { fixture as loopRowChildChildrenRef } from './loop-row-child-children-re
 import { fixture as loopRowNestedChildChildrenHandler } from './loop-row-nested-child-children-handler'
 import { fixture as loopRowChildChildrenInnerLoopHandler } from './loop-row-child-children-inner-loop-handler'
 import { fixture as signalLoopRowChildChildren } from './signal-loop-row-child-children'
+import { fixture as signalLoopRowChildChildrenShapes } from './signal-loop-row-child-children-shapes'
+import { fixture as signalLoopRowChildChildrenPropsObject } from './signal-loop-row-child-children-props-object'
+import { fixture as signalLoopRowChildChildrenMemberSeed } from './signal-loop-row-child-children-member-seed'
+import { fixture as signalLoopRowChildChildrenMemberSeedPropsObject } from './signal-loop-row-child-children-member-seed-props-object'
 import { fixture as loopRowChildChildrenNestedPreambleProp } from './loop-row-child-children-nested-preamble-prop'
 import { fixture as loopRowChildChildrenNestedRowVarShapes } from './loop-row-child-children-nested-row-var-shapes'
 import { fixture as loopRowChildChildrenFilterCapturesRow } from './loop-row-child-children-filter-captures-row'
@@ -1749,6 +1758,9 @@ export const jsxFixtures: JSXFixture[] = [
   preWhitespace,
   tableDynamicRows,
   adjacentDynamicText,
+  atSignBeforeDynamicText,
+  atSignBeforeDynamicTextPropsObject,
+  atSignBesideBrace,
   memoChain,
   memoMultiStatementBlock,
   childPropFromPropsObject,
@@ -1778,6 +1790,8 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstArraySeed,
   moduleConstArraySeedNoGeneric,
   moduleConstLoopSource,
+  moduleConstMultilineTemplateLiteral,
+  moduleConstMultilineTemplateLiteralPropsObject,
   moduleConstLoopSourceChildComponent,
   moduleConstLoopSourceComputed,
   moduleConstLoopSourceComputedClient,
@@ -1931,6 +1945,10 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowNestedChildChildrenHandler,
   loopRowChildChildrenInnerLoopHandler,
   signalLoopRowChildChildren,
+  signalLoopRowChildChildrenShapes,
+  signalLoopRowChildChildrenPropsObject,
+  signalLoopRowChildChildrenMemberSeed,
+  signalLoopRowChildChildrenMemberSeedPropsObject,
   loopRowChildChildrenNestedPreambleProp,
   loopRowChildChildrenNestedRowVarShapes,
   loopRowChildChildrenFilterCapturesRow,

@@ -923,6 +923,53 @@
       "axes": [],
       "contexts": []
     },
+    "at-sign-before-dynamic-text": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "at-sign-before-dynamic-text-props-object": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:null"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "at-sign-beside-brace": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "attr-ternary-title": {
       "kinds": [
         "call",
@@ -8291,6 +8338,43 @@
         "text"
       ]
     },
+    "module-const-multiline-template-literal": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-multiline-template-literal-props-object": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "module-const-named-like-object-prop": {
       "kinds": [
         "binary",
@@ -12051,6 +12135,62 @@
         "literal:string"
       ],
       "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "signal-loop-row-child-children-member-seed": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "signal-loop-row-child-children-member-seed-props-object": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "signal-loop-row-child-children-props-object": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "signal-loop-row-child-children-shapes": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
         "loop",
         "text"
       ]
