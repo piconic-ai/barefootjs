@@ -9451,6 +9451,138 @@
       }
     }
   ],
+  "signal-from-same-named-prop-raw-read-element-access": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    },
+    {
+      "name": "gen:note:empty",
+      "props": {
+        "note": ""
+      }
+    },
+    {
+      "name": "gen:note:markup",
+      "props": {
+        "note": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:note:multibyte",
+      "props": {
+        "note": "日本語"
+      }
+    }
+  ],
+  "signal-from-same-named-prop-raw-read-kinds": [
+    {
+      "name": "gen:count:zero",
+      "props": {
+        "count": 0
+      }
+    },
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "count": -7
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "count": 1234567890
+      }
+    },
+    {
+      "name": "gen:title:empty",
+      "props": {
+        "title": ""
+      }
+    },
+    {
+      "name": "gen:title:markup",
+      "props": {
+        "title": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:title:multibyte",
+      "props": {
+        "title": "日本語"
+      }
+    },
+    {
+      "name": "gen:note:empty",
+      "props": {
+        "note": ""
+      }
+    },
+    {
+      "name": "gen:note:markup",
+      "props": {
+        "note": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:note:multibyte",
+      "props": {
+        "note": "日本語"
+      }
+    },
+    {
+      "name": "gen:total:zero",
+      "props": {
+        "total": 0
+      }
+    },
+    {
+      "name": "gen:total:negative",
+      "props": {
+        "total": -7
+      }
+    },
+    {
+      "name": "gen:total:large",
+      "props": {
+        "total": 1234567890
+      }
+    }
+  ],
+  "signal-from-same-named-prop-raw-read-positions": [
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "signal-literal-prop-fractional-collision": [
     {
       "name": "gen:count:negative",
@@ -10114,6 +10246,20 @@
       "props": {
         "mode": "wide",
         "label": "日本語"
+      }
+    }
+  ],
+  "signal-seed-number-prop-via-const-nullish": [
+    {
+      "name": "gen:b:negative",
+      "props": {
+        "b": -7
+      }
+    },
+    {
+      "name": "gen:b:large",
+      "props": {
+        "b": 1234567890
       }
     }
   ],
