@@ -63,7 +63,7 @@ import { isBooleanAttr } from '../../../html-constants.ts'
 import { emitDedupedAttrUpdate, dedupGuard } from '../../emit-reactive.ts'
 import { toHtmlAttrName } from '../../utils.ts'
 import type { SkeletonSlotPaths } from '../../html-template.ts'
-import { claimPlanLiteral, type ClaimSlotSpec } from './claim-plan.ts'
+import { claimPlanLiteral, rowTextSlotKind, rowTextSlotValue, type ClaimSlotSpec } from './claim-plan.ts'
 import { pathExpr } from './skeleton-paths.ts'
 import {
   emitHoistedTemplateDecl,
@@ -156,13 +156,13 @@ export function stringifyLazyRowLoop(lines: string[], o: StringifyLazyRowOptions
   let freshPlanVar: string | null = null
   if (lazyRow.texts.length > 0) {
     adoptedPlanVar = `__lzs_${mid}`
-    const adoptedSlots: ClaimSlotSpec[] = lazyRow.texts.map(t => ({ id: t.slotId, kind: 'text', path: [] }))
+    const adoptedSlots: ClaimSlotSpec[] = lazyRow.texts.map(t => ({ id: t.slotId, kind: rowTextSlotKind(t), path: [] }))
     lines.push(`${indent}const ${adoptedPlanVar} = ${claimPlanLiteral(adoptedSlots)}`)
     if (textPathVar) {
       freshPlanVar = `__lzsc_${mid}`
       const freshSlots: ClaimSlotSpec[] = lazyRow.texts.map((t, i) => ({
         id: t.slotId,
-        kind: 'text',
+        kind: rowTextSlotKind(t),
         path: [],
         pathExpr: `${textPathVar}[${i}]`,
       }))
@@ -535,15 +535,16 @@ function emitTextBinding(
       ? `${doorExpr}.write('${t.slotId}', ${valueExpr})`
       : `${doorExpr}('${t.slotId}', ${valueExpr})`
 
+  const value = rowTextSlotValue(t, '__x', 'textOrNode')
   if (mode === 'outer') {
     lines.push(`${ind}if (__seed) {`)
-    lines.push(`${ind}  const __s = textOrNode(__x)`)
+    lines.push(`${ind}  const __s = ${value}`)
     lines.push(`${ind}  if (${doorExpr}.read('${t.slotId}') !== __s) ${writeOf('__s')}`)
-    lines.push(`${ind}} else if (${dedupGuard(t.ordinal)}) ${writeOf('textOrNode(__x)')}`)
+    lines.push(`${ind}} else if (${dedupGuard(t.ordinal)}) ${writeOf(value)}`)
   } else if (mode === 'item') {
-    lines.push(`${ind}if (${dedupGuard(t.ordinal)}) ${writeOf('textOrNode(__x)')}`)
+    lines.push(`${ind}if (${dedupGuard(t.ordinal)}) ${writeOf(value)}`)
   } else {
-    lines.push(`${ind}${writeOf('textOrNode(__x)')}`)
+    lines.push(`${ind}${writeOf(value)}`)
   }
   lines.push(`${ind}__l[${t.ordinal}] = __x }`)
 }

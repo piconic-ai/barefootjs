@@ -34,7 +34,7 @@
 import { varSlotId, profileBindingId } from '../../utils.ts'
 import { emitDedupedAttrUpdate, DEDUP_STORE_DECL } from '../../emit-reactive.ts'
 import { stringifyLoopChildArm, conditionGetterExpr } from './loop-child-arm.ts'
-import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from './claim-plan.ts'
+import { claimPlanLiteral, claimWriterVarName, rowTextSlotKind, rowTextSlotValue, type ClaimSlotSpec } from './claim-plan.ts'
 import type {
   NestedConditionalPlan,
   ReactiveAttrSlot,
@@ -277,7 +277,7 @@ function emitConsolidatedRowEffect(
   //    preamble regions (kind 'markup') — mixed-kind plans are supported by
   //    claim-slots.ts's per-slot `kind` dispatch.
   const claimSlots: ClaimSlotSpec[] = [
-    ...outerTexts.map((t): ClaimSlotSpec => ({ id: t.slotId, kind: 'text', path: [], pathExpr: textClaimPathExprs?.get(t.slotId) })),
+    ...outerTexts.map((t): ClaimSlotSpec => ({ id: t.slotId, kind: rowTextSlotKind(t), path: [], pathExpr: textClaimPathExprs?.get(t.slotId) })),
     ...preambleRegions.map((r): ClaimSlotSpec => ({ id: r.slotId, kind: 'markup', path: [] })),
   ]
   const writer = claimSlots.length > 0 ? claimWriterVarName(claimSlots, varSlotId) : null
@@ -294,7 +294,7 @@ function emitConsolidatedRowEffect(
   //    preamble region) uses the multi-line block.
   if (attrSlots.length === 0 && preambleRegions.length === 0 && outerTexts.length === 1) {
     const text = outerTexts[0]
-    lines.push(`${indent}createEffect(() => { ${writer}('${text.slotId}', String(${text.wrappedExpression})) })`)
+    lines.push(`${indent}createEffect(() => { ${writer}('${text.slotId}', ${rowTextSlotValue(text, text.wrappedExpression, 'String')}) })`)
     return
   }
   lines.push(`${indent}createEffect(() => {`)
@@ -319,7 +319,7 @@ function emitConsolidatedRowEffect(
     lines.push(`${indent}  }`)
   }
   for (const text of outerTexts) {
-    lines.push(`${indent}  ${writer}('${text.slotId}', String(${text.wrappedExpression}))`)
+    lines.push(`${indent}  ${writer}('${text.slotId}', ${rowTextSlotValue(text, text.wrappedExpression, 'String')})`)
   }
   for (const region of preambleRegions) {
     lines.push(`${indent}  ${writer}('${region.slotId}', ${region.valueExpr})`)
@@ -338,14 +338,14 @@ function emitOuterTexts(
   if (texts.length === 0) return
   const slots: ClaimSlotSpec[] = texts.map(t => ({
     id: t.slotId,
-    kind: 'text',
+    kind: rowTextSlotKind(t),
     path: [],
     pathExpr: textClaimPathExprs?.get(t.slotId),
   }))
   const writer = claimWriterVarName(slots, varSlotId)
   lines.push(`${indent}const ${writer} = lazySlots(${elVar}, ${claimPlanLiteral(slots)})`)
   for (const text of texts) {
-    lines.push(`${indent}createEffect(() => { ${writer}('${text.slotId}', String(${text.wrappedExpression})) }${bindingBfId(text.slotId)})`)
+    lines.push(`${indent}createEffect(() => { ${writer}('${text.slotId}', ${rowTextSlotValue(text, text.wrappedExpression, 'String')}) }${bindingBfId(text.slotId)})`)
   }
 }
 

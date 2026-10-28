@@ -59,19 +59,19 @@ export function initLoopParamNamedProps(__scope, _p = {}) {
   mapArray(() => items(), _s13, (props) => String(props), (props, __idx, __existing) => {
     const __el = __existing ?? mountRowRoot((() => {
       const __tpl = document.createElement('template')
-      __tpl.innerHTML = `<li data-key="${escapeAttr(props())}"><span class="label" bf="s11"><!--bf:s9-->${escapeText(props())}<!--/--><!--bf:s10-->${escapeText(_p.suffix)}<!--/--></span><div data-bf-ph="s12"></div></li>`
+      __tpl.innerHTML = `<li data-key="${escapeAttr(props())}"><span class="label" bf="s11"><!--bf:s9-->${escapeText(props())}<!--/--><!--bf:s10-->${escapeTextOrMarkup(_p.suffix)}<!--/--></span><div data-bf-ph="s12"></div></li>`
       return __tpl.content.firstElementChild.cloneNode(true)
     })())
     upsertChild(__el, 'Tag__e7d377f0', 's12', { get label() { return props() }, get mark() { return _p.suffix } }, undefined, __scope)
-    const __bfw_s9 = lazySlots(__el, [{ id: 's9', kind: 'text', path: [] }, { id: 's10', kind: 'text', path: [] }])
+    const __bfw_s9 = lazySlots(__el, [{ id: 's9', kind: 'text', path: [] }, { id: 's10', kind: 'markup', path: [] }])
     createEffect(() => {
       __bfw_s9('s9', String(props()))
-      __bfw_s9('s10', String(_p.suffix))
+      __bfw_s9('s10', escapeTextOrNode(_p.suffix))
     })
     return __el
   }, 'l0')
 
 }
 
-hydrate('LoopParamNamedProps', { init: initLoopParamNamedProps, template: (_p) => `<div><p class="total" bf="s1"><!--bf:s0-->${escapeTextOrMarkup((0))}<!--/--></p><p class="last" bf="s3"><!--bf:s2-->${escapeTextOrMarkup(('none'))}<!--/--></p><button type="button" class="add" bf="s4">add</button><button type="button" class="bump" bf="s5">bump</button><button type="button" class="drop" bf="s6">drop</button><button type="button" class="say" bf="s7">say</button><button type="button" class="hoist" bf="s8">hoist</button><ul class="rows" bf="s13"><!--bf-loop:l0-->${(['a', 'b']).map((props) => `<li data-key="${escapeAttr(props)}"><span class="label" bf="s11"><!--bf:s9-->${escapeText(props)}<!--/--><!--bf:s10-->${escapeText(_p.suffix)}<!--/--></span>${renderChild('Tag__e7d377f0', {label: props, mark: _p.suffix}, undefined, 's12')}</li>`).join('')}<!--bf-/loop:l0--></ul></div>` })
+hydrate('LoopParamNamedProps', { init: initLoopParamNamedProps, template: (_p) => `<div><p class="total" bf="s1"><!--bf:s0-->${escapeTextOrMarkup((0))}<!--/--></p><p class="last" bf="s3"><!--bf:s2-->${escapeTextOrMarkup(('none'))}<!--/--></p><button type="button" class="add" bf="s4">add</button><button type="button" class="bump" bf="s5">bump</button><button type="button" class="drop" bf="s6">drop</button><button type="button" class="say" bf="s7">say</button><button type="button" class="hoist" bf="s8">hoist</button><ul class="rows" bf="s13"><!--bf-loop:l0-->${(['a', 'b']).map((props) => `<li data-key="${escapeAttr(props)}"><span class="label" bf="s11"><!--bf:s9-->${escapeText(props)}<!--/--><!--bf:s10-->${escapeTextOrMarkup(_p.suffix)}<!--/--></span>${renderChild('Tag__e7d377f0', {label: props, mark: _p.suffix}, undefined, 's12')}</li>`).join('')}<!--bf-/loop:l0--></ul></div>` })
 export function LoopParamNamedProps(_p, __bfKey) { return createComponent('LoopParamNamedProps', _p, __bfKey) }

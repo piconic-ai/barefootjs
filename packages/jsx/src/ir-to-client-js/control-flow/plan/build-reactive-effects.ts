@@ -98,6 +98,7 @@ export function buildReactiveEffectsPlan(
   const outerTexts: ReactiveTextEffect[] = texts.map(text => ({
     slotId: text.slotId,
     wrappedExpression: wrap(text.expression),
+    ...(text.markup && { markup: true as const }),
   }))
 
   // 3. Per-conditional plans. Each arm's own reactive attrs / texts come

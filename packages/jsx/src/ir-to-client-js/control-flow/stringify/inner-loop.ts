@@ -28,7 +28,7 @@ import { emitComponentAndEventSetup, emitRowEventListener } from '../shared.ts'
 import { emitDedupedAttrUpdate, DEDUP_STORE_DECL } from '../../emit-reactive.ts'
 import { emitMultiRootTemplateCloneLines, namespaceWrapForTemplate } from './template-parse.ts'
 import { emitLoopChildRefs } from './loop.ts'
-import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from './claim-plan.ts'
+import { claimPlanLiteral, claimWriterVarName, rowTextSlotKind, rowTextSlotValue, type ClaimSlotSpec } from './claim-plan.ts'
 import { stringifyLoopChildConditionals } from './loop-child-arm.ts'
 import type {
   InnerLoopPlan,
@@ -112,14 +112,14 @@ function emitReactive(lines: string[], inner: InnerLoopPlan, indent: string, pc:
     // writes are a plain, idempotent `nodeValue` assignment with no
     // dedup/trust-first-run state to go stale — so re-claiming here is exactly
     // as safe as, and replaces, the old re-query-$t-on-every-run discipline.
-    lines.push(`${indent}  createEffect(() => { claimSlots(__innerEl${uid}, [{ id: '${text.slotId}', kind: 'text', path: [] }]).write('${text.slotId}', String(${text.wrappedExpression})) }${bf})`)
+    lines.push(`${indent}  createEffect(() => { claimSlots(__innerEl${uid}, [{ id: '${text.slotId}', kind: '${rowTextSlotKind(text)}', path: [] }]).write('${text.slotId}', ${rowTextSlotValue(text, text.wrappedExpression, 'String')}) }${bf})`)
   }
   if (plainTexts.length > 0) {
-    const slots: ClaimSlotSpec[] = plainTexts.map(t => ({ id: t.slotId, kind: 'text', path: [] }))
+    const slots: ClaimSlotSpec[] = plainTexts.map(t => ({ id: t.slotId, kind: rowTextSlotKind(t), path: [] }))
     const writer = claimWriterVarName(slots, varSlotId)
     lines.push(`${indent}  const ${writer} = lazySlots(__innerEl${uid}, ${claimPlanLiteral(slots)})`)
     for (const text of plainTexts) {
-      lines.push(`${indent}  createEffect(() => { ${writer}('${text.slotId}', String(${text.wrappedExpression})) }${profileBindingId(pc, text.slotId)})`)
+      lines.push(`${indent}  createEffect(() => { ${writer}('${text.slotId}', ${rowTextSlotValue(text, text.wrappedExpression, 'String')}) }${profileBindingId(pc, text.slotId)})`)
     }
   }
   if (emit.reactiveAttrs.length > 0) lines.push(`${indent}  ${DEDUP_STORE_DECL}`)

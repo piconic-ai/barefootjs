@@ -59,6 +59,8 @@ export interface LazyRowAttrBinding {
 /** One reactive text (content slot) of a lazy row. */
 export interface LazyRowTextBinding {
   slotId: string
+  /** Claimed and written as markup (`RowTextSlot`). */
+  markup?: true
   wrappedExpression: string
   ordinal: number
   readsItem: boolean
@@ -340,6 +342,7 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
       readsItem: c.readsItem || !c.readsOuter,
       readsOuter: c.readsOuter,
       readsPreamble: c.readsPreamble,
+      ...(text.markup && { markup: true as const }),
     }
   })
 

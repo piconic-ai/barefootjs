@@ -8,6 +8,7 @@ import { fixture as jsxPropTemplateDelimiters } from './jsx-prop-template-delimi
 import { fixture as jsxPropNestedComponentPositions } from './jsx-prop-nested-component-positions'
 import { fixture as jsxPropNestedComponentConditional } from './jsx-prop-nested-component-conditional'
 import { fixture as jsxPropNestedComponentForwarded } from './jsx-prop-nested-component-forwarded'
+import { fixture as jsxPropLoopRow } from './jsx-prop-loop-row'
 import { fixture as staticChildQuotedKeys } from './static-child-quoted-keys'
 import { fixture as childrenNullishFallback } from './children-nullish-fallback'
 import { fixture as conditionalNestedClient } from './conditional-nested-loop-client-reactivity'
@@ -1698,6 +1699,7 @@ export const jsxFixtures: JSXFixture[] = [
   jsxPropNestedComponentPositions,
   jsxPropNestedComponentConditional,
   jsxPropNestedComponentForwarded,
+  jsxPropLoopRow,
   staticChildQuotedKeys,
   svgIcon,
   customElementTag,

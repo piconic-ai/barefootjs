@@ -61,7 +61,7 @@ import type {
 import { nameForRegistryRef } from '../component-scope.ts'
 import { varSlotId } from '../utils.ts'
 import { emitDedupedAttrUpdate, DEDUP_STORE_DECL } from '../emit-reactive.ts'
-import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from '../control-flow/stringify/claim-plan.ts'
+import { claimPlanLiteral, claimWriterVarName, rowTextSlotKind, rowTextSlotValue, type ClaimSlotSpec } from '../control-flow/stringify/claim-plan.ts'
 import { emitLoopChildRefs } from '../control-flow/stringify/loop.ts'
 import { emitRowEventListener } from '../control-flow/shared.ts'
 import { stringifyInnerLoops } from '../control-flow/stringify/inner-loop.ts'
@@ -207,11 +207,11 @@ function emitInnerLoopNested(lines: string[], plan: InnerLoopNestedInitPlan): vo
     lines.push(`        }`)
   }
   if (texts.length > 0) {
-    const slots: ClaimSlotSpec[] = texts.map(t => ({ id: t.slotId, kind: 'text', path: [] }))
+    const slots: ClaimSlotSpec[] = texts.map(t => ({ id: t.slotId, kind: rowTextSlotKind(t), path: [] }))
     const writer = claimWriterVarName(slots, varSlotId)
     lines.push(`        const ${writer} = lazySlots(__innerEl, ${claimPlanLiteral(slots)})`)
     for (const text of texts) {
-      lines.push(`        createEffect(() => { ${writer}('${text.slotId}', String(${text.expression})) })`)
+      lines.push(`        createEffect(() => { ${writer}('${text.slotId}', ${rowTextSlotValue(text, text.expression, 'String')}) })`)
     }
   }
   // Ref callbacks fire on every forEach iteration — initial mount and any
