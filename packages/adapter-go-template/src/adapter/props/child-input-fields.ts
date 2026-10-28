@@ -176,8 +176,12 @@ function emitChildField(
   const fieldName = capitalizeFieldName(jsxName)
   // A `float64` field (a `number` prop) also takes this caller's `int`
   // value (a `.length` memo, a loop index): `bf.Number` converts any
-  // numeric Go value. A numeric literal assigns as is.
+  // numeric Go value. A numeric literal assigns as is. A nillable field
+  // (`interface{}`, `nillableParamNames`) takes the value unchanged: the
+  // caller's nil is the child's `undefined`, which `bf.Number` would turn
+  // into `NaN`.
   const numeric = childShape?.paramGoTypes.get(jsxName) === 'float64' &&
+    !childShape.nillableParamNames.has(jsxName) &&
     !/^-?\d+(\.\d+)?$/.test(goValue) && !goValue.startsWith('bf.Number(')
   fields.push({ goField: fieldName, goValue: numeric ? `bf.Number(${goValue})` : goValue })
 }
