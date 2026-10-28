@@ -818,7 +818,8 @@ export function resolvePropGoType(
   // an arithmetic operand whose nil reads as `undefined` (#3533) — see
   // `collectArithmeticAbsentPropNames`. So does a param a `{...props}`
   // spread onto a child component forwards (#3530) — see
-  // `collectPropsSpreadForwardedParams`.
+  // `collectPropsSpreadForwardedParams`. So does a param passed as it is
+  // into a child's nillable field — see `collectNillableForwardedPropNames`.
   // A default that reads an earlier prop (`{ off = false, on = off }`,
   // #3531), or a literal one other than the zero value (`{ tag = 'z' }`,
   // `{ n = 2 }`, `{ on = true }`), applies to an absent prop only, which the
@@ -836,7 +837,8 @@ export function resolvePropGoType(
       ctx.state.nullableSignalSeedPropNames.has(param.name) ||
       ctx.state.optionalChainReceiverPropNames.has(param.name) ||
       ctx.state.arithmeticAbsentPropNames.has(param.name) ||
-      ctx.state.propsSpreadForwardedPropNames.has(param.name)) &&
+      ctx.state.propsSpreadForwardedPropNames.has(param.name) ||
+      ctx.state.nillableForwardedPropNames.has(param.name)) &&
     NULLISH_SCALAR_GO_TYPES.has(base)
   ) {
     return 'interface{}'
