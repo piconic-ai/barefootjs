@@ -903,7 +903,11 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       captures.push(`<% my ${varName} = begin %>${body}<% end %>`)
       return varName
     }
-    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const plan = planComponentProps(comp, {
+      propsObjectName: this.propsObjectName,
+      propsParams: this.propsParams,
+      callerKeys: true,
+    })
     const segments = spellComponentProps(plan, {
       entry: (entry) => {
         switch (entry.kind) {
@@ -921,7 +925,8 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       },
       // A `%{…}` hash dereference flattens a spread into the named-arg list (`emitSpread`).
       spread: (value) => emitAttrValue(value, this.componentPropEmitter, ''),
-      presentParam: (name) => `%{ defined($${name}) ? +{ ${perlHashKey(name)} => $${name} } : +{} }`,
+      presentParam: (name) =>
+        `%{ bf->passed(${perlStringLiteral(name)}, defined($${name})) ? +{ ${perlHashKey(name)} => $${name} } : +{} }`,
     })
     const parts = segments.flatMap((s) => (s.kind === 'entries' ? s.parts : s.expr ? [s.expr] : []))
     const propsStr = parts.length > 0 ? `, ${parts.join(', ')}` : ''

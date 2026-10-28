@@ -833,7 +833,11 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
       captures.push(`{% set ${captured} %}${body}{% endset %}`)
       return captured
     }
-    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const plan = planComponentProps(comp, {
+      propsObjectName: this.propsObjectName,
+      propsParams: this.propsParams,
+      callerKeys: true,
+    })
     const segments = spellComponentProps(plan, {
       entry: (entry) => {
         switch (entry.kind) {
@@ -854,7 +858,7 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
       // `ChainableUndefined`, which `is not none` alone lets through.
       presentParam: (name) => {
         const v = jinjaIdent(name)
-        return `({${jinjaHashKey(name)}: ${v}} if (${v} is defined and ${v} is not none) else {})`
+        return `({${jinjaHashKey(name)}: ${v}} if bf.passed(${jinjaHashKey(name)}, ${v} is defined and ${v} is not none) else {})`
       },
     })
     const dict = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`

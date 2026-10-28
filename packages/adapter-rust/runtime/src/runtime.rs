@@ -48,7 +48,7 @@ use crate::evaluator;
 use crate::num::{self, JsValue};
 use minijinja::value::{from_args, Enumerator, Kwargs, Object, ObjectRepr, Value as MjValue, ValueKind};
 use minijinja::{Error, ErrorKind, State};
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 
 const NULL_JS: JsValue = JsValue::Null;
@@ -946,6 +946,10 @@ pub struct BfInstance {
     pub bf_mount: Option<String>,
     pub props: Option<JsValue>,
     pub data_key: Option<JsValue>,
+    /// The keys this instance's caller passed, recorded by `render_child`
+    /// for a child; `None` for a root, whose caller's keys are `props`'s.
+    /// See [`BfInstance::passed`].
+    pub caller_keys: Option<BTreeSet<String>>,
 }
 
 impl BfInstance {
@@ -958,6 +962,25 @@ impl BfInstance {
             bf_mount: None,
             props: None,
             data_key: None,
+            caller_keys: None,
+        }
+    }
+
+    /// Whether this component's caller passed the prop `name`, even as
+    /// `none`: JS's `name in props`, which a template can't ask of its vars
+    /// (every declared prop is seeded, so an omitted one and a `none` one
+    /// read the same). A `{...props}` spread onto a child carries a param
+    /// only when this is true. The keys are those `render_child` recorded
+    /// for a child and `props` for the root; with neither recorded (a root
+    /// rendered without props), `fallback`, the template's own "not nil"
+    /// test, decides.
+    fn passed(&self, name: &str, fallback: bool) -> bool {
+        if let Some(keys) = &self.caller_keys {
+            return keys.contains(name);
+        }
+        match self.props.as_ref().and_then(|p| p.as_object()) {
+            Some(map) => map.contains_key(name),
+            None => fallback,
         }
     }
 
@@ -1155,6 +1178,7 @@ impl BfInstance {
         }
         .ok_or_else(|| Error::new(ErrorKind::InvalidOperation, format!("No renderer registered for child component '{name}'")))?;
 
+        let caller_keys: BTreeSet<String> = props.keys().cloned().collect();
         let mut map: BTreeMap<String, MjValue> = props.into_iter().map(|(k, v)| (mangle_ident(&k), v)).collect();
 
         // Rest-bag routing -- mirrors
@@ -1205,6 +1229,7 @@ impl BfInstance {
             bf_mount,
             props: None,
             data_key,
+            caller_keys: Some(caller_keys),
         };
 
         // Seed template vars through `resolve_child_vars`, resolving each
@@ -1488,6 +1513,7 @@ impl Object for BfInstance {
             "hydration_attrs" => Ok(safe(self.hydration_attrs())),
             "data_key_attr" => Ok(safe(self.data_key_attr())),
             "props_attr" => Ok(safe(self.props_attr())),
+            "passed" => Ok(MjValue::from(self.passed(js_string(a(0)).as_str(), js_truthy(a(1))))),
 
             // -- Context --------------------------------------------------
             "provide_context" => {

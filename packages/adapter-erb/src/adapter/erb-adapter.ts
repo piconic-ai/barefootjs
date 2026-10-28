@@ -1039,7 +1039,11 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     // (`data-slot`) that are no valid Ruby local name.
     const tplName = childTemplateName(comp.name, this.importAliases)
     const captures: string[] = []
-    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const plan = planComponentProps(comp, {
+      propsObjectName: this.propsObjectName,
+      propsParams: this.propsParams,
+      callerKeys: true,
+    })
     const segments = spellComponentProps(plan, {
       entry: (entry) => {
         switch (entry.kind) {
@@ -1071,7 +1075,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       spread: (value) => emitAttrValue(value, this.componentPropEmitter, ''),
       presentParam: (name) => {
         const v = `v[${rubySymbolLiteral(name)}]`
-        return `**(${v}.nil? ? {} : { ${rubySymbolKey(name)} ${v} })`
+        return `**(bf.passed?(${rubySymbolLiteral(name)}, !${v}.nil?) ? { ${rubySymbolKey(name)} ${v} } : {})`
       },
     })
     const parts = segments.flatMap((s) => (s.kind === 'entries' ? s.parts : s.expr ? [s.expr] : []))

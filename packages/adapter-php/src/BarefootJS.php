@@ -80,6 +80,10 @@ final class BarefootJS
     /** @var array<string, list<mixed>> SSR mirror of client provideContext/useContext. */
     private static array $contextStacks = [];
 
+    /** @var list<array<string, true>> The keys each `render_child` call
+     * passed, innermost last (see `passed`). */
+    private static array $callerKeys = [];
+
     /** @var list<string> Dual get/set (Perl accessor-base) attribute names that
      * default to `null` when unread. */
     private const SIMPLE_ACCESSORS = ['_scope_id', '_bf_parent', '_bf_mount', '_props', '_data_key'];
@@ -493,7 +497,46 @@ final class BarefootJS
         foreach ($props as $k => $v) {
             $mangled[$this->backend->ident((string) $k)] = $v;
         }
-        return $renderer($mangled, $this);
+        // Record the keys this call passes for the child's `passed` while its
+        // template renders. The renderer builds the child's own instance, so
+        // the record rides on a stack rather than on that object; rendering
+        // is synchronous, so its top is always the keys of the component
+        // whose template is running.
+        $keys = [];
+        foreach (array_keys($props) as $k) {
+            $keys[(string) $k] = true;
+        }
+        self::$callerKeys[] = $keys;
+        try {
+            return $renderer($mangled, $this);
+        } finally {
+            array_pop(self::$callerKeys);
+        }
+    }
+
+    /**
+     * Whether this component's caller passed the prop `$name`, even as null:
+     * JS's `name in props`, which a template can't ask of its variables
+     * (every declared prop is seeded, so an omitted one and a null one read
+     * the same). A `{...props}` spread onto a child carries a param only
+     * when this is true. The keys are those `render_child` recorded for a
+     * child and `_props` for the root; with neither recorded (a root
+     * rendered without `_props`), `$fallback`, the template's own "not nil"
+     * test, decides.
+     */
+    public function passed(string $name, $fallback = false): bool
+    {
+        if (self::$callerKeys !== []) {
+            return isset(self::$callerKeys[count(self::$callerKeys) - 1][$name]);
+        }
+        $props = $this->_props();
+        if (is_array($props)) {
+            return array_key_exists($name, $props);
+        }
+        if ($props instanceof \stdClass) {
+            return property_exists($props, $name);
+        }
+        return (bool) $fallback;
     }
 
     // -----------------------------------------------------------------

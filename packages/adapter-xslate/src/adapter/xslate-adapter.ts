@@ -900,7 +900,11 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
       captures.push(`<: macro ${macroName} -> () { :>${body}<: } :>`)
       return `${macroName}()`
     }
-    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const plan = planComponentProps(comp, {
+      propsObjectName: this.propsObjectName,
+      propsParams: this.propsParams,
+      callerKeys: true,
+    })
     const segments = spellComponentProps(plan, {
       entry: (entry) => {
         switch (entry.kind) {
@@ -917,7 +921,8 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
         }
       },
       spread: (value) => this.convertExpressionToKolon(value.expr),
-      presentParam: (name) => `(defined $${name} ? { ${name} => $${name} } : {})`,
+      presentParam: (name) =>
+        `($bf.passed(${kolonStringLiteral(name)}, (defined $${name})) ? { ${name} => $${name} } : {})`,
     })
     const hashEntries = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
     return `${captures.join('')}<: $bf.render_child('${tplName}'${hashEntries}) | mark_raw :>`

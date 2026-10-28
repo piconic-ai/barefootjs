@@ -234,8 +234,10 @@ export async function renderHonoComponent(options: RenderOptions): Promise<strin
 
   // Combine: JSX pragma + child compiled functions + parent compiled code
   const codeParts = ['/** @jsxImportSource hono/jsx */']
+  // A child may import a sibling child (`./mid` rendering `./tag`): that
+  // sibling is inlined too, so its import line goes like the parent's.
   for (const childCode of childCodes) {
-    codeParts.push(childCode)
+    codeParts.push(rewriteChildImports(childCode))
   }
   codeParts.push(parentCode)
   const code = codeParts.join('\n')

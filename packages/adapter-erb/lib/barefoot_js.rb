@@ -330,7 +330,32 @@ module BarefootJS
       # `props[:children]` as already-rendered HTML. Guard on `key?` so a
       # childless invocation doesn't gain a spurious `children: nil` key.
       props[:children] = backend.materialize(props[:children]) if props.key?(:children)
-      renderer.call(props, self)
+      # Record the keys this call passes for the child's `passed?` while its
+      # template renders. The renderer builds the child's own Context, so
+      # the record rides on a per-thread stack rather than on that object;
+      # rendering is synchronous, so its top is always the keys of the
+      # component whose template is running.
+      stack = (Thread.current[:barefoot_js_caller_keys] ||= [])
+      stack.push(props.keys.map(&:to_s))
+      begin
+        renderer.call(props, self)
+      ensure
+        stack.pop
+      end
+    end
+
+    # Whether this component's caller passed the prop `name`, even as `nil`:
+    # JS's `name in props`, which a template can't ask of its vars (every
+    # declared prop is seeded, so an omitted one and a `nil` one read the
+    # same). A `{...props}` spread onto a child carries a param only when
+    # this is true. The keys are those `render_child` recorded for a child
+    # and `_props` for the root; with neither recorded (a root rendered
+    # without `_props`), `fallback`, the template's own "not nil" test,
+    # decides.
+    def passed?(name, fallback)
+      stack = Thread.current[:barefoot_js_caller_keys]
+      keys = stack && !stack.empty? ? stack.last : _props&.keys&.map(&:to_s)
+      keys ? keys.include?(name.to_s) : fallback
     end
 
     # -----------------------------------------------------------------

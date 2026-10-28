@@ -380,6 +380,24 @@ sub register_child_renderer ($self, $name, $renderer) {
     $self->_child_renderers->{$name} = $renderer;
 }
 
+# The keys the innermost `render_child` call passed (see `passed`); undef
+# outside one, i.e. while the root renders.
+our $CALLER_KEYS;
+
+# Whether this component's caller passed the prop `$name`, even as undef:
+# JS's `name in props`, which a template can't ask of its stash (every
+# declared prop is seeded, so an omitted one and an undef one read the same).
+# A `{...props}` spread onto a child carries a param only when this is true.
+# The keys are those `render_child` recorded for a child and `_props` for the
+# root; with neither recorded (a root rendered without `_props`), `$fallback`,
+# the template's own "not nil" test, decides.
+sub passed ($self, $name, $fallback = undef) {
+    return exists $CALLER_KEYS->{$name} ? 1 : 0 if $CALLER_KEYS;
+    my $props = $self->_props;
+    return exists $props->{$name} ? 1 : 0 if ref $props eq 'HASH';
+    return $fallback ? 1 : 0;
+}
+
 sub render_child ($self, $name, @args) {
     my $renderer = $self->_child_renderers->{$name};
     die "No renderer registered for child component '$name'" unless $renderer;
@@ -399,6 +417,12 @@ sub render_child ($self, $name, @args) {
     # is safe to apply unconditionally rather than naming `children`
     # specifically.
     $props{$_} = $self->backend->materialize($props{$_}) for keys %props;
+    # Record the keys this call passes for the child's `passed` while its
+    # template renders. The renderer builds the child's own instance, so the
+    # record is dynamically scoped (`local`) rather than stored on that
+    # object; rendering is synchronous, so it always holds the keys of the
+    # component whose template is running.
+    local $CALLER_KEYS = { map { $_ => 1 } keys %props };
     # Renderer contract (#1897): the renderer is invoked with TWO
     # arguments — the props hashref and the INVOKING instance. A renderer
     # registered on the root may be called from a nested child render

@@ -77,7 +77,6 @@ export const renderDivergences: RenderDivergences = {
   // engine holds it and an omitted prop as the same nil, so the spread
   // carries the key only when it is not nil and an earlier explicit prop
   // keeps its value where JS overrides it with `null`.
-  'component-spread-explicit-null': { limitation: 'props-spread-explicit-null-override' },
   // `number-division-zero-divisor` and `remainder-negative-zero-quotient`
   // used to sit here: Python's `/` raised `ZeroDivisionError` on a zero
   // divisor. `/` now goes through the runtime's `div` (#3474).

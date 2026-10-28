@@ -1014,7 +1014,11 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
       )
       return captured
     }
-    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const plan = planComponentProps(comp, {
+      propsObjectName: this.propsObjectName,
+      propsParams: this.propsParams,
+      callerKeys: true,
+    })
     const segments = spellComponentProps(plan, {
       entry: (entry) => {
         switch (entry.kind) {
@@ -1031,8 +1035,10 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
         }
       },
       spread: (value) => `$bf->omit(${this.convertExpressionToBlade(value.expr)}, [])`,
-      // `isset` is false for an unset variable and for `null` alike.
-      presentParam: (name) => `(isset(${bladeVar(name)}) ? [${bladeHashKey(name)} => ${bladeVar(name)}] : [])`,
+      // `isset` is false for an unset variable and for `null` alike, so it
+      // is only the fallback for a render that recorded no caller keys.
+      presentParam: (name) =>
+        `($bf->passed(${bladeHashKey(name)}, isset(${bladeVar(name)})) ? [${bladeHashKey(name)} => ${bladeVar(name)}] : [])`,
     })
     const dict = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
     return `${captures.join('')}{!! $bf->render_child('${tplName}'${dict}) !!}`

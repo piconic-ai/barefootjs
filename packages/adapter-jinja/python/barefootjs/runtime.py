@@ -74,6 +74,7 @@ import datetime
 import functools
 import math
 import re
+import threading
 import uuid
 import zoneinfo
 from typing import Any, Callable, Optional
@@ -83,6 +84,18 @@ from markupsafe import Markup
 from . import evaluator as _evaluator
 from .evaluator import looks_like_number, parse_number_literal
 from .search_params import SearchParams
+
+_caller_keys = threading.local()
+
+
+def _caller_keys_stack() -> list:
+    """The per-thread stack of the keys each `render_child` call passed
+    (see `BarefootJS.passed`)."""
+    stack = getattr(_caller_keys, "stack", None)
+    if stack is None:
+        stack = []
+        _caller_keys.stack = stack
+    return stack
 
 # ---------------------------------------------------------------------------
 # Keyword mangling (Python/Jinja adapter plan, "Reserved words" divergence
@@ -836,10 +849,37 @@ class BarefootJS:
         # children when present" behaviour.
         if "children" in props:
             props["children"] = self.backend.materialize(props["children"])
-        # Keyword mangling applied wherever a props dict becomes template
-        # variables -- see the module docstring's divergence notes.
-        props = {jinja_ident(k): v for k, v in props.items()}
-        return renderer(props, self)
+        # Record the keys this call passes for the child's `passed` while its
+        # template renders. The renderer builds the child's own instance, so
+        # the record rides on a per-thread stack rather than on that object;
+        # rendering is synchronous, so its top is always the keys of the
+        # component whose template is running.
+        stack = _caller_keys_stack()
+        stack.append(frozenset(str(k) for k in props))
+        try:
+            # Keyword mangling applied wherever a props dict becomes template
+            # variables -- see the module docstring's divergence notes.
+            props = {jinja_ident(k): v for k, v in props.items()}
+            return renderer(props, self)
+        finally:
+            stack.pop()
+
+    def passed(self, name: str, fallback: Any) -> bool:
+        """Whether this component's caller passed the prop `name`, even as
+        None: JS's `name in props`, which a template can't ask of its vars
+        (every declared prop is seeded, so an omitted one and a None one read
+        the same). A `{...props}` spread onto a child carries a param only
+        when this is true. The keys are those `render_child` recorded for a
+        child and `_props` for the root; with neither recorded (a root
+        rendered without `_props`), `fallback`, the template's own "not
+        nil" test, decides."""
+        stack = _caller_keys_stack()
+        if stack:
+            return name in stack[-1]
+        root_props = self._props()
+        if isinstance(root_props, dict):
+            return name in root_props
+        return bool(fallback)
 
     # -----------------------------------------------------------------
     # Bulk registration from build manifest
