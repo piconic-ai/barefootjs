@@ -11750,6 +11750,84 @@
       }
     }
   ],
+  "undefined-method-result-attr": [
+    {
+      "name": "gen:word:empty",
+      "props": {
+        "word": "",
+        "nums": [
+          0,
+          2
+        ],
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          []
+        ]
+      }
+    },
+    {
+      "name": "gen:word:markup",
+      "props": {
+        "word": "<b>&\"'</b>",
+        "nums": [
+          0,
+          2
+        ],
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          []
+        ]
+      }
+    },
+    {
+      "name": "gen:word:multibyte",
+      "props": {
+        "word": "日本語",
+        "nums": [
+          0,
+          2
+        ],
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          []
+        ]
+      }
+    },
+    {
+      "name": "gen:nums:empty",
+      "props": {
+        "word": "ab",
+        "nums": [],
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          []
+        ]
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "word": "ab",
+        "nums": [
+          0,
+          2
+        ],
+        "rows": []
+      }
+    }
+  ],
   "underscore-prefixed-prop": [
     {
       "name": "gen:value:empty",

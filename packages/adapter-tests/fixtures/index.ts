@@ -595,6 +595,7 @@ import { fixture as numberToFixed } from './number-tofixed'
 import { fixture as mathMethods } from './math-methods'
 import { fixture as stringLengthText } from './string-length-text'
 import { fixture as stringIndexMethods } from './string-index-methods'
+import { fixture as undefinedMethodResultAttr } from './undefined-method-result-attr'
 import { fixture as stringAtLoneSurrogate } from './string-at-lone-surrogate'
 import { fixture as stringIndexNonFinite } from './string-index-non-finite'
 import { fixture as booleanAttrLiterals } from './boolean-attr-literals'
@@ -1650,6 +1651,7 @@ export const jsxFixtures: JSXFixture[] = [
   mathMethods,
   stringLengthText,
   stringIndexMethods,
+  undefinedMethodResultAttr,
   stringAtLoneSurrogate,
   stringIndexNonFinite,
   booleanAttrLiterals,

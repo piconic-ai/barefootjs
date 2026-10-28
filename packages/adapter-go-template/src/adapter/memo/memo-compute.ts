@@ -328,6 +328,13 @@ export function evalExprGo(
     const recv = evalExprGo(ctx, body.object, signals, propsParams, propFallbackVars, resolving)
     return recv === null ? null : `bf.${helper}(${recv})`
   }
+  // `.at(i)`, which the evaluator does not run either, takes the template's
+  // `bf_at` helper: `nil` out of range, as JS reads `undefined`.
+  if (body.kind === 'array-method' && body.method === 'at' && body.args.length === 1) {
+    const recv = evalExprGo(ctx, body.object, signals, propsParams, propFallbackVars, resolving)
+    const index = recv === null ? null : evalExprGo(ctx, body.args[0], signals, propsParams, propFallbackVars, resolving)
+    return index === null ? null : `bf.At(${recv}, ${index})`
+  }
   // Env readers are per-request readers the evaluator can't invoke.
   const knownGetterNames = new Set<string>(
     ctx.state.ssrSeedPlan.steps.filter(s => s.kind !== 'env-reader').map(s => s.name),

@@ -14042,6 +14042,34 @@
         "attribute"
       ]
     },
+    "undefined-method-result-attr": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "array-method:at",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "logical:??",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "undefined-signal-arithmetic-direct": {
       "kinds": [
         "binary",
