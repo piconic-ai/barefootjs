@@ -4774,38 +4774,6 @@
           }
         }
       },
-      "loop-row-child-children-handler": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "signal-loop-row-child-children-unseeded"
-          ]
-        }
-      },
-      "loop-row-child-children-inner-loop-handler": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "signal-loop-row-child-children-unseeded"
-          ]
-        }
-      },
-      "loop-row-child-children-inner-loop-shadow": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "signal-loop-row-child-children-unseeded"
-          ]
-        }
-      },
-      "loop-row-child-children-ref": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "signal-loop-row-child-children-unseeded"
-          ]
-        }
-      },
       "loop-row-child-outer-state-key": {
         "go-template": {
           "kind": "refusal",
@@ -4863,14 +4831,6 @@
             "state": "escapable",
             "twin": "loop-row-child-untyped-array-nested-field-typed"
           }
-        }
-      },
-      "loop-row-nested-child-children-handler": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "signal-loop-row-child-children-unseeded"
-          ]
         }
       },
       "map-array-builder-body": {
@@ -7154,14 +7114,6 @@
           ]
         }
       },
-      "signal-loop-row-child-children": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "signal-loop-row-child-children-unseeded"
-          ]
-        }
-      },
       "signal-object-spread-init": {
         "go-template": {
           "kind": "refusal",
@@ -8457,22 +8409,6 @@
         "description": "A loop-row child component's JSX `children` element keeps its own reactive attrs patched after a…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-attrs.ts"
       },
-      "loop-row-child-children-handler": {
-        "description": "An event handler on an element forwarded as a loop-row child component's children reads the row…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-handler.ts"
-      },
-      "loop-row-child-children-inner-loop-handler": {
-        "description": "An event handler in an inner loop of a loop-row child component's forwarded children reads the…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-inner-loop-handler.ts"
-      },
-      "loop-row-child-children-inner-loop-shadow": {
-        "description": "An inner loop in a loop-row child's forwarded children shadows the outer row's index, item and…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-inner-loop-shadow.ts"
-      },
-      "loop-row-child-children-ref": {
-        "description": "A ref callback on an element forwarded as a loop-row child component's children runs with the row…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-children-ref.ts"
-      },
       "loop-row-child-outer-state-key": {
         "description": "A component loop row keyed by an expression reading outer state carries its value as data-key",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-outer-state-key.ts"
@@ -8488,10 +8424,6 @@
       "loop-row-child-untyped-array-nested-field": {
         "description": "A loop row calling a child component over an untyped object-literal array const whose rows carry a…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-untyped-array-nested-field.ts"
-      },
-      "loop-row-nested-child-children-handler": {
-        "description": "An event handler on an element forwarded through a child component nested below the loop row element",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-nested-child-children-handler.ts"
       },
       "map-array-builder-body": {
         "description": "imperative array-builder .map() body — JS-runtime verbatim, DSL refuses (BF021)",
@@ -8600,10 +8532,6 @@
       "rich-prop-client-read": {
         "description": "A Map-typed prop used by client code (even via a method call, since BF021 never sees a handler…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/rich-prop-client-read.ts"
-      },
-      "signal-loop-row-child-children": {
-        "description": "A signal-array loop whose row is a child component with forwarded JSX children renders each row at…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-loop-row-child-children.ts"
       },
       "signal-object-spread-init": {
         "description": "Signal initializer spreads a prop-derived object directly, in value position",
@@ -9697,24 +9625,6 @@
         "BF049"
       ],
       "reason": "Props cross the `bf-p` hydration boundary as `JSON.stringify` data with no type-aware revival, so these types lose their contents (`Map` / `Set` serialize to `{}`, `BigInt` throws, `Promise` / `Function` cannot cross a serialization boundary at all). A typed revival envelope was considered and rejected as a nine-adapter protocol change that still could not carry every listed type. The sound path is to pass a JSON-safe value and rebuild the rich value client-side."
-    },
-    "signal-loop-row-child-children-unseeded": {
-      "title": "A signal-array loop whose row is a child component with forwarded JSX children",
-      "kind": "silent",
-      "given": "a `.map()` over a signal's array whose row is a child component receiving JSX children (`rows().map((o) => <Chip key={o.id}><b>{o.id}</b></Chip>)`), rendered at SSR",
-      "expected": "one child component per array item, each with its forwarded children, from the signal's initial value",
-      "actual": "renders the loop container with no rows",
-      "fixtures": [
-        "loop-row-child-children-handler",
-        "loop-row-child-children-inner-loop-handler",
-        "loop-row-child-children-inner-loop-shadow",
-        "loop-row-child-children-ref",
-        "loop-row-nested-child-children-handler",
-        "signal-loop-row-child-children"
-      ],
-      "adapters": [
-        "go-template"
-      ]
     },
     "signal-read-in-nested-static-loop": {
       "title": "Signal read inside a nested static loop row",
