@@ -1,15 +1,19 @@
 import { describe, test, expect } from 'bun:test'
 import { analyzeComponent } from '../analyzer'
-import { parseExpression } from '../expression-parser'
+import { exprToString, parseExpression } from '../expression-parser'
 import {
+  ambiguousNilArithmeticOperands,
   arithmeticOperandCoercion,
+  arithmeticOperandIsNull,
   arithmeticOperandIsUndefined,
+  arithmeticOperandNilIsAmbiguous,
   attrValueMayBeNullish,
   collectAbsentPropSeedReads,
   collectNullableSignalGetters,
   collectNullishAttrContext,
   nullableSignalAttrGetter,
 } from '../nullable-signal-attr'
+import { BindingScope } from '../scope/binding-scope'
 import type { ComponentIR } from '../types'
 
 function nullableGetters(decls: string): Set<string> {
@@ -196,7 +200,8 @@ describe('arithmeticOperandCoercion (#3474)', () => {
     for (const op of ['-', '*', '/', '%', '**']) expect(coercion(ctx, op, 'props.b', 'x')).toBe('undefined')
     expect(coercion(ctx, '+', 'props.b', '-2')).toBe('undefined')
     expect(coercion(ctx, '*', 'props.u', '2')).toBe('undefined')
-    // A type that admits both keeps the null reading: its nil can be either.
+    // A type that admits both keeps the null spelling; the arithmetic over it
+    // is refused (`arithmeticOperandNilIsAmbiguous`, #3700).
     expect(coercion(ctx, '*', 'props.both', '2')).toBe('null')
   })
 
@@ -229,5 +234,80 @@ describe('arithmeticOperandCoercion (#3474)', () => {
   test('a defaulted prop is not nullable; an undefined-seeded signal keeps its NaN coercion', () => {
     expect(coercion(ctxOf('{ a = 1 }: { a?: number }'), '*', 'a', '2')).toBeNull()
     expect(coercion(ctxOf('', 'const [t] = createSignal<number>()'), '+', 't()', '1')).toBe('undefined')
+  })
+})
+
+describe('arithmeticOperandNilIsAmbiguous (#3700)', () => {
+  function ctxOf(signature: string, decls = ''): ReturnType<typeof collectNullishAttrContext> {
+    const source = `
+      'use client'
+      import { createMemo } from '@barefootjs/client'
+      export function C(${signature}) {
+        ${decls}
+        return <p>x</p>
+      }
+    `
+    return collectNullishAttrContext({ metadata: analyzeComponent(source, 'C.tsx') } as unknown as ComponentIR)
+  }
+  const ambiguous = (ctx: ReturnType<typeof collectNullishAttrContext>, op: string, operand: string, other?: string) =>
+    arithmeticOperandNilIsAmbiguous(op, parseExpression(operand), other === undefined ? undefined : parseExpression(other), ctx)
+
+  test('a number prop that admits both null and absence, in either props form', () => {
+    for (const signature of ['props: { n?: number | null }', 'props: { n: number | null | undefined }']) {
+      const ctx = ctxOf(signature)
+      for (const op of ['-', '*', '/', '%', '**']) expect(ambiguous(ctx, op, 'props.n', 'x')).toBe(true)
+      expect(ambiguous(ctx, '+', 'props.n', '1')).toBe(true)
+      expect(ambiguous(ctx, '-', 'props.n')).toBe(true)
+      // `+` against a non-number may concatenate: no `ToNumber`, no ambiguity.
+      expect(ambiguous(ctx, '+', 'props.n', "'px'")).toBe(false)
+    }
+    const destructured = ctxOf('{ n, m: alias }: { n?: number | null; m?: null | number }')
+    expect(ambiguous(destructured, '*', 'n', '2')).toBe(true)
+    expect(ambiguous(destructured, '*', 'alias', '2')).toBe(true)
+  })
+
+  test('a prop with one nil reading, a defaulted one and a shadowed one are not ambiguous', () => {
+    const ctx = ctxOf('props: { a: number | null; b?: number; c: number }')
+    for (const operand of ['props.a', 'props.b', 'props.c']) expect(ambiguous(ctx, '*', operand, '2')).toBe(false)
+    expect(ambiguous(ctxOf('{ n = 1 }: { n?: number | null }'), '*', 'n', '2')).toBe(false)
+    const destructured = ctxOf('{ n }: { n?: number | null }')
+    expect(arithmeticOperandNilIsAmbiguous('*', parseExpression('n'), parseExpression('2'), destructured, name => name === 'n')).toBe(false)
+  })
+
+  test('an identity memo over the prop is ambiguous too; the null spelling is kept for it', () => {
+    const ctx = ctxOf('props: { n?: number | null }', 'const m = createMemo(() => props.n)')
+    expect(ambiguous(ctx, '*', 'm()', '2')).toBe(true)
+    expect(arithmeticOperandCoercion('*', parseExpression('m()'), parseExpression('2'), ctx)).toBe('null')
+    expect(arithmeticOperandIsNull(parseExpression('m()'), ctx)).toBe(true)
+  })
+
+  test('a destructured union binding keeps its declared type for the classification', () => {
+    const ctx = ctxOf('{ a, u }: { a: number | null; u?: number | undefined }')
+    expect(arithmeticOperandCoercion('*', parseExpression('a'), parseExpression('2'), ctx)).toBe('null')
+    expect(arithmeticOperandCoercion('*', parseExpression('u'), parseExpression('2'), ctx)).toBe('undefined')
+  })
+})
+
+describe('ambiguousNilArithmeticOperands (#3700)', () => {
+  const ctx = collectNullishAttrContext({
+    metadata: analyzeComponent(
+      `export function C({ n, items }: { n?: number | null; items: number[] }) { return <p>x</p> }`,
+      'C.tsx',
+    ),
+  } as unknown as ComponentIR)
+  const found = (source: string, scope?: BindingScope) =>
+    ambiguousNilArithmeticOperands(parseExpression(source), ctx, scope).map(exprToString)
+
+  test('finds the operands in nested positions', () => {
+    expect(found("items.filter(i => i > n * 2).length")).toEqual(['n'])
+    expect(found("(-n > 1 ? `a${n + 1}` : 'b')")).toEqual(['n', 'n'])
+  })
+
+  test('an arrow param or an enclosing binding of the same name shadows the prop', () => {
+    expect(found("items.filter(n => n * 2 > 1).length")).toEqual([])
+    expect(found("items.map(i => items.filter(n => n > i).length * n)")).toEqual(['n'])
+    expect(found('n * 2', BindingScope.EMPTY.enterCallback(['n']))).toEqual([])
+    // A sibling arrow's param does not leak out of its own body.
+    expect(found('items.filter(n => n > 1).length * n')).toEqual(['n'])
   })
 })

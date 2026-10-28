@@ -263,6 +263,8 @@ import { fixture as memoDivisionZeroDivisor } from './memo-division-zero-divisor
 import { fixture as unaryMinusCompoundOperand } from './unary-minus-compound-operand'
 import { fixture as omittedOptionalNumberNegation } from './omitted-optional-number-negation'
 import { fixture as omittedOptionalNullableNumberArithmetic } from './omitted-optional-nullable-number-arithmetic'
+import { fixture as omittedOptionalNullableNumberArithmeticDestructured } from './omitted-optional-nullable-number-arithmetic-destructured'
+import { fixture as nullableNumberArithmeticDestructured } from './nullable-number-arithmetic-destructured'
 import { fixture as callbackIndexParam } from './callback-index-param'
 import { fixture as callbackIndexParamClient } from './callback-index-param-client'
 import { fixture as callbackNestedIndexParam } from './callback-nested-index-param'
@@ -1366,6 +1368,8 @@ export const jsxFixtures: JSXFixture[] = [
   unaryMinusCompoundOperand,
   omittedOptionalNumberNegation,
   omittedOptionalNullableNumberArithmetic,
+  omittedOptionalNullableNumberArithmeticDestructured,
+  nullableNumberArithmeticDestructured,
   callbackIndexParam,
   callbackIndexParamClient,
   callbackNestedIndexParam,

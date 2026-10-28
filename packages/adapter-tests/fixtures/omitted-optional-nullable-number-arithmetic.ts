@@ -5,8 +5,11 @@ import { createFixture } from '../src/types'
  * (`missing?: number | null`). JS reads the omitted prop as `undefined`, so
  * `missing * 2` is `NaN`, where a `null` one would give `0`. A template
  * engine holds both as the same nil, and the type does not say which one it
- * stands for. The prop typed `missing?: number` is
- * `omitted-optional-number-arithmetic`.
+ * stands for, so every template adapter refuses the arithmetic with BF101
+ * (`arithmeticOperandNilIsAmbiguous`) instead of rendering one reading.
+ * Declaring only one of the two (`missing?: number`) is the rewrite: that
+ * is `omitted-optional-number-arithmetic`. The destructured form is
+ * `omitted-optional-nullable-number-arithmetic-destructured`.
  */
 export const fixture = createFixture({
   id: 'omitted-optional-nullable-number-arithmetic',
@@ -24,4 +27,5 @@ export function OmittedOptionalNullableNumberArithmetic(props: { missing?: numbe
   expectedHtml: `
     <p bf-s="test" bf="s2" data-missing="NaN"><span bf="s1"><!--bf:s0-->NaN<!--/--></span></p>
   `,
+  escapes: [{ kind: 'rewrite', fixture: 'omitted-optional-number-arithmetic' }],
 })

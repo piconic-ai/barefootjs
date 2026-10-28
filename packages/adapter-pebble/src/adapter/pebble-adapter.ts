@@ -252,7 +252,6 @@ import {
   isBooleanResultExpr,
   isExplicitStringCall,
   hasClientInteractivity,
-  arithmeticOperandCoercion,
   renderElementShell,
   renderFragmentScope,
   renderDangerousInnerHtml,
@@ -1240,6 +1239,8 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     param: string,
     localVarMap: Map<string, string> = new Map(),
   ): string {
+    // Arithmetic over a prop whose nil the type cannot classify (#3700).
+    this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
     return emitParsedExpr(
       expr,
       new PebbleFilterEmitter(
@@ -1326,7 +1327,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
       _isRootPropsObject: (expr) => isRootPropsObject(expr, n => this.scope.isBound(n)),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
-      _arithmeticCoercion: (op, operand, other) => arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
+      _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderPebbleFilterExprPublic: (e, p) => this._renderPebbleFilterExprPublic(e, p),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),

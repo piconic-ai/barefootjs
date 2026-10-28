@@ -137,6 +137,12 @@ export { planStyleObject, type StyleObjectPlanEntry } from './adapters/style-obj
 export { filterCaptureCollisions } from './adapters/filter-capture-collisions.ts'
 export { templateNameCollisionErrors } from './adapters/template-name-collisions.ts'
 export {
+  arithmeticCoercionOrRefuse,
+  refuseAmbiguousNilArithmetic,
+  refuseAmbiguousNilMemoArithmetic,
+  type AmbiguousNilArithmeticSink,
+} from './adapters/ambiguous-nil-arithmetic.ts'
+export {
   collectBooleanValueNames,
   isAriaBooleanAttr,
   isBooleanResultExpr,
@@ -211,6 +217,8 @@ export {
   arithmeticOperandIsNull,
   arithmeticOperandIsUndefined,
   arithmeticOperandCoercion,
+  arithmeticOperandNilIsAmbiguous,
+  ambiguousNilArithmeticOperands,
   bareGetterCallName,
   attrValueMayBeNullish,
   collectAbsentPropSeedReads,
