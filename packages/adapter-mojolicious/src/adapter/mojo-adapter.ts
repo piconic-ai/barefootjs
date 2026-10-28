@@ -80,8 +80,11 @@ import type { BindingScope, ParsedExpr } from '@barefootjs/jsx'
 import {
   escapeLineStatementSigil,
   isBooleanResultParsed,
-  isNumericArithmeticResult,
+  collectNumberValueNames,
+  computeSsrSeedPlan,
+  isNumberValuedExpr,
   isOpaqueLocalAccessorName,
+  numberValuedSeedNames,
   stringifyBooleanTernaryBranches,
 } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, escapeHtml } from '@barefootjs/shared'
@@ -101,7 +104,7 @@ import {
   generateContextConsumerSeed,
   generateDerivedMemoSeed,
 } from './memo/seed.ts'
-import { collectNumberValueNames, collectProviderDataNames, collectStringValueNames } from './props/prop-classes.ts'
+import { collectProviderDataNames, collectStringValueNames } from './props/prop-classes.ts'
 
 export type { MojoAdapterOptions } from './lib/types.ts'
 import type { MojoAdapterOptions } from './lib/types.ts'
@@ -199,6 +202,8 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
   private providerDataNames: Set<string> = new Set()
   private booleanValueNames: { names: Set<string>; props: Set<string> } = { names: new Set(), props: new Set() }
   private numberValueNames: { names: Set<string>; props: Set<string> } = { names: new Set(), props: new Set() }
+  /** Signals and memos whose in-template seed is a JS number (`numberValuedSeedNames`). */
+  private numberSeedNames: Set<string> = new Set()
 
   constructor(options: MojoAdapterOptions = {}) {
     super()
@@ -224,6 +229,11 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     this.providerDataNames = collectProviderDataNames(ir)
     this.booleanValueNames = collectBooleanValueNames(ir.metadata)
     this.numberValueNames = collectNumberValueNames(ir)
+    this.numberSeedNames = numberValuedSeedNames(
+      ir.metadata.ssrSeedPlan ?? computeSsrSeedPlan(ir.metadata),
+      (n, c) => this._isStringValueName(n, c),
+      (n, c) => this._isNumberValueName(n, c),
+    )
   }
 
   protected contextConsumerSeed(ir: ComponentIR): string {
@@ -1270,6 +1280,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isBooleanValueName: (name, property) => property ? !this.scope.shadowsPropsObject() && this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
       _isNumberValueName: (name, property) => this._isNumberValueName(name, property),
+      _jsNumberOutput: (parsed, perl) => this.jsNumberOutput(parsed, perl),
       _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.scope.isBound(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
@@ -1373,12 +1384,23 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
    * no Embedded-Perl lowering) and templatePrimitive arity errors.
    */
   /**
-   * Print an arithmetic result with JS `Number::toString` (`bf->string`)
+   * Print a number — an arithmetic result, or a read of a number-typed name
+   * or a number-valued seed — with JS `Number::toString` (`bf->string`)
    * rather than Perl's `%.15g`, which pads a small exponent
-   * (`1.23456789e-06`) and drops digits past 15 (#3380).
+   * (`1.23456789e-06`), drops digits past 15 (#3380) and spells the
+   * infinities `Inf` (#3711).
    */
   private jsNumberOutput(parsed: ParsedExpr | null | undefined, perl: string): string {
-    return isNumericArithmeticResult(parsed, (n, c) => this._isStringValueName(n, c)) ? `bf->string(${perl})` : perl
+    return isNumberValuedExpr(parsed, (n, c) => this._isStringValueName(n, c), (n, c) => this._isNumberOutputName(n, c))
+      ? `bf->string(${perl})`
+      : perl
+  }
+
+  /** Whether `name` holds a number here: declared `number`, or a signal /
+   *  memo whose seed is a number (`numberSeedNames`), unshadowed. */
+  private _isNumberOutputName(name: string, componentProperty = false): boolean {
+    if (this._isNumberValueName(name, componentProperty)) return true
+    return !componentProperty && !this.scope.isBound(name) && this.numberSeedNames.has(name)
   }
 
   /** Whether `name` (a signal getter or prop) holds a string value, so an

@@ -13,7 +13,6 @@ import {
   isStringTypeInfo,
   resolveBodyDestructuredPropAliases,
   type ComponentIR,
-  type TypeInfo,
 } from '@barefootjs/jsx'
 
 /**
@@ -90,35 +89,4 @@ export function collectStringValueNames(ir: ComponentIR): Set<string> {
   }
   for (const bound of collectLoopBoundNames(ir)) names.delete(bound)
   return names
-}
-
-/**
- * Number-typed signals, memos, props and same-file local consts: a strict
- * equality against one of them keeps Perl's numeric `==` / `!=`, where an
- * operand of unknown type goes through the runtime's `strict_eq`
- * (`emitPerlEquality`). `names` holds the bare spellings (a getter, a
- * destructured prop, a const), `props` the caller-facing keys a
- * `props.<key>` member reads. Whether a binding shadows a name is the
- * caller's scope question.
- */
-export function collectNumberValueNames(ir: ComponentIR): { names: Set<string>; props: Set<string> } {
-  const isNumber = (type: TypeInfo | null | undefined): boolean =>
-    type?.kind === 'primitive' && type.primitive === 'number'
-  const names = new Set<string>()
-  const props = new Set<string>()
-  for (const s of ir.metadata.signals) {
-    if (isNumber(s.type)) names.add(s.getter)
-  }
-  for (const m of ir.metadata.memos ?? []) {
-    if (isNumber(m.type)) names.add(m.name)
-  }
-  for (const p of ir.metadata.propsParams) {
-    if (!isNumber(p.type)) continue
-    props.add(p.sourceName ?? p.name)
-    if (!ir.metadata.propsObjectName) names.add(p.name)
-  }
-  for (const c of ir.metadata.localConstants) {
-    if (isNumber(c.type)) names.add(c.name)
-  }
-  return { names, props }
 }

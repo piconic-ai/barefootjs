@@ -550,7 +550,8 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     // string-value registry catches getter/prop operands with no literal
     // present (`firstName() + lastName()`).
     if (isStringConcatBinary(op, left, right, (n, property) => this.ctx._isStringValueName(n, property))) {
-      return `${l} ~ ${r}`
+      // A number operand is stringified as JS does, not as Perl's `~` does (#3711).
+      return `${this.ctx._jsNumberOutput(left, l)} ~ ${this.ctx._jsNumberOutput(right, r)}`
     }
     // Kolon's `==` / `!=` are value-equality operators handling both strings
     // and numbers (unlike Perl's numeric `==`, which the Mojo adapter must

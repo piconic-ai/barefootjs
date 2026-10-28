@@ -674,7 +674,8 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     // Perl's numeric `+` coerces `'Hello, ' + $name` to 0 (#2176). Lower
     // to Perl's `.` concat operator.
     if (isStringConcatBinary(op, left, right, (n: string, property?: boolean) => this.ctx._isStringValueName(n, property))) {
-      return `${l} . ${r}`
+      // A number operand is stringified as JS does, not as Perl's `.` does (#3711).
+      return `${this.ctx._jsNumberOutput(left, l)} . ${this.ctx._jsNumberOutput(right, r)}`
     }
     // `/` and `%` go through the runtime's JS division and remainder
     // (#3474, #3574).

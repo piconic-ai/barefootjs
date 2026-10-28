@@ -2932,20 +2932,6 @@
           }
         }
       },
-      "destructure-default-large-number": {
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "bare-number-prop-perl-precision"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "bare-number-prop-perl-precision"
-          ]
-        }
-      },
       "destructure-default-param-computed-array": {
         "go-template": {
           "kind": "refusal",
@@ -5299,20 +5285,6 @@
           "kind": "render",
           "limitations": [
             "local-function-named-like-prop"
-          ]
-        }
-      },
-      "memo-division-zero-divisor": {
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "memo-non-finite-quotient"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "memo-non-finite-quotient"
           ]
         }
       },
@@ -8309,10 +8281,6 @@
         "description": "A renamed body destructure default computing an array from an earlier binding takes the computed…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-computed-array.ts"
       },
-      "destructure-default-large-number": {
-        "description": "An integral destructure default past int64 applies 100000000000000000000 when absent and keeps an…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-large-number.ts"
-      },
       "destructure-default-param-computed-array": {
         "description": "A parameter destructure default computing an array from an earlier binding takes the computed array",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-computed-array.ts"
@@ -8444,10 +8412,6 @@
       "memo-const-declared-after-named-like-prop": {
         "description": "A memo reading a const declared after it and named like a typed prop reads the const, not the prop",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-const-declared-after-named-like-prop.ts"
-      },
-      "memo-division-zero-divisor": {
-        "description": "A memo dividing by a literal or runtime zero renders Infinity, -Infinity or NaN",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-division-zero-divisor.ts"
       },
       "memo-local-function-named-like-prop": {
         "description": "A memo calling a local function named like a typed prop calls the function, not the prop",
@@ -8872,20 +8836,6 @@
         "BF056"
       ]
     },
-    "bare-number-prop-perl-precision": {
-      "title": "A bare number prop with more than 15 significant digits",
-      "kind": "silent",
-      "given": "a number prop (or its literal destructure default) of 1e15 or more, such as `{ b = 1e20 }`, read bare in text or attribute position",
-      "expected": "JS stringifies it with `Number::toString` (`100000000000000000000`)",
-      "actual": "renders Perl's `%.15g` spelling (`1e+20`)",
-      "fixtures": [
-        "destructure-default-large-number"
-      ],
-      "adapters": [
-        "mojolicious",
-        "xslate"
-      ]
-    },
     "boolean-in-static-loop-item": {
       "title": "Boolean field in a static loop item",
       "kind": "refusal",
@@ -9257,20 +9207,6 @@
         "mojolicious",
         "pebble",
         "twig",
-        "xslate"
-      ]
-    },
-    "memo-non-finite-quotient": {
-      "title": "A memo whose quotient is an infinity",
-      "kind": "silent",
-      "given": "a `createMemo` dividing a nonzero number by a literal or runtime zero (`count() / 0`, `count() / props.zero`), read directly or through another memo, in text or attribute position",
-      "expected": "JS stringifies the quotient as `Infinity` / `-Infinity`",
-      "actual": "renders the host spelling `Inf` / `-Inf`",
-      "fixtures": [
-        "memo-division-zero-divisor"
-      ],
-      "adapters": [
-        "mojolicious",
         "xslate"
       ]
     },

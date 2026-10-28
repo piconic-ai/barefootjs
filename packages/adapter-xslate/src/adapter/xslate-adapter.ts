@@ -95,8 +95,11 @@ import type { ParsedExpr } from '@barefootjs/jsx'
 import {
   escapeLineStatementSigil,
   isBooleanResultParsed,
-  isNumericArithmeticResult,
+  collectNumberValueNames,
+  computeSsrSeedPlan,
+  isNumberValuedExpr,
   isOpaqueLocalAccessorName,
+  numberValuedSeedNames,
   stringifyBooleanTernaryBranches,
 } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, escapeHtml } from '@barefootjs/shared'
@@ -207,6 +210,10 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
 
   private options: Required<XslateAdapterOptions>
   private booleanValueNames: { names: Set<string>; props: Set<string> } = { names: new Set(), props: new Set() }
+  /** Number-typed names (`collectNumberValueNames`), and the signals and
+   *  memos whose in-template seed is a number (`numberValuedSeedNames`). */
+  private numberValueNames: { names: Set<string>; props: Set<string> } = { names: new Set(), props: new Set() }
+  private numberSeedNames: Set<string> = new Set()
 
   constructor(options: XslateAdapterOptions = {}) {
     super()
@@ -233,6 +240,12 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
 
   protected override resetAdapterState(ir: ComponentIR): void {
     this.booleanValueNames = collectBooleanValueNames(ir.metadata)
+    this.numberValueNames = collectNumberValueNames(ir)
+    this.numberSeedNames = numberValuedSeedNames(
+      ir.metadata.ssrSeedPlan ?? computeSsrSeedPlan(ir.metadata),
+      (n, c) => this._isStringValueName(n, c),
+      (n, c) => c ? this.numberValueNames.props.has(n) : this.numberValueNames.names.has(n),
+    )
     // Before any body rendering: memo reads in the body must use the same
     // local the memo seed declares (#3369).
     this.memoKolonNames = collectMemoKolonRenames(ir)
@@ -1248,6 +1261,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
       _isRootPropsObject: (expr) => isRootPropsObject(expr, n => this.scope.isBound(n)),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
+      _jsNumberOutput: (parsed, kolon) => this.jsNumberOutput(parsed, kolon),
       _isBooleanValueName: (name, property) => property ? !this.scope.shadowsPropsObject() && this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
       _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
@@ -1355,12 +1369,23 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
   }
 
   /**
-   * Print an arithmetic result with JS `Number::toString` (`$bf.string`)
+   * Print a number — an arithmetic result, or a read of a number-typed name
+   * or a number-valued seed — with JS `Number::toString` (`$bf.string`)
    * rather than Perl's `%.15g`, which pads a small exponent
-   * (`1.23456789e-06`) and drops digits past 15 (#3380).
+   * (`1.23456789e-06`), drops digits past 15 (#3380) and spells the
+   * infinities `Inf` (#3711).
    */
   private jsNumberOutput(parsed: ParsedExpr | null | undefined, kolon: string): string {
-    return isNumericArithmeticResult(parsed, (n, c) => this._isStringValueName(n, c)) ? `$bf.string(${kolon})` : kolon
+    return isNumberValuedExpr(parsed, (n, c) => this._isStringValueName(n, c), (n, c) => this._isNumberOutputName(n, c))
+      ? `$bf.string(${kolon})`
+      : kolon
+  }
+
+  /** Whether `name` holds a number here: declared `number`, or a signal /
+   *  memo whose seed is a number (`numberSeedNames`), unshadowed. */
+  private _isNumberOutputName(name: string, componentProperty = false): boolean {
+    if (componentProperty) return !this.scope.shadowsPropsObject() && this.numberValueNames.props.has(name)
+    return !this.scope.isBound(name) && (this.numberValueNames.names.has(name) || this.numberSeedNames.has(name))
   }
 
   /** Whether `name` (a signal getter or prop) holds a string value, so an
