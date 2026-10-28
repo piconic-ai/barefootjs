@@ -50,6 +50,8 @@
 
 import {
   arithmeticHelper,
+  isStringConcatBinary,
+  isStringTypedOperand,
   groupBinaryOperand,
   groupUnaryOperand,
   literalMemberIndex,
@@ -90,6 +92,23 @@ import {
 
 // The display name BF101 uses; a native predicate form does not exist here.
 export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Jinja' }
+
+/**
+ * One operand of a `+` the shared layer classified as string concatenation
+ * (`isStringConcatBinary`), spelled with `~`. Jinja's `+` raises on a string
+ * plus a number, and `~` converts a non-string with the host's own spelling
+ * (the `-0` of `-4 % 2`, a float's `.0`), so an operand the shared
+ * `isStringTypedOperand` does not type as a string goes through the
+ * runtime's JS `String()` first: `r.id + '-' + i` is `"x-0"`, and
+ * `'r=' + (-4 % 2)` is `"r=0"`.
+ */
+function concatOperand(
+  operand: ParsedExpr,
+  emitted: string,
+  isStringName: (n: string, componentProperty?: boolean) => boolean,
+): string {
+  return isStringTypedOperand(operand, isStringName) ? emitted : `bf.string(${emitted})`
+}
 
 /**
  * Route a condition-TEST position through `bf.truthy(...)` unless the node
@@ -158,7 +177,7 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
   // [ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX]`), only plain type annotations.
   private readonly param: string
   private readonly localVarMap: Map<string, string>
-  private readonly isStringName: (n: string) => boolean
+  private readonly isStringName: (n: string, componentProperty?: boolean) => boolean
   // Records a BF101 for predicate shapes this emitter can only degrade
   // (#2038). Optional so emitter construction stays possible without an
   // adapter; a missing hook keeps the old silent-degrade emit.
@@ -169,7 +188,7 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
   constructor(
     param: string,
     localVarMap: Map<string, string>,
-    isStringName: (n: string) => boolean = () => false,
+    isStringName: (n: string, componentProperty?: boolean) => boolean = () => false,
     onUnsupported?: (message: string, reason?: string) => void,
     isOuterBound: (name: string) => boolean = () => false,
   ) {
@@ -252,6 +271,11 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
     // (#3474, #3574).
     const helper = arithmeticHelper(op)
     if (helper) return `bf.${helper}(${l}, ${r})`
+    // JS `+` with a string-typed operand is concatenation; Jinja's `+`
+    // raises on a string plus a number. Lower to `~`.
+    if (isStringConcatBinary(op, left, right, this.isStringName)) {
+      return `${concatOperand(left, l, this.isStringName)} ~ ${concatOperand(right, r, this.isStringName)}`
+    }
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*',
@@ -574,6 +598,12 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     // (#3474, #3574).
     const helper = arithmeticHelper(op)
     if (helper) return `bf.${helper}(${l}, ${r})`
+    // JS `+` with a string-typed operand is concatenation; Jinja's `+`
+    // raises on a string plus a number. Lower to `~`.
+    const isStringName = (n: string, property?: boolean) => this.ctx._isStringValueName(n, property)
+    if (isStringConcatBinary(op, left, right, isStringName)) {
+      return `${concatOperand(left, l, isStringName)} ~ ${concatOperand(right, r, isStringName)}`
+    }
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*',

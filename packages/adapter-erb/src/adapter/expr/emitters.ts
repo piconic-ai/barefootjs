@@ -34,6 +34,8 @@
 
 import {
   arithmeticHelper,
+  isStringConcatBinary,
+  isStringTypedOperand,
   literalMemberIndex,
   type ParsedExprEmitter,
   type ArrayMethod,
@@ -59,6 +61,7 @@ import {
   unloweredCallRefusal,
   type CallbackLoweringOptions,
   type PredicateMethod,
+  BindingScope,
 } from '@barefootjs/jsx'
 
 import type { ErbEmitContext } from '../emit-context.ts'
@@ -82,9 +85,33 @@ const PREDICATE_METHODS: ReadonlySet<string> = new Set([
   'filter', 'find', 'findIndex', 'findLast', 'findLastIndex', 'every', 'some',
 ])
 
-/** `void` referencing an unused parameter without a lint complaint. */
-function unusedIsStringName(_n: string): boolean {
-  return false
+/**
+ * String typing at a filter predicate's position: the binding scope there
+ * (the predicate's own param and every enclosing row and callback) and the
+ * component's string-valued names. A nested callback enters its param on
+ * `scope`, so a param named like a string prop is typed as the param.
+ */
+export interface ErbStringTyping {
+  readonly scope: BindingScope
+  readonly isStringValueName: (name: string) => boolean
+}
+
+const NO_STRING_TYPING: ErbStringTyping = { scope: BindingScope.EMPTY, isStringValueName: () => false }
+
+/**
+ * One operand of a `+` the shared layer classified as string concatenation
+ * (`isStringConcatBinary`). Ruby's `+` raises on a String plus a number
+ * (`no implicit conversion of Integer into String`), so an operand the shared
+ * `isStringTypedOperand` does not type as a string goes through the
+ * runtime's JS `String()` first: `r.id + '-' + i` is `"x-0"`, and
+ * `'r=' + (-4 % 2)` is `"r=0"`.
+ */
+function concatOperand(
+  operand: ParsedExpr,
+  emitted: string,
+  isStringName: (n: string, componentProperty?: boolean) => boolean,
+): string {
+  return isStringTypedOperand(operand, isStringName) ? emitted : `bf.string(${emitted})`
 }
 
 /**
@@ -145,10 +172,10 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
   // `ErbEmitContext.isLoopBoundName`'s docstring for why ERB needs this
   // and EP does not.
   private readonly isLoopBoundOuter: (n: string) => boolean
-  // Reports whether a getter/prop name is string-typed, for the Hash-vs-
-  // Array index-access split (#operand.ts). Defaults to "never" for
-  // callers that don't thread it through.
-  private readonly isStringName: (n: string) => boolean
+  // Whether a getter/prop name is string-typed here, for the Hash-vs-Array
+  // index-access split (#operand.ts) and `+` string concatenation.
+  // Defaults to "never" for callers that don't thread it through.
+  private readonly stringTyping: ErbStringTyping
   // Records a BF101 for nested callback shapes this emitter can only
   // degrade — `find*` and the non-predicate methods. Optional so emitter
   // construction stays possible without an adapter; a missing hook keeps
@@ -178,7 +205,7 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     param: string,
     localVarMap: Map<string, string>,
     isLoopBoundOuter: (n: string) => boolean = () => false,
-    isStringName: (n: string) => boolean = unusedIsStringName,
+    stringTyping: ErbStringTyping = NO_STRING_TYPING,
     onUnsupported?: (message: string, reason?: string) => void,
     renderParamAs: string = rubyLocal(param),
     outerLocals: ReadonlyMap<string, string> = new Map(),
@@ -186,11 +213,14 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     this.param = param
     this.localVarMap = localVarMap
     this.isLoopBoundOuter = isLoopBoundOuter
-    this.isStringName = isStringName
+    this.stringTyping = stringTyping
     this.onUnsupported = onUnsupported
     this.renderParamAs = renderParamAs
     this.outerLocals = outerLocals
   }
+
+  private readonly isStringName = (n: string, componentProperty?: boolean): boolean =>
+    this.stringTyping.scope.isStringValueName(n, this.stringTyping.isStringValueName, componentProperty)
 
   identifier(name: string): string {
     if (name === this.param) return this.renderParamAs
@@ -267,6 +297,12 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     // floors (#3574).
     const helper = arithmeticHelper(op)
     if (helper) return `bf.${helper}(${l}, ${r})`
+    // JS `+` with a string-typed operand is concatenation; Ruby's `+` raises
+    // on a String plus a number, so the other operand goes through
+    // `bf.string`.
+    if (isStringConcatBinary(op, left, right, this.isStringName)) {
+      return `(${concatOperand(left, l, this.isStringName)} + ${concatOperand(right, r, this.isStringName)})`
+    }
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*',
@@ -317,7 +353,7 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
       param,
       this.localVarMap,
       (n) => n === this.param || this.isLoopBoundOuter(n),
-      this.isStringName,
+      { ...this.stringTyping, scope: this.stringTyping.scope.enterCallback([param]) },
       this.onUnsupported,
       blockParam,
       outerLocals,
@@ -615,6 +651,13 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     // floors (#3574).
     const helper = arithmeticHelper(op)
     if (helper) return `bf.${helper}(${l}, ${r})`
+    // JS `+` with a string-typed operand is concatenation; Ruby's `+` raises
+    // on a String plus a number, so the other operand goes through
+    // `bf.string`.
+    const isStringName = (n: string, property?: boolean) => this.ctx._isStringValueName(n, property)
+    if (isStringConcatBinary(op, left, right, isStringName)) {
+      return `(${concatOperand(left, l, isStringName)} + ${concatOperand(right, r, isStringName)})`
+    }
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*',

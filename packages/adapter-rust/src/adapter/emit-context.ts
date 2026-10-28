@@ -83,6 +83,10 @@ export interface JinjaEmitContext {
    * omitted for unary minus (#3533). */
   _arithmeticCoercion(op: string, operand: ParsedExpr, other?: ParsedExpr): ArithmeticCoercion
 
+  /** Whether a getter/prop name resolves to a string-typed SSR value at the
+   *  current binding scope. `componentProperty`: read as `props.<name>`. */
+  _isStringValueName(name: string, componentProperty?: boolean): boolean
+
   _recordExprBF101(message: string, reason?: string): void
 
   /** Lower a filter/predicate body to its Jinja form, bound to `param`. */
