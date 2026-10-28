@@ -829,6 +829,26 @@
       }
     }
   ],
+  "at-sign-beside-brace": [
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": ""
+      }
+    },
+    {
+      "name": "gen:b:markup",
+      "props": {
+        "b": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:b:multibyte",
+      "props": {
+        "b": "日本語"
+      }
+    }
+  ],
   "bare-text-optional-scalar": [
     {
       "name": "gen:size:negative",

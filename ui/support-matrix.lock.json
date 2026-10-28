@@ -14879,10 +14879,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L173"
       },
       "example": {
-        "fixture": "children-alias-hop-shadowed-intermediate",
-        "description": "A children alias hop read in a loop row that shadows an intermediate alias keeps the children markup",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-alias-hop-shadowed-intermediate.ts",
-        "code": "rows.map"
+        "fixture": "at-sign-beside-brace",
+        "description": "A literal @ beside a literal brace, bang, @ or newline in static text and literal attribute values",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/at-sign-beside-brace.ts",
+        "code": "props.b"
       }
     },
     "object-literal": {

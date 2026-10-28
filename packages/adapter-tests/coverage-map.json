@@ -960,6 +960,16 @@
         "text"
       ]
     },
+    "at-sign-beside-brace": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "attr-ternary-title": {
       "kinds": [
         "call",

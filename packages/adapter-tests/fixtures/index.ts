@@ -690,6 +690,7 @@ import { fixture as tableDynamicRows } from './table-dynamic-rows'
 import { fixture as adjacentDynamicText } from './adjacent-dynamic-text'
 import { fixture as atSignBeforeDynamicText } from './at-sign-before-dynamic-text'
 import { fixture as atSignBeforeDynamicTextPropsObject } from './at-sign-before-dynamic-text-props-object'
+import { fixture as atSignBesideBrace } from './at-sign-beside-brace'
 import { fixture as memoChain } from './memo-chain'
 import { fixture as memoMultiStatementBlock } from './memo-multi-statement-block'
 import { fixture as childPropFromPropsObject } from './child-prop-from-props-object'
@@ -1751,6 +1752,7 @@ export const jsxFixtures: JSXFixture[] = [
   adjacentDynamicText,
   atSignBeforeDynamicText,
   atSignBeforeDynamicTextPropsObject,
+  atSignBesideBrace,
   memoChain,
   memoMultiStatementBlock,
   childPropFromPropsObject,
