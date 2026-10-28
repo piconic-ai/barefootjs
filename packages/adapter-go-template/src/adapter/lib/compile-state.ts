@@ -475,6 +475,23 @@ export function isPropsObjectName(state: CompileState, name: string): boolean {
   return name === 'props' && state.computedConsts?.isGlobal(name) === true
 }
 
+/**
+ * The key a read off the props object names: `props.x`, or a literal-key
+ * element access `props['x']` / `props?.['x']`, which JS reads the same
+ * (#3776). The props-nullability decisions (`props/prop-types.ts`) and the
+ * nil-guards that rely on them key on this one shape, so a prop read only
+ * through `props['x']` takes the same nillable field as `props.x`. Null for
+ * any other expression, or in a component without a props object.
+ */
+export function propsObjectKeyRead(propsObjectName: string | null, expr: ParsedExpr): string | null {
+  return propsObjectName !== null &&
+    expr.kind === 'member' &&
+    expr.object.kind === 'identifier' &&
+    expr.object.name === propsObjectName
+    ? expr.property
+    : null
+}
+
 /** A module-scope const, by name. */
 export function findModuleScopeConst(state: CompileState, name: string): ConstantInfo | undefined {
   return state.localConstants.find(c => c.name === name && c.origin?.scope === 'module')
