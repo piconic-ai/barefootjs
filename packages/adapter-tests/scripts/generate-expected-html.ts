@@ -102,7 +102,11 @@ async function main() {
 
       const normalizedHtml = normalizeHTML(html)
       const indentedHtml = indentHTML(normalizedHtml)
-      const expectedHtmlBlock = `  expectedHtml: \`${indentedHtml}\`,`
+      // The HTML is written into a template literal: a backslash or a `${`
+      // in the rendered text would otherwise be read back as an escape or
+      // an interpolation, and the fixture would assert different HTML.
+      const literalBody = indentedHtml.replaceAll('\\', '\\\\').replaceAll('${', '\\${')
+      const expectedHtmlBlock = `  expectedHtml: \`${literalBody}\`,`
 
       // Read the fixture file and update it. `resolveFixturePath`
       // walks the known fixture sub-directories so groupings like

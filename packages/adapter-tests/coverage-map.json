@@ -8291,6 +8291,43 @@
         "text"
       ]
     },
+    "module-const-multiline-template-literal": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-multiline-template-literal-props-object": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "module-const-named-like-object-prop": {
       "kinds": [
         "binary",
