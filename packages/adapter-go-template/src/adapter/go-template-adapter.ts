@@ -160,6 +160,7 @@ import { computeMemoInitialValue, collectPropsReadByCtorInit, isBoxedNumericMemo
 import { collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { collectPropsSpreadForwardedParams } from "./props/props-spread.ts"
+import { callsComponent, collectNillableForwardedPropNames } from "./props/child-forwarded-nillable.ts"
 import { buildPropTypeOverrides, dependentDefaultNormalization, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames, collectArithmeticAbsentPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 import { emitMemoFieldInits, emitPropFallbackLocals, emitPropFieldInits, emitSignalFieldInits, hoistSiblingMemoLocals } from "./props/ctor-field-inits.ts"
@@ -785,6 +786,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.optionalChainReceiverPropNames = collectOptionalChainReceiverPropNames(this.emitCtx, ir)
     this.state.arithmeticAbsentPropNames = collectArithmeticAbsentPropNames(this.emitCtx, ir)
     this.state.propsSpreadForwardedPropNames = collectPropsSpreadForwardedParams(this.emitCtx, ir)
+    this.state.nillableForwardedPropNames = collectNillableForwardedPropNames(
+      this.emitCtx, ir, (name) => this.childComponentShapes.get(this.resolveChildName(name)),
+    )
     for (const key of collectNullableSeedStructFields(ir.metadata, ir.root)) this.fileNullableSeedStructFields.add(key)
     this.state.nullableSeedStructFields = this.fileNullableSeedStructFields
     this.state.nillablePropNames = collectNillablePropNames(this.emitCtx, ir, this.state.propTypeOverrides)
@@ -1250,6 +1254,52 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (deps.size > 0) this.childDerivedFieldDeps.set(name, deps)
   }
 
+  /**
+   * The IR each registered shape was built from, so a shape registered later
+   * can re-probe the components forwarding into it
+   * (`refreshNillableForwarders`).
+   */
+  private shapeSources: Map<string, Pick<ComponentIR, 'metadata' | 'root'>> = new Map()
+
+  /**
+   * `ir`'s nillable params by caller-facing name: the child's own nillable
+   * decision, primed on a separate instance so this compile's state is
+   * untouched (#3323). The instance reads the shapes registered so far, so a
+   * param forwarded into a nillable child field is nillable here too
+   * (`collectNillableForwardedPropNames`).
+   */
+  private probeNillableParamNames(ir: Pick<ComponentIR, 'metadata' | 'root'>): Set<string> {
+    const probe = new GoTemplateAdapter(this.options)
+    probe.childComponentShapes = this.childComponentShapes
+    probe.primeCompileState(ir as ComponentIR)
+    return new Set(
+      (ir.metadata.propsParams ?? [])
+        .filter(p => probe.state.nillablePropNames.has(p.name))
+        .map(p => p.sourceName ?? p.name),
+    )
+  }
+
+  /**
+   * Re-probe every registered component that calls `changed` (and, in turn,
+   * the components calling one whose nillable params grew), so a forwarding
+   * component registered BEFORE its child still sees the child's nillable
+   * fields whatever the registration order.
+   */
+  private refreshNillableForwarders(changed: string): void {
+    const pending = [changed]
+    while (pending.length > 0) {
+      const child = pending.pop()!
+      for (const [name, source] of this.shapeSources) {
+        const shape = this.childComponentShapes.get(name)
+        if (!shape || name === child || !callsComponent(source, child)) continue
+        const next = this.probeNillableParamNames(source)
+        if (next.size === shape.nillableParamNames.size && [...next].every(n => shape.nillableParamNames.has(n))) continue
+        this.childComponentShapes.set(name, { ...shape, nillableParamNames: next })
+        pending.push(name)
+      }
+    }
+  }
+
   registerChildComponentShape(ir: Pick<ComponentIR, 'metadata' | 'root'>): void {
     const name = ir.metadata.componentName
     if (!name) return
@@ -1333,15 +1383,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           propTypeOverrides.get(p.name) ?? typeInfoToGo(this.emitCtx, p.type, p.defaultValue, p.parsed),
         ]),
     )
-    // The child's own nillable decision, primed on a separate instance so
-    // this compile's state is untouched (#3323).
-    const probe = new GoTemplateAdapter(this.options)
-    probe.primeCompileState(ir as ComponentIR)
-    const nillableParamNames = new Set(
-      (ir.metadata.propsParams ?? [])
-        .filter(p => probe.state.nillablePropNames.has(p.name))
-        .map(p => p.sourceName ?? p.name),
-    )
+    const nillableParamNames = this.probeNillableParamNames(ir)
     this.childComponentShapes.set(name, {
       paramNames,
       restBagField,
@@ -1359,6 +1401,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // make an aliased child's derived field look dependency-free and silently
     // un-refuse / un-rebuild it.
     this.recordDerivedFieldDeps(ir, new Set((ir.metadata.propsParams ?? []).map(p => p.name)))
+    this.shapeSources.set(name, ir)
+    if (nillableParamNames.size > 0) this.refreshNillableForwarders(name)
     // Contexts this child consumes, so a parent `<Ctx.Provider value>` wrapping
     // it can set the matching field on the child's slot input.
     this.childContextConsumers.set(name, collectContextConsumers(ir.metadata))
