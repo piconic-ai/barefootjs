@@ -683,7 +683,7 @@ function collectTemplateRiskyNames(irRoot: IRNode): Set<string> {
     },
     component: ({ descend, descendJsxChildren }) => {
       // Component props are stripped from `renderChild` when
-      // `transformExpr` returns UNSAFE_TEMPLATE_EXPR (see
+      // `transformExprOrUnsafe` reports them unsafe (see
       // html-template.ts). `initChild`'s getter binding then fills
       // the prop once init runs. No diagnostic needed.
       descend()

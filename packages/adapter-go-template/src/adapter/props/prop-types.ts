@@ -18,7 +18,7 @@ import {
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
-import { resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
+import { propsObjectKeyRead, resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
 import { applyGoFallback } from '../lib/go-emit.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { literalNumberValue, typeInfoToGo } from '../type/type-codegen.ts'
@@ -127,8 +127,9 @@ export function collectNullishConsumedPropNames(ctx: GoEmitContext, ir: Componen
   const propsObject = ctx.state.propsObjectName
   const propNameOfLeft = (left: ParsedExpr): string | null => {
     if (left.kind === 'identifier') return left.name
+    const key = propsObjectKeyRead(propsObject, left)
+    if (key !== null) return key
     if (left.kind === 'member' && !left.computed && left.object.kind === 'identifier') {
-      if (left.object.name === propsObject) return left.property
       // Single-hop member access rooted at a bare destructured optional
       // OBJECT prop (`user?.name ?? '…'`, #2256): the flip belongs to the
       // ROOT prop (`user`) — an optional-object prop already lowers to a
@@ -301,6 +302,17 @@ export function seedPassthroughPropName(ctx: GoEmitContext, parsed: ParsedExpr |
 }
 
 /**
+ * The prop a bare attribute or text value reads whole: a bare identifier
+ * (`rows`), or a props-object key (`props.rows` / `props['rows']`,
+ * `propsObjectKeyRead`). Null for any other value, or an unparsed one.
+ */
+function barePropReadName(propsObject: string | null, parsed: ParsedExpr | undefined): string | null {
+  if (!parsed) return null
+  if (parsed.kind === 'identifier') return parsed.name
+  return propsObjectKeyRead(propsObject, parsed)
+}
+
+/**
  * Names of OPTIONAL no-default props consumed as the BARE value of an
  * omittable attribute (`rows={rows}` / `rows={props.rows}`) anywhere in the
  * component's element tree.
@@ -337,14 +349,8 @@ export function collectOmittableAttrConsumedPropNames(ctx: GoEmitContext, ir: Co
         if (attr.name === 'class' || attr.name === 'className' || attr.name === 'style') continue
         if (isBooleanAttr(attr.name)) continue
         if (attr.value?.kind !== 'expression' || attr.value.presenceOrUndefined) continue
-        const bareId = String(attr.value.expr ?? '').trim()
-        const propName =
-          propsObject && bareId.startsWith(`${propsObject}.`)
-            ? bareId.slice(propsObject.length + 1)
-            : bareId
-        if (/^[A-Za-z_$][\w$]*$/.test(propName) && optionalParams.has(propName)) {
-          names.add(propName)
-        }
+        const propName = barePropReadName(propsObject, attr.value.parsed as ParsedExpr | undefined)
+        if (propName !== null && optionalParams.has(propName)) names.add(propName)
       }
     }
     for (const value of Object.values(rec)) walk(value)
@@ -404,14 +410,8 @@ export function collectTextConsumedPropNames(ctx: GoEmitContext, ir: ComponentIR
     }
     const rec = node as Record<string, unknown>
     if (rec.type === 'expression') {
-      const bareId = String(rec.expr ?? '').trim()
-      const propName =
-        propsObject && bareId.startsWith(`${propsObject}.`)
-          ? bareId.slice(propsObject.length + 1)
-          : bareId
-      if (/^[A-Za-z_$][\w$]*$/.test(propName) && optionalParams.has(propName)) {
-        names.add(propName)
-      }
+      const propName = barePropReadName(propsObject, rec.parsed as ParsedExpr | undefined)
+      if (propName !== null && optionalParams.has(propName)) names.add(propName)
     }
     for (const value of Object.values(rec)) walk(value)
   }
@@ -445,12 +445,8 @@ export function collectOptionalChainReceiverPropNames(ctx: GoEmitContext, ir: Co
 
   const propsObject = ctx.state.propsObjectName
   const propNameOf = (receiver: ParsedExpr): string | null =>
-    receiver.kind === 'member' && !receiver.computed &&
-      receiver.object.kind === 'identifier' && receiver.object.name === propsObject
-      ? receiver.property
-      : !propsObject && receiver.kind === 'identifier'
-        ? receiver.name
-        : null
+    propsObjectKeyRead(propsObject, receiver) ??
+      (!propsObject && receiver.kind === 'identifier' ? receiver.name : null)
   const isNullish = (e: ParsedExpr): boolean =>
     (e.kind === 'literal' && e.literalType === 'null') || (e.kind === 'identifier' && e.name === 'undefined')
   const walk = (node: unknown): void => {
@@ -503,12 +499,8 @@ export function collectArithmeticAbsentPropNames(ctx: GoEmitContext, ir: Compone
   const nullishCtx = collectNullishAttrContext(ir)
   const propsObject = ctx.state.propsObjectName
   const propNameOf = (operand: ParsedExpr): string | null =>
-    operand.kind === 'member' && !operand.computed &&
-      operand.object.kind === 'identifier' && operand.object.name === propsObject
-      ? operand.property
-      : !propsObject && operand.kind === 'identifier'
-        ? operand.name
-        : null
+    propsObjectKeyRead(propsObject, operand) ??
+      (!propsObject && operand.kind === 'identifier' ? operand.name : null)
   const addOperand = (op: string, operand: ParsedExpr, other: ParsedExpr | undefined): void => {
     const propName = propNameOf(operand)
     if (propName === null || !optionalParams.has(propName)) return
@@ -577,12 +569,8 @@ export function collectPresenceCheckedPropNames(ctx: GoEmitContext, ir: Componen
     // the props object. Destructured style (`X` bare) — `other` is a bare
     // identifier naming the prop directly.
     const propName =
-      other.kind === 'member' && !other.computed &&
-        other.object.kind === 'identifier' && other.object.name === propsObject
-        ? other.property
-        : !propsObject && other.kind === 'identifier'
-          ? other.name
-          : null
+      propsObjectKeyRead(propsObject, other) ??
+        (!propsObject && other.kind === 'identifier' ? other.name : null)
     if (propName && optionalParams.has(propName)) names.add(propName)
   }
   return names

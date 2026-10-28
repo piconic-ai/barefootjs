@@ -2014,6 +2014,22 @@
         "text"
       ]
     },
+    "component-child-template-literal-module-lines": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "component-prop-bare-getter": {
       "kinds": [
         "call",
@@ -2053,6 +2069,25 @@
         "literal:number"
       ],
       "contexts": [
+        "text"
+      ]
+    },
+    "component-prop-undefined-literal-positions": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
         "text"
       ]
     },
@@ -9780,6 +9815,21 @@
         "text"
       ]
     },
+    "omitted-optional-element-access-operands": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "member:computed",
+        "member:optional"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "omitted-optional-nullable-number-arithmetic": {
       "kinds": [
         "binary",
@@ -9844,6 +9894,27 @@
       ],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "omitted-optional-number-element-access": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string",
+        "logical:??",
+        "member:computed",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
         "text"
       ]
     },
@@ -10495,6 +10566,28 @@
       ],
       "axes": [],
       "contexts": [
+        "text"
+      ]
+    },
+    "props-template-literal-key-read": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:null",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
         "text"
       ]
     },

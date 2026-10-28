@@ -9542,16 +9542,7 @@
         "component-spread-forwarded-null"
       ],
       "adapters": [
-        "hono",
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
+        "go-template"
       ]
     },
     "ref-effect-attr-state-ssr": {

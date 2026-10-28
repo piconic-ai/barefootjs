@@ -110,6 +110,30 @@ describe('expression-parser', () => {
       }
     })
 
+    test('folds a no-substitution template-literal key like the equivalent string key (#3763)', () => {
+      // Same static key, same `member` shape — adapters lower `props[`x`]`
+      // exactly as `props['x']` (a prop read), not as a dynamic index.
+      const pairs: Array<[string, string]> = [
+        ['props[`title`]', "props['title']"],
+        ['props?.[`title`]', "props?.['title']"],
+        ['obj[`a\\u0062`]', "obj['a\\u0062']"],
+        ['obj[`a\\nb`]', "obj['a\\nb']"],
+        ['obj[`a\nb`]', "obj['a\\nb']"],
+        ['obj[``]', "obj['']"],
+      ]
+      for (const [templateKey, stringKey] of pairs) {
+        expect(parseExpression(templateKey)).toEqual(parseExpression(stringKey))
+      }
+      const folded = parseExpression('props[`title`]')
+      expect(folded.kind).toBe('member')
+      if (folded.kind === 'member') {
+        expect(folded.property).toBe('title')
+        expect(folded.computed).toBe(true)
+      }
+      // A key WITH a substitution is dynamic and stays an index access.
+      expect(parseExpression('props[`${k}`]').kind).toBe('index-access')
+    })
+
     test('parses .length access', () => {
       const result = parseExpression('items().length')
       expect(result.kind).toBe('member')

@@ -135,7 +135,7 @@ import type {
 } from "./lib/types.ts"
 import { routesToRestBag, restBagOverrideFields, isCertainlyDataType } from "./lib/types.ts"
 import { GO_TEMPLATE_PRIMITIVES, SCALAR_ROW_GO_TYPES, SCALAR_ROW_ITEM_FIELD } from "./lib/constants.ts"
-import { CompileState, findModuleScopeConst, findValuedLocalConst, resolveSignalParsedThroughSeedPlan } from "./lib/compile-state.ts"
+import { CompileState, findModuleScopeConst, findValuedLocalConst, propsObjectKeyRead, resolveSignalParsedThroughSeedPlan } from "./lib/compile-state.ts"
 import { hasClientInteractivity, findNestedComponents, loopArraySignal } from "./analysis/component-tree.ts"
 import { analyzeBakeableStaticChildLoop, scalarToGoLiteral, type BakedStaticChildLoop } from "./analysis/static-child-loop-bake.ts"
 import { analyzeBakeableStaticElementLoop, classifyBakedCondition } from "./analysis/static-element-loop-bake.ts"
@@ -4507,17 +4507,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private textNillablePropNameOf(expr: ParsedExpr | undefined): string | null {
     if (!expr) return null
-    let name: string | null = null
-    if (expr.kind === 'identifier') {
-      name = expr.name
-    } else if (
-      expr.kind === 'member' &&
-      !expr.computed &&
-      expr.object.kind === 'identifier' &&
-      expr.object.name === this.state.propsObjectName
-    ) {
-      name = expr.property
-    }
+    const name = expr.kind === 'identifier' ? expr.name : propsObjectKeyRead(this.state.propsObjectName, expr)
     return name !== null &&
       this.state.textConsumedPropNames.has(name) &&
       this.state.nillablePropNames.has(name)
@@ -5340,22 +5330,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private nillablePropNameOf(expr: ParsedExpr): string | null {
     let name: string | null = null
     let memberOfRoot = false
+    const key = propsObjectKeyRead(this.state.propsObjectName, expr)
     if (expr.kind === 'identifier') {
       name = expr.name
+    } else if (key !== null) {
+      name = key
     } else if (expr.kind === 'member' && !expr.computed && expr.object.kind === 'identifier') {
-      if (expr.object.name === this.state.propsObjectName) {
-        name = expr.property
-      } else {
-        // Single-hop member access rooted at a bare destructured optional
-        // OBJECT prop (`user?.name ?? '…'`, #2256) — the ROOT prop is what
-        // needs to be in the nillable/nullish-consumed sets, not the
-        // accessed field; `member()`'s own `bf_get` lowering for the `?.`
-        // hop already returns Go `nil` on a nil/missing root, so gating on
-        // the root here is sufficient. Mirrors
-        // `collectNullishConsumedPropNames`'s `propNameOfLeft`.
-        name = expr.object.name
-        memberOfRoot = true
-      }
+      // Single-hop member access rooted at a bare destructured optional
+      // OBJECT prop (`user?.name ?? '…'`, #2256) — the ROOT prop is what
+      // needs to be in the nillable/nullish-consumed sets, not the
+      // accessed field; `member()`'s own `bf_get` lowering for the `?.`
+      // hop already returns Go `nil` on a nil/missing root, so gating on
+      // the root here is sufficient. Mirrors
+      // `collectNullishConsumedPropNames`'s `propNameOfLeft`.
+      name = expr.object.name
+      memberOfRoot = true
     }
     if (name === null || !this.state.nullishConsumedPropNames.has(name)) return null
     if (this.state.nillablePropNames.has(name)) return name
@@ -6888,23 +6877,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const unparsed = emitStyleOrPresenceAttr(this.elementAttrHost, value, name)
       if (unparsed !== null) return unparsed
       const parsed = value.parsed ?? parseExpression(value.expr.trim())
-      // The reads of the attribute's source text for the nil-guarded omission
-      // paths (`attr/element-attrs.ts`) stay here, next to the parse above.
-      // A props-object access (`props.id`) is normalized to its bare prop name
-      // (`id`); a closed-type `{...rest}` key (#3057) is a bare `rest.key`.
+      // The bare reads for the nil-guarded omission paths
+      // (`attr/element-attrs.ts`) stay here, next to the parse above. A
+      // props-object access (`props.id` / `props['id']`, #3776) is normalized
+      // to its bare prop name (`id`); a closed-type `{...rest}` key (#3057) is
+      // a bare `rest.key`.
+      const propsKey = propsObjectKeyRead(this.state.propsObjectName, parsed)
       const bareId = value.expr.trim()
-      const propName =
-        this.state.propsObjectName && bareId.startsWith(`${this.state.propsObjectName}.`)
-          ? bareId.slice(this.state.propsObjectName.length + 1)
-          : bareId
       const restKeyRead = Boolean(
         this.state.restPropsName &&
         bareId.startsWith(`${this.state.restPropsName}.`) &&
         /^[A-Za-z_$][\w$]*$/.test(bareId.slice(this.state.restPropsName.length + 1)),
       )
       return emitParsedExpressionAttr(this.elementAttrHost, value, name, parsed, {
-        nillablePropName: /^[A-Za-z_$][\w$]*$/.test(propName) ? propName : null,
-        viaPropsObject: propName !== bareId,
+        nillablePropName: propsKey ?? (parsed.kind === 'identifier' ? parsed.name : null),
+        viaPropsObject: propsKey !== null,
         restKeyRead,
       })
     },

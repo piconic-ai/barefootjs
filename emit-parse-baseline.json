@@ -24,7 +24,7 @@
       "GoTemplateAdapter.convertExpressionToGo": 5,
       "GoTemplateAdapter.refuseComputedConstLoopSource": 1,
       "GoTemplateAdapter.resolveDynamicPropValue": 1,
-      "emitExpression": 4
+      "emitExpression": 3
     },
     "packages/adapter-go-template/src/adapter/lib/loop-row-path.ts": {
       "loopKeyToGoRowExpr": 1

@@ -232,16 +232,20 @@ import { fixture as componentSpreadRest } from './component-spread-rest'
 import { fixture as componentSpreadPropsThenExplicit } from './component-spread-props-then-explicit'
 import { fixture as componentSpreadExplicitThenProps } from './component-spread-explicit-then-props'
 import { fixture as componentSpreadPropsSubset } from './component-spread-props-subset'
+import { fixture as componentChildTemplateLiteralModuleLines } from './component-child-template-literal-module-lines'
 import { fixture as componentSpreadPropsRestBag } from './component-spread-props-rest-bag'
 import { fixture as componentSpreadExplicitNull } from './component-spread-explicit-null'
 import { fixture as componentSpreadExplicitNullPositions } from './component-spread-explicit-null-positions'
 import { fixture as componentSpreadExplicitUndefinedProp } from './component-spread-explicit-undefined-prop'
 import { fixture as componentPropUndefinedLiteralSpread } from './component-prop-undefined-literal-spread'
+import { fixture as componentPropUndefinedLiteralPositions } from './component-prop-undefined-literal-positions'
 import { fixture as componentSpreadForwardedAbsent } from './component-spread-forwarded-absent'
 import { fixture as componentSpreadForwardedNull } from './component-spread-forwarded-null'
 import { fixture as nullishOperandArithmeticMatrix } from './nullish-operand-arithmetic-matrix'
 import { fixture as nullishOperandDivisionRemainder } from './nullish-operand-division-remainder'
 import { fixture as omittedOptionalNumberArithmetic } from './omitted-optional-number-arithmetic'
+import { fixture as omittedOptionalNumberElementAccess } from './omitted-optional-number-element-access'
+import { fixture as omittedOptionalElementAccessOperands } from './omitted-optional-element-access-operands'
 import { fixture as omittedOptionalNumberArithmeticDestructured } from './omitted-optional-number-arithmetic-destructured'
 import { fixture as optionalNumberArithmeticMatrix } from './optional-number-arithmetic-matrix'
 import { fixture as remainderNanOperand } from './remainder-nan-operand'
@@ -352,6 +356,7 @@ import { fixture as signalSeedNumberPropViaConstNullish } from './signal-seed-nu
 import { fixture as signalFromSameNamedPropRawReadUntyped } from './signal-from-same-named-prop-raw-read-untyped'
 import { fixture as signalFromSameNamedPropRawReadElementAccess } from './signal-from-same-named-prop-raw-read-element-access'
 import { fixture as signalFromSameNamedPropRawReadElementAccessUntyped } from './signal-from-same-named-prop-raw-read-element-access-untyped'
+import { fixture as propsTemplateLiteralKeyRead } from './props-template-literal-key-read'
 import { fixture as memoNamedLikeProp } from './memo-named-like-prop'
 import { fixture as namespaceImportPrimitive } from './namespace-import-primitive'
 import { fixture as namespaceImportPrimitiveNamedEscape } from './namespace-import-primitive-named-escape'
@@ -1364,15 +1369,19 @@ export const jsxFixtures: JSXFixture[] = [
   componentSpreadPropsThenExplicit,
   componentSpreadExplicitThenProps,
   componentSpreadPropsSubset,
+  componentChildTemplateLiteralModuleLines,
   componentSpreadPropsRestBag,
   componentSpreadExplicitNull,
   componentSpreadExplicitNullPositions,
   componentSpreadExplicitUndefinedProp,
   componentPropUndefinedLiteralSpread,
+  componentPropUndefinedLiteralPositions,
   componentSpreadForwardedAbsent,
   componentSpreadForwardedNull,
   nullishOperandArithmeticMatrix,
   nullishOperandDivisionRemainder,
+  omittedOptionalNumberElementAccess,
+  omittedOptionalElementAccessOperands,
   omittedOptionalNumberArithmetic,
   omittedOptionalNumberArithmeticDestructured,
   optionalNumberArithmeticMatrix,
@@ -1482,6 +1491,7 @@ export const jsxFixtures: JSXFixture[] = [
   signalFromSameNamedPropRawReadUntyped,
   signalFromSameNamedPropRawReadElementAccess,
   signalFromSameNamedPropRawReadElementAccessUntyped,
+  propsTemplateLiteralKeyRead,
   memoNamedLikeProp,
   namespaceImportPrimitive,
   namespaceImportPrimitiveNamedEscape,
