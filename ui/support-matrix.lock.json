@@ -3169,6 +3169,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3258,6 +3264,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -3477,6 +3489,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3584,6 +3602,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -3701,6 +3725,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3796,6 +3826,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -3901,6 +3937,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3990,6 +4032,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -4096,6 +4144,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -6982,12 +7036,6 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -7186,6 +7234,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -7289,12 +7343,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -7484,6 +7532,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -7590,7 +7644,31 @@
               ]
             },
             {
+              "fixture": "component-prop-undefined-literal-spread",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-null-positions",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-undefined-prop",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "component-spread-forwarded-null",
               "limitations": [
                 "props-spread-explicit-null-override"
               ]
@@ -7974,6 +8052,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -8116,12 +8200,6 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -8321,6 +8399,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -8438,12 +8522,6 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -8648,6 +8726,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -8760,12 +8844,6 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -8953,6 +9031,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -9064,9 +9148,307 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-null",
+              "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
-                "props-spread-explicit-null-override"
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "date-method-uncatalogued",
+              "limitations": [
+                "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "limitations": [
+                "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-predicate",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-nested-callback-reads-outer-param",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-nested-find-predicate",
+              "limitations": [
+                "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-predicate-shape-loop",
+              "limitations": [
+                "unlowerable-loop-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "jsx-element-prop-array",
+              "limitations": [
+                "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "jsx-element-prop-ternary",
+              "limitations": [
+                "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "map-array-builder-body",
+              "limitations": [
+                "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "map-array-builder-escaping",
+              "limitations": [
+                "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-arrow-helper",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-function-helper-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "namespace-import-primitive",
+              "limitations": [
+                "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "preamble-cells",
+              "limitations": [
+                "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "reduce-typeof-body",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "reserved-name-and-internal-twin",
+              "limitations": [
+                "reserved-name-collides-with-internal-name"
+              ]
+            },
+            {
+              "fixture": "reserved-name-filter-param-and-internal-prop",
+              "limitations": [
+                "reserved-name-collides-with-internal-name"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "limitations": [
+                "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-global-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
               ]
             },
             {
@@ -9268,305 +9650,7 @@
               ]
             },
             {
-              "fixture": "opaque-local-accessor-call",
-              "limitations": [
-                "opaque-local-accessor-call"
-              ]
-            },
-            {
-              "fixture": "preamble-cells",
-              "limitations": [
-                "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "reduce-nonliteral-seed",
-              "limitations": [
-                "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "reduce-right-typeof-body",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "reduce-typeof-body",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "reserved-name-and-internal-twin",
-              "limitations": [
-                "reserved-name-collides-with-internal-name"
-              ]
-            },
-            {
-              "fixture": "reserved-name-filter-param-and-internal-prop",
-              "limitations": [
-                "reserved-name-collides-with-internal-name"
-              ]
-            },
-            {
-              "fixture": "signal-seed-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "some-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "sort-opaque-comparator",
-              "limitations": [
-                "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "static-array-from-props",
-              "limitations": [
-                "computed-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component",
-              "limitations": [
-                "computed-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "tag-cloud",
-              "limitations": [
-                "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "unlowered-global-call",
-              "limitations": [
-                "unlowered-method-call"
-              ]
-            },
-            {
-              "fixture": "unlowered-method-call",
-              "limitations": [
-                "unlowered-method-call"
-              ]
-            }
-          ]
-        },
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "callback-index-param",
-              "limitations": [
-                "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
-              "fixture": "computed-const-loop-source-parenthesized",
-              "limitations": [
-                "computed-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "computed-const-read-unlowerable",
-              "limitations": [
-                "unlowered-method-call"
-              ]
-            },
-            {
-              "fixture": "conditional-return-fragment-branch",
-              "limitations": [
-                "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "const-getter-read-loop-shadowed",
-              "limitations": [
-                "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
-              "fixture": "date-method-uncatalogued",
-              "limitations": [
-                "ambient-locale-date-formatting"
-              ]
-            },
-            {
-              "fixture": "every-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "fill-unsupported",
-              "limitations": [
-                "array-fill"
-              ]
-            },
-            {
-              "fixture": "filter-array-method-predicate",
-              "limitations": [
-                "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-index-param-loop",
-              "limitations": [
-                "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "filter-native-nested-index",
-              "limitations": [
-                "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-nested-callback-predicate",
-              "limitations": [
-                "nested-callback-in-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "filter-nested-callback-reads-outer-param",
-              "limitations": [
-                "nested-callback-in-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "filter-nested-find-predicate",
-              "limitations": [
-                "nested-callback-in-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "filter-opaque-predicate",
-              "limitations": [
-                "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "filter-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "find-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "flatmap-typeof-projection",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "format-date",
-              "limitations": [
-                "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "jsx-element-prop-array",
-              "limitations": [
-                "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "jsx-element-prop-ternary",
-              "limitations": [
-                "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "map-array-builder-body",
-              "limitations": [
-                "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "map-array-builder-escaping",
-              "limitations": [
-                "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "map-opaque-projection",
-              "limitations": [
-                "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "markup-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-arrow-helper",
-              "limitations": [
-                "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-loop-source-computed",
-              "limitations": [
-                "computed-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "module-function-helper-chain",
-              "limitations": [
-                "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-helper-boolcontext-call",
-              "limitations": [
-                "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "namespace-import-primitive",
-              "limitations": [
-                "namespace-import-primitive-without-program"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -9675,12 +9759,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -9883,6 +9961,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -10137,12 +10221,6 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -10275,6 +10353,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -10348,12 +10432,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -10489,6 +10567,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -10577,7 +10661,31 @@
               ]
             },
             {
+              "fixture": "component-prop-undefined-literal-spread",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-null-positions",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-undefined-prop",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "component-spread-forwarded-null",
               "limitations": [
                 "props-spread-explicit-null-override"
               ]
@@ -10865,6 +10973,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -10983,12 +11097,6 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -11122,6 +11230,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -11209,12 +11323,6 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -11353,6 +11461,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -11432,12 +11546,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -11574,6 +11682,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -11667,9 +11781,211 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-null",
+              "fixture": "computed-const-read-unlowerable",
               "limitations": [
-                "props-spread-explicit-null-override"
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "conditional-return-fragment-branch",
+              "limitations": [
+                "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-getter-read-loop-shadowed",
+              "limitations": [
+                "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "every-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "fill-unsupported",
+              "limitations": [
+                "array-fill"
+              ]
+            },
+            {
+              "fixture": "filter-array-method-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-index-param-loop",
+              "limitations": [
+                "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "filter-native-nested-index",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-opaque-predicate",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "filter-predicate-shape-loop",
+              "limitations": [
+                "unlowerable-loop-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "filter-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "find-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "flatmap-typeof-projection",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "format-date",
+              "limitations": [
+                "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "jsx-element-prop-ternary",
+              "limitations": [
+                "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "map-opaque-projection",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "markup-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "memo-const-declared-after-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-arrow-helper",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-function-helper-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "preamble-cells",
+              "limitations": [
+                "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "reduce-nonliteral-seed",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "reduce-right-typeof-body",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "reduce-typeof-body",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "some-typeof-predicate",
+              "limitations": [
+                "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "sort-opaque-comparator",
+              "limitations": [
+                "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "static-array-from-props-with-component",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "tag-cloud",
+              "limitations": [
+                "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "unlowered-method-call",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "callback-index-param",
+              "limitations": [
+                "callback-index-param"
               ]
             },
             {
@@ -11805,209 +12121,7 @@
               ]
             },
             {
-              "fixture": "opaque-local-accessor-call",
-              "limitations": [
-                "opaque-local-accessor-call"
-              ]
-            },
-            {
-              "fixture": "preamble-cells",
-              "limitations": [
-                "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "reduce-nonliteral-seed",
-              "limitations": [
-                "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "reduce-right-typeof-body",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "reduce-typeof-body",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "some-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "sort-opaque-comparator",
-              "limitations": [
-                "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "static-array-from-props-with-component",
-              "limitations": [
-                "computed-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "tag-cloud",
-              "limitations": [
-                "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "unlowered-method-call",
-              "limitations": [
-                "unlowered-method-call"
-              ]
-            }
-          ]
-        },
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "callback-index-param",
-              "limitations": [
-                "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
-              "fixture": "computed-const-read-unlowerable",
-              "limitations": [
-                "unlowered-method-call"
-              ]
-            },
-            {
-              "fixture": "conditional-return-fragment-branch",
-              "limitations": [
-                "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "const-getter-read-loop-shadowed",
-              "limitations": [
-                "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
-              "fixture": "every-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "fill-unsupported",
-              "limitations": [
-                "array-fill"
-              ]
-            },
-            {
-              "fixture": "filter-array-method-predicate",
-              "limitations": [
-                "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-index-param-loop",
-              "limitations": [
-                "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "filter-native-nested-index",
-              "limitations": [
-                "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-opaque-predicate",
-              "limitations": [
-                "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "filter-predicate-shape-loop",
-              "limitations": [
-                "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "filter-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "find-typeof-predicate",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "flatmap-typeof-projection",
-              "limitations": [
-                "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "format-date",
-              "limitations": [
-                "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "jsx-element-prop-ternary",
-              "limitations": [
-                "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "map-opaque-projection",
-              "limitations": [
-                "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "markup-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-arrow-helper",
-              "limitations": [
-                "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-function-helper-chain",
-              "limitations": [
-                "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-helper-boolcontext-call",
-              "limitations": [
-                "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -12086,12 +12200,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -12228,6 +12336,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -12331,12 +12445,6 @@
         "blade": {
           "gaps": [
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -12358,12 +12466,6 @@
         },
         "erb": {
           "gaps": [
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -12387,7 +12489,31 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "component-prop-undefined-literal-spread",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-null-positions",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-undefined-prop",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "component-spread-forwarded-null",
               "limitations": [
                 "props-spread-explicit-null-override"
               ]
@@ -12499,12 +12625,6 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -12526,12 +12646,6 @@
         },
         "minijinja": {
           "gaps": [
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -12555,12 +12669,6 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -12582,12 +12690,6 @@
         },
         "pebble": {
           "gaps": [
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -12611,12 +12713,6 @@
         "twig": {
           "gaps": [
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -12638,12 +12734,6 @@
         },
         "xslate": {
           "gaps": [
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -12712,12 +12802,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -12947,12 +13031,6 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -13167,7 +13245,31 @@
               ]
             },
             {
+              "fixture": "component-prop-undefined-literal-spread",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-null-positions",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-undefined-prop",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "component-spread-forwarded-null",
               "limitations": [
                 "props-spread-explicit-null-override"
               ]
@@ -13591,12 +13693,6 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -13832,12 +13928,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -14079,12 +14169,6 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -14296,12 +14380,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -14531,12 +14609,6 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -14760,12 +14832,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -18179,6 +18245,12 @@
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
             }
           ]
         },
@@ -18186,6 +18258,12 @@
           "gaps": [
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -18199,6 +18277,12 @@
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
             }
           ]
         },
@@ -18209,6 +18293,12 @@
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
             }
           ]
         },
@@ -18216,6 +18306,12 @@
           "gaps": [
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -18235,6 +18331,12 @@
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
             }
           ]
         },
@@ -18245,6 +18347,12 @@
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
             }
           ]
         },
@@ -18252,6 +18360,12 @@
           "gaps": [
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -18268,6 +18382,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -18299,6 +18419,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -18322,6 +18448,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -18385,6 +18517,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -18408,6 +18546,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -18447,6 +18591,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -18475,6 +18625,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -18492,6 +18648,12 @@
           "gaps": [
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -18519,6 +18681,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -18536,6 +18704,12 @@
           "gaps": [
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -19719,6 +19893,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "component-spread-explicit-null-positions",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "conditional-nested-loop-signal-reactivity",
               "limitations": [
                 "conditional-nested-const-loop-source"
@@ -19855,6 +20035,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -19968,6 +20154,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -20151,6 +20343,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -20287,6 +20485,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -20406,6 +20610,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -20547,6 +20757,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -20677,6 +20893,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -20784,6 +21006,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -20919,6 +21147,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -21005,12 +21239,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -21135,12 +21363,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -21274,7 +21496,31 @@
               ]
             },
             {
+              "fixture": "component-prop-undefined-literal-spread",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-null-positions",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-undefined-prop",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "component-spread-forwarded-null",
               "limitations": [
                 "props-spread-explicit-null-override"
               ]
@@ -21554,12 +21800,6 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -21693,12 +21933,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -21838,12 +22072,6 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -21974,12 +22202,6 @@
               ]
             },
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -22095,12 +22317,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -22225,12 +22441,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
               ]
             },
             {
@@ -22480,12 +22690,6 @@
         "blade": {
           "gaps": [
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -22501,12 +22705,6 @@
         },
         "erb": {
           "gaps": [
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -22524,7 +22722,31 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "component-prop-undefined-literal-spread",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
               "fixture": "component-spread-explicit-null",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-null-positions",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "component-spread-explicit-undefined-prop",
+              "limitations": [
+                "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "component-spread-forwarded-null",
               "limitations": [
                 "props-spread-explicit-null-override"
               ]
@@ -22630,12 +22852,6 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -22651,12 +22867,6 @@
         },
         "minijinja": {
           "gaps": [
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -22674,12 +22884,6 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -22695,12 +22899,6 @@
         },
         "pebble": {
           "gaps": [
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -22718,12 +22916,6 @@
         "twig": {
           "gaps": [
             {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -22739,12 +22931,6 @@
         },
         "xslate": {
           "gaps": [
-            {
-              "fixture": "component-spread-explicit-null",
-              "limitations": [
-                "props-spread-explicit-null-override"
-              ]
-            },
             {
               "fixture": "static-array-from-props",
               "limitations": [

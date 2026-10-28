@@ -8,9 +8,11 @@
 import { augmentInheritedPropAccesses, collectModuleStringConsts } from '../augment-inherited-props.ts'
 import { buildImportAliasMap } from '../ir-to-client-js/component-scope.ts'
 import { prepareLoweringMatchers, type LoweringMatcher } from '../lowering-registry.ts'
+import type { ParsedExpr } from '../expression-parser.ts'
 import {
   collectNullableSignalGetters,
   collectNullishAttrContext,
+  type ArithmeticCoercion,
   type NullishAttrContext,
 } from '../nullable-signal-attr.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
@@ -24,6 +26,12 @@ import type {
   IRMetadata,
   PreambleValueDeclaration,
 } from '../types.ts'
+import {
+  arithmeticCoercionOrRefuse,
+  refuseAmbiguousNilArithmetic,
+  refuseAmbiguousNilMemoArithmetic,
+  type AmbiguousNilArithmeticSink,
+} from './ambiguous-nil-arithmetic.ts'
 import { collectImportedLoopChildComponentErrors } from './component-tree.ts'
 import { computedConstContext, type ComputedConstContext } from './computed-const.ts'
 import { searchParamsLocalNames } from './env-signal.ts'
@@ -224,6 +232,36 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     }
   }
 
+  /**
+   * The coercion an arithmetic operand's emitter spells
+   * (`arithmeticOperandCoercion`), refusing an operand whose nil the
+   * declared type cannot classify (`arithmeticCoercionOrRefuse`, #3700).
+   * `isShadowed` is the adapter's scope test at the emission site.
+   */
+  protected arithmeticCoercion(
+    op: string,
+    operand: ParsedExpr,
+    other: ParsedExpr | undefined,
+    isShadowed: (name: string) => boolean,
+  ): ArithmeticCoercion {
+    return arithmeticCoercionOrRefuse(op, operand, other, this.nullishAttrCtx, isShadowed, this.ambiguousNilSink())
+  }
+
+  /**
+   * Refuse the ambiguous-nil arithmetic (#3700) in a whole expression the
+   * adapter lowers through its own renderer rather than per operator: a
+   * `.filter()` predicate, read in the current scope with the callback's
+   * own `params` (its parameter and block locals) entered as a callback
+   * frame.
+   */
+  protected refuseAmbiguousNilArithmeticIn(expr: ParsedExpr, params: readonly string[]): void {
+    refuseAmbiguousNilArithmetic(expr, this.nullishAttrCtx, this.scope.enterCallback(params), this.ambiguousNilSink())
+  }
+
+  private ambiguousNilSink(): AmbiguousNilArithmeticSink {
+    return { errors: this.errors, componentName: this.componentName }
+  }
+
   /** {@link planLoop} against the current scope and the component's constants. */
   protected loopPlanFor<Spelled>(loop: IRLoop, spelling: LoopPlanSpelling<Spelled>): LoopPlan<Spelled> {
     return planLoop(loop, { scope: this.scope, localConstants: this.localConstants ?? [], ...spelling })
@@ -397,5 +435,6 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     if (!options?.siblingTemplatesRegistered) {
       this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName, this.loopChildDiagnosticName))
     }
+    refuseAmbiguousNilMemoArithmetic(ir.metadata.memos ?? [], this.nullishAttrCtx, this.ambiguousNilSink())
   }
 }

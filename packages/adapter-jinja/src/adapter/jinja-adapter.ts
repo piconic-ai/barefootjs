@@ -149,7 +149,6 @@ import {
   isBooleanResultExpr,
   isExplicitStringCall,
   hasClientInteractivity,
-  arithmeticOperandCoercion,
   renderElementShell,
   renderFragmentScope,
   renderDangerousInnerHtml,
@@ -833,7 +832,11 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
       captures.push(`{% set ${captured} %}${body}{% endset %}`)
       return captured
     }
-    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const plan = planComponentProps(comp, {
+      propsObjectName: this.propsObjectName,
+      propsParams: this.propsParams,
+      callerKeys: true,
+    })
     const segments = spellComponentProps(plan, {
       entry: (entry) => {
         switch (entry.kind) {
@@ -854,7 +857,7 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
       // `ChainableUndefined`, which `is not none` alone lets through.
       presentParam: (name) => {
         const v = jinjaIdent(name)
-        return `({${jinjaHashKey(name)}: ${v}} if (${v} is defined and ${v} is not none) else {})`
+        return `({${jinjaHashKey(name)}: ${v}} if bf.passed(${jinjaHashKey(name)}, ${v} is defined and ${v} is not none) else {})`
       },
     })
     const dict = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
@@ -1093,6 +1096,8 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
     param: string,
     localVarMap: Map<string, string> = new Map(),
   ): string {
+    // Arithmetic over a prop whose nil the type cannot classify (#3700).
+    this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
     return emitParsedExpr(
       expr,
       new JinjaFilterEmitter(
@@ -1164,7 +1169,7 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
       _isRootPropsObject: (expr) => isRootPropsObject(expr, n => this.scope.isBound(n)),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
-      _arithmeticCoercion: (op, operand, other) => arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
+      _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderJinjaFilterExprPublic: (e, p) => this._renderJinjaFilterExprPublic(e, p),
     }

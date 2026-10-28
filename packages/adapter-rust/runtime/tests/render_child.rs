@@ -242,3 +242,38 @@ fn children_safe_value_survives_render_child_and_bf_string_unescaped() {
     let out = backend_minijinja::render_entry(&env, "root", root.as_mj_value(), &no_defaults(), &[]).unwrap();
     assert_eq!(out, "[<span>hi</span>]");
 }
+
+/// `bf.passed` answers from the keys the caller handed over (raw, before
+/// keyword mangling), so a key passed as `none` counts and an omitted one
+/// does not; a root reads its `props`, and with no record at all the
+/// template's own fallback decides.
+#[test]
+fn passed_reads_the_caller_keys() {
+    let dir = TempDir::new("passed");
+    dir.write(
+        "root.j2",
+        "{{ bf.passed('label', true) }}|{{ bf.render_child('probe', {'label': none, 'class': none}) | safe }}",
+    );
+    dir.write(
+        "probe.j2",
+        "{{ bf.passed('label', false) }}/{{ bf.passed('class', false) }}/{{ bf.passed('tone', true) }}",
+    );
+
+    let env = backend_minijinja::build_environment(&dir.0);
+    let session = RenderSession::new();
+    session.register_child_renderer(
+        "probe".to_string(),
+        ChildRendererSpec { component_name: "Probe".to_string(), template: "probe".to_string(), ssr_defaults: no_ssr_defaults(), rest_props_name: None, param_names: vec![] },
+    );
+
+    let root = BfInstance::root(Arc::clone(&session), "Root_test");
+    let out = backend_minijinja::render_entry(&env, "root", root.as_mj_value(), &no_defaults(), &[]).unwrap();
+    assert_eq!(out, "true|true/true/false");
+
+    let mut root = BfInstance::root(session, "Root_test");
+    let mut props = BTreeMap::new();
+    props.insert("tone".to_string(), JsValue::Null);
+    root.props = Some(JsValue::Object(props));
+    let out = backend_minijinja::render_entry(&env, "root", root.as_mj_value(), &no_defaults(), &[]).unwrap();
+    assert!(out.starts_with("false|"), "a root reads its props: {out}");
+}

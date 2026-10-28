@@ -4267,6 +4267,7 @@ function extractProps(param: ts.ParameterDeclaration, ctx: AnalyzerContext): voi
         const info: ParamInfo = {
           name: localName,
           type: resolvedType,
+          ...unresolvedDeclaredType(member),
           // The type's `?` and a destructure default (`{ x = 1 }`) both mean
           // the caller may omit the prop.
           optional: !!member?.optional || !!element.initializer,
@@ -4524,20 +4525,38 @@ function localObjectMemberTypesFor(ctx: AnalyzerContext): LocalObjectMemberTypes
  *   `isResolvableMemberType`'s own docstring for why the structural cases
  *   are safe to admit and why those three still are not.
  */
+/**
+ * A destructured binding's member type: `type` when it resolves to a
+ * concrete representation (`isResolvableMemberType`), and the declared
+ * type as written (`declared`), which `ParamInfo.declaredType` carries when
+ * `type` does not resolve.
+ */
+interface DestructuredMemberType {
+  type: TypeInfo | null
+  declared: TypeInfo | null
+  optional: boolean
+}
+
+/** `ParamInfo.declaredType` for a member whose declared type did not resolve to `type`. */
+function unresolvedDeclaredType(member: DestructuredMemberType | undefined): Pick<ParamInfo, 'declaredType'> {
+  return member && !member.type && member.declared ? { declaredType: member.declared } : {}
+}
+
 function collectMemberTypes(
   typeNode: ts.TypeNode,
   ctx: AnalyzerContext
-): Map<string, { type: TypeInfo | null; optional: boolean }> | null {
+): Map<string, DestructuredMemberType> | null {
   const localObjectMembers = localObjectMemberTypesFor(ctx)
   const fromMembers = (
     members: ts.NodeArray<ts.TypeElement>
-  ): Map<string, { type: TypeInfo | null; optional: boolean }> => {
-    const map = new Map<string, { type: TypeInfo | null; optional: boolean }>()
+  ): Map<string, DestructuredMemberType> => {
+    const map = new Map<string, DestructuredMemberType>()
     for (const member of members) {
       if (ts.isPropertySignature(member) && member.name) {
         const info = member.type ? typeNodeToTypeInfo(member.type, ctx.sourceFile) : null
         map.set(member.name.getText(ctx.sourceFile), {
           type: info && isResolvableMemberType(info, localObjectMembers) ? info : null,
+          declared: info,
           optional: !!member.questionToken,
         })
       }

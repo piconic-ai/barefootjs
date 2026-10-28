@@ -77,4 +77,41 @@ class RenderChildTest < Minitest::Test
     bf.render_child('probe', { value: 1 })
     refute seen_props.key?(:children)
   end
+
+  # `passed?` answers from the keys the caller handed over, so a key passed
+  # as nil counts and an omitted one does not; a root reads `_props`, and
+  # with no record at all the template's own fallback decides.
+  def test_passed_reads_the_caller_keys
+    bf = new_bf
+    seen = nil
+    bf.register_child_renderer('probe', lambda { |_props, _caller|
+      child = new_bf
+      seen = [child.passed?(:label, false), child.passed?(:tone, true)]
+      ''
+    })
+    bf.render_child('probe', { label: nil })
+    assert_equal [true, false], seen
+
+    root = new_bf
+    assert_equal true, root.passed?(:label, true), 'no record: the fallback decides'
+    assert_equal false, root.passed?(:label, false)
+    root._props({ label: nil })
+    assert_equal true, root.passed?(:label, false), 'a root reads its _props'
+    assert_equal false, root.passed?(:tone, true)
+  end
+
+  def test_passed_reads_the_innermost_caller_after_a_nested_render
+    bf = new_bf
+    seen = []
+    bf.register_child_renderer('leaf', ->(_props, _caller) { '' })
+    bf.register_child_renderer('mid', lambda { |_props, caller|
+      seen << caller.passed?(:label, false)
+      caller.render_child('leaf', { tone: 'x' })
+      seen << caller.passed?(:label, false)
+      ''
+    })
+    bf.render_child('mid', { label: nil })
+    assert_equal [true, true], seen
+    assert_equal false, bf.passed?(:label, false), 'the record is gone once the render returns'
+  end
 end

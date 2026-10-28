@@ -95,7 +95,6 @@ import {
   isAriaBooleanAttr,
   isBooleanResultExpr,
   hasClientInteractivity,
-  arithmeticOperandCoercion,
   renderElementShell,
   renderFragmentScope,
   renderDangerousInnerHtml,
@@ -1039,7 +1038,11 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     // (`data-slot`) that are no valid Ruby local name.
     const tplName = childTemplateName(comp.name, this.importAliases)
     const captures: string[] = []
-    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const plan = planComponentProps(comp, {
+      propsObjectName: this.propsObjectName,
+      propsParams: this.propsParams,
+      callerKeys: true,
+    })
     const segments = spellComponentProps(plan, {
       entry: (entry) => {
         switch (entry.kind) {
@@ -1071,7 +1074,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       spread: (value) => emitAttrValue(value, this.componentPropEmitter, ''),
       presentParam: (name) => {
         const v = `v[${rubySymbolLiteral(name)}]`
-        return `**(${v}.nil? ? {} : { ${rubySymbolKey(name)} ${v} })`
+        return `**(bf.passed?(${rubySymbolLiteral(name)}, !${v}.nil?) ? { ${rubySymbolKey(name)} ${v} } : {})`
       },
     })
     const parts = segments.flatMap((s) => (s.kind === 'entries' ? s.parts : s.expr ? [s.expr] : []))
@@ -1353,6 +1356,8 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     // match/render stay the same value, unchanged from before #2245.
     renderParamAs?: string,
   ): string {
+    // Arithmetic over a prop whose nil the type cannot classify (#3700).
+    this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
     return emitParsedExpr(
       expr,
       new ErbFilterEmitter(
@@ -1419,7 +1424,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       isLoopBoundName: (name) => this.isLoopBoundName(name),
       _isStringValueName: (name) => this._isStringValueName(name),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
-      _arithmeticCoercion: (op, operand, other) => arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
+      _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderRubyFilterExprPublic: (e, p) => this._renderRubyFilterExprPublic(e, p),
     }

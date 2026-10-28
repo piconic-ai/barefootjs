@@ -234,6 +234,11 @@ import { fixture as componentSpreadExplicitThenProps } from './component-spread-
 import { fixture as componentSpreadPropsSubset } from './component-spread-props-subset'
 import { fixture as componentSpreadPropsRestBag } from './component-spread-props-rest-bag'
 import { fixture as componentSpreadExplicitNull } from './component-spread-explicit-null'
+import { fixture as componentSpreadExplicitNullPositions } from './component-spread-explicit-null-positions'
+import { fixture as componentSpreadExplicitUndefinedProp } from './component-spread-explicit-undefined-prop'
+import { fixture as componentPropUndefinedLiteralSpread } from './component-prop-undefined-literal-spread'
+import { fixture as componentSpreadForwardedAbsent } from './component-spread-forwarded-absent'
+import { fixture as componentSpreadForwardedNull } from './component-spread-forwarded-null'
 import { fixture as nullishOperandArithmeticMatrix } from './nullish-operand-arithmetic-matrix'
 import { fixture as nullishOperandDivisionRemainder } from './nullish-operand-division-remainder'
 import { fixture as omittedOptionalNumberArithmetic } from './omitted-optional-number-arithmetic'
@@ -263,6 +268,8 @@ import { fixture as memoDivisionZeroDivisor } from './memo-division-zero-divisor
 import { fixture as unaryMinusCompoundOperand } from './unary-minus-compound-operand'
 import { fixture as omittedOptionalNumberNegation } from './omitted-optional-number-negation'
 import { fixture as omittedOptionalNullableNumberArithmetic } from './omitted-optional-nullable-number-arithmetic'
+import { fixture as omittedOptionalNullableNumberArithmeticDestructured } from './omitted-optional-nullable-number-arithmetic-destructured'
+import { fixture as nullableNumberArithmeticDestructured } from './nullable-number-arithmetic-destructured'
 import { fixture as callbackIndexParam } from './callback-index-param'
 import { fixture as callbackIndexParamClient } from './callback-index-param-client'
 import { fixture as callbackNestedIndexParam } from './callback-nested-index-param'
@@ -1341,6 +1348,11 @@ export const jsxFixtures: JSXFixture[] = [
   componentSpreadPropsSubset,
   componentSpreadPropsRestBag,
   componentSpreadExplicitNull,
+  componentSpreadExplicitNullPositions,
+  componentSpreadExplicitUndefinedProp,
+  componentPropUndefinedLiteralSpread,
+  componentSpreadForwardedAbsent,
+  componentSpreadForwardedNull,
   nullishOperandArithmeticMatrix,
   nullishOperandDivisionRemainder,
   omittedOptionalNumberArithmetic,
@@ -1370,6 +1382,8 @@ export const jsxFixtures: JSXFixture[] = [
   unaryMinusCompoundOperand,
   omittedOptionalNumberNegation,
   omittedOptionalNullableNumberArithmetic,
+  omittedOptionalNullableNumberArithmeticDestructured,
+  nullableNumberArithmeticDestructured,
   callbackIndexParam,
   callbackIndexParamClient,
   callbackNestedIndexParam,

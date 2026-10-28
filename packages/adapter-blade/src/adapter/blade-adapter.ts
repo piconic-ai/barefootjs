@@ -298,7 +298,6 @@ import {
   isBooleanResultExpr,
   isExplicitStringCall,
   hasClientInteractivity,
-  arithmeticOperandCoercion,
   renderElementShell,
   renderFragmentScope,
   renderDangerousInnerHtml,
@@ -1014,7 +1013,11 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
       )
       return captured
     }
-    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const plan = planComponentProps(comp, {
+      propsObjectName: this.propsObjectName,
+      propsParams: this.propsParams,
+      callerKeys: true,
+    })
     const segments = spellComponentProps(plan, {
       entry: (entry) => {
         switch (entry.kind) {
@@ -1031,8 +1034,10 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
         }
       },
       spread: (value) => `$bf->omit(${this.convertExpressionToBlade(value.expr)}, [])`,
-      // `isset` is false for an unset variable and for `null` alike.
-      presentParam: (name) => `(isset(${bladeVar(name)}) ? [${bladeHashKey(name)} => ${bladeVar(name)}] : [])`,
+      // `isset` is false for an unset variable and for `null` alike, so it
+      // is only the fallback for a render that recorded no caller keys.
+      presentParam: (name) =>
+        `($bf->passed(${bladeHashKey(name)}, isset(${bladeVar(name)})) ? [${bladeHashKey(name)} => ${bladeVar(name)}] : [])`,
     })
     const dict = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
     return `${captures.join('')}{!! $bf->render_child('${tplName}'${dict}) !!}`
@@ -1276,6 +1281,8 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     param: string,
     localVarMap: Map<string, string> = new Map(),
   ): string {
+    // Arithmetic over a prop whose nil the type cannot classify (#3700).
+    this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
     return emitParsedExpr(
       expr,
       new BladeFilterEmitter(
@@ -1351,7 +1358,7 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
       _isRootPropsObject: (expr) => isRootPropsObject(expr, n => this.scope.isBound(n)),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
-      _arithmeticCoercion: (op, operand, other) => arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
+      _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderBladeFilterExprPublic: (e, p) => this._renderBladeFilterExprPublic(e, p),

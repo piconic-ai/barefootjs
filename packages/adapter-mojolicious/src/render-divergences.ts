@@ -56,15 +56,14 @@ export const renderDivergences: RenderDivergences = {
   // `omitted-optional-number-arithmetic` used to sit here: an omitted
   // optional number prop read as `0` in arithmetic. A prop that can only be
   // absent now reads its nil as `undefined`, giving `NaN` (#3533).
-  // Arithmetic over an omitted `n?: number | null` prop: the engine holds an
-  // omitted prop and a `null` one as the same nil, and the type admits both,
-  // so the nil reads as `null` (`0`) where JS reads `undefined` (`NaN`).
-  'omitted-optional-nullable-number-arithmetic': { limitation: 'omitted-optional-nullable-number-arithmetic' },
+  // `omitted-optional-nullable-number-arithmetic` used to sit here: an
+  // omitted `n?: number | null` prop read as `0` in arithmetic. The type
+  // cannot say which nil it stands for, so the arithmetic is now refused
+  // with BF101 (`conformance-pins.ts`).
   // An explicit `null` carried by a `{...props}` spread onto a child: the
   // engine holds it and an omitted prop as the same nil, so the spread
   // carries the key only when it is not nil and an earlier explicit prop
   // keeps its value where JS overrides it with `null`.
-  'component-spread-explicit-null': { limitation: 'props-spread-explicit-null-override' },
   // `boolean-logical-stringify` used to sit here: a stringified `&&` / `||`
   // over a boolean prop and a computed boolean rendered the native `1` its
   // last operand evaluates to. A name declared `boolean` now counts as a

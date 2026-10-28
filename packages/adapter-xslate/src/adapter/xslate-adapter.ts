@@ -83,7 +83,6 @@ import {
   isAriaBooleanAttr,
   isBooleanResultExpr,
   hasClientInteractivity,
-  arithmeticOperandCoercion,
   renderElementShell,
   renderFragmentScope,
   renderDangerousInnerHtml,
@@ -900,7 +899,11 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
       captures.push(`<: macro ${macroName} -> () { :>${body}<: } :>`)
       return `${macroName}()`
     }
-    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const plan = planComponentProps(comp, {
+      propsObjectName: this.propsObjectName,
+      propsParams: this.propsParams,
+      callerKeys: true,
+    })
     const segments = spellComponentProps(plan, {
       entry: (entry) => {
         switch (entry.kind) {
@@ -917,7 +920,8 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
         }
       },
       spread: (value) => this.convertExpressionToKolon(value.expr),
-      presentParam: (name) => `(defined $${name} ? { ${name} => $${name} } : {})`,
+      presentParam: (name) =>
+        `($bf.passed(${kolonStringLiteral(name)}, (defined $${name})) ? { ${name} => $${name} } : {})`,
     })
     const hashEntries = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
     return `${captures.join('')}<: $bf.render_child('${tplName}'${hashEntries}) | mark_raw :>`
@@ -1173,6 +1177,8 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     paramLocal = param,
     onRead?: (name: string) => void,
   ): string {
+    // Arithmetic over a prop whose nil the type cannot classify (#3700).
+    this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
     return emitParsedExpr(
       expr,
       new XslateFilterEmitter(
@@ -1243,7 +1249,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isBooleanValueName: (name, property) => property ? !this.scope.shadowsPropsObject() && this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
-      _arithmeticCoercion: (op, operand, other) => arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
+      _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _memoKolonName: (name) => this.memoKolonNames.get(name) ?? name,
       _rowLocalName: (name) => this.rowLocalName(name),
