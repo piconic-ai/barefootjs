@@ -4480,6 +4480,28 @@
         "text"
       ]
     },
+    "escaped-ternary-branch": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "event-delegation-container-handler": {
       "kinds": [
         "array-literal",
