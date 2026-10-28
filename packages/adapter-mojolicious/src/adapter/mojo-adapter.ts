@@ -76,7 +76,7 @@ import {
   inlineComputedConstAttr,
   inlineComputedConsts,
 } from '@barefootjs/jsx'
-import type { ParsedExpr } from '@barefootjs/jsx'
+import type { BindingScope, ParsedExpr } from '@barefootjs/jsx'
 import {
   escapeLineStatementSigil,
   isBooleanResultParsed,
@@ -101,7 +101,7 @@ import {
   generateContextConsumerSeed,
   generateDerivedMemoSeed,
 } from './memo/seed.ts'
-import { collectProviderDataNames, collectStringValueNames } from './props/prop-classes.ts'
+import { collectNumberValueNames, collectProviderDataNames, collectStringValueNames } from './props/prop-classes.ts'
 
 export type { MojoAdapterOptions } from './lib/types.ts'
 import type { MojoAdapterOptions } from './lib/types.ts'
@@ -198,6 +198,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
    */
   private providerDataNames: Set<string> = new Set()
   private booleanValueNames: { names: Set<string>; props: Set<string> } = { names: new Set(), props: new Set() }
+  private numberValueNames: { names: Set<string>; props: Set<string> } = { names: new Set(), props: new Set() }
 
   constructor(options: MojoAdapterOptions = {}) {
     super()
@@ -222,6 +223,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
   protected override resetAdapterState(ir: ComponentIR): void {
     this.providerDataNames = collectProviderDataNames(ir)
     this.booleanValueNames = collectBooleanValueNames(ir.metadata)
+    this.numberValueNames = collectNumberValueNames(ir)
   }
 
   protected contextConsumerSeed(ir: ComponentIR): string {
@@ -1197,6 +1199,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     // the exact degrade points inside `MojoFilterEmitter.callbackMethod`.
     // Arithmetic over a prop whose nil the type cannot classify (#3700).
     this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
+    const predicateScope = this.scope.enterCallback([param, ...localVarMap.keys()])
     return emitParsedExpr(
       expr,
       new MojoFilterEmitter(
@@ -1207,6 +1210,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
         new Map(),
         paramVar,
         n => this.scope.isBound(n),
+        (n, property) => this._isNumberValueName(n, property, predicateScope),
       ),
     )
   }
@@ -1265,6 +1269,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       resolveStaticRecordLiteral: (o, k) => this.resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isBooleanValueName: (name, property) => property ? !this.scope.shadowsPropsObject() && this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
+      _isNumberValueName: (name, property) => this._isNumberValueName(name, property),
       _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.scope.isBound(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
@@ -1380,6 +1385,14 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
    *  equality comparison against it should use Perl `eq`/`ne` (#1672). */
   private _isStringValueName(name: string, componentProperty = false): boolean {
     return this.scope.isStringValueName(name, n => this.stringValueNames.has(n), componentProperty)
+  }
+
+  /** Whether `name` (a getter, prop or const) is declared `number` here and
+   *  no binding shadows it, so a strict equality against it keeps Perl's
+   *  numeric `==` rather than the runtime's `strict_eq`. */
+  private _isNumberValueName(name: string, componentProperty = false, scope: BindingScope = this.scope): boolean {
+    if (componentProperty) return !scope.shadowsPropsObject() && this.numberValueNames.props.has(name)
+    return !scope.isBound(name) && this.numberValueNames.names.has(name)
   }
 
   private _recordExprBF101(message: string, reason?: string): void {

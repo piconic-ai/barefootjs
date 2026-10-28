@@ -6,8 +6,8 @@ import { createFixture } from '../src/types'
  * one (`props?.['note']`). Each raw read must keep the caller's value
  * (empty when omitted), apart from the signal seeded from it. A
  * no-substitution template key (`` props[`title`] ``) separates the same
- * way (analyzer unit test), but the template adapters do not lower that
- * read at all yet, independent of any signal.
+ * way (analyzer unit test); its lowering on its own is covered by
+ * `props-template-literal-key-read`.
  */
 export const fixture = createFixture({
   id: 'signal-from-same-named-prop-raw-read-element-access',

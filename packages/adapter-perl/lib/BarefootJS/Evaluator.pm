@@ -9,7 +9,7 @@ no warnings 'experimental::signatures';
 use B ();
 use POSIX ();
 use JSON::PP ();
-use Scalar::Util qw(looks_like_number);
+use Scalar::Util qw(looks_like_number refaddr);
 
 # Lightweight evaluator for the pure `ParsedExpr` subset, scoped to
 # higher-order callback bodies (reduce / sort / map / filter / find
@@ -491,6 +491,11 @@ sub _strict_eq ($l, $r) {
     if ($lb || $rb) {
         return 0 unless $lb && $rb;
         return ((!!$l) == (!!$r)) ? 1 : 0;
+    }
+    # An object or array is equal only to itself: the same reference, not
+    # another structure with the same contents.
+    if (ref $l || ref $r) {
+        return (ref $l && ref $r && refaddr($l) == refaddr($r)) ? 1 : 0;
     }
     return ($l eq $r ? 1 : 0) if _is_string($l) && _is_string($r);
     return 0;

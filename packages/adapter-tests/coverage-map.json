@@ -2014,6 +2014,22 @@
         "text"
       ]
     },
+    "component-child-template-literal-module-lines": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "component-prop-bare-getter": {
       "kinds": [
         "call",
@@ -10495,6 +10511,28 @@
         "text"
       ]
     },
+    "props-template-literal-key-read": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:null",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "query-href": {
       "kinds": [
         "call",
@@ -13269,6 +13307,97 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "strict-equality-distinct-reference": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "array-method:at",
+        "binary:!==",
+        "binary:===",
+        "literal:null",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "strict-equality-same-reference": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:!==",
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "strict-equality-untyped-operands": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "array-method:at",
+        "binary:!==",
+        "binary:===",
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "strict-equality-untyped-operands-props-object": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "binary:===",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
         "text"
       ]
     },
