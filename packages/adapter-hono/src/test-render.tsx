@@ -14,6 +14,7 @@ import { jsxRenderer } from 'hono/jsx-renderer'
 import { readFileSync } from 'node:fs'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import ts from 'typescript'
 import { BfPortals } from "./portals.tsx"
 
 // Place temp files inside the hono package so hono/jsx resolves correctly
@@ -49,52 +50,72 @@ export interface RenderOptions {
   componentName?: string
 }
 
+/** One replacement of `code.slice(start, end)`. */
+interface SourceEdit {
+  start: number
+  end: number
+  text: string
+}
+
+/** Apply non-overlapping `edits` to `code`. */
+function applySourceEdits(code: string, edits: readonly SourceEdit[]): string {
+  let out = code
+  for (const edit of [...edits].sort((a, b) => b.start - a.start)) {
+    out = out.slice(0, edit.start) + edit.text + out.slice(edit.end)
+  }
+  return out
+}
+
+/** The top-level statements of a compiled marked template. */
+function topLevelStatements(code: string): readonly ts.Statement[] {
+  return ts.createSourceFile('module.tsx', code, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX).statements
+}
+
 /**
  * Drop module-level exports from a compiled marked template so it can be
  * inlined as plain declarations alongside other components. Specifier
  * blocks (`export { … }`, `export type { … }`, with or without a
  * trailing `from '…'` re-export source) are removed whole; declaration
  * forms (`export function/const/let/type/interface`, `export default`)
- * keep their body with only the leading keyword stripped.
- *
- * The set of forms is bounded by `generateModuleExports` in
- * @barefootjs/jsx — see the caller for the enumeration. This stays a
- * line-oriented text pass (rather than a real parse) because the input
- * is compiler-generated with a stable, single-line-per-export shape.
+ * keep their body with only the `export` / `default` keywords removed.
+ * A top-level statement walk, so text inside a string, template literal
+ * or comment is never touched.
  */
 function stripModuleExports(code: string): string {
-  return code
-    // `export [type] { … } [from '…']` specifier / re-export blocks.
-    .replace(
-      /^[ \t]*export\s+(?:type\s+)?\{[^}]*\}(?:[ \t]*from[ \t]*['"][^'"]*['"])?[ \t]*;?[ \t]*$/gm,
-      '',
-    )
-    // Leading keyword on declaration forms (`export function`,
-    // `export const X = …`, `export default …`, etc.).
-    .replace(/\bexport\s+(default\s+)?/g, '')
+  const edits: SourceEdit[] = []
+  for (const statement of topLevelStatements(code)) {
+    if (ts.isExportDeclaration(statement)) {
+      edits.push({ start: statement.getStart(), end: statement.end, text: '' })
+    } else if (ts.isExportAssignment(statement)) {
+      // `export default <expr>` keeps the expression as a statement.
+      edits.push({ start: statement.getStart(), end: statement.expression.getStart(), text: '' })
+    } else if (ts.canHaveModifiers(statement)) {
+      for (const modifier of ts.getModifiers(statement) ?? []) {
+        if (modifier.kind === ts.SyntaxKind.ExportKeyword || modifier.kind === ts.SyntaxKind.DefaultKeyword) {
+          edits.push({ start: modifier.getStart(), end: modifier.end, text: '' })
+        }
+      }
+    }
+  }
+  return applySourceEdits(code, edits)
 }
 
 /**
- * A single named-import line for a child that's being INLINED (its
- * declarations are spliced in verbatim, see `stripModuleExports` above) —
- * returns `const <local> = <declared>` for every aliased specifier
- * (`{ Label as AliasedLabel }`), or `null` when every specifier is a bare,
- * non-aliased name (nothing left to bind; dropping the whole line is
- * correct). A default-import specifier (`import Label from …`) has no
- * declared name to alias against and is left unhandled — dropped like
- * before, matching what a bare inlined child needs.
+ * What replaces an import of a child that's being INLINED (its
+ * declarations are spliced in verbatim, see `stripModuleExports` above):
+ * `const <local> = <declared>` for every aliased named specifier
+ * (`{ Label as AliasedLabel }`), or nothing when every specifier is a
+ * bare, non-aliased name (nothing left to bind). A default-import
+ * specifier (`import Label from …`) has no declared name to alias
+ * against and is dropped, matching what a bare inlined child needs.
  */
-function aliasDeclarationsFor(importLine: string): string | null {
-  const namedMatch = importLine.match(/\{([^}]*)\}/)
-  if (!namedMatch) return null
-  const aliases = namedMatch[1]
-    .split(',')
-    .map(spec => spec.trim())
-    .filter(Boolean)
-    .map(spec => spec.match(/^(\w+)\s+as\s+(\w+)$/))
-    .filter((m): m is RegExpMatchArray => m !== null)
-    .map(([, declared, local]) => `const ${local} = ${declared};`)
-  return aliases.length > 0 ? aliases.join(' ') : null
+function aliasDeclarationsFor(declaration: ts.ImportDeclaration): string {
+  const bindings = declaration.importClause?.namedBindings
+  if (!bindings || !ts.isNamedImports(bindings)) return ''
+  return bindings.elements
+    .filter(element => element.propertyName !== undefined)
+    .map(element => `const ${element.name.text} = ${element.propertyName!.text};`)
+    .join(' ')
 }
 
 export async function renderHonoComponent(options: RenderOptions): Promise<string> {
@@ -174,13 +195,8 @@ export async function renderHonoComponent(options: RenderOptions): Promise<strin
   // copy (`moduleTempPaths`), strip it (inlined via `components`), or
   // leave it. Both maps key on the import specifier; match the importing
   // module's path with or without a `.tsx` extension (`./badge` ↔
-  // `./badge.tsx`).
-  //
-  // Assumes one import statement per line — the marked-template adapter
-  // emits single-line imports (`import { Slot } from '../slot'`), so the
-  // per-line scan is sufficient. A multi-line import would not match
-  // here; the unrewritten `../slot` then fails loudly at module
-  // resolution rather than rendering wrong output.
+  // `./badge.tsx`). A top-level `ImportDeclaration` walk, so an
+  // import-looking line inside a template literal or comment is text.
   const rewriteChildImports = (code: string): string => {
     if (componentKeys.size === 0 && moduleTempPaths.size === 0) return code
     const matchKey = (importPath: string, keys: Iterable<string>): string | undefined => {
@@ -190,34 +206,28 @@ export async function renderHonoComponent(options: RenderOptions): Promise<strin
       }
       return undefined
     }
-    return code
-      .split('\n')
-      .map(line => {
-        const importMatch = line.match(/^(\s*import\s+.*from\s+['"])(.+?)(['"].*)$/)
-        if (!importMatch) return line
-        const [, prefix, importPath, suffix] = importMatch
-        const moduleKey = matchKey(importPath, moduleTempPaths.keys())
-        if (moduleKey) return `${prefix}${moduleTempPaths.get(moduleKey)}${suffix}`
-        if (matchKey(importPath, componentKeys)) {
-          // The inlined child keeps its OWN declared name (`stripModuleExports`
-          // only removes `export `, it doesn't rename), but the parent's
-          // JSX still references whatever LOCAL name it imported the child
-          // under (#2777 — Hono correctly keeps the caller's local binding
-          // rather than the declared name). Dropping the import line
-          // unconditionally is only safe for a non-aliased specifier
-          // (`import { Label } from './label'`, where local === declared);
-          // an aliased one (`import { Label as AliasedLabel } from
-          // './label'`) needs a `const AliasedLabel = Label` left behind, or
-          // the parent's JSX throws `ReferenceError: AliasedLabel is not
-          // defined` — this harness inlines the child by literal source
-          // splice, not through a real module boundary, so there's no
-          // `import … as …` left to do the binding for us.
-          return aliasDeclarationsFor(line)
-        }
-        return line
-      })
-      .filter((line): line is string => line !== null)
-      .join('\n')
+    const edits: SourceEdit[] = []
+    for (const statement of topLevelStatements(code)) {
+      if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier)) continue
+      const specifier = statement.moduleSpecifier
+      const moduleKey = matchKey(specifier.text, moduleTempPaths.keys())
+      if (moduleKey) {
+        edits.push({ start: specifier.getStart(), end: specifier.end, text: JSON.stringify(moduleTempPaths.get(moduleKey)) })
+      } else if (matchKey(specifier.text, componentKeys)) {
+        // The inlined child keeps its OWN declared name (`stripModuleExports`
+        // only removes `export `, it doesn't rename), but the importing
+        // module's JSX still references whatever LOCAL name it imported the
+        // child under (#2777 — Hono correctly keeps the caller's local
+        // binding rather than the declared name). An aliased specifier
+        // (`import { Label as AliasedLabel } from './label'`) needs a
+        // `const AliasedLabel = Label` left behind, or the JSX throws
+        // `ReferenceError: AliasedLabel is not defined` — this harness
+        // inlines the child by source splice, not through a real module
+        // boundary, so there's no `import … as …` left to do the binding.
+        edits.push({ start: statement.getStart(), end: statement.end, text: aliasDeclarationsFor(statement) })
+      }
+    }
+    return applySourceEdits(code, edits)
   }
 
   const parentCode = rewriteChildImports(templateFile.content)
