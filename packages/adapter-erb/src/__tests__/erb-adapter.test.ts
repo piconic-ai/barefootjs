@@ -738,3 +738,36 @@ describe('dataPointDivergences', () => {
     })
   }
 })
+
+// A `+` the shared layer classifies as string concatenation: Ruby's `+`
+// raises on a String plus a number, so the operand that is not typed as a
+// string goes through `bf.string`, in both orders. A loop row or filter
+// param named like a string prop is typed as the param (a number here).
+describe('ErbAdapter - string concatenation operand', () => {
+  test('a number operand of `+` concatenation goes through bf.string', () => {
+    const { template } = compileAndGenerate(`
+function Widget(props: { label: string; n: number; nums: number[] }) {
+  return <div>
+    <span>{'r=' + props.n}</span>
+    <span>{props.n + '=r'}</span>
+    <ol>{props.nums.map(label => <li key={label}>{label + props.label}</li>)}</ol>
+    <ul>{props.nums.filter(label => label + 'x' !== '0x').map(v => <li key={v}>{v}</li>)}</ul>
+  </div>
+}
+`)
+    expect(template).toContain("('r=' + bf.string(v[:n]))")
+    expect(template).toContain("(bf.string(v[:n]) + '=r')")
+    expect(template).toContain('(bf.string(label) + v[:label])')
+    expect(template).toContain("(bf.string(v_) + 'x')")
+    expect(template).not.toContain("bf.string('r=')")
+  })
+
+  test('a nested callback param named like a string prop is typed as the param', () => {
+    const { template } = compileAndGenerate(`
+function Widget(props: { label: string; rows: { tags: number[] }[] }) {
+  return <p>{props.rows.filter(r => r.tags.some(label => 'x' + label === 'x2')).length}</p>
+}
+`)
+    expect(template).toContain("('x' + bf.string(label))")
+  })
+})

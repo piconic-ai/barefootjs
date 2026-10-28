@@ -13341,6 +13341,30 @@
         "text"
       ]
     },
+    "string-number-plus-concat-positions": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:!==",
+        "binary:*",
+        "binary:+",
+        "literal:null",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "string-padEnd": {
       "kinds": [
         "array-method",

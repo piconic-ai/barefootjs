@@ -1364,7 +1364,8 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
         param,
         localVarMap,
         n => this.isLoopBoundName(n),
-        n => this._isStringValueName(n),
+        // The predicate's own param shadows an outer string-typed name.
+        { scope: this.scope.enterCallback([param]), isStringValueName: n => this.stringValueNames.has(n) },
         (message, reason) => this._recordExprBF101(message, reason),
         renderParamAs,
       ),
@@ -1422,7 +1423,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       resolveLiteralConst: (name) => this.resolveLiteralConst(name),
       resolveStaticRecordLiteral: (o, k) => this.resolveStaticRecordLiteral(o, k),
       isLoopBoundName: (name) => this.isLoopBoundName(name),
-      _isStringValueName: (name) => this._isStringValueName(name),
+      _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
@@ -1521,10 +1522,12 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     return emitParsedExpr(expr, new ErbTopLevelEmitter(this.emitCtx))
   }
 
-  /** Whether `name` (a signal getter or prop) holds a string value — gates
-   *  index-access Hash-vs-Array lowering (see `expr/operand.ts`). */
-  private _isStringValueName(name: string): boolean {
-    return this.stringValueNames.has(name)
+  /** Whether `name` (a signal getter or prop) holds a string value at the
+   *  current binding scope — gates index-access Hash-vs-Array lowering (see
+   *  `expr/operand.ts`) and `+` string concatenation. A loop row or callback
+   *  binding of the same name shadows the outer typing. */
+  private _isStringValueName(name: string, componentProperty = false): boolean {
+    return this.scope.isStringValueName(name, n => this.stringValueNames.has(n), componentProperty)
   }
 
   /**
