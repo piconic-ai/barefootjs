@@ -60,6 +60,26 @@ export function lookupPartToJsExpr(
   return `(${obj}${typed})[${key}]`
 }
 
+/**
+ * Spell a `ternary` part's branch — the literal's COOKED value, as the IR
+ * carries it — as a single-quoted JS string literal. The cooked value of
+ * `'a\nb'` holds a real newline and that of `"it's"` a bare quote, so
+ * wrapping it in quotes unescaped yields an unterminated or unbalanced
+ * literal. Escapes only what a single-quoted literal cannot hold raw (the
+ * backslash, the quote and the line terminators), so a branch without
+ * them prints exactly as before.
+ */
+function singleQuotedJsString(value: string): string {
+  const body = value
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'")
+    .replace(/\n/g, '\\n')
+    .replace(/\r/g, '\\r')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029')
+  return `'${body}'`
+}
+
 /** Convert a `template` variant's parts into a JS template-literal string. */
 export function templatePartsToJsExpr(
   parts: readonly IRTemplatePart[],
@@ -73,7 +93,7 @@ export function templatePartsToJsExpr(
       result += `\${${opts?.useTemplate ? part.templateExpr ?? part.expr : part.expr}}`
     } else if (part.type === 'ternary') {
       const cond = (opts?.useTemplate && part.templateCondition) ? part.templateCondition : part.condition
-      result += `\${${cond} ? '${part.whenTrue}' : '${part.whenFalse}'}`
+      result += `\${${cond} ? ${singleQuotedJsString(part.whenTrue)} : ${singleQuotedJsString(part.whenFalse)}}`
     } else if (part.type === 'lookup') {
       result += `\${${lookupPartToJsExpr(part, opts)}}`
     }
