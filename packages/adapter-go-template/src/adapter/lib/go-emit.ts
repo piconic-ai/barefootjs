@@ -9,9 +9,22 @@ import { arithmeticHelper, serializeParsedExpr, freeVarsInBody } from '@barefoot
 
 import { capitalize } from "./go-naming.ts"
 
-/** Escape a value for embedding in a Go-template double-quoted string. */
+/**
+ * Escape a value for embedding in a Go double-quoted string — a Go-template
+ * action (`{{"..."}}`) or Go source. Both lexers reject a raw newline inside
+ * the quotes, so line breaks and the other control characters are spelled as
+ * escapes; `strconv.Unquote` reads them back to the same characters.
+ */
 export function escapeGoString(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"')
+  return s.replace(/[\\"\x00-\x1f\x7f]/g, ch => GO_STRING_ESCAPES[ch] ?? `\\x${ch.charCodeAt(0).toString(16).padStart(2, '0')}`)
+}
+
+const GO_STRING_ESCAPES: Readonly<Record<string, string>> = {
+  '\\': '\\\\',
+  '"': '\\"',
+  '\n': '\\n',
+  '\r': '\\r',
+  '\t': '\\t',
 }
 
 /**

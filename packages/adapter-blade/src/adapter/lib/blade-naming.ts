@@ -61,6 +61,37 @@ export function escapeBladeSingleQuoted(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
 }
 
+const BLADE_AT_SIGN = "<?php echo '@'; ?>"
+
+/**
+ * Escape static template text (an element's text run or a literal attribute
+ * value, already HTML-escaped) so Blade's compiler prints every `@` instead
+ * of reading it. A raw `@` is not inert in a Blade template: `@word` runs a
+ * directive (`@php`, `@json(…)`, `@verbatim`), `@@word` collapses to
+ * `@word`, and `@{{` / `@{!!` keep the following echo as literal source —
+ * so a JSX text run ending in `@` right before a dynamic expression printed
+ * that expression's own text marker echo verbatim (#3758).
+ *
+ * Each `@` becomes a raw PHP block, not a Blade echo. Blade compiles only
+ * the inline-HTML tokens between PHP blocks, one token at a time, so the
+ * block cannot fuse with the literal text on either side: a Blade echo
+ * such as `{{ '@' }}` would turn a preceding literal `{` into a `{{{ … }}}`
+ * echo opener, and `{!! '@' !!}` would close a preceding literal `{!!`.
+ * PHP drops the one newline (`\n`, `\r\n` or `\r`) right after `?>`, so a
+ * newline that follows the `@` in the same text gets an extra `\n` for PHP
+ * to drop. A newline the adapter itself places after the text (before a
+ * directive line) is template layout, not content, and is dropped as it is
+ * after any directive.
+ */
+export function escapeBladeStaticText(s: string): string {
+  const [head, ...rest] = s.split('@')
+  return head + rest.map(part => BLADE_AT_SIGN + (startsWithNewline(part) ? '\n' : '') + part).join('')
+}
+
+function startsWithNewline(s: string): boolean {
+  return s.startsWith('\n') || s.startsWith('\r')
+}
+
 /**
  * Quote an array-literal KEY for Blade/PHP. Always quotes — a bareword key
  * in a PHP array literal (`[key => value]`) is a syntax error, not a
