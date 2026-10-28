@@ -11269,6 +11269,33 @@
         "text"
       ]
     },
+    "remainder-negative-zero-json-positions": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:%",
+        "binary:+",
+        "binary:<",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "remainder-negative-zero-quotient": {
       "kinds": [
         "array-literal",

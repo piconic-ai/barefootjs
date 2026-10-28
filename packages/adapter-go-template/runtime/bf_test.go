@@ -2027,6 +2027,15 @@ func TestJSON(t *testing.T) {
 		{"NaN", math.NaN(), "null"},
 		{"+Inf", math.Inf(1), "null"},
 		{"-Inf", math.Inf(-1), "null"},
+		// JS writes -0 as 0 at any depth; other numbers and strings
+		// that merely contain "-0" keep their spelling.
+		{"-0", math.Copysign(0, -1), "0"},
+		{"-0 nested", []any{[]any{math.Copysign(0, -1)}, 1}, `[[0],1]`},
+		{"-0 in map", map[string]any{"a": math.Copysign(0, -1)}, `{"a":0}`},
+		{"-0 in struct", struct{ A float64 }{math.Copysign(0, -1)}, `{"A":0}`},
+		{"-0.5", -0.5, "-0.5"},
+		{"-10", -10.0, "-10"},
+		{"-0 string", []any{"-0", `x\"-0`, math.Copysign(0, -1)}, `["-0","x\\\"-0",0]`},
 	}
 	for _, c := range cases {
 		got, err := JSON(c.in)

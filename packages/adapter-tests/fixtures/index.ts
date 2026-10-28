@@ -271,6 +271,7 @@ import { fixture as remainderNegativeZeroQuotient } from './remainder-negative-z
 import { fixture as remainderNegativeZeroString } from './remainder-negative-zero-string'
 import { fixture as remainderNegativeZeroConcat } from './remainder-negative-zero-concat'
 import { fixture as remainderNegativeZeroJson } from './remainder-negative-zero-json'
+import { fixture as remainderNegativeZeroJsonPositions } from './remainder-negative-zero-json-positions'
 import { fixture as numberDivisionZeroDivisor } from './number-division-zero-divisor'
 import { fixture as memoDivisionZeroDivisor } from './memo-division-zero-divisor'
 import { fixture as memoNumberOutputPositions } from './memo-number-output-positions'
@@ -1413,6 +1414,7 @@ export const jsxFixtures: JSXFixture[] = [
   remainderNegativeZeroString,
   remainderNegativeZeroConcat,
   remainderNegativeZeroJson,
+  remainderNegativeZeroJsonPositions,
   numberDivisionZeroDivisor,
   memoDivisionZeroDivisor,
   memoNumberOutputPositions,
