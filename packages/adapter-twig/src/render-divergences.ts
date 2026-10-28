@@ -44,9 +44,6 @@ export const renderDivergences: RenderDivergences = {
   // lone surrogate, so it returns U+FFFD (halves compare equal, and
   // rejoining them renders `��` instead of the emoji).
   'string-at-lone-surrogate': { limitation: 'string-at-lone-surrogate' },
-  // A signal seeded from its own same-named prop keeps the prop's template
-  // variable, so a raw `props.<name>` read beside it sees the derived value.
-  'signal-from-same-named-prop-raw-read': { limitation: 'signal-from-same-named-prop-raw-read' },
   // A memo calling a local function named like a typed prop the body never
   // destructures: the server render reads the prop for the call.
   'memo-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },

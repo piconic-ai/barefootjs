@@ -71,34 +71,83 @@ interface SeparatedBinding {
   name: string
   loc: SourceLocation
   prefix: 'bfSignal' | 'bfMemo'
+  /** Its own initializer derives from the same-named prop. */
+  selfDerived: boolean
 }
 
 /**
  * Signal getters and memos that share a name with a prop of a bare-props
  * component (`props.label` beside `const [label] = createSignal(...)` or
- * `const label = createMemo(...)`). The comparison ignores case because a
- * backend may fold it (Go exports both `label` and `Label` as the field
- * `Label`).
+ * `const label = createMemo(...)`). `propNames` holds lower-cased names:
+ * the comparison ignores case because a backend may fold it (Go exports
+ * both `label` and `Label` as the field `Label`).
  *
  * A binding whose own initializer derives from that same prop
- * (`createSignal(props.label ?? 'x')`) is left alone: the template-stash
- * backends keep it on the prop's variable, seeded from the raw prop, and
- * `extractSsrDefaults` decides that case with the same `referencesOwnProp`
- * test. A raw `props.label` read beside such a binding then sees the
- * derived value (limitation `signal-from-same-named-prop-raw-read`).
+ * (`createSignal(props.label ?? 'x')`) is marked `selfDerived`: the
+ * template-stash backends keep it on the prop's variable, seeded from the
+ * raw prop (`extractSsrDefaults` decides that case with the same
+ * `referencesOwnProp` test), unless the component also reads the raw prop
+ * (`separateSignalPropBindings`).
  */
-function collidingBindings(ctx: AnalyzerContext, propsObjectName: string): SeparatedBinding[] {
-  const propNames = new Set(ctx.propsParams.map(p => p.name.toLowerCase()))
+function collidingBindings(ctx: AnalyzerContext, propsObjectName: string, propNames: ReadonlySet<string>): SeparatedBinding[] {
   const localConsts = localConstValuesByName(ctx)
-  const collides = (name: string, derivation: string): boolean =>
-    propNames.has(name.toLowerCase()) && !referencesOwnProp(derivation, propsObjectName, name, localConsts)
+  const collides = (name: string): boolean => propNames.has(name.toLowerCase())
+  const selfDerived = (name: string, derivation: string): boolean =>
+    referencesOwnProp(derivation, propsObjectName, name, localConsts)
   const signals: SeparatedBinding[] = ctx.signals
-    .filter(s => !s.isModule && !s.getterElided && !s.envReader && collides(s.getter, s.initialValue))
-    .map(s => ({ name: s.getter, loc: s.loc, prefix: 'bfSignal' }))
+    .filter(s => !s.isModule && !s.getterElided && !s.envReader && collides(s.getter))
+    .map(s => ({ name: s.getter, loc: s.loc, prefix: 'bfSignal', selfDerived: selfDerived(s.getter, s.initialValue) }))
   const memos: SeparatedBinding[] = ctx.memos
-    .filter(m => !m.isModule && collides(m.name, m.computation))
-    .map(m => ({ name: m.name, loc: m.loc, prefix: 'bfMemo' }))
+    .filter(m => !m.isModule && collides(m.name))
+    .map(m => ({ name: m.name, loc: m.loc, prefix: 'bfMemo', selfDerived: selfDerived(m.name, m.computation) }))
   return [...signals, ...memos]
+}
+
+/** A property read off the props object (`props.label`): its lower-cased name and position. */
+interface PropsRead {
+  name: string
+  pos: number
+}
+
+/**
+ * Every property read off the props object (`props.label`) inside the
+ * component. An untyped `props` parameter declares no `propsParams`, so
+ * these reads are its only prop names. `isPropsObject` decides whether an
+ * access's receiver is the props binding itself.
+ */
+function propsReads(
+  component: ts.Node,
+  propsObjectName: string,
+  isPropsObject: (receiver: ts.Identifier) => boolean,
+): PropsRead[] {
+  const reads: PropsRead[] = []
+  function visit(node: ts.Node): void {
+    if (
+      ts.isPropertyAccessExpression(node) &&
+      ts.isIdentifier(node.expression) &&
+      node.expression.text === propsObjectName &&
+      ts.isIdentifier(node.name) &&
+      isPropsObject(node.expression)
+    ) {
+      reads.push({ name: node.name.text.toLowerCase(), pos: node.getStart() })
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(component)
+  return reads
+}
+
+/**
+ * Whether `binding`, declared by `declaration`, must leave the prop's
+ * name. A self-derived binding shares the prop's template variable only
+ * while nothing else reads the raw prop: a `props.<name>` read outside its
+ * own initializer would otherwise see the derived value.
+ */
+function needsSeparation(binding: SeparatedBinding, declaration: ts.VariableDeclaration, reads: readonly PropsRead[]): boolean {
+  if (!binding.selfDerived) return true
+  const init = declaration.initializer
+  const name = binding.name.toLowerCase()
+  return reads.some(r => r.name === name && (!init || r.pos < init.getStart() || r.pos >= init.getEnd()))
 }
 
 /**
@@ -119,15 +168,29 @@ export function separateSignalPropBindings(
   ctx: AnalyzerContext,
   isNonReference: (id: ts.Identifier) => boolean,
 ): string | null {
-  if (!ctx.propsObjectName || !ctx.componentNode) return null
-  const candidates = collidingBindings(ctx, ctx.propsObjectName)
-  if (candidates.length === 0) return null
+  const propsObjectName = ctx.propsObjectName
+  const component = ctx.componentNode
+  if (!propsObjectName || !component) return null
+  const declared = ctx.propsParams.map(p => p.name.toLowerCase())
+  // Every same-spelled read is a candidate before binding resolution, so
+  // the checker is built only when some binding can collide.
+  const spelled = propsReads(component, propsObjectName, () => true).map(r => r.name)
+  if (collidingBindings(ctx, propsObjectName, new Set([...declared, ...spelled])).length === 0) return null
 
   const sf = ctx.sourceFile
   const checker = ctx.checker ?? ts.createProgram([sf.fileName], { noLib: true, noResolve: true }, {
     ...ts.createCompilerHost({ noLib: true, noResolve: true }),
     getSourceFile: () => sf,
   }).getTypeChecker()
+  // A read counts only when its receiver is the props parameter, not a
+  // callback parameter or local that shadows the name.
+  const param = component.parameters.find(p => ts.isIdentifier(p.name) && p.name.text === propsObjectName)
+  const paramSymbol = param && checker.getSymbolAtLocation(param.name)
+  const reads = paramSymbol
+    ? propsReads(component, propsObjectName, id => checker.getSymbolAtLocation(id) === paramSymbol)
+    : []
+  const candidates = collidingBindings(ctx, propsObjectName, new Set([...declared, ...reads.map(r => r.name)]))
+  if (candidates.length === 0) return null
   const occupied = new Set<string>()
   function collectNames(node: ts.Node): void {
     // Also avoid case-fold collisions introduced by backend field naming.
@@ -145,7 +208,7 @@ export function separateSignalPropBindings(
   function collectBindings(node: ts.Node): void {
     if (ts.isVariableDeclaration(node)) {
       const binding = declarations.get(node.getStart(sf))
-      if (binding) {
+      if (binding && needsSeparation(binding, node, reads)) {
         const names = ts.isIdentifier(node.name) ? [node.name]
           : ts.isArrayBindingPattern(node.name)
             ? node.name.elements.flatMap(e => ts.isBindingElement(e) && ts.isIdentifier(e.name) ? [e.name] : [])
@@ -164,7 +227,7 @@ export function separateSignalPropBindings(
     }
     ts.forEachChild(node, collectBindings)
   }
-  collectBindings(ctx.componentNode)
+  collectBindings(component)
 
   const edits: { start: number; end: number; text: string }[] = []
   function collectEdits(node: ts.Node): void {
@@ -180,7 +243,7 @@ export function separateSignalPropBindings(
     }
     ts.forEachChild(node, collectEdits)
   }
-  collectEdits(ctx.componentNode)
+  collectEdits(component)
   if (edits.length === 0) return null
   let source = sf.text
   for (const edit of edits.sort((a, b) => b.start - a.start)) {
