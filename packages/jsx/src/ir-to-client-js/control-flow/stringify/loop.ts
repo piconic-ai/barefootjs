@@ -36,7 +36,7 @@ import { emitTemplateCloneInline, emitLoopItemElementSetup, emitHoistedTemplateD
 import { buildSkeletonPathPlan, type SkeletonPathPlan } from './skeleton-paths.ts'
 import { stringifyComponentLoop } from './component-loop.ts'
 import { stringifyCompositeLoop } from './composite-loop.ts'
-import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from './claim-plan.ts'
+import { claimPlanLiteral, claimWriterVarName, rowTextSlotKind, rowTextSlotValue, type ClaimSlotSpec } from './claim-plan.ts'
 import { stringifyLazyRowLoop } from './lazy-row.ts'
 import type { LoopChildRefBinding, LoopPlan, PlainLoopPlan, StaticLoopPlan } from '../plan/types.ts'
 
@@ -515,11 +515,11 @@ export function stringifyStaticLoop(lines: string[], plan: StaticLoopPlan): void
     lines.push(`        }`)
   }
   if (texts.length > 0) {
-    const slots: ClaimSlotSpec[] = texts.map(t => ({ id: t.slotId, kind: 'text', path: [] }))
+    const slots: ClaimSlotSpec[] = texts.map(t => ({ id: t.slotId, kind: rowTextSlotKind(t), path: [] }))
     const writer = claimWriterVarName(slots, varSlotId)
     lines.push(`        const ${writer} = lazySlots(__iterEl, ${claimPlanLiteral(slots)})`)
     for (const text of texts) {
-      lines.push(`        createEffect(() => { ${writer}('${text.slotId}', String(${text.expression})) }${profileBindingId(pc, text.slotId)})`)
+      lines.push(`        createEffect(() => { ${writer}('${text.slotId}', ${rowTextSlotValue(text, text.expression, 'String')}) }${profileBindingId(pc, text.slotId)})`)
     }
   }
   // Ref callbacks fire on every forEach iteration — initial mount and any

@@ -76,6 +76,8 @@ export type BranchChildComponentInitsPlan = readonly BranchChildComponentInit[]
 /** A reactive text effect inside a branch inner loop's renderItem body. */
 export interface BranchInnerLoopText {
   slotId: string
+  /** Claimed and written as markup (`RowTextSlot`). */
+  markup?: true
   /** Already wrapped via inner+outer loop param accessor (`wrapBoth`). */
   wrappedExpression: string
   /**

@@ -44,6 +44,33 @@ export interface ClaimSlotSpec {
   readonly markerless?: boolean
 }
 
+/**
+ * A loop-row content slot. `markup` is set for a row's read of the
+ * component's own prop (Phase 1's `IRExpression.loopRowPropRead`, carried as
+ * `LoopChildReactiveText.markup`): the caller may pass a JSX element there,
+ * so the slot is claimed and written as markup, the same way the read is
+ * outside a loop (`markup-slots.ts`). Every other row text stays 'text'.
+ */
+export interface RowTextSlot {
+  readonly slotId: string
+  readonly markup?: true
+}
+
+/** The claim kind of a loop-row content slot (see {@link RowTextSlot}). */
+export function rowTextSlotKind(text: RowTextSlot): 'text' | 'markup' {
+  return text.markup ? 'markup' : 'text'
+}
+
+/**
+ * The value a loop-row content slot's writer receives: `escapeTextOrNode`
+ * for a markup slot (unwraps a `bfMarkup()` value, passes a Node or a
+ * `__slot()` marker through, escapes a string before the markup writer's
+ * `innerHTML`), `coerce(expr)` for a 'text' slot.
+ */
+export function rowTextSlotValue(text: RowTextSlot, expr: string, coerce: 'String' | 'textOrNode'): string {
+  return text.markup ? `escapeTextOrNode(${expr})` : `${coerce}(${expr})`
+}
+
 /** Render one `SlotSpec` as a source-text object literal. */
 function slotSpecLiteral(slot: ClaimSlotSpec): string {
   const pathSrc = slot.pathExpr ?? `[${slot.path.join(', ')}]`

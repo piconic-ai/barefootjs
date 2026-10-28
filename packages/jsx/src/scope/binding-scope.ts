@@ -236,6 +236,11 @@ export class BindingScope {
     return hit ? hit.binding.stringValue === true : outer(name)
   }
 
+  /** Whether any frame is a loop row: the position sits inside a `.map()` row body. */
+  insideLoopRow(): boolean {
+    return this.frames.some(frame => frame.kind === 'loop-row')
+  }
+
   /** The names the innermost frame binds, in binding order. */
   innermostNames(): readonly string[] {
     return this.frames[0] ? [...this.frames[0].bindings.keys()] : []

@@ -532,6 +532,17 @@ export interface IRExpression {
    * escaping it, while a non-empty fallback stays escaped text.
    */
   childrenRead?: 'bare' | 'nullish-empty' | 'nullish-fallback' | 'or-fallback'
+  /**
+   * A child-position read, inside a loop row, of one of the component's own
+   * props other than `children` (`{props.footer}`, a destructured `{footer}`,
+   * or a const alias of either), not shadowed by a row binding. Decided once
+   * in Phase 1 from the binding. The caller may pass a JSX element at that
+   * prop, which reaches the client as a `bfMarkup()` value or a `__slot()`
+   * marker, so the client writes the row slot as markup, exactly like the
+   * same read outside a loop. A row's own data (the item, a preamble local)
+   * is never flagged and stays escaped text.
+   */
+  loopRowPropRead?: true
   /** When true, expression calls signal getters or memos (has reactive `foo()` pattern). */
   callsReactiveGetters?: boolean
   /** When true, expression contains function call(s) — any `identifier()` pattern (computed from AST). */

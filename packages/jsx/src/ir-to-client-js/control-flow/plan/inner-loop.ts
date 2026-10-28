@@ -39,6 +39,8 @@ export type PreludeStatements = readonly string[]
 /** A reactive text effect inside a reactive inner loop's renderItem body. */
 export interface InnerLoopText {
   slotId: string
+  /** Claimed and written as markup (`RowTextSlot`). */
+  markup?: true
   /** Already wrapped via inner+outer loop param accessor (`wrapBoth`). */
   wrappedExpression: string
   /**

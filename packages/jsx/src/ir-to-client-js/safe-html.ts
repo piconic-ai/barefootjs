@@ -213,7 +213,10 @@ export interface ChildSpliceContext {
    * branch-row builders, whose reactive twin is a `kind: 'text'` writer
    * (`String(...)` into `nodeValue`) — plain `escapeText` is the consistent
    * choice there, and it is also the choice that never unwraps a
-   * `bfMarkup()`-shaped object arriving in JSON-sourced loop data.
+   * `bfMarkup()`-shaped object arriving in JSON-sourced loop data. The one
+   * exception is a row's read of the component's own prop
+   * (`IRExpression.loopRowPropRead`): its row writer is `kind: 'markup'`,
+   * so the door unwraps it as it does the same read outside a loop.
    */
   readonly markupSlotIds?: ReadonlySet<string>
 }
@@ -228,7 +231,10 @@ export interface ChildSpliceContext {
  * Arms, first match wins:
  *   1. `joinArrayChild`         → `joinedMarkup`      (array of compiled leaves)
  *   2. `branchSlotsVar`         → `branchSlotValue`   (runtime coercion, may be a Node)
- *   3. `slotId` ∈ markupSlotIds → `escapedTextOrMarkup`
+ *   3. `slotId` ∈ markupSlotIds,→ `escapedTextOrMarkup`
+ *      or a loop-row prop read
+ *      (`loopRowPropRead`, whose
+ *      row writer is 'markup' too)
  *   4. `slotId`                 → `escapedText`
  *   5. `{children}` passthrough → `childrenMarkup`    (bare splice only, #2775/#2786)
  *   6. `children ?? fallback`,  → `childrenMarkupOrEscapedFallback` (#3554)
@@ -242,14 +248,15 @@ export interface ChildSpliceContext {
  * either alone misses one of the two shapes (#2786).
  */
 export function spliceChildValue(
-  node: Pick<IRExpression, 'expr' | 'slotId' | 'joinArrayChild' | 'childrenRead'>,
+  node: Pick<IRExpression, 'expr' | 'slotId' | 'joinArrayChild' | 'childrenRead' | 'loopRowPropRead'>,
   valueExpr: string,
   cx: ChildSpliceContext,
 ): SafeHtml {
   if (node.joinArrayChild) return joinedMarkup(valueExpr)
   if (cx.branchSlotsVar) return branchSlotValue(valueExpr, cx.branchSlotsVar)
   if (node.slotId) {
-    return cx.markupSlotIds?.has(node.slotId) ? escapedTextOrMarkup(valueExpr) : escapedText(valueExpr)
+    const markup = cx.markupSlotIds?.has(node.slotId) || node.loopRowPropRead
+    return markup ? escapedTextOrMarkup(valueExpr) : escapedText(valueExpr)
   }
   if (node.childrenRead === 'bare' || node.childrenRead === 'nullish-empty') {
     return childrenMarkup(valueExpr)

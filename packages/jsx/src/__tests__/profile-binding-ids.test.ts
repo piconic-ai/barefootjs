@@ -13,6 +13,7 @@ import { TestAdapter } from '../adapters/test-adapter'
 import { buildIdIndex } from '../profiler'
 import { analyzeComponent } from '../analyzer'
 import { buildComponentAnalysis } from '../debug'
+import { codeSafeStringLiteral } from '../ir-to-client-js/utils'
 
 const adapter = new TestAdapter()
 
@@ -221,5 +222,18 @@ describe('the analyzer records `undefined` for a zero-arg createSignal() (#3215)
     `
     const [signal] = analyzeComponent(source, 'Empty.tsx').signals
     expect(signal.type.raw).toBe('string')
+  })
+})
+
+describe('codeSafeStringLiteral (profile binding id spelling)', () => {
+  test('prints a plain id exactly as JSON.stringify does', () => {
+    expect(codeSafeStringLiteral('Counter#binding:s0')).toBe(JSON.stringify('Counter#binding:s0'))
+  })
+
+  test('escapes <, >, / and the line separators, and still evaluates to the same string', () => {
+    const value = 'a</script>b\u2028c\u2029d'
+    const literal = codeSafeStringLiteral(value)
+    expect(literal).not.toMatch(/[<>/\u2028\u2029]/)
+    expect(new Function(`return ${literal}`)()).toBe(value)
   })
 })

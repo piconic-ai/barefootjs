@@ -342,6 +342,7 @@ export function buildBranchInnerLoopsPlan(
       slotId: text.slotId,
       wrappedExpression: wrapBoth(text.expression),
       insideConditional: !!text.insideConditional,
+      ...(text.markup && { markup: true as const }),
     }))
 
     plan.push({

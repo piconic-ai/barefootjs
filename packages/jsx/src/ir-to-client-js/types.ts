@@ -586,6 +586,8 @@ export interface LoopChildReactiveText {
    * constants' own `freeIdentifiers`.
    */
   freeIdentifiers?: ReadonlySet<string>
+  /** A read of the component's own prop (`IRExpression.loopRowPropRead`): claimed and written as markup (`RowTextSlot`). */
+  markup?: true
 }
 
 /**
