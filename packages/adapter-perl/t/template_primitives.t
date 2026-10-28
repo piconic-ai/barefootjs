@@ -163,6 +163,30 @@ subtest 'includes — array + string + non-array/string dispatch' => sub {
     ok !$bf->includes(sub {}, 'x'),      'code ref → 0';
 };
 
+# JS `===` between operands whose type the compiler cannot see. Perl's
+# numeric `==` reads two non-numeric strings as `0 == 0`; `eq` reads `1` and
+# `1.0` as different. The comparison goes by the operands' JS types instead.
+subtest 'strict_eq — JS === by type and value' => sub {
+    ok !$bf->strict_eq('p', 'q'), 'different non-numeric strings are not equal';
+    ok $bf->strict_eq('p', 'p'), 'equal strings are equal';
+    ok !$bf->strict_eq('', 'a'), 'empty string vs non-empty string';
+    ok !$bf->strict_eq('001', '1'), 'numeric-looking strings compare by content';
+    ok $bf->strict_eq(1, 1.0), 'numbers compare by value';
+    ok $bf->strict_eq(0, -0.0), '0 === -0';
+    ok $bf->strict_eq(1e3, 1000), 'exponent notation is the same number';
+    ok !$bf->strict_eq(0.5, 1), 'different numbers are not equal';
+    ok !$bf->strict_eq(1, '1'), 'number vs string of the same digits';
+    ok !$bf->strict_eq('abc', 0), 'non-numeric string vs 0';
+    my $nan = 0 + 'nan';
+    ok !$bf->strict_eq($nan, $nan), 'NaN !== NaN';
+    ok $bf->strict_eq(undef, undef), 'undef === undef';
+    ok !$bf->strict_eq(undef, 0), 'undef vs 0';
+    ok !$bf->strict_eq(undef, ''), 'undef vs empty string';
+    ok $bf->strict_eq(JSON::PP::true(), JSON::PP::true()), 'true === true';
+    ok !$bf->strict_eq(JSON::PP::true(), JSON::PP::false()), 'true !== false';
+    ok !$bf->strict_eq(JSON::PP::true(), 1), 'true !== 1';
+};
+
 # `Array.prototype.indexOf(x)` / `Array.prototype.lastIndexOf(x)`
 # value-equality search (#1448 Tier A). Non-array receivers return -1.
 # Duplicated-value coverage is the disambiguator between indexOf

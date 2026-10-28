@@ -13113,6 +13113,55 @@
         "text"
       ]
     },
+    "strict-equality-untyped-operands": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "array-method:at",
+        "binary:!==",
+        "binary:===",
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "strict-equality-untyped-operands-props-object": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "binary:===",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "string-at-lone-surrogate": {
       "kinds": [
         "array-method",

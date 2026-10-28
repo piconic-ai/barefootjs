@@ -71,6 +71,8 @@ export interface MojoEmitContext {
   _isStringValueName(name: string, componentProperty?: boolean): boolean
   /** Whether a name is declared `boolean` at this position (#3443). */
   _isBooleanValueName(name: string, componentProperty?: boolean): boolean
+  /** Whether a name is declared `number` at this position (`emitPerlEquality`). */
+  _isNumberValueName(name: string, componentProperty?: boolean): boolean
   /** How the emitter coerces an arithmetic operand over a nullish value
    * (`arithmeticOperandCoercion`, #3474): `'null'` reads nil as `0`,
    * `'undefined'` as the runtime's JS `Number()` gives it, `NaN`. `other` is

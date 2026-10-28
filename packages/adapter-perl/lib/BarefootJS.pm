@@ -1084,6 +1084,16 @@ sub _format_date_zone_offset ($tz, $ms) {
 # JS semantic where `.includes` is only defined on Array /
 # TypedArray / String.
 
+# JS `a === b` when neither operand's type is known at compile time. Perl's
+# numeric `==` reads two different non-numeric strings as `0 == 0`, and `eq`
+# reads `1` and `1.0` as different, so the comparison goes by the operands'
+# JS types: numbers by value, strings by content, booleans by truth value,
+# `undef` only to `undef`, and values of different types never equal. The
+# result is a Perl boolean, the same value the native operators yield.
+sub strict_eq ($self, $l, $r) {
+    return BarefootJS::Evaluator::_strict_eq($l, $r) ? !!1 : !!0;
+}
+
 sub includes ($self, $recv, $elem) {
     if (ref($recv) eq 'ARRAY') {
         for my $item (@$recv) {
