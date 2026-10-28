@@ -722,9 +722,34 @@ final class BarefootJS
     // `{{ bf.json(val) }}`, `{{ bf.floor(val) }}`, etc.
     // -----------------------------------------------------------------
 
+    /** JS `JSON.stringify`. JS writes `-0` as `0` (`JSON.stringify(-4 % 2)`
+     * is `"0"`), where `json_encode` keeps the sign of the float `-0.0`
+     * that `mod` gives for a negative dividend, so a zero float is written
+     * as the int `0`, also inside an array or object (#3698). */
     public function json($value): string
     {
-        return $this->backend->encode_json($value);
+        return $this->backend->encode_json(self::unsignZero($value));
+    }
+
+    /** `$value` with every float zero, at any depth of a list, an assoc
+     * array or a `stdClass`, replaced by the int `0`. A value holding no
+     * float zero comes back unchanged. */
+    private static function unsignZero($value)
+    {
+        if (is_float($value)) {
+            return $value === 0.0 ? 0 : $value;
+        }
+        if (is_array($value)) {
+            return array_map(fn ($v) => self::unsignZero($v), $value);
+        }
+        if ($value instanceof \stdClass) {
+            $out = new \stdClass();
+            foreach (get_object_vars($value) as $k => $v) {
+                $out->$k = self::unsignZero($v);
+            }
+            return $out;
+        }
+        return $value;
     }
 
     /** JS `String(v)` mirror: `null` renders as the empty string (not
@@ -841,18 +866,28 @@ final class BarefootJS
      * implements C-style fmod semantics matching JS `%` for every case
      * (zero divisor, infinite/NaN operands all yield NaN natively).
      *
-     * A zero remainder of two int operands is the int `0`, so it still
-     * indexes a list: Blade's `data_get` reads the float `-0.0` that
-     * `fmod(-4, 2)` gives as the key `"-0"`. That drops JS's sign
-     * (`-4 % 2` is `-0`, so `1 / (-4 % 2)` is `-Infinity`); PHP has no
-     * negative-zero int to carry both.
+     * A zero remainder of two int operands is the int `0` when the
+     * dividend is not negative. A negative dividend keeps `fmod`'s float
+     * `-0.0`: JS gives `-4 % 2` as `-0`, so `1 / (-4 % 2)` is `-Infinity`.
+     * It still prints `"0"`, compares equal to `0`, and indexes a list as
+     * `0` (Twig's `attribute()` takes it; Blade's index access passes it
+     * through `index_key`).
      *
      * A nil operand reads as `0`, as with `div`: the adapters spell JS's
      * `null` operand as the nil itself (`null % 2` is `0`). */
     public function mod($a, $b): int|float
     {
         $r = fmod($this->number($a ?? 0), $this->number($b ?? 0));
-        return $r === 0.0 && is_int($a) && is_int($b) ? 0 : $r;
+        return $r === 0.0 && is_int($a) && is_int($b) && $a >= 0 ? 0 : $r;
+    }
+
+    /** A computed index as Blade's `data_get` key (`a[i]` is
+     * `data_get($a, $bf->index_key($i))`). JS reads the key `-0` as `"0"`;
+     * `data_get` spells the float `-0.0` as the key `"-0"` and misses, so a
+     * zero float becomes the int `0`. Any other key is returned as is. */
+    public function index_key($key)
+    {
+        return is_float($key) && $key === 0.0 ? 0 : $key;
     }
 
     public function floor($value): float

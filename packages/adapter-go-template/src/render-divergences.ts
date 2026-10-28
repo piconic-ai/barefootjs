@@ -120,6 +120,10 @@ export const renderDivergences: RenderDivergences = {
   // A JSX prop holding a nested component, forwarded by the receiving
   // component to a grandchild prop, renders nothing in the grandchild.
   'jsx-prop-nested-component-forwarded': { limitation: 'nested-component-in-jsx-prop-forwarded' },
+  // `bf_json` (Go's `encoding/json`) writes the float `-0` that `bf_mod`
+  // gives for a negative dividend as `-0`, where JS's `JSON.stringify`
+  // writes `0`.
+  'remainder-negative-zero-json': { limitation: 'negative-zero-json-stringify' },
   // `.at(i)` on half of a surrogate pair: the runtime string can't hold a
   // lone surrogate, so it returns U+FFFD (halves compare equal, and
   // rejoining them renders `��` instead of the emoji).

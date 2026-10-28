@@ -76,10 +76,11 @@ export const renderDivergences: RenderDivergences = {
   // `number-division-zero-divisor` used to sit here: PHP's `/` threw
   // `DivisionByZeroError` on a zero divisor. `/` now goes through the
   // runtime's `div` (#3474).
-  // The runtime's `mod` keeps an int `0` for `-4 % 2` so the remainder still
-  // indexes a list (Blade's `data_get` reads the float `-0.0` as the key
-  // `"-0"`), which drops JS's `-0` sign: `1 / (-4 % 2)` is `Infinity`.
-  'remainder-negative-zero-quotient': { limitation: 'negative-zero-remainder-quotient' },
+  // `remainder-negative-zero-quotient` used to sit here: the runtime's `mod`
+  // kept an int `0` for `-4 % 2`, which dropped JS's `-0` sign, so
+  // `1 / (-4 % 2)` rendered `Infinity`. `mod` now keeps the float `-0.0`,
+  // and Blade's index access reads it as `0` through the runtime's
+  // `index_key` (#3698).
   // `remainder-nan-operand` used to sit here: PHP's `%` converted both
   // operands to integers, so `NaN % 2` rendered an integer. `%` now goes
   // through the runtime's `mod`, PHP's `fmod` (#3474).
