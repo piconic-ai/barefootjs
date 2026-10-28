@@ -12033,6 +12033,30 @@
         "text"
       ]
     },
+    "signal-loop-row-child-children-member-seed": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
+    "signal-loop-row-child-children-member-seed-props-object": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "signal-loop-row-child-children-props-object": {
       "kinds": [
         "call",

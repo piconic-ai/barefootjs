@@ -152,7 +152,7 @@ import { parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
 import { propertyInfoToGo, typeInfoToGo } from "./type/type-codegen.ts"
 import { isKnownArray, isKnownNonNumber } from "./type/number-read.ts"
 import { planSynthPropStructs } from "./type/synth-prop-structs.ts"
-import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, signalDeclaredRowType, signalFieldGoType, signalSeedGo } from "./type/state-fields.ts"
+import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, isPrimitiveLiteralArray, signalFieldGoType, signalLoopRows, signalSeedGo } from "./type/state-fields.ts"
 import { propsFieldName, propsFieldNames } from './lib/props-field-names.ts'
 import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
@@ -2175,22 +2175,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   ): string | null {
     if (this.resolveLoopDatumFields(itemType).length > 0) return null
     const resolved = this.resolveLoopArraySourceParsed(arrayParsed)
-    if (!resolved) return null
-    if (resolved.kind !== 'array-literal' || resolved.elements.length === 0) {
-      return null
-    }
-    for (const el of resolved.elements) {
-      const isStr = el.kind === 'literal' && el.literalType === 'string'
-      // A numeric literal, or a unary-minus wrapping one (`-1`).
-      const isNum =
-        (el.kind === 'literal' && el.literalType === 'number') ||
-        (el.kind === 'unary' &&
-          el.op === '-' &&
-          el.argument.kind === 'literal' &&
-          el.argument.literalType === 'number')
-      if (!isStr && !isNum) return null
-    }
-    return 'interface{}'
+    return isPrimitiveLiteralArray(resolved) ? 'interface{}' : null
   }
 
   /**
@@ -2201,26 +2186,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * primitive-literal array (`scalarLiteralLoopGoType`), an array prop of
    * strings/numbers/booleans whose rows the constructor builds from the prop
    * itself (`propArrayLoopRowSource`), or a signal of such values
-   * (`scalarSignalRowGoType`). The struct field, the constructor's rows and
+   * (`signalLoopRows`). The struct field, the constructor's rows and
    * the template (`scalarWrapperRowLoops`) all read this one answer.
    */
   private wrapperRowScalarItemGoType(ir: ComponentIR, nested: NestedComponentInfo): string | null {
     if (!nested.bodyChildren?.length) return null
     const signal = loopArraySignal(nested, ir.metadata.signals, this.state.getterAliases)
-    if (signal) return this.scalarSignalRowGoType(ir, signal)
+    if (signal) return signalLoopRows(this.emitCtx, signal, ir.metadata.propsParams)?.scalar ? 'interface{}' : null
     const literal = this.scalarLiteralLoopGoType(nested.loopArrayParsed, nested.loopItemType)
     if (literal) return literal
     const source = this.propArrayLoopRowSource(ir, nested)
     return source?.shape.scalar ? 'interface{}' : null
-  }
-
-  /**
-   * `'interface{}'` when a signal's rows are scalars (a declared primitive
-   * element type, or a seed that is a primitive-literal array), else null.
-   */
-  private scalarSignalRowGoType(ir: ComponentIR, signal: ComponentIR['metadata']['signals'][number]): string | null {
-    if (signalDeclaredRowType(this.emitCtx, signal, ir.metadata.propsParams)?.kind === 'primitive') return 'interface{}'
-    return this.scalarLiteralLoopGoType(resolveSignalParsedThroughSeedPlan(this.state, signal), null)
   }
 
   /** Generate the NewXxxProps function. */
@@ -2883,26 +2859,32 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /**
    * The constructor-time Go value of a dynamic forwarded-children loop's
-   * rows, or null when it has none: the signal the loop ranges over
-   * (`rows()`), seeded exactly as the signal's own Props field is, else the
-   * memo it ranges over (`sortedData()`).
+   * rows, or null when it has none. A signal's rows (`rows()`) are its seed
+   * exactly as its own Props field takes it, declared as that field's type
+   * (`goType`) so the range yields the row type `signalLoopRows` decided —
+   * null when that decision has no row type. A memo's (`sortedData()`) are
+   * its initial value.
    */
   private dynamicBodyRowsValue(
     ir: ComponentIR,
     nested: NestedComponentInfo,
     propFallbackVars: Map<string, PropFallbackVar>,
-  ): string | null {
+  ): { expr: string; goType: string | null } | null {
     const signal = loopArraySignal(nested, ir.metadata.signals, this.state.getterAliases)
     if (signal) {
+      const rows = signalLoopRows(this.emitCtx, signal, ir.metadata.propsParams)
+      if (!rows) return null
       const bakeType = this.state.synthStructTypes.get(signal.getter) ?? signal.type
-      return signalSeedGo(this.emitCtx, signal, ir.metadata.propsParams, propFallbackVars, bakeType)
+      const expr = signalSeedGo(this.emitCtx, signal, ir.metadata.propsParams, propFallbackVars, bakeType, true)
+      return { expr, goType: rows.sliceGoType }
     }
     const memoName = this.extractMemoNameFromLoopArray(nested.loopArray)
     const memo = memoName ? ir.metadata.memos.find(m => m.name === memoName) : undefined
     if (!memo) return null
     const propsParamMap = new Map(ir.metadata.propsParams.map(p => [p.name, p]))
     const goType = inferMemoType(this.emitCtx, memo, ir.metadata.signals, propsParamMap)
-    return computeMemoInitialValue(this.emitCtx, memo, ir.metadata.signals, ir.metadata.propsParams, propFallbackVars, goType)
+    const expr = computeMemoInitialValue(this.emitCtx, memo, ir.metadata.signals, ir.metadata.propsParams, propFallbackVars, goType)
+    return { expr, goType: null }
   }
 
   private emitDynamicBodyWrappers(
@@ -2916,8 +2898,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Wrapper items for dynamic loop-body components (embedded child Props +
     // datum + sub-instances), built from the rows' constructor-time value.
     for (const nested of dynamicWithBody) {
-      const bakedValue = this.dynamicBodyRowsValue(ir, nested, propFallbackVars)
-      if (bakedValue === null || bakedValue === 'nil' || bakedValue === '0') continue
+      const baked = this.dynamicBodyRowsValue(ir, nested, propFallbackVars)
+      if (baked === null || baked.expr === 'nil' || baked.expr === '0') continue
 
       const wrapperType = this.loopBodyWrapperName(componentName, nested)
       const varName = this.nestedRowsVar(nested)
@@ -2928,7 +2910,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.emitLoopRowBodyChildInstances(lines, ir, bodyChildInstances, propFallbackVars)
 
       const dataVar = `${varName}Data`
-      lines.push(`\t${dataVar} := ${bakedValue}`)
+      lines.push(baked.goType ? `\tvar ${dataVar} ${baked.goType} = ${baked.expr}` : `\t${dataVar} := ${baked.expr}`)
       lines.push(`\t${varName} := make([]${wrapperType}, len(${dataVar}))`)
       lines.push(`\tfor i, item := range ${dataVar} {`)
       lines.push(`\t\t${varName}[i] = ${wrapperType}{`)

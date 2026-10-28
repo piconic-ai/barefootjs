@@ -25,6 +25,7 @@ import type { ComponentIR, ParsedExpr, ParsedStatement, TypeInfo, JsSourceText }
 import type { GoEmitContext } from '../emit-context.ts'
 import { resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
 import { GO_KEYWORDS, capitalizeFieldName } from '../lib/go-naming.ts'
+import { SCALAR_ROW_GO_TYPES } from '../lib/constants.ts'
 import type { PropFallbackVar } from '../lib/types.ts'
 import { propsFieldName } from '../lib/props-field-names.ts'
 import { findNestedComponents } from '../analysis/component-tree.ts'
@@ -33,7 +34,7 @@ import { resolveBlockBodyMemoModuleConst } from '../memo/memo-value.ts'
 import { isIntegerValued } from '../memo/memo-compute.ts'
 import { memoSeedRepresentation } from '../memo/memo-seed-shape.ts'
 import { NULLISH_SCALAR_GO_TYPES, bareSeedPropName, buildPropTypeOverrides, propLiteralDefaultGo, resolvePropGoType, seedPassthroughPropName } from '../props/prop-types.ts'
-import { isMathMinMax, propMemberSeedGoType } from '../value/prop-member-seed.ts'
+import { isMathMinMax, propMemberSeedGoType, resolvePropMemberSeed } from '../value/prop-member-seed.ts'
 import { convertInitialValue, seedFallbackVar } from '../value/value-lowering.ts'
 import { typeInfoToGo } from './type-codegen.ts'
 
@@ -178,35 +179,63 @@ function seedingProp(
 }
 
 /**
- * The declared element type of an array signal's rows: the signal's own
- * element type, else that of the array prop seeding it (`createSignal(items)`,
- * `createSignal(props.items ?? [])`). Null when neither declares one.
+ * Whether `parsed` is a non-empty array literal of string/number literals
+ * (a negated number included): rows that carry their bare value.
  */
-export function signalDeclaredRowType(
-  ctx: GoEmitContext,
-  signal: StateSignal,
-  propsParams: readonly StatePropParam[],
-): TypeInfo | null {
-  const propsParamMap = new Map(propsParams.map(p => [p.name, p]))
-  return signal.type?.elementType ?? seedingProp(ctx, signal, propsParamMap)?.type?.elementType ?? null
+export function isPrimitiveLiteralArray(parsed: ParsedExpr | undefined): boolean {
+  if (parsed?.kind !== 'array-literal' || parsed.elements.length === 0) return false
+  return parsed.elements.every(el =>
+    (el.kind === 'literal' && (el.literalType === 'string' || el.literalType === 'number')) ||
+    (el.kind === 'unary' && el.op === '-' && el.argument.kind === 'literal' && el.argument.literalType === 'number'),
+  )
 }
 
 /**
- * The row type a loop over an array signal (`rows().map(…)`) resolves its
- * wrapper's datum fields from: the struct synthesized for an untyped
- * object-array seed, else the declared element type
- * (`signalDeclaredRowType`), named by its generated Go struct when it has
- * one. Null when none resolves.
+ * How the constructor builds the forwarded-children rows of a loop over an
+ * array signal (`rows().map(…)`): it ranges over the signal's own seed,
+ * typed as the signal's Props field (`sliceGoType`, `signalFieldGoType`),
+ * and each row is either a generated struct whose fields the wrapper copies
+ * (`itemType`) or a scalar carried bare on `BfLoopItem`. The wrapper's
+ * datum fields, its `BfLoopItem`, the template's scalar-row reads and the
+ * constructor's rows all read this one answer.
+ *
+ * The row type is checked against the field type the seed actually
+ * produces: the element type of the synthesized struct, of a prop-member
+ * seed's field path (`initial.items`), of the signal's declared type, or of
+ * the array prop seeding it must spell `sliceGoType`'s element. Null when
+ * none does (an `interface{}` field of a computed seed, an untyped row): the
+ * constructor then builds no rows, so no wrapper reads a field it lacks.
  */
-export function signalRowItemType(
+export function signalLoopRows(
   ctx: GoEmitContext,
   signal: StateSignal,
   propsParams: readonly StatePropParam[],
-): TypeInfo | null {
-  const element = ctx.state.synthStructTypes.get(signal.getter)?.elementType ?? signalDeclaredRowType(ctx, signal, propsParams)
-  if (!element) return null
-  const goName = typeInfoToGo(ctx, element)
-  return ctx.state.localStructFields.has(goName) ? { kind: 'interface', raw: goName } : element
+): { sliceGoType: string; itemType: TypeInfo; scalar: boolean } | null {
+  const propsParamMap = new Map(propsParams.map(p => [p.name, p]))
+  const sliceGoType = signalFieldGoType(ctx, signal, propsParamMap)
+  const memberSeed = resolvePropMemberSeed(ctx, signal.parsed, ctx.state.currentPropsParams)
+  const candidates = [
+    ctx.state.synthStructTypes.get(signal.getter)?.elementType,
+    memberSeed?.kind === 'resolved' ? memberSeed.type.elementType : undefined,
+    signal.type?.elementType,
+    seedingProp(ctx, signal, propsParamMap)?.type?.elementType,
+  ]
+  for (const element of candidates) {
+    if (!element) continue
+    // A primitive element whose field stays boxed (`number[]` is
+    // `[]interface{}`, #3310) is still a scalar row.
+    if (sliceGoType === '[]interface{}' && element.kind === 'primitive') return { sliceGoType, itemType: element, scalar: true }
+    const goName = typeInfoToGo(ctx, element)
+    if (`[]${goName}` !== sliceGoType) continue
+    if (ctx.state.localStructFields.has(goName)) return { sliceGoType, itemType: { kind: 'interface', raw: goName }, scalar: false }
+    if (SCALAR_ROW_GO_TYPES.has(goName)) return { sliceGoType, itemType: element, scalar: true }
+  }
+  // An untyped primitive-literal seed (`createSignal(['x', 'y'])`) is a
+  // `[]interface{}` field of scalars.
+  if (sliceGoType === '[]interface{}' && isPrimitiveLiteralArray(resolveSignalParsedThroughSeedPlan(ctx.state, signal))) {
+    return { sliceGoType, itemType: { kind: 'unknown', raw: 'unknown' }, scalar: true }
+  }
+  return null
 }
 
 /**

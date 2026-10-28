@@ -40,7 +40,7 @@ import { GO_IDENTIFIER, capitalizeFieldName } from '../lib/go-naming.ts'
 import type { NestedComponentInfo } from '../lib/types.ts'
 import { resolveBlockBodyMemoModuleConst } from '../memo/memo-value.ts'
 import { planSynthPropStructs } from './synth-prop-structs.ts'
-import { signalRowItemType } from './state-fields.ts'
+import { signalLoopRows } from './state-fields.ts'
 
 /**
  * What the type synthesis needs from the adapter beyond the shared
@@ -524,6 +524,14 @@ export function resolveNestedLoopItemTypes(
   //      #3178) → same shape as (2) structurally, but nothing already resolved
   //      an element type to borrow — synthesize one from the literal itself.
   for (const nested of nestedComponents) {
+    // A signal-array loop (`rows()`): the row type the constructor's rows
+    // are built with (`signalLoopRows`), even over a type the IR carries,
+    // and none when it builds no rows.
+    const signal = loopArraySignal(nested, ir.metadata.signals, host.ctx.state.getterAliases)
+    if (signal) {
+      nested.loopItemType = signalLoopRows(host.ctx, signal, ir.metadata.propsParams)?.itemType ?? null
+      continue
+    }
     if (nested.loopItemType || !nested.loopArray) continue
 
     // Case 0: an array prop's own element type (`propArrayLoopRowSource`).
@@ -531,14 +539,6 @@ export function resolveNestedLoopItemTypes(
     const propRows = nested.bodyChildren?.length ? host.propArrayLoopRowSource(ir, nested) : null
     if (propRows) {
       nested.loopItemType = propRows.itemType
-      continue
-    }
-
-    // Case 1a: a signal-array loop (`rows()`) borrows the signal's row type
-    // (`signalRowItemType`).
-    const signal = loopArraySignal(nested, ir.metadata.signals, host.ctx.state.getterAliases)
-    if (signal) {
-      nested.loopItemType = signalRowItemType(host.ctx, signal, ir.metadata.propsParams)
       continue
     }
 

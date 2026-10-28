@@ -7,6 +7,7 @@
 
 import { describe, expect, test } from 'bun:test'
 import { compileFixtureJSX } from '@barefootjs/adapter-tests/harness-program'
+import { compileJSX } from '@barefootjs/jsx'
 import type { ComponentIR } from '@barefootjs/jsx'
 import { GoTemplateAdapter } from '../adapter/go-template-adapter'
 import { findNestedComponents, loopArraySignal } from '../adapter/analysis/component-tree'
@@ -37,7 +38,8 @@ describe('loopArraySignal', () => {
   return <p>{rows().map((o) => <Chip key={o.id}><b>{o.id}</b></Chip>)}</p>
 }`)
     expect(sourceSignals(ir)).toEqual(['rows'])
-  })
+    // The first compile in the file builds the type-checker program cold.
+  }, 30_000)
 
   test("a local alias of the getter resolves to the getter's signal", () => {
     const ir = compileIR(`export function C() {
@@ -73,5 +75,40 @@ describe('loopArraySignal', () => {
   return <div>{shown().map((o) => <Chip key={o.id}><b>{o.id}</b></Chip>)}</div>
 }`)
     expect(sourceSignals(ir)).toEqual([null])
+  })
+})
+
+/** The generated Go types file (constructor included) for `body`. */
+function compileTypes(body: string): string {
+  const source = `'use client'\nimport { createSignal } from '@barefootjs/client'\n${CHIP}\ntype Item = { id: string; label: string }\ninterface State { items: Item[]; tags: string[] }\n${body}`
+  const result = compileJSX(source, 'test.tsx', { adapter: new GoTemplateAdapter(), outputIR: false })
+  return result.files.find(f => f.type === 'types')?.content ?? ''
+}
+
+describe("the constructor's signal rows agree with the row type", () => {
+  test('a prop-member seed ranges over its Input field path, typed as the signal field', () => {
+    const types = compileTypes(`export function C({ initial }: { initial: State }) {
+  const [rows] = createSignal(initial.items)
+  return <p>{rows().map((item) => <Chip key={item.id}><b>{item.label}</b></Chip>)}</p>
+}`)
+    expect(types).toContain('var chipsData []Item = in.Initial.Items')
+    expect(types).toContain('Label: item.Label,')
+  })
+
+  test('a scalar prop-member seed carries each value on BfLoopItem', () => {
+    const types = compileTypes(`export function C(props: { initial: State }) {
+  const [tags] = createSignal(props.initial.tags)
+  return <p>{tags().map((t) => <Chip key={t}><b>{t}</b></Chip>)}</p>
+}`)
+    expect(types).toContain('var chipsData []string = in.Initial.Tags')
+    expect(types).toContain('BfLoopItem: item,')
+  })
+
+  test('a seed whose field has no row type builds no rows', () => {
+    const types = compileTypes(`export function C({ items, on }: { items: Item[]; on: boolean }) {
+  const [rows] = createSignal(on ? items : [])
+  return <p>{rows().map((item) => <Chip key={item.id}><b>{item.label}</b></Chip>)}</p>
+}`)
+    expect(types).not.toContain('chipsData')
   })
 })
