@@ -2056,6 +2056,25 @@
         "text"
       ]
     },
+    "component-prop-undefined-literal-positions": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "component-prop-undefined-literal-spread": {
       "kinds": [
         "identifier",

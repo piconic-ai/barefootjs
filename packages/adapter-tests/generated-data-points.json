@@ -1340,6 +1340,70 @@
       }
     }
   ],
+  "component-prop-undefined-literal-positions": [
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "show": true
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "items": [
+          "a",
+          "b"
+        ],
+        "show": true
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "items": [
+          "a",
+          "b"
+        ],
+        "show": true
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "items": [
+          "a",
+          "b"
+        ],
+        "show": true
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "label": "outer",
+        "items": [],
+        "show": true
+      }
+    },
+    {
+      "name": "gen:show:false",
+      "props": {
+        "label": "outer",
+        "items": [
+          "a",
+          "b"
+        ],
+        "show": false
+      }
+    }
+  ],
   "component-prop-undefined-literal-spread": [
     {
       "name": "gen:other:empty",
