@@ -1014,6 +1014,8 @@ import { fixture as loopRowChildChildrenRef } from './loop-row-child-children-re
 import { fixture as loopRowNestedChildChildrenHandler } from './loop-row-nested-child-children-handler'
 import { fixture as loopRowChildChildrenInnerLoopHandler } from './loop-row-child-children-inner-loop-handler'
 import { fixture as signalLoopRowChildChildren } from './signal-loop-row-child-children'
+import { fixture as signalLoopRowChildChildrenShapes } from './signal-loop-row-child-children-shapes'
+import { fixture as signalLoopRowChildChildrenPropsObject } from './signal-loop-row-child-children-props-object'
 import { fixture as loopRowChildChildrenNestedPreambleProp } from './loop-row-child-children-nested-preamble-prop'
 import { fixture as loopRowChildChildrenNestedRowVarShapes } from './loop-row-child-children-nested-row-var-shapes'
 import { fixture as loopRowChildChildrenFilterCapturesRow } from './loop-row-child-children-filter-captures-row'
@@ -1914,6 +1916,8 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowNestedChildChildrenHandler,
   loopRowChildChildrenInnerLoopHandler,
   signalLoopRowChildChildren,
+  signalLoopRowChildChildrenShapes,
+  signalLoopRowChildChildrenPropsObject,
   loopRowChildChildrenNestedPreambleProp,
   loopRowChildChildrenNestedRowVarShapes,
   loopRowChildChildrenFilterCapturesRow,

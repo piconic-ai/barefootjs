@@ -178,6 +178,38 @@ function seedingProp(
 }
 
 /**
+ * The declared element type of an array signal's rows: the signal's own
+ * element type, else that of the array prop seeding it (`createSignal(items)`,
+ * `createSignal(props.items ?? [])`). Null when neither declares one.
+ */
+export function signalDeclaredRowType(
+  ctx: GoEmitContext,
+  signal: StateSignal,
+  propsParams: readonly StatePropParam[],
+): TypeInfo | null {
+  const propsParamMap = new Map(propsParams.map(p => [p.name, p]))
+  return signal.type?.elementType ?? seedingProp(ctx, signal, propsParamMap)?.type?.elementType ?? null
+}
+
+/**
+ * The row type a loop over an array signal (`rows().map(…)`) resolves its
+ * wrapper's datum fields from: the struct synthesized for an untyped
+ * object-array seed, else the declared element type
+ * (`signalDeclaredRowType`), named by its generated Go struct when it has
+ * one. Null when none resolves.
+ */
+export function signalRowItemType(
+  ctx: GoEmitContext,
+  signal: StateSignal,
+  propsParams: readonly StatePropParam[],
+): TypeInfo | null {
+  const element = ctx.state.synthStructTypes.get(signal.getter)?.elementType ?? signalDeclaredRowType(ctx, signal, propsParams)
+  if (!element) return null
+  const goName = typeInfoToGo(ctx, element)
+  return ctx.state.localStructFields.has(goName) ? { kind: 'interface', raw: goName } : element
+}
+
+/**
  * A memo's arithmetic body (`*`, `/`, `+`, `-`) is a number when one of its
  * dependency signals is number-typed, either through the prop that seeds it
  * or through its own inferred type.

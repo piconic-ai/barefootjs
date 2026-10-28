@@ -34,11 +34,13 @@ import {
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
+import { loopArraySignal } from '../analysis/component-tree.ts'
 import { findModuleScopeConst } from '../lib/compile-state.ts'
 import { GO_IDENTIFIER, capitalizeFieldName } from '../lib/go-naming.ts'
 import type { NestedComponentInfo } from '../lib/types.ts'
 import { resolveBlockBodyMemoModuleConst } from '../memo/memo-value.ts'
 import { planSynthPropStructs } from './synth-prop-structs.ts'
+import { signalRowItemType } from './state-fields.ts'
 
 /**
  * What the type synthesis needs from the adapter beyond the shared
@@ -529,6 +531,14 @@ export function resolveNestedLoopItemTypes(
     const propRows = nested.bodyChildren?.length ? host.propArrayLoopRowSource(ir, nested) : null
     if (propRows) {
       nested.loopItemType = propRows.itemType
+      continue
+    }
+
+    // Case 1a: a signal-array loop (`rows()`) borrows the signal's row type
+    // (`signalRowItemType`).
+    const signal = loopArraySignal(nested, ir.metadata.signals, host.ctx.state.getterAliases)
+    if (signal) {
+      nested.loopItemType = signalRowItemType(host.ctx, signal, ir.metadata.propsParams)
       continue
     }
 

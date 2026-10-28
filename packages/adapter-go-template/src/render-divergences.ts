@@ -131,16 +131,6 @@ export const renderDivergences: RenderDivergences = {
   // A signal seeded from its own same-named prop keeps the prop's template
   // variable, so a raw `props.<name>` read beside it sees the derived value.
   'signal-from-same-named-prop-raw-read': { limitation: 'signal-from-same-named-prop-raw-read' },
-  // A signal-array loop whose row is a child component with forwarded JSX
-  // children: the constructor leaves a signal-backed loop's child Props slice
-  // to the route handler, and a row with body children has no handler-side
-  // construction, so the loop renders no rows.
-  'signal-loop-row-child-children': { limitation: 'signal-loop-row-child-children-unseeded' },
-  'loop-row-child-children-inner-loop-shadow': { limitation: 'signal-loop-row-child-children-unseeded' },
-  'loop-row-child-children-handler': { limitation: 'signal-loop-row-child-children-unseeded' },
-  'loop-row-child-children-ref': { limitation: 'signal-loop-row-child-children-unseeded' },
-  'loop-row-nested-child-children-handler': { limitation: 'signal-loop-row-child-children-unseeded' },
-  'loop-row-child-children-inner-loop-handler': { limitation: 'signal-loop-row-child-children-unseeded' },
   // A const reading a signal getter (`const b = count()`) read in a loop row
   // that binds the getter's name (`rows.map(count => …{b}…)`): the template
   // reads `b` as a variable that is never set.
