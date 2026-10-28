@@ -4214,6 +4214,44 @@
       }
     }
   ],
+  "escaped-ternary-branch": [
+    {
+      "name": "gen:on:absent",
+      "props": {
+        "items": [
+          "x",
+          "y"
+        ],
+        "__instanceId": "EscapedTernaryBranch_test"
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "on": false,
+        "items": [
+          "x",
+          "y"
+        ],
+        "__instanceId": "EscapedTernaryBranch_test"
+      }
+    },
+    {
+      "name": "gen:items:absent",
+      "props": {
+        "on": true,
+        "__instanceId": "EscapedTernaryBranch_test"
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "on": true,
+        "items": [],
+        "__instanceId": "EscapedTernaryBranch_test"
+      }
+    }
+  ],
   "falsy-row-clicks": [
     {
       "name": "gen:nums:empty",
