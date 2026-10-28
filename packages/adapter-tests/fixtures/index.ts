@@ -757,6 +757,8 @@ import { fixture as moduleConstArraySeedNoGeneric } from './module-const-array-s
 // #2946: a module-scope const array `.map()`'d directly with no signal
 // wrapper — the shape `resolveStaticLoopSource` used to refuse outright.
 import { fixture as moduleConstLoopSource } from './module-const-loop-source'
+import { fixture as moduleConstMultilineTemplateLiteral } from './module-const-multiline-template-literal'
+import { fixture as moduleConstMultilineTemplateLiteralPropsObject } from './module-const-multiline-template-literal-props-object'
 import { fixture as moduleConstLoopSourceChildComponent } from './module-const-loop-source-child-component'
 import { fixture as moduleConstLoopSourceComputed } from './module-const-loop-source-computed'
 import { fixture as moduleConstLoopSourceComputedClient } from './module-const-loop-source-computed-client'
@@ -1786,6 +1788,8 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstArraySeed,
   moduleConstArraySeedNoGeneric,
   moduleConstLoopSource,
+  moduleConstMultilineTemplateLiteral,
+  moduleConstMultilineTemplateLiteralPropsObject,
   moduleConstLoopSourceChildComponent,
   moduleConstLoopSourceComputed,
   moduleConstLoopSourceComputedClient,
