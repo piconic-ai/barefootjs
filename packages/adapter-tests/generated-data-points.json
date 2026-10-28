@@ -639,6 +639,196 @@
       }
     }
   ],
+  "at-sign-before-dynamic-text": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": "",
+        "b": "y",
+        "show": true,
+        "items": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:a:markup",
+      "props": {
+        "a": "<b>&\"'</b>",
+        "b": "y",
+        "show": true,
+        "items": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:a:multibyte",
+      "props": {
+        "a": "日本語",
+        "b": "y",
+        "show": true,
+        "items": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "a": "x",
+        "b": "",
+        "show": true,
+        "items": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:b:markup",
+      "props": {
+        "a": "x",
+        "b": "<b>&\"'</b>",
+        "show": true,
+        "items": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:b:multibyte",
+      "props": {
+        "a": "x",
+        "b": "日本語",
+        "show": true,
+        "items": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:show:false",
+      "props": {
+        "a": "x",
+        "b": "y",
+        "show": false,
+        "items": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "a": "x",
+        "b": "y",
+        "show": true,
+        "items": []
+      }
+    }
+  ],
+  "at-sign-before-dynamic-text-props-object": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": "",
+        "b": "y",
+        "show": true,
+        "items": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:a:markup",
+      "props": {
+        "a": "<b>&\"'</b>",
+        "b": "y",
+        "show": true,
+        "items": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:a:multibyte",
+      "props": {
+        "a": "日本語",
+        "b": "y",
+        "show": true,
+        "items": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "a": "x",
+        "b": "",
+        "show": true,
+        "items": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:b:markup",
+      "props": {
+        "a": "x",
+        "b": "<b>&\"'</b>",
+        "show": true,
+        "items": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:b:multibyte",
+      "props": {
+        "a": "x",
+        "b": "日本語",
+        "show": true,
+        "items": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:show:false",
+      "props": {
+        "a": "x",
+        "b": "y",
+        "show": false,
+        "items": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "a": "x",
+        "b": "y",
+        "show": true,
+        "items": []
+      }
+    }
+  ],
   "bare-text-optional-scalar": [
     {
       "name": "gen:size:negative",

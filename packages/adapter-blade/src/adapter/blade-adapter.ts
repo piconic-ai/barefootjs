@@ -316,6 +316,7 @@ import {
   bladeIdent,
   bladeVar,
   escapeBladeSingleQuoted,
+  escapeBladeStaticText,
   bladeLoopBindingAccessor,
 } from './lib/blade-naming.ts'
 import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
@@ -486,8 +487,9 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
 
   emitText(node: IRText): string {
     // IRText carries the entity-DECODED value (Phase 1 decodes JSX
-    // character references); re-escape for direct HTML emission.
-    return escapeHtml(node.value)
+    // character references); re-escape for direct HTML emission, then
+    // keep any `@` away from Blade's directive / escaped-echo syntax.
+    return escapeBladeStaticText(escapeHtml(node.value))
   }
 
   emitExpression(node: IRExpression): string {
@@ -1121,7 +1123,7 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
    * AttrValue lowering for intrinsic-element attributes (Blade).
    */
   private readonly elementAttrEmitter: AttrValueEmitter = {
-    emitLiteral: (value, name) => `${name}="${escapeHtml(value.value)}"`,
+    emitLiteral: (value, name) => `${name}="${escapeBladeStaticText(escapeHtml(value.value))}"`,
     emitExpression: (source, name) => {
       // A computed const reads as its initializer (#3494).
       const value = inlineComputedConstAttr(source, this.computedConsts)

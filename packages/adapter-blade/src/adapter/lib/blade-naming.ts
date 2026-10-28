@@ -62,6 +62,21 @@ export function escapeBladeSingleQuoted(s: string): string {
 }
 
 /**
+ * Escape static template text (an element's text run or a literal attribute
+ * value, already HTML-escaped) so Blade's compiler prints every `@` instead
+ * of reading it. A raw `@` is not inert in a Blade template: `@word` runs a
+ * directive (`@php`, `@json(…)`, `@verbatim`), `@@word` collapses to
+ * `@word`, and `@{{` / `@{!!` keep the following echo as literal source —
+ * so a JSX text run ending in `@` right before a dynamic expression printed
+ * that expression's own text marker echo verbatim (#3758). Each `@` becomes
+ * a `{{ '@' }}` echo: `e('@')` is `@`, so the rendered HTML is unchanged and
+ * no `@` reaches the compiler from static text.
+ */
+export function escapeBladeStaticText(s: string): string {
+  return s.split('@').join("{{ '@' }}")
+}
+
+/**
  * Quote an array-literal KEY for Blade/PHP. Always quotes — a bareword key
  * in a PHP array literal (`[key => value]`) is a syntax error, not a
  * variable lookup (unlike Twig's hash literal, where an unquoted key reads

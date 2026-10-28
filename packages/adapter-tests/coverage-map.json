@@ -923,6 +923,43 @@
       "axes": [],
       "contexts": []
     },
+    "at-sign-before-dynamic-text": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "at-sign-before-dynamic-text-props-object": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:null"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "attr-ternary-title": {
       "kinds": [
         "call",
