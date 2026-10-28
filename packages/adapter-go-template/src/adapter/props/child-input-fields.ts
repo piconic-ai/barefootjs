@@ -42,7 +42,7 @@ import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { rowItemPath, rowReadGoAccessor, rowReadGoValue, type LoopRowBinding, type LoopRowShape } from '../lib/loop-row-path.ts'
 import type { ChildComponentShape, NestedComponentInfo, PropFallbackVar } from '../lib/types.ts'
 import { objectBakeTargetFor, routesToRestBag } from '../lib/types.ts'
-import { evaluateChildPropValue, resolveLocalGetterAsGo, templatePartsToGoCode, unboxNillablePropRef } from '../value/child-prop-value.ts'
+import { evaluateChildPropValue, evaluateUntypedChildPropValue, resolveLocalGetterAsGo, templatePartsToGoCode, unboxNillablePropRef } from '../value/child-prop-value.ts'
 import { parsedLiteralToGo } from '../value/parsed-literal-to-go.ts'
 import { objectLiteralToGoComposite, unboxToGoScalar } from '../value/value-lowering.ts'
 import { isFinalPropWriter, isPropsObjectSpread, resolvePropsSpreadCall } from './props-spread.ts'
@@ -604,9 +604,10 @@ function refusePropsSpreadMerge(ctx: GoEmitContext, childName: string, spread: I
  * it as the child root's `data-key`, never as a prop, so it is not a field of
  * `<Child>Input` (`lowerChildInputFields` is handed the call without it). The
  * Go value is stamped on the built child's `BfDataKey`, which the child's root
- * already relays (`{{if .BfDataKey}} data-key=…{{end}}`). Lowered by the same
- * per-prop steps as any other prop; null when there is no key, when it reads
- * a loop row (no constructor-time value), or when it does not lower.
+ * already relays (`{{if .BfDataKey}} data-key=…{{end}}`). A quoted key is its
+ * exact string; an expression key is lowered by the same per-prop steps as any
+ * other prop and stringified with `bf.String`. Null when there is no key, when
+ * it reads a loop row (no constructor-time value), or when it does not lower.
  */
 export function lowerStaticChildDataKey(
   host: ChildInputHost,
@@ -617,6 +618,9 @@ export function lowerStaticChildDataKey(
   const keyProp = child.props.find(p => p.name === 'key')
   if (!keyProp) return null
   if (child.rowScope && propReadsRow(keyProp, child.rowScope)) return null
+  // A quoted key is a string as written (`key="001"` is `data-key="001"`),
+  // never coerced the way `goLiteral` reads a bare number or boolean.
+  if (keyProp.value.kind === 'literal') return JSON.stringify(keyProp.value.value)
   let goValue: string | null = null
   const site: ChildCallSite = {
     host,
@@ -627,6 +631,12 @@ export function lowerStaticChildDataKey(
     emit: (_jsxName, writtenValue) => { goValue = writtenValue },
   }
   lowerChildProp(site, keyProp)
+  // A key outside the per-prop steps' typed destinations (a template
+  // literal, say) still has a constructor-time value: the evaluator's
+  // untyped result, which `bf.String` stringifies like any other.
+  if (goValue === null && keyProp.value.kind === 'expression' && keyProp.value.parsed) {
+    goValue = evaluateUntypedChildPropValue(host.ctx, keyProp.value.parsed, ir, propFallbackVars)
+  }
   return goValue === null ? null : `bf.String(${goValue})`
 }
 

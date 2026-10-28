@@ -59,7 +59,28 @@ export function Parent() {
 }`)
     expect(errors).toEqual([])
     expect(types).not.toContain('Key:')
-    expect(types).toContain('p.BfDataKey = bf.String("k1"); return p }(),')
+    expect(types).toContain('p.BfDataKey = "k1"; return p }(),')
+  })
+
+  test.each([['001'], ['08'], ['1e3'], ['0x10'], ['-0'], [' 1'], ['true'], ['a\\b']])(
+    'a quoted key %p is its exact string, not a coerced literal',
+    key => {
+      const { types, errors } = compile(`${children}
+export function Parent() {
+  return <div><Badge key="${key}" /></div>
+}`)
+      expect(errors).toEqual([])
+      expect(types).toContain(`p.BfDataKey = ${JSON.stringify(key)}; return p }(),`)
+    },
+  )
+
+  test('a template-literal key is evaluated and stringified', () => {
+    const { types, errors } = compile(`${children}
+export function Parent(props: { id?: string }) {
+  return <div><Badge key={\`k-\${props.id}\`} /></div>
+}`)
+    expect(errors).toEqual([])
+    expect(types).toContain('p.BfDataKey = bf.String(bf.EvalExpr(')
   })
 
   test('a numeric key is stamped through bf.String', () => {

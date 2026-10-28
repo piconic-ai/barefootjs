@@ -12392,6 +12392,17 @@
       "axes": [],
       "contexts": []
     },
+    "static-child-quoted-keys": {
+      "kinds": [
+        "literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": []
+    },
     "static-literal-loop-component-in-row": {
       "kinds": [
         "array-literal",
