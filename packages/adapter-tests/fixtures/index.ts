@@ -238,6 +238,7 @@ import { fixture as componentSpreadExplicitNull } from './component-spread-expli
 import { fixture as componentSpreadExplicitNullPositions } from './component-spread-explicit-null-positions'
 import { fixture as componentSpreadExplicitUndefinedProp } from './component-spread-explicit-undefined-prop'
 import { fixture as componentPropUndefinedLiteralSpread } from './component-prop-undefined-literal-spread'
+import { fixture as componentPropUndefinedLiteralPositions } from './component-prop-undefined-literal-positions'
 import { fixture as componentSpreadForwardedAbsent } from './component-spread-forwarded-absent'
 import { fixture as componentSpreadForwardedNull } from './component-spread-forwarded-null'
 import { fixture as nullishOperandArithmeticMatrix } from './nullish-operand-arithmetic-matrix'
@@ -1371,6 +1372,7 @@ export const jsxFixtures: JSXFixture[] = [
   componentSpreadExplicitNullPositions,
   componentSpreadExplicitUndefinedProp,
   componentPropUndefinedLiteralSpread,
+  componentPropUndefinedLiteralPositions,
   componentSpreadForwardedAbsent,
   componentSpreadForwardedNull,
   nullishOperandArithmeticMatrix,

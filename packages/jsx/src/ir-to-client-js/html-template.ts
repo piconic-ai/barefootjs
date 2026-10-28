@@ -238,11 +238,13 @@ function maybeHoistedScopeAttr(
 }
 
 /**
- * Sentinel returned by the CSR template's `transformExpr` when the expression
- * references an init-body-only name (#1128). Equality with this sentinel is
- * how downstream emit sites decide to drop a renderChild prop, swap a loop
- * array for an empty array literal, or short-circuit a text expression to
- * an empty string. Module-internal — never appears in test fixtures.
+ * Spelling the CSR template's `transformExpr` emits when the expression
+ * references an init-body-only name (#1128), so a position that just
+ * evaluates it reads `undefined`. Sites that drop a renderChild prop, swap a
+ * loop array for an empty array literal, or short-circuit a text expression
+ * to an empty string decide that from `transformExprOrUnsafe`'s `null`, not
+ * from equality with this string: a source written as the literal
+ * `undefined` spells the same (#3752). Module-internal.
  */
 const UNSAFE_TEMPLATE_EXPR = 'undefined'
 
@@ -1764,8 +1766,9 @@ export interface TemplateOptions {
    * (the literal token `'undefined'`) whenever the resulting expression
    * still references one of these names. The init function's
    * `createEffect` / `initChild` bindings populate the real value once
-   * init runs. Per-context guards (loop array, text expression) translate
-   * the sentinel into something safe for that AST position.
+   * init runs. Per-context guards (loop array, text expression, child
+   * prop) test `transformExprOrUnsafe`'s `null` instead and translate it
+   * into something safe for that AST position.
    */
   unsafeLocalNames?: Set<string>
   /**
@@ -2499,7 +2502,14 @@ export function computeDeferredChildSlots(
 function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): string {
   const { restSpreadNames, propsObjectName, restPropsName, csrEnv, unsafeLocalNames, loopDepth = 0 } = opts
   const env: CsrEnv = csrEnv ?? { substitutions: new Map(), propsObjectName: propsObjectName ?? null }
-  const transformExpr = (expr: JsSourceText, templateExpr?: JsSourceText): string => {
+  // `null` when the expression cannot run in the module-scope template
+  // (it writes a binding or reads an init-only name). Call sites that drop
+  // or replace such an expression test this, not `transformExpr`'s
+  // `UNSAFE_TEMPLATE_EXPR` spelling: that sentinel is also what a source
+  // written as the literal `undefined` transforms to, and a child prop
+  // `label={undefined}` must keep its key (it overrides an earlier
+  // spread value, #3752).
+  const transformExprOrUnsafe = (expr: JsSourceText, templateExpr?: JsSourceText): string | null => {
     // Single AST substitution pass: replaces signal getter calls
     // (`count()` → `(initialValue)`), memo calls (`bars()` → `(body)`),
     // and inlinable-const refs (`label` → `(rewrittenValue)`) in one
@@ -2514,7 +2524,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
     // An expression that writes a binding (`{++nextId}`, a child prop
     // `() => ++start`) cannot run here: the template has no binding to
     // write, and the write belongs to init's run of the component.
-    if (writes.size > 0) return UNSAFE_TEMPLATE_EXPR
+    if (writes.size > 0) return null
 
     // The CSR template runs at module scope, so any post-substitution
     // free identifier that lands in `unsafeLocalNames` (init-body-only
@@ -2529,7 +2539,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
     // (and its `'foo-className'` / `a.className` false-match risk)
     // is gone (#1267 / #1277).
     if (unsafeLocalNames && unsafeLocalNames.size > 0 && setIntersects(freeIdentifiers, unsafeLocalNames)) {
-      return UNSAFE_TEMPLATE_EXPR
+      return null
     }
     // Final emit-form: rewrite `propsName.X → _p.X` (and a direct
     // rest-bag read, `restName.X → _p.X` — the rest binding IS `_p` at
@@ -2542,6 +2552,8 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
     // gate — #1138).
     return rewritePropsObjectRef(rewritten, propsObjectName ?? null, restPropsName ?? null, { enclosingScope: opts.scope })
   }
+  const transformExpr = (expr: JsSourceText, templateExpr?: JsSourceText): string =>
+    transformExprOrUnsafe(expr, templateExpr) ?? UNSAFE_TEMPLATE_EXPR
 
   // `recurse` preserves `inHoistedChildren` for structural pass-through
   // (fragment / conditional); `childrenRecurse` clears it — a new element
@@ -2684,12 +2696,12 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
         return `<!--bf:${node.slotId}--><!--/-->`
       }
       {
-        const transformed = transformExpr(node.expr, node.templateExpr)
+        const transformed = transformExprOrUnsafe(node.expr, node.templateExpr)
         // Init-body-only refs would render the literal text "undefined"
         // before init's createEffect overwrites the slot (#1128). Emit
         // an empty placeholder instead — a literal, so it bypasses the door.
         const hole = interp(
-          transformed === UNSAFE_TEMPLATE_EXPR
+          transformed === null
             ? EMPTY_MARKUP
             : spliceChildValue(node, transformed, { markupSlotIds: opts.markupSlotIds }),
         )
@@ -2765,18 +2777,19 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
               return `${quotePropName(p.name)}: true`
             case 'expression':
             case 'spread': {
-              const transformed = transformExpr(p.value.expr, p.value.templateExpr)
-              // When transformExpr emits the unsafe sentinel for an init-scope-only
-              // reference (#1128), drop the prop from renderChild — initChild's
-              // getter binding will populate it once init runs.
-              if (transformed === UNSAFE_TEMPLATE_EXPR) return null
+              const transformed = transformExprOrUnsafe(p.value.expr, p.value.templateExpr)
+              // An init-scope-only reference (#1128) drops the prop from
+              // renderChild — initChild's getter binding will populate it once
+              // init runs. A prop written as the literal `undefined` is not
+              // unsafe and keeps its key (#3752).
+              if (transformed === null) return null
               return templatePropEntry(p, transformed)
             }
             case 'template': {
               const valueStr = attrValueToString(p.value, { useTemplate: true })
               if (!valueStr) return null
-              const transformed = transformExpr(valueStr)
-              if (transformed === UNSAFE_TEMPLATE_EXPR) return null
+              const transformed = transformExprOrUnsafe(valueStr)
+              if (transformed === null) return null
               return `${quotePropName(p.name)}: ${transformed}`
             }
           }
@@ -2817,12 +2830,12 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       const hoistValues: string[] = []
       for (const name of hoisted) {
         const sub = env.substitutions.get(name)!
-        const value = transformExpr(sub.kind === 'call' ? `${name}()` : name)
+        const value = transformExprOrUnsafe(sub.kind === 'call' ? `${name}()` : name)
         // An init-only value stays on the resolved substitution, whose free
         // identifiers still name the init-only local, so a row expression
         // reading it is deferred like any other unsafe read rather than
         // handed a bound `undefined` to dereference.
-        if (value === UNSAFE_TEMPLATE_EXPR) continue
+        if (value === null) continue
         const param = `__bf_outer_${name}`
         hoistParams.push(param)
         hoistValues.push(value)
@@ -2862,8 +2875,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       const chainedTemplateArray = node.sortComparator || node.filterPredicate
         ? applyLoopChain(node, node.templateArray)
         : node.templateArray
-      const rawArrayExpr = transformExpr(node.array, chainedTemplateArray)
-      const safeRawArrayExpr = rawArrayExpr === UNSAFE_TEMPLATE_EXPR ? '[]' : rawArrayExpr
+      const safeRawArrayExpr = transformExprOrUnsafe(node.array, chainedTemplateArray) ?? '[]'
       const { array: iterArrayExpr, callbackParam } = applyIterationShape(node, safeRawArrayExpr, indexParam)
       const iterMethod = node.method ?? 'map'
       let mapExpr: string
