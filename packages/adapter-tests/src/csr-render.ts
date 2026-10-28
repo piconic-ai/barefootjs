@@ -18,6 +18,7 @@ import {
 } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import ts from 'typescript'
 import { harnessProgramFor } from './harness-program'
 
 // The CSR runtime is a JS engine, so — like Hono / any `JsxAdapter` — it runs
@@ -155,6 +156,23 @@ export async function renderCsrComponent(options: CsrRenderOptions): Promise<str
 }
 
 /**
+ * Remove every top-level `import` declaration from generated client JS
+ * (named, default, namespace and bare side-effect forms), leaving the
+ * rest of the module byte-for-byte. A walk over the TypeScript AST's
+ * top-level statements, so an import-looking line inside a string,
+ * template literal or comment is content and stays put.
+ */
+export function stripTopLevelImports(code: string): string {
+  const statements = ts.createSourceFile('client.js', code, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS).statements
+  let out = code
+  for (const statement of [...statements].reverse()) {
+    if (!ts.isImportDeclaration(statement)) continue
+    out = out.slice(0, statement.getStart()) + out.slice(statement.end)
+  }
+  return out
+}
+
+/**
  * Build a self-contained ES module that evaluates CSR template functions.
  *
  * Strategy:
@@ -163,10 +181,8 @@ export async function renderCsrComponent(options: CsrRenderOptions): Promise<str
  * 3. The last component registered is the main one — evaluate its template with props
  */
 function buildCsrEvalModule(clientJs: string, props: Record<string, unknown>, componentName?: string): string {
-  // Strip ES module import statements (named imports and bare side-effect imports)
-  const strippedCode = clientJs
-    .replace(/^import\s+\{[^}]*\}\s+from\s+['"][^'"]*['"];?\s*$/gm, '')
-    .replace(/^import\s+['"][^'"]*['"];?\s*$/gm, '')
+  // The mock runtime below stands in for every imported binding.
+  const strippedCode = stripTopLevelImports(clientJs)
 
   // Root scope id for the rendered tree. Shared / UI fixtures pass a
   // deterministic `__instanceId` (`<ComponentName>_test`) so the CSR
