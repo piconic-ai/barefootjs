@@ -5531,6 +5531,44 @@
         "text"
       ]
     },
+    "jsx-prop-nested-component-conditional": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "jsx-prop-nested-component-forwarded": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "jsx-prop-nested-component-positions": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "jsx-prop-template-delimiters": {
       "kinds": [
         "identifier",
@@ -12429,6 +12467,17 @@
     "static-attr-escape": {
       "kinds": [],
       "axes": [],
+      "contexts": []
+    },
+    "static-child-quoted-keys": {
+      "kinds": [
+        "literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
       "contexts": []
     },
     "static-literal-loop-component-in-row": {

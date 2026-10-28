@@ -4730,11 +4730,11 @@
           ]
         }
       },
-      "jsx-prop-template-delimiters": {
+      "jsx-prop-nested-component-forwarded": {
         "go-template": {
           "kind": "render",
           "limitations": [
-            "nested-component-in-jsx-prop"
+            "nested-component-in-jsx-prop-forwarded"
           ]
         }
       },
@@ -8301,9 +8301,9 @@
         "description": "Ternary wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-ternary.ts"
       },
-      "jsx-prop-template-delimiters": {
-        "description": "JSX prop getters preserve static template delimiters alongside a nested component and forwarded…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-prop-template-delimiters.ts"
+      "jsx-prop-nested-component-forwarded": {
+        "description": "A named JSX prop holding a nested component, forwarded by the receiving component to a grandchild…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-prop-nested-component-forwarded.ts"
       },
       "loop-key-to-string-number-component-row": {
         "description": "A component loop row over a number array keyed by n.toString() renders data-key",
@@ -9278,14 +9278,36 @@
         "BF101"
       ]
     },
-    "nested-component-in-jsx-prop": {
-      "title": "A nested component inside a named JSX prop",
+    "nested-component-in-jsx-prop-conditional-arm": {
+      "title": "A nested component in a named JSX prop, read in a conditional arm",
       "kind": "silent",
-      "given": "a named JSX prop whose element contains a nested component, alongside forwarded children",
-      "expected": "the named prop renders its element and nested component, and the forwarded children render normally",
-      "actual": "throws a missing-child-field error during rendering, or replaces the named prop markup with escaped text during hydration",
+      "given": "a named JSX prop whose element contains a nested component, read by the receiving component inside a && or ternary arm",
+      "expected": "the arm renders the element with the nested component, which keeps the scope of the component that wrote the JSX",
+      "actual": "renders [object Object] in place of the element in a client-mounted arm, or renders the nested component under the receiving component scope when the client renders the arm",
       "fixtures": [
-        "jsx-prop-template-delimiters"
+        "jsx-prop-nested-component-conditional"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "nested-component-in-jsx-prop-forwarded": {
+      "title": "A nested component in a named JSX prop, forwarded to a grandchild",
+      "kind": "silent",
+      "given": "a named JSX prop whose element contains a nested component, passed on by the receiving component as a prop of its own child",
+      "expected": "the grandchild renders the element with the nested component, the element keeping the scope of the component that wrote the JSX",
+      "actual": "renders nothing in the grandchild, or renders the element under the receiving component scope when the client mounts it",
+      "fixtures": [
+        "jsx-prop-nested-component-forwarded"
       ],
       "adapters": [
         "hono",

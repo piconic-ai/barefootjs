@@ -31,3 +31,15 @@ export function __slot(thunk: () => unknown): SlotMarker {
     },
   }
 }
+
+/**
+ * Whether `value` is a {@link SlotMarker}. The one check every content-slot
+ * writer and the value wrappers in front of them (`escapeTextOrNode`) ask, so
+ * a marker reaches the writer intact and leaves the server-rendered DOM alone.
+ *
+ * @since 0.1.0
+ * @internal
+ */
+export function isSlotMarker(value: unknown): value is SlotMarker {
+  return value != null && (value as { __isSlot?: boolean }).__isSlot === true
+}

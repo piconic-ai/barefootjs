@@ -113,6 +113,7 @@ import { BF_SCOPE, BF_PARENT_OWNED_PREFIX } from '@barefootjs/shared'
 import { commentsInScope } from './query.ts'
 import { commentScopeRegistry, isOwnedByScope } from './scope.ts'
 import { relocatedRowElements } from './row-portal.ts'
+import { isSlotMarker, type SlotMarker } from '../slot.ts'
 
 /**
  * A slot's compile-time descriptor. `path` is the list of child indices
@@ -496,8 +497,11 @@ function writeText(slot: ClaimedTextSlot, value: unknown): void {
  * exactly as the previous inline `String(...)` emission did. The nullish
  * collapse stays where it already was, in {@link writeText}.
  */
-export function textOrNode(value: unknown): string | Node {
+export function textOrNode(value: unknown): string | Node | SlotMarker {
   if (typeof Node !== 'undefined' && value instanceof Node) return value
+  // A `__slot()` marker reaches `writeSlot` intact, which leaves the
+  // server-rendered DOM alone (see `escapeTextOrNode`).
+  if (isSlotMarker(value)) return value
   return String(value)
 }
 
@@ -563,7 +567,7 @@ function writeMarkup(ref: ClaimedMarkupSlot, value: unknown): void {
   // untouched entirely — no write, no `last` update either, so a later real
   // value still gets a correct dedup read. Mirrors `__bfText`'s identical
   // guard (#1663).
-  if (value != null && (value as { __isSlot?: boolean }).__isSlot) return
+  if (isSlotMarker(value)) return
 
   if (typeof Node !== 'undefined' && value instanceof Node) {
     // Identity dedup, mirrors `__bfText`'s `value === current` check — the
@@ -588,6 +592,8 @@ function writeMarkup(ref: ClaimedMarkupSlot, value: unknown): void {
 }
 
 function writeSlot(refs: Map<string, ClaimedSlotRef>, id: string, value: unknown): void {
+  // A slot marker keeps the server-rendered DOM on either kind of slot.
+  if (isSlotMarker(value)) return
   const ref = refs.get(id)
   if (!ref) {
     console.warn(`[barefootjs] no claimed slot for id ${id}; write ignored`)

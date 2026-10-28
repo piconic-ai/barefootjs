@@ -107,16 +107,23 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // is held in the `Children` field the parent's children populate, not in a
 // never-set field named after the local (`Kids`).
 //
+// #3699 graduated `jsx-prop-template-delimiters` (`nested-component-in-jsx-prop`):
+// the components nested in a named JSX prop's companion define get their
+// `<Name>SlotN` fields, a static child's `key` is stamped as its `BfDataKey`,
+// and a literal child prop's string is escaped as a Go string literal.
+//
 // #3706 graduated `template-literal-attribute-quotes`: the literal segments
 // of a template literal (outer and nested) are HTML-escaped where they land
 // in markup outside a `{{…}}` action, so a `"` no longer closes the
 // surrounding attribute.
 export const renderDivergences: RenderDivergences = {
+  // A JSX prop holding a nested component, forwarded by the receiving
+  // component to a grandchild prop, renders nothing in the grandchild.
+  'jsx-prop-nested-component-forwarded': { limitation: 'nested-component-in-jsx-prop-forwarded' },
   // `bf_json` (Go's `encoding/json`) writes the float `-0` that `bf_mod`
   // gives for a negative dividend as `-0`, where JS's `JSON.stringify`
   // writes `0`.
   'remainder-negative-zero-json': { limitation: 'negative-zero-json-stringify' },
-  'jsx-prop-template-delimiters': { limitation: 'nested-component-in-jsx-prop' },
   // `.at(i)` on half of a surrogate pair: the runtime string can't hold a
   // lone surrogate, so it returns U+FFFD (halves compare equal, and
   // rejoining them renders `��` instead of the emoji).
