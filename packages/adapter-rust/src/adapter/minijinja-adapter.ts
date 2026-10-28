@@ -174,7 +174,6 @@ import {
   isBooleanResultExpr,
   isExplicitStringCall,
   hasClientInteractivity,
-  arithmeticOperandCoercion,
   renderElementShell,
   renderFragmentScope,
   renderDangerousInnerHtml,
@@ -1156,6 +1155,8 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
     param: string,
     localVarMap: Map<string, string> = new Map(),
   ): string {
+    // Arithmetic over a prop whose nil the type cannot classify (#3700).
+    this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
     return emitParsedExpr(
       expr,
       new JinjaFilterEmitter(
@@ -1233,7 +1234,7 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
       _isRootPropsObject: (expr) => isRootPropsObject(expr, n => this.scope.isBound(n)),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
-      _arithmeticCoercion: (op, operand, other) => arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
+      _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderJinjaFilterExprPublic: (e, p) => this._renderJinjaFilterExprPublic(e, p),
     }

@@ -69,7 +69,6 @@ import {
   isBooleanResultExpr,
   hasClientInteractivity,
   lowerCallbackMethod,
-  arithmeticOperandCoercion,
   renderElementShell,
   renderFragmentScope,
   renderDangerousInnerHtml,
@@ -1196,6 +1195,8 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     // rewriting the predicate (#2038). Wholesale refusal would block
     // the canonical case #1443 exists to enable, so the gate lives at
     // the exact degrade points inside `MojoFilterEmitter.callbackMethod`.
+    // Arithmetic over a prop whose nil the type cannot classify (#3700).
+    this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
     return emitParsedExpr(
       expr,
       new MojoFilterEmitter(
@@ -1264,7 +1265,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       resolveStaticRecordLiteral: (o, k) => this.resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isBooleanValueName: (name, property) => property ? !this.scope.shadowsPropsObject() && this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
-      _arithmeticCoercion: (op, operand, other) => arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, n => this.scope.isBound(n)),
+      _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.scope.isBound(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderPerlFilterExprPublic: (e, p) => this._renderPerlFilterExprPublic(e, p),

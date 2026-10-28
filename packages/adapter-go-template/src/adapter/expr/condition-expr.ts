@@ -87,6 +87,14 @@ export interface ConditionExprHost {
   isNillableNullishLeft(expr: ParsedExpr): boolean
   /** Whether `path` names a registered template primitive. */
   isTemplatePrimitive(path: string): boolean
+  /**
+   * Refuse (BF101) the arithmetic in `expr` over a prop whose nil the
+   * declared type cannot classify (`refuseAmbiguousNilArithmetic`, #3700):
+   * this module lowers operators without the adapter's operand coercion.
+   * `params` are the enclosing callback's own bindings (a filter predicate's
+   * parameter and locals), entered over the current scope.
+   */
+  refuseAmbiguousNilArithmetic(expr: ParsedExpr, params: readonly string[]): void
 }
 
 /**
@@ -135,6 +143,8 @@ export function renderFilterExpr(
   datumField?: string,
   fieldlessParam = false,
 ): string | null {
+  // The predicate's operators lower without the operand coercion (#3700).
+  host.refuseAmbiguousNilArithmetic(expr, [param, ...localVarMap.keys()])
   return renderFilterExprNode(host, expr, param, localVarMap, datumField, fieldlessParam)
 }
 
@@ -180,7 +190,7 @@ function renderFilterExprNode(
       return renderFilterCall(host, expr, param, localVarMap, datumField, fieldlessParam, paramPrefix, paramHasFields)
 
     case 'unary': {
-      const arg = renderFilterExpr(host, expr.argument, param, localVarMap, datumField, fieldlessParam)
+      const arg = renderFilterExprNode(host, expr.argument, param, localVarMap, datumField, fieldlessParam)
       if (arg === null) return null
       if (expr.op === '!') return lowerJsNot(expr.argument, arg)
       if (expr.op === '-') {
@@ -193,9 +203,9 @@ function renderFilterExprNode(
       return renderFilterBinary(host, expr, param, localVarMap, datumField, fieldlessParam)
 
     case 'logical': {
-      const left = renderFilterExpr(host, expr.left, param, localVarMap, datumField, fieldlessParam)
+      const left = renderFilterExprNode(host, expr.left, param, localVarMap, datumField, fieldlessParam)
       if (left === null) return null
-      const right = renderFilterExpr(host, expr.right, param, localVarMap, datumField, fieldlessParam)
+      const right = renderFilterExprNode(host, expr.right, param, localVarMap, datumField, fieldlessParam)
       if (right === null) return null
       if (expr.op === '&&') {
         return `and (${left}) (${right})`
@@ -311,13 +321,13 @@ function renderFilterMember(
     const innerHO = host.higherOrderShapeOf(expr.object)
     if (innerHO && innerHO.method === 'filter') {
       const lenExpr = host.renderFilterLengthExpr(innerHO, e =>
-        renderFilterExpr(host, e, param, localVarMap, datumField, fieldlessParam) ?? 'false',
+        renderFilterExprNode(host, e, param, localVarMap, datumField, fieldlessParam) ?? 'false',
       )
       if (lenExpr) return `(${lenExpr})`
     }
   }
   // Nested member access or local var.prop.
-  const obj = renderFilterExpr(host, expr.object, param, localVarMap, datumField, fieldlessParam)
+  const obj = renderFilterExprNode(host, expr.object, param, localVarMap, datumField, fieldlessParam)
   if (obj === null) return null
   // JS `.length` on a field (`i.name.length`, `i.tags.length`, #3447):
   // `bf_length` counts a string's UTF-16 code units or a slice's
@@ -364,7 +374,7 @@ function renderFilterCall(
   if (asCallbackMethodCall(expr) !== null) {
     return refuseFilterExprNode(host, expr)
   }
-  return renderFilterExpr(host, expr.callee, param, localVarMap, datumField, fieldlessParam)
+  return renderFilterExprNode(host, expr.callee, param, localVarMap, datumField, fieldlessParam)
 }
 
 /** The `binary` arm of {@link renderFilterExprNode}. */
@@ -376,9 +386,9 @@ function renderFilterBinary(
   datumField: string | undefined,
   fieldlessParam: boolean,
 ): string | null {
-  const left = renderFilterExpr(host, expr.left, param, localVarMap, datumField, fieldlessParam)
+  const left = renderFilterExprNode(host, expr.left, param, localVarMap, datumField, fieldlessParam)
   if (left === null) return null
-  const right = renderFilterExpr(host, expr.right, param, localVarMap, datumField, fieldlessParam)
+  const right = renderFilterExprNode(host, expr.right, param, localVarMap, datumField, fieldlessParam)
   if (right === null) return null
   // #2873 (pullfrog review, PR #2882): every case below is a prefix
   // function call (`bf_mod a b`, `eq a b`, …), so a COMPOUND operand —

@@ -18,6 +18,10 @@ export const conformancePins: ConformancePins = {
   'map-array-builder-body': [{ code: 'BF021', severity: 'error', limitation: 'statement-body-callback' }],
   'map-array-builder-escaping': [{ code: 'BF021', severity: 'error', limitation: 'statement-body-callback' }],
   'fill-unsupported': [{ code: 'BF101', severity: 'error', limitation: 'array-fill' }],
+  // A prop typed both optional and nullable: the engine cannot tell an
+  // omitted one (`NaN` in arithmetic) from a `null` one (`0`).
+  'omitted-optional-nullable-number-arithmetic': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
+  'omitted-optional-nullable-number-arithmetic-destructured': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
   // The props constructor applies the default before any read, so a
   // `/* @client */` read site doesn't avoid the refusal: no escape twin.
   'destructure-default-body-renamed-computed-array': [

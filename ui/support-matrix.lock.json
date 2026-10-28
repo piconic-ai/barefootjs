@@ -3169,6 +3169,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3258,6 +3264,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -3477,6 +3489,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3584,6 +3602,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -3701,6 +3725,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3796,6 +3826,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -3901,6 +3937,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3990,6 +4032,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -4096,6 +4144,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -7234,6 +7288,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -7527,6 +7587,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -8052,6 +8118,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -8404,6 +8476,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -8726,6 +8804,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -9031,6 +9115,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -9346,6 +9436,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -9645,6 +9741,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -9961,6 +10063,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -10353,6 +10461,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -10562,6 +10676,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -10973,6 +11093,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -11235,6 +11361,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -11456,6 +11588,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -11687,6 +11825,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -11913,6 +12057,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -12116,6 +12266,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -12336,6 +12492,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -18353,6 +18515,12 @@
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
             }
           ]
         },
@@ -18360,6 +18528,12 @@
           "gaps": [
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -18373,6 +18547,12 @@
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
             }
           ]
         },
@@ -18383,6 +18563,12 @@
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
             }
           ]
         },
@@ -18390,6 +18576,12 @@
           "gaps": [
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -18409,6 +18601,12 @@
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
             }
           ]
         },
@@ -18419,6 +18617,12 @@
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
             }
           ]
         },
@@ -18426,6 +18630,12 @@
           "gaps": [
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -18442,6 +18652,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -18473,6 +18689,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -18496,6 +18718,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -18559,6 +18787,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -18582,6 +18816,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -18621,6 +18861,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -18649,6 +18895,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -18666,6 +18918,12 @@
           "gaps": [
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -18693,6 +18951,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -18710,6 +18974,12 @@
           "gaps": [
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -20035,6 +20305,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -20148,6 +20424,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -20331,6 +20613,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -20467,6 +20755,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -20586,6 +20880,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -20727,6 +21027,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -20857,6 +21163,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -20964,6 +21276,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -21094,6 +21412,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
