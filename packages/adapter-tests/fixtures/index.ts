@@ -242,6 +242,8 @@ import { fixture as componentSpreadForwardedNull } from './component-spread-forw
 import { fixture as nullishOperandArithmeticMatrix } from './nullish-operand-arithmetic-matrix'
 import { fixture as nullishOperandDivisionRemainder } from './nullish-operand-division-remainder'
 import { fixture as omittedOptionalNumberArithmetic } from './omitted-optional-number-arithmetic'
+import { fixture as omittedOptionalNumberElementAccess } from './omitted-optional-number-element-access'
+import { fixture as omittedOptionalElementAccessOperands } from './omitted-optional-element-access-operands'
 import { fixture as omittedOptionalNumberArithmeticDestructured } from './omitted-optional-number-arithmetic-destructured'
 import { fixture as optionalNumberArithmeticMatrix } from './optional-number-arithmetic-matrix'
 import { fixture as remainderNanOperand } from './remainder-nan-operand'
@@ -1372,6 +1374,8 @@ export const jsxFixtures: JSXFixture[] = [
   componentSpreadForwardedNull,
   nullishOperandArithmeticMatrix,
   nullishOperandDivisionRemainder,
+  omittedOptionalNumberElementAccess,
+  omittedOptionalElementAccessOperands,
   omittedOptionalNumberArithmetic,
   omittedOptionalNumberArithmeticDestructured,
   optionalNumberArithmeticMatrix,

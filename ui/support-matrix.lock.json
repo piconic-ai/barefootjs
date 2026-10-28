@@ -23043,10 +23043,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L169"
       },
       "example": {
-        "fixture": "signal-from-same-named-prop-raw-read-element-access-untyped",
-        "description": "A signal seeded from its same-named prop of an untyped props object, read beside the raw prop through a literal element access",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-from-same-named-prop-raw-read-element-access-untyped.ts",
-        "code": "props['label']"
+        "fixture": "omitted-optional-element-access-operands",
+        "description": "Omitted optional props read through props['x'] as a ?. receiver and a presence-check operand",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-element-access-operands.ts",
+        "code": "props['n']"
       }
     },
     "member:optional": {

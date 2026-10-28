@@ -85,7 +85,7 @@
     },
     "packages/adapter-go-template/src/adapter/props/prop-types.ts": {
       "collectOmittableAttrConsumedPropNames/walk": [
-        32
+        27
       ]
     },
     "packages/adapter-go-template/src/adapter/spread/spread-codegen.ts": {

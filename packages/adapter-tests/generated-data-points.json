@@ -7508,6 +7508,44 @@
       }
     }
   ],
+  "omitted-optional-element-access-operands": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890
+      }
+    },
+    {
+      "name": "gen:s:empty",
+      "props": {
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:s:markup",
+      "props": {
+        "s": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:s:multibyte",
+      "props": {
+        "s": "日本語"
+      }
+    }
+  ],
   "omitted-optional-nullable-number-arithmetic": [
     {
       "name": "gen:missing:union:1",
@@ -7572,6 +7610,32 @@
       "name": "gen:zero:large",
       "props": {
         "zero": 1234567890
+      }
+    }
+  ],
+  "omitted-optional-number-element-access": [
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "items": [
+          "a"
+        ],
+        "count": -7
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "items": [
+          "a"
+        ],
+        "count": 1234567890
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
       }
     }
   ],

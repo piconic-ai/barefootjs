@@ -9758,6 +9758,21 @@
         "text"
       ]
     },
+    "omitted-optional-element-access-operands": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "member:computed",
+        "member:optional"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "omitted-optional-nullable-number-arithmetic": {
       "kinds": [
         "binary",
@@ -9822,6 +9837,27 @@
       ],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "omitted-optional-number-element-access": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string",
+        "logical:??",
+        "member:computed",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
         "text"
       ]
     },
