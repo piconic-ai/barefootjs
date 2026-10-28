@@ -7154,62 +7154,6 @@
           ]
         }
       },
-      "signal-from-same-named-prop-raw-read": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "signal-from-same-named-prop-raw-read"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "signal-from-same-named-prop-raw-read"
-          ]
-        },
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "signal-from-same-named-prop-raw-read"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "signal-from-same-named-prop-raw-read"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "signal-from-same-named-prop-raw-read"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "signal-from-same-named-prop-raw-read"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "signal-from-same-named-prop-raw-read"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "signal-from-same-named-prop-raw-read"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "signal-from-same-named-prop-raw-read"
-          ]
-        }
-      },
       "signal-loop-row-child-children": {
         "go-template": {
           "kind": "render",
@@ -8611,10 +8555,6 @@
         "description": "A Map-typed prop used by client code (even via a method call, since BF021 never sees a handler…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/rich-prop-client-read.ts"
       },
-      "signal-from-same-named-prop-raw-read": {
-        "description": "A signal seeded from its same-named prop, read beside the raw prop",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-from-same-named-prop-raw-read.ts"
-      },
       "signal-loop-row-child-children": {
         "description": "A signal-array loop whose row is a child component with forwarded JSX children renders each row at…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-loop-row-child-children.ts"
@@ -9672,27 +9612,6 @@
         "BF049"
       ],
       "reason": "Props cross the `bf-p` hydration boundary as `JSON.stringify` data with no type-aware revival, so these types lose their contents (`Map` / `Set` serialize to `{}`, `BigInt` throws, `Promise` / `Function` cannot cross a serialization boundary at all). A typed revival envelope was considered and rejected as a nine-adapter protocol change that still could not carry every listed type. The sound path is to pass a JSON-safe value and rebuild the rich value client-side."
-    },
-    "signal-from-same-named-prop-raw-read": {
-      "title": "Raw prop read beside a signal seeded from the same-named prop",
-      "kind": "silent",
-      "given": "a bare-props component with a signal named like a prop and seeded from that prop (`const [label] = createSignal(props.label ?? 'D')`) that also reads `props.label`",
-      "expected": "`props.label` renders the caller's value, empty when the caller omits it",
-      "actual": "renders the signal's derived value for `props.label` (`D` when the caller omits the prop)",
-      "fixtures": [
-        "signal-from-same-named-prop-raw-read"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
     },
     "signal-loop-row-child-children-unseeded": {
       "title": "A signal-array loop whose row is a child component with forwarded JSX children",

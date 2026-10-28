@@ -175,8 +175,10 @@ export function collectNullishConsumedPropNames(ctx: GoEmitContext, ir: Componen
   walk(computedConstInitializers(ir))
   // A signal seed the runtime evaluator computes (`(props.n ?? 1) * 2`)
   // hands it the prop's field, which must be nil when the prop is absent
-  // for that `??` to take its right side (#3532).
-  walk(ir.metadata.signals.map(s => s.parsed))
+  // for that `??` to take its right side (#3532). Read through the seed
+  // plan's const-hop inlining, as the evaluator is (`const mid = props.n;
+  // createSignal((mid ?? 1) * 2)`).
+  walk(ir.metadata.signals.map(s => resolveSignalParsedThroughSeedPlan(ctx.state, s)))
 
   // Signal seeds (`createSignal(props.X ?? 1)`) live in metadata, not the
   // tree — reuse the seam's existing `props.X ?? <literal>` recognizer. The

@@ -346,6 +346,12 @@ import { fixture as signalNamedLikeNumberProp } from './signal-named-like-number
 import { fixture as signalNamedLikePropPositions } from './signal-named-like-prop-positions'
 import { fixture as signalNamedLikePropCaseFold } from './signal-named-like-prop-case-fold'
 import { fixture as signalFromSameNamedPropRawRead } from './signal-from-same-named-prop-raw-read'
+import { fixture as signalFromSameNamedPropRawReadKinds } from './signal-from-same-named-prop-raw-read-kinds'
+import { fixture as signalFromSameNamedPropRawReadPositions } from './signal-from-same-named-prop-raw-read-positions'
+import { fixture as signalSeedNumberPropViaConstNullish } from './signal-seed-number-prop-via-const-nullish'
+import { fixture as signalFromSameNamedPropRawReadUntyped } from './signal-from-same-named-prop-raw-read-untyped'
+import { fixture as signalFromSameNamedPropRawReadElementAccess } from './signal-from-same-named-prop-raw-read-element-access'
+import { fixture as signalFromSameNamedPropRawReadElementAccessUntyped } from './signal-from-same-named-prop-raw-read-element-access-untyped'
 import { fixture as memoNamedLikeProp } from './memo-named-like-prop'
 import { fixture as namespaceImportPrimitive } from './namespace-import-primitive'
 import { fixture as namespaceImportPrimitiveNamedEscape } from './namespace-import-primitive-named-escape'
@@ -1455,6 +1461,12 @@ export const jsxFixtures: JSXFixture[] = [
   signalNamedLikePropPositions,
   signalNamedLikePropCaseFold,
   signalFromSameNamedPropRawRead,
+  signalFromSameNamedPropRawReadKinds,
+  signalFromSameNamedPropRawReadPositions,
+  signalSeedNumberPropViaConstNullish,
+  signalFromSameNamedPropRawReadUntyped,
+  signalFromSameNamedPropRawReadElementAccess,
+  signalFromSameNamedPropRawReadElementAccessUntyped,
   memoNamedLikeProp,
   namespaceImportPrimitive,
   namespaceImportPrimitiveNamedEscape,
