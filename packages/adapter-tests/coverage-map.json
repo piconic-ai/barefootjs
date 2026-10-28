@@ -2009,6 +2009,22 @@
         "text"
       ]
     },
+    "component-prop-undefined-literal-spread": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "component-root-client-scope": {
       "kinds": [
         "call",
@@ -2052,6 +2068,25 @@
         "text"
       ]
     },
+    "component-spread-explicit-null-positions": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "component-spread-explicit-then-props": {
       "kinds": [
         "identifier",
@@ -2060,6 +2095,52 @@
       "axes": [],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "component-spread-explicit-undefined-prop": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "component-spread-forwarded-absent": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "component-spread-forwarded-null": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
         "text"
       ]
     },

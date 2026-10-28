@@ -120,4 +120,31 @@ bf_test('prop keys are routed through backend->ident (identity in this stub)', f
     bf_assert_eq($seen['props']['id'], 'y');
 });
 
+// `passed` answers from the keys the caller handed over, so a key passed as
+// null counts and an omitted one does not; a root reads `_props`, and with
+// no record at all the template's own fallback decides.
+bf_test('passed reads the caller keys', function () {
+    $bf = bfrc_new_bf();
+    $seen = [];
+    $bf->register_child_renderer('leaf', fn ($props, $caller) => '');
+    $bf->register_child_renderer('probe', function ($props, $caller) use (&$seen) {
+        $child = bfrc_new_bf();
+        $seen[] = $child->passed('label', false);
+        $seen[] = $child->passed('tone', true);
+        $caller->render_child('leaf', ['tone' => 'x']);
+        $seen[] = $child->passed('label', false);
+        return '';
+    });
+    $bf->render_child('probe', ['label' => null]);
+    bf_assert_eq($seen, [true, false, true]);
+    bf_assert_eq($bf->passed('label', false), false);
+
+    $root = bfrc_new_bf();
+    bf_assert_eq($root->passed('label', true), true);
+    bf_assert_eq($root->passed('label', false), false);
+    $root->_props(['label' => null]);
+    bf_assert_eq($root->passed('label', false), true);
+    bf_assert_eq($root->passed('tone', true), false);
+});
+
 return bf_finish();

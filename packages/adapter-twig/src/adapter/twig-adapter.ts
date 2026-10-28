@@ -896,7 +896,11 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
       captures.push(`{% set ${captured} %}${body}{% endset %}`)
       return captured
     }
-    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const plan = planComponentProps(comp, {
+      propsObjectName: this.propsObjectName,
+      propsParams: this.propsParams,
+      callerKeys: true,
+    })
     const segments = spellComponentProps(plan, {
       entry: (entry) => {
         switch (entry.kind) {
@@ -913,7 +917,8 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
         }
       },
       spread: (value) => `bf.omit(${this.convertExpressionToTwig(value.expr)}, [])`,
-      presentParam: (name) => `(${twigIdent(name)} is not null ? {${twigHashKey(name)}: ${twigIdent(name)}} : {})`,
+      presentParam: (name) =>
+        `(bf.passed(${twigHashKey(name)}, ${twigIdent(name)} is not null) ? {${twigHashKey(name)}: ${twigIdent(name)}} : {})`,
     })
     const dict = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
     return `${captures.join('')}{{ bf.render_child('${tplName}'${dict}) | raw }}`

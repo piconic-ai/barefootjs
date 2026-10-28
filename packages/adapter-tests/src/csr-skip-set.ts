@@ -213,4 +213,7 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // to the receiving component.
   'jsx-prop-nested-component-conditional': { limitation: 'nested-component-in-jsx-prop-conditional-arm' },
   'jsx-prop-nested-component-forwarded': { limitation: 'nested-component-in-jsx-prop-forwarded' },
+  // `<Mid label={undefined} />`: the CSR template's `renderChild('Mid', {})`
+  // leaves the key out, so Mid's `{...props}` keeps its earlier `label`.
+  'component-prop-undefined-literal-spread': { limitation: 'props-spread-explicit-null-override' },
 }

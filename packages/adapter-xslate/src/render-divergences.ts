@@ -75,7 +75,6 @@ export const renderDivergences: RenderDivergences = {
   // engine holds it and an omitted prop as the same nil, so the spread
   // carries the key only when it is not nil and an earlier explicit prop
   // keeps its value where JS overrides it with `null`.
-  'component-spread-explicit-null': { limitation: 'props-spread-explicit-null-override' },
   // `remainder-nan-operand` used to sit here: Kolon's `%` is Perl's integer
   // modulus, so `NaN % 2` rendered an integer. `%` now goes through the
   // runtime's `mod`, JS's truncated remainder (#3474).

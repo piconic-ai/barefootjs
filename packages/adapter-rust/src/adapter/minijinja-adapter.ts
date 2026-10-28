@@ -891,7 +891,11 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
       captures.push(`{% set ${captured} %}${body}{% endset %}`)
       return captured
     }
-    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const plan = planComponentProps(comp, {
+      propsObjectName: this.propsObjectName,
+      propsParams: this.propsParams,
+      callerKeys: true,
+    })
     const segments = spellComponentProps(plan, {
       entry: (entry) => {
         switch (entry.kind) {
@@ -912,7 +916,7 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
       // undefined, which `is not none` alone lets through.
       presentParam: (name) => {
         const v = minijinjaIdent(name)
-        return `({${minijinjaHashKey(name)}: ${v}} if (${v} is defined and ${v} is not none) else {})`
+        return `({${minijinjaHashKey(name)}: ${v}} if bf.passed(${minijinjaHashKey(name)}, ${v} is defined and ${v} is not none) else {})`
       },
     })
     const dict = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`

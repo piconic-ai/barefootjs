@@ -1130,10 +1130,61 @@
       }
     }
   ],
+  "component-prop-undefined-literal-spread": [
+    {
+      "name": "gen:other:empty",
+      "props": {
+        "other": ""
+      }
+    },
+    {
+      "name": "gen:other:markup",
+      "props": {
+        "other": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:other:multibyte",
+      "props": {
+        "other": "日本語"
+      }
+    }
+  ],
   "component-spread-explicit-null": [
     {
       "name": "gen:label:absent",
       "props": {}
+    }
+  ],
+  "component-spread-explicit-null-positions": [
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "show": true
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "label": null,
+        "items": [],
+        "show": true
+      }
+    },
+    {
+      "name": "gen:show:false",
+      "props": {
+        "label": null,
+        "items": [
+          "a",
+          "b"
+        ],
+        "show": false
+      }
     }
   ],
   "component-spread-explicit-then-props": [
@@ -1214,6 +1265,51 @@
         "tone": "warm",
         "label": "日本語"
       }
+    }
+  ],
+  "component-spread-explicit-undefined-prop": [
+    {
+      "name": "gen:other:union:1",
+      "props": {
+        "other": null
+      }
+    }
+  ],
+  "component-spread-forwarded-absent": [
+    {
+      "name": "gen:label:union:1",
+      "props": {
+        "tone": "warm",
+        "label": null
+      }
+    },
+    {
+      "name": "gen:tone:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:tone:empty",
+      "props": {
+        "tone": ""
+      }
+    },
+    {
+      "name": "gen:tone:markup",
+      "props": {
+        "tone": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:tone:multibyte",
+      "props": {
+        "tone": "日本語"
+      }
+    }
+  ],
+  "component-spread-forwarded-null": [
+    {
+      "name": "gen:label:absent",
+      "props": {}
     }
   ],
   "component-spread-props-rest-bag": [

@@ -976,7 +976,11 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
       captures.push(`{% set ${captured} %}${body}{% endset %}`)
       return captured
     }
-    const plan = planComponentProps(comp, { propsObjectName: this.propsObjectName, propsParams: this.propsParams })
+    const plan = planComponentProps(comp, {
+      propsObjectName: this.propsObjectName,
+      propsParams: this.propsParams,
+      callerKeys: true,
+    })
     const segments = spellComponentProps(plan, {
       entry: (entry) => {
         switch (entry.kind) {
@@ -993,7 +997,8 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
         }
       },
       spread: (value) => this.convertExpressionToPebble(value.expr),
-      presentParam: (name) => `(${pebbleIdent(name)} is null ? {} : {${pebbleHashKey(name)}: ${pebbleIdent(name)}})`,
+      presentParam: (name) =>
+        `(bf.passed(${pebbleHashKey(name)}, ${pebbleIdent(name)} is not null) ? {${pebbleHashKey(name)}: ${pebbleIdent(name)}} : {})`,
     })
     const dict = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
     return `${captures.join('')}{{ bf.render_child('${tplName}'${dict}) | raw }}`

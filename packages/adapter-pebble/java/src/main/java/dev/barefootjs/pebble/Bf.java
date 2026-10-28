@@ -97,6 +97,9 @@ public final class Bf {
   /** Props payload for `props_attr()`/`scope_comment()`'s `bf-p`/props-JSON segment. Never populated by `render_child` (mirrors the Jinja/Rust ports, where the equivalent field is likewise always absent for a CHILD — see this class's own render-state-helpers header); every helper vector / hand-written-`.peb` smoke test in this package also leaves it `null`. A REAL root render DOES need it set — see the `(String, PebbleEngine, Map, Object)` constructor and {@link #newRoot(String, Bf, Object)}, both added for exactly that (`integrations/spring`'s `Render.renderRoot`; the conformance harness's `Main` seeds it the same way from `vars.json`'s reserved `__bf_root_props` key). */
   private final Object markerProps;
 
+  /** The keys this instance's caller passed, recorded by `render_child` for a child; `null` for a root, whose caller's keys are `markerProps`'s. See {@link #passed}. */
+  private Set<String> callerKeys;
+
   /**
    * `provide_context`/`revoke_context`/`use_context`'s backing store —
    * SHARED (the same {@link Map} REFERENCE, never copied) across every
@@ -1747,6 +1750,28 @@ public final class Bf {
     return String.join(" ", parts);
   }
 
+  /**
+   * Whether this component's caller passed the prop {@code name}, even as
+   * null: JS's {@code name in props}, which a template can't ask of its
+   * variables (every declared prop is seeded, so an omitted one and a null
+   * one read the same). A {@code {...props}} spread onto a child carries a
+   * param only when this is true. The keys are those {@code render_child}
+   * recorded for a child and {@code markerProps} for the root; with neither
+   * recorded (a root rendered without props), {@code fallback}, the
+   * template's own "not nil" test, decides.
+   */
+  @SuppressWarnings("unchecked")
+  public boolean passed(Object name, Object fallback) {
+    String key = JsValue.jsString(name);
+    if (callerKeys != null) {
+      return callerKeys.contains(key);
+    }
+    if (markerProps instanceof Map) {
+      return ((Map<String, Object>) markerProps).containsKey(key);
+    }
+    return Boolean.TRUE.equals(fallback);
+  }
+
   /** `bf-p='...'` hydration-props payload, when one accompanies this scope. */
   @SuppressWarnings("unchecked")
   public String props_attr() {
@@ -2067,6 +2092,7 @@ public final class Bf {
     Bf child = new Bf(
         childScopeId, engine, manifest, true, childBfHost, childBfMount, dataKeyValue, null,
         contextStacks, scripts, scriptSeen, preloads, preloadSeen, portalElements);
+    child.callerKeys = new HashSet<>(raw.keySet());
 
     Map<String, Object> vars = new LinkedHashMap<>(props);
     if (meta != null) {

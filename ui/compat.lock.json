@@ -2274,56 +2274,40 @@
           }
         }
       },
-      "component-spread-explicit-null": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "props-spread-explicit-null-override"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "props-spread-explicit-null-override"
-          ]
-        },
+      "component-prop-undefined-literal-spread": {
         "go-template": {
           "kind": "render",
           "limitations": [
             "props-spread-explicit-null-override"
           ]
-        },
-        "jinja": {
+        }
+      },
+      "component-spread-explicit-null": {
+        "go-template": {
           "kind": "render",
           "limitations": [
             "props-spread-explicit-null-override"
           ]
-        },
-        "minijinja": {
+        }
+      },
+      "component-spread-explicit-null-positions": {
+        "go-template": {
           "kind": "render",
           "limitations": [
             "props-spread-explicit-null-override"
           ]
-        },
-        "mojolicious": {
+        }
+      },
+      "component-spread-explicit-undefined-prop": {
+        "go-template": {
           "kind": "render",
           "limitations": [
             "props-spread-explicit-null-override"
           ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "props-spread-explicit-null-override"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "props-spread-explicit-null-override"
-          ]
-        },
-        "xslate": {
+        }
+      },
+      "component-spread-forwarded-null": {
+        "go-template": {
           "kind": "render",
           "limitations": [
             "props-spread-explicit-null-override"
@@ -8335,9 +8319,25 @@
         "description": "A `.map()` callback reading its index — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/callback-index-param.ts"
       },
+      "component-prop-undefined-literal-spread": {
+        "description": "A child prop written as the literal undefined still passes its key to a props spread",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-prop-undefined-literal-spread.ts"
+      },
       "component-spread-explicit-null": {
         "description": "A props spread whose explicit null overrides an earlier explicit prop",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-explicit-null.ts"
+      },
+      "component-spread-explicit-null-positions": {
+        "description": "A props spread whose explicit null overrides an earlier explicit prop under a condition and in a…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-explicit-null-positions.ts"
+      },
+      "component-spread-explicit-undefined-prop": {
+        "description": "A props spread carrying a key its caller passed as undefined overrides an earlier explicit prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-explicit-undefined-prop.ts"
+      },
+      "component-spread-forwarded-null": {
+        "description": "An explicit null forwarded through two props spreads overrides the earlier explicit prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-forwarded-null.ts"
       },
       "computed-const-loop-source-parenthesized": {
         "description": "A parenthesized computed-const loop source refuses (BF101) like the bare one (#3473)",
@@ -9629,9 +9629,15 @@
       "expected": "the spread carries the key, so its `null` / `undefined` overrides the earlier explicit prop",
       "actual": "keeps the earlier explicit prop, as if the caller had omitted the key",
       "fixtures": [
-        "component-spread-explicit-null"
+        "component-prop-undefined-literal-spread",
+        "component-spread-explicit-null",
+        "component-spread-explicit-null-positions",
+        "component-spread-explicit-undefined-prop",
+        "component-spread-forwarded-absent",
+        "component-spread-forwarded-null"
       ],
       "adapters": [
+        "hono",
         "blade",
         "erb",
         "go-template",

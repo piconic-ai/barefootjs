@@ -91,6 +91,33 @@ class RenderChildTest(unittest.TestCase):
         self.assertEqual(seen["props"]["id"], "y")
         self.assertNotIn("class", seen["props"])
 
+    def test_passed_reads_the_caller_keys(self):
+        # `passed` answers from the keys the caller handed over (raw, before
+        # keyword mangling), so a key passed as None counts and an omitted
+        # one does not; a root reads `_props`, and with no record at all the
+        # template's own fallback decides.
+        bf = new_bf()
+        seen = {}
+
+        def probe(props, caller):
+            child = new_bf()
+            seen["label"] = child.passed("label", False)
+            seen["class"] = child.passed("class", False)
+            seen["tone"] = child.passed("tone", True)
+            return ""
+
+        bf.register_child_renderer("probe", probe)
+        bf.render_child("probe", {"label": None, "class": None})
+        self.assertEqual(seen, {"label": True, "class": True, "tone": False})
+        self.assertFalse(bf.passed("label", False), "the record is gone once the render returns")
+
+        root = new_bf()
+        self.assertTrue(root.passed("label", True), "no record: the fallback decides")
+        self.assertFalse(root.passed("label", False))
+        root._props({"label": None})
+        self.assertTrue(root.passed("label", False), "a root reads its _props")
+        self.assertFalse(root.passed("tone", True))
+
 
 if __name__ == "__main__":
     unittest.main()

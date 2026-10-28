@@ -234,6 +234,11 @@ import { fixture as componentSpreadExplicitThenProps } from './component-spread-
 import { fixture as componentSpreadPropsSubset } from './component-spread-props-subset'
 import { fixture as componentSpreadPropsRestBag } from './component-spread-props-rest-bag'
 import { fixture as componentSpreadExplicitNull } from './component-spread-explicit-null'
+import { fixture as componentSpreadExplicitNullPositions } from './component-spread-explicit-null-positions'
+import { fixture as componentSpreadExplicitUndefinedProp } from './component-spread-explicit-undefined-prop'
+import { fixture as componentPropUndefinedLiteralSpread } from './component-prop-undefined-literal-spread'
+import { fixture as componentSpreadForwardedAbsent } from './component-spread-forwarded-absent'
+import { fixture as componentSpreadForwardedNull } from './component-spread-forwarded-null'
 import { fixture as nullishOperandArithmeticMatrix } from './nullish-operand-arithmetic-matrix'
 import { fixture as nullishOperandDivisionRemainder } from './nullish-operand-division-remainder'
 import { fixture as omittedOptionalNumberArithmetic } from './omitted-optional-number-arithmetic'
@@ -1339,6 +1344,11 @@ export const jsxFixtures: JSXFixture[] = [
   componentSpreadPropsSubset,
   componentSpreadPropsRestBag,
   componentSpreadExplicitNull,
+  componentSpreadExplicitNullPositions,
+  componentSpreadExplicitUndefinedProp,
+  componentPropUndefinedLiteralSpread,
+  componentSpreadForwardedAbsent,
+  componentSpreadForwardedNull,
   nullishOperandArithmeticMatrix,
   nullishOperandDivisionRemainder,
   omittedOptionalNumberArithmetic,

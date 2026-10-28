@@ -144,4 +144,28 @@ class RenderChildTest {
     Bf bf = new Bf("test");
     assertThrows(IllegalStateException.class, () -> bf.render_child("child", Map.of()));
   }
+
+  /**
+   * {@link Bf#passed} answers from the keys the caller handed over, so a key
+   * passed as null counts and an omitted one does not; a root reads its
+   * props, and with no record at all the template's own fallback decides.
+   */
+  @Test
+  void passedReadsTheCallerKeys(@TempDir Path dir) throws Exception {
+    Files.writeString(dir.resolve("parent.peb"), "{{ bf.render_child('child', {'label': null}) | raw }}");
+    Files.writeString(
+        dir.resolve("child.peb"),
+        "{{ bf.passed('label', false) }}/{{ bf.passed('tone', true) }}");
+
+    assertEquals("true/false", renderEntry(dir, "parent", Map.of(), "test", Map.of()));
+
+    Bf bare = new Bf("test");
+    assertTrue(bare.passed("label", true));
+    assertEquals(false, bare.passed("label", false));
+    Map<String, Object> rootProps = new LinkedHashMap<>();
+    rootProps.put("label", null);
+    Bf root = new Bf("test", engineFor(dir), Map.of(), rootProps);
+    assertTrue(root.passed("label", false));
+    assertEquals(false, root.passed("tone", true));
+  }
 }

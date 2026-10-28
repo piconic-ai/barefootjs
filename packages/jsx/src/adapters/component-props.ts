@@ -60,6 +60,13 @@ export interface ComponentPropsOptions {
   propsObjectName: string | null
   /** The analyzer-extracted props params, which `{...props}` enumerates. */
   propsParams: ReadonlyArray<ComponentPropsParam>
+  /**
+   * Whether the backend's runtime records which keys each component's
+   * caller passed, so a template can ask it whether a param was passed
+   * rather than whether it is nil (the DSL runtimes' `passed(name,
+   * fallback)`). See {@link propsSpreadParam}.
+   */
+  callerKeys?: boolean
 }
 
 /** What a call has set before a `{...props}` spread, as far as the compiler can see. */
@@ -82,14 +89,25 @@ export interface EarlierComponentProps {
  * - `'present'`: carried only when the caller passed it, so an absent param
  *   leaves the earlier value alone.
  *
- * A template backend reads an absent prop and an explicit `undefined` or
- * `null` one as the same nil, so "passed" is spelled "not nil" there: a
- * caller that passes `undefined`/`null` keeps the earlier value, where JS
- * would override it with the nil (limitation
+ * A template engine reads an absent prop and an explicit `undefined` or
+ * `null` one as the same nil, so "passed" can't be spelled "not nil": a
+ * caller that passes `null` must still override the earlier value, as JS
+ * does. With `callerKeys`, the runtime answers "passed" from the keys the
+ * caller actually handed over, and every optional param is `'present'`:
+ * an `'entry'` would hand the child the key even when the caller left it
+ * out, and the child would then read it as passed (a nil overriding its
+ * own earlier prop in a further `{...props}`). Without `callerKeys` (Go,
+ * whose Input struct can't tell the two nils apart), "passed" is "not
+ * nil", and an explicit nil keeps the earlier value (limitation
  * `props-spread-explicit-null-override`).
  */
-export function propsSpreadParam(param: ComponentPropsParam, earlier: EarlierComponentProps): 'entry' | 'present' {
+export function propsSpreadParam(
+  param: ComponentPropsParam,
+  earlier: EarlierComponentProps,
+  callerKeys = false,
+): 'entry' | 'present' {
   if (param.optional === false) return 'entry'
+  if (callerKeys) return 'present'
   return earlier.spread || earlier.keys.has(param.name) ? 'present' : 'entry'
 }
 
@@ -130,7 +148,7 @@ export function planComponentProps(
     // against the params this same spread has already pushed.
     const before: EarlierComponentProps = { keys: new Set(earlier.keys), spread: earlier.spread }
     for (const param of options.propsParams) {
-      if (propsSpreadParam(param, before) === 'entry') {
+      if (propsSpreadParam(param, before, options.callerKeys) === 'entry') {
         push({ kind: 'props-param', name: param.name })
       } else {
         earlier.keys.add(param.name)
@@ -173,8 +191,10 @@ export interface ComponentPropSpelling {
   spread(value: SpreadAttr): string
   /**
    * The expression a `present-param` segment folds in like a spread: a
-   * one-key hash `{ name: <param> }` when the param is not nil, an empty
-   * hash when it is.
+   * one-key hash `{ name: <param> }` when the caller passed the param, an
+   * empty hash when it did not. "Passed" is the runtime's
+   * `passed('<name>', <param is not nil>)`: the caller's keys when the
+   * runtime recorded them, the nil test otherwise.
    */
   presentParam(name: string): string
 }

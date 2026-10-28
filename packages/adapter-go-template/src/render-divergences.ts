@@ -180,11 +180,17 @@ export const renderDivergences: RenderDivergences = {
   // omitted `n?: number | null` prop read as `0` in arithmetic. The type
   // cannot say which nil it stands for, so the arithmetic is now refused
   // with BF101 (`conformance-pins.ts`).
-  // An explicit `null` carried by a `{...props}` spread onto a child: the
-  // engine holds it and an omitted prop as the same nil, so the spread
-  // carries the key only when it is not nil and an earlier explicit prop
-  // keeps its value where JS overrides it with `null`.
+  // An explicit `null` (or an `undefined` a parent passed) carried by a
+  // `{...props}` spread onto a child: the Input struct holds it and an
+  // omitted prop as the same nil, so the spread carries the key only when it
+  // is not nil and an earlier explicit prop keeps its value where JS
+  // overrides it. The DSL runtimes record the keys each caller passed
+  // (`passed`); the Input struct has no such record.
   'component-spread-explicit-null': { limitation: 'props-spread-explicit-null-override' },
+  'component-spread-explicit-null-positions': { limitation: 'props-spread-explicit-null-override' },
+  'component-spread-forwarded-null': { limitation: 'props-spread-explicit-null-override' },
+  'component-spread-explicit-undefined-prop': { limitation: 'props-spread-explicit-null-override' },
+  'component-prop-undefined-literal-spread': { limitation: 'props-spread-explicit-null-override' },
   // `number-division-zero-divisor`, `nullish-operand-division-remainder`,
   // `string-index-non-finite` and `remainder-negative-zero-quotient` used to
   // sit here: `bf_div` gave `0` for a zero divisor. It is now IEEE division,
@@ -311,4 +317,7 @@ export const dataPointDivergences: Readonly<Record<string, { limitation: string 
   // `.at(-1)` on an empty string is `undefined`, which omits the attribute
   // in JS; the template renders `data-last=""`.
   'string-index-methods:gen:word:empty': { limitation: 'undefined-method-result-attr' },
+  // The same fixture's root called with `label: null`, forwarded through two
+  // `{...props}` spreads: the second keeps its earlier `"first"`.
+  'component-spread-forwarded-absent:gen:label:union:1': { limitation: 'props-spread-explicit-null-override' },
 }

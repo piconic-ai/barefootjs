@@ -130,6 +130,16 @@ describe('planComponentProps', () => {
     expect(spell(comp, withProps)).toEqual([`{tone='a'}`, '...tone?=$tone', `{size=$size, tone='z', _bf_slot='s0'}`])
   })
 
+  test('with caller keys, {...props} carries every optional param only when the caller passed it', () => {
+    const callerKeys: ComponentPropsOptions = {
+      propsObjectName: 'props',
+      propsParams: [{ name: 'tone', optional: false }, { name: 'size' }],
+      callerKeys: true,
+    }
+    const comp = component([prop('', spread('props'))])
+    expect(spell(comp, callerKeys)).toEqual([`{tone=$tone}`, '...size?=$size', `{_bf_slot='s0'}`])
+  })
+
   test('a key repeated across a spread stays twice: the spread may set it in between', () => {
     const comp = component([prop('tone', literal('a')), prop('', spread('rest')), prop('tone', literal('b'))])
     expect(spell(comp)).toEqual([`{tone='a'}`, '...rest', `{tone='b', _bf_slot='s0'}`])
@@ -160,6 +170,10 @@ describe('propsSpreadParam', () => {
   })
   test('a required param is always passed, so it always wins', () => {
     expect(propsSpreadParam({ name: 'tone', optional: false }, { keys: new Set(['tone']), spread: true })).toBe('entry')
+  })
+  test('with caller keys, an optional param is carried only when passed even with nothing earlier', () => {
+    expect(propsSpreadParam({ name: 'tone' }, none, true)).toBe('present')
+    expect(propsSpreadParam({ name: 'tone', optional: false }, none, true)).toBe('entry')
   })
 })
 
