@@ -40,11 +40,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
-  // A string and a number joined with `+` (`r.id + '-' + i`) is emitted as
-  // the template language's own `+`, which raises a type error on a string
-  // plus an integer instead of concatenating.
-  'loop-row-child-concat-index-key': { limitation: 'string-number-plus-concat' },
-  'remainder-negative-zero-concat': { limitation: 'string-number-plus-concat' },
   // Ruby's `JSON.generate` writes the float `-0.0` that `%` gives for a
   // negative dividend as `-0.0`, where JS's `JSON.stringify` writes `0`.
   'remainder-negative-zero-json': { limitation: 'negative-zero-json-stringify' },
@@ -122,7 +117,4 @@ export const renderDivergences: RenderDivergences = {
  * `@barefootjs/go-template`'s `dataPointDivergences`.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
-  // `.at(-1)` on an empty string is `undefined`, which omits the attribute
-  // in JS; the template renders `data-last=""`.
-  'string-index-methods:gen:word:empty': { limitation: 'undefined-method-result-attr' },
 }

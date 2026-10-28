@@ -240,10 +240,9 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
   protected override readonly templateIdentifierSpelling = { ident: jinjaIdent, label: 'Jinja' }
 
   /**
-   * Names (signal getters + props) whose value is a string. Carried for
-   * parity with the Perl-family adapters (Mojo needs it for `eq`/`ne`
-   * selection); the Jinja emitters don't consume it — Jinja's `==`/`!=`
-   * compare strings and numbers correctly.
+   * Names (signal getters + props) whose value is a string. Selects `~`
+   * for a `+` string concatenation; equality does not consume it — Jinja's
+   * `==`/`!=` compare strings and numbers correctly.
    */
   protected stringValueNamesFor(ir: ComponentIR): Set<string> {
     return collectStringValueNames(ir)
@@ -1098,12 +1097,14 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
   ): string {
     // Arithmetic over a prop whose nil the type cannot classify (#3700).
     this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
+    // The predicate's own param shadows an outer string-typed name.
+    const predicateScope = this.scope.enterCallback([param])
     return emitParsedExpr(
       expr,
       new JinjaFilterEmitter(
         param,
         localVarMap,
-        n => this._isStringValueName(n),
+        (n, property) => this._isStringValueName(n, property, predicateScope),
         // A nested callback method inside the predicate has no Jinja scalar
         // form — surface BF101 (#2038) instead of silently degrading it to
         // its receiver.
@@ -1170,6 +1171,7 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),
+      _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderJinjaFilterExprPublic: (e, p) => this._renderJinjaFilterExprPublic(e, p),
     }
@@ -1296,11 +1298,13 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
     return emitParsedExpr(expr, new JinjaTopLevelEmitter(this.emitCtx))
   }
 
-  /** Whether `name` (a signal getter or prop) holds a string value. Carried
-   *  for parity with the Perl-family adapters; the Jinja emitters don't
-   *  consume it (Jinja's `==`/`!=` compare strings and numbers correctly). */
-  private _isStringValueName(name: string): boolean {
-    return this.stringValueNames.has(name)
+  /** Whether `name` (a signal getter or prop) holds a string value at
+   *  `scope`, which picks `~` for a `+` string concatenation (Jinja's `==`/
+   *  `!=` compare strings and numbers correctly, so equality does not
+   *  consume it). A loop row or callback binding of the same name shadows
+   *  the outer typing. */
+  private _isStringValueName(name: string, componentProperty = false, scope = this.scope): boolean {
+    return scope.isStringValueName(name, n => this.stringValueNames.has(n), componentProperty)
   }
 
   /**

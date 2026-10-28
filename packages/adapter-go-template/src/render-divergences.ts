@@ -301,9 +301,6 @@ export const renderDivergences: RenderDivergences = {
  * `go-template-adapter.test.ts`'s citation check until the skip goes too.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
-  // `.at(-1)` on an empty string is `undefined`, which omits the attribute
-  // in JS; the template renders `data-last=""`.
-  'string-index-methods:gen:word:empty': { limitation: 'undefined-method-result-attr' },
   // The same fixture's root called with `label: null`, forwarded through two
   // `{...props}` spreads: the second keeps its earlier `"first"`.
   'component-spread-forwarded-absent:gen:label:union:1': { limitation: 'props-spread-explicit-null-override' },

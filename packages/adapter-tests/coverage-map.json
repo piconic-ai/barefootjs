@@ -13397,6 +13397,30 @@
         "text"
       ]
     },
+    "string-number-plus-concat-positions": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:!==",
+        "binary:*",
+        "binary:+",
+        "literal:null",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "string-padEnd": {
       "kinds": [
         "array-method",
@@ -14213,6 +14237,34 @@
       ],
       "contexts": [
         "attribute"
+      ]
+    },
+    "undefined-method-result-attr": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "array-method:at",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "logical:??",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
       ]
     },
     "undefined-signal-arithmetic-direct": {

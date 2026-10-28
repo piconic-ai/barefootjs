@@ -739,3 +739,28 @@ export function Counter() {
     expect(template).not.toContain('<link')
   })
 })
+
+// A `+` the shared layer classifies as string concatenation: Jinja's `+`
+// raises on a string plus a number, so it lowers to `~`, and the operand
+// that is not typed as a string goes through `bf.string`, in both orders. A
+// loop row or filter param named like a string prop is typed as the param
+// (a number here).
+describe('MinijinjaAdapter - string concatenation operand', () => {
+  test('a number operand of `+` concatenation goes through bf.string and `~`', () => {
+    const { template } = compileAndGenerate(`
+function Widget(props: { label: string; n: number; nums: number[] }) {
+  return <div>
+    <span>{'r=' + props.n}</span>
+    <span>{props.n + '=r'}</span>
+    <ol>{props.nums.map(label => <li key={label}>{label + props.label}</li>)}</ol>
+    <ul>{props.nums.filter(label => label + 'x' !== '0x').map(v => <li key={v}>{v}</li>)}</ul>
+  </div>
+}
+`)
+    expect(template).toContain("'r=' ~ bf.string(n)")
+    expect(template).toContain("bf.string(n) ~ '=r'")
+    expect(template).toContain('bf.string(label) ~ __bf_root_label')
+    expect(template).toContain("(bf.string(v) ~ 'x') != '0x'")
+    expect(template).not.toContain("bf.string('r=')")
+  })
+})

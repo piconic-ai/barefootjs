@@ -253,6 +253,8 @@ function collectNullableNumberProps(ir: ComponentIR): ReadonlyMap<string, Nullab
  *   (`pair[1]`, `row[key]`), or a member read of a value that can itself be
  *   nullish;
  * - a ternary branch, or an `??` / `||` / `&&` operand the result can be;
+ * - a method call that reads `undefined` when nothing is there
+ *   (`word.at(-1)`, `items.find(...)`, {@link methodMayReturnUndefined});
  * - a literal `undefined` / `null`.
  *
  * Like the bare-signal guard it is presence-only: a non-nil value renders
@@ -271,6 +273,7 @@ export function attrValueMayBeNullish(
   // loop bindings at the top level, none inside a memo body — its getters
   // resolve where the memo is declared, not where it is read.
   const walk = (expr: ParsedExpr, shadowed: (name: string) => boolean): boolean => {
+    if (methodMayReturnUndefined(expr)) return true
     switch (expr.kind) {
       case 'identifier':
         return expr.name === 'undefined'
@@ -305,6 +308,24 @@ export function attrValueMayBeNullish(
     }
   }
   return parsed !== undefined && walk(parsed, isShadowed)
+}
+
+/** Array / string methods that read `undefined` when nothing matches. */
+const UNDEFINED_ON_MISS_METHODS: ReadonlySet<string> = new Set(['find', 'findLast'])
+
+/**
+ * Whether `expr` is a method call that reads `undefined` for some receiver:
+ * `.at(i)` out of range (an empty string or array included, `''.at(-1)`),
+ * or `.find()` / `.findLast()` with no matching element.
+ */
+function methodMayReturnUndefined(expr: ParsedExpr): boolean {
+  if (expr.kind === 'array-method') return expr.method === 'at'
+  return (
+    expr.kind === 'call' &&
+    expr.callee.kind === 'member' &&
+    !expr.callee.computed &&
+    UNDEFINED_ON_MISS_METHODS.has(expr.callee.property)
+  )
 }
 
 /**

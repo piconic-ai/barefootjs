@@ -233,12 +233,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "remainder-negative-zero-json",
               "limitations": [
                 "negative-zero-json-stringify"
@@ -589,12 +583,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -716,12 +704,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -3221,12 +3203,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-concat-index-key",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -3248,12 +3224,6 @@
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -3559,12 +3529,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-concat-index-key",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -3586,12 +3550,6 @@
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -3677,12 +3635,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-concat-index-key",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -3704,12 +3656,6 @@
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -4632,12 +4578,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "remainder-negative-zero-json",
               "limitations": [
                 "negative-zero-json-stringify"
@@ -5288,12 +5228,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -5547,12 +5481,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -7382,12 +7310,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-concat-index-key",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -7493,12 +7415,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -8218,12 +8134,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-concat-index-key",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -8329,12 +8239,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -8540,12 +8444,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-concat-index-key",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -8651,12 +8549,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -10411,12 +10303,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-concat-index-key",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -10492,12 +10378,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -11043,12 +10923,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-concat-index-key",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -11124,12 +10998,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -11269,12 +11137,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-concat-index-key",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -11350,12 +11212,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -12983,12 +12839,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-concat-index-key",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -13034,12 +12884,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -13627,12 +13471,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-concat-index-key",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -13678,12 +13516,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -13865,12 +13697,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-concat-index-key",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -13916,12 +13742,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -15480,12 +15300,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "remainder-negative-zero-json",
               "limitations": [
                 "negative-zero-json-stringify"
@@ -15528,12 +15342,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
             }
           ]
         },
@@ -15549,12 +15357,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             }
           ]
@@ -17953,12 +17755,6 @@
         "erb": {
           "gaps": [
             {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "remainder-negative-zero-json",
               "limitations": [
                 "negative-zero-json-stringify"
@@ -17976,26 +17772,8 @@
             }
           ]
         },
-        "jinja": {
-          "gaps": [
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            }
-          ]
-        },
-        "minijinja": {
-          "gaps": [
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            }
-          ]
-        },
+        "jinja": {},
+        "minijinja": {},
         "mojolicious": {},
         "pebble": {},
         "twig": {},
@@ -18219,12 +17997,6 @@
         "erb": {
           "gaps": [
             {
-              "fixture": "loop-row-child-concat-index-key",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -18240,12 +18012,6 @@
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -18317,12 +18083,6 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "loop-row-child-concat-index-key",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -18338,12 +18098,6 @@
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -18357,12 +18111,6 @@
         "minijinja": {
           "gaps": [
             {
-              "fixture": "loop-row-child-concat-index-key",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -18378,12 +18126,6 @@
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -19973,12 +19715,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "remainder-negative-zero-json",
               "limitations": [
                 "negative-zero-json-stringify"
@@ -20299,12 +20035,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -20426,12 +20156,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -21210,12 +20934,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-concat-index-key",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -21225,12 +20943,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -21614,12 +21326,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-concat-index-key",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -21629,12 +21335,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -21750,12 +21450,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-concat-index-key",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -21765,12 +21459,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
               ]
             },
             {
@@ -23202,12 +22890,6 @@
         "erb": {
           "gaps": [
             {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            },
-            {
               "fixture": "remainder-negative-zero-json",
               "limitations": [
                 "negative-zero-json-stringify"
@@ -23225,26 +22907,8 @@
             }
           ]
         },
-        "jinja": {
-          "gaps": [
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            }
-          ]
-        },
-        "minijinja": {
-          "gaps": [
-            {
-              "fixture": "remainder-negative-zero-concat",
-              "limitations": [
-                "string-number-plus-concat"
-              ]
-            }
-          ]
-        },
+        "jinja": {},
+        "minijinja": {},
         "mojolicious": {
           "gaps": [
             {

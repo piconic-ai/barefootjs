@@ -601,6 +601,7 @@ import { fixture as numberToFixed } from './number-tofixed'
 import { fixture as mathMethods } from './math-methods'
 import { fixture as stringLengthText } from './string-length-text'
 import { fixture as stringIndexMethods } from './string-index-methods'
+import { fixture as undefinedMethodResultAttr } from './undefined-method-result-attr'
 import { fixture as stringAtLoneSurrogate } from './string-at-lone-surrogate'
 import { fixture as stringIndexNonFinite } from './string-index-non-finite'
 import { fixture as booleanAttrLiterals } from './boolean-attr-literals'
@@ -1166,6 +1167,7 @@ import { fixture as loopRowChildPropDestinations } from './loop-row-child-prop-d
 import { fixture as loopRowChildIndexKey } from './loop-row-child-index-key'
 import { fixture as loopRowChildComputedKey } from './loop-row-child-computed-key'
 import { fixture as loopRowChildConcatIndexKey } from './loop-row-child-concat-index-key'
+import { fixture as stringNumberPlusConcatPositions } from './string-number-plus-concat-positions'
 import { fixture as loopRowChildChildrenIndexKey } from './loop-row-child-children-index-key'
 import { fixture as loopRowChildChildrenComputedKey } from './loop-row-child-children-computed-key'
 import { fixture as loopRowChildBooleanKey } from './loop-row-child-boolean-key'
@@ -1666,6 +1668,7 @@ export const jsxFixtures: JSXFixture[] = [
   mathMethods,
   stringLengthText,
   stringIndexMethods,
+  undefinedMethodResultAttr,
   stringAtLoneSurrogate,
   stringIndexNonFinite,
   booleanAttrLiterals,
@@ -2035,6 +2038,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildIndexKey,
   loopRowChildComputedKey,
   loopRowChildConcatIndexKey,
+  stringNumberPlusConcatPositions,
   loopRowChildChildrenIndexKey,
   loopRowChildChildrenComputedKey,
   loopRowChildBooleanKey,
