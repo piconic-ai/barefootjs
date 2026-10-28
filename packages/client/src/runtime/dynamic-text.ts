@@ -46,6 +46,7 @@
  */
 
 import { __bfReportOutput } from '@barefootjs/client/reactive'
+import { isSlotMarker } from '../slot.ts'
 
 const END_MARKER = '/'
 
@@ -84,7 +85,7 @@ function slotStart(node: Node): Node | null {
 export function __bfText(current: Node | null, value: unknown): Node | null {
   if (!current) return current
   // Slot markers (`__slot()`): leave the server-rendered DOM untouched.
-  if (value != null && (value as { __isSlot?: boolean }).__isSlot) return current
+  if (isSlotMarker(value)) return current
 
   if (typeof Node !== 'undefined' && value instanceof Node) {
     if (value === current) {

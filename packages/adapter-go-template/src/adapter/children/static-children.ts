@@ -181,6 +181,17 @@ function collectComponentInstances(
     for (const child of effectiveChildren) {
       collectStaticChildInstancesRecursive(host, child, result, inLoop, providerCtx, propsParams, scope)
     }
+    // A named JSX prop (`header={<span><Badge /></span>}`) whose value can't
+    // be baked renders through its own companion define with the PARENT's
+    // data too (`queueDynamicPropDefine`), so its nested instances need the
+    // same fields. A bakeable value holds no component, so this is a no-op
+    // for it.
+    for (const prop of comp.props) {
+      if (prop.value.kind !== 'jsx-children' || prop.name === 'children') continue
+      for (const child of prop.value.children) {
+        collectStaticChildInstancesRecursive(host, child, result, inLoop, providerCtx, propsParams, scope)
+      }
+    }
   }
   // Recurse into Portal's children to find nested components
   if (comp.name === 'Portal' && comp.children) {

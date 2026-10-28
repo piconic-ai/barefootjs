@@ -5,6 +5,9 @@ import { fixture as templateLiteralTextEscape } from './template-literal-text-es
 import { fixture as templateLiteralStaticDelimiters } from './template-literal-static-delimiters'
 import { fixture as clientTemplateStaticDelimiters } from './client-template-static-delimiters'
 import { fixture as jsxPropTemplateDelimiters } from './jsx-prop-template-delimiters'
+import { fixture as jsxPropNestedComponentPositions } from './jsx-prop-nested-component-positions'
+import { fixture as jsxPropNestedComponentConditional } from './jsx-prop-nested-component-conditional'
+import { fixture as jsxPropNestedComponentForwarded } from './jsx-prop-nested-component-forwarded'
 import { fixture as childrenNullishFallback } from './children-nullish-fallback'
 import { fixture as conditionalNestedClient } from './conditional-nested-loop-client-reactivity'
 import { fixture as conditionalNestedPrecomputed } from './conditional-nested-loop-precomputed-reactivity'
@@ -1633,6 +1636,9 @@ export const jsxFixtures: JSXFixture[] = [
   staticAttrEscape,
   clientTemplateStaticDelimiters,
   jsxPropTemplateDelimiters,
+  jsxPropNestedComponentPositions,
+  jsxPropNestedComponentConditional,
+  jsxPropNestedComponentForwarded,
   svgIcon,
   customElementTag,
   customElementChildLoopRow,

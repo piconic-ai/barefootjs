@@ -7812,9 +7812,9 @@
               ]
             },
             {
-              "fixture": "jsx-prop-template-delimiters",
+              "fixture": "jsx-prop-nested-component-forwarded",
               "limitations": [
-                "nested-component-in-jsx-prop"
+                "nested-component-in-jsx-prop-forwarded"
               ]
             },
             {
@@ -13491,9 +13491,9 @@
               ]
             },
             {
-              "fixture": "jsx-prop-template-delimiters",
+              "fixture": "jsx-prop-nested-component-forwarded",
               "limitations": [
-                "nested-component-in-jsx-prop"
+                "nested-component-in-jsx-prop-forwarded"
               ]
             },
             {

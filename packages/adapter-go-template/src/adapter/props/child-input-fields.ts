@@ -600,6 +600,37 @@ function refusePropsSpreadMerge(ctx: GoEmitContext, childName: string, spread: I
 }
 
 /**
+ * A non-loop child call's `key` (`<Badge key="k" />`): the reference renders
+ * it as the child root's `data-key`, never as a prop, so it is not a field of
+ * `<Child>Input` (`lowerChildInputFields` is handed the call without it). The
+ * Go value is stamped on the built child's `BfDataKey`, which the child's root
+ * already relays (`{{if .BfDataKey}} data-key=…{{end}}`). Lowered by the same
+ * per-prop steps as any other prop; null when there is no key, when it reads
+ * a loop row (no constructor-time value), or when it does not lower.
+ */
+export function lowerStaticChildDataKey(
+  host: ChildInputHost,
+  child: { name: string; props: readonly IRProp[]; rowScope?: BindingScope },
+  ir: ComponentIR,
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+): string | null {
+  const keyProp = child.props.find(p => p.name === 'key')
+  if (!keyProp) return null
+  if (child.rowScope && propReadsRow(keyProp, child.rowScope)) return null
+  let goValue: string | null = null
+  const site: ChildCallSite = {
+    host,
+    child,
+    ir,
+    propFallbackVars,
+    childShape: undefined,
+    emit: (_jsxName, writtenValue) => { goValue = writtenValue },
+  }
+  lowerChildProp(site, keyProp)
+  return goValue === null ? null : `bf.String(${goValue})`
+}
+
+/**
  * Does `prop`'s value read a name `rowScope` binds? Reads the IR-computed
  * `IRProp.freeIdentifiers` when it is a live `Set` — it does not survive the
  * debug IR's JSON round trip, which `generateTypes` can be handed — and

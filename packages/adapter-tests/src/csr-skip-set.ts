@@ -207,4 +207,10 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // `_p.label` without the default, so an omitted prop renders empty (the
   // init body's `const a` keeps the default).
   'const-alias-default-prop-loop-shadow': { limitation: 'const-alias-signature-default' },
+  // A JSX prop holding a nested component, read in a conditional arm or
+  // forwarded to a grandchild: the CSR template stringifies the branded prop
+  // in the arm (`[object Object]`) and resolves the forwarded element's scope
+  // to the receiving component.
+  'jsx-prop-nested-component-conditional': { limitation: 'nested-component-in-jsx-prop-conditional-arm' },
+  'jsx-prop-nested-component-forwarded': { limitation: 'nested-component-in-jsx-prop-forwarded' },
 }
