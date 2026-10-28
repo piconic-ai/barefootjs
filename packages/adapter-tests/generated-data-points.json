@@ -6006,6 +6006,172 @@
       }
     }
   ],
+  "memo-number-output-positions": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0,
+        "zero": 0,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7,
+        "zero": 0,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890,
+        "zero": 0,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:zero:negative",
+      "props": {
+        "n": 2,
+        "zero": -7,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:zero:large",
+      "props": {
+        "n": 2,
+        "zero": 1234567890,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "n": 2,
+        "zero": 0,
+        "on": false,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "n": 2,
+        "zero": 0,
+        "on": true,
+        "items": []
+      }
+    }
+  ],
+  "memo-number-output-positions-destructured": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0,
+        "zero": 0,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7,
+        "zero": 0,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890,
+        "zero": 0,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:zero:negative",
+      "props": {
+        "n": 2,
+        "zero": -7,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:zero:large",
+      "props": {
+        "n": 2,
+        "zero": 1234567890,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "n": 2,
+        "zero": 0,
+        "on": false,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "n": 2,
+        "zero": 0,
+        "on": true,
+        "items": []
+      }
+    }
+  ],
   "memo-prop-read-beside-signal-nullish-seed": [
     {
       "name": "gen:b:absent",
