@@ -393,30 +393,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-children-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-inner-loop-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-inner-loop-shadow",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-ref",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -426,12 +402,6 @@
               "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
-              ]
-            },
-            {
-              "fixture": "loop-row-nested-child-children-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -468,12 +438,6 @@
               "fixture": "remainder-negative-zero-json",
               "limitations": [
                 "negative-zero-json-stringify"
-              ]
-            },
-            {
-              "fixture": "signal-loop-row-child-children",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -4888,36 +4852,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-children-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-inner-loop-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-inner-loop-shadow",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-ref",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-nested-child-children-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -5023,12 +4957,6 @@
               "fixture": "remainder-negative-zero-json",
               "limitations": [
                 "negative-zero-json-stringify"
-              ]
-            },
-            {
-              "fixture": "signal-loop-row-child-children",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -7836,30 +7764,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-children-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-inner-loop-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-inner-loop-shadow",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-ref",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
               "fixture": "loop-row-child-outer-state-key",
               "limitations": [
                 "loop-row-key-outer-state"
@@ -7881,12 +7785,6 @@
               "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
-              ]
-            },
-            {
-              "fixture": "loop-row-nested-child-children-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -8019,12 +7917,6 @@
               "fixture": "remainder-negative-zero-json",
               "limitations": [
                 "negative-zero-json-stringify"
-              ]
-            },
-            {
-              "fixture": "signal-loop-row-child-children",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -10763,30 +10655,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-children-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-inner-loop-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-inner-loop-shadow",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-ref",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -10796,12 +10664,6 @@
               "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
-              ]
-            },
-            {
-              "fixture": "loop-row-nested-child-children-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -10898,12 +10760,6 @@
               "fixture": "remainder-negative-zero-json",
               "limitations": [
                 "negative-zero-json-stringify"
-              ]
-            },
-            {
-              "fixture": "signal-loop-row-child-children",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -13335,30 +13191,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-children-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-inner-loop-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-inner-loop-shadow",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-ref",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
               "fixture": "loop-row-child-outer-state-key",
               "limitations": [
                 "loop-row-key-outer-state"
@@ -13380,12 +13212,6 @@
               "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
-              ]
-            },
-            {
-              "fixture": "loop-row-nested-child-children-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -13452,12 +13278,6 @@
               "fixture": "remainder-negative-zero-json",
               "limitations": [
                 "negative-zero-json-stringify"
-              ]
-            },
-            {
-              "fixture": "signal-loop-row-child-children",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -14935,30 +14755,6 @@
         "go-template": {
           "gaps": [
             {
-              "fixture": "loop-row-child-children-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-inner-loop-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-inner-loop-shadow",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-ref",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -14971,21 +14767,9 @@
               ]
             },
             {
-              "fixture": "loop-row-nested-child-children-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "signal-loop-row-child-children",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -15836,12 +15620,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-ref",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -21394,30 +21172,6 @@
               ]
             },
             {
-              "fixture": "loop-row-child-children-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-inner-loop-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-inner-loop-shadow",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-children-ref",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
-              ]
-            },
-            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -21427,12 +21181,6 @@
               "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
-              ]
-            },
-            {
-              "fixture": "loop-row-nested-child-children-handler",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
               ]
             },
             {
@@ -21451,12 +21199,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "signal-loop-row-child-children",
-              "limitations": [
-                "signal-loop-row-child-children-unseeded"
               ]
             },
             {

@@ -81,6 +81,13 @@ export interface NestedComponentInfo extends IRLoopChildComponent {
    */
   rowScope: BindingScope
   /**
+   * The scope the loop's ARRAY expression is evaluated in: the loops
+   * enclosing this one, without its own row. A name the array reads
+   * (`rows()`) is the component's own binding only when this scope leaves
+   * it unbound.
+   */
+  arrayScope: BindingScope
+  /**
    * The loop-body component's own full `IRProp`s — unlike the trimmed `props`
    * copy on `IRLoopChildComponent`, these carry `freeIdentifiers`, `loc` and
    * `clientOnly`, which the constructor-side prop lowering
