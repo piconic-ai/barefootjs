@@ -1211,7 +1211,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
         parts.push(this.convertExpressionToKolon(part.expr, part.parsed))
       } else if (part.type === 'ternary') {
         const cond = this.convertExpressionToKolon(part.condition)
-        parts.push(`(${cond} ? '${part.whenTrue}' : '${part.whenFalse}')`)
+        parts.push(`(${cond} ? ${kolonStringLiteral(part.whenTrue)} : ${kolonStringLiteral(part.whenFalse)})`)
       } else if (part.type === 'lookup') {
         // `${MAP[KEY]}` against a Record<T, string> literal — emit a Kolon
         // hash literal with an immediate `{ ... }[$key]` lookup. Kolon's `//`

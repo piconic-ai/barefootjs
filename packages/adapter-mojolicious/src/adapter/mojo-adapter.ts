@@ -1228,7 +1228,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
         parts.push(this.convertExpressionToPerl(part.expr, part.parsed))
       } else if (part.type === 'ternary') {
         const cond = this.convertExpressionToPerl(part.condition)
-        parts.push(`(${cond} ? '${part.whenTrue}' : '${part.whenFalse}')`)
+        parts.push(`(${cond} ? ${perlStringLiteral(part.whenTrue)} : ${perlStringLiteral(part.whenFalse)})`)
       } else if (part.type === 'lookup') {
         // `${MAP[KEY]}` against a Record<T, string> literal — emit a
         // Perl anonymous hash with an immediate `->{ $key } // ''`
