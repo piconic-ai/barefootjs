@@ -13113,6 +13113,48 @@
         "text"
       ]
     },
+    "strict-equality-distinct-reference": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "array-method:at",
+        "binary:!==",
+        "binary:===",
+        "literal:null",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "strict-equality-same-reference": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:!==",
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "strict-equality-untyped-operands": {
       "kinds": [
         "array-literal",

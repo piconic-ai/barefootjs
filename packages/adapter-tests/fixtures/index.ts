@@ -597,6 +597,8 @@ import { fixture as stringConcatPlusIdentifiers } from './string-concat-plus-ide
 import { fixture as stringConcatPlusRenamedProp } from './string-concat-plus-renamed-prop'
 import { fixture as strictEqualityUntypedOperands } from './strict-equality-untyped-operands'
 import { fixture as strictEqualityUntypedOperandsPropsObject } from './strict-equality-untyped-operands-props-object'
+import { fixture as strictEqualitySameReference } from './strict-equality-same-reference'
+import { fixture as strictEqualityDistinctReference } from './strict-equality-distinct-reference'
 import { fixture as templateLiteralMultiInterp } from './template-literal-multi-interp'
 import { fixture as optionalChainingProp } from './optional-chaining-prop'
 import { fixture as numberToFixed } from './number-tofixed'
@@ -2156,4 +2158,6 @@ export const jsxFixtures: JSXFixture[] = [
   loopKeyToStringNumberComponentRowClient,
   strictEqualityUntypedOperands,
   strictEqualityUntypedOperandsPropsObject,
+  strictEqualitySameReference,
+  strictEqualityDistinctReference,
 ]

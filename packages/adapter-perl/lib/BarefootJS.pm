@@ -1088,7 +1088,8 @@ sub _format_date_zone_offset ($tz, $ms) {
 # numeric `==` reads two different non-numeric strings as `0 == 0`, and `eq`
 # reads `1` and `1.0` as different, so the comparison goes by the operands'
 # JS types: numbers by value, strings by content, booleans by truth value,
-# `undef` only to `undef`, and values of different types never equal. The
+# `undef` only to `undef`, an object or array only to the same reference,
+# and values of different types never equal. The
 # result is a Perl boolean, the same value the native operators yield.
 sub strict_eq ($self, $l, $r) {
     return BarefootJS::Evaluator::_strict_eq($l, $r) ? !!1 : !!0;

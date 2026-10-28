@@ -185,6 +185,16 @@ subtest 'strict_eq — JS === by type and value' => sub {
     ok $bf->strict_eq(JSON::PP::true(), JSON::PP::true()), 'true === true';
     ok !$bf->strict_eq(JSON::PP::true(), JSON::PP::false()), 'true !== false';
     ok !$bf->strict_eq(JSON::PP::true(), 1), 'true !== 1';
+    my ($obj, $arr) = ({ id => 1 }, [1]);
+    ok $bf->strict_eq($obj, $obj), 'the same hash ref is equal to itself';
+    ok $bf->strict_eq($arr, $arr), 'the same array ref is equal to itself';
+    ok !$bf->strict_eq({ id => 1 }, { id => 1 }), 'distinct hashes with equal contents are not equal';
+    ok !$bf->strict_eq([1], [1]), 'distinct arrays with equal contents are not equal';
+    ok !$bf->strict_eq($obj, $arr), 'a hash is not an array';
+    ok !$bf->strict_eq($arr, '1'), 'an array is not its string form';
+    ok !$bf->strict_eq($obj, undef), 'a hash is not undef';
+    ok $bf->includes([$obj, $arr], $arr), 'includes finds the same reference';
+    ok !$bf->includes([{ id => 1 }], $obj), 'includes misses a distinct equal hash';
 };
 
 # `Array.prototype.indexOf(x)` / `Array.prototype.lastIndexOf(x)`

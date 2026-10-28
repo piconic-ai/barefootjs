@@ -7810,6 +7810,52 @@
           }
         }
       },
+      "strict-equality-distinct-reference": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "object-equality-by-contents"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "object-equality-by-contents"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "object-equality-by-contents"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "object-equality-by-contents"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "object-equality-by-contents"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "object-equality-by-contents"
+          ]
+        }
+      },
+      "strict-equality-same-reference": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "array-self-equality"
+          ]
+        }
+      },
       "string-at-lone-surrogate": {
         "blade": {
           "kind": "render",
@@ -8603,6 +8649,14 @@
         "description": "a ref callback and a signal-derived text inside a nested .map() under a static (non-signal) outer…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-nested-loop-ref.ts"
       },
+      "strict-equality-distinct-reference": {
+        "description": "=== / !== between distinct objects or arrays with equal contents is false / true",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/strict-equality-distinct-reference.ts"
+      },
+      "strict-equality-same-reference": {
+        "description": "=== / !== between an object or array and itself is true / false",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/strict-equality-same-reference.ts"
+      },
       "string-at-lone-surrogate": {
         "description": "`.at(i)` on half of a surrogate pair keeps the lone surrogate: halves compare different and rejoin…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/string-at-lone-surrogate.ts"
@@ -8850,6 +8904,19 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "array-self-equality": {
+      "title": "Strict equality between an array and itself",
+      "kind": "silent",
+      "given": "`===` / `!==` with the same array on both sides (`arr === arr`)",
+      "expected": "`===` is true and `!==` is false",
+      "actual": "renders `===` as false and `!==` as true",
+      "fixtures": [
+        "strict-equality-same-reference"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "authored-format-date-call": {
@@ -9414,6 +9481,24 @@
         "pebble",
         "twig",
         "xslate"
+      ]
+    },
+    "object-equality-by-contents": {
+      "title": "Strict equality between distinct objects or arrays with the same contents",
+      "kind": "silent",
+      "given": "`===` / `!==` between two distinct objects or arrays whose contents are equal (two props holding `{ id: 1 }`, two elements of `[{ id: 1 }, { id: 1 }]`)",
+      "expected": "the comparison is by reference, so `===` is false and `!==` is true",
+      "actual": "renders `===` as true and `!==` as false: the comparison is by contents",
+      "fixtures": [
+        "strict-equality-distinct-reference"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "twig"
       ]
     },
     "off-subset-callback-body": {
