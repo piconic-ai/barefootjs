@@ -1440,6 +1440,29 @@
         "text"
       ]
     },
+    "child-forwarded-defaulted-optional-prop": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "child-forwarded-omitted-optional-number": {
       "kinds": [
         "binary",

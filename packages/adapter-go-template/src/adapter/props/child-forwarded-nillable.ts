@@ -33,7 +33,10 @@ export function collectNillableForwardedPropNames(
   childShape: (name: string) => ChildComponentShape | undefined,
 ): Set<string> {
   const names = new Set<string>()
-  const params = ir.metadata.propsParams.filter(p => !p.isRest)
+  // A param with a destructure default (`{ count = 0 }`) is never
+  // `undefined` once destructured: the child receives the default, `0` /
+  // `false` / `''` included, so forwarding it needs no nil.
+  const params = ir.metadata.propsParams.filter(p => !p.isRest && p.defaultValue == null)
   if (params.length === 0) return names
   const propsObject = ctx.state.propsObjectName
   // A relay of the value as it is: a computed const (`const c = props.x`,
