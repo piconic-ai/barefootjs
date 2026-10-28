@@ -239,12 +239,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-json",
-              "limitations": [
-                "negative-zero-json-stringify"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -444,12 +438,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-json",
-              "limitations": [
-                "negative-zero-json-stringify"
               ]
             },
             {
@@ -3305,12 +3293,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-json",
-              "limitations": [
-                "negative-zero-json-stringify"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3522,12 +3504,6 @@
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-json",
-              "limitations": [
-                "negative-zero-json-stringify"
               ]
             },
             {
@@ -4698,12 +4674,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-json",
-              "limitations": [
-                "negative-zero-json-stringify"
-              ]
-            },
-            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -5077,12 +5047,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-json",
-              "limitations": [
-                "negative-zero-json-stringify"
               ]
             },
             {
@@ -7580,12 +7544,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-json",
-              "limitations": [
-                "negative-zero-json-stringify"
-              ]
-            },
-            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -8079,12 +8037,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-json",
-              "limitations": [
-                "negative-zero-json-stringify"
               ]
             },
             {
@@ -10585,12 +10537,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-json",
-              "limitations": [
-                "negative-zero-json-stringify"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -10964,12 +10910,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-json",
-              "limitations": [
-                "negative-zero-json-stringify"
               ]
             },
             {
@@ -13127,12 +13067,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-json",
-              "limitations": [
-                "negative-zero-json-stringify"
-              ]
-            },
-            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -13512,12 +13446,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-json",
-              "limitations": [
-                "negative-zero-json-stringify"
               ]
             },
             {
@@ -15574,12 +15502,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "remainder-negative-zero-json",
-              "limitations": [
-                "negative-zero-json-stringify"
-              ]
             }
           ]
         },
@@ -15595,12 +15517,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-json",
-              "limitations": [
-                "negative-zero-json-stringify"
               ]
             }
           ]
@@ -18121,26 +18037,8 @@
       "cells": {
         "hono": {},
         "blade": {},
-        "erb": {
-          "gaps": [
-            {
-              "fixture": "remainder-negative-zero-json",
-              "limitations": [
-                "negative-zero-json-stringify"
-              ]
-            }
-          ]
-        },
-        "go-template": {
-          "gaps": [
-            {
-              "fixture": "remainder-negative-zero-json",
-              "limitations": [
-                "negative-zero-json-stringify"
-              ]
-            }
-          ]
-        },
+        "erb": {},
+        "go-template": {},
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},
@@ -20183,12 +20081,6 @@
               ]
             },
             {
-              "fixture": "remainder-negative-zero-json",
-              "limitations": [
-                "negative-zero-json-stringify"
-              ]
-            },
-            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -20364,12 +20256,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "remainder-negative-zero-json",
-              "limitations": [
-                "negative-zero-json-stringify"
               ]
             },
             {
@@ -23427,26 +23313,8 @@
       "cells": {
         "hono": {},
         "blade": {},
-        "erb": {
-          "gaps": [
-            {
-              "fixture": "remainder-negative-zero-json",
-              "limitations": [
-                "negative-zero-json-stringify"
-              ]
-            }
-          ]
-        },
-        "go-template": {
-          "gaps": [
-            {
-              "fixture": "remainder-negative-zero-json",
-              "limitations": [
-                "negative-zero-json-stringify"
-              ]
-            }
-          ]
-        },
+        "erb": {},
+        "go-template": {},
         "jinja": {},
         "minijinja": {},
         "mojolicious": {
