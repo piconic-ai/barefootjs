@@ -785,7 +785,9 @@ export function ConcatRenamedProp(props: { fallbackLabel: string }) {
   )
 }
 `)
-    expect(result.template).toContain("data_get($t, 'label') . $fallbackLabel")
+    // The row field is not string-typed to the shared classifier, so it
+    // goes through `$bf->string` (#3698); the operator is still `.`.
+    expect(result.template).toContain("$bf->string(data_get($t, 'label')) . $fallbackLabel")
   })
 })
 
@@ -848,5 +850,24 @@ function Widget({ items, n }: { items: string[]; n: number }) {
     expect(template).toContain('data_get($items, $bf->index_key($bf->mod($n, 2)))')
     expect(template).toContain("data_get($items, '1')")
     expect(template).not.toContain('index_key(1')
+  })
+})
+
+// #3698: `.` spells a non-string operand with PHP's own conversion (the
+// float `-0.0` of `-4 % 2` as "-0"), so an operand the shared layer does
+// not type as a string goes through `$bf->string` first, in both orders.
+describe('BladeAdapter - string concatenation operand (#3698)', () => {
+  test('a number operand of `+` concatenation goes through $bf->string, a string operand does not', () => {
+    const { template } = compileAndGenerate(`
+function Widget({ n }: { n: number }) {
+  return <p>
+    <span>{'r=' + (n % 2)}</span>
+    <span>{(n % 2) + '=r'}</span>
+  </p>
+}
+`)
+    expect(template).toContain("'r=' . $bf->string(($bf->mod($n, 2)))")
+    expect(template).toContain("$bf->string(($bf->mod($n, 2))) . '=r'")
+    expect(template).not.toContain("$bf->string('r=')")
   })
 })

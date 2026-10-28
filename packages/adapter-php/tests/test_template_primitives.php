@@ -115,6 +115,15 @@ bf_test('json', function () use ($bf) {
     bf_assert_eq($bf->json([1, 2, 3]), '[1,2,3]');
     bf_assert_eq($bf->json('hi'), '"hi"');
     bf_assert_eq($bf->json(null), 'null');
+    // JS writes -0 as 0, at any depth (#3698).
+    bf_assert_eq($bf->json($bf->mod(-4, 2)), '0');
+    bf_assert_eq($bf->json([$bf->mod(-4, 2), 1]), '[0,1]');
+    bf_assert_eq($bf->json(['z' => -0.0, 'k' => [-0.0]]), '{"k":[0],"z":0}');
+    $o = new \stdClass();
+    $o->z = -0.0;
+    bf_assert_eq($bf->json($o), '{"z":0}');
+    bf_assert(fdiv(1, $o->z) === -INF, 'json must not change its argument');
+    bf_assert_eq($bf->json([1.5, -2]), '[1.5,-2]');
 });
 
 bf_test('string', function () use ($bf) {

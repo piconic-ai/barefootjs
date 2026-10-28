@@ -6760,6 +6760,40 @@
           ]
         }
       },
+      "remainder-negative-zero-concat": {
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "string-number-plus-concat"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "string-number-plus-concat"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "string-number-plus-concat"
+          ]
+        }
+      },
+      "remainder-negative-zero-json": {
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "negative-zero-json-stringify"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "negative-zero-json-stringify"
+          ]
+        }
+      },
       "reserved-name-and-internal-twin": {
         "blade": {
           "kind": "refusal",
@@ -8411,6 +8445,14 @@
         "description": "A ref mount callback writing an attribute the JSX never renders refuses with BF063",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/ref-mount-attr.ts"
       },
+      "remainder-negative-zero-concat": {
+        "description": "A string joined with the -0 remainder of a negative dividend spells it \"0\" ('r=' + (-4 % 2))",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/remainder-negative-zero-concat.ts"
+      },
+      "remainder-negative-zero-json": {
+        "description": "JSON.stringify writes the -0 remainder of a negative dividend as 0 (JSON.stringify(-4 % 2))",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/remainder-negative-zero-json.ts"
+      },
       "reserved-name-and-internal-twin": {
         "description": "Props named loop and __bf_loop render their own values, or the adapter refuses",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reserved-name-and-internal-twin.ts"
@@ -9196,6 +9238,20 @@
       ],
       "reason": "Without a type checker the analyzer fast path matches only a bare identifier callee, so the declaration would be silently dropped and every reference would throw at hydrate. The loud refusal is the permanent answer for checker-less compiles; a compile that supplies a shared program (the Vite plugin does) resolves the primitive normally and never reaches it. Importing the primitive by name is the supported form."
     },
+    "negative-zero-json-stringify": {
+      "title": "`JSON.stringify` of a negative zero",
+      "kind": "silent",
+      "given": "`JSON.stringify` of the `-0` remainder of a negative integer dividend (`JSON.stringify(n % 2)` for `n = -4`), on its own or inside an array",
+      "expected": "JS writes `-0` as `0`: `0`, `[0,1]`",
+      "actual": "renders `-0` / `[-0,1]` (or `-0.0` / `[-0.0,1]`): the backend JSON encoder keeps the float's sign",
+      "fixtures": [
+        "remainder-negative-zero-json"
+      ],
+      "adapters": [
+        "erb",
+        "go-template"
+      ]
+    },
     "nested-callback-in-filter-predicate": {
       "title": "Nested higher-order callback inside a filter predicate",
       "kind": "refusal",
@@ -9556,7 +9612,8 @@
       "expected": "the number is stringified and concatenated, as JS `+` does (`x-0`)",
       "actual": "throws at render time: the template language raises a type error adding a string and an integer",
       "fixtures": [
-        "loop-row-child-concat-index-key"
+        "loop-row-child-concat-index-key",
+        "remainder-negative-zero-concat"
       ],
       "adapters": [
         "erb",

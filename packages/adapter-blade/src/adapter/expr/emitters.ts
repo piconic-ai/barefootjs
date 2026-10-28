@@ -88,6 +88,7 @@ import {
   groupUnaryOperand,
   groupObjectLiteralSegments,
   isStringConcatBinary,
+  isStringTypedOperand,
   type ParsedExprEmitter,
   type ArrayMethod,
   type LiteralType,
@@ -165,6 +166,22 @@ function flattenPropsMember(object: ParsedExpr, property: string, isBound: (name
  * BF101 surfacing as the Twig/Jinja ports (#2038) instead of silently
  * degrading to the callback's receiver.
  */
+/**
+ * One operand of a `+` the shared layer classified as string concatenation
+ * (`isStringConcatBinary`), spelled with `.`. `.` converts a non-string
+ * operand with PHP's own spelling: the float `-0.0` of `-4 % 2` as `"-0"`,
+ * an infinity as `"INF"`, `true` as `"1"`. An operand the shared
+ * `isStringTypedOperand` does not type as a string goes through the
+ * runtime's JS `String()` first, so `'r=' + (-4 % 2)` is `"r=0"` (#3698).
+ */
+function concatOperand(
+  operand: ParsedExpr,
+  emitted: string,
+  isStringName: (n: string, componentProperty?: boolean) => boolean,
+): string {
+  return isStringTypedOperand(operand, isStringName) ? emitted : `$bf->string(${emitted})`
+}
+
 /**
  * `x.length` through `$bf->length`. An optional-chained `x?.length` yields
  * `null` — JS's `undefined` — for an absent receiver instead of
@@ -274,7 +291,7 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
     // PHP's `+` fatals on non-numeric strings ("Unsupported operand
     // types", #2176). Lower to PHP's `.` concat operator.
     if (isStringConcatBinary(op, left, right, this.isStringName)) {
-      return `${l} . ${r}`
+      return `${concatOperand(left, l, this.isStringName)} . ${concatOperand(right, r, this.isStringName)}`
     }
     // `/` and `%` go through the runtime's JS division and remainder
     // (#3474, #3574).
@@ -580,8 +597,9 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     // types", #2176). Lower to PHP's `.` concat operator. The adapter's
     // string-value registry catches getter/prop operands with no literal
     // present (`firstName() + lastName()`).
-    if (isStringConcatBinary(op, left, right, (n, property) => this.ctx._isStringValueName(n, property))) {
-      return `${l} . ${r}`
+    const isStringName = (n: string, property?: boolean) => this.ctx._isStringValueName(n, property)
+    if (isStringConcatBinary(op, left, right, isStringName)) {
+      return `${concatOperand(left, l, isStringName)} . ${concatOperand(right, r, isStringName)}`
     }
     // `/` and `%` go through the runtime's JS division and remainder
     // (#3474, #3574).

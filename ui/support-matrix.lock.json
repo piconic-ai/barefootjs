@@ -233,6 +233,18 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-json",
+              "limitations": [
+                "negative-zero-json-stringify"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -459,6 +471,12 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-json",
+              "limitations": [
+                "negative-zero-json-stringify"
+              ]
+            },
+            {
               "fixture": "signal-loop-row-child-children",
               "limitations": [
                 "signal-loop-row-child-children-unseeded"
@@ -607,6 +625,12 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -728,6 +752,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
               ]
             },
             {
@@ -3245,6 +3275,18 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-json",
+              "limitations": [
+                "negative-zero-json-stringify"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3447,6 +3489,12 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-json",
+              "limitations": [
+                "negative-zero-json-stringify"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3553,6 +3601,12 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3656,6 +3710,12 @@
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
               ]
             },
             {
@@ -4560,6 +4620,18 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-json",
+              "limitations": [
+                "negative-zero-json-stringify"
+              ]
+            },
+            {
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
@@ -4966,6 +5038,12 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-json",
+              "limitations": [
+                "negative-zero-json-stringify"
+              ]
+            },
+            {
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
@@ -5246,6 +5324,12 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
@@ -5505,6 +5589,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
               ]
             },
             {
@@ -7484,6 +7574,18 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-json",
+              "limitations": [
+                "negative-zero-json-stringify"
+              ]
+            },
+            {
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
@@ -7980,6 +8082,12 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-json",
+              "limitations": [
+                "negative-zero-json-stringify"
+              ]
+            },
+            {
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
@@ -8320,6 +8428,12 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
               "fixture": "reserved-name-and-internal-twin",
               "limitations": [
                 "reserved-name-collides-with-internal-name"
@@ -8639,6 +8753,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
               ]
             },
             {
@@ -10513,6 +10633,18 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-json",
+              "limitations": [
+                "negative-zero-json-stringify"
+              ]
+            },
+            {
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
@@ -10889,6 +11021,12 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-json",
+              "limitations": [
+                "negative-zero-json-stringify"
+              ]
+            },
+            {
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
@@ -11145,6 +11283,12 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
@@ -11368,6 +11512,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
               ]
             },
             {
@@ -13175,6 +13325,18 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-json",
+              "limitations": [
+                "negative-zero-json-stringify"
+              ]
+            },
+            {
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
@@ -13569,6 +13731,12 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-json",
+              "limitations": [
+                "negative-zero-json-stringify"
+              ]
+            },
+            {
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
@@ -13831,6 +13999,12 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
               "fixture": "reserved-name-and-internal-twin",
               "limitations": [
                 "reserved-name-collides-with-internal-name"
@@ -14072,6 +14246,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
               ]
             },
             {
@@ -15718,6 +15898,18 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-json",
+              "limitations": [
+                "negative-zero-json-stringify"
+              ]
             }
           ]
         },
@@ -15733,6 +15925,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-json",
+              "limitations": [
+                "negative-zero-json-stringify"
               ]
             }
           ]
@@ -15750,6 +15948,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
             }
           ]
         },
@@ -15765,6 +15969,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
               ]
             }
           ]
@@ -18166,10 +18376,52 @@
       "cells": {
         "hono": {},
         "blade": {},
-        "erb": {},
-        "go-template": {},
-        "jinja": {},
-        "minijinja": {},
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-json",
+              "limitations": [
+                "negative-zero-json-stringify"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "remainder-negative-zero-json",
+              "limitations": [
+                "negative-zero-json-stringify"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            }
+          ]
+        },
         "mojolicious": {},
         "pebble": {},
         "twig": {},
@@ -18351,6 +18603,12 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -18431,6 +18689,12 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
@@ -18456,6 +18720,12 @@
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
               ]
             },
             {
@@ -20003,6 +20273,18 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-json",
+              "limitations": [
+                "negative-zero-json-stringify"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -20169,6 +20451,12 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-json",
+              "limitations": [
+                "negative-zero-json-stringify"
+              ]
+            },
+            {
               "fixture": "static-loop-client-only-nested",
               "limitations": [
                 "client-only-loop-in-static-loop"
@@ -20299,6 +20587,12 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -20414,6 +20708,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
               ]
             },
             {
@@ -21204,6 +21504,12 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
@@ -21632,6 +21938,12 @@
               ]
             },
             {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
               "fixture": "signal-from-same-named-prop-raw-read",
               "limitations": [
                 "signal-from-same-named-prop-raw-read"
@@ -21771,6 +22083,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
               ]
             },
             {
@@ -23331,10 +23649,52 @@
       "cells": {
         "hono": {},
         "blade": {},
-        "erb": {},
-        "go-template": {},
-        "jinja": {},
-        "minijinja": {},
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            },
+            {
+              "fixture": "remainder-negative-zero-json",
+              "limitations": [
+                "negative-zero-json-stringify"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "remainder-negative-zero-json",
+              "limitations": [
+                "negative-zero-json-stringify"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "remainder-negative-zero-concat",
+              "limitations": [
+                "string-number-plus-concat"
+              ]
+            }
+          ]
+        },
         "mojolicious": {
           "gaps": [
             {
