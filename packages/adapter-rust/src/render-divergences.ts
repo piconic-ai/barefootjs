@@ -46,6 +46,7 @@ export const renderDivergences: RenderDivergences = {
   // the template language's own `+`, which raises a type error on a string
   // plus an integer instead of concatenating.
   'loop-row-child-concat-index-key': { limitation: 'string-number-plus-concat' },
+  'remainder-negative-zero-concat': { limitation: 'string-number-plus-concat' },
   // `.at(i)` on half of a surrogate pair: the runtime string can't hold a
   // lone surrogate, so it returns U+FFFD (halves compare equal, and
   // rejoining them renders `��` instead of the emoji).

@@ -665,7 +665,9 @@ function Widget({ label, values }: { label: string; values: number[] }) {
   </div>
 }
 `)
-    expect(template).toContain("label ~ '!'")
+    // `label` is excluded from the string set here, so it goes through
+    // `bf.string` (#3698); the operator is still `~`.
+    expect(template).toContain("bf.string(label) ~ '!'")
     expect(template).not.toContain("label + '!'")
   })
 
@@ -958,7 +960,9 @@ export function ConcatRenamedProp(props: { fallbackLabel: string }) {
   )
 }
 `)
-    expect(result.template).toContain('t.label ~ fallbackLabel')
+    // The row field is not string-typed to the shared classifier, so it
+    // goes through `bf.string` (#3698); the operator is still `~`.
+    expect(result.template).toContain('bf.string(t.label) ~ fallbackLabel')
   })
 })
 
@@ -989,5 +993,24 @@ export function C(props: { rows: string[]; __bf_saved_l0_0: string }) {
 `)
     expect(template).toContain('{% set __bf_saved_l0_0_ = i %}')
     expect(template).not.toContain('{% set __bf_saved_l0_0 = ')
+  })
+})
+
+// #3698: `~` spells a non-string operand with PHP's own conversion (the
+// float `-0.0` of `-4 % 2` as "-0"), so an operand the shared layer does
+// not type as a string goes through `bf.string` first, in both orders.
+describe('TwigAdapter - string concatenation operand (#3698)', () => {
+  test('a number operand of `+` concatenation goes through bf.string, a string operand does not', () => {
+    const { template } = compileAndGenerate(`
+function Widget({ n }: { n: number }) {
+  return <p>
+    <span>{'r=' + (n % 2)}</span>
+    <span>{(n % 2) + '=r'}</span>
+  </p>
+}
+`)
+    expect(template).toContain("'r=' ~ bf.string((bf.mod(n, 2)))")
+    expect(template).toContain("bf.string((bf.mod(n, 2))) ~ '=r'")
+    expect(template).not.toContain("bf.string('r=')")
   })
 })

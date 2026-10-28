@@ -4738,11 +4738,11 @@
           ]
         }
       },
-      "jsx-prop-template-delimiters": {
+      "jsx-prop-nested-component-forwarded": {
         "go-template": {
           "kind": "render",
           "limitations": [
-            "nested-component-in-jsx-prop"
+            "nested-component-in-jsx-prop-forwarded"
           ]
         }
       },
@@ -6950,17 +6950,37 @@
           ]
         }
       },
-      "remainder-negative-zero-quotient": {
-        "blade": {
+      "remainder-negative-zero-concat": {
+        "erb": {
           "kind": "render",
           "limitations": [
-            "negative-zero-remainder-quotient"
+            "string-number-plus-concat"
           ]
         },
-        "twig": {
+        "jinja": {
           "kind": "render",
           "limitations": [
-            "negative-zero-remainder-quotient"
+            "string-number-plus-concat"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "string-number-plus-concat"
+          ]
+        }
+      },
+      "remainder-negative-zero-json": {
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "negative-zero-json-stringify"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "negative-zero-json-stringify"
           ]
         }
       },
@@ -8471,9 +8491,9 @@
         "description": "Ternary wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-ternary.ts"
       },
-      "jsx-prop-template-delimiters": {
-        "description": "JSX prop getters preserve static template delimiters alongside a nested component and forwarded…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-prop-template-delimiters.ts"
+      "jsx-prop-nested-component-forwarded": {
+        "description": "A named JSX prop holding a nested component, forwarded by the receiving component to a grandchild…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-prop-nested-component-forwarded.ts"
       },
       "loop-key-to-string-number-component-row": {
         "description": "A component loop row over a number array keyed by n.toString() renders data-key",
@@ -8619,9 +8639,13 @@
         "description": "A ref mount callback writing an attribute the JSX never renders refuses with BF063",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/ref-mount-attr.ts"
       },
-      "remainder-negative-zero-quotient": {
-        "description": "Dividing by the -0 remainder of a negative dividend gives -Infinity (1 / (-4 % 2))",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/remainder-negative-zero-quotient.ts"
+      "remainder-negative-zero-concat": {
+        "description": "A string joined with the -0 remainder of a negative dividend spells it \"0\" ('r=' + (-4 % 2))",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/remainder-negative-zero-concat.ts"
+      },
+      "remainder-negative-zero-json": {
+        "description": "JSON.stringify writes the -0 remainder of a negative dividend as 0 (JSON.stringify(-4 % 2))",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/remainder-negative-zero-json.ts"
       },
       "reserved-name-and-internal-twin": {
         "description": "Props named loop and __bf_loop render their own values, or the adapter refuses",
@@ -9416,18 +9440,18 @@
       ],
       "reason": "Without a type checker the analyzer fast path matches only a bare identifier callee, so the declaration would be silently dropped and every reference would throw at hydrate. The loud refusal is the permanent answer for checker-less compiles; a compile that supplies a shared program (the Vite plugin does) resolves the primitive normally and never reaches it. Importing the primitive by name is the supported form."
     },
-    "negative-zero-remainder-quotient": {
-      "title": "Dividing by the -0 remainder of a negative integer dividend",
+    "negative-zero-json-stringify": {
+      "title": "`JSON.stringify` of a negative zero",
       "kind": "silent",
-      "given": "`/` in a template expression whose divisor is the zero remainder of a negative integer dividend (`1 / (n % 2)` for `n = -4`)",
-      "expected": "JS gives `-4 % 2` as `-0`, so the quotient is `-Infinity`",
-      "actual": "renders `Infinity`: the remainder is an integer `0` that has lost the sign",
+      "given": "`JSON.stringify` of the `-0` remainder of a negative integer dividend (`JSON.stringify(n % 2)` for `n = -4`), on its own or inside an array",
+      "expected": "JS writes `-0` as `0`: `0`, `[0,1]`",
+      "actual": "renders `-0` / `[-0,1]` (or `-0.0` / `[-0.0,1]`): the backend JSON encoder keeps the float's sign",
       "fixtures": [
-        "remainder-negative-zero-quotient"
+        "remainder-negative-zero-json"
       ],
       "adapters": [
-        "blade",
-        "twig"
+        "erb",
+        "go-template"
       ]
     },
     "nested-callback-in-filter-predicate": {
@@ -9456,14 +9480,36 @@
         "BF101"
       ]
     },
-    "nested-component-in-jsx-prop": {
-      "title": "A nested component inside a named JSX prop",
+    "nested-component-in-jsx-prop-conditional-arm": {
+      "title": "A nested component in a named JSX prop, read in a conditional arm",
       "kind": "silent",
-      "given": "a named JSX prop whose element contains a nested component, alongside forwarded children",
-      "expected": "the named prop renders its element and nested component, and the forwarded children render normally",
-      "actual": "throws a missing-child-field error during rendering, or replaces the named prop markup with escaped text during hydration",
+      "given": "a named JSX prop whose element contains a nested component, read by the receiving component inside a && or ternary arm",
+      "expected": "the arm renders the element with the nested component, which keeps the scope of the component that wrote the JSX",
+      "actual": "renders [object Object] in place of the element in a client-mounted arm, or renders the nested component under the receiving component scope when the client renders the arm",
       "fixtures": [
-        "jsx-prop-template-delimiters"
+        "jsx-prop-nested-component-conditional"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "nested-component-in-jsx-prop-forwarded": {
+      "title": "A nested component in a named JSX prop, forwarded to a grandchild",
+      "kind": "silent",
+      "given": "a named JSX prop whose element contains a nested component, passed on by the receiving component as a prop of its own child",
+      "expected": "the grandchild renders the element with the nested component, the element keeping the scope of the component that wrote the JSX",
+      "actual": "renders nothing in the grandchild, or renders the element under the receiving component scope when the client mounts it",
+      "fixtures": [
+        "jsx-prop-nested-component-forwarded"
       ],
       "adapters": [
         "hono",
@@ -9794,7 +9840,8 @@
       "expected": "the number is stringified and concatenated, as JS `+` does (`x-0`)",
       "actual": "throws at render time: the template language raises a type error adding a string and an integer",
       "fixtures": [
-        "loop-row-child-concat-index-key"
+        "loop-row-child-concat-index-key",
+        "remainder-negative-zero-concat"
       ],
       "adapters": [
         "erb",

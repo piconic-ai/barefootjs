@@ -21,9 +21,12 @@
  * Escaping happens here, on the string path only, so the `<!--bf-slot:N-->`
  * markers returned for live `Node` values are left intact for `insert()`
  * to splice. (Doing it here rather than wrapping the whole `__bfSlot(...)`
- * call in `escapeText` is what lets the marker path stay raw.)
+ * call in `escapeText` is what lets the marker path stay raw.) A JSX-prop
+ * markup carrier (`bfMarkup()` / `__slot()`) is compiler-built HTML, so it
+ * goes through `escapeTextOrMarkup` and lands raw, as in the component
+ * template.
  */
-import { escapeText } from './component.ts'
+import { escapeTextOrMarkup } from './component.ts'
 
 export function __bfSlot(value: unknown, slots: Node[]): string {
   if (value == null || value === false || value === true) return ''
@@ -35,5 +38,5 @@ export function __bfSlot(value: unknown, slots: Node[]): string {
   if (Array.isArray(value)) {
     return value.map((v) => __bfSlot(v, slots)).join('')
   }
-  return escapeText(value)
+  return escapeTextOrMarkup(value)
 }

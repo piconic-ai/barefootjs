@@ -163,7 +163,7 @@ import { collectPropsSpreadForwardedParams } from "./props/props-spread.ts"
 import { buildPropTypeOverrides, dependentDefaultNormalization, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames, collectArithmeticAbsentPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 import { emitMemoFieldInits, emitPropFallbackLocals, emitPropFieldInits, emitSignalFieldInits, hoistSiblingMemoLocals } from "./props/ctor-field-inits.ts"
-import { lowerChildInputFields, lowerLoopRowChildInputFields, sourceRowChildInputFields, type ChildInputHost } from "./props/child-input-fields.ts"
+import { lowerChildInputFields, lowerLoopRowChildInputFields, lowerStaticChildDataKey, sourceRowChildInputFields, type ChildInputHost } from "./props/child-input-fields.ts"
 import { resolveLocalGetterAsGo } from "./value/child-prop-value.ts"
 import { emitParsedExpressionAttr, emitSpreadAttr, emitStyleOrPresenceAttr, emitTemplateAttr, type ElementAttrHost } from "./attr/element-attrs.ts"
 import { renderConditionExpr, renderFilterExpr, type ConditionExprHost } from "./expr/condition-expr.ts"
@@ -2567,7 +2567,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // (this PARENT's own struct field) stays keyed by the alias — declared
       // and read consistently within this one parent's generated code.
       const declaredName = this.resolveChildName(child.name)
-      lines.push(`\t\t${child.fieldName}: New${declaredName}Props(${declaredName}Input{`)
+      // A `key` is the child root's `data-key`, not an Input field: build the
+      // child, stamp `BfDataKey`, and hand the stamped value to the field.
+      const dataKey = lowerStaticChildDataKey(this.childInputHost, child, ir, propFallbackVars)
+      lines.push(dataKey === null
+        ? `\t\t${child.fieldName}: New${declaredName}Props(${declaredName}Input{`
+        : `\t\t${child.fieldName}: func() ${declaredName}Props { p := New${declaredName}Props(${declaredName}Input{`)
       lines.push(`\t\t\tScopeID: scopeID + "_${child.slotId}",`)
       lines.push(`\t\t\tBfParent: scopeID,`)
       lines.push(`\t\t\tBfMount: "${child.slotId}",`)
@@ -2582,7 +2587,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           }
         }
       }
-      for (const { goField, goValue } of lowerChildInputFields(this.childInputHost, child, ir, propFallbackVars).fields) {
+      const inputProps = { name: child.name, props: child.props.filter(p => p.name !== 'key') }
+      for (const { goField, goValue } of lowerChildInputFields(this.childInputHost, inputProps, ir, propFallbackVars).fields) {
         lines.push(`\t\t\t${goField}: ${goValue},`)
       }
       // JSX children → the child slot's `Children` input. Plain text uses
@@ -2600,7 +2606,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         this.state.usesHtmlTemplate = true
         lines.push(`\t\t\tChildren: template.HTML(${child.childrenScopedHtmlExpr}),`)
       }
-      lines.push(`\t\t}),`)
+      lines.push(dataKey === null ? `\t\t}),` : `\t\t}); p.BfDataKey = ${dataKey}; return p }(),`)
     }
   }
 

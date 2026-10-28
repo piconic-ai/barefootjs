@@ -37,10 +37,15 @@ export interface QuarantineEntry {
 }
 
 export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
-  'jsx-prop-template-delimiters': {
+  'jsx-prop-nested-component-conditional': {
     oracles: ['snap', 'three-point'],
-    reason: 'hydration replaces the named JSX prop element with escaped HTML text when it contains a nested component',
-    limitation: 'nested-component-in-jsx-prop',
+    reason: 'a conditional arm re-renders the JSX prop on the client: the nested component takes the receiving component scope, and a client-mounted && arm renders [object Object]',
+    limitation: 'nested-component-in-jsx-prop-conditional-arm',
+  },
+  'jsx-prop-nested-component-forwarded': {
+    oracles: ['three-point'],
+    reason: 'csr-mount renders the forwarded JSX prop element under the receiving component scope instead of the scope that wrote it',
+    limitation: 'nested-component-in-jsx-prop-forwarded',
   },
   // ref-effect-computed attribute state never reaches SSR (#2714,
   // direction corrected 2026-08-26): these components hard-code the

@@ -6,6 +6,7 @@
  */
 
 import { evalTemplateFn, getTemplate } from './template.ts'
+import { isSlotMarker, type SlotMarker } from '../slot.ts'
 import { getComponentInit } from './registry.ts'
 import { getRegisteredDef } from './hydrate.ts'
 import { hydratedScopes } from './hydration-state.ts'
@@ -1089,6 +1090,10 @@ export function isBfMarkup(value: unknown): value is BfMarkup {
  */
 export function escapeTextOrMarkup(value: unknown): string {
   if (isBfMarkup(value)) return value[BF_MARKUP_BRAND]
+  // A `__slot()` marker's thunk builds the same compiler-assembled markup a
+  // `bfMarkup()` value carries (`initChild`'s getter for a JSX prop holding
+  // a component), so it is spliced raw too.
+  if (isSlotMarker(value)) return String(value)
   return escapeText(value)
 }
 
@@ -1147,8 +1152,13 @@ export function markupOrEmpty(value: unknown): string {
  * the wrapper object into `"[object Object]"`) would corrupt it. Checked
  * before the `Node` branch since the two shapes are mutually exclusive.
  */
-export function escapeTextOrNode(value: unknown): string | Node {
+export function escapeTextOrNode(value: unknown): string | Node | SlotMarker {
   if (isBfMarkup(value)) return value[BF_MARKUP_BRAND]
+  // A `__slot()` marker (a JSX prop holding a component, e.g. `initChild`'s
+  // `get header() { return __slot(...) }`) passes through untouched so the
+  // 'markup' writer sees it and keeps the server-rendered DOM, instead of
+  // stringifying it into escaped markup text.
+  if (isSlotMarker(value)) return value
   if (typeof Node !== 'undefined' && value instanceof Node) return value
   return escapeText(value)
 }

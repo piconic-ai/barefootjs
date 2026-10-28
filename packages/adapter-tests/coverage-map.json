@@ -5531,6 +5531,44 @@
         "text"
       ]
     },
+    "jsx-prop-nested-component-conditional": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "jsx-prop-nested-component-forwarded": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "jsx-prop-nested-component-positions": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "jsx-prop-template-delimiters": {
       "kinds": [
         "identifier",
@@ -10768,8 +10806,9 @@
         "text"
       ]
     },
-    "remainder-negative-zero-quotient": {
+    "remainder-negative-zero-concat": {
       "kinds": [
+        "array-literal",
         "binary",
         "call",
         "identifier",
@@ -10779,12 +10818,88 @@
       ],
       "axes": [
         "binary:%",
-        "binary:/",
+        "binary:+",
+        "literal:number",
+        "literal:string",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "remainder-negative-zero-json": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:%",
         "literal:number",
         "unary:-"
       ],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "remainder-negative-zero-quotient": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:%",
+        "binary:/",
+        "binary:<",
+        "literal:number",
+        "literal:string",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "remainder-negative-zero-string": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal",
+        "unary"
+      ],
+      "axes": [
+        "array-method:includes",
+        "array-method:join",
+        "binary:%",
+        "binary:+",
+        "literal:number",
+        "literal:string",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
         "text"
       ]
     },
@@ -12387,6 +12502,17 @@
     "static-attr-escape": {
       "kinds": [],
       "axes": [],
+      "contexts": []
+    },
+    "static-child-quoted-keys": {
+      "kinds": [
+        "literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
       "contexts": []
     },
     "static-literal-loop-component-in-row": {

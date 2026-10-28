@@ -139,6 +139,26 @@ function restMemberChildPropValue(
 }
 
 /**
+ * The runtime evaluator's `any`-typed Go value for a child prop value
+ * (`bf.EvalExpr` over this component's seeds), before any destination
+ * typing. Null when the value is outside the evaluator's surface.
+ */
+export function evaluateUntypedChildPropValue(
+  ctx: GoEmitContext,
+  value: ParsedExpr,
+  ir: ComponentIR,
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+): string | null {
+  // A component-scope computed const (`const shown = props.label ?? 'd'`)
+  // is read through its value, not its name (#3507) — a const shadowing a
+  // prop would otherwise read the prop and drop the const's default.
+  return evalExprGo(
+    ctx, inlineComputedConsts(value, ctx.state.computedConsts), ir.metadata.signals,
+    ir.metadata.propsParams, propFallbackVars, new Set(),
+  )
+}
+
+/**
  * A child prop value computed by the runtime evaluator over this
  * component's seeds (`evalExprGo`), typed for its destination: a rest-bag
  * entry or a nillable Input field takes the `any` result, a concrete field
@@ -155,13 +175,7 @@ export function evaluateChildPropValue(
 ): string | null {
   const restRead = restMemberChildPropValue(ctx, value, propName, childShape)
   if (restRead !== null) return restRead
-  // A component-scope computed const (`const shown = props.label ?? 'd'`)
-  // is read through its value, not its name (#3507) — a const shadowing a
-  // prop would otherwise read the prop and drop the const's default.
-  const evaluated = evalExprGo(
-    ctx, inlineComputedConsts(value, ctx.state.computedConsts), ir.metadata.signals,
-    ir.metadata.propsParams, propFallbackVars, new Set(),
-  )
+  const evaluated = evaluateUntypedChildPropValue(ctx, value, ir, propFallbackVars)
   if (evaluated === null) return null
   if (routesToRestBag(childShape, propName) || childShape?.nillableParamNames.has(propName)) return evaluated
   const goType = childShape?.paramGoTypes.get(propName)

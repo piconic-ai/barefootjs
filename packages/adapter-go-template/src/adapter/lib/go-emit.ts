@@ -466,18 +466,17 @@ export function applyGoFallback(ref: string, fallback: string): string {
   return `func() string { if ${ref} == "" { return ${fallback} }; return ${ref} }()`
 }
 
-/** Convert a JavaScript literal value to Go literal syntax. */
+/**
+ * Convert a literal attribute's raw value (`LiteralAttr.value`, the text
+ * between the quotes) to Go literal syntax. Anything but a bare boolean or
+ * number is a string: `JSON.stringify` spells it with the escapes a Go
+ * interpreted string literal shares (`\\`, `\"`, `\n`, `\uXXXX`), so a
+ * backslash or quote in the value stays the character it is.
+ */
 export function goLiteral(value: string): string {
   if (value === 'true' || value === 'false') return value
   if (/^-?\d+(\.\d+)?$/.test(value)) return value
-  // Single-quoted → Go double quotes; double-quoted kept as-is.
-  if (value.startsWith("'") && value.endsWith("'")) {
-    return `"${value.slice(1, -1)}"`
-  }
-  if (value.startsWith('"') && value.endsWith('"')) {
-    return value
-  }
-  return `"${value}"`
+  return JSON.stringify(value)
 }
 
 /**

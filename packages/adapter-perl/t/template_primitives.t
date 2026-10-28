@@ -39,6 +39,25 @@ subtest 'json — mirrors JS JSON.stringify (with documented undef divergence)' 
     is $bf->json(undef),     'null',    'undef → "null" (matches JS null; diverges from JS undefined)';
 };
 
+subtest 'json — a negative zero is written as 0 (JS JSON.stringify(-0) is "0")' => sub {
+    # `mod` keeps `-0.0` for a negative dividend; whether the encoder spells
+    # it `-0`, `-0.0` or `0` depends on the Perl / JSON module version, so
+    # check the value handed to the encoder (`%g` keeps the sign).
+    my $neg_zero = POSIX::fmod(-4, 2);
+    is sprintf('%g', $neg_zero), '-0', 'precondition: fmod(-4, 2) is -0.0';
+    is sprintf('%g', BarefootJS::_json_zero($neg_zero)), '0', 'scalar';
+    my $nested = BarefootJS::_json_zero({ a => [$neg_zero, 1], b => $neg_zero });
+    is sprintf('%g', $nested->{a}[0]), '0', 'inside an array inside a hash';
+    is sprintf('%g', $nested->{b}),    '0', 'hash value';
+    is $nested->{a}[1], 1, 'non-zero numbers kept';
+    is BarefootJS::_json_zero('-0'),  '-0',  'a string stays a string';
+    is BarefootJS::_json_zero('0.0'), '0.0', 'a "0.0" string stays a string';
+    my $input = [$neg_zero];
+    BarefootJS::_json_zero($input);
+    is sprintf('%g', $input->[0]), '-0', 'the argument is not mutated';
+    is $bf->json([$neg_zero, 1]), '[0,1]', 'json() end to end';
+};
+
 subtest 'string — JS String(v) mirror' => sub {
     is $bf->string(42),    '42', 'int';
     is $bf->string('hi'),  'hi', 'string passthrough';

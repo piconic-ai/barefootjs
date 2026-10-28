@@ -44,6 +44,10 @@ export const renderDivergences: RenderDivergences = {
   // the template language's own `+`, which raises a type error on a string
   // plus an integer instead of concatenating.
   'loop-row-child-concat-index-key': { limitation: 'string-number-plus-concat' },
+  'remainder-negative-zero-concat': { limitation: 'string-number-plus-concat' },
+  // Ruby's `JSON.generate` writes the float `-0.0` that `%` gives for a
+  // negative dividend as `-0.0`, where JS's `JSON.stringify` writes `0`.
+  'remainder-negative-zero-json': { limitation: 'negative-zero-json-stringify' },
   // `.at(i)` on half of a surrogate pair: the runtime string can't hold a
   // lone surrogate, so it returns U+FFFD (halves compare equal, and
   // rejoining them renders `��` instead of the emoji).
