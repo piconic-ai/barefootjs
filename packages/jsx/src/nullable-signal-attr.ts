@@ -189,10 +189,12 @@ export interface NullishAttrContext {
  * decides. A prop whose type admits `null` (`n: number | null`) reads its
  * nil as `null`. A prop that can only be absent (`n?: number`,
  * `n: number | undefined`) reads it as `undefined`; a present value, `0`
- * included, is unaffected. A prop that admits both (`n?: number | null`)
- * keeps the `null` reading: its nil can be either.
+ * included, is unaffected. A prop that admits both (`n?: number | null`,
+ * `n: number | null | undefined`) is `'either'`: the type cannot say which
+ * one its nil stands for, so arithmetic over it is refused
+ * (`arithmeticOperandNilIsAmbiguous`).
  */
-export type NullableNumberPropNil = 'null' | 'undefined'
+export type NullableNumberPropNil = 'null' | 'undefined' | 'either'
 
 export function collectNullishAttrContext(ir: ComponentIR): NullishAttrContext {
   const signals = ir.metadata.signals ?? []
@@ -218,10 +220,11 @@ function nullableNumberPropNil(type: TypeInfo | undefined, optional: boolean): N
   const members = type.kind === 'union' ? (type.unionTypes ?? []) : [type]
   const families = new Set(members.map(m => (m.kind === 'primitive' ? m.primitive : m.kind)))
   const admitsNull = families.has('null')
-  const nullable = optional || admitsNull || families.has('undefined')
+  const admitsAbsent = optional || families.has('undefined')
   families.delete('null')
   families.delete('undefined')
-  if (!nullable || families.size !== 1 || !families.has('number')) return null
+  if (!(admitsNull || admitsAbsent) || families.size !== 1 || !families.has('number')) return null
+  if (admitsNull && admitsAbsent) return 'either'
   return admitsNull ? 'null' : 'undefined'
 }
 
@@ -230,7 +233,7 @@ function collectNullableNumberProps(ir: ComponentIR): ReadonlyMap<string, Nullab
   const objectName = ir.metadata.propsObjectName
   for (const p of ir.metadata.propsParams) {
     if (p.isRest || p.defaultValue !== undefined) continue
-    const nil = nullableNumberPropNil(p.type, p.optional)
+    const nil = nullableNumberPropNil(p.declaredType ?? p.type, p.optional)
     if (nil !== null) names.set(objectName ? `${objectName}.${p.sourceName ?? p.name}` : p.name, nil)
   }
   return names
@@ -317,7 +320,8 @@ export function arithmeticOperandIsNull(
   ctx: NullishAttrContext,
   isShadowed: (name: string) => boolean = () => false,
 ): boolean {
-  return arithmeticOperandSeed(parsed, ctx, isShadowed) === 'null'
+  const seed = arithmeticOperandSeed(parsed, ctx, isShadowed)
+  return seed === 'null' || seed === 'either'
 }
 
 /**
@@ -339,9 +343,11 @@ export function arithmeticOperandIsUndefined(
  * What an arithmetic operand's SSR nil stands for: `'null'` / `'undefined'`
  * when the operand is that value (a nullable number prop's `null` reading
  * included), `'absent'` when it is a number prop that may be absent
- * (`n?: number`), whose nil is `undefined` but which may hold a number.
+ * (`n?: number`), whose nil is `undefined` but which may hold a number,
+ * `'either'` when it is a number prop whose nil may be either
+ * (`n?: number | null`).
  */
-type OperandSeed = 'null' | 'undefined' | 'absent' | null
+type OperandSeed = 'null' | 'undefined' | 'absent' | 'either' | null
 
 function arithmeticOperandSeed(
   parsed: ParsedExpr | undefined,
@@ -353,7 +359,7 @@ function arithmeticOperandSeed(
     if (expr.kind === 'literal') return expr.literalType === 'null' ? 'null' : null
     if (expr.kind === 'identifier' && expr.name === 'undefined' && !shadowed('undefined')) return 'undefined'
     const prop = nullableNumberPropRead(expr, ctx, shadowed)
-    if (prop !== null) return prop === 'undefined' ? 'absent' : 'null'
+    if (prop !== null) return prop === 'undefined' ? 'absent' : prop
     const getter = expr.kind === 'identifier' ? expr.name : bareGetterCallName(expr)
     if (getter === null || shadowed(getter)) return null
     if (ctx.nullSeededSignals?.has(getter)) return 'null'
@@ -419,10 +425,105 @@ export function arithmeticOperandCoercion(
   ctx: NullishAttrContext,
   isShadowed: (name: string) => boolean = () => false,
 ): ArithmeticCoercion {
-  const numeric = NULL_COERCING_ARITHMETIC_OPS.has(op) || (op === '+' && isNumberLiteral(other))
-  if (!numeric) return null
+  if (!isNumericArithmetic(op, other)) return null
   const seed = arithmeticOperandSeed(operand, ctx, isShadowed)
-  return seed === 'absent' ? 'undefined' : seed
+  if (seed === 'absent') return 'undefined'
+  // `'either'` is refused (`arithmeticOperandNilIsAmbiguous`); the spelling
+  // keeps the `null` reading so the refused template stays well-formed.
+  return seed === 'either' ? 'null' : seed
+}
+
+/**
+ * Whether an arithmetic operand reads a number prop whose type admits both
+ * `null` and absence (`n?: number | null`), directly or through a memo
+ * (#3700). JS reads the omitted prop as `undefined` (`NaN` in arithmetic)
+ * and a `null` one as `0`; a template engine holds both as one nil and the
+ * type cannot say which, so no spelling of {@link arithmeticOperandCoercion}
+ * renders both. Template adapters refuse such an operand instead of
+ * rendering one reading silently. Same operators and scope as
+ * {@link arithmeticOperandCoercion}.
+ */
+export function arithmeticOperandNilIsAmbiguous(
+  op: string,
+  operand: ParsedExpr | undefined,
+  other: ParsedExpr | undefined,
+  ctx: NullishAttrContext,
+  isShadowed: (name: string) => boolean = () => false,
+): boolean {
+  return isNumericArithmetic(op, other) && arithmeticOperandSeed(operand, ctx, isShadowed) === 'either'
+}
+
+/**
+ * Every arithmetic operand in `expr` that {@link arithmeticOperandNilIsAmbiguous}
+ * matches, for a whole expression a template adapter lowers without visiting
+ * each operator through its emitter (a memo body, a `.filter()` predicate, an
+ * expression the runtime evaluator runs). Operands of binary operators and of
+ * unary minus count. An arrow's params shadow within its body, on top of
+ * `isShadowed`, the scope the expression is read in.
+ */
+export function ambiguousNilArithmeticOperands(
+  expr: ParsedExpr,
+  ctx: NullishAttrContext,
+  isShadowed: (name: string) => boolean = () => false,
+): ParsedExpr[] {
+  const found: ParsedExpr[] = []
+  const visit = (e: ParsedExpr, shadowed: (name: string) => boolean): void => {
+    if (e.kind === 'arrow') {
+      const params = new Set(e.params)
+      visit(e.body, n => params.has(n) || shadowed(n))
+      return
+    }
+    for (const [op, operand, other] of arithmeticOperandsOf(e)) {
+      if (arithmeticOperandNilIsAmbiguous(op, operand, other, ctx, shadowed)) found.push(operand)
+    }
+    for (const child of parsedExprChildren(e)) visit(child, shadowed)
+  }
+  if (!ctx.nullableNumberProps?.size) return found
+  visit(expr, isShadowed)
+  return found
+}
+
+/** The `[op, operand, other]` triples of an arithmetic node's operands. */
+function arithmeticOperandsOf(e: ParsedExpr): Array<[string, ParsedExpr, ParsedExpr | undefined]> {
+  if (e.kind === 'binary') return [[e.op, e.left, e.right], [e.op, e.right, e.left]]
+  if (e.kind === 'unary' && e.op === '-') return [['-', e.argument, undefined]]
+  return []
+}
+
+/** The value-position sub-expressions of `e` (an arrow's body included). */
+function parsedExprChildren(e: ParsedExpr): ParsedExpr[] {
+  switch (e.kind) {
+    case 'call':
+      return [e.callee, ...e.args]
+    case 'member':
+      return [e.object]
+    case 'index-access':
+      return [e.object, e.index]
+    case 'binary':
+    case 'logical':
+      return [e.left, e.right]
+    case 'unary':
+      return [e.argument]
+    case 'conditional':
+      return [e.test, e.consequent, e.alternate]
+    case 'template-literal':
+      return e.parts.flatMap(p => (p.type === 'expression' ? [p.expr] : []))
+    case 'array-literal':
+      return e.elements
+    case 'array-method':
+      return [e.object, ...e.args, ...(e.method === 'flat' && e.depthExpr ? [e.depthExpr] : [])]
+    case 'object-literal':
+      return e.properties.map(p => (p.kind === 'spread' ? p.expr : p.value))
+    case 'arrow':
+      return [e.body]
+    default:
+      return []
+  }
+}
+
+/** The operators {@link arithmeticOperandCoercion} applies `ToNumber` under. */
+function isNumericArithmetic(op: string, other: ParsedExpr | undefined): boolean {
+  return NULL_COERCING_ARITHMETIC_OPS.has(op) || (op === '+' && isNumberLiteral(other))
 }
 
 function isNumberLiteral(expr: ParsedExpr | undefined): boolean {

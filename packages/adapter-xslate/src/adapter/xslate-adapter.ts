@@ -83,7 +83,6 @@ import {
   isAriaBooleanAttr,
   isBooleanResultExpr,
   hasClientInteractivity,
-  arithmeticOperandCoercion,
   renderElementShell,
   renderFragmentScope,
   renderDangerousInnerHtml,
@@ -1173,6 +1172,8 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     paramLocal = param,
     onRead?: (name: string) => void,
   ): string {
+    // Arithmetic over a prop whose nil the type cannot classify (#3700).
+    this.refuseAmbiguousNilArithmeticIn(expr, n => n === param || localVarMap.has(n) || this.isLoopBoundName(n))
     return emitParsedExpr(
       expr,
       new XslateFilterEmitter(
@@ -1243,7 +1244,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isBooleanValueName: (name, property) => property ? !this.scope.shadowsPropsObject() && this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
-      _arithmeticCoercion: (op, operand, other) => arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, n => this.isLoopBoundName(n)),
+      _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _memoKolonName: (name) => this.memoKolonNames.get(name) ?? name,
       _rowLocalName: (name) => this.rowLocalName(name),

@@ -50,7 +50,10 @@ import {
   type AttrValueEmitter,
   type SupportResult,
   collectNullableSignalGetters,
-  arithmeticOperandCoercion,
+  arithmeticCoercionOrRefuse,
+  refuseAmbiguousNilArithmetic,
+  refuseAmbiguousNilMemoArithmetic,
+  type ArithmeticCoercion,
   collectNullishAttrContext,
   parseExpression,
   stringifyParsedExpr,
@@ -827,6 +830,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.refusedLoopArrayConsts = new Set()
     this.scope = BindingScope.EMPTY
     ir = this.primeCompileState(ir)
+    // Memo bodies seed at construction through several paths that never
+    // reach the operand coercion; refuse their ambiguous-nil arithmetic once.
+    refuseAmbiguousNilMemoArithmetic(ir.metadata.memos ?? [], this.state.nullishAttrCtx, this.state)
     this.state.stringValueNames = collectStringValueNames(ir)
     // A SAME-FILE child's shape (`childComponentShapes`, which `routesToRestBag`
     // reads to pick `bf_with_props` vs `bf_with_bag` delivery, and
@@ -5159,7 +5165,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `ToNumber(undefined)` does. The arithmetic helpers already read a
     // `null` operand as `0`, so that coercion needs no spelling.
     const undefinedOperand = (e: ParsedExpr, other: ParsedExpr, w: string): string =>
-      arithmeticOperandCoercion(op, e, other, this.state.nullishAttrCtx, n => this.scope.isBound(n)) === 'undefined'
+      this.arithmeticCoercion(op, e, other) === 'undefined'
         ? `(bf_number ${w})`
         : w
     const wl = undefinedOperand(left, right, wrapIfMultiToken(l))
@@ -5217,6 +5223,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return this.scope.isStringValueName(name, n => this.state.stringValueNames.has(n), componentProperty)
   }
 
+  /**
+   * The shared arithmetic-operand decision (`arithmeticCoercionOrRefuse`,
+   * #3474 / #3700) in the emission site's scope: the coercion to spell, and
+   * a BF101 for an operand whose nil the declared type cannot classify.
+   */
+  private arithmeticCoercion(op: string, operand: ParsedExpr, other: ParsedExpr | undefined): ArithmeticCoercion {
+    return arithmeticCoercionOrRefuse(op, operand, other, this.state.nullishAttrCtx, n => this.scope.isBound(n), this.state)
+  }
+
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     const arg = this.emitOperand(argument, emit)
     // `lowerJsNot` parenthesises a multi-token argument (#2758: `not or a b`
@@ -5226,7 +5241,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Unary minus applies JS `ToNumber` like binary `-` (#3533): an operand
     // whose nil reads as `undefined` goes through `bf_number`.
     if (op === '-') {
-      return arithmeticOperandCoercion(op, argument, undefined, this.state.nullishAttrCtx, n => this.scope.isBound(n)) === 'undefined'
+      return this.arithmeticCoercion(op, argument, undefined) === 'undefined'
         ? `bf_neg (bf_number ${wrapIfMultiToken(arg)})`
         : `bf_neg ${wrapIfMultiToken(arg)}`
     }
@@ -6226,6 +6241,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return { condition: `false`, preamble: '' }
     }
 
+    // `renderConditionExpr` lowers operators without the operand coercion.
+    this.conditionExprHost.refuseAmbiguousNilArithmetic(parsed, n => this.scope.isBound(n))
     const { preamble, expr: condition } = renderConditionExpr(this.conditionExprHost, parsed)
     // A bare value read as the whole test (`{tags() ? … : …}`) gets JS
     // truthiness: `{{if}}` alone reads an empty slice or map as false, where
@@ -6893,6 +6910,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     renderParsedExpr: (expr) => this.renderParsedExpr(expr),
     makeLoc: () => this.makeLoc(),
     hasScopeBinding: (name) => Boolean(this.scope.lookup(name)),
+    refuseAmbiguousNilArithmetic: (expr, isShadowed) =>
+      refuseAmbiguousNilArithmetic(expr, this.state.nullishAttrCtx, isShadowed, this.state),
     filterCaptureAlias: (name) => this.filterCaptureAliases.get(name),
     lookupDestructureBinding: (name) => this.lookupDestructureBinding(name),
     noteWrapperRowRead: (name, rendered) => this.noteWrapperRowRead(name, rendered),

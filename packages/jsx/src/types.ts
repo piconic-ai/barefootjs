@@ -102,6 +102,16 @@ export interface PropertyInfo {
 export interface ParamInfo {
   name: string
   type: TypeInfo
+  /**
+   * The binding's declared type when `type` is `unknown` only because a
+   * destructured binding's declared type does not resolve to a concrete
+   * representation (`isResolvableMemberType` declines a union such as
+   * `n?: number | null`). `type` stays `unknown` so typed backends keep
+   * their untyped field; a reader that classifies the value's nil from the
+   * declaration (`collectNullishAttrContext`) reads this, as it reads
+   * `type` for the `props.n` form.
+   */
+  declaredType?: TypeInfo
   optional: boolean
   defaultValue?: JsSourceText
   /**

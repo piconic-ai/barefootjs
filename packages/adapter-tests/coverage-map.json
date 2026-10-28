@@ -8750,6 +8750,25 @@
         "condition"
       ]
     },
+    "nullable-number-arithmetic-destructured": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:-",
+        "literal:number",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "nullish-coalesce-array-matrix": {
       "kinds": [
         "identifier",
@@ -9542,6 +9561,22 @@
         "identifier",
         "literal",
         "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "omitted-optional-nullable-number-arithmetic-destructured": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal"
       ],
       "axes": [
         "binary:*",
