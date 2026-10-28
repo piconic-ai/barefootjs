@@ -27,9 +27,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // runtime's shape-check method, `java/.../Bf.java`) ahead of `call()`'s
 // generic fallback, so it never reaches the refusal at all.
 export const renderDivergences: RenderDivergences = {
-  // A signal seeded from its own same-named prop keeps the prop's template
-  // variable, so a raw `props.<name>` read beside it sees the derived value.
-  'signal-from-same-named-prop-raw-read': { limitation: 'signal-from-same-named-prop-raw-read' },
   // A const reading a signal getter (`const b = count()`) read in a loop row
   // that binds the getter's name (`rows.map(count => …{b}…)`): the template
   // reads `b` as a variable that is never set.
