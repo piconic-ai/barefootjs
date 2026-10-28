@@ -8232,6 +8232,178 @@
       }
     }
   ],
+  "props-template-literal-key-read": [
+    {
+      "name": "gen:title:empty",
+      "props": {
+        "title": "",
+        "count": 3,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ],
+        "rows": [
+          {
+            "name": "r1"
+          },
+          {
+            "name": "r2"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:title:markup",
+      "props": {
+        "title": "<b>&\"'</b>",
+        "count": 3,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ],
+        "rows": [
+          {
+            "name": "r1"
+          },
+          {
+            "name": "r2"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:title:multibyte",
+      "props": {
+        "title": "日本語",
+        "count": 3,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ],
+        "rows": [
+          {
+            "name": "r1"
+          },
+          {
+            "name": "r2"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:count:zero",
+      "props": {
+        "title": "X",
+        "count": 0,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ],
+        "rows": [
+          {
+            "name": "r1"
+          },
+          {
+            "name": "r2"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "title": "X",
+        "count": -7,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ],
+        "rows": [
+          {
+            "name": "r1"
+          },
+          {
+            "name": "r2"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "title": "X",
+        "count": 1234567890,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ],
+        "rows": [
+          {
+            "name": "r1"
+          },
+          {
+            "name": "r2"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "title": "X",
+        "count": 3,
+        "on": false,
+        "items": [
+          "a",
+          "b"
+        ],
+        "rows": [
+          {
+            "name": "r1"
+          },
+          {
+            "name": "r2"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "title": "X",
+        "count": 3,
+        "on": true,
+        "items": [],
+        "rows": [
+          {
+            "name": "r1"
+          },
+          {
+            "name": "r2"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "title": "X",
+        "count": 3,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ],
+        "rows": []
+      }
+    }
+  ],
   "query-href": [
     {
       "name": "gen:base:empty",

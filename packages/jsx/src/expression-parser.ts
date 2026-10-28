@@ -1029,7 +1029,10 @@ function convertNode(node: ts.Node, raw: string): ParsedExpr {
     if (ts.isNumericLiteral(argNode)) {
       return { kind: 'member', object, property: argNode.text, computed: true, optional: !!node.questionDotToken }
     }
-    if (ts.isStringLiteral(argNode)) {
+    // A no-substitution template literal key (`` obj[`key`] ``) is the
+    // same static key as `obj['key']` — fold both so every adapter sees
+    // one shape (#3763).
+    if (ts.isStringLiteralLike(argNode)) {
       return { kind: 'member', object, property: argNode.text, computed: true, optional: !!node.questionDotToken }
     }
     // Variable / expression index (`selected()[index]`, `rows[i + 1]`):

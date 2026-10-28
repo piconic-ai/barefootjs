@@ -352,6 +352,7 @@ import { fixture as signalSeedNumberPropViaConstNullish } from './signal-seed-nu
 import { fixture as signalFromSameNamedPropRawReadUntyped } from './signal-from-same-named-prop-raw-read-untyped'
 import { fixture as signalFromSameNamedPropRawReadElementAccess } from './signal-from-same-named-prop-raw-read-element-access'
 import { fixture as signalFromSameNamedPropRawReadElementAccessUntyped } from './signal-from-same-named-prop-raw-read-element-access-untyped'
+import { fixture as propsTemplateLiteralKeyRead } from './props-template-literal-key-read'
 import { fixture as memoNamedLikeProp } from './memo-named-like-prop'
 import { fixture as namespaceImportPrimitive } from './namespace-import-primitive'
 import { fixture as namespaceImportPrimitiveNamedEscape } from './namespace-import-primitive-named-escape'
@@ -1468,6 +1469,7 @@ export const jsxFixtures: JSXFixture[] = [
   signalFromSameNamedPropRawReadUntyped,
   signalFromSameNamedPropRawReadElementAccess,
   signalFromSameNamedPropRawReadElementAccessUntyped,
+  propsTemplateLiteralKeyRead,
   memoNamedLikeProp,
   namespaceImportPrimitive,
   namespaceImportPrimitiveNamedEscape,
