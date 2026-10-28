@@ -48,6 +48,8 @@ export type PropMemberSeed =
       goRef: string
       /** The Go type of the last field on that path, e.g. `[]Item`. */
       goType: string
+      /** The TS type of the last field on that path, e.g. `Item[]`. */
+      type: TypeInfo
     }
   | {
       kind: 'unresolved'
@@ -121,6 +123,7 @@ export function resolvePropMemberSeed(
   let goRef = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
   let goType = resolvePropGoType(ctx, param, ctx.state.propTypeOverrides)
   let owner = `prop '${propName}'`
+  let type: TypeInfo = param.type
   for (const property of path) {
     const struct = structProperties(ctx, goType)
     if (!struct) {
@@ -133,9 +136,10 @@ export function resolvePropMemberSeed(
     }
     goRef = `${goRef}.${goName}`
     goType = propertyInfoToGo(ctx, propInfo, goType)
+    type = propInfo.type
     owner = `'${property}'`
   }
-  return { kind: 'resolved', propName, path, goRef, goType }
+  return { kind: 'resolved', propName, path, goRef, goType, type }
 }
 
 /**
