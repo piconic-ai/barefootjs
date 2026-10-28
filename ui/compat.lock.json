@@ -9710,27 +9710,6 @@
         "xslate"
       ]
     },
-    "undefined-method-result-attr": {
-      "title": "An attribute bound to a method call that returns undefined",
-      "kind": "silent",
-      "given": "an attribute whose value is an array or string method call that returns `undefined` for the current value (`data-last={props.word.at(-1)}` with `word: ''`)",
-      "expected": "the attribute is omitted, as for any `undefined` attribute value",
-      "actual": "renders the attribute with an empty value (`data-last=\"\"`)",
-      "fixtures": [
-        "string-index-methods"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
     "unlowerable-loop-filter-predicate": {
       "title": "A loop filter predicate with no template form",
       "kind": "refusal",
