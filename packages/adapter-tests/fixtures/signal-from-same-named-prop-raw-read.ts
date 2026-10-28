@@ -3,11 +3,11 @@ import { createFixture } from '../src/types'
 /**
  * A signal seeded from its OWN same-named prop (`label` from
  * `props.label ?? 'D'`), with the raw `props.label` read beside it. The
- * template-stash backends keep such a signal on the prop's template
- * variable, so the raw read sees the derived value: an omitted prop renders
- * `D` where JS renders nothing. When the caller passes the prop, both
- * values agree. A signal seeded from a DIFFERENT prop is
- * `signal-named-like-prop`.
+ * raw read makes the analyzer separate the signal from the prop before IR
+ * is built, so it keeps the caller's value: an omitted prop renders
+ * nothing, not the signal's `D`. A signal seeded from a DIFFERENT prop is
+ * `signal-named-like-prop`; other derivations and positions are
+ * `signal-from-same-named-prop-raw-read-kinds` / `-positions`.
  */
 export const fixture = createFixture({
   id: 'signal-from-same-named-prop-raw-read',

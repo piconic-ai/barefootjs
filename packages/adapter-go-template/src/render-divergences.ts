@@ -128,9 +128,6 @@ export const renderDivergences: RenderDivergences = {
   // lone surrogate, so it returns U+FFFD (halves compare equal, and
   // rejoining them renders `��` instead of the emoji).
   'string-at-lone-surrogate': { limitation: 'string-at-lone-surrogate' },
-  // A signal seeded from its own same-named prop keeps the prop's template
-  // variable, so a raw `props.<name>` read beside it sees the derived value.
-  'signal-from-same-named-prop-raw-read': { limitation: 'signal-from-same-named-prop-raw-read' },
   // A signal-array loop whose row is a child component with forwarded JSX
   // children: the constructor leaves a signal-backed loop's child Props slice
   // to the route handler, and a row with body children has no handler-side

@@ -6665,7 +6665,7 @@ export function C(props: { count?: number }) {
     expect(newProps).toContain('Count: in.Count,')
   })
 
-  test('the same collision reached through a component-scope const hop (#2685) lowers identically', () => {
+  test('the same derivation through a component-scope const hop (#2685) separates the signal from the prop', () => {
     const direct = compileJSX(`
 'use client'
 import { createSignal } from '@barefootjs/client'
@@ -6686,7 +6686,14 @@ export function ViaConst(props: { count?: number }) {
     const directTypes = direct.files.find(f => f.type === 'types')!.content
     const viaConstTypes = viaConst.files.find(f => f.type === 'types')!.content
     expect(directTypes.slice(directTypes.indexOf('func NewDirectProps'))).toContain('Count: count * 2,')
-    expect(viaConstTypes.slice(viaConstTypes.indexOf('func NewViaConstProps'))).toContain('Count: count * 2,')
+    // The const reads the raw prop outside the signal's own initializer, so
+    // the analyzer separates the signal (`signal-from-same-named-prop-raw-read`):
+    // the prop field stays raw and nillable, so the seed's `??` still sees
+    // an omitted prop as nil, and the signal keeps its own field.
+    const viaConstNew = viaConstTypes.slice(viaConstTypes.indexOf('func NewViaConstProps'))
+    expect(viaConstTypes).toContain('Count interface{}')
+    expect(viaConstNew).toContain('Count: in.Count,')
+    expect(viaConstNew).toContain('BfSignal_count: ')
   })
 
   test('a differently-named signal deriving from the same prop (no collision) is untouched — its own field, not the shared one', () => {

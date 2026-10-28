@@ -73,7 +73,7 @@ test('a signal seeded from another prop, a memo, and a case-folded name are sepa
   expect(ctx.sourceFile.text).toContain('{props.label}{props.count}{props.title}')
 })
 
-test('a memo derived from its own same-named prop keeps its name', () => {
+test('a memo derived from its own prop through a const is separated: the const reads the raw prop', () => {
   const ctx = analyzeComponent(`
     'use client'
     import { createMemo } from '@barefootjs/client'
@@ -83,7 +83,107 @@ test('a memo derived from its own same-named prop keeps its name', () => {
       return <p>{label()}</p>
     }
   `, 'test.tsx')
-  expect(ctx.memos.map(m => m.name)).toEqual(['label'])
+  expect(ctx.memos.map(m => m.name)).toEqual(['bfMemo_label'])
+  expect(ctx.sourceFile.text).toContain('const fallback = props.label')
+})
+
+test('a binding derived from its own prop is separated when the raw prop is read elsewhere', () => {
+  const ctx = analyzeComponent(`
+    'use client'
+    import { createSignal, createMemo } from '@barefootjs/client'
+    export function App(props: { label?: string; note?: string; other?: string }) {
+      const [label] = createSignal(props.label ?? 'D')
+      const note = createMemo(() => (props.note ?? 'N') + '!')
+      const [other] = createSignal(props.other ?? 'O')
+      const shout = () => props.note
+      return <p title={props.label}>{label()}{note()}{other()}{shout()}</p>
+    }
+  `, 'test.tsx')
+  // `other` is read raw only inside its own initializer.
+  expect(ctx.signals.map(s => s.getter)).toEqual(['bfSignal_label', 'other'])
+  expect(ctx.memos.map(m => m.name)).toEqual(['bfMemo_note'])
+  expect(ctx.sourceFile.text).toContain('createSignal(props.label ?? \'D\')')
+  expect(ctx.sourceFile.text).toContain('<p title={props.label}>{bfSignal_label()}{bfMemo_note()}{other()}{shout()}</p>')
+})
+
+test('an untyped props object names its props by the reads off it', () => {
+  const ctx = analyzeComponent(`
+    'use client'
+    import { createSignal, createMemo } from '@barefootjs/client'
+    export function App(props) {
+      const [label] = createSignal(props.label ?? 'D')
+      const note = createMemo(() => label() + '!')
+      return <p>{label()}{note()}{props.label}</p>
+    }
+  `, 'test.tsx')
+  expect(ctx.signals.map(s => s.getter)).toEqual(['bfSignal_label'])
+  expect(ctx.memos.map(m => m.name)).toEqual(['note'])
+  expect(ctx.sourceFile.text).toContain('{bfSignal_label()}{note()}{props.label}')
+})
+
+test('a read off a callback parameter that shadows props is no raw prop read', () => {
+  const ctx = analyzeComponent(`
+    'use client'
+    import { createSignal } from '@barefootjs/client'
+    export function App(props: { label?: string; rows?: { label: string }[] }) {
+      const [label] = createSignal(props.label ?? 'D')
+      return <ul>{label()}{(props.rows ?? []).map(props => <li>{props.label}</li>)}</ul>
+    }
+  `, 'test.tsx')
+  expect(ctx.signals.map(s => s.getter)).toEqual(['label'])
+})
+
+test('a literal element-access read of the raw prop separates the binding', () => {
+  const ctx = analyzeComponent(`
+    'use client'
+    import { createSignal } from '@barefootjs/client'
+    export function App(props: { a?: string; b?: string; c?: string; d?: string }) {
+      const [a] = createSignal(props.a ?? 'A')
+      const [b] = createSignal(props.b ?? 'B')
+      const [c] = createSignal(props.c ?? 'C')
+      const [d] = createSignal(props.d ?? 'D')
+      return <p>{a()}{b()}{c()}{d()}{props['a']}{props?.['b']}{props[\`c\`]}{props[0]}</p>
+    }
+  `, 'test.tsx')
+  // A numeric key names no identifier prop, so `d` keeps its name.
+  expect(ctx.signals.map(s => s.getter)).toEqual(['bfSignal_a', 'bfSignal_b', 'bfSignal_c', 'd'])
+  expect(ctx.sourceFile.text).toContain("{props['a']}{props?.['b']}")
+})
+
+test('a computed-key read may read any prop, so it separates every self-derived binding', () => {
+  const ctx = analyzeComponent(`
+    'use client'
+    import { createSignal } from '@barefootjs/client'
+    export function App(props: { a?: string; k: 'a' | 'b' }) {
+      const [a] = createSignal(props.a ?? 'A')
+      return <p>{a()}{props[props.k]}</p>
+    }
+  `, 'test.tsx')
+  expect(ctx.signals.map(s => s.getter)).toEqual(['bfSignal_a'])
+})
+
+test('an untyped props object names its props by literal element-access reads too', () => {
+  const ctx = analyzeComponent(`
+    'use client'
+    import { createSignal } from '@barefootjs/client'
+    export function App(props) {
+      const [label] = createSignal(props.label ?? 'D')
+      return <p>{label()}{props['label']}</p>
+    }
+  `, 'test.tsx')
+  expect(ctx.signals.map(s => s.getter)).toEqual(['bfSignal_label'])
+})
+
+test('an element-access read off a callback parameter that shadows props is no raw prop read', () => {
+  const ctx = analyzeComponent(`
+    'use client'
+    import { createSignal } from '@barefootjs/client'
+    export function App(props: { label?: string; rows?: { label: string }[] }) {
+      const [label] = createSignal(props.label ?? 'D')
+      return <ul>{label()}{(props.rows ?? []).map(props => <li>{props['label']}{props[0]}</li>)}</ul>
+    }
+  `, 'test.tsx')
+  expect(ctx.signals.map(s => s.getter)).toEqual(['label'])
 })
 
 test('signed literal seeds are separated without a type-based program', () => {
