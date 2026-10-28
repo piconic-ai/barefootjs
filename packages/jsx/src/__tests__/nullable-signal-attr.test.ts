@@ -124,6 +124,7 @@ describe('attrValueMayBeNullish (#3322)', () => {
       const plain = createMemo(() => t())
       const typed = createMemo<string | undefined>(() => t())
       const loop = createMemo(() => loop())
+      const tail = createMemo(() => t().at(-1))
       return <p>x</p>
     }
   `
@@ -159,6 +160,20 @@ describe('attrValueMayBeNullish (#3322)', () => {
     expect(mayBe('null')).toBe(true)
     expect(mayBe("''")).toBe(false)
     expect(mayBe('0')).toBe(false)
+  })
+
+  test('`.at(i)` / `.find()` / `.findLast()` read undefined, directly or through a memo', () => {
+    expect(mayBe('t().at(-1)')).toBe(true)
+    expect(mayBe('tail()')).toBe(true)
+    expect(mayBe("t() ? t().at(9) : 'x'")).toBe(true)
+    expect(mayBe("t().at(-1) ?? 'x'")).toBe(false)
+    expect(mayBe('t().slice(-1)')).toBe(false)
+    expect(mayBe("t().indexOf('a')")).toBe(false)
+    expect(mayBe("xs.find(x => x === 'z')")).toBe(true)
+    expect(mayBe('xs.findLast(x => x)')).toBe(true)
+    expect(mayBe("xs.find(x => x === 'z').name")).toBe(true)
+    expect(mayBe('xs.findIndex(x => x)')).toBe(false)
+    expect(mayBe('xs.filter(x => x)')).toBe(false)
   })
 
   test('a getter a loop binding shadows is not the signal or memo', () => {
