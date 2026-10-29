@@ -483,9 +483,10 @@ function C({ rows }: { rows?: number }) {
   return <textarea rows={rows} />
 }
 `)
-    expect(template).toContain('<% if (defined $rows) { %>rows="<%= $rows %>"<% } %>')
+    // A number prints through `bf->string`, as JS stringifies it (#3783).
+    expect(template).toContain('<% if (defined $rows) { %>rows="<%= bf->string($rows) %>"<% } %>')
     // Must NOT emit the bare unconditional form.
-    expect(template).not.toMatch(/(?<!\{ %>)rows="<%= \$rows %>"/)
+    expect(template).not.toMatch(/(?<!\{ %>)rows="<%= bf->string\(\$rows\) %>"/)
   })
 
   test('leaves a defaulted attr unconditional (scope did not widen)', () => {

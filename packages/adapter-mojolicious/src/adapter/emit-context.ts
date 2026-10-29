@@ -74,8 +74,9 @@ export interface MojoEmitContext {
   /** Whether a name is declared `number` at this position (`emitPerlEquality`). */
   _isNumberValueName(name: string, componentProperty?: boolean): boolean
   /** `perl` wrapped in `bf->string` when `parsed` yields a number, which JS
-   *  stringifies with `Number::toString` (#3711). */
-  _jsNumberOutput(parsed: ParsedExpr, perl: string): string
+   *  stringifies with `Number::toString` (#3711), or may yield a decoded
+   *  JSON boolean, which Perl prints as `0` / `1` (#3783). */
+  _jsStringOutput(parsed: ParsedExpr, perl: string): string
   /** How the emitter coerces an arithmetic operand over a nullish value
    * (`arithmeticOperandCoercion`, #3474): `'null'` reads nil as `0`,
    * `'undefined'` as the runtime's JS `Number()` gives it, `NaN`. `other` is

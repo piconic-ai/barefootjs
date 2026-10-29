@@ -95,10 +95,12 @@ import type { ParsedExpr } from '@barefootjs/jsx'
 import {
   escapeLineStatementSigil,
   isBooleanResultParsed,
+  collectBooleanCarrierNames,
   collectNumberValueNames,
   computeSsrSeedPlan,
   isNumberValuedExpr,
   isOpaqueLocalAccessorName,
+  mayYieldBooleanCarrier,
   numberValuedSeedNames,
   stringifyBooleanTernaryBranches,
 } from '@barefootjs/jsx'
@@ -214,6 +216,8 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
    *  memos whose in-template seed is a number (`numberValuedSeedNames`). */
   private numberValueNames: { names: Set<string>; props: Set<string> } = { names: new Set(), props: new Set() }
   private numberSeedNames: Set<string> = new Set()
+  /** Names that may hold a decoded JSON boolean (`collectBooleanCarrierNames`). */
+  private booleanCarrierNames: { names: Set<string>; props: Set<string> } = { names: new Set(), props: new Set() }
 
   constructor(options: XslateAdapterOptions = {}) {
     super()
@@ -241,6 +245,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
   protected override resetAdapterState(ir: ComponentIR): void {
     this.booleanValueNames = collectBooleanValueNames(ir.metadata)
     this.numberValueNames = collectNumberValueNames(ir)
+    this.booleanCarrierNames = collectBooleanCarrierNames(ir.metadata)
     this.numberSeedNames = numberValuedSeedNames(
       ir.metadata.ssrSeedPlan ?? computeSsrSeedPlan(ir.metadata),
       (n, c) => this._isStringValueName(n, c),
@@ -506,7 +511,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     // resolved bare-identifier `.map`/`.filter`/… callback
     // (`resolveCallbackMethodFunctionReferences`, #2206) isn't lost to a
     // fresh, unresolved re-parse of the raw string.
-    const perlExpr = this.jsNumberOutput(
+    const perlExpr = this.jsStringOutput(
       expr.parsed ?? parseExpression(expr.expr.trim()),
       this.convertExpressionToKolon(expr.expr, expr.parsed),
     )
@@ -1040,21 +1045,23 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
         isLoopBound: (n) => this.isLoopBoundName(n),
         boolStr: (expr, attr) => isBooleanResultExpr(expr) || isAriaBooleanAttr(attr) || isBooleanTypedPropRef(expr, { propsObjectName: this.propsObjectName, booleanTypedProps: this.booleanTypedProps, isBound: (n) => this.scope.isBound(n) }),
       })
-      const attr = (v: string, boolStr: boolean) =>
-        boolStr ? `${name}="<: $bf.bool_str(${v}) :>"` : `${name}="<: ${v} :>"`
+      // `parsed` is the value `v` holds, printed as JS stringifies it (#3783).
+      const attr = (v: string, boolStr: boolean, parsed?: ParsedExpr | null) =>
+        boolStr ? `${name}="<: $bf.bool_str(${v}) :>"` : `${name}="<: ${this.jsStringOutput(parsed, v)} :>"`
+      const valueParsed = value.parsed ?? parseExpression(value.expr.trim())
       // Each kind is documented on `AttrExpressionPlan`.
       switch (plan.kind) {
         case 'omit-nullable': {
           // A bare read here, so it doubles as the guard test and the value.
           const v = this.convertExpressionToKolon(value.expr)
-          return `\n: if (defined ${v}) {\n${attr(v, plan.boolStr)}\n: }\n`
+          return `\n: if (defined ${v}) {\n${attr(v, plan.boolStr, valueParsed)}\n: }\n`
         }
         case 'boolean-attr':
           return `<: ${this.convertExpressionToKolon(value.expr, value.parsed)} ? '${name}' : '' :>`
         case 'presence': {
           const v = this.convertExpressionToKolon(value.expr)
           const tmp = `$bf_pu${this.presenceVarCounter++}`
-          return `\n: my ${tmp} = ${v};\n: if (${tmp}) {\n${attr(tmp, plan.boolStr)}\n: }\n`
+          return `\n: my ${tmp} = ${v};\n: if (${tmp}) {\n${attr(tmp, plan.boolStr, valueParsed)}\n: }\n`
         }
         case 'undefined-alternate': {
           // A mixed boolean / string branch renders its boolean as JS does.
@@ -1063,24 +1070,23 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
           const val = this.convertExpressionToKolon('', stringifyBooleanTernaryBranches(m.consequentParsed))
           const shown = isBooleanResultParsed(m.consequentParsed)
             ? `$bf.bool_str(${val})`
-            : this.jsNumberOutput(m.consequentParsed, val)
+            : this.jsStringOutput(m.consequentParsed, val)
           return `\n: if (${cond}) {\n${name}="<: ${shown} :>"\n: }\n`
         }
         case 'omit-nil':
         case 'plain': {
           // A ternary with a boolean and a string branch renders its boolean
           // as JS does, unless the whole value goes through `bool_str`.
-          const valueParsed = value.parsed ?? parseExpression(value.expr.trim())
           const mixedParsed = valueParsed && !plan.boolStr ? stringifyBooleanTernaryBranches(valueParsed) : value.parsed
           const v = this.convertExpressionToKolon(value.expr, mixedParsed)
           // A literal is never nil, and Text::Xslate folds `defined` of a
           // local bound to a string literal to false, which would drop the
           // attribute (a computed-key read resolved at compile time, #3497).
           if (plan.kind === 'plain' || KOLON_LITERAL.test(v)) {
-            return plan.boolStr ? attr(v, true) : attr(this.jsNumberOutput(mixedParsed, v), false)
+            return attr(v, plan.boolStr, mixedParsed)
           }
           const tmp = `$bf_pu${this.presenceVarCounter++}`
-          return `\n: my ${tmp} = ${v};\n: if (defined ${tmp}) {\n${attr(tmp, plan.boolStr)}\n: }\n`
+          return `\n: my ${tmp} = ${v};\n: if (defined ${tmp}) {\n${attr(tmp, plan.boolStr, mixedParsed)}\n: }\n`
         }
       }
     },
@@ -1261,7 +1267,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
       _isRootPropsObject: (expr) => isRootPropsObject(expr, n => this.scope.isBound(n)),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
-      _jsNumberOutput: (parsed, kolon) => this.jsNumberOutput(parsed, kolon),
+      _jsStringOutput: (parsed, kolon) => this.jsStringOutput(parsed, kolon),
       _isBooleanValueName: (name, property) => property ? !this.scope.shadowsPropsObject() && this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
       _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
@@ -1369,16 +1375,26 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
   }
 
   /**
-   * Print a number — an arithmetic result, or a read of a number-typed name
-   * or a number-valued seed — with JS `Number::toString` (`$bf.string`)
-   * rather than Perl's `%.15g`, which pads a small exponent
-   * (`1.23456789e-06`), drops digits past 15 (#3380) and spells the
-   * infinities `Inf` (#3711).
+   * Print a value JS stringifies differently from Perl with JS `String`
+   * (`$bf.string`): a number — an arithmetic result, or a read of a
+   * number-typed name or a number-valued seed — rather than Perl's `%.15g`,
+   * which pads a small exponent (`1.23456789e-06`), drops digits past 15
+   * (#3380) and spells the infinities `Inf` (#3711); and a value that may be
+   * a decoded JSON boolean (`mayYieldBooleanCarrier`), which Perl prints as
+   * `0` / `1` (#3783).
    */
-  private jsNumberOutput(parsed: ParsedExpr | null | undefined, kolon: string): string {
-    return isNumberValuedExpr(parsed, (n, c) => this._isStringValueName(n, c), (n, c) => this._isNumberOutputName(n, c))
+  private jsStringOutput(parsed: ParsedExpr | null | undefined, kolon: string): string {
+    const isNumber = isNumberValuedExpr(parsed, (n, c) => this._isStringValueName(n, c), (n, c) => this._isNumberOutputName(n, c))
+    return isNumber || mayYieldBooleanCarrier(parsed, (n, c) => this._isBooleanCarrierName(n, c))
       ? `$bf.string(${kolon})`
       : kolon
+  }
+
+  /** Whether `name` may hold a decoded JSON boolean here
+   *  (`collectBooleanCarrierNames`) and no binding shadows it. */
+  private _isBooleanCarrierName(name: string, componentProperty = false): boolean {
+    if (componentProperty) return !this.scope.shadowsPropsObject() && this.booleanCarrierNames.props.has(name)
+    return !this.scope.isBound(name) && this.booleanCarrierNames.names.has(name)
   }
 
   /** Whether `name` holds a number here: declared `number`, or a signal /
