@@ -43,7 +43,7 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
 
 import type { XslateEmitContext } from '../emit-context.ts'
 import { XSLATE_TEMPLATE_PRIMITIVES } from '../lib/constants.ts'
-import { escapeKolonSingleQuoted } from '../lib/kolon-naming.ts'
+import { kolonStringLiteral } from '../lib/kolon-naming.ts'
 import {
   renderArrayMethod,
   renderSortMethod,
@@ -178,7 +178,7 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
-    if (literalType === 'string') return `'${escapeKolonSingleQuoted(String(value))}'`
+    if (literalType === 'string') return kolonStringLiteral(String(value))
     if (literalType === 'boolean') return value ? '1' : '0'
     if (literalType === 'null') return 'nil'
     return String(value)
@@ -404,7 +404,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
-    if (literalType === 'string') return `'${escapeKolonSingleQuoted(String(value))}'`
+    if (literalType === 'string') return kolonStringLiteral(String(value))
     if (literalType === 'boolean') return value ? '1' : '0'
     if (literalType === 'null') return 'nil'
     return String(value)
@@ -705,7 +705,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     // quotes the spread-path literal.
     if (properties.length === 0) return '{}'
     const literalOf = (run: readonly Extract<ObjectLiteralProperty, { kind: 'prop' }>[]) =>
-      `{ ${run.map(p => `'${escapeKolonSingleQuoted(p.key)}' => ${emit(p.value)}`).join(', ')} }`
+      `{ ${run.map(p => `${kolonStringLiteral(p.key)} => ${emit(p.value)}`).join(', ')} }`
     if (!properties.some(p => p.kind === 'spread')) {
       return literalOf(properties as Extract<ObjectLiteralProperty, { kind: 'prop' }>[])
     }

@@ -27,7 +27,7 @@ import { parseRecordIndexAccess, stringifyParsedExpr, isLiteralIndex } from '@ba
 import type { ParsedExpr } from '@barefootjs/jsx'
 
 import type { MojoSpreadContext } from '../emit-context.ts'
-import { escapePerlSingleQuoted } from '../lib/perl-naming.ts'
+import { perlStringLiteral } from '../lib/perl-naming.ts'
 
 /**
  * Lower a `cond ? {…} : {…}` conditional-spread expression — carried as the
@@ -128,7 +128,7 @@ export function objectLiteralToPerlHashref(
         // Thread the carried `val` tree straight through as `preParsed` (#2018)
         // — no stringify→re-parse round-trip.
         : ctx.convertExpressionToPerl('', val)
-    entries.push(`'${escapePerlSingleQuoted(key)}' => ${valPerl}`)
+    entries.push(`${perlStringLiteral(key)} => ${valPerl}`)
   }
   return entries.length === 0 ? '{}' : `{ ${entries.join(', ')} }`
 }
@@ -171,8 +171,8 @@ export function recordIndexAccessToPerl(ctx: MojoSpreadContext, val: ParsedExpr)
   if (!parsed) return null
   const entries = parsed.entries.map(e => {
     const mapVal =
-      e.value.kind === 'number' ? e.value.text : `'${escapePerlSingleQuoted(e.value.text)}'`
-    return `'${escapePerlSingleQuoted(e.key)}' => ${mapVal}`
+      e.value.kind === 'number' ? e.value.text : perlStringLiteral(e.value.text)
+    return `${perlStringLiteral(e.key)} => ${mapVal}`
   })
   return `{ ${entries.join(', ')} }->{$${parsed.indexPropName}}`
 }

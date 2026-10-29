@@ -1214,6 +1214,7 @@ import { fixture as constBooleanConditionalTest } from './const-boolean-conditio
 import { fixture as moduleConstBooleanConditionalTest } from './module-const-boolean-conditional-test'
 import { fixture as constStringConditionalTest } from './const-string-conditional-test'
 import { fixture as literalConstConditionalShapes } from './literal-const-conditional-shapes'
+import { fixture as stringConstQuoteNewline } from './string-const-quote-newline'
 // Static text starting with `:` / `%` right after a ternary, or as a
 // ternary branch — a template line the engine must not read as a line
 // statement (#3311).
@@ -2101,6 +2102,7 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstBooleanConditionalTest,
   constStringConditionalTest,
   literalConstConditionalShapes,
+  stringConstQuoteNewline,
   conditionalThenColonText,
   conditionalThenPercentText,
   conditionalBranchSigilText,

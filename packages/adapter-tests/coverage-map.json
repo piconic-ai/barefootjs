@@ -13774,6 +13774,30 @@
         "text"
       ]
     },
+    "string-const-quote-newline": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "literal:boolean",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "string-endsWith": {
       "kinds": [
         "array-method",

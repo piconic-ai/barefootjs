@@ -11711,6 +11711,38 @@
       }
     }
   ],
+  "string-const-quote-newline": [
+    {
+      "name": "gen:on:true",
+      "props": {
+        "on": true
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "on": false
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
   "string-endsWith": [
     {
       "name": "gen:value:empty",

@@ -14,6 +14,26 @@ export function escapePerlSingleQuoted(s: string): string {
 }
 
 /**
+ * Spell a string value as a Perl string literal. A single-quoted literal
+ * cannot spell a control character except raw, and a raw newline ends a
+ * `%` line in a Mojolicious template, so a value holding a control
+ * character is written double-quoted with each control character escaped
+ * (and `$` / `@` escaped against interpolation). Any other value stays
+ * single-quoted, as before.
+ */
+export function perlStringLiteral(s: string): string {
+  if (!/[\x00-\x1f\x7f]/.test(s)) return `'${escapePerlSingleQuoted(s)}'`
+  const body = s.replace(/[\\"$@\x00-\x1f\x7f]/g, ch => {
+    if (ch === '\n') return '\\n'
+    if (ch === '\r') return '\\r'
+    if (ch === '\t') return '\\t'
+    const code = ch.charCodeAt(0)
+    return code < 0x20 || code === 0x7f ? `\\x{${code.toString(16)}}` : `\\${ch}`
+  })
+  return `"${body}"`
+}
+
+/**
  * (#checkbox) Quote a `render_child` named-arg / hashref key when it isn't a
  * bare Perl identifier. A JSX attribute name like `data-slot` would otherwise
  * emit `data-slot => '...'`, which Perl parses as the subtraction
@@ -21,7 +41,7 @@ export function escapePerlSingleQuoted(s: string): string {
  * through unquoted to keep the generated template readable.
  */
 export function perlHashKey(name: string): string {
-  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) ? name : `'${escapePerlSingleQuoted(name)}'`
+  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) ? name : perlStringLiteral(name)
 }
 
 /**

@@ -15,13 +15,13 @@
  * the caller falls back to its existing BF101 refusal instead of guessing.
  */
 
-import { escapeKolonSingleQuoted, kolonHashKey } from './kolon-naming.ts'
+import { kolonHashKey, kolonStringLiteral } from './kolon-naming.ts'
 
 export function staticValueToKolon(value: unknown): string | null {
   if (value === null || value === undefined) return 'nil'
   if (typeof value === 'boolean') return null
   if (typeof value === 'number') return String(value)
-  if (typeof value === 'string') return `'${escapeKolonSingleQuoted(value)}'`
+  if (typeof value === 'string') return kolonStringLiteral(value)
   if (Array.isArray(value)) {
     const items: string[] = []
     for (const el of value) {
