@@ -2,7 +2,10 @@
  * A module const read only through a destructure default
  * (`{ label = DEFAULT_LABEL }`) hydrates: the client module declares the
  * const, so the init effects that read `_p.label ?? DEFAULT_LABEL` run and
- * the click listener is attached. The SSR-side positions live in the
+ * the click listener is attached. A module const named like a member of a
+ * default (`const note` beside `{ tone = TONES.note }`) is no client read and
+ * stays out of the client module — it reads `process`, so declaring it
+ * throws in the browser. The SSR-side positions live in the
  * `module-const-destructure-default` conformance fixture.
  *
  * Snapshots in `__snapshots__/module-const-default-hydrate.{html,client.js}`
@@ -13,16 +16,18 @@
 import { defineSharedFixture, type SharedFixtureSpec } from './_helpers'
 
 const label = 'p[data-slot="label"]'
+const tone = 'p[data-slot="tone"]'
 const button = 'button'
 
 export const spec: SharedFixtureSpec = {
   id: 'module-const-default-hydrate',
   componentName: 'ModuleConstDefaultHydrate',
   sourceRoot: 'fixture',
-  description: 'A module const read only through a destructure default is declared in the client module, so the component hydrates',
+  description: 'A module const read only through a destructure default is declared in the client module, so the component hydrates; a const named only like a member of a default is not declared',
   interactions: [
     { type: 'expectText', selector: label, text: 'm' },
     { type: 'expectAttribute', selector: label, attribute: 'title', value: 'm' },
+    { type: 'expectText', selector: tone, text: 'n' },
     { type: 'expectText', selector: button, text: '2' },
     { type: 'click', selector: button },
     { type: 'expectText', selector: button, text: '3' },

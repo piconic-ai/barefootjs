@@ -8456,7 +8456,9 @@
         "call",
         "identifier",
         "literal",
-        "logical"
+        "logical",
+        "member",
+        "object-literal"
       ],
       "axes": [
         "literal:number",

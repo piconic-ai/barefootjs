@@ -421,6 +421,12 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
  * `computeDeclarationScopes` drops `DEFAULT` as unused while the emitted
  * effect still reads it — a `ReferenceError` at hydrate.
  *
+ * The names come from the analyzer's `ParamInfo.defaultFreeIdentifiers`
+ * (the initializer's own AST), not a token scan of `defaultValue`: an
+ * object key, member name or callback parameter in the default
+ * (`{ m = ({ label: 'm' }).label }`) is no read, and an edge to it would
+ * keep an unrelated module `const label = …` in `initX`.
+ *
  * Only a default whose prop is read gets traced (an unread prop's default
  * is never emitted). A default that reads an earlier prop of the same
  * pattern (`{ a = DEFAULT, b = a }`) renders that prop's own read in turn
@@ -449,10 +455,8 @@ function addPropDefaultEdges(
     if (traced.has(name)) continue
     traced.add(name)
     const param = byName.get(name)
-    if (!param?.defaultValue) continue
-    const names = new Set<string>()
-    extractIdentifiers(param.defaultValue, names)
-    for (const ref of names) {
+    if (!param?.defaultFreeIdentifiers) continue
+    for (const ref of param.defaultFreeIdentifiers) {
       if (propNames.has(ref)) pending.push(ref)
       else if (!bodyBound.has(ref)) edges.push({ from: ROOT_SOURCE, to: ref, context: 'init-body' })
     }

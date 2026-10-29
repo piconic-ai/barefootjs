@@ -106,3 +106,51 @@ export function C({ m = UNUSED }: { m?: string }) {
     expect(declaredNames(js).has('UNUSED')).toBe(false)
   })
 })
+
+describe('a destructure default names only its free references (#3792 review)', () => {
+  // A property key, a member name and a callback parameter inside the
+  // default are not reads of an outer binding; tracing them kept an
+  // unrelated module declaration in `initC` (here one reading `process`,
+  // which the browser lacks — a `ReferenceError` at mount).
+  test('an object literal key and a member name of the default', () => {
+    const js = clientJs(`'use client'
+const label = process.env.SERVER_ONLY
+export function C({ m = ({ label: 'm' }).label }: { m?: string }) {
+  return <p>{m}</p>
+}`)
+    expect(declaredNames(js).has('label')).toBe(false)
+    expect(js).not.toContain('process')
+  })
+
+  test('a callback parameter of the default', () => {
+    const js = clientJs(`'use client'
+const label = process.env.SERVER_ONLY
+export function C({ m = ['m'].map(label => label)[0] }: { m?: string }) {
+  return <p>{m}</p>
+}`)
+    expect(declaredNames(js).has('label')).toBe(false)
+    expect(js).not.toContain('process')
+  })
+
+  test('a genuine outer read beside a colliding key is still traced', () => {
+    const js = clientJs(`'use client'
+const label = process.env.SERVER_ONLY
+const D = { text: 'm' }
+export function C({ m = ({ label: D.text }).label }: { m?: string }) {
+  return <p>{m}</p>
+}`)
+    expect(declaredNames(js).has('D')).toBe(true)
+    expect(declaredNames(js).has('label')).toBe(false)
+  })
+
+  test('a chain through an earlier prop whose default has a colliding key', () => {
+    const js = clientJs(`'use client'
+const label = process.env.SERVER_ONLY
+const DEFAULT = 'm'
+export function C({ a = ({ label: DEFAULT }).label, b = a }: { a?: string; b?: string }) {
+  return <p>{b}</p>
+}`)
+    expect(declaredNames(js).has('DEFAULT')).toBe(true)
+    expect(declaredNames(js).has('label')).toBe(false)
+  })
+})

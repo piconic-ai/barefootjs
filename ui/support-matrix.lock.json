@@ -13297,6 +13297,12 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -13508,6 +13514,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -13887,6 +13899,12 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -14143,6 +14161,12 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -14375,6 +14399,12 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -14586,6 +14616,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -14821,6 +14857,12 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -15053,6 +15095,12 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -15276,6 +15324,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -15389,6 +15443,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -15416,6 +15476,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
             {
               "fixture": "preamble-cells",
               "limitations": [
@@ -15454,6 +15520,12 @@
               "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -15503,6 +15575,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -15531,6 +15609,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -15558,6 +15642,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
             {
               "fixture": "preamble-cells",
               "limitations": [
@@ -15593,6 +15683,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -15614,6 +15710,12 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
             {
               "fixture": "preamble-cells",
               "limitations": [
@@ -15642,6 +15744,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
             {
               "fixture": "preamble-cells",
               "limitations": [

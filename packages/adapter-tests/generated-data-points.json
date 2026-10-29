@@ -6321,6 +6321,27 @@
         "__instanceId": "ModuleConstDefaultHydrate_test",
         "start": 1234567890
       }
+    },
+    {
+      "name": "gen:tone:empty",
+      "props": {
+        "__instanceId": "ModuleConstDefaultHydrate_test",
+        "tone": ""
+      }
+    },
+    {
+      "name": "gen:tone:markup",
+      "props": {
+        "__instanceId": "ModuleConstDefaultHydrate_test",
+        "tone": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:tone:multibyte",
+      "props": {
+        "__instanceId": "ModuleConstDefaultHydrate_test",
+        "tone": "日本語"
+      }
     }
   ],
   "module-const-hop-loop-shadow": [

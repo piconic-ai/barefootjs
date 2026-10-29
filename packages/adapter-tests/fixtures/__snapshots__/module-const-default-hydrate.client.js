@@ -7,13 +7,14 @@ export function initModuleConstDefaultHydrate(__scope, _p = {}) {
 
   const DEFAULT_LABEL = 'm'
   const START = 2
+  const TONES = { 'note': 'n' }
   const [count, setCount] = createSignal(_p.start ?? START)
   createEffect(() => {
     const __val = (_p.start ?? START)
     if (__val !== undefined) setCount(__val)
   })
 
-  const [_s3, _s1] = $(__scope, 's3', 's1')
+  const [_s5, _s1] = $(__scope, 's5', 's1')
 
   const __bfw_s0 = lazySlots(__scope, [{ id: 's0', kind: 'markup', path: [] }])
   createEffect(() => {
@@ -23,8 +24,14 @@ export function initModuleConstDefaultHydrate(__scope, _p = {}) {
 
   const __bfw_s2 = lazySlots(__scope, [{ id: 's2', kind: 'markup', path: [] }])
   createEffect(() => {
-    const __val = count()
+    const __val = (_p.tone ?? TONES.note)
     __bfw_s2('s2', escapeTextOrNode(__val))
+  })
+
+  const __bfw_s4 = lazySlots(__scope, [{ id: 's4', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = count()
+    __bfw_s4('s4', escapeTextOrNode(__val))
   })
 
   { const __l = []
@@ -38,8 +45,8 @@ export function initModuleConstDefaultHydrate(__scope, _p = {}) {
     }
   }) }
 
-  if (_s3) _s3.addEventListener('click', () => setCount(count() + 1))
+  if (_s5) _s5.addEventListener('click', () => setCount(count() + 1))
 }
 
-hydrate('ModuleConstDefaultHydrate', { init: initModuleConstDefaultHydrate, template: (_p) => `<div><p data-slot="label" ${((_p.label ?? ('m'))) != null ? 'title="' + escapeAttr((_p.label ?? ('m'))) + '"' : ''} bf="s1"><!--bf:s0-->${escapeTextOrMarkup((_p.label ?? ('m')))}<!--/--></p><button bf="s3"><!--bf:s2-->${escapeTextOrMarkup(((_p.start ?? (2))))}<!--/--></button></div>` })
+hydrate('ModuleConstDefaultHydrate', { init: initModuleConstDefaultHydrate, template: (_p) => `<div><p data-slot="label" ${((_p.label ?? ('m'))) != null ? 'title="' + escapeAttr((_p.label ?? ('m'))) + '"' : ''} bf="s1"><!--bf:s0-->${escapeTextOrMarkup((_p.label ?? ('m')))}<!--/--></p><p data-slot="tone" bf="s3"><!--bf:s2-->${escapeTextOrMarkup((_p.tone ?? ({ 'note': 'n' }).note))}<!--/--></p><button bf="s5"><!--bf:s4-->${escapeTextOrMarkup(((_p.start ?? (2))))}<!--/--></button></div>` })
 export function ModuleConstDefaultHydrate(_p, __bfKey) { return createComponent('ModuleConstDefaultHydrate', _p, __bfKey) }
