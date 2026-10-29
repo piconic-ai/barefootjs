@@ -33,9 +33,11 @@
  *    BOTH member access (`a.b` → `data_get($a, 'b')`) and index access
  *    (`a[i]` → `data_get($a, $i)`) — verified empirically (see
  *    `bladeMemberAccess`'s docstring) to be null-safe over the same
- *    {stdClass, array, null} value shapes Twig's dot/bracket cover. The one
- *    runtime helper on this path is `$bf->index_key`, which a computed
- *    index's key goes through so the float `-0.0` reads as `0` (#3698).
+ *    {stdClass, array, null} value shapes Twig's dot/bracket cover.
+ *    `data_get` reads its key as a path (`"a.b"` is the nested `a.b`, `"*"`
+ *    a wildcard), so it takes only an identifier member name. An index, and
+ *    a member name that is not an identifier, go through the runtime's
+ *    `$bf->index`, a single-level read of the own key or element (#3744).
  * 4. **Reserved-word set is COMPLETELY DIFFERENT, and for a different
  *    reason.** Twig keywords (`for`, `filter`, `if`, …) collide with Twig's
  *    OWN expression grammar — irrelevant here, since Blade variables are
@@ -47,7 +49,7 @@
  *    side carries a parity test against the other).
  */
 
-import type { LoopBindingPathSegment } from '@barefootjs/jsx'
+import { isIdentifierName, type LoopBindingPathSegment } from '@barefootjs/jsx'
 
 /**
  * Escape a string for a PHP/Blade single-quoted literal: backslash first (so
@@ -163,30 +165,26 @@ export function bladeVar(name: string): string {
  *     var_dump(data_get($o, "missing.x"));  // NULL (no warning)
  *     var_dump(data_get(null, "a.b"));      // NULL (no warning)'
  *
- * `data_get` treats a key with no `.` as ONE top-level segment (not a
- * multi-hop path), so a literal property name that itself happens to
- * contain a `.` character would be misread as a nested path — accepted as a
- * known, narrow limitation (JS field/prop names essentially never contain a
- * literal dot; no adapter-conformance fixture does).
+ * `data_get` reads its key as a path: `.` separates segments, and `*` and
+ * `{first}` / `{last}` are wildcards. An identifier has none of them, so it
+ * names one own key. Any other member name (`o['a.b']`, a destructured
+ * `{ 'a.b': x }`) is read through `bladeIndexAccess` instead (#3744).
  */
 export function bladeMemberAccess(objectExpr: string, property: string): string {
-  return `data_get(${objectExpr}, '${escapeBladeSingleQuoted(property)}')`
+  const key = `'${escapeBladeSingleQuoted(property)}'`
+  return isIdentifierName(property) ? `data_get(${objectExpr}, ${key})` : bladeIndexAccess(objectExpr, key)
 }
 
 /**
- * Index access lowering: `a[i]` → `data_get($a, $bf->index_key($i))`.
- * `data_get` accepts a non-string (int, or a PHP expression evaluating to
- * int/string) segment directly — verified empirically:
- * `data_get(['a','b','c'], $i)` with `$i = 1` → `'b'`. Same null-safety as
- * `bladeMemberAccess`. A computed key goes through `$bf->index_key`, which
- * reads the float `-0.0` (`-4 % 2`) as `0` as JS does; `data_get` spells it
- * as the key `"-0"` and misses. A literal key is passed as written
- * (`computed: false`).
+ * Index access lowering: `a[i]` → `$bf->index($a, $i)`, the runtime's JS
+ * `a[i]`: one level, the own key or element, null-safe over `stdClass`,
+ * arrays and `null`. `data_get` read its key as a path, so `o['a.b']` read
+ * the nested `a.b` and `xs[1.1]` read `xs[1][1]` (#3744). The runtime turns
+ * the key into the name JS reads, so the float `-0.0` (`-4 % 2`) reads
+ * index `0` (#3698).
  */
-export function bladeIndexAccess(objectExpr: string, indexExpr: string, computed = true): string {
-  return computed
-    ? `data_get(${objectExpr}, $bf->index_key(${indexExpr}))`
-    : `data_get(${objectExpr}, ${indexExpr})`
+export function bladeIndexAccess(objectExpr: string, indexExpr: string): string {
+  return `$bf->index(${objectExpr}, ${indexExpr})`
 }
 
 /**

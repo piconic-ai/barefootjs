@@ -393,6 +393,12 @@
               ]
             },
             {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -3465,6 +3471,12 @@
               ]
             },
             {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
+              ]
+            },
+            {
               "fixture": "loop-row-child-caller-rows-outer-state-key",
               "limitations": [
                 "loop-row-key-outer-state"
@@ -4921,6 +4933,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
               ]
             },
             {
@@ -7848,6 +7866,12 @@
               ]
             },
             {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
+              ]
+            },
+            {
               "fixture": "loop-key-to-string-number-component-row",
               "limitations": [
                 "caller-rows-computed-key"
@@ -10757,6 +10781,12 @@
               ]
             },
             {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -13281,6 +13311,12 @@
               ]
             },
             {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
+              ]
+            },
+            {
               "fixture": "loop-key-to-string-number-component-row",
               "limitations": [
                 "caller-rows-computed-key"
@@ -14851,6 +14887,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
+              ]
+            },
+            {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
@@ -15195,6 +15237,12 @@
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
               ]
             },
             {
@@ -18692,6 +18740,12 @@
               ]
             },
             {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -19632,6 +19686,12 @@
               ]
             },
             {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -20046,6 +20106,12 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
               ]
             },
             {
@@ -21412,6 +21478,12 @@
               ]
             },
             {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -22765,7 +22837,16 @@
         "hono": {},
         "blade": {},
         "erb": {},
-        "go-template": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
+              ]
+            }
+          ]
+        },
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},

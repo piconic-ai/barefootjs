@@ -832,24 +832,32 @@ export function C(props: { tags: string[] }) {
   })
 })
 
-// #3698: the PHP runtime's `mod` keeps JS's `-0` for `-4 % 2` as the float
-// `-0.0`, which `data_get` spells as the key "-0" and misses. A computed
-// index reads its key through `$bf->index_key`, which reads `-0.0` as `0`;
-// a literal index keeps its member spelling. The rendered output is pinned by
-// the shared fixture `remainder-negative-zero-quotient`.
-describe('BladeAdapter - computed index key (#3698)', () => {
-  test('a computed index goes through index_key, a literal index does not', () => {
+// An index reads through the runtime's `$bf->index`, a single-level read of
+// the own key or element (#3744): `data_get` read its key as a path, so a
+// key with a dot read a nested value and `xs[1.1]` read `xs[1][1]`. The
+// runtime reads the float `-0.0` of `-4 % 2` as index `0` (#3698). An
+// identifier member keeps `data_get`. The rendered output is pinned by the
+// shared fixtures `computed-index-own-key` and
+// `remainder-negative-zero-quotient`.
+describe('BladeAdapter - index access (#3744)', () => {
+  test('an index and a non-identifier member go through $bf->index, an identifier member through data_get', () => {
     const { template } = compileAndGenerate(`
-function Widget({ items, n }: { items: string[]; n: number }) {
+function Widget({ items, n, obj, k }: { items: string[]; n: number; obj: Record<string, string>; k: string }) {
   return <p>
     <span>{items[n % 2]}</span>
     <span>{items[1]}</span>
+    <span>{obj[k]}</span>
+    <span>{obj['a.b']}</span>
+    <span>{obj.plain}</span>
   </p>
 }
 `)
-    expect(template).toContain('data_get($items, $bf->index_key($bf->mod($n, 2)))')
-    expect(template).toContain("data_get($items, '1')")
-    expect(template).not.toContain('index_key(1')
+    expect(template).toContain('$bf->index($items, $bf->mod($n, 2))')
+    expect(template).toContain("$bf->index($items, '1')")
+    expect(template).toContain('$bf->index($obj, $k)')
+    expect(template).toContain("$bf->index($obj, 'a.b')")
+    expect(template).toContain("data_get($obj, 'plain')")
+    expect(template).not.toContain("data_get($obj, 'a.b')")
   })
 })
 

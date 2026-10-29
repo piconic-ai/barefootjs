@@ -2591,6 +2591,34 @@
         "text"
       ]
     },
+    "computed-index-own-key": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:||",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "computed-let-shadows-prop-reassigned": {
       "kinds": [
         "conditional",
@@ -6108,6 +6136,31 @@
         "literal:number",
         "literal:string",
         "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "literal-index-own-key": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "member:computed"
       ],
       "contexts": [
         "attribute",

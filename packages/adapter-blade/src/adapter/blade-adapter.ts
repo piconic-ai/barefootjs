@@ -31,7 +31,7 @@
  *   Twig `bf.truthy` in test positions     → Blade `$bf->truthy(...)` — same policy (PHP falsiness diverges from JS)
  *   Twig `{% set NAME %}…{% endset %}` capture → Blade output buffering: `@php(ob_start())` … content … `@php($NAME = $bf->backend->mark_raw(preg_replace('/\n\z/', '', ob_get_clean(), 1)))` (see divergence 4)
  *   Twig `.twig` files, `<snake_case>.twig` → Blade `.blade.php` files, `<snake_case>.blade.php` (`extension = '.blade.php'`)
- *   Twig `a.b` / `a[i]` member/index access → Blade `data_get($a, 'b')` / `data_get($a, $i)` (see divergence 5 — the one place Twig's polymorphic `.` has no raw-PHP equivalent)
+ *   Twig `a.b` / `a[i]` member/index access → Blade `data_get($a, 'b')` / `$bf->index($a, $i)` (see divergence 5 — the one place Twig's polymorphic `.` has no raw-PHP equivalent)
  *   Twig evaluator-JSON `*_eval` payloads for callbacks → UNCHANGED — same mechanism, same shared `Barefoot\Evaluator`
  *
  * The render harness this adapter's output assumes: a Blade `Factory` wired
@@ -180,9 +180,10 @@
  *      `null`/scalar). This adapter uses Laravel's `data_get($target, $key)`
  *      (from `illuminate/support`, already a transitive dependency of
  *      `illuminate/view` — no NEW runtime dependency, no change to
- *      `packages/adapter-php`) uniformly for both member access (`a.b` →
- *      `data_get($a, 'b')`) and index access (`a[i]` → `data_get($a, $i)`)
- *      — verified null-safe over the SAME {stdClass, array, null} value
+ *      `packages/adapter-php`) for member access (`a.b` →
+ *      `data_get($a, 'b')`), and the runtime's `$bf->index` for index access
+ *      (`a[i]` → `$bf->index($a, $i)`), since `data_get` reads a key as a
+ *      path (#3744) — both verified null-safe over the SAME {stdClass, array, null} value
  *      shapes Twig's dot/bracket cover (see `lib/blade-naming.ts`'s
  *      `bladeMemberAccess`/`bladeIndexAccess` docstrings for the verification
  *      transcript). This is the ONE place this port required a genuinely new
