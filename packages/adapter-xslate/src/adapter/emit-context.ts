@@ -70,8 +70,9 @@ export interface XslateEmitContext {
   /** Whether a getter/prop name resolves to a string-typed SSR value. */
   _isStringValueName(name: string, componentProperty?: boolean): boolean
   /** `kolon` wrapped in `$bf.string` when `parsed` yields a number, which JS
-   *  stringifies with `Number::toString` (#3711). */
-  _jsNumberOutput(parsed: ParsedExpr, kolon: string): string
+   *  stringifies with `Number::toString` (#3711), or may yield a decoded
+   *  JSON boolean, which Perl prints as `0` / `1` (#3783). */
+  _jsStringOutput(parsed: ParsedExpr, kolon: string): string
   /** Whether a name is declared `boolean` at this position (#3443). */
   _isBooleanValueName(name: string, componentProperty?: boolean): boolean
   /** How the emitter coerces an arithmetic operand over a nullish value

@@ -202,7 +202,8 @@ function C({ rows }: { rows?: number }) {
 }
 `)
     expect(template).toContain(': if (defined $rows) {')
-    expect(template).toContain('rows="<: $rows :>"')
+    // A number prints through `$bf.string`, as JS stringifies it (#3783).
+    expect(template).toContain('rows="<: $bf.string($rows) :>"')
   })
 
   test('leaves a defaulted attr unconditional (scope did not widen)', () => {
