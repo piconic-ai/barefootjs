@@ -274,6 +274,8 @@ import { fixture as numberDivisionZeroDivisor } from './number-division-zero-div
 import { fixture as memoDivisionZeroDivisor } from './memo-division-zero-divisor'
 import { fixture as memoNumberOutputPositions } from './memo-number-output-positions'
 import { fixture as memoNumberOutputPositionsDestructured } from './memo-number-output-positions-destructured'
+import { fixture as nullishBooleanOutputPositions } from './nullish-boolean-output-positions'
+import { fixture as nullishBooleanOutputPositionsDestructured } from './nullish-boolean-output-positions-destructured'
 import { fixture as unaryMinusCompoundOperand } from './unary-minus-compound-operand'
 import { fixture as omittedOptionalNumberNegation } from './omitted-optional-number-negation'
 import { fixture as omittedOptionalNullableNumberArithmetic } from './omitted-optional-nullable-number-arithmetic'
@@ -1416,6 +1418,8 @@ export const jsxFixtures: JSXFixture[] = [
   memoDivisionZeroDivisor,
   memoNumberOutputPositions,
   memoNumberOutputPositionsDestructured,
+  nullishBooleanOutputPositions,
+  nullishBooleanOutputPositionsDestructured,
   unaryMinusCompoundOperand,
   omittedOptionalNumberNegation,
   omittedOptionalNullableNumberArithmetic,

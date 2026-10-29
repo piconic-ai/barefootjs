@@ -80,10 +80,12 @@ import type { BindingScope, ParsedExpr } from '@barefootjs/jsx'
 import {
   escapeLineStatementSigil,
   isBooleanResultParsed,
+  collectBooleanCarrierNames,
   collectNumberValueNames,
   computeSsrSeedPlan,
   isNumberValuedExpr,
   isOpaqueLocalAccessorName,
+  mayYieldBooleanCarrier,
   numberValuedSeedNames,
   stringifyBooleanTernaryBranches,
 } from '@barefootjs/jsx'
@@ -204,6 +206,8 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
   private numberValueNames: { names: Set<string>; props: Set<string> } = { names: new Set(), props: new Set() }
   /** Signals and memos whose in-template seed is a JS number (`numberValuedSeedNames`). */
   private numberSeedNames: Set<string> = new Set()
+  /** Names that may hold a decoded JSON boolean (`collectBooleanCarrierNames`). */
+  private booleanCarrierNames: { names: Set<string>; props: Set<string> } = { names: new Set(), props: new Set() }
 
   constructor(options: MojoAdapterOptions = {}) {
     super()
@@ -229,6 +233,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     this.providerDataNames = collectProviderDataNames(ir)
     this.booleanValueNames = collectBooleanValueNames(ir.metadata)
     this.numberValueNames = collectNumberValueNames(ir)
+    this.booleanCarrierNames = collectBooleanCarrierNames(ir.metadata)
     this.numberSeedNames = numberValuedSeedNames(
       ir.metadata.ssrSeedPlan ?? computeSsrSeedPlan(ir.metadata),
       (n, c) => this._isStringValueName(n, c),
@@ -553,7 +558,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     // resolved bare-identifier `.map`/`.filter`/… callback
     // (`resolveCallbackMethodFunctionReferences`, #2206) isn't lost to a
     // fresh, unresolved re-parse of the raw string.
-    const perlExpr = this.jsNumberOutput(
+    const perlExpr = this.jsStringOutput(
       expr.parsed ?? parseExpression(expr.expr.trim()),
       this.convertExpressionToPerl(expr.expr, expr.parsed),
     )
@@ -1037,21 +1042,23 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
         isLoopBound: (n) => this.scope.isBound(n),
         boolStr: (expr, attr) => isBooleanResultExpr(expr) || isAriaBooleanAttr(attr) || isBooleanTypedPropRef(expr, { propsObjectName: this.propsObjectName, booleanTypedProps: this.booleanTypedProps, isBound: (n) => this.scope.isBound(n) }),
       })
-      const attr = (v: string, boolStr: boolean) =>
-        boolStr ? `${name}="<%= bf->bool_str(${v}) %>"` : `${name}="<%= ${v} %>"`
+      // `parsed` is the value `v` holds, printed as JS stringifies it (#3783).
+      const attr = (v: string, boolStr: boolean, parsed?: ParsedExpr | null) =>
+        boolStr ? `${name}="<%= bf->bool_str(${v}) %>"` : `${name}="<%= ${this.jsStringOutput(parsed, v)} %>"`
+      const valueParsed = value.parsed ?? parseExpression(value.expr.trim())
       // Each kind is documented on `AttrExpressionPlan`.
       switch (plan.kind) {
         case 'omit-nullable': {
           // A bare read here, so it doubles as the guard test and the value.
           const v = this.convertExpressionToPerl(value.expr)
-          return `<% if (defined ${v}) { %>${attr(v, plan.boolStr)}<% } %>`
+          return `<% if (defined ${v}) { %>${attr(v, plan.boolStr, valueParsed)}<% } %>`
         }
         case 'boolean-attr':
           return `<%= ${this.convertExpressionToPerl(value.expr, value.parsed)} ? '${name}' : '' %>`
         case 'presence': {
           const v = this.convertExpressionToPerl(value.expr)
           const tmp = `$bf_pu${this.presenceVarCounter++}`
-          return `<% my ${tmp} = ${v}; if (${tmp}) { %>${attr(tmp, plan.boolStr)}<% } %>`
+          return `<% my ${tmp} = ${v}; if (${tmp}) { %>${attr(tmp, plan.boolStr, valueParsed)}<% } %>`
         }
         case 'undefined-alternate': {
           // A mixed boolean / string branch renders its boolean as JS does.
@@ -1060,19 +1067,18 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
           const val = this.convertExpressionToPerl('', stringifyBooleanTernaryBranches(m.consequentParsed))
           const shown = isBooleanResultParsed(m.consequentParsed)
             ? `bf->bool_str(${val})`
-            : this.jsNumberOutput(m.consequentParsed, val)
+            : this.jsStringOutput(m.consequentParsed, val)
           return `<% if (${cond}) { %>${name}="<%= ${shown} %>"<% } %>`
         }
         case 'omit-nil':
         case 'plain': {
           // A ternary with a boolean and a string branch renders its boolean
           // as JS does, unless the whole value goes through `bool_str`.
-          const valueParsed = value.parsed ?? parseExpression(value.expr.trim())
           const mixedParsed = valueParsed && !plan.boolStr ? stringifyBooleanTernaryBranches(valueParsed) : value.parsed
           const v = this.convertExpressionToPerl(value.expr, mixedParsed)
-          if (plan.kind === 'plain') return plan.boolStr ? attr(v, true) : attr(this.jsNumberOutput(mixedParsed, v), false)
+          if (plan.kind === 'plain') return attr(v, plan.boolStr, mixedParsed)
           const tmp = `$bf_pu${this.presenceVarCounter++}`
-          return `<% my ${tmp} = ${v}; if (defined ${tmp}) { %>${attr(tmp, plan.boolStr)}<% } %>`
+          return `<% my ${tmp} = ${v}; if (defined ${tmp}) { %>${attr(tmp, plan.boolStr, mixedParsed)}<% } %>`
         }
       }
     },
@@ -1280,7 +1286,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _isBooleanValueName: (name, property) => property ? !this.scope.shadowsPropsObject() && this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
       _isNumberValueName: (name, property) => this._isNumberValueName(name, property),
-      _jsNumberOutput: (parsed, perl) => this.jsNumberOutput(parsed, perl),
+      _jsStringOutput: (parsed, perl) => this.jsStringOutput(parsed, perl),
       _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.scope.isBound(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
@@ -1384,16 +1390,26 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
    * no Embedded-Perl lowering) and templatePrimitive arity errors.
    */
   /**
-   * Print a number — an arithmetic result, or a read of a number-typed name
-   * or a number-valued seed — with JS `Number::toString` (`bf->string`)
-   * rather than Perl's `%.15g`, which pads a small exponent
-   * (`1.23456789e-06`), drops digits past 15 (#3380) and spells the
-   * infinities `Inf` (#3711).
+   * Print a value JS stringifies differently from Perl with JS `String`
+   * (`bf->string`): a number — an arithmetic result, or a read of a
+   * number-typed name or a number-valued seed — rather than Perl's `%.15g`,
+   * which pads a small exponent (`1.23456789e-06`), drops digits past 15
+   * (#3380) and spells the infinities `Inf` (#3711); and a value that may be
+   * a decoded JSON boolean (`mayYieldBooleanCarrier`), which Perl prints as
+   * `0` / `1` (#3783).
    */
-  private jsNumberOutput(parsed: ParsedExpr | null | undefined, perl: string): string {
-    return isNumberValuedExpr(parsed, (n, c) => this._isStringValueName(n, c), (n, c) => this._isNumberOutputName(n, c))
+  private jsStringOutput(parsed: ParsedExpr | null | undefined, perl: string): string {
+    const isNumber = isNumberValuedExpr(parsed, (n, c) => this._isStringValueName(n, c), (n, c) => this._isNumberOutputName(n, c))
+    return isNumber || mayYieldBooleanCarrier(parsed, (n, c) => this._isBooleanCarrierName(n, c))
       ? `bf->string(${perl})`
       : perl
+  }
+
+  /** Whether `name` may hold a decoded JSON boolean here
+   *  (`collectBooleanCarrierNames`) and no binding shadows it. */
+  private _isBooleanCarrierName(name: string, componentProperty = false): boolean {
+    if (componentProperty) return !this.scope.shadowsPropsObject() && this.booleanCarrierNames.props.has(name)
+    return !this.scope.isBound(name) && this.booleanCarrierNames.names.has(name)
   }
 
   /** Whether `name` holds a number here: declared `number`, or a signal /

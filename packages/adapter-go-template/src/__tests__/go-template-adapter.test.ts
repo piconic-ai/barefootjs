@@ -7617,7 +7617,8 @@ export function C(props: Props) {
     // a bare `needsParensInGoTemplate`/unwrapped-`len` miss would produce —
     // `html/template` parses those as `gt`/`len`/`eq` receiving 3/4 sibling
     // args instead of the intended 1/2.
-    expect(template).toContain('gt (len (or .Todos bf_arr)) 0')
+    // A nillable signal's `??` tests nil only, keeping a present `[]` (#3783).
+    expect(template).toContain('gt (len (bf_nullish .Todos bf_arr)) 0')
     // `todos()?.length` takes the nil-safe `bf_length` (#3422).
     expect(template).toContain('gt (or (bf_length .Todos) 0) 0')
     expect(template).toContain('gt (or .Count 0) 0')
@@ -7732,7 +7733,8 @@ export function C(props: Props) {
     const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
     // NOT `lt bf_neg or .N 0 0` — Go would read that as `lt` given `bf_neg`,
     // `or`, `.N`, `0`, `0` as five sibling args.
-    expect(template).toContain('lt (bf_neg (or .N 0)) 0')
+    // A nillable signal's `??` tests nil only, keeping a present `0` (#3783).
+    expect(template).toContain('lt (bf_neg (bf_nullish .N 0)) 0')
 
     try {
       const negHtml = await renderGoTemplateComponent({ source, adapter: new GoTemplateAdapter(), props: { count: 2 } })

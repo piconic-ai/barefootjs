@@ -95,6 +95,7 @@ import {
   computedConstContext,
   inlineComputedConstAttr,
   inlineComputedConsts,
+  nullableSignalAttrGetter,
 } from '@barefootjs/jsx'
 import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
@@ -5353,7 +5354,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * the `interface{}` flip in `resolvePropGoType`.
    */
   private isNillableNullishLeft(expr: ParsedExpr): boolean {
-    return this.nillablePropNameOf(expr) !== null || this.isNillableSignalField(expr)
+    return this.nillablePropNameOf(expr) !== null || this.isNillableSignalField(expr) || this.isNillableSignalRead(expr)
+  }
+
+  /**
+   * `flag()` where `flag` is a nullable signal whose field is `interface{}`
+   * (`nillableSignalGetters`) and no binding shadows it: its `undefined` is
+   * nil, so `??` tests nil-ness and keeps a present `false` / `''` / `0`
+   * that the truthiness-based `or` would replace.
+   */
+  private isNillableSignalRead(expr: ParsedExpr): boolean {
+    const getter = nullableSignalAttrGetter(expr, this.state.nillableSignalGetters)
+    return getter !== null && !this.scope.isBound(getter)
   }
 
   /**

@@ -6960,6 +6960,158 @@
       }
     }
   ],
+  "nullish-boolean-output-positions": [
+    {
+      "name": "gen:off:absent",
+      "props": {
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:off:true",
+      "props": {
+        "off": true,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:on:absent",
+      "props": {
+        "off": false,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "off": false,
+        "on": false,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:missing:true",
+      "props": {
+        "off": false,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ],
+        "missing": true
+      }
+    },
+    {
+      "name": "gen:missing:false",
+      "props": {
+        "off": false,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ],
+        "missing": false
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "off": false,
+        "on": true,
+        "items": []
+      }
+    }
+  ],
+  "nullish-boolean-output-positions-destructured": [
+    {
+      "name": "gen:off:absent",
+      "props": {
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:off:true",
+      "props": {
+        "off": true,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:on:absent",
+      "props": {
+        "off": false,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "off": false,
+        "on": false,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:missing:true",
+      "props": {
+        "off": false,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ],
+        "missing": true
+      }
+    },
+    {
+      "name": "gen:missing:false",
+      "props": {
+        "off": false,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ],
+        "missing": false
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "off": false,
+        "on": true,
+        "items": []
+      }
+    }
+  ],
   "nullish-coalesce-array-matrix": [
     {
       "name": "gen:a:empty",
