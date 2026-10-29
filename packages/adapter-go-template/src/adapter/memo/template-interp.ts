@@ -16,6 +16,7 @@ import type { ParsedExpr, ParsedStatement, TypeInfo } from '@barefootjs/jsx'
 import type { GoEmitContext } from '../emit-context.ts'
 import { escapeGoString } from '../lib/go-emit.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
+import { isConcreteStringPropField } from '../props/prop-types.ts'
 
 /**
  * Compute the SSR initial value of a template-literal memo as a Go `string`
@@ -25,8 +26,8 @@ import { capitalizeFieldName } from '../lib/go-naming.ts'
  *   - an identifier naming a module string const → its inlined literal (covers
  *     pure-string and `[...].join(' ')` consts);
  *   - `props.<name> ?? '<fallback>'` or bare `props.<name>` → `in.<Field>` when
- *     `<name>` is a known string-typed prop param (the `?? ''` fallback maps to
- *     Go's zero value for an unset string field).
+ *     `<name>` is a prop param whose input field is a concrete Go `string`
+ *     (the `?? ''` fallback maps to Go's zero value for an unset string field).
  *
  * @returns the `"a" + in.Field + " grid..."` concatenation, or null when the
  *   computation isn't a single template literal or any interpolation isn't
@@ -120,16 +121,17 @@ function resolveTemplateInterpolation(
     const right = node.right
     const isEmptyStr = right.kind === 'literal' && right.literalType === 'string' && right.value === ''
     const propName = propsAccessNameFromParsed(ctx, node.left)
-    if (propName && propNames.has(propName) && isEmptyStr) {
+    if (propName && propNames.has(propName) && isEmptyStr && isConcreteStringPropField(ctx, propName)) {
       // Unset string field is "" in Go — same as `?? ''`.
       return `in.${capitalizeFieldName(propName)}`
     }
     return null
   }
 
-  // Bare `props.X` (string-typed prop).
+  // Bare `props.X` over a concrete `string` field. A nillable or number
+  // field is no Go string operand; the evaluator computes the memo instead.
   const propName = propsAccessNameFromParsed(ctx, node)
-  if (propName && propNames.has(propName)) {
+  if (propName && propNames.has(propName) && isConcreteStringPropField(ctx, propName)) {
     return `in.${capitalizeFieldName(propName)}`
   }
   return null
