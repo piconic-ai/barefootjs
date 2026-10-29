@@ -32,9 +32,9 @@ export function collectBooleanCarrierNames(
   const names = new Set<string>()
   const props = new Set<string>()
   for (const signal of metadata.signals) {
-    const seed = signal.initialValue?.trim()
     const untyped = !signal.type || signal.type.kind === 'unknown'
-    if (admitsBoolean(signal.type) || (untyped && (seed === 'true' || seed === 'false'))) names.add(signal.getter)
+    const booleanSeed = signal.parsed?.kind === 'literal' && signal.parsed.literalType === 'boolean'
+    if (admitsBoolean(signal.type) || (untyped && booleanSeed)) names.add(signal.getter)
   }
   for (const memo of metadata.memos ?? []) {
     if (admitsBoolean(memo.type)) names.add(memo.name)

@@ -38,8 +38,9 @@ describe('collectBooleanCarrierNames (#3783)', () => {
   })
 
   test('a boolean-typed or untyped boolean-seeded signal carries a boolean; a string signal does not', () => {
+    // The seed is classified from its parsed tree, as the analyzer attaches it.
     const signal = (getter: string, type: TypeInfo, initialValue: string) =>
-      ({ getter, setter: null, type, initialValue }) as never
+      ({ getter, setter: null, type, initialValue, parsed: parseExpression(initialValue) }) as never
     const { names } = collectBooleanCarrierNames({
       signals: [signal('flag', union(bool, undef), 'false'), signal('open', unknown, 'true'), signal('text', str, "'x'")],
       memos: [],
