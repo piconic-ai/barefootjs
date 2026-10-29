@@ -181,6 +181,8 @@ import { fixture as signalSeedRenamedDefaultBesideRawNullish } from './signal-se
 import { fixture as memoPropReadBesideSignalNullishSeed } from './memo-prop-read-beside-signal-nullish-seed'
 import { fixture as memoPropReadBesideSignalNullishSeedDestructured } from './memo-prop-read-beside-signal-nullish-seed-destructured'
 import { fixture as memoPropArithmeticBesideSignalNullishSeed } from './memo-prop-arithmetic-beside-signal-nullish-seed'
+import { fixture as memoTemplateLiteralNillableProp } from './memo-template-literal-nillable-prop'
+import { fixture as memoTemplateLiteralNillablePropDestructured } from './memo-template-literal-nillable-prop-destructured'
 import { fixture as signalSeedDependentDefaultNullishLiteral } from './signal-seed-dependent-default-nullish-literal'
 import { fixture as signalSeedDependentDefaultNullishLiteralBody } from './signal-seed-dependent-default-nullish-literal-body'
 import { fixture as signalSeedLocalHelperCall } from './signal-seed-local-helper-call'
@@ -248,6 +250,7 @@ import { fixture as omittedOptionalNumberArithmetic } from './omitted-optional-n
 import { fixture as omittedOptionalNumberElementAccess } from './omitted-optional-number-element-access'
 import { fixture as childForwardedOmittedOptionalNumber } from './child-forwarded-omitted-optional-number'
 import { fixture as childForwardedOmittedOptionalNumberRelay } from './child-forwarded-omitted-optional-number-relay'
+import { fixture as memoNullishOmittedLiteralUnionProp } from './memo-nullish-omitted-literal-union-prop'
 import { fixture as childForwardedDefaultedOptionalProp } from './child-forwarded-defaulted-optional-prop'
 import { fixture as omittedOptionalElementAccessOperands } from './omitted-optional-element-access-operands'
 import { fixture as omittedOptionalNumberArithmeticDestructured } from './omitted-optional-number-arithmetic-destructured'
@@ -1334,6 +1337,8 @@ export const jsxFixtures: JSXFixture[] = [
   memoPropReadBesideSignalNullishSeed,
   memoPropReadBesideSignalNullishSeedDestructured,
   memoPropArithmeticBesideSignalNullishSeed,
+  memoTemplateLiteralNillableProp,
+  memoTemplateLiteralNillablePropDestructured,
   signalSeedDependentDefaultNullishLiteral,
   signalSeedDependentDefaultNullishLiteralBody,
   signalSeedLocalHelperCall,
@@ -1394,6 +1399,7 @@ export const jsxFixtures: JSXFixture[] = [
   omittedOptionalNumberElementAccess,
   childForwardedOmittedOptionalNumber,
   childForwardedOmittedOptionalNumberRelay,
+  memoNullishOmittedLiteralUnionProp,
   childForwardedDefaultedOptionalProp,
   omittedOptionalElementAccessOperands,
   omittedOptionalNumberArithmetic,

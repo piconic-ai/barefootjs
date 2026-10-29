@@ -1,5 +1,13 @@
 # @barefootjs/php
 
+## 0.40.1
+
+### Patch Changes
+
+- f6c0d7c: PHP runtime: `mod` now keeps JavaScript's `-0` for the zero remainder of a negative int dividend, so `1 / (-4 % 2)` renders `-Infinity` on Blade and Twig instead of `Infinity` (#3698). The remainder still prints `0` and compares equal to `0`. Blade's computed index access now reads its key through the new runtime helper `$bf->index_key`, which turns `-0.0` into `0`, so `items[x % 2]` still reads index `0` there (`data_get` read `-0.0` as the key `"-0"`). A literal index is emitted as before.
+- 66729fd: Blade and Twig: a number operand of `+` string concatenation now goes through the runtime's JS `String()` before PHP's `.` / Twig's `~`, so `'r=' + (-4 % 2)` renders `r=0` instead of `r=-0` (#3698). An operand the shared layer types as a string is emitted as before. The same conversion also gives JS's spelling for an infinity (`Infinity`, not `INF`) and a boolean (`true`, not `1`). The PHP runtime's `json` (`JSON.stringify`) writes a float `-0.0` as `0`, on its own and inside an array or object.
+- 837fd72: A `{...props}` spread onto a child component now carries a key its caller passed as `null` or `undefined` on the template adapters, as it does in JS (#3701). `<Tag label="first" {...props} />` called with `{ label: null }` used to keep `"first"` on every template adapter except Hono, because a template reads an omitted prop and a `null` one as the same nil. Each runtime now records the keys the caller passed (`render_child` for a child, `_props` for the root) and answers `bf.passed(name, fallback)` from them; the spread carries a param only when it was passed, so an omitted one still keeps the earlier prop, and a spread that forwards the props object to a child no longer hands it keys the caller left out. With no record (a root rendered without `_props`), the old "not nil" test decides. Templates compiled by this version call `bf.passed`, so they need the runtime of the same version. The Go template adapter still keeps the earlier prop (its Input struct has no record of the passed keys).
+
 ## 0.40.0
 
 No changes in this release.
