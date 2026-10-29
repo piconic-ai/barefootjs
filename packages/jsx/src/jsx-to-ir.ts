@@ -1157,6 +1157,61 @@ function childrenReadOf(
 }
 
 /**
+ * Whether `parsed`, read in the component scope, is `<props object>.<name>`
+ * for a prop other than `children` (`props.footer`, `p.footer` for `const p
+ * = props`).
+ */
+function isPropsValueMember(parsed: ParsedExpr | undefined, analyzer: AnalyzerContext): boolean {
+  return (
+    parsed?.kind === 'member' &&
+    !parsed.computed &&
+    parsed.property !== 'children' &&
+    parsed.object.kind === 'identifier' &&
+    isPropsObjectBinding(parsed.object.name, analyzer)
+  )
+}
+
+/**
+ * Whether the component-scope name `name` holds one of the component's own
+ * props other than `children`: a destructured props param (renamed or not),
+ * a body destructure or member read of the props object (`const { footer }
+ * = props`, `const f = props.footer`), or a const alias hop of one.
+ */
+function isPropValueBinding(name: string, analyzer: AnalyzerContext): boolean {
+  const consts = childrenHopConstants(analyzer)
+  const params = boundPropLocalNames(analyzer)
+  const terminal = (n: string): true | null => {
+    if (consts.has(n)) return isPropsValueMember(consts.get(n), analyzer) ? true : null
+    return params.has(n) && !analyzer.propsParams.some(p => p.name === n && isChildrenPropParam(p)) ? true : null
+  }
+  return resolveAliasOrigin(childrenAliasHops(analyzer), name, terminal) === true
+}
+
+/**
+ * Whether a child-position expression inside a loop row is a bare read of one
+ * of the component's own props other than `children`
+ * (`IRExpression.loopRowPropRead`). A name or `props` object the enclosing
+ * loop rows bind shadows the prop.
+ */
+function isLoopRowPropRead(parsed: ParsedExpr, analyzer: AnalyzerContext, scope: BindingScope): boolean {
+  if (!scope.insideLoopRow()) return false
+  if (parsed.kind === 'identifier') return !scope.isBound(parsed.name) && isPropValueBinding(parsed.name, analyzer)
+  return (
+    parsed.kind === 'member' &&
+    parsed.object.kind === 'identifier' &&
+    !scope.isBound(parsed.object.name) &&
+    isPropsValueMember(parsed, analyzer)
+  )
+}
+
+/** Set `childrenRead` and `loopRowPropRead` on an expression child from its parse. */
+function attachPropReadFlags(node: IRExpression, parsed: ParsedExpr, analyzer: AnalyzerContext, scope: BindingScope): void {
+  const childrenRead = childrenReadOf(parsed, analyzer, scope)
+  if (childrenRead) node.childrenRead = childrenRead
+  if (isLoopRowPropRead(parsed, analyzer, scope)) node.loopRowPropRead = true
+}
+
+/**
  * Attach `parsed` to every expression-valued attribute / prop so adapters can
  * lower from the tree instead of re-parsing the string. Element attrs,
  * component props (e.g. `opts={{ … }}` → Go map), and a provider's `value`
@@ -1212,8 +1267,7 @@ function attachParsedExpressions(node: IRNode, analyzer: AnalyzerContext, scope:
   if (node.type === 'expression') {
     const trimmed = node.expr.trim()
     if (trimmed) node.parsed = parse(trimmed)
-    const childrenRead = node.parsed ? childrenReadOf(node.parsed, analyzer, scope) : null
-    if (childrenRead) node.childrenRead = childrenRead
+    if (node.parsed) attachPropReadFlags(node, node.parsed, analyzer, scope)
   } else if (node.type === 'conditional' || node.type === 'if-statement') {
     const trimmed = node.condition.trim()
     if (trimmed) node.parsedCondition = parse(trimmed)

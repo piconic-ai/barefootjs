@@ -37,6 +37,8 @@ export interface ReactiveAttrSlot {
 /** A reactive text effect (one createEffect updating textContent). */
 export interface ReactiveTextEffect {
   slotId: string
+  /** Claimed and written as markup (`RowTextSlot`). */
+  markup?: true
   /** Already wrapped via wrapLoopParamAsAccessor at build time. */
   wrappedExpression: string
 }

@@ -510,8 +510,22 @@ module BarefootJS
     NUMERIC_STRING_RE = /\A\s*[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?\s*\z/.freeze
 
     def json(value)
-      backend.encode_json(value)
+      backend.encode_json(json_unsign_zeros(value))
     end
+
+    # JS `JSON.stringify` writes -0 as `0` at any depth (`[-4 % 2, 1]` ->
+    # `[0,1]`), but Ruby's encoder spells a Float zero `-0.0` / `0.0` --
+    # the `-0.0` that `Evaluator.remainder` gives for a negative dividend.
+    # Float zeros become Integer 0, inside Arrays and Hash values too.
+    def json_unsign_zeros(value)
+      case value
+      when Float then value.zero? ? 0 : value
+      when Array then value.map { |el| json_unsign_zeros(el) }
+      when Hash then value.transform_values { |v| json_unsign_zeros(v) }
+      else value
+      end
+    end
+    private :json_unsign_zeros
 
     # JS `String(v)` mirror, EXCEPT `nil` renders as '' (not the literal
     # "null") so an unset prop doesn't surface as literal text in

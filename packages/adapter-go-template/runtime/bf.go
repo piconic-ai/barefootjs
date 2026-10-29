@@ -1723,7 +1723,54 @@ func JSON(v any) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return string(b), nil
+	return string(unsignJSONZeros(b)), nil
+}
+
+// unsignJSONZeros rewrites every `-0` number in encoded JSON to `0`, at
+// any depth: JS `JSON.stringify(-0)` is `0` (and `[-0, 1]` is `[0,1]`),
+// but `encoding/json` keeps the sign of a float64 negative zero (the `-0`
+// that `Mod` gives for `-4 % 2`). It walks the encoder's own output, so a
+// `-0` inside a string is skipped and `-0.5` keeps its sign. The bytes are
+// rewritten in place since the result is never longer than the input.
+func unsignJSONZeros(b []byte) []byte {
+	if !bytes.Contains(b, []byte("-0")) {
+		return b
+	}
+	out := b[:0]
+	inString := false
+	for i := 0; i < len(b); i++ {
+		c := b[i]
+		switch {
+		case inString && c == '\\':
+			// The escaped byte can't end the string; copy it with the
+			// backslash.
+			out = append(out, c, b[i+1])
+			i++
+			continue
+		case c == '"':
+			inString = !inString
+		case !inString && c == '-' && isJSONZero(b[i+1:]):
+			continue
+		}
+		out = append(out, c)
+	}
+	return out
+}
+
+// isJSONZero reports whether rest starts with the number `0` as a whole
+// integer part with no fraction or exponent (`0`, not `0.5` or `0e1`).
+func isJSONZero(rest []byte) bool {
+	if len(rest) == 0 || rest[0] != '0' {
+		return false
+	}
+	if len(rest) == 1 {
+		return true
+	}
+	switch rest[1] {
+	case '.', 'e', 'E':
+		return false
+	}
+	return true
 }
 
 // Number coerces v to a float64. Mirrors JS `Number(v)` semantics:

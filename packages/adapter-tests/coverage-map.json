@@ -5782,6 +5782,27 @@
         "text"
       ]
     },
+    "jsx-prop-loop-row": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "jsx-prop-nested-component-conditional": {
       "kinds": [
         "identifier",
@@ -11296,6 +11317,33 @@
       ],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "remainder-negative-zero-json-positions": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:%",
+        "binary:+",
+        "binary:<",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
         "text"
       ]
     },

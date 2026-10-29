@@ -255,6 +255,7 @@ function buildReactiveEmit(
     slotId: text.slotId,
     wrappedExpression: wrapLoopParamAsAccessor(wrapOuterRow(text.expression), inner.param, inner.paramBindings, inner.index),
     insideConditional: !!text.insideConditional,
+    ...(text.markup && { markup: true as const }),
   }))
 
   const reactiveAttrs: InnerLoopReactiveAttr[] = inner.bindings.reactiveAttrs.map(attr => {

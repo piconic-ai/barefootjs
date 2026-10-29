@@ -8,6 +8,7 @@ import { fixture as jsxPropTemplateDelimiters } from './jsx-prop-template-delimi
 import { fixture as jsxPropNestedComponentPositions } from './jsx-prop-nested-component-positions'
 import { fixture as jsxPropNestedComponentConditional } from './jsx-prop-nested-component-conditional'
 import { fixture as jsxPropNestedComponentForwarded } from './jsx-prop-nested-component-forwarded'
+import { fixture as jsxPropLoopRow } from './jsx-prop-loop-row'
 import { fixture as staticChildQuotedKeys } from './static-child-quoted-keys'
 import { fixture as childrenNullishFallback } from './children-nullish-fallback'
 import { fixture as conditionalNestedClient } from './conditional-nested-loop-client-reactivity'
@@ -270,6 +271,7 @@ import { fixture as remainderNegativeZeroQuotient } from './remainder-negative-z
 import { fixture as remainderNegativeZeroString } from './remainder-negative-zero-string'
 import { fixture as remainderNegativeZeroConcat } from './remainder-negative-zero-concat'
 import { fixture as remainderNegativeZeroJson } from './remainder-negative-zero-json'
+import { fixture as remainderNegativeZeroJsonPositions } from './remainder-negative-zero-json-positions'
 import { fixture as numberDivisionZeroDivisor } from './number-division-zero-divisor'
 import { fixture as memoDivisionZeroDivisor } from './memo-division-zero-divisor'
 import { fixture as memoNumberOutputPositions } from './memo-number-output-positions'
@@ -1414,6 +1416,7 @@ export const jsxFixtures: JSXFixture[] = [
   remainderNegativeZeroString,
   remainderNegativeZeroConcat,
   remainderNegativeZeroJson,
+  remainderNegativeZeroJsonPositions,
   numberDivisionZeroDivisor,
   memoDivisionZeroDivisor,
   memoNumberOutputPositions,
@@ -1713,6 +1716,7 @@ export const jsxFixtures: JSXFixture[] = [
   jsxPropNestedComponentPositions,
   jsxPropNestedComponentConditional,
   jsxPropNestedComponentForwarded,
+  jsxPropLoopRow,
   staticChildQuotedKeys,
   svgIcon,
   customElementTag,

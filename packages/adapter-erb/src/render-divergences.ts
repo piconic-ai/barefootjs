@@ -42,9 +42,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 export const renderDivergences: RenderDivergences = {
   // `===` / `!==` between objects or arrays compares contents, not references.
   'strict-equality-distinct-reference': { limitation: 'object-equality-by-contents' },
-  // Ruby's `JSON.generate` writes the float `-0.0` that `%` gives for a
-  // negative dividend as `-0.0`, where JS's `JSON.stringify` writes `0`.
-  'remainder-negative-zero-json': { limitation: 'negative-zero-json-stringify' },
   // `.at(i)` on half of a surrogate pair: the runtime string can't hold a
   // lone surrogate, so it returns U+FFFD (halves compare equal, and
   // rejoining them renders `��` instead of the emoji).

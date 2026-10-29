@@ -804,6 +804,7 @@ export function collectLoopChildReactiveTexts(
         expression: expanded.expr,
         insideConditional: insideConditional || undefined,
         ...(expanded.freeIds !== undefined && { freeIdentifiers: expanded.freeIds }),
+        ...(n.loopRowPropRead && { markup: true as const }),
       })
     },
     conditional: ({ node: c, descend }) => {
