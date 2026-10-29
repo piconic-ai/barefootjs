@@ -1,5 +1,15 @@
 # @barefootjs/perl
 
+## 0.40.1
+
+### Patch Changes
+
+- 369501b: Mojolicious: `===` / `!==` between operands whose type the compiler cannot tell (an `.at()` result, an array element, a prop typed as a union) now compares by the values' JS types through the new runtime helper `strict_eq`. Before, it lowered to Perl's numeric `==`, which reads two different non-numeric strings as equal (`'p' === 'q'` rendered as true). A comparison with a string operand still uses `eq` / `ne`, and one with a number or boolean operand still uses `==` / `!=`.
+  
+  An object or array compared with `===` / `!==` (in a template, an evaluated callback, or `includes`) now compares by reference on the Perl runtime: a value equals itself, and two distinct structures with the same contents are not equal. Before, `strict_eq` and the evaluator's `===` treated every object or array as unequal, even to itself.
+- c27a758: Perl runtime: `json` now writes a negative zero as `0`, matching JS `JSON.stringify(-0)`. Newer Perl / Mojo::JSON combinations spelled the `-0.0` remainder of a negative dividend as `-0.0` (#3698).
+- 837fd72: A `{...props}` spread onto a child component now carries a key its caller passed as `null` or `undefined` on the template adapters, as it does in JS (#3701). `<Tag label="first" {...props} />` called with `{ label: null }` used to keep `"first"` on every template adapter except Hono, because a template reads an omitted prop and a `null` one as the same nil. Each runtime now records the keys the caller passed (`render_child` for a child, `_props` for the root) and answers `bf.passed(name, fallback)` from them; the spread carries a param only when it was passed, so an omitted one still keeps the earlier prop, and a spread that forwards the props object to a child no longer hands it keys the caller left out. With no record (a root rendered without `_props`), the old "not nil" test decides. Templates compiled by this version call `bf.passed`, so they need the runtime of the same version. The Go template adapter still keeps the earlier prop (its Input struct has no record of the passed keys).
+
 ## 0.40.0
 
 No changes in this release.
