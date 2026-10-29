@@ -7,6 +7,7 @@
 
 import type { ComponentIR, IRMetadata, ParsedExpr } from '@barefootjs/jsx'
 import {
+  BindingScope,
   arithmeticOperandCoercion,
   asCallbackMethodCall,
   collectAbsentPropSeedReads,
@@ -21,7 +22,7 @@ import type { GoEmitContext } from '../emit-context.ts'
 import { propsObjectKeyRead, resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
 import { applyGoFallback } from '../lib/go-emit.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
-import { literalNumberValue, typeInfoToGo } from '../type/type-codegen.ts'
+import { collapseLiteralUnion, literalNumberValue, typeInfoToGo } from '../type/type-codegen.ts'
 import { evalExprGo, evaluatedAsGoType } from '../memo/memo-compute.ts'
 
 /**
@@ -174,6 +175,32 @@ export function collectNullishConsumedPropNames(ctx: GoEmitContext, ir: Componen
   // A computed const reads as its initializer in the template (#3494), so a
   // `props.X ?? d` there is consumed like one written in place.
   walk(computedConstInitializers(ir))
+  // A memo body the runtime evaluator computes (`() => props.size ?? 'icon'`)
+  // hands it the prop's field the same way a computed seed does. A callback
+  // inside the body (`rows.map(size => size ?? 'x')`) binds its own params,
+  // so a `??` over one of those reads the param, not the prop.
+  const walkMemoBody = (node: unknown, scope: BindingScope): void => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) {
+      for (const item of node) walkMemoBody(item, scope)
+      return
+    }
+    const rec = node as Record<string, unknown>
+    if (rec.kind === 'arrow') {
+      walkMemoBody(rec.body, scope.enterCallback(rec.params as string[]))
+      return
+    }
+    if (rec.kind === 'logical' && rec.op === '??' && rec.left && rec.right) {
+      const left = rec.left as ParsedExpr
+      const root = left.kind === 'member' ? left.object : left
+      const propName = root.kind === 'identifier' && scope.isBound(root.name) ? null : propNameOfLeft(left)
+      if (propName && optionalParams.has(propName) && !isZeroEquivalentLiteral(rec.right as ParsedExpr)) {
+        names.add(propName)
+      }
+    }
+    for (const value of Object.values(rec)) walkMemoBody(value, scope)
+  }
+  for (const memo of ir.metadata.memos) walkMemoBody(memo.parsed, BindingScope.EMPTY)
   // A signal seed the runtime evaluator computes (`(props.n ?? 1) * 2`)
   // hands it the prop's field, which must be nil when the prop is absent
   // for that `??` to take its right side (#3532). Read through the seed
@@ -796,15 +823,12 @@ export function resolvePropGoType(
   // `interface{}`), and the prop joins the existing nillable behaviours
   // (bare-attribute omission) by construction.
   //
-  // Gated to `kind: 'primitive'` — a string-union prop
-  // (`placement?: 'top' | 'bottom'`) must stay its scalar Go type (the same
-  // invariant the struct-map gate above documents): the union-typed
-  // class-composition lowerings key off the concrete type, AND the flip
-  // would buy nothing — the zero value (`""`) is never a legal union
-  // member, so the zero-check already coincides with nullish semantics for
-  // every valid input. (A literal-number union containing 0 would be the
-  // exception; none exists in the corpus and the conflation is the
-  // documented pre-#2248 trade-off there.)
+  // A single-family literal union (`size?: 'default' | 'icon'`,
+  // `level?: 1 | 2`) takes the flip like its primitive: the runtime
+  // evaluator (a memo body, a computed seed) and a child's nillable field
+  // read the Go value as it is, so an omitted prop must be nil there, not
+  // `""` / `0`. A local alias of one (`tone?: Tone`) is still a named
+  // reference here and keeps its alias type.
   // A bare-attribute consumption (`rows={rows}`) takes the same flip (#2259):
   // attribute omission for an absent optional needs a nil to test — see
   // `collectOmittableAttrConsumedPropNames`. A bare TEXT-position
@@ -828,7 +852,7 @@ export function resolvePropGoType(
   // the caller's value.
   if (
     param.optional &&
-    param.type.kind === 'primitive' &&
+    collapseLiteralUnion(param.type).kind === 'primitive' &&
     (appliesDefaultOnNil(param) ||
       ctx.state.nullishConsumedPropNames.has(param.name) ||
       ctx.state.omittableAttrConsumedPropNames.has(param.name) ||
