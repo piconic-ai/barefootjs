@@ -169,7 +169,7 @@ describe('#2835 — name collision with a whole-props type member is not prop-de
       }
     `, 'DestructuredRegression.tsx')
     expect(clientJs).toMatch(/\bmapArray(Lazy)?\s*\(/)
-    expect(clientJs).not.toMatch(/qsaChildScopes\(/)
+    expect(clientJs).not.toMatch(/childScopesBySlot\(/)
   })
 
   test('regression guard: a renamed destructure ({ base: rows }) still resolves to mapArray', () => {
@@ -183,7 +183,7 @@ describe('#2835 — name collision with a whole-props type member is not prop-de
       }
     `, 'RenamedDestructureRegression.tsx')
     expect(clientJs).toMatch(/\bmapArray(Lazy)?\s*\(/)
-    expect(clientJs).not.toMatch(/qsaChildScopes\(/)
+    expect(clientJs).not.toMatch(/childScopesBySlot\(/)
   })
 
   test('regression guard: a renamed destructure keeps a same-named module const static (no name collision through the rename)', () => {
@@ -212,7 +212,7 @@ describe('#2835 — name collision with a whole-props type member is not prop-de
       }
     `, 'WholePropsBodyDestructure.tsx')
     expect(clientJs).toMatch(/\bmapArray(Lazy)?\s*\(/)
-    expect(clientJs).not.toMatch(/qsaChildScopes\(/)
+    expect(clientJs).not.toMatch(/childScopesBySlot\(/)
   })
 
   test('regression guard: direct `props.base` access still resolves to mapArray', () => {
@@ -226,7 +226,7 @@ describe('#2835 — name collision with a whole-props type member is not prop-de
       }
     `, 'DirectMemberAccessRegression.tsx')
     expect(clientJs).toMatch(/\bmapArray(Lazy)?\s*\(/)
-    expect(clientJs).not.toMatch(/qsaChildScopes\(/)
+    expect(clientJs).not.toMatch(/childScopesBySlot\(/)
   })
 
   test('regression guard: a rest-spread sibling name is unaffected (no collision to guard against)', () => {

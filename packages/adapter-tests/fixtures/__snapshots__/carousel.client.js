@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, lazySlots, markupOrEmpty, onCleanup, provideContext, qsaChildScopes, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, childScopesBySlot, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, lazySlots, markupOrEmpty, onCleanup, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -3153,7 +3153,7 @@ export function initCarouselPreviewDemo(__scope, _p = {}) {
 
   // Initialize static array children (hydrate skips nested instances)
   if (_s2) {
-    const __childScopes = qsaChildScopes(_s2, `[bf-h="${__scopeId}"][bf-m="s1"], [bf-s$="_s1"]`)
+    const __childScopes = childScopesBySlot(_s2, __scopeId, 's1')
     __childScopes.forEach((childScope, __idx) => {
       const n = [1, 2, 3, 4, 5][__idx]
       initChild('CarouselItem', childScope, {})
@@ -3189,7 +3189,7 @@ export function initCarouselSizesDemo(__scope, _p = {}) {
 
   // Initialize static array children (hydrate skips nested instances)
   if (_s2) {
-    const __childScopes = qsaChildScopes(_s2, `[bf-h="${__scopeId}"][bf-m="s1"], [bf-s$="_s1"]`)
+    const __childScopes = childScopesBySlot(_s2, __scopeId, 's1')
     __childScopes.forEach((childScope, __idx) => {
       const n = [1, 2, 3, 4, 5, 6][__idx]
       initChild('CarouselItem', childScope, { className: "pl-2 basis-1/3" })
@@ -3225,7 +3225,7 @@ export function initCarouselOrientationDemo(__scope, _p = {}) {
 
   // Initialize static array children (hydrate skips nested instances)
   if (_s2) {
-    const __childScopes = qsaChildScopes(_s2, `[bf-h="${__scopeId}"][bf-m="s1"], [bf-s$="_s1"]`)
+    const __childScopes = childScopesBySlot(_s2, __scopeId, 's1')
     __childScopes.forEach((childScope, __idx) => {
       const n = [1, 2, 3, 4, 5][__idx]
       initChild('CarouselItem', childScope, { orientation: "vertical", className: "basis-1/2" })

@@ -41,6 +41,7 @@ import { buildForwardedInnerLoopsPlan } from '../control-flow/plan/build-inner-l
 /** The inline prop shape carried on `IRLoopChildComponent.props`. */
 type LoopChildCompProp = IRLoopChildComponent['props'][number]
 import type {
+  ChildScopesLookup,
   ComponentRootedInnerLoopInitPlan,
   InnerLoopComp,
   InnerLoopNestedInitPlan,
@@ -115,18 +116,32 @@ export function buildStaticArrayChildInitsPlan(
   return plans
 }
 
+/**
+ * The one decision for how a static array's child init finds a component's
+ * scope (#3821), for every shape: the document-order zip and the per-row
+ * lookup alike. A slotted component is looked up by its slot, which the
+ * runtime matches on an element's `bf-h`/`bf-m`/`bf-s` and on a fragment
+ * root's `<!--bf-scope:…|h=…|m=…-->` comment alike; an element selector
+ * (`buildCompSelector`) cannot reach the comment, so a fragment-rooted row
+ * was never initialised. Without a slot id the name-prefix selector stays.
+ */
+function buildChildScopesLookup(comp: { slotId?: string | null; name: string }): ChildScopesLookup {
+  return comp.slotId
+    ? { by: 'slot', slotId: comp.slotId }
+    : { by: 'name', selector: buildCompSelector(comp) }
+}
+
 function buildSingleCompPlan(
   elem: TopLevelLoop,
   childComponent: IRLoopChildComponent,
 ): SingleCompInitPlan {
-  const { name, props, slotId } = childComponent
-  const childSelector = buildCompSelector({ name, slotId })
+  const { name, props } = childComponent
 
   return {
     kind: 'single-comp',
     containerVar: `_${varSlotId(elem.slotId)}`,
     componentName: name,
-    childSelector,
+    lookup: buildChildScopesLookup(childComponent),
     arrayExpr: elem.array,
     param: elem.param,
     indexParam: elem.index || '__idx',
@@ -160,7 +175,7 @@ function buildOuterNestedPlan(
     kind: 'outer-nested',
     containerVar: `_${varSlotId(elem.slotId)}`,
     componentName: comp.name,
-    selector: buildCompSelector(comp),
+    lookup: buildChildScopesLookup(comp),
     arrayExpr: elem.array,
     param: elem.param,
     indexParam,
@@ -183,7 +198,7 @@ function buildInnerLoopNestedPlan(
   const innerIndexParam = innerLoop.index || '__innerIdx'
   const comps: InnerLoopComp[] = innerComps.map(comp => ({
     componentName: comp.name,
-    selector: buildCompSelector(comp),
+    lookup: buildChildScopesLookup(comp),
     propsExpr: buildStaticPropsExpr(comp.props),
   }))
 
@@ -246,7 +261,7 @@ function buildComponentRootedInnerLoopPlan(
 ): ComponentRootedInnerLoopInitPlan {
   const comps: InnerLoopComp[] = innerComps.map(comp => ({
     componentName: comp.name,
-    selector: buildCompSelector(comp),
+    lookup: buildChildScopesLookup(comp),
     propsExpr: buildStaticPropsExpr(comp.props),
   }))
 
