@@ -14,17 +14,13 @@
  * the caller falls back to its existing BF101 refusal instead of guessing.
  */
 
-import { perlHashKey } from './perl-naming.ts'
-
-function escapePerlSingleQuote(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
-}
+import { perlHashKey, perlStringLiteral } from './perl-naming.ts'
 
 export function staticValueToPerl(value: unknown): string | null {
   if (value === null || value === undefined) return 'undef'
   if (typeof value === 'boolean') return null
   if (typeof value === 'number') return String(value)
-  if (typeof value === 'string') return `'${escapePerlSingleQuote(value)}'`
+  if (typeof value === 'string') return perlStringLiteral(value)
   if (Array.isArray(value)) {
     const items: string[] = []
     for (const el of value) {

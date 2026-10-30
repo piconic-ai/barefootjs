@@ -44,7 +44,7 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
 
 import type { MojoEmitContext } from '../emit-context.ts'
 import { MOJO_TEMPLATE_PRIMITIVES } from '../lib/constants.ts'
-import { escapePerlSingleQuoted } from '../lib/perl-naming.ts'
+import { perlStringLiteral } from '../lib/perl-naming.ts'
 import { emitIndexAccessPerl, emitPerlEquality } from './operand.ts'
 import {
   renderArrayMethod,
@@ -249,7 +249,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
-    if (literalType === 'string') return `'${escapePerlSingleQuoted(String(value))}'`
+    if (literalType === 'string') return perlStringLiteral(String(value))
     if (literalType === 'boolean') return value ? '1' : '0'
     if (literalType === 'null') return 'undef'
     return String(value)
@@ -513,7 +513,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
-    if (literalType === 'string') return `'${escapePerlSingleQuoted(String(value))}'`
+    if (literalType === 'string') return perlStringLiteral(String(value))
     if (literalType === 'boolean') return value ? '1' : '0'
     if (literalType === 'null') return 'undef'
     return String(value)
@@ -850,7 +850,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     // its own list segment to ONE hashref literal — no merge CALL needed,
     // unlike the other 6 adapters.
     const parts = properties.map(p =>
-      p.kind === 'spread' ? `%{${emit(p.expr)}}` : `'${escapePerlSingleQuoted(p.key)}' => ${emit(p.value)}`,
+      p.kind === 'spread' ? `%{${emit(p.expr)}}` : `${perlStringLiteral(p.key)} => ${emit(p.value)}`,
     )
     return `{ ${parts.join(', ')} }`
   }

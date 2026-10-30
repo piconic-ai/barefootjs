@@ -27,7 +27,7 @@ import { parseRecordIndexAccess, stringifyParsedExpr, isLiteralIndex } from '@ba
 import type { ParsedExpr } from '@barefootjs/jsx'
 
 import type { XslateSpreadContext } from '../emit-context.ts'
-import { escapeKolonSingleQuoted } from '../lib/kolon-naming.ts'
+import { kolonStringLiteral } from '../lib/kolon-naming.ts'
 
 /**
  * Lower a conditional inline-object spread
@@ -131,7 +131,7 @@ export function objectLiteralToKolonHashref(
         // Thread the carried `val` tree straight through as `preParsed` (#2018)
         // — no stringify→re-parse round-trip.
         : ctx.convertExpressionToKolon('', val)
-    entries.push(`'${escapeKolonSingleQuoted(key)}' => ${valKolon}`)
+    entries.push(`${kolonStringLiteral(key)} => ${valKolon}`)
   }
   return entries.length === 0 ? '{}' : `{ ${entries.join(', ')} }`
 }
@@ -168,8 +168,8 @@ export function recordIndexAccessToKolon(ctx: XslateSpreadContext, val: ParsedEx
   if (!parsed) return null
   const entries = parsed.entries.map(e => {
     const mapVal =
-      e.value.kind === 'number' ? e.value.text : `'${escapeKolonSingleQuoted(e.value.text)}'`
-    return `'${escapeKolonSingleQuoted(e.key)}' => ${mapVal}`
+      e.value.kind === 'number' ? e.value.text : kolonStringLiteral(e.value.text)
+    return `${kolonStringLiteral(e.key)} => ${mapVal}`
   })
   return `{ ${entries.join(', ')} }[$${parsed.indexPropName}]`
 }

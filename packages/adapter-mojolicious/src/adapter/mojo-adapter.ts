@@ -93,7 +93,7 @@ import { BF_SLOT, BF_COND, escapeHtml } from '@barefootjs/shared'
 
 import type { MojoRenderCtx } from './lib/types.ts'
 import { MOJO_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
-import { perlHashKey, perlIdentifierFromMarkerId } from './lib/perl-naming.ts'
+import { perlHashKey, perlIdentifierFromMarkerId, perlStringLiteral } from './lib/perl-naming.ts'
 import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToPerl } from './lib/static-value.ts'
 import { MojoFilterEmitter, MojoTopLevelEmitter, CALLBACK_LOWERING } from './expr/emitters.ts'
@@ -133,19 +133,6 @@ function perlSegmentAccessor(base: string, segments: readonly LoopBindingPathSeg
         : `->[${seg.index}]`
   }
   return expr
-}
-
-/**
- * Quote a string as a Perl single-quoted literal (backslash first, then the
- * quote, so the escape doesn't double up). Unlike `perlHashKey` — which
- * intentionally leaves an identifier-safe name as a bareword for `->{key}` /
- * `key => val` hash-key position — a plain list element (`bf->omit($x, [id,
- * title])`) is NOT hash-key position: an unquoted bareword there is a sub
- * call under `use strict subs`, so every object-rest exclude key needs an
- * unconditional string literal.
- */
-function perlStringLiteral(s: string): string {
-  return `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
 }
 
 /** How a lowered loop destructure binding reads off the row item. */
@@ -289,7 +276,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     if (lit.kind === 'number') return lit.text
     if (lit.kind === 'boolean') return lit.text === 'true' ? '1' : '0'
     if (lit.kind === 'null') return 'undef'
-    return `'${lit.text.replace(/[\\']/g, m => `\\${m}`)}'`
+    return perlStringLiteral(lit.text)
   }
 
   private resolveStaticRecordLiteral(objectName: string, key: string): string | null {
@@ -297,7 +284,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     if (!hit) return null
     return hit.kind === 'number'
       ? hit.text
-      : `'${hit.text.replace(/[\\']/g, m => `\\${m}`)}'`
+      : perlStringLiteral(hit.text)
   }
 
   private resolveModuleStringConst(name: string): string | null {
@@ -306,7 +293,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     if (this.scope.isBound(name)) return null
     const value = this.moduleStringConsts.get(name)
     if (value === undefined) return null
-    return `'${value.replace(/[\\']/g, m => `\\${m}`)}'`
+    return perlStringLiteral(value)
   }
 
   // ===========================================================================
@@ -432,7 +419,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     const v = valueProp.value
     if (v.kind === 'literal') {
       return typeof v.value === 'string'
-        ? `'${v.value.replace(/[\\']/g, m => `\\${m}`)}'`
+        ? perlStringLiteral(v.value)
         : String(v.value)
     }
     if (v.kind === 'expression') {
@@ -470,7 +457,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     const entries = members.map(m => {
       // String-literal JS keys can carry `'` / `\` — escape for the
       // single-quoted Perl key string.
-      const key = `'${m.name.replace(/[\\']/g, c => `\\${c}`)}'`
+      const key = perlStringLiteral(m.name)
       if (m.kind === 'function' || /^on[A-Z]/.test(m.name)) return `${key} => undef`
       const src = m.kind === 'getter' ? m.body : m.expr
       // (#1971) A member whose value is a bare identifier that doesn't resolve
@@ -861,7 +848,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
    * `render_child` named-arg list.
    */
   private readonly componentPropEmitter: AttrValueEmitter = {
-    emitLiteral: (value, name) => `${perlHashKey(name)} => '${value.value}'`,
+    emitLiteral: (value, name) => `${perlHashKey(name)} => ${perlStringLiteral(value.value)}`,
     emitExpression: (value, name) => {
       // The IR producer collapses component-prop `template` kinds
       // into `expression` for client-runtime reasons but preserves
@@ -1159,8 +1146,8 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     const entries = planStyleObject(value)
     if (!entries) return null
     const args = entries.flatMap(e => [
-      `'${e.cssKey.replace(/[\\']/g, m => `\\${m}`)}'`,
-      e.kind === 'literal' ? `'${e.value.replace(/[\\']/g, m => `\\${m}`)}'` : this.convertExpressionToPerl(e.expr, e.parsed),
+      perlStringLiteral(e.cssKey),
+      e.kind === 'literal' ? perlStringLiteral(e.value) : this.convertExpressionToPerl(e.expr, e.parsed),
     ])
     return `<%== bf->style_object(${args.join(', ')}) %>`
   }
@@ -1255,7 +1242,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
         // existing `props.x` rule apply uniformly.
         const keyExpr = this.convertExpressionToPerl(part.key)
         const entries = Object.entries(part.cases)
-          .map(([k, v]) => `'${k}' => '${v}'`)
+          .map(([k, v]) => `${perlStringLiteral(k)} => ${perlStringLiteral(v)}`)
           .join(', ')
         parts.push(`({ ${entries} }->{${keyExpr}} // '')`)
       }

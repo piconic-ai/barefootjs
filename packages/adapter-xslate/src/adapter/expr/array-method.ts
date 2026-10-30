@@ -16,6 +16,7 @@ import {
   lowerArrayMethod,
   prefixedArrayMethodSpelling,
 } from '@barefootjs/jsx'
+import { kolonStringLiteral } from '../lib/kolon-naming.ts'
 import type {
   ParsedExpr,
   ArrayMethod,
@@ -41,14 +42,6 @@ export function renderArrayMethod(
   return emitArrayMethod(lowerArrayMethod(method, object, args), emit, ARRAY_METHOD_SPELLING)
 }
 
-/** Escape a string for embedding in a Perl single-quoted literal. */
-function escapePerlSingleQuote(s: string): string {
-  // Double every backslash and escape apostrophes: Perl single-quote
-  // un-escaping then restores the original bytes (a JSON `\\` must reach
-  // `JSON::PP->decode` as `\\`, so it travels as `\\\\` in the literal).
-  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
-}
-
 /**
  * How this adapter spells a runtime-evaluator call. What to call, with which
  * operands and captured names, is decided by `@barefootjs/jsx`'s
@@ -56,10 +49,10 @@ function escapePerlSingleQuote(s: string): string {
  */
 export const EVAL_SPELLING: CallbackEvalSpelling = {
   call: (helper, operands) => `$bf.${helper}(${operands.join(', ')})`,
-  string: (value) => `'${escapePerlSingleQuote(value)}'`,
+  string: (value) => kolonStringLiteral(value),
   boolean: (value) => (value ? '1' : '0'),
   env: (entries) =>
-    entries.length === 0 ? '{}' : `{ ${entries.map(([name, value]) => `'${escapePerlSingleQuote(name)}' => ${value}`).join(', ')} }`,
+    entries.length === 0 ? '{}' : `{ ${entries.map(([name, value]) => `${kolonStringLiteral(name)} => ${value}`).join(', ')} }`,
 }
 
 /**

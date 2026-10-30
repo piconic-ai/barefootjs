@@ -17,11 +17,27 @@ export function escapeKolonSingleQuoted(s: string): string {
 }
 
 /**
+ * Spell a string value as a Kolon string literal. A single-quoted literal
+ * can hold a line break only raw, and a raw line break ends a `:` line, so
+ * a value holding `\n` or `\r` is written double-quoted instead. Kolon's
+ * double-quoted literal knows only the `\n`, `\r` and `\t` escapes and
+ * reads any other `\X` as `X`, and it does not interpolate. Any other
+ * value stays single-quoted, as before.
+ */
+export function kolonStringLiteral(s: string): string {
+  if (!/[\n\r]/.test(s)) return `'${escapeKolonSingleQuoted(s)}'`
+  const body = s.replace(/[\\"\n\r\t]/g, ch =>
+    ch === '\n' ? '\\n' : ch === '\r' ? '\\r' : ch === '\t' ? '\\t' : `\\${ch}`,
+  )
+  return `"${body}"`
+}
+
+/**
  * Quote a hashref KEY for Kolon when it isn't a bare-identifier-safe name.
  * Kolon parses `data-slot` as `data - slot` (subtraction) and faults on the
  * undefined `data` symbol, so a hyphenated key (`data-slot`, `aria-label`)
  * must be single-quoted: `'data-slot'`. Bare identifiers pass through unquoted.
  */
 export function kolonHashKey(name: string): string {
-  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) ? name : `'${escapeKolonSingleQuoted(name)}'`
+  return /^[A-Za-z_][A-Za-z0-9_]*$/.test(name) ? name : kolonStringLiteral(name)
 }
