@@ -795,6 +795,17 @@ function dependentDefaultGo(
   return evaluated === null ? null : evaluatedAsGoType(evaluated, goType)
 }
 
+/**
+ * Whether prop `propName` of the component being compiled lowers to a
+ * concrete Go `string` input field, so `in.<Field>` is a Go string operand
+ * as it is. A nillable (`interface{}`) or number field is not: a
+ * concatenation over it is computed by the evaluator instead.
+ */
+export function isConcreteStringPropField(ctx: GoEmitContext, propName: string): boolean {
+  const binding = ctx.state.currentPropsParams.find(p => p.name === propName)
+  return binding !== undefined && resolvePropGoType(ctx, binding, ctx.state.propTypeOverrides) === 'string'
+}
+
 export function resolvePropGoType(
   ctx: GoEmitContext,
   param: IRMetadata['propsParams'][number],

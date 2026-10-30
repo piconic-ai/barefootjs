@@ -97,6 +97,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -212,6 +218,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -423,6 +435,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -571,6 +589,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -701,6 +725,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -816,6 +846,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -955,6 +991,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1079,6 +1121,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1200,6 +1248,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -3247,6 +3301,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -3344,6 +3404,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -3567,6 +3633,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -3685,6 +3757,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -3797,6 +3875,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -3894,6 +3978,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -4003,6 +4093,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -4100,6 +4196,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -4212,6 +4314,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -4445,6 +4553,18 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -4695,6 +4815,18 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -5068,6 +5200,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
@@ -5366,6 +5510,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
@@ -5634,6 +5790,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
@@ -5881,6 +6049,18 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -6146,6 +6326,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
@@ -6393,6 +6585,18 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -6655,6 +6859,18 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -7282,6 +7498,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
@@ -7583,6 +7811,18 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -8076,6 +8316,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
@@ -8428,6 +8680,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
@@ -8750,6 +9014,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
@@ -9051,6 +9327,18 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -9370,6 +9658,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
@@ -9671,6 +9971,18 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -9987,6 +10299,18 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -10425,6 +10749,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -10642,6 +10978,18 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -11021,6 +11369,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -11283,6 +11643,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -11509,6 +11881,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -11726,6 +12110,18 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -11961,6 +12357,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -12166,6 +12574,18 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -12389,6 +12809,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -12517,6 +12949,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -12542,6 +12986,18 @@
               "fixture": "index-key-canonical-form",
               "limitations": [
                 "callback-noncanonical-index-key"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -12675,6 +13131,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -12709,6 +13177,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -12734,6 +13214,18 @@
               "fixture": "index-key-canonical-form",
               "limitations": [
                 "string-key-list-index"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -12765,6 +13257,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -12793,6 +13297,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -12812,6 +13328,18 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -12840,6 +13368,18 @@
               "fixture": "index-key-canonical-form",
               "limitations": [
                 "callback-noncanonical-index-key"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -13036,6 +13576,18 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -13250,6 +13802,18 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -13629,6 +14193,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -13885,6 +14461,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -14117,6 +14705,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -14328,6 +14928,18 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -14563,6 +15175,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -14789,6 +15413,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -15012,6 +15648,18 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -15119,6 +15767,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -15146,6 +15800,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
             {
               "fixture": "preamble-cells",
               "limitations": [
@@ -15190,6 +15850,12 @@
               "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -15239,6 +15905,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -15267,6 +15939,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -15294,6 +15972,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
             {
               "fixture": "preamble-cells",
               "limitations": [
@@ -15329,6 +16013,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -15350,6 +16040,12 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
             {
               "fixture": "preamble-cells",
               "limitations": [
@@ -15378,6 +16074,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
             {
               "fixture": "preamble-cells",
               "limitations": [
@@ -15460,6 +16162,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -15485,6 +16193,12 @@
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -15540,6 +16254,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -15565,6 +16285,12 @@
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -15596,6 +16322,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -15621,6 +16353,12 @@
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -15652,6 +16390,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -15671,6 +16415,12 @@
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -15699,6 +16449,12 @@
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -18500,6 +19256,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -18527,6 +19289,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
@@ -18586,6 +19354,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -18613,6 +19387,12 @@
         },
         "jinja": {
           "gaps": [
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
@@ -18642,6 +19422,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -18669,6 +19455,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
@@ -18698,6 +19490,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -18726,6 +19524,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -18753,6 +19557,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
@@ -19776,6 +20586,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -19789,6 +20605,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -19820,6 +20642,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -19842,6 +20670,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -19858,6 +20692,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -19871,6 +20711,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -19902,6 +20748,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -19918,6 +20770,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -19931,6 +20789,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -19972,6 +20836,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -19981,6 +20851,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
             {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
@@ -20016,6 +20892,12 @@
               ]
             },
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -20025,6 +20907,12 @@
         },
         "jinja": {
           "gaps": [
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
             {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
@@ -20036,6 +20924,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -20046,6 +20940,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
@@ -20053,9 +20953,24 @@
             }
           ]
         },
-        "pebble": {},
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            }
+          ]
+        },
         "twig": {
           "gaps": [
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
             {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
@@ -20066,6 +20981,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
             {
               "fixture": "static-loop-item-conditional",
               "limitations": [
@@ -20152,6 +21073,18 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -20282,6 +21215,18 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -20469,6 +21414,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -20611,6 +21568,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -20741,6 +21710,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -20868,6 +21849,18 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -21007,6 +22000,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -21122,6 +22127,18 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -21252,6 +22269,18 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -21446,6 +22475,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -21573,6 +22614,18 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -21838,6 +22891,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -21998,6 +23063,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -22134,6 +23211,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -22261,6 +23350,18 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -22406,6 +23507,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -22521,6 +23634,18 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -22651,6 +23776,18 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -22828,6 +23965,18 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -22847,6 +23996,18 @@
               "fixture": "index-key-canonical-form",
               "limitations": [
                 "callback-noncanonical-index-key"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -22974,6 +24135,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -23002,6 +24175,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -23021,6 +24206,18 @@
               "fixture": "index-key-canonical-form",
               "limitations": [
                 "string-key-list-index"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {
@@ -23046,6 +24243,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -23068,6 +24277,18 @@
               ]
             },
             {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -23083,6 +24304,18 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
             {
               "fixture": "static-array-from-props",
               "limitations": [
@@ -23103,6 +24336,18 @@
               "fixture": "index-key-canonical-form",
               "limitations": [
                 "callback-noncanonical-index-key"
+              ]
+            },
+            {
+              "fixture": "module-const-default-hydrate",
+              "limitations": [
+                "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-destructure-default",
+              "limitations": [
+                "module-const-destructure-default"
               ]
             },
             {

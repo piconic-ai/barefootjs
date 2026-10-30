@@ -21,6 +21,7 @@
  */
 
 import type { ComponentIR, ParsedExpr, ParsedStatement, TypeInfo, JsSourceText } from '@barefootjs/jsx'
+import { isStringConcatBinary } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
@@ -241,7 +242,9 @@ export function signalLoopRows(
 /**
  * A memo's arithmetic body (`*`, `/`, `+`, `-`) is a number when one of its
  * dependency signals is number-typed, either through the prop that seeds it
- * or through its own inferred type.
+ * or through its own inferred type. A body that is a string concatenation
+ * (`'a=' + a()`, the shared `isStringConcatBinary` decision) is a string
+ * whatever its operands.
  */
 function isNumericArithmeticMemo(
   ctx: GoEmitContext,
@@ -251,6 +254,11 @@ function isNumericArithmeticMemo(
 ): boolean {
   const c = memo.computation
   if (!c.includes('*') && !c.includes('/') && !c.includes('+') && !c.includes('-')) return false
+  const body = memo.parsed
+  if (body?.kind === 'binary' &&
+      isStringConcatBinary(body.op, body.left, body.right, n => ctx.state.stringValueNames.has(n))) {
+    return false
+  }
   for (const dep of memo.deps) {
     const signal = signals.find(s => s.getter === dep)
     if (!signal) continue

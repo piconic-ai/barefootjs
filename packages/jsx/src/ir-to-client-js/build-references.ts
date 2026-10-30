@@ -406,7 +406,76 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
     }
   }
 
+  addPropDefaultEdges(ctx, edges, propNames)
+
   return { edges, declaredNames, propNames }
+}
+
+/**
+ * Phase 5 — destructure defaults of the props the client reads.
+ *
+ * A destructured prop's read is emitted as `_p.m ?? <default>`, so the
+ * default's own references (a module const `{ m = DEFAULT }`, a module
+ * helper `{ m = fmt('x') }`) are client reads too. No earlier phase sees
+ * them: the IR expression names only `m`. Without these edges
+ * `computeDeclarationScopes` drops `DEFAULT` as unused while the emitted
+ * effect still reads it — a `ReferenceError` at hydrate.
+ *
+ * The names come from the analyzer's `ParamInfo.defaultFreeIdentifiers`
+ * (the initializer's own AST), not a token scan of `defaultValue`: an
+ * object key, member name or callback parameter in the default
+ * (`{ m = ({ label: 'm' }).label }`) is no read, and an edge to it would
+ * keep an unrelated module `const label = …` in `initX`.
+ *
+ * Only a default whose prop is read gets traced (an unread prop's default
+ * is never emitted). A default that reads an earlier prop of the same
+ * pattern (`{ a = DEFAULT, b = a }`) renders that prop's own read in turn
+ * (`PropDefaultPart`), so its default is traced as well; the earlier prop
+ * itself is not added as an edge — the emitted text reads it as `_p.a`,
+ * never as the bare binding.
+ *
+ * A default is evaluated before the component body runs, so it never sees
+ * a body binding. A name a body binding shadows gets no edge here: the
+ * edge would only add the module declaration next to the body one, and
+ * two `const`s of one name in `initX` are a SyntaxError for the whole
+ * module.
+ */
+function addPropDefaultEdges(
+  ctx: ClientJsContext,
+  edges: ReferenceEdge[],
+  propNames: ReadonlySet<string>,
+): void {
+  const bodyBound = componentBodyBindings(ctx)
+  const used = graphUsedIdentifiers({ edges, declaredNames: new Set(), propNames: new Set() })
+  const byName = new Map(ctx.propsParams.map(p => [p.name, p]))
+  const pending = ctx.propsParams.filter(p => used.has(p.name)).map(p => p.name)
+  const traced = new Set<string>()
+  while (pending.length > 0) {
+    const name = pending.pop()!
+    if (traced.has(name)) continue
+    traced.add(name)
+    const param = byName.get(name)
+    if (!param?.defaultFreeIdentifiers) continue
+    for (const ref of param.defaultFreeIdentifiers) {
+      if (propNames.has(ref)) pending.push(ref)
+      else if (!bodyBound.has(ref)) edges.push({ from: ROOT_SOURCE, to: ref, context: 'init-body' })
+    }
+  }
+}
+
+/** Names the component body itself binds (not module-level declarations). */
+function componentBodyBindings(ctx: ClientJsContext): Set<string> {
+  const names = new Set<string>()
+  for (const c of ctx.localConstants) if (!c.isModule) names.add(c.name)
+  for (const f of ctx.localFunctions) if (!f.isModule) names.add(f.name)
+  for (const s of ctx.signals) {
+    if (s.isModule) continue
+    names.add(s.getter)
+    const second = signalSecondBinding(s)
+    if (second) names.add(second)
+  }
+  for (const m of ctx.memos) if (!m.isModule) names.add(m.name)
+  return names
 }
 
 // =============================================================================

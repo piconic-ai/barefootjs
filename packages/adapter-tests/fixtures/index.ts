@@ -181,6 +181,8 @@ import { fixture as signalSeedRenamedDefaultBesideRawNullish } from './signal-se
 import { fixture as memoPropReadBesideSignalNullishSeed } from './memo-prop-read-beside-signal-nullish-seed'
 import { fixture as memoPropReadBesideSignalNullishSeedDestructured } from './memo-prop-read-beside-signal-nullish-seed-destructured'
 import { fixture as memoPropArithmeticBesideSignalNullishSeed } from './memo-prop-arithmetic-beside-signal-nullish-seed'
+import { fixture as memoTemplateLiteralNillableProp } from './memo-template-literal-nillable-prop'
+import { fixture as memoTemplateLiteralNillablePropDestructured } from './memo-template-literal-nillable-prop-destructured'
 import { fixture as signalSeedDependentDefaultNullishLiteral } from './signal-seed-dependent-default-nullish-literal'
 import { fixture as signalSeedDependentDefaultNullishLiteralBody } from './signal-seed-dependent-default-nullish-literal-body'
 import { fixture as signalSeedLocalHelperCall } from './signal-seed-local-helper-call'
@@ -994,6 +996,8 @@ import { fixture as moduleConstArrowHelper } from './module-const-arrow-helper'
 // `functionReferencesDeclaredName` check that flagged any reference to a
 // declared name (even a safe one) as unsafe.
 import { fixture as moduleFunctionHelperChain } from './module-function-helper-chain'
+import { fixture as moduleConstDestructureDefault } from './module-const-destructure-default'
+import { fixture as moduleConstDefaultHydrate } from './module-const-default-hydrate'
 // #3012: the boolean-test-position companion of moduleConstArrowHelper /
 // moduleFunctionHelperChain above — a module-scope helper called from
 // inside a ternary's `test` (not `isValidElement`), pinning that the
@@ -1336,6 +1340,8 @@ export const jsxFixtures: JSXFixture[] = [
   memoPropReadBesideSignalNullishSeed,
   memoPropReadBesideSignalNullishSeedDestructured,
   memoPropArithmeticBesideSignalNullishSeed,
+  memoTemplateLiteralNillableProp,
+  memoTemplateLiteralNillablePropDestructured,
   signalSeedDependentDefaultNullishLiteral,
   signalSeedDependentDefaultNullishLiteralBody,
   signalSeedLocalHelperCall,
@@ -1963,6 +1969,8 @@ export const jsxFixtures: JSXFixture[] = [
   moduleHelperAsync,
   moduleConstArrowHelper,
   moduleFunctionHelperChain,
+  moduleConstDestructureDefault,
+  moduleConstDefaultHydrate,
   moduleHelperBoolcontextCall,
   opaqueLocalAccessorCall,
   opaqueLocalAccessorCallClient,

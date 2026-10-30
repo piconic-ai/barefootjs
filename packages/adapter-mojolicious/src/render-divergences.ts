@@ -97,6 +97,8 @@ export const renderDivergences: RenderDivergences = {
   // branch next to a non-boolean branch lowered to Perl `0`. Such branches
   // are now rewritten to `'true'` / `'false'` (`stringifyBooleanTernaryBranches`);
   // it renders like Hono.
+  'module-const-destructure-default': { limitation: 'module-const-destructure-default' },
+  'module-const-default-hydrate': { limitation: 'module-const-destructure-default' },
 }
 
 /**
