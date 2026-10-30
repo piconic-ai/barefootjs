@@ -209,6 +209,14 @@ export interface ChildComponentShape {
    * a value that may be nil keeps it whole only into these (#3323).
    */
   nillableParamNames: ReadonlySet<string>
+  /**
+   * Caller-facing params declared as an array of one scalar family
+   * (`string[]`, `number[]`, `boolean[]`) whose Input field is that typed
+   * slice (no usage-driven override). An inline array literal the parent
+   * passes to one bakes against this type (`[]string{"a"}`), not the
+   * untyped `[]interface{}` Go would refuse to assign.
+   */
+  scalarArrayParamTypes: ReadonlyMap<string, TypeInfo>
 }
 
 /**
@@ -221,6 +229,12 @@ export function isCertainlyDataType(type: TypeInfo): boolean {
   if (type.kind === 'primitive' || type.kind === 'array') return true
   if (type.kind === 'union') return (type.unionTypes ?? []).length > 0 && type.unionTypes!.every(isCertainlyDataType)
   return false
+}
+
+/** An array whose element is one scalar family: `string[]`, `number[]`, `boolean[]`. */
+export function isScalarArrayType(type: TypeInfo): boolean {
+  const el = type.kind === 'array' ? type.elementType : undefined
+  return el?.kind === 'primitive' && (el.primitive === 'string' || el.primitive === 'number' || el.primitive === 'boolean')
 }
 
 /**
@@ -238,6 +252,16 @@ export function isCertainlyDataType(type: TypeInfo): boolean {
  */
 export function routesToRestBag(shape: ChildComponentShape | undefined, jsxName: string): boolean {
   return !!shape?.restBagField && !shape.paramNames.has(jsxName)
+}
+
+/**
+ * True when the child neither declares `jsxName` nor collects undeclared
+ * props in a rest object: its `<Child>Input` has no field the value could
+ * go to. JS hands such a prop over and the child never reads it, so the
+ * parent drops it. False when the child's shape is unknown.
+ */
+export function hasNoInputSlot(shape: ChildComponentShape | undefined, jsxName: string): boolean {
+  return !!shape && !shape.restBagField && !shape.paramNames.has(jsxName)
 }
 
 /**

@@ -137,7 +137,7 @@ import type {
   CtorLowerEnv,
   GoTemplateAdapterOptions,
 } from "./lib/types.ts"
-import { routesToRestBag, restBagOverrideFields, isCertainlyDataType } from "./lib/types.ts"
+import { routesToRestBag, restBagOverrideFields, isCertainlyDataType, isScalarArrayType, hasNoInputSlot } from "./lib/types.ts"
 import { GO_TEMPLATE_PRIMITIVES, SCALAR_ROW_GO_TYPES, SCALAR_ROW_ITEM_FIELD } from "./lib/constants.ts"
 import { CompileState, findModuleScopeConst, findValuedLocalConst, propsObjectKeyRead, resolveSignalParsedThroughSeedPlan } from "./lib/compile-state.ts"
 import { hasClientInteractivity, findNestedComponents, loopArraySignal } from "./analysis/component-tree.ts"
@@ -1309,6 +1309,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   registerChildComponentShape(ir: Pick<ComponentIR, 'metadata' | 'root'>): void {
     const name = ir.metadata.componentName
     if (!name) return
+    // The props a props-object child reads but its type only inherits
+    // (`props.id` off `HTMLBaseAttributes`) are params of its Input too. The
+    // nillable probe below adds them to `ir` anyway (`primeCompileState`);
+    // adding them first keeps every set here keyed by the same param list,
+    // so `hasNoInputSlot` never drops a prop the child's Input declares.
+    augmentInheritedPropAccesses(ir as ComponentIR)
     for (const key of collectNullableSeedStructFields(ir.metadata, ir.root)) this.fileNullableSeedStructFields.add(key)
     // Both sets on `ChildComponentShape` are looked up by a PARENT against the
     // name it wrote at the JSX call site, so they are keyed by
@@ -1390,6 +1396,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         ]),
     )
     const nillableParamNames = this.probeNillableParamNames(ir)
+    const scalarArrayParamTypes = new Map(
+      (ir.metadata.propsParams ?? [])
+        .filter(p => !p.isRest && !propTypeOverrides.has(p.name) && isScalarArrayType(p.type))
+        .map(p => [p.sourceName ?? p.name, p.type]),
+    )
     this.childComponentShapes.set(name, {
       paramNames,
       restBagField,
@@ -1399,6 +1410,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       dataTypedParamNames,
       paramGoTypes,
       nillableParamNames,
+      scalarArrayParamTypes,
     })
     // NOT `paramNames`: `recordDerivedFieldDeps` forwards this set to
     // `collectPropsReadByCtorInit`, which in destructured mode matches BARE
@@ -6379,7 +6391,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private getBakedStaticChildLoop(
     markerId: string,
-    childComponent: { props: IRLoopChildComponent['props'] },
+    childComponent: { name: string; props: IRLoopChildComponent['props'] },
     arrayParsed: ParsedExpr | undefined,
     param: string | undefined,
     key: string | undefined,
@@ -6395,8 +6407,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // on the coarse whole-component shadow-name Set `primeCompileState`
     // populates. A genuinely-legitimate surviving use of the pre-#2482
     // device (flagged for Stage 4 rather than migrated here).
+    // A prop the child has no Input field for is dropped, as at a non-loop
+    // call site (`hasNoInputSlot`).
+    const shape = this.childComponentShapes.get(this.resolveChildName(childComponent.name))
+    const props = childComponent.props.filter(p => !hasNoInputSlot(shape, p.name))
     const result = analyzeBakeableStaticChildLoop(
-      { props: childComponent.props, loopArrayParsed: arrayParsed, loopParam: param, loopKey: key },
+      { props, loopArrayParsed: arrayParsed, loopParam: param, loopKey: key },
       this.state.localConstants,
       { isNameShadowed: name => this.state.staticLoopSourceBoundNames.has(name) },
     )

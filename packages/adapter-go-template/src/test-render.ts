@@ -971,7 +971,9 @@ function loopRowChildInputFields(
     const field = capitalizeFieldName(prop.name)
     const fieldType = childInput?.get(field)
     if (childInput && fieldType === undefined) {
-      if (!restBagField) return null
+      // A prop the child neither declares nor collects in a rest bag is
+      // dropped, as JS ignores it.
+      if (!restBagField) continue
       restBagEntries.push(`${JSON.stringify(prop.name)}: ${value}`)
       continue
     }

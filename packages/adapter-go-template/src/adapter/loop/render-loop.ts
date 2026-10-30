@@ -42,7 +42,7 @@ import { emitBfSort, emitSortEval, wrapIfMultiToken } from '../lib/go-emit.ts'
 import { capitalizeFieldName, goFieldNameForKey } from '../lib/go-naming.ts'
 import { isFieldlessRowType } from '../lib/loop-row-path.ts'
 import type { RowsFieldSite } from '../lib/nested-rows-field.ts'
-import { restBagOverrideFields, routesToRestBag, type ChildComponentShape } from '../lib/types.ts'
+import { hasNoInputSlot, restBagOverrideFields, routesToRestBag, type ChildComponentShape } from '../lib/types.ts'
 import { loopRowType } from '../type/number-read.ts'
 
 
@@ -103,7 +103,7 @@ export interface LoopRenderHost {
   /** The memoized bake of a static-array child-component loop. */
   getBakedStaticChildLoop(
     markerId: string,
-    childComponent: { props: IRLoopChildComponent['props'] },
+    childComponent: { name: string; props: IRLoopChildComponent['props'] },
     arrayParsed: ParsedExpr | undefined,
     param: string | undefined,
     key: string | undefined,
@@ -936,6 +936,8 @@ function lowerLoopRowChildProp(
   if (prop.name === 'key' || prop.name === 'children') return null
   if (isEventHandlerName(prop.name)) return null
   if (prop.name.includes('-')) return null
+  // A prop the child neither declares nor collects has no field to patch.
+  if (hasNoInputSlot(childShape, prop.name)) return null
   // A prop that routes into the child's rest bag (`routesToRestBag`,
   // `emitChildField`'s same routing rule) has no named Go field to
   // override via `bf_with_props` — routed into `bagEntries` below instead

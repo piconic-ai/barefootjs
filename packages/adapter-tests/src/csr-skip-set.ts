@@ -82,6 +82,9 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // harness stubs. A real mount is pinned by
   // `packages/client/__tests__/runtime/issue-3688-props-spread-merge.test.ts`.
   'component-spread-props-rest-bag',
+  // Same `applyRestAttrs`-not-modeled harness class: `data-x` / `data-n` /
+  // `title` reach `Box`'s root only through its `{...rest}` spread.
+  'child-string-prop-literal-lookalike-rest-bag',
   // The harness now mounts the fixture's `componentName` (the #1467
   // multi-export class — `__lastComponent` rendering the last demo export
   // instead of the pinned basic demo — is gone; radio-group, tabs, dialog,

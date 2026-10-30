@@ -727,6 +727,11 @@ import { fixture as loopPreambleChainedFilter } from './loop-preamble-chained-fi
 import { fixture as loopPreambleConditionalReactive } from './loop-preamble-conditional-reactive'
 import { fixture as loopRowStaticConditional } from './loop-row-static-conditional'
 import { fixture as childPrimitiveProps } from './child-primitive-props'
+import { fixture as childStringPropLiteralLookalike } from './child-string-prop-literal-lookalike'
+import { fixture as childStringPropLiteralLookalikePositions } from './child-string-prop-literal-lookalike-positions'
+import { fixture as childStringPropLiteralLookalikeRestBag } from './child-string-prop-literal-lookalike-rest-bag'
+import { fixture as childUndeclaredPropDropped } from './child-undeclared-prop-dropped'
+import { fixture as childInlineStringArrayProp } from './child-inline-string-array-prop'
 import { fixture as preWhitespace } from './pre-whitespace'
 import { fixture as tableDynamicRows } from './table-dynamic-rows'
 import { fixture as adjacentDynamicText } from './adjacent-dynamic-text'
@@ -1846,6 +1851,11 @@ export const jsxFixtures: JSXFixture[] = [
   loopPreambleChainedFilter,
   loopRowStaticConditional,
   childPrimitiveProps,
+  childStringPropLiteralLookalike,
+  childStringPropLiteralLookalikePositions,
+  childStringPropLiteralLookalikeRestBag,
+  childUndeclaredPropDropped,
+  childInlineStringArrayProp,
   preWhitespace,
   tableDynamicRows,
   adjacentDynamicText,

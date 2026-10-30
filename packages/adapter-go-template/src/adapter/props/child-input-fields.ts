@@ -41,7 +41,7 @@ import { goLiteral } from '../lib/go-emit.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { rowItemPath, rowReadGoAccessor, rowReadGoValue, type LoopRowBinding, type LoopRowShape } from '../lib/loop-row-path.ts'
 import type { ChildComponentShape, NestedComponentInfo, PropFallbackVar } from '../lib/types.ts'
-import { objectBakeTargetFor, routesToRestBag } from '../lib/types.ts'
+import { hasNoInputSlot, objectBakeTargetFor, routesToRestBag } from '../lib/types.ts'
 import { evaluateChildPropValue, evaluateUntypedChildPropValue, resolveLocalGetterAsGo, templatePartsToGoCode, unboxNillablePropRef } from '../value/child-prop-value.ts'
 import { parsedLiteralToGo } from '../value/parsed-literal-to-go.ts'
 import { objectLiteralToGoComposite, unboxToGoScalar } from '../value/value-lowering.ts'
@@ -169,6 +169,9 @@ function emitChildField(
     restBagEntries.push(`${JSON.stringify(jsxName)}: ${goValue}`)
     return
   }
+  // A prop the child neither declares nor collects in a rest object has no
+  // Input field: JS hands it over and the child never reads it.
+  if (hasNoInputSlot(childShape, jsxName)) return
   // A hyphenated attr (`aria-label`) can't be a Go field and, with no rest
   // bag to route it into, has nowhere to go — skip over emitting invalid Go.
   if (jsxName.includes('-')) return
@@ -194,7 +197,7 @@ function emitChildField(
 function lowerChildProp(site: ChildCallSite, prop: IRProp): boolean {
   switch (prop.value.kind) {
     case 'literal':
-      site.emit(prop.name, goLiteral(prop.value.value))
+      site.emit(prop.name, quotedAttrGoValue(site.childShape, prop.name, prop.value.value))
       return true
     case 'boolean-shorthand':
     case 'boolean-attr':
@@ -209,6 +212,21 @@ function lowerChildProp(site: ChildCallSite, prop: IRProp): boolean {
       return true
   }
   return true
+}
+
+/**
+ * A quoted attribute (`label="true"`) is a JS string whatever it spells. It
+ * is spelled as a Go string unless the child declares the prop as a `bool`
+ * or number field, which can't hold one; there, and when the child's shape
+ * is unknown, a bare `true` / `false` / number keeps its Go literal
+ * (`goLiteral`).
+ */
+function quotedAttrGoValue(childShape: ChildComponentShape | undefined, jsxName: string, value: string): string {
+  if (!childShape || routesToRestBag(childShape, jsxName) || childShape.nillableParamNames.has(jsxName)) {
+    return childShape ? JSON.stringify(value) : goLiteral(value)
+  }
+  const fieldType = childShape.paramGoTypes.get(jsxName)
+  return fieldType === 'bool' || fieldType === 'float64' || fieldType === 'int' ? goLiteral(value) : JSON.stringify(value)
 }
 
 /** An `expression` / `spread` / `template` prop value. */
@@ -293,7 +311,7 @@ function lowerExpressionChildProp(
   // would have silently reintroduced the same omitted-field bug
   // for a negative numeric literal).
   if (parsedValue) {
-    const goVal = parsedLiteralToGo(site.host.ctx, parsedValue)
+    const goVal = literalChildPropValue(site, prop.name, parsedValue)
     if (goVal !== null) {
       site.emit(prop.name, goVal)
       return true
@@ -313,6 +331,19 @@ function lowerExpressionChildProp(
     }
   }
   return lowerResolvedChildProp(site, prop, exprText, parsedValue)
+}
+
+/**
+ * A literal expression prop's Go value (`parsedLiteralToGo`), or null. An
+ * inline array to a `string[]` / `number[]` / `boolean[]` param bakes as
+ * that typed slice (`[]string{"a"}`); any other destination keeps the
+ * untyped `[]interface{}`.
+ */
+function literalChildPropValue(site: ChildCallSite, jsxName: string, parsedValue: ParsedExpr): string | null {
+  const arrayType = site.childShape?.nillableParamNames.has(jsxName)
+    ? undefined
+    : site.childShape?.scalarArrayParamTypes.get(jsxName)
+  return parsedLiteralToGo(site.host.ctx, parsedValue, arrayType)
 }
 
 /**
@@ -555,7 +586,7 @@ function planChildCallProps(
     if (!param) continue
     // A key the child neither declares nor collects in a rest bag has no
     // field on its Input: JS hands it over, but the child never reads it.
-    if (childShape && !childShape.restBagField && !childShape.paramNames.has(param.name)) continue
+    if (hasNoInputSlot(childShape, param.name)) continue
     const ref = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
     const keepsNil = routesToRestBag(childShape, param.name) || childShape?.nillableParamNames.has(param.name)
     paramFields.push({
@@ -756,6 +787,7 @@ function isUndeliveredSsrData(host: ChildInputHost, prop: IRProp, childName: str
   if (prop.name === 'children' || prop.name === 'ref') return false
   if (isEventHandlerName(prop.name)) return false
   const shape = host.childShape(childName)
+  if (hasNoInputSlot(shape, prop.name)) return false
   if (prop.name.includes('-') && !routesToRestBag(shape, prop.name)) return false
   if (isFunctionValuedProp(host.ctx, prop, ir)) return false
   if (isImportedBindingValue(host.ctx, prop, ir)) return shape?.dataTypedParamNames.has(prop.name) ?? false
@@ -872,7 +904,7 @@ function sourceRowReadFields(
   const childShape = host.childShape(nested.name)
   const rowFields: Array<{ goField: string; goValue: string; readsRow: true }> = []
   for (const prop of nested.rowProps) {
-    if (prop.name === 'key') continue
+    if (prop.name === 'key' || hasNoInputSlot(childShape, prop.name)) continue
     const ssrData = isUndeliveredSsrData(host, prop, nested.name, ir)
     if (!propReadsRow(prop, nested.rowScope)) continue
     const parsed = prop.value.kind === 'expression' ? prop.value.parsed : undefined

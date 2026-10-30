@@ -54,12 +54,29 @@ describe('GoTemplateAdapter - {...props} onto a child component', () => {
     )
   })
 
-  test("a param the child doesn't declare gets no field on its Input", () => {
-    const { types, bf101 } = compile(source('{ label?: string }', '<Tag {...props} />', '; own?: string'))
+  test("a param the child neither declares nor reads gets no field on its Input", () => {
+    const { types, bf101 } = compile(`
+function Tag(props: { label?: string }) {
+  return <b>{props.label}</b>
+}
+export function Parent(props: { tone?: string; label?: string; own?: string }) {
+  return <p><Tag {...props} /></p>
+}
+`)
     expect(bf101).toEqual([])
     expect(types).toContain('Label: in.Label,')
     expect(types).not.toContain('Own:')
     expect(types).not.toContain('Tone:')
+  })
+
+  test('a param the child reads off its props object without declaring it still reaches it', () => {
+    // `props.tone` is a param of Tag's Input (`augmentInheritedPropAccesses`),
+    // as JS hands the spread's `tone` to the read.
+    const { types, bf101 } = compile(source('{ label?: string }', '<Tag {...props} />', '; own?: string'))
+    expect(bf101).toEqual([])
+    expect(types).toContain('Label: in.Label,')
+    expect(types).toContain('Tone: in.Tone,')
+    expect(types).not.toContain('Own:')
   })
 
   test("a param the child doesn't declare goes into the child's rest bag", () => {

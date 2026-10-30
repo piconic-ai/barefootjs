@@ -1423,6 +1423,20 @@
       }
     }
   ],
+  "child-string-prop-literal-lookalike-positions": [
+    {
+      "name": "gen:show:true",
+      "props": {
+        "show": true
+      }
+    },
+    {
+      "name": "gen:show:false",
+      "props": {
+        "show": false
+      }
+    }
+  ],
   "children-alias-hop-shadowed-intermediate": [
     {
       "name": "gen:rows:empty",
