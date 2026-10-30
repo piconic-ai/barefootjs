@@ -120,6 +120,10 @@ export const renderDivergences: RenderDivergences = {
   // A boolean text child prints `true` / `false`; JSX renders nothing.
   'boolean-text-child': { limitation: 'boolean-text-child' },
   'boolean-text-child-destructured': { limitation: 'boolean-text-child' },
+  // `??` over a logical or ternary left operand that yields `false` takes
+  // the fallback: `or` tests truthiness.
+  'logical-mixed-left-nullish': { limitation: 'nullish-over-false-yielding-operand' },
+  'logical-mixed-left-nullish-destructured': { limitation: 'nullish-over-false-yielding-operand' },
   // `===` / `!==` between objects or arrays compares contents, not references.
   'strict-equality-distinct-reference': { limitation: 'object-equality-by-contents' },
   // An array compared with itself reads unequal.

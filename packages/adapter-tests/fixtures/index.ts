@@ -291,6 +291,10 @@ import { fixture as booleanTextChild } from './boolean-text-child'
 import { fixture as booleanTextChildDestructured } from './boolean-text-child-destructured'
 import { fixture as logicalComparisonOutputPositions } from './logical-comparison-output-positions'
 import { fixture as logicalComparisonOutputPositionsDestructured } from './logical-comparison-output-positions-destructured'
+import { fixture as logicalMixedLeftOutput } from './logical-mixed-left-output'
+import { fixture as logicalMixedLeftOutputDestructured } from './logical-mixed-left-output-destructured'
+import { fixture as logicalMixedLeftNullish } from './logical-mixed-left-nullish'
+import { fixture as logicalMixedLeftNullishDestructured } from './logical-mixed-left-nullish-destructured'
 import { fixture as nullishConcreteFieldPositions } from './nullish-concrete-field-positions'
 import { fixture as nullishConcreteFieldPositionsDestructured } from './nullish-concrete-field-positions-destructured'
 import { fixture as logicalAndAbsentOptionalAttr } from './logical-and-absent-optional-attr'
@@ -1458,6 +1462,10 @@ export const jsxFixtures: JSXFixture[] = [
   booleanTextChildDestructured,
   logicalComparisonOutputPositions,
   logicalComparisonOutputPositionsDestructured,
+  logicalMixedLeftOutput,
+  logicalMixedLeftOutputDestructured,
+  logicalMixedLeftNullish,
+  logicalMixedLeftNullishDestructured,
   nullishConcreteFieldPositions,
   nullishConcreteFieldPositionsDestructured,
   logicalAndAbsentOptionalAttr,

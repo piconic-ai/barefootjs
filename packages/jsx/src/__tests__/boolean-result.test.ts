@@ -27,6 +27,13 @@ describe('stringifyBooleanBranches (#3349, #3789)', () => {
     expect(stringifyBooleanBranches(plain)).toBe(plain)
   })
 
+  test('a mixed left operand that can yield a boolean keeps its truthiness test and yields the rewritten form', () => {
+    expect(rewrite("(n() > 0 && 'y') && 'z'")).toBe(exprToString(parseExpression("(n() > 0 && 'y') ? 'z' : (n() > 0 ? 'y' : 'false')")!))
+    expect(rewrite("(n() ? 'y' : false) && 'z'")).toBe(exprToString(parseExpression("(n() ? 'y' : false) ? 'z' : (n() ? 'y' : 'false')")!))
+    expect(rewrite("(n() ? 'y' : false) || 'z'")).toBe(exprToString(parseExpression("(n() ? 'y' : false) ? (n() ? 'y' : 'false') : 'z'")!))
+    expect(rewrite("((n() > 0) && 'y') ?? 'z'")).toBe(exprToString(parseExpression("(n() > 0 ? 'y' : 'false') ?? 'z'")!))
+  })
+
   test('a wholly boolean ternary and a non-ternary are left unchanged', () => {
     const whole = parseExpression('c() ? true : false')!
     expect(isBooleanResultParsed(whole)).toBe(true)

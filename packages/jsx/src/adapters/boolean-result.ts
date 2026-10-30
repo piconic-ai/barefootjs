@@ -103,11 +103,15 @@ export function isBooleanResultParsed(
  * - A ternary branch (`yes() ? false : s()`, #3349): a literal `true` /
  *   `false` becomes the string literal `'true'` / `'false'`, any other
  *   boolean-result branch `b` becomes `b ? 'true' : 'false'`.
- * - An operand JS `&&` / `||` / `??` returns (`n > 0 && 'y'`): a
- *   boolean-result left operand is returned only when it decides the
- *   result, so `b && r` becomes `b ? r : 'false'`, `b || r` becomes
- *   `b ? 'true' : r`, and `b ?? r` is `b` stringified (a boolean is never
- *   nullish). The right operand is rewritten as a branch.
+ * - An operand JS `&&` / `||` / `??` returns (`n > 0 && 'y'`): the left
+ *   operand is returned only when it decides the result, so its rewritten
+ *   form `l'` (the operand stringified, a nested chain or a ternary
+ *   rewritten likewise) is what the expression yields then, while the
+ *   original operand stays the test: `l && r` becomes `l ? r : l'` and
+ *   `l || r` becomes `l ? l' : r`. `l ?? r` becomes `l' ?? r`, since the
+ *   rewrite keeps nullishness. A boolean-result `l` gives `b ? r :
+ *   'false'` and `b ? 'true' : r`. The right operand is rewritten as a
+ *   branch.
  *
  * The existing lowering then renders the rewritten tree unchanged. Nested
  * values are rewritten recursively; a tree with nothing to rewrite is
@@ -123,11 +127,18 @@ export function stringifyBooleanBranches(node: ParsedExpr): ParsedExpr {
   }
   if (node.kind !== 'logical') return node
   const right = stringifyBooleanBranch(node.right)
-  if (!isBooleanResultParsed(node.left)) return right === node.right ? node : { ...node, right }
-  if (node.op === '??') return stringifyBooleanBranch(node.left)
+  const left = stringifyBooleanBranch(node.left)
+  if (left === node.left) return right === node.right ? node : { ...node, right }
+  const wholly = isBooleanResultParsed(node.left)
+  // `??` tests nullishness only, which the rewrite keeps: a stringified
+  // boolean is as non-nullish as the boolean, and a boolean is never nullish.
+  if (node.op === '??') return wholly ? left : { ...node, left, right }
+  // `&&` / `||` test the left operand's truthiness, which a `'false'`
+  // string would flip, so the original operand stays the test and the
+  // rewritten one is what the expression yields when it returns it.
   return node.op === '&&'
-    ? { kind: 'conditional', test: node.left, consequent: right, alternate: stringLiteral('false') }
-    : { kind: 'conditional', test: node.left, consequent: stringLiteral('true'), alternate: right }
+    ? { kind: 'conditional', test: node.left, consequent: right, alternate: wholly ? stringLiteral('false') : left }
+    : { kind: 'conditional', test: node.left, consequent: wholly ? stringLiteral('true') : left, alternate: right }
 }
 
 function stringLiteral(value: string): ParsedExpr {

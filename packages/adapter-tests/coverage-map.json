@@ -6498,6 +6498,100 @@
         "text"
       ]
     },
+    "logical-mixed-left-nullish": {
+      "kinds": [
+        "binary",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:>",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "logical-mixed-left-nullish-destructured": {
+      "kinds": [
+        "binary",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:>",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "logical-mixed-left-output": {
+      "kinds": [
+        "binary",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:>",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "logical-mixed-left-output-destructured": {
+      "kinds": [
+        "binary",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:>",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "logical-or-jsx": {
       "kinds": [
         "identifier",

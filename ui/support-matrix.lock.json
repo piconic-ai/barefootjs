@@ -3621,6 +3621,18 @@
               ]
             },
             {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
               "fixture": "loop-row-child-caller-rows-outer-state-key",
               "limitations": [
                 "loop-row-key-outer-state"
@@ -7121,6 +7133,18 @@
               ]
             },
             {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -8301,6 +8325,18 @@
               "fixture": "literal-index-own-key",
               "limitations": [
                 "non-identifier-literal-key"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
               ]
             },
             {
@@ -11531,6 +11567,18 @@
               ]
             },
             {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -13467,6 +13515,18 @@
               ]
             },
             {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -14568,6 +14628,12 @@
               "fixture": "literal-index-own-key",
               "limitations": [
                 "non-identifier-literal-key"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
               ]
             },
             {
@@ -16719,6 +16785,18 @@
               "fixture": "literal-index-own-key",
               "limitations": [
                 "non-identifier-literal-key"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
               ]
             },
             {
@@ -19810,6 +19888,18 @@
               ]
             },
             {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
               "fixture": "loop-row-child-caller-rows-outer-state-key",
               "limitations": [
                 "loop-row-key-outer-state"
@@ -20914,6 +21004,18 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
             }
           ]
         },
@@ -21161,6 +21263,18 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
               ]
             },
             {
@@ -22017,6 +22131,18 @@
               "fixture": "literal-index-own-key",
               "limitations": [
                 "non-identifier-literal-key"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
               ]
             },
             {
@@ -23563,6 +23689,18 @@
               ]
             },
             {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -24669,6 +24807,18 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
             }
           ]
         },
@@ -24954,6 +25104,18 @@
               "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
               ]
             },
             {
