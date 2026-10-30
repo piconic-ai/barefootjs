@@ -10791,6 +10791,63 @@
       }
     }
   ],
+  "props-object-non-props-name-row-binding-props": [
+    {
+      "name": "gen:value:empty",
+      "props": {
+        "value": "",
+        "rows": [
+          {
+            "id": "a",
+            "value": 2
+          },
+          {
+            "id": "b",
+            "value": 5
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:value:markup",
+      "props": {
+        "value": "<b>&\"'</b>",
+        "rows": [
+          {
+            "id": "a",
+            "value": 2
+          },
+          {
+            "id": "b",
+            "value": 5
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:value:multibyte",
+      "props": {
+        "value": "日本語",
+        "rows": [
+          {
+            "id": "a",
+            "value": 2
+          },
+          {
+            "id": "b",
+            "value": 5
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "value": "v",
+        "rows": []
+      }
+    }
+  ],
   "props-reactive": [
     {
       "name": "gen:label:empty",

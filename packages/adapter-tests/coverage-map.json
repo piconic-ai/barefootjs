@@ -11734,6 +11734,23 @@
         "text"
       ]
     },
+    "props-object-non-props-name-row-binding-props": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "props-object-non-props-name-spread": {
       "kinds": [
         "identifier",

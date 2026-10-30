@@ -118,7 +118,23 @@ describe('a props object parameter not named props (#3729)', () => {
     expect(row.shadowsPropsObject()).toBe(true)
     expect(component.enterLoopRow({ param: 'props' }).shadowsPropsObject()).toBe(false)
     expect(component.enterCallback(['x']).propsObject).toBe('p')
-    expect(component.isStringValueName('label', () => true, true)).toBe(true)
+    // The typing callers flag only the literal receiver `props.<name>`: in a
+    // component whose props object is `p`, an unbound `props` is not it.
+    expect(component.isStringValueName('label', () => true, true)).toBe(false)
     expect(row.isStringValueName('label', () => true, true)).toBe(false)
+  })
+
+  test('a row binding named props keeps its own member types when the props object is named p', () => {
+    const fields = {
+      Row: [
+        { name: 'value', type: { primitive: 'number' }, optional: false },
+        { name: 'label', type: { primitive: 'string' }, optional: false },
+      ],
+    }
+    const named = (name: string) => fields[name as keyof typeof fields]
+    const row = component.enterLoopRow({ param: 'props', rowType: { raw: 'Row' } })
+    // `outer` would type every component name as a string; the row binding wins.
+    expect(row.isStringValueName('value', () => true, true, [], named)).toBe(false)
+    expect(row.isStringValueName('label', () => false, true, [], named)).toBe(true)
   })
 })

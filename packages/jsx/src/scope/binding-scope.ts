@@ -363,9 +363,10 @@ export class BindingScope {
 
   /**
    * Resolve string typing at this position, respecting the nearest binding.
-   * `componentProperty`: `name` is read as `props.<name>`, which is the
-   * component's prop only while no binding shadows `props`; while one does,
-   * it is that binding's member. `path`: the read is the member chain
+   * `componentProperty`: `name` is read as the literal `props.<name>`. That is
+   * the component's prop only when `props` is this component's props object
+   * and no binding shadows it; while a binding named `props` is in scope, it
+   * is that binding's member. `path`: the read is the member chain
    * `name.<path…>` (`row.id`). A loop row binding resolves the chain against
    * its row type (`LoopBindingSource.rowType`), through `namedFields` for a
    * named type; an outer name has typing for itself only.
@@ -378,9 +379,15 @@ export class BindingScope {
     namedFields?: NamedTypeFields,
   ): boolean {
     if (componentProperty) {
-      if (!this.shadowsPropsObject()) return path.length === 0 && outer(name)
-      // `props.<name>` reads the shadowing binding's member.
-      return this.isStringValueName(this.propsObject, outer, false, [name, ...path], namedFields)
+      // The operand classifiers flag only the literal receiver `props`
+      // (`props.<name>`). A binding named `props` reads its own member.
+      if (this.isBound(PROPS_OBJECT_IDENTIFIER)) {
+        return this.isStringValueName(PROPS_OBJECT_IDENTIFIER, outer, false, [name, ...path], namedFields)
+      }
+      // In a component whose props object has another name (`function C(p)`),
+      // an unbound `props` is not that object, so it carries no prop typing.
+      if (this.propsObject !== PROPS_OBJECT_IDENTIFIER) return false
+      return path.length === 0 && outer(name)
     }
     const hit = this.lookup(name)
     // An outer name's typing covers the name itself, not a member of it.
