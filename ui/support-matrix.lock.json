@@ -1449,7 +1449,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -1643,12 +1643,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -1731,12 +1725,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -1813,7 +1801,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -1895,7 +1883,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -2047,7 +2035,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -2275,7 +2263,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -2583,12 +2571,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -2707,12 +2689,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -2813,7 +2789,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -2937,7 +2913,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -3173,7 +3149,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -4782,7 +4758,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -5474,12 +5450,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -5754,12 +5724,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -6016,7 +5980,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -6290,7 +6254,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -6826,7 +6790,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -7754,7 +7718,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -9270,7 +9234,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -9598,7 +9562,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -10242,7 +10206,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -10476,7 +10440,7 @@
         "erb": {
           "gaps": [
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -10534,7 +10498,7 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -10550,7 +10514,7 @@
         "pebble": {
           "gaps": [
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -10576,7 +10540,7 @@
         "xslate": {
           "gaps": [
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -10945,7 +10909,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -12077,7 +12041,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -12321,7 +12285,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -12773,7 +12737,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -12983,7 +12947,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -13251,7 +13215,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -13291,7 +13255,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -13365,7 +13329,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -13769,7 +13733,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -14425,12 +14389,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -14669,12 +14627,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -14895,7 +14847,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -15139,7 +15091,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -15615,7 +15567,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -17652,7 +17604,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -17780,12 +17732,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -17844,12 +17790,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -17902,7 +17842,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -17966,7 +17906,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -18082,7 +18022,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -22605,7 +22545,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -23341,7 +23281,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -23495,7 +23435,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -23767,7 +23707,7 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -23993,7 +23933,7 @@
         "erb": {
           "gaps": [
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -24237,7 +24177,7 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -24271,7 +24211,7 @@
         "pebble": {
           "gaps": [
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]
@@ -24333,7 +24273,7 @@
         "xslate": {
           "gaps": [
             {
-              "fixture": "index-key-canonical-form",
+              "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
               ]

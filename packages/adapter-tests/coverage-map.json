@@ -5653,6 +5653,21 @@
     },
     "index-key-canonical-form": {
       "kinds": [
+        "identifier",
+        "index-access",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "index-key-canonical-form-callback": {
+      "kinds": [
         "array-method",
         "arrow",
         "call",

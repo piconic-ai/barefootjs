@@ -4525,12 +4525,6 @@
         }
       },
       "index-key-canonical-form": {
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "callback-noncanonical-index-key"
-          ]
-        },
         "jinja": {
           "kind": "render",
           "limitations": [
@@ -4541,6 +4535,14 @@
           "kind": "render",
           "limitations": [
             "string-key-list-index"
+          ]
+        }
+      },
+      "index-key-canonical-form-callback": {
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "callback-noncanonical-index-key"
           ]
         },
         "mojolicious": {
@@ -8498,8 +8500,12 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/format-date.ts"
       },
       "index-key-canonical-form": {
-        "description": "A list index reads element 1 for 1 and \"1\" but nothing for \"01\", \"-0\" or \"1e0\", directly and in a…",
+        "description": "A list index reads element 1 for 1 and \"1\" but nothing for \"01\", \"-0\" or \"1e0\" in a direct read",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/index-key-canonical-form.ts"
+      },
+      "index-key-canonical-form-callback": {
+        "description": "A list index inside a map callback reads element 1 for 1 and \"1\" but nothing for \"01\", \"-0\" or \"1e0\"",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/index-key-canonical-form-callback.ts"
       },
       "jsx-element-prop-array": {
         "description": "Array literal wrapping JSX at a non-children prop position refuses with BF021",
@@ -9041,9 +9047,9 @@
       "kind": "silent",
       "given": "a list index read inside a callback the runtime evaluator runs (`rows.map(r => r[k])`) with a string key that spells a number but is not the canonical index name (`'01'`, `'-0'`, `'1e0'`)",
       "expected": "nothing (`undefined`): JS reads a list element only through a canonical index name (`1` or `'1'`), the same answer as the read outside the callback",
-      "actual": "the element at the key's numeric value (`'01'` and `'1e0'` read element 1, `'-0'` element 0): the evaluator converts the key with ToNumber before reading the list",
+      "actual": "renders the element at the key's numeric value (`'01'` and `'1e0'` read element 1, `'-0'` element 0): the evaluator converts the key with ToNumber before reading the list",
       "fixtures": [
-        "index-key-canonical-form"
+        "index-key-canonical-form-callback"
       ],
       "adapters": [
         "erb",

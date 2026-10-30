@@ -43,7 +43,7 @@ export const renderDivergences: RenderDivergences = {
   // A list index read inside a callback the evaluator runs
   // (`rows.map(r => r[k])`) converts the key with ToNumber, so `'01'`,
   // `'-0'` and `'1e0'` read an element where JS reads nothing.
-  'index-key-canonical-form': { limitation: 'callback-noncanonical-index-key' },
+  'index-key-canonical-form-callback': { limitation: 'callback-noncanonical-index-key' },
   // `===` / `!==` between objects or arrays compares contents, not references.
   'strict-equality-distinct-reference': { limitation: 'object-equality-by-contents' },
   // `.at(i)` on half of a surrogate pair: the runtime string can't hold a

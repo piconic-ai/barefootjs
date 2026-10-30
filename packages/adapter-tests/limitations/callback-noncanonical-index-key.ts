@@ -8,6 +8,6 @@ export default defineLimitation({
   expected:
     "nothing (`undefined`): JS reads a list element only through a canonical index name (`1` or `'1'`), the same answer as the read outside the callback",
   actual:
-    "the element at the key's numeric value (`'01'` and `'1e0'` read element 1, `'-0'` element 0): the evaluator converts the key with ToNumber before reading the list",
-  fixtures: ['index-key-canonical-form'],
+    "renders the element at the key's numeric value (`'01'` and `'1e0'` read element 1, `'-0'` element 0): the evaluator converts the key with ToNumber before reading the list",
+  fixtures: ['index-key-canonical-form-callback'],
 })
