@@ -35,6 +35,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 instead of silently rendering empty — see
 // `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A props object parameter not named `props` (`function C(p)`): its
+  // members are not typed as the component's props, so `p.label + p.n`
+  // does not concatenate (or the boolean `p.on` prints as `1`).
+  'props-object-non-props-name-operand-typing': { limitation: 'props-object-non-props-name-operand-typing' },
   // A prop the child does not declare, spread onto its root through
   // `{...props}`, is missing from the element.
   'child-undeclared-prop-whole-props-spread': { limitation: 'whole-props-spread-undeclared-prop' },

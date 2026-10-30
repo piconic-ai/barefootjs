@@ -88,6 +88,9 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // Same `applyRestAttrs`-not-modeled harness class: `Kid` spreads its whole
   // props object onto its root.
   'child-undeclared-prop-whole-props-spread',
+  // Same `applyRestAttrs`-not-modeled harness class: `Kid` and `Pill` spread
+  // their whole props object (named `scopeID` / `bfParent`) onto their root.
+  'props-object-non-props-name-spread',
   // Same `applyRestAttrs`-not-modeled harness class: each child spreads
   // its rest bag onto its root.
   'child-rest-bag-generated-field-name',

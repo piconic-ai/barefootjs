@@ -227,6 +227,7 @@ export function emitSortEval(
   body: ParsedExpr,
   params: string[],
   emit: (e: ParsedExpr) => string,
+  propsObject: string,
 ): string | null {
   // A comparator needs both params; a wrong-arity arrow would bind the wrong
   // env (or treat a real param as a free var), so fail over to the structured
@@ -234,7 +235,7 @@ export function emitSortEval(
   if (params.length < 2) return null
   const paramA = params[0]
   const paramB = params[1]
-  const evaluable = evalBody(body, new Set([paramA, paramB]))
+  const evaluable = evalBody(body, new Set([paramA, paramB]), propsObject)
   if (evaluable === null) return null
   const env = emitEvalEnvArg(evaluable.captured, emit)
   return `bf_sort_eval ${wrapIfMultiToken(recv)} "${escapeGoString(evaluable.json)}" "${paramA}" "${paramB}" ${env}`
@@ -255,6 +256,7 @@ export function emitReduceEval(
   init: ParsedExpr,
   direction: 'left' | 'right',
   emit: (e: ParsedExpr) => string,
+  propsObject: string,
 ): string | null {
   // A reducer needs both the accumulator and the element param; a wrong-arity
   // arrow would bind the wrong env, so refuse cleanly (→ BF101) rather than
@@ -272,7 +274,7 @@ export function emitReduceEval(
   } else {
     return null
   }
-  const evaluable = evalBody(body, new Set([paramAcc, paramItem]))
+  const evaluable = evalBody(body, new Set([paramAcc, paramItem]), propsObject)
   if (evaluable === null) return null
   const env = emitEvalEnvArg(evaluable.captured, emit)
   return `bf_reduce_eval ${wrapIfMultiToken(recv)} "${escapeGoString(evaluable.json)}" "${paramAcc}" "${paramItem}" ${initGo} "${direction}" ${env}`
@@ -300,9 +302,10 @@ export function emitPredicateEval(
   predicate: ParsedExpr,
   param: string,
   emit: (e: ParsedExpr) => string,
+  propsObject: string,
   extraArgs: string[] = [],
 ): string | null {
-  const evaluable = evalBody(predicate, new Set([param]))
+  const evaluable = evalBody(predicate, new Set([param]), propsObject)
   if (evaluable === null) return null
   const env = emitEvalEnvArg(evaluable.captured, emit)
   const extra = extraArgs.length > 0 ? ` ${extraArgs.join(' ')}` : ''
@@ -320,8 +323,9 @@ export function emitFlatMapEval(
   body: ParsedExpr,
   param: string,
   emit: (e: ParsedExpr) => string,
+  propsObject: string,
 ): string | null {
-  const evaluable = evalBody(body, new Set([param]))
+  const evaluable = evalBody(body, new Set([param]), propsObject)
   if (evaluable === null) return null
   const env = emitEvalEnvArg(evaluable.captured, emit)
   return `bf_flat_map_eval ${wrapIfMultiToken(recv)} "${escapeGoString(evaluable.json)}" "${param}" ${env}`
@@ -340,8 +344,9 @@ export function emitMapEval(
   body: ParsedExpr,
   param: string,
   emit: (e: ParsedExpr) => string,
+  propsObject: string,
 ): string | null {
-  const evaluable = evalBody(body, new Set([param]))
+  const evaluable = evalBody(body, new Set([param]), propsObject)
   if (evaluable === null) return null
   const env = emitEvalEnvArg(evaluable.captured, emit)
   return `bf_map_eval ${wrapIfMultiToken(recv)} "${escapeGoString(evaluable.json)}" "${param}" ${env}`

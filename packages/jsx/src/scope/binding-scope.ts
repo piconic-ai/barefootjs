@@ -30,11 +30,25 @@
  */
 
 /**
- * The identifier a template reads as the component's props object:
- * `props.X` is the component's prop `X` while no binding shadows `props`
- * (#3693).
+ * The identifier a template reads as the component's props object when the
+ * component does not name one itself: `props.X` is the component's prop `X`
+ * while no binding shadows `props` (#3693). A component that takes its props
+ * as one object names it with its parameter (`function C(p)`), and
+ * {@link BindingScope.forComponent} makes that name the props object instead.
  */
 export const PROPS_OBJECT_IDENTIFIER = 'props'
+
+/**
+ * The identifier that names the props object of a component whose props
+ * parameter is `propsObjectName` (`IRMetadata.propsObjectName`): that name
+ * (`function C(p)` → `p`), or {@link PROPS_OBJECT_IDENTIFIER} when the
+ * component destructures its props (`null`). The single answer to "which
+ * identifier is the component's props object"; {@link BindingScope.propsObject}
+ * carries it.
+ */
+export function propsObjectIdentifier(propsObjectName: string | null | undefined): string {
+  return propsObjectName ?? PROPS_OBJECT_IDENTIFIER
+}
 
 /**
  * How a name inside a `ScopeFrame` came to be bound — the row shapes
@@ -212,9 +226,30 @@ function fieldType(type: LoopValueType, key: string, namedFields: NamedTypeField
  * frames exist.
  */
 export class BindingScope {
-  static readonly EMPTY: BindingScope = new BindingScope([])
+  static readonly EMPTY: BindingScope = new BindingScope([], PROPS_OBJECT_IDENTIFIER)
 
-  private constructor(private readonly frames: readonly ScopeFrame[]) {}
+  /**
+   * `propsObject`: the identifier that names the component's props object
+   * in this scope's component ({@link forComponent}). Every child scope
+   * keeps it.
+   */
+  private constructor(
+    private readonly frames: readonly ScopeFrame[],
+    readonly propsObject: string,
+  ) {}
+
+  /**
+   * The empty scope of a component whose props object parameter is
+   * `propsObjectName` (`IRMetadata.propsObjectName`, decided in Phase 1):
+   * `function C(p)` reads its props as `p.X`, so `p` is the props object.
+   * A component that destructures its props (`null`) keeps
+   * {@link PROPS_OBJECT_IDENTIFIER}.
+   */
+  static forComponent(propsObjectName: string | null): BindingScope {
+    const propsObject = propsObjectIdentifier(propsObjectName)
+    if (propsObject === PROPS_OBJECT_IDENTIFIER) return BindingScope.EMPTY
+    return new BindingScope([], propsObject)
+  }
 
   /**
    * Child scope with a new `'loop-row'` frame for one loop's per-item
@@ -273,7 +308,7 @@ export class BindingScope {
     for (const name of loop.preamble?.declaredNames ?? []) bindings.set(name, { source: 'preamble' })
 
     const frame: ScopeFrame = { kind: 'loop-row', bindings }
-    return new BindingScope([frame, ...this.frames])
+    return new BindingScope([frame, ...this.frames], this.propsObject)
   }
 
   /**
@@ -285,7 +320,7 @@ export class BindingScope {
     const bindings = new Map<string, ScopeBinding>()
     for (const name of params) bindings.set(name, { source: 'param' })
     const frame: ScopeFrame = { kind: 'callback', bindings }
-    return new BindingScope([frame, ...this.frames])
+    return new BindingScope([frame, ...this.frames], this.propsObject)
   }
 
   /**
@@ -304,7 +339,7 @@ export class BindingScope {
       if (hit) bindings.set(alias, hit.binding)
     }
     if (bindings.size === 0) return this
-    return new BindingScope([{ kind: 'callback', bindings }, ...this.frames])
+    return new BindingScope([{ kind: 'callback', bindings }, ...this.frames], this.propsObject)
   }
 
   /** Innermost-first membership check across every frame in the stack. */
@@ -317,20 +352,21 @@ export class BindingScope {
 
   /**
    * Whether a binding here shadows the component's props object
-   * ({@link PROPS_OBJECT_IDENTIFIER}): a `.map((props) => …)` row, a
+   * ({@link propsObject}): a `.map((props) => …)` row, a
    * destructured `({ props })` field, a preamble local or a callback param.
    * `props.X` then reads that binding's member, not the component's prop
    * `X` (#3693).
    */
   shadowsPropsObject(): boolean {
-    return this.isBound(PROPS_OBJECT_IDENTIFIER)
+    return this.isBound(this.propsObject)
   }
 
   /**
    * Resolve string typing at this position, respecting the nearest binding.
-   * `componentProperty`: `name` is read as `props.<name>`, which is the
-   * component's prop only while no binding shadows `props`; while one does,
-   * it is that binding's member. `path`: the read is the member chain
+   * `componentProperty`: `name` is read as the literal `props.<name>`. That is
+   * the component's prop only when `props` is this component's props object
+   * and no binding shadows it; while a binding named `props` is in scope, it
+   * is that binding's member. `path`: the read is the member chain
    * `name.<path…>` (`row.id`). A loop row binding resolves the chain against
    * its row type (`LoopBindingSource.rowType`), through `namedFields` for a
    * named type; an outer name has typing for itself only.
@@ -343,9 +379,15 @@ export class BindingScope {
     namedFields?: NamedTypeFields,
   ): boolean {
     if (componentProperty) {
-      if (!this.shadowsPropsObject()) return path.length === 0 && outer(name)
-      // `props.<name>` reads the shadowing binding's member.
-      return this.isStringValueName(PROPS_OBJECT_IDENTIFIER, outer, false, [name, ...path], namedFields)
+      // The operand classifiers flag only the literal receiver `props`
+      // (`props.<name>`). A binding named `props` reads its own member.
+      if (this.isBound(PROPS_OBJECT_IDENTIFIER)) {
+        return this.isStringValueName(PROPS_OBJECT_IDENTIFIER, outer, false, [name, ...path], namedFields)
+      }
+      // In a component whose props object has another name (`function C(p)`),
+      // an unbound `props` is not that object, so it carries no prop typing.
+      if (this.propsObject !== PROPS_OBJECT_IDENTIFIER) return false
+      return path.length === 0 && outer(name)
     }
     const hit = this.lookup(name)
     // An outer name's typing covers the name itself, not a member of it.

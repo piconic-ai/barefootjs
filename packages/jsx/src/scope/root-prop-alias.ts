@@ -1,7 +1,7 @@
 import { collectLoopBoundNames } from '../adapters/loop-bound-names.ts'
 import type { ParsedExpr } from '../expression-parser.ts'
 import type { ComponentIR } from '../types.ts'
-import { PROPS_OBJECT_IDENTIFIER, type BindingScope } from './binding-scope.ts'
+import type { BindingScope } from './binding-scope.ts'
 
 /**
  * Root-prop aliases for template engines that flatten `props.X` to the bare
@@ -84,14 +84,21 @@ export function rootPropReadName(
 /**
  * Whether `expr` reads the component's props object at a position where
  * `isBound` answers which names a binding shadows: the bare identifier
- * `props` that no binding shadows (#3693). A `.map((props) => …)` row, a
- * destructured `({ props })` field, a preamble local or a callback param
- * named `props` is that binding instead, so `props.X` reads its member
- * rather than flattening to the component's prop `X`. Template emitters
- * flatten a `props.X` read only when this holds; `isBound` is the
+ * `propsObject` that no binding shadows (#3693). `propsObject` is the
+ * component's props object identifier, `BindingScope.propsObject`: the
+ * props parameter's own name (`function C(p)` reads `p.X`), or `props` for
+ * a component that destructures its props. A `.map((props) => …)` row, a
+ * destructured `({ props })` field, a preamble local or a callback param of
+ * that name is that binding instead, so `props.X` reads its member rather
+ * than flattening to the component's prop `X`. Template emitters flatten a
+ * props-object member read only when this holds; `isBound` is the
  * adapter's current `BindingScope` (`scope.isBound`), or, in a filter
  * predicate, the predicate's own params plus the enclosing scope.
  */
-export function isRootPropsObject(expr: ParsedExpr, isBound: (name: string) => boolean): boolean {
-  return expr.kind === 'identifier' && expr.name === PROPS_OBJECT_IDENTIFIER && !isBound(expr.name)
+export function isRootPropsObject(
+  expr: ParsedExpr,
+  isBound: (name: string) => boolean,
+  propsObject: string,
+): boolean {
+  return expr.kind === 'identifier' && expr.name === propsObject && !isBound(expr.name)
 }

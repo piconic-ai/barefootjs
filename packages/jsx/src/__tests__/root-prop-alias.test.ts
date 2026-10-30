@@ -67,19 +67,19 @@ describe('the props object a binding named props shadows (#3693)', () => {
   const isBoundIn = (scope: BindingScope) => (name: string) => scope.isBound(name)
 
   test('props is the component props object until a binding of that name shadows it', () => {
-    expect(isRootPropsObject(props, isBoundIn(BindingScope.EMPTY))).toBe(true)
-    expect(isRootPropsObject(props, isBoundIn(BindingScope.EMPTY.enterLoopRow({ param: 'row' })))).toBe(true)
-    expect(isRootPropsObject(props, isBoundIn(BindingScope.EMPTY.enterLoopRow({ param: 'props' })))).toBe(false)
+    expect(isRootPropsObject(props, isBoundIn(BindingScope.EMPTY), 'props')).toBe(true)
+    expect(isRootPropsObject(props, isBoundIn(BindingScope.EMPTY.enterLoopRow({ param: 'row' })), 'props')).toBe(true)
+    expect(isRootPropsObject(props, isBoundIn(BindingScope.EMPTY.enterLoopRow({ param: 'props' })), 'props')).toBe(false)
     const destructured = BindingScope.EMPTY.enterLoopRow({ param: '{ props }', paramBindings: [{ name: 'props' }] })
-    expect(isRootPropsObject(props, isBoundIn(destructured))).toBe(false)
+    expect(isRootPropsObject(props, isBoundIn(destructured), 'props')).toBe(false)
     const preamble = BindingScope.EMPTY.enterLoopRow({ param: 'row', preamble: { declaredNames: ['props'] } })
-    expect(isRootPropsObject(props, isBoundIn(preamble))).toBe(false)
-    expect(isRootPropsObject(props, isBoundIn(BindingScope.EMPTY.enterCallback(['props'])))).toBe(false)
+    expect(isRootPropsObject(props, isBoundIn(preamble), 'props')).toBe(false)
+    expect(isRootPropsObject(props, isBoundIn(BindingScope.EMPTY.enterCallback(['props'])), 'props')).toBe(false)
   })
 
   test('only the bare identifier props reads the props object', () => {
-    expect(isRootPropsObject({ kind: 'identifier', name: 'row' }, () => false)).toBe(false)
-    expect(isRootPropsObject({ kind: 'member', object: props, property: 'a', computed: false, optional: false }, () => false)).toBe(false)
+    expect(isRootPropsObject({ kind: 'identifier', name: 'row' }, () => false, 'props')).toBe(false)
+    expect(isRootPropsObject({ kind: 'member', object: props, property: 'a', computed: false, optional: false }, () => false, 'props')).toBe(false)
   })
 
   test('a props.<name> read has no component typing while props is shadowed', () => {
@@ -91,5 +91,50 @@ describe('the props object a binding named props shadows (#3693)', () => {
     expect(row.isStringValueName('label', () => true, true)).toBe(false)
     // A bare `label` is untouched: only the `props.<name>` form changes.
     expect(row.isStringValueName('label', () => true)).toBe(true)
+  })
+})
+
+describe('a props object parameter not named props (#3729)', () => {
+  const p: ParsedExpr = { kind: 'identifier', name: 'p' }
+  const props: ParsedExpr = { kind: 'identifier', name: 'props' }
+  const component = BindingScope.forComponent('p')
+  const isBoundIn = (scope: BindingScope) => (name: string) => scope.isBound(name)
+
+  test('the props parameter name is the props object; props is not', () => {
+    expect(component.propsObject).toBe('p')
+    expect(isRootPropsObject(p, isBoundIn(component), component.propsObject)).toBe(true)
+    expect(isRootPropsObject(props, isBoundIn(component), component.propsObject)).toBe(false)
+  })
+
+  test('a destructured or props-named component keeps props', () => {
+    expect(BindingScope.forComponent(null).propsObject).toBe('props')
+    expect(BindingScope.forComponent('props').propsObject).toBe('props')
+  })
+
+  test('child scopes keep the name, and a binding of it shadows the props object', () => {
+    const row = component.enterLoopRow({ param: 'p' })
+    expect(row.propsObject).toBe('p')
+    expect(isRootPropsObject(p, isBoundIn(row), row.propsObject)).toBe(false)
+    expect(row.shadowsPropsObject()).toBe(true)
+    expect(component.enterLoopRow({ param: 'props' }).shadowsPropsObject()).toBe(false)
+    expect(component.enterCallback(['x']).propsObject).toBe('p')
+    // The typing callers flag only the literal receiver `props.<name>`: in a
+    // component whose props object is `p`, an unbound `props` is not it.
+    expect(component.isStringValueName('label', () => true, true)).toBe(false)
+    expect(row.isStringValueName('label', () => true, true)).toBe(false)
+  })
+
+  test('a row binding named props keeps its own member types when the props object is named p', () => {
+    const fields = {
+      Row: [
+        { name: 'value', type: { primitive: 'number' }, optional: false },
+        { name: 'label', type: { primitive: 'string' }, optional: false },
+      ],
+    }
+    const named = (name: string) => fields[name as keyof typeof fields]
+    const row = component.enterLoopRow({ param: 'props', rowType: { raw: 'Row' } })
+    // `outer` would type every component name as a string; the row binding wins.
+    expect(row.isStringValueName('value', () => true, true, [], named)).toBe(false)
+    expect(row.isStringValueName('label', () => false, true, [], named)).toBe(true)
   })
 })
