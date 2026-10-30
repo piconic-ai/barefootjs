@@ -280,6 +280,7 @@ import { fixture as remainderNegativeZeroConcat } from './remainder-negative-zer
 import { fixture as remainderNegativeZeroJson } from './remainder-negative-zero-json'
 import { fixture as remainderNegativeZeroJsonPositions } from './remainder-negative-zero-json-positions'
 import { fixture as jsonStringifyNumberSpelling } from './json-stringify-number-spelling'
+import { fixture as jsonStringifyComparedStringProp } from './json-stringify-compared-string-prop'
 import { fixture as numberDivisionZeroDivisor } from './number-division-zero-divisor'
 import { fixture as memoDivisionZeroDivisor } from './memo-division-zero-divisor'
 import { fixture as memoNumberOutputPositions } from './memo-number-output-positions'
@@ -1436,6 +1437,7 @@ export const jsxFixtures: JSXFixture[] = [
   remainderNegativeZeroJson,
   remainderNegativeZeroJsonPositions,
   jsonStringifyNumberSpelling,
+  jsonStringifyComparedStringProp,
   numberDivisionZeroDivisor,
   memoDivisionZeroDivisor,
   memoNumberOutputPositions,

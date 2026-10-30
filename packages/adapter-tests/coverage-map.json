@@ -5714,6 +5714,28 @@
         "attribute"
       ]
     },
+    "json-stringify-compared-string-prop": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:<",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "json-stringify-number-spelling": {
       "kinds": [
         "array-literal",

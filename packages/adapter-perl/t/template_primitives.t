@@ -57,6 +57,16 @@ subtest 'json — numbers are written as JS writes them' => sub {
     is $bf->json([-$inf, $inf, $inf - $inf, [-$inf]]), '[null,null,null,[null]]', 'non-finite at any depth';
     is $bf->json(['-0', '0.0', '-Inf', '1e5']), '["-0","0.0","-Inf","1e5"]', 'strings stay strings';
     is $bf->json([JSON::PP::true, JSON::PP::false, undef]), '[true,false,null]', 'booleans and undef';
+    # A JSON string keeps its quotes after a numeric comparison caches a
+    # number on it (`"1e5" < 0` sets IOK/NOK next to POK); a number that
+    # was only interpolated stays a number.
+    my $str = JSON::PP->new->allow_nonref->decode('"1e5"');
+    my $cmp = $str < 0;
+    is $bf->json($str), '"1e5"', 'a compared string stays a string';
+    is $bf->json([$str, "007"]), '["1e5","007"]', 'inside an array';
+    my $num = 0.1 + 0.2;
+    my $interp = "$num";
+    is $bf->json($num), '0.30000000000000004', 'an interpolated number stays a number';
     my $input = [$neg_zero];
     $bf->json($input);
     is sprintf('%g', $input->[0]), '-0', 'the argument is not mutated';

@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"math"
 	"reflect"
+	"runtime/debug"
 	"strings"
 	"testing"
 )
@@ -2053,6 +2054,33 @@ func TestJSON(t *testing.T) {
 		if got != c.want {
 			t.Errorf("JSON(%s) = %v, want %v", c.name, got, c.want)
 		}
+	}
+}
+
+// A self-referencing container is a marshal error, as with
+// `encoding/json` alone, not a stack overflow in the non-finite walk
+// (#3787 review). The input is left as it was. The stack is bounded so
+// a regression fails fast.
+func TestJSONCyclicContainer(t *testing.T) {
+	defer debug.SetMaxStack(debug.SetMaxStack(64 << 20))
+	m := map[string]any{"n": math.Inf(1)}
+	m["self"] = m
+	s := make([]any, 2)
+	s[0] = math.NaN()
+	s[1] = s
+	for name, in := range map[string]any{"map": m, "slice": s} {
+		got, err := JSON(in)
+		if err == nil || !strings.Contains(err.Error(), "encountered a cycle") {
+			t.Errorf("JSON(cyclic %s) = %q, %v; want a cycle error", name, got, err)
+		}
+	}
+	if !math.IsInf(m["n"].(float64), 1) || !math.IsNaN(s[0].(float64)) {
+		t.Errorf("JSON mutated its cyclic input")
+	}
+	// A value reached twice without a cycle is not one.
+	shared := []any{math.Inf(-1)}
+	if got, err := JSON([]any{shared, shared}); err != nil || got != `[[null],[null]]` {
+		t.Errorf("JSON(shared) = %q, %v", got, err)
 	}
 }
 

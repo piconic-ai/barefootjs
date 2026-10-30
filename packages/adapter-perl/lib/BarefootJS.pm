@@ -6,6 +6,7 @@ use utf8;
 use feature 'signatures';
 no warnings 'experimental::signatures';
 
+use B ();
 use POSIX ();
 use Time::Local ();
 use Scalar::Util qw(looks_like_number weaken);
@@ -723,12 +724,26 @@ sub json ($self, $value) {
             $self->backend->encode_json("$_") . ':' . $self->json($value->{$_})
         } sort keys %$value) . '}';
     }
-    if (BarefootJS::Evaluator::_is_number($value)) {
+    if (_json_is_number($value)) {
         my $n = BarefootJS::Evaluator::_double($value + 0);
         return 'null' if $n != $n || $n == 9**9**9 || $n == -(9**9**9);
         return BarefootJS::Evaluator::_format_number($n);
     }
     return $self->backend->encode_json($value);
+}
+
+# Whether `json` writes $value as a JSON number. Decided from the scalar's
+# flags the way JSON::PP / Cpanel::JSON::XS do: a scalar carrying a public
+# string flag (SVf_POK) is a string, even after a numeric comparison has
+# cached a number on it (`"1e5" < 0` leaves IOK/NOK set), so a JSON string
+# prop keeps its quotes whatever the template compared it with. A number
+# that was only stringified keeps the private flag alone (Perl 5.36+) and
+# stays a number.
+sub _json_is_number ($value) {
+    return 0 if !defined $value || ref $value;
+    my $flags = B::svref_2object(\$value)->FLAGS;
+    return 0 if $flags & B::SVf_POK;
+    return ($flags & (B::SVp_IOK | B::SVp_NOK)) ? 1 : 0;
 }
 
 sub string ($self, $value) {

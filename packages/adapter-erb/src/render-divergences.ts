@@ -40,6 +40,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A string prop compared with a number (`s < 0`) is not converted to a
+  // number first.
+  'json-stringify-compared-string-prop': { limitation: 'string-number-relational-comparison' },
   // A list index read inside a callback the evaluator runs
   // (`rows.map(r => r[k])`) converts the key with ToNumber, so `'01'`,
   // `'-0'` and `'1e0'` read an element where JS reads nothing.
