@@ -468,9 +468,50 @@ export function collectModuleStringConsts(
   return map
 }
 
+type StaticConstants = IRMetadata['localConstants'] | undefined
+
 /**
- * Resolve `IDENT.key` / `IDENT['key']` where `IDENT` is a module-scope
- * object-literal const and the key/value are static literals — a fully
+ * The const declaration a read of `name` reaches, when its declared value
+ * is what the read sees — the ONE decision behind every compile-time lookup
+ * of a literal const's member (`lookupStaticRecordLiteral`,
+ * `lookupStaticArrayElement`, the Go adapter's record lookup). Returns
+ * `null` when the read must fall back to the generic lowering:
+ *
+ *   - `isShadowed(name)`: an enclosing loop callback's param, index,
+ *     destructure or preamble binding of the name is what the read reaches;
+ *   - a component-scope declaration of the name is the binding — exactly
+ *     one `const` whose value the component does not change during render
+ *     (`mutatedAfterDeclaration`) and that is not a destructure of the props
+ *     object. A `let`, or more than one component-scope entry of the name
+ *     (the IR does not record which block each sits in, so which one a read
+ *     reaches is unknown), is refused, and so is the module const of the
+ *     same name, which the component-scope binding hides;
+ *   - otherwise the module const of the name, unless a prop or another
+ *     component binding shadows it (`shadowedInComponent`) or the component
+ *     changes it during render.
+ */
+export function resolveStaticConstBinding(
+  name: string,
+  constants: StaticConstants,
+  isShadowed: (name: string) => boolean,
+): IRMetadata['localConstants'][number] | null {
+  if (isShadowed(name)) return null
+  const named = (constants ?? []).filter(c => c.name === name)
+  const local = named.filter(c => !c.isModule)
+  if (local.length > 0) {
+    const c = local[0]
+    if (local.length > 1 || c.declarationKind !== 'const' || c.propsDestructure) return null
+    return c.mutatedAfterDeclaration ? null : c
+  }
+  const moduleConst = named.find(c => c.isModule)
+  if (!moduleConst || moduleConst.shadowedInComponent || moduleConst.mutatedAfterDeclaration) return null
+  return moduleConst
+}
+
+/**
+ * Resolve `IDENT.key` / `IDENT['key']` where `IDENT` is a module-scope or
+ * component-local object-literal const and the key/value are static
+ * literals — a fully
  * compile-time lookup (the icon registry's `strokePaths['chevron-down']`,
  * pagination's `variantClasses.ghost`; #1896 / #1897). Returns the
  * looked-up scalar, or `null` for any other shape so callers fall back
@@ -492,13 +533,11 @@ export function collectModuleStringConsts(
 export function lookupStaticRecordLiteral(
   objectName: string,
   key: string,
-  constants: IRMetadata['localConstants'] | undefined,
+  constants: StaticConstants,
   isShadowed: (name: string) => boolean,
 ): { kind: 'string' | 'number'; text: string } | null {
-  if (isShadowed(objectName)) return null
-  const constInfo = (constants ?? []).find(c => c.name === objectName && c.isModule)
-  // A prop or component binding of the name is what the read reaches.
-  if (constInfo?.value === undefined || constInfo.shadowedInComponent) return null
+  const constInfo = resolveStaticConstBinding(objectName, constants, isShadowed)
+  if (constInfo?.value === undefined) return null
   const sf = ts.createSourceFile(
     '__rec.ts', `(${constInfo.value})`, ts.ScriptTarget.Latest, /*setParentNodes*/ true,
   )
@@ -528,7 +567,8 @@ export function lookupStaticRecordLiteral(
 }
 
 /**
- * The element at `key` of a module array-literal const (`QS[0]`, `QS['1']`)
+ * The element at `key` of a module or component-local array-literal const
+ * (`QS[0]`, `QS['1']`)
  * or its `length`, as the element's own typed `ParsedExpr`: a string or
  * number `literal`, or a unary `-` over a number literal. The caller emits
  * it through its own expression emitter, exactly as if the source had
@@ -540,19 +580,16 @@ export function lookupStaticRecordLiteral(
  * `null`, so the caller falls back to its generic lowering.
  *
  * `isShadowed` is REQUIRED for the same reason as in
- * `lookupStaticRecordLiteral`; a const the component scope shadows
- * (`shadowedInComponent`) is not resolved either.
+ * `lookupStaticRecordLiteral`; which declaration the name reaches is
+ * `resolveStaticConstBinding`'s decision.
  */
 export function lookupStaticArrayElement(
   objectName: string,
   key: string,
-  constants: IRMetadata['localConstants'] | undefined,
+  constants: StaticConstants,
   isShadowed: (name: string) => boolean,
 ): ParsedExpr | null {
-  if (isShadowed(objectName)) return null
-  const constInfo = (constants ?? []).find(c => c.name === objectName && c.isModule)
-  if (!constInfo || constInfo.shadowedInComponent || constInfo.mutatedAfterDeclaration) return null
-  const array = constInfo.parsed
+  const array = resolveStaticConstBinding(objectName, constants, isShadowed)?.parsed
   if (array?.kind !== 'array-literal') return null
   if (key === 'length') {
     if (array.elements.some(e => e.kind === 'unsupported')) return null

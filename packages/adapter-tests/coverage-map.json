@@ -6586,6 +6586,35 @@
         "text"
       ]
     },
+    "local-const-literal-index": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "binary:>",
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "member:computed",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "local-record-union-index": {
       "kinds": [
         "literal",

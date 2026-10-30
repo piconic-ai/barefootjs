@@ -72,6 +72,7 @@ import {
   collectModuleStringConsts as collectModuleStringConstsShared,
   lookupLiteralConst,
   lookupStaticArrayElement,
+  resolveStaticConstBinding,
   prepareLoweringMatchers,
   envSignalReaderFor,
   computeSsrSeedPlan,
@@ -6156,8 +6157,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * `objectName[key]` over a module record literal const: its string/number
-   * value as a Go literal, or null.
+   * `objectName[key]` over a module or component-local record literal const:
+   * its string/number value as a Go literal, or null.
    */
   private resolveStaticConstMember(objectName: string, key: string): string | null {
     // The base name may be an enclosing loop callback's own (shadowing)
@@ -6165,12 +6166,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // — the record-member sibling of the #2236 bare-identifier gap, found
     // by the loop-param-shadows-record-const fixture. Fall through to the
     // generic lowering, which resolves the member through the loop binding.
-    if (this.isLoopShadowedName(objectName)) return null
-    const constInfo = (this.state.localConstants ?? []).find(
-      c => c.name === objectName && c.isModule,
-    )
-    // A prop or component binding of the name is what the read reaches.
-    if (constInfo?.value === undefined || constInfo.shadowedInComponent) return null
+    // Which declaration the name reaches (a component-local or module const,
+    // or neither) is the shared `resolveStaticConstBinding` decision.
+    const constInfo = resolveStaticConstBinding(objectName, this.state.localConstants, n => this.isLoopShadowedName(n))
+    if (constInfo?.value === undefined) return null
 
     // Read the IR-carried structured value: the analyzer parses a module
     // record's `{ key: 'lit' }` once into an `object-literal`, so the key lookup
