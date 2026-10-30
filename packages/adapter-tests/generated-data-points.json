@@ -10499,6 +10499,66 @@
       "props": {}
     }
   ],
+  "percent-delimiter-string-literal": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": "",
+        "show": true
+      }
+    },
+    {
+      "name": "gen:a:markup",
+      "props": {
+        "a": "<b>&\"'</b>",
+        "show": true
+      }
+    },
+    {
+      "name": "gen:a:multibyte",
+      "props": {
+        "a": "日本語",
+        "show": true
+      }
+    },
+    {
+      "name": "gen:show:false",
+      "props": {
+        "a": "x",
+        "show": false
+      }
+    }
+  ],
+  "percent-delimiter-string-literal-props-object": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": "",
+        "show": true
+      }
+    },
+    {
+      "name": "gen:a:markup",
+      "props": {
+        "a": "<b>&\"'</b>",
+        "show": true
+      }
+    },
+    {
+      "name": "gen:a:multibyte",
+      "props": {
+        "a": "日本語",
+        "show": true
+      }
+    },
+    {
+      "name": "gen:show:false",
+      "props": {
+        "a": "x",
+        "show": false
+      }
+    }
+  ],
   "pre-whitespace": [
     {
       "name": "gen:snippet:empty",

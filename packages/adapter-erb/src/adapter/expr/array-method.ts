@@ -24,7 +24,7 @@ import type {
   ArrayMethodSpelling,
   CallbackEvalSpelling,
 } from '@barefootjs/jsx'
-import { rubySymbolKey, escapeRubySingleQuoted } from '../lib/ruby-naming.ts'
+import { rubySymbolKey, rubyStringLiteral } from '../lib/ruby-naming.ts'
 
 const helperCall = prefixedArrayMethodSpelling('bf.', 'nil')
 
@@ -61,7 +61,7 @@ export function renderArrayMethod(
  */
 export const EVAL_SPELLING: CallbackEvalSpelling = {
   call: (helper, operands) => `bf.${helper}(${operands.join(', ')})`,
-  string: (value) => `'${escapeRubySingleQuoted(value)}'`,
+  string: (value) => rubyStringLiteral(value),
   boolean: (value) => (value ? 'true' : 'false'),
   env: (entries) =>
     entries.length === 0 ? '{}' : `{ ${entries.map(([name, value]) => `${rubySymbolKey(name)} ${value}`).join(', ')} }`,

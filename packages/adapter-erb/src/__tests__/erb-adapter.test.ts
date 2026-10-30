@@ -739,6 +739,25 @@ describe('dataPointDivergences', () => {
   }
 })
 
+// ERB splits the template on `%>` before Ruby sees it, so a string literal
+// holding `%>` is spelled double-quoted with `%` hex-escaped; one without
+// keeps its single-quoted spelling.
+describe('ErbAdapter - string literal spelling a tag delimiter', () => {
+  test('a literal holding %> does not end the enclosing tag', () => {
+    const { template } = compileAndGenerate(`
+function Widget(props: { a: string; show: boolean }) {
+  return <div>
+    <span>{props.show ? 'a %> "#{b}" \\\\' : '<% c'}</span>
+    <span>{\`\${props.a} %%> d\`}</span>
+  </div>
+}
+`)
+    expect(template).toContain(`"a \\x25> \\"\\#{b}\\" \\\\"`)
+    expect(template).toContain("'<% c'")
+    expect(template).toContain('" \\x25\\x25> d"')
+  })
+})
+
 // A `+` the shared layer classifies as string concatenation: Ruby's `+`
 // raises on a String plus a number, so the operand that is not typed as a
 // string goes through `bf.string`, in both orders. A loop row or filter

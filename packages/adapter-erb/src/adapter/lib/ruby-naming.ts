@@ -80,9 +80,21 @@ export function escapeRubySingleQuoted(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
 }
 
-/** Wrap a raw string value as a Ruby single-quoted literal. */
+/**
+ * Spell a string value as a Ruby string literal — the one door every
+ * string value the adapter writes into template code goes through.
+ *
+ * ERB splits the template on `%>` before Ruby sees it, so a value holding
+ * `%>` would end the enclosing tag (`<%= 'a %> b' %>` is a syntax error),
+ * and ERB reads `%%>` inside a tag as `%>`. Such a value is written
+ * double-quoted with every `%` hex-escaped (`\x25` is still `%` to Ruby,
+ * but no longer spells a delimiter), and `\` / `"` / `#` escaped against
+ * interpolation. Any other value stays single-quoted. (`<%` inside a tag
+ * is plain content to ERB.)
+ */
 export function rubyStringLiteral(s: string): string {
-  return `'${escapeRubySingleQuoted(s)}'`
+  if (!s.includes('%>')) return `'${escapeRubySingleQuoted(s)}'`
+  return `"${s.replace(/[\\"#%]/g, ch => (ch === '%' ? '\\x25' : `\\${ch}`))}"`
 }
 
 /** A syntactically valid bare Ruby hash-key / symbol identifier. */
