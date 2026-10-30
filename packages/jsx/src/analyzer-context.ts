@@ -201,6 +201,8 @@ export interface AnalyzerContext {
   propsType: TypeInfo | null
   propsParams: ParamInfo[]
   propsObjectName: string | null
+  /** Whether the component reads its props object as a whole (`observesWholePropsObject`). */
+  propsObjectObservedWhole: boolean
   restPropsName: string | null
   /** Keys that can be statically expanded from rest props (closed type) */
   restPropsExpandedKeys: string[]
@@ -303,6 +305,7 @@ export function createAnalyzerContext(
     propsType: null,
     propsParams: [],
     propsObjectName: null,
+    propsObjectObservedWhole: false,
     restPropsName: null,
     restPropsExpandedKeys: [],
     propsDestructuring: null,

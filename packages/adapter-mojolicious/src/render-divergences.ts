@@ -27,6 +27,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 at compile time instead of silently crashing
 // Perl `strict`-mode template execution — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A prop the child does not declare, spread onto its root through
+  // `{...props}`, is missing from the element.
+  'child-undeclared-prop-whole-props-spread': { limitation: 'whole-props-spread-undeclared-prop' },
   // A boolean text child prints `true` / `false`; JSX renders nothing.
   'boolean-text-child': { limitation: 'boolean-text-child' },
   'boolean-text-child-destructured': { limitation: 'boolean-text-child' },

@@ -63,7 +63,11 @@ export function analyzeBakeableStaticChildLoop(
     loopKey?: string
   },
   localConstants: ReadonlyArray<ConstantInfo>,
-  opts?: { isNameShadowed?: (name: string) => boolean },
+  opts?: {
+    isNameShadowed?: (name: string) => boolean
+    /** The child's rest bag field, and which props route into it (`routesToRestBag`). */
+    restBag?: { field: string; routes: (name: string) => boolean }
+  },
 ): BakedStaticChildLoop | null {
   // A destructured loop param's raw pattern text starts with `{`/`[` (the
   // synthesized single-identifier rewrite only applies to a SIMPLE param) —
@@ -76,16 +80,8 @@ export function analyzeBakeableStaticChildLoop(
   const items: BakedStaticChildItem[] = []
   for (const item of staticItemsResult) {
     const bindings = new Map<string, unknown>([[nested.loopParam, item]])
-    const inputFields: Array<{ goField: string; goValue: string }> = []
-    for (const prop of nested.props) {
-      if (prop.isEventHandler) continue
-      if (prop.name.includes('-')) continue // no rest-bag at this compile-time-baked layer
-      const resolved = resolvePropValue(prop.value, bindings)
-      if (resolved === undefined) return null
-      const goValue = scalarToGoLiteral(resolved)
-      if (goValue === null) return null
-      inputFields.push({ goField: capitalizeFieldName(prop.name), goValue })
-    }
+    const inputFields = bakeItemInputFields(nested.props, bindings, opts?.restBag)
+    if (inputFields === null) return null
     let dataKey: string | null = null
     if (nested.loopKey) {
       const keyExpr = parseExpression(nested.loopKey)
@@ -96,6 +92,39 @@ export function analyzeBakeableStaticChildLoop(
     items.push({ inputFields, dataKey })
   }
   return { items }
+}
+
+/**
+ * One item's `<Child>Input` fields, or null when a prop doesn't resolve to a
+ * scalar. A prop the child collects in its rest bag goes into that bag's
+ * map; a hyphenated one with no bag, or whose value doesn't bake, is
+ * skipped.
+ */
+function bakeItemInputFields(
+  props: ReadonlyArray<{ name: string; value: IRProp['value']; isEventHandler: boolean }>,
+  bindings: ReadonlyMap<string, unknown>,
+  restBag: { field: string; routes: (name: string) => boolean } | undefined,
+): Array<{ goField: string; goValue: string }> | null {
+  const inputFields: Array<{ goField: string; goValue: string }> = []
+  const bagEntries: string[] = []
+  for (const prop of props) {
+    if (prop.isEventHandler) continue
+    const toBag = restBag?.routes(prop.name) ?? false
+    const hyphenated = prop.name.includes('-')
+    if (!toBag && hyphenated) continue
+    const resolved = resolvePropValue(prop.value, bindings)
+    const goValue = resolved === undefined ? null : scalarToGoLiteral(resolved)
+    // A hyphenated attr was skipped before it could reach a bag; one that
+    // doesn't bake still is, rather than costing the whole loop its bake.
+    if (goValue === null && hyphenated) continue
+    if (goValue === null) return null
+    if (toBag) bagEntries.push(`${JSON.stringify(prop.name)}: ${goValue}`)
+    else inputFields.push({ goField: capitalizeFieldName(prop.name), goValue })
+  }
+  if (restBag && bagEntries.length > 0) {
+    inputFields.push({ goField: restBag.field, goValue: `map[string]any{${bagEntries.join(', ')}}` })
+  }
+  return inputFields
 }
 
 /** Resolves a prop's `AttrValue` to a plain JS value, or `undefined` if unresolvable. */

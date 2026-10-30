@@ -5,6 +5,8 @@
  * `GoTemplateAdapterOptions`. Pure type surface — no behaviour.
  */
 
+import { collectContextConsumers, type IRMetadata } from '@barefootjs/jsx'
+import { capitalizeFieldName } from './go-naming.ts'
 import type {
   BindingScope,
   HigherOrderMethod,
@@ -209,6 +211,14 @@ export interface ChildComponentShape {
    * a value that may be nil keeps it whole only into these (#3323).
    */
   nillableParamNames: ReadonlySet<string>
+  /**
+   * Caller-facing params declared as an array of one scalar family
+   * (`string[]`, `number[]`, `boolean[]`) whose Input field is that typed
+   * slice (no usage-driven override). An inline array literal the parent
+   * passes to one bakes against this type (`[]string{"a"}`), not the
+   * untyped `[]interface{}` Go would refuse to assign.
+   */
+  scalarArrayParamTypes: ReadonlyMap<string, TypeInfo>
 }
 
 /**
@@ -221,6 +231,12 @@ export function isCertainlyDataType(type: TypeInfo): boolean {
   if (type.kind === 'primitive' || type.kind === 'array') return true
   if (type.kind === 'union') return (type.unionTypes ?? []).length > 0 && type.unionTypes!.every(isCertainlyDataType)
   return false
+}
+
+/** An array whose element is one scalar family: `string[]`, `number[]`, `boolean[]`. */
+export function isScalarArrayType(type: TypeInfo): boolean {
+  const el = type.kind === 'array' ? type.elementType : undefined
+  return el?.kind === 'primitive' && (el.primitive === 'string' || el.primitive === 'number' || el.primitive === 'boolean')
 }
 
 /**
@@ -238,6 +254,66 @@ export function isCertainlyDataType(type: TypeInfo): boolean {
  */
 export function routesToRestBag(shape: ChildComponentShape | undefined, jsxName: string): boolean {
   return !!shape?.restBagField && !shape.paramNames.has(jsxName)
+}
+
+/**
+ * True when the child neither declares `jsxName` nor collects undeclared
+ * props in a rest bag (`restBagBinding`): its `<Child>Input` has no field
+ * the value could go to. JS hands such a prop over and the child never
+ * reads it, so the parent drops it. False when the child's shape is unknown.
+ */
+export function hasNoInputSlot(shape: ChildComponentShape | undefined, jsxName: string): boolean {
+  return !!shape && !shape.restBagField && !shape.paramNames.has(jsxName)
+}
+
+/**
+ * The binding whose undeclared keys the component's open-ended rest bag
+ * holds, or null when it has none. A destructured rest (`{ a, ...rest }`)
+ * is one; so is a props object the component reads as a whole
+ * (`<b {...props}>`, `IRMetadata.propsObjectObservedWhole`), whose
+ * undeclared keys a caller delivers through the same bag. The bag's Go field
+ * name is {@link restBagField}'s.
+ */
+export function restBagBinding(
+  meta: { restPropsName?: string | null; propsObjectName: string | null; propsObjectObservedWhole?: boolean },
+): string | null {
+  if (meta.restPropsName) return meta.restPropsName
+  return meta.propsObjectName && meta.propsObjectObservedWhole ? meta.propsObjectName : null
+}
+
+/** Fields every generated `<C>Input` / `<C>Props` struct may carry besides the component's own. */
+const GENERATED_STRUCT_FIELDS: ReadonlySet<string> = new Set([
+  'ScopeID', 'BfParent', 'BfMount', 'BfDataKey', 'BfCallerProps', 'BfIsChild', 'BfIsRoot',
+  'BfRowVars', 'BfLoopItem', 'Scripts', 'Portals', 'SearchParams',
+])
+
+/**
+ * The Go field of the component's rest bag (`restBagBinding`) on its Input
+ * and Props structs, or null when it has none: `Capitalize(binding)`
+ * (prefixed `Bag` when it falls in the `Spread_<slot>` namespace), with `_`
+ * appended until it is no generated field (`ScopeID`, `BfParent`, …) and no
+ * field of the component's own params, signals, memos or context consumers.
+ * A rest named `scopeID` gets `ScopeID_`; `spread_s0` gets `BagSpread_s0`.
+ * Every site that writes or reads the bag uses this one name.
+ */
+export function restBagField(meta: IRMetadata): string | null {
+  const binding = restBagBinding(meta)
+  if (!binding) return null
+  const taken = new Set<string>(GENERATED_STRUCT_FIELDS)
+  for (const p of meta.propsParams ?? []) {
+    if (p.isRest) continue
+    taken.add(capitalizeFieldName(p.name))
+    taken.add(capitalizeFieldName(p.sourceName ?? p.name))
+  }
+  for (const s of meta.signals ?? []) taken.add(capitalizeFieldName(s.getter))
+  for (const m of meta.memos ?? []) taken.add(capitalizeFieldName(m.name))
+  for (const c of collectContextConsumers(meta)) taken.add(capitalizeFieldName(c.localName))
+  // `Spread_<slot>` is a whole namespace of element-spread bags, and appending
+  // `_` keeps the prefix, so a binding in it moves out first (`Bag` prefix).
+  let field = capitalizeFieldName(binding)
+  if (field.startsWith('Spread_')) field = `Bag${field}`
+  while (taken.has(field)) field += '_'
+  return field
 }
 
 /**

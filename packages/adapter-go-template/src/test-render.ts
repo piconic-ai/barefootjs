@@ -13,7 +13,7 @@ import { capitalizeFieldName, goFieldNameForKey } from './adapter/lib/go-naming.
 import { goItemAccessor, loopKeyToGoRowExpr, rowItemPath, type LoopRowBinding } from './adapter/lib/loop-row-path.ts'
 import { allocateRowsFields, rowsFieldSiteKey } from './adapter/lib/nested-rows-field.ts'
 import { findNestedComponents } from './adapter/analysis/component-tree.ts'
-import type { NestedComponentInfo } from './adapter/lib/types.ts'
+import { restBagField as restBagFieldOf, type NestedComponentInfo } from './adapter/lib/types.ts'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
 
@@ -971,7 +971,9 @@ function loopRowChildInputFields(
     const field = capitalizeFieldName(prop.name)
     const fieldType = childInput?.get(field)
     if (childInput && fieldType === undefined) {
-      if (!restBagField) return null
+      // A prop the child neither declares nor collects in a rest bag is
+      // dropped, as JS ignores it.
+      if (!restBagField) continue
       restBagEntries.push(`${JSON.stringify(prop.name)}: ${value}`)
       continue
     }
@@ -1044,7 +1046,8 @@ function buildGoPropsInit(
     (ir?.metadata.propsParams ?? []).map(p => p.sourceName ?? p.name),
   )
   const restPropsName = ir?.metadata.restPropsName ?? null
-  const restBagField = restPropsName ? capitalizeFieldName(restPropsName) : null
+  // The bag's field is the adapter's own choice (`restBagField`).
+  const restBagField = restPropsName ? restBagFieldOf(ir!.metadata) : null
 
   const lines: string[] = []
   const restBagEntries: Array<[string, unknown]> = []

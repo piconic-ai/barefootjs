@@ -27,6 +27,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // runtime's shape-check method, `java/.../Bf.java`) ahead of `call()`'s
 // generic fallback, so it never reaches the refusal at all.
 export const renderDivergences: RenderDivergences = {
+  // A prop the child does not declare, spread onto its root through
+  // `{...props}`, is missing from the element.
+  'child-undeclared-prop-whole-props-spread': { limitation: 'whole-props-spread-undeclared-prop' },
   // A boolean text child prints `true` / `false`; JSX renders nothing.
   'boolean-text-child': { limitation: 'boolean-text-child' },
   'boolean-text-child-destructured': { limitation: 'boolean-text-child' },

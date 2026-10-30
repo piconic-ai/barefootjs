@@ -2386,6 +2386,56 @@
           }
         }
       },
+      "child-undeclared-prop-whole-props-spread": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "whole-props-spread-undeclared-prop"
+          ]
+        }
+      },
       "component-prop-undefined-literal-spread": {
         "go-template": {
           "kind": "render",
@@ -8621,6 +8671,10 @@
         "description": "A `.map()` callback reading its index — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/callback-index-param.ts"
       },
+      "child-undeclared-prop-whole-props-spread": {
+        "description": "Undeclared props reach a child that spreads its whole props object",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/child-undeclared-prop-whole-props-spread.ts"
+      },
       "component-prop-undefined-literal-spread": {
         "description": "A child prop written as the literal undefined still passes its key to a props spread",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-prop-undefined-literal-spread.ts"
@@ -10345,6 +10399,26 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "whole-props-spread-undeclared-prop": {
+      "title": "An undeclared prop through a whole-props spread",
+      "kind": "silent",
+      "given": "a child that spreads its whole props object onto an element (`<b {...props}>`) is passed a prop its props type does not declare",
+      "expected": "the undeclared prop renders on the spread element (`title=\"passed\"`)",
+      "actual": "drops the undeclared prop from the element",
+      "fixtures": [
+        "child-undeclared-prop-whole-props-spread"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     }
   },

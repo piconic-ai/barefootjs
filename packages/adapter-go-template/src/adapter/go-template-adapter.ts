@@ -137,7 +137,7 @@ import type {
   CtorLowerEnv,
   GoTemplateAdapterOptions,
 } from "./lib/types.ts"
-import { routesToRestBag, restBagOverrideFields, isCertainlyDataType } from "./lib/types.ts"
+import { routesToRestBag, restBagOverrideFields, isCertainlyDataType, isScalarArrayType, hasNoInputSlot, restBagBinding, restBagField } from "./lib/types.ts"
 import { GO_TEMPLATE_PRIMITIVES, SCALAR_ROW_GO_TYPES, SCALAR_ROW_ITEM_FIELD } from "./lib/constants.ts"
 import { CompileState, findModuleScopeConst, findValuedLocalConst, propsObjectKeyRead, resolveSignalParsedThroughSeedPlan } from "./lib/compile-state.ts"
 import { hasClientInteractivity, findNestedComponents, loopArraySignal } from "./analysis/component-tree.ts"
@@ -660,6 +660,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private primeCompileState(ir: ComponentIR): ComponentIR {
     this.state.propsObjectName = ir.metadata.propsObjectName
     this.state.restPropsName = ir.metadata.restPropsName ?? null
+    this.state.restBagField = restBagField(ir.metadata)
     // #2822: this component's OWN import-alias map (local alias -> declared
     // name), read by `resolveChildName` at every cross-file lookup/codegen
     // site below. Re-primed on every `generate()`/`generateTypes()` call —
@@ -1309,6 +1310,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   registerChildComponentShape(ir: Pick<ComponentIR, 'metadata' | 'root'>): void {
     const name = ir.metadata.componentName
     if (!name) return
+    // The props a props-object child reads but its type only inherits
+    // (`props.id` off `HTMLBaseAttributes`) are params of its Input too. The
+    // nillable probe below adds them to `ir` anyway (`primeCompileState`);
+    // adding them first keeps every set here keyed by the same param list,
+    // so `hasNoInputSlot` never drops a prop the child's Input declares.
+    augmentInheritedPropAccesses(ir as ComponentIR)
     for (const key of collectNullableSeedStructFields(ir.metadata, ir.root)) this.fileNullableSeedStructFields.add(key)
     // Both sets on `ChildComponentShape` are looked up by a PARENT against the
     // name it wrote at the JSX call site, so they are keyed by
@@ -1319,8 +1326,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `loopRowChildPropOverrides` (skipped as rest-bag-only) — the same
     // wrong-name-at-a-parent-side-lookup bug as #2457, one function over.
     const paramNames = new Set((ir.metadata.propsParams ?? []).map(p => p.sourceName ?? p.name))
-    const restPropsName = ir.metadata.restPropsName ?? null
-    const restBagField = restPropsName ? capitalizeFieldName(restPropsName) : null
+    // A destructured rest, or a props object read as a whole: the caller's
+    // undeclared props land in the bag either way (`restBagBinding`).
+    const restPropsName = restBagBinding(ir.metadata)
+    const restBagFieldName = restBagField(ir.metadata as ComponentIR['metadata'])
     // #3062: which `Spread_N` field(s), if any, an element spread of THIS
     // rest binding (`{...rest}` somewhere in the child's own tree) renders
     // from — computed structurally off `ir.root` since no `GoEmitContext`
@@ -1390,15 +1399,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         ]),
     )
     const nillableParamNames = this.probeNillableParamNames(ir)
+    const scalarArrayParamTypes = new Map(
+      (ir.metadata.propsParams ?? [])
+        .filter(p => !p.isRest && !propTypeOverrides.has(p.name) && isScalarArrayType(p.type))
+        .map(p => [p.sourceName ?? p.name, p.type]),
+    )
     this.childComponentShapes.set(name, {
       paramNames,
-      restBagField,
+      restBagField: restBagFieldName,
       restBagSpreadFields,
       mapTypedParamNames,
       structTypedObjectParams,
       dataTypedParamNames,
       paramGoTypes,
       nillableParamNames,
+      scalarArrayParamTypes,
     })
     // NOT `paramNames`: `recordDerivedFieldDeps` forwards this set to
     // `collectPropsReadByCtorInit`, which in destructured mode matches BARE
@@ -1690,7 +1705,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const eligible =
       nestedComponents.every(n => n.isDynamic && !n.isPropDerived) &&
       spreadSlots.length === 0 &&
-      !ir.metadata.restPropsName &&
+      !restBagBinding(ir.metadata) &&
       this.nonCollidingContextConsumers(takenInput).length === 0
     if (!eligible) return
 
@@ -1940,9 +1955,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       ...ir.metadata.memos.map(m => capitalizeFieldName(m.name)),
       ...this.state.contextConsumers.map(c => this.contextFieldName(c)),
     ])
-    if (ir.metadata.restPropsName) {
-      taken.add(capitalizeFieldName(ir.metadata.restPropsName))
-    }
+    const restBag = restBagField(ir.metadata)
+    if (restBag) taken.add(restBag)
     return !taken.has('SearchParams')
   }
 
@@ -2040,9 +2054,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // NOT only when it's also spread onto an element (`bagSource:
     // 'input-bag'`): a component that only READS `rest.header` needs the
     // same field to land a value in, even though it never spreads the bag.
-    const restPropsName = ir.metadata.restPropsName
-    if (restPropsName) {
-      const fieldName = capitalizeFieldName(restPropsName)
+    const restPropsName = restBagBinding(ir.metadata)
+    const restField = restBagField(ir.metadata)
+    if (restPropsName && restField) {
+      const fieldName = restField
       const jsonTag = this.toJsonTag(restPropsName)
       lines.push(`\t${fieldName} map[string]any \`json:"${jsonTag}"\``)
     }
@@ -2441,10 +2456,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Pass the rest-bag map straight through from Input to Props (#2805) —
     // same field on both structs (`generateInputStruct` / `emitPropsAuxFields`),
     // no reshaping needed since it's already `map[string]any` on both sides.
-    if (ir.metadata.restPropsName) {
-      const field = capitalizeFieldName(ir.metadata.restPropsName)
-      lines.push(`\t\t${field}: in.${field},`)
-    }
+    const field = restBagField(ir.metadata)
+    if (field) lines.push(`\t\t${field}: in.${field},`)
 
     lines.push('\t}')
     lines.push('}')
@@ -3654,10 +3667,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // land on the struct the template actually executes against. Never
     // serialised: rest-bag values reach the client through `BfCallerProps`
     // the same way reserved `children` does, not through `bf-p` JSON.
-    if (ir.metadata.restPropsName) {
-      const fieldName = capitalizeFieldName(ir.metadata.restPropsName)
-      lines.push(`\t${fieldName} map[string]any \`json:"-"\``)
-    }
+    const restField = restBagField(ir.metadata)
+    if (restField) lines.push(`\t${restField} map[string]any \`json:"-"\``)
   }
 
   /** Convert a field name to its JSON tag (camelCase). */
@@ -4869,7 +4880,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const resolved = this.resolveRootFieldAlias(name)
     this.state.templateReadRootFields.add(resolved)
     const prefix = this.inLoop ? '$.' : '.'
-    return `${prefix}${capitalizeFieldName(resolved)}`
+    // The rest bag's field is `restBagField`'s, not always `Capitalize(name)`.
+    const field = this.state.restBagField && resolved === this.state.restPropsName
+      ? this.state.restBagField
+      : capitalizeFieldName(resolved)
+    return `${prefix}${field}`
   }
 
   /**
@@ -6379,7 +6394,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private getBakedStaticChildLoop(
     markerId: string,
-    childComponent: { props: IRLoopChildComponent['props'] },
+    childComponent: { name: string; props: IRLoopChildComponent['props'] },
     arrayParsed: ParsedExpr | undefined,
     param: string | undefined,
     key: string | undefined,
@@ -6395,10 +6410,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // on the coarse whole-component shadow-name Set `primeCompileState`
     // populates. A genuinely-legitimate surviving use of the pre-#2482
     // device (flagged for Stage 4 rather than migrated here).
+    // A prop the child has no Input field for is dropped, and one the child
+    // collects in its rest bag goes there, as at a non-loop call site
+    // (`hasNoInputSlot`, `routesToRestBag`).
+    const shape = this.childComponentShapes.get(this.resolveChildName(childComponent.name))
+    const props = childComponent.props.filter(p => !hasNoInputSlot(shape, p.name))
+    const restBag = shape?.restBagField
+      ? { field: shape.restBagField, routes: (name: string) => routesToRestBag(shape, name) }
+      : undefined
     const result = analyzeBakeableStaticChildLoop(
-      { props: childComponent.props, loopArrayParsed: arrayParsed, loopParam: param, loopKey: key },
+      { props, loopArrayParsed: arrayParsed, loopParam: param, loopKey: key },
       this.state.localConstants,
-      { isNameShadowed: name => this.state.staticLoopSourceBoundNames.has(name) },
+      { isNameShadowed: name => this.state.staticLoopSourceBoundNames.has(name), restBag },
     )
     this.bakedStaticChildLoopCache.set(markerId, result)
     return result

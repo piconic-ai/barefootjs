@@ -28,7 +28,7 @@ import type {
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
-import type { SpreadSlotInfo } from '../lib/types.ts'
+import { restBagBinding, restBagField, type SpreadSlotInfo } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 
 /** A raw top-level intrinsic-element spread attr, before bag-source classification. */
@@ -164,6 +164,24 @@ function classifySpreadBagSource(ctx: GoEmitContext, spreadExpr: string): 'input
 }
 
 /**
+ * A SolidJS-style props object's `{...props}` bag: every Input field as a
+ * bag key (caller-facing name, as the spread's external shape has it; the
+ * props-object pattern has no aliasing). A props object read as a whole
+ * also carries the caller's undeclared keys, in its rest bag
+ * (`restBagBinding`, field `restBagField`). The two key sets are disjoint, so the merge order only
+ * fixes which map wins a key neither should hold: the declared one, as
+ * written last.
+ */
+function propsObjectSpreadInitializer(ir: ComponentIR, propsObject: string): string {
+  const entries = ir.metadata.propsParams.map(p =>
+    `${JSON.stringify(p.sourceName ?? p.name)}: in.${capitalizeFieldName(p.sourceName ?? p.name)}`,
+  )
+  const declared = `map[string]any{${entries.join(', ')}}`
+  const bag = restBagBinding(ir.metadata) === propsObject ? restBagField(ir.metadata) : null
+  return bag ? `bf.Merge(in.${bag}, ${declared})` : declared
+}
+
+/**
  * Lower a signal's carried object-literal initial value into a Go
  * `map[string]any{...}` literal. Conservative subset: string/number/boolean/null
  * values (and a signed-number `{count: -1}`) keyed by identifier or
@@ -271,22 +289,14 @@ export function buildSpreadInitializer(
     //    `map[string]any{}`: SSR renders no spread attrs, but the CSR
     //    `applyRestAttrs` hydrate path still applies them — worse than full
     //    enumeration, better than BF101 blocking the build.
-    if (ir.metadata.propsObjectName === trimmed) {
-      // Bag key stays the caller-facing prop name (mirrors the spread bag's
-      // external shape); Input field read is caller-facing too (#2525) —
-      // identity here since the `props`-object pattern has no aliasing.
-      const entries = ir.metadata.propsParams.map(p =>
-        `${JSON.stringify(p.sourceName ?? p.name)}: in.${capitalizeFieldName(p.sourceName ?? p.name)}`,
-      )
-      return `map[string]any{${entries.join(', ')}}`
-    }
+    if (ir.metadata.propsObjectName === trimmed) return propsObjectSpreadInitializer(ir, trimmed)
     // 3. Destructured-rest identifier `function({a, ...rest}: P)`. The rest's
     //    key set is open-ended, so `generateInputStruct` added an Input field
     //    named after the rest binding (`rest` → `Rest`); callers write
     //    `XxxInput{Rest: ...}` with the same identifier they saw in source.
     //    Forward it through.
     if (ir.metadata.restPropsName === trimmed) {
-      return `in.${capitalizeFieldName(trimmed)}`
+      return `in.${restBagField(ir.metadata)!}`
     }
     // 4. Function-scope local const holding a conditional inline-object spread:
     //    `const sizeAttrs = size ? {…} : {}` then `{...sizeAttrs}`. Resolve to

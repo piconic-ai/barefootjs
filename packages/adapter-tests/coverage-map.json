@@ -1572,6 +1572,32 @@
         "text"
       ]
     },
+    "child-inline-string-array-prop": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:+",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "member:computed",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "child-number-prop-fraction": {
       "kinds": [
         "array-literal",
@@ -1655,6 +1681,115 @@
       ],
       "contexts": [
         "attribute"
+      ]
+    },
+    "child-rest-bag-generated-field-name": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "child-string-prop-literal-lookalike": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "child-string-prop-literal-lookalike-positions": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "child-string-prop-literal-lookalike-rest-bag": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "child-undeclared-prop-dropped": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "child-undeclared-prop-whole-props-spread": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
       ]
     },
     "children-alias-hop": {

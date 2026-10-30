@@ -2419,6 +2419,13 @@ export interface IRMetadata {
   propsParams: ParamInfo[]
   /** Name of the props object parameter (e.g., 'props' in `function Component(props: Props)`) */
   propsObjectName: string | null
+  /**
+   * Whether the component reads its props object as a whole (`{...props}`,
+   * `Object.keys(props)`, `props[key]`, passing `props` on), so a key its
+   * props type does not declare can still reach the output. Undefined on
+   * hand-built metadata, which reads as false.
+   */
+  propsObjectObservedWhole?: boolean
   restPropsName: string | null
   /** Keys statically expanded from rest props via type analysis (closed type only) */
   restPropsExpandedKeys: string[]

@@ -132,7 +132,7 @@ function restMemberChildPropValue(
   ) {
     return null
   }
-  const ref = `in.${capitalizeFieldName(restName)}[${JSON.stringify(value.property)}]`
+  const ref = `in.${ctx.state.restBagField ?? capitalizeFieldName(restName)}[${JSON.stringify(value.property)}]`
   if (routesToRestBag(childShape, propName) || childShape?.nillableParamNames.has(propName)) return ref
   const goType = childShape?.paramGoTypes.get(propName)
   return goType === undefined ? null : unboxToGoScalar(ref, goType)

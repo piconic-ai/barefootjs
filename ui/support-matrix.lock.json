@@ -25,6 +25,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -164,6 +170,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -541,6 +553,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -686,6 +704,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -837,6 +861,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -970,6 +1000,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -1115,6 +1151,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -1254,6 +1296,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -4616,6 +4664,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -4887,6 +4941,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -5570,6 +5630,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -5847,6 +5913,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -6130,6 +6202,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -6383,6 +6461,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -6660,6 +6744,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -6931,6 +7021,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -7221,6 +7317,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
@@ -7248,6 +7350,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
             {
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
@@ -7323,6 +7431,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
@@ -7350,6 +7464,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
             {
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
@@ -7379,6 +7499,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
@@ -7406,6 +7532,12 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
             {
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
@@ -7435,6 +7567,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
@@ -7462,6 +7600,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
             {
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
@@ -7561,6 +7705,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -7913,6 +8063,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -8836,6 +8992,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -9197,6 +9359,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -9564,6 +9732,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -9895,6 +10069,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -10250,6 +10430,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -10599,6 +10785,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -11127,6 +11319,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -11380,6 +11578,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -12105,6 +12309,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -12370,6 +12580,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -12641,6 +12857,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -12903,6 +13125,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -13159,6 +13387,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -13412,6 +13646,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -14305,6 +14545,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -14558,6 +14804,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -15247,6 +15499,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -15506,6 +15764,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -15771,6 +16035,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -16012,6 +16282,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -16283,6 +16559,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -16536,6 +16818,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -16799,6 +17087,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -16832,6 +17126,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
             {
               "fixture": "module-const-default-hydrate",
               "limitations": [
@@ -16937,6 +17237,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -16971,6 +17277,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -17004,6 +17316,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
             {
               "fixture": "module-const-default-hydrate",
               "limitations": [
@@ -17045,6 +17363,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -17072,6 +17396,12 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
             {
               "fixture": "module-const-default-hydrate",
               "limitations": [
@@ -17106,6 +17436,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
             {
               "fixture": "module-const-default-hydrate",
               "limitations": [
@@ -17188,6 +17524,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
@@ -17219,6 +17561,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -17332,6 +17680,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
@@ -17363,6 +17717,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -17400,6 +17760,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
@@ -17434,6 +17800,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
@@ -17459,6 +17831,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -17493,6 +17871,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -21957,6 +22341,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -21984,6 +22374,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -22071,6 +22467,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -22099,6 +22501,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -22126,6 +22534,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -22167,6 +22581,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -22195,6 +22615,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -22222,6 +22648,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -22291,6 +22723,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "module-const-array-negative-zero",
               "limitations": [
                 "negative-zero-literal"
@@ -22322,6 +22760,12 @@
               "fixture": "boolean-text-child-destructured",
               "limitations": [
                 "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -22417,6 +22861,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "module-const-array-negative-zero",
               "limitations": [
                 "negative-zero-literal"
@@ -22448,6 +22898,12 @@
               "fixture": "boolean-text-child-destructured",
               "limitations": [
                 "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -22485,6 +22941,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "module-const-array-negative-zero",
               "limitations": [
                 "negative-zero-literal"
@@ -22519,6 +22981,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "module-const-array-negative-zero",
               "limitations": [
                 "negative-zero-literal"
@@ -22544,6 +23012,12 @@
               "fixture": "boolean-text-child-destructured",
               "limitations": [
                 "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -22578,6 +23052,12 @@
               "fixture": "boolean-text-child-destructured",
               "limitations": [
                 "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -24158,6 +24638,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -24321,6 +24807,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -24830,6 +25322,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -25005,6 +25503,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {
@@ -25186,6 +25690,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -25358,6 +25868,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -25524,6 +26040,12 @@
               ]
             },
             {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -25687,6 +26209,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "child-undeclared-prop-whole-props-spread",
+              "limitations": [
+                "whole-props-spread-undeclared-prop"
               ]
             },
             {

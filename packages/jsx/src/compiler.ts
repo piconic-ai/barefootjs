@@ -678,6 +678,7 @@ export function buildMetadata(
     typeParameters: componentTypeParametersText(ctx.componentNode, ctx.sourceFile),
     propsParams: ctx.propsParams,
     propsObjectName: ctx.propsObjectName,
+    propsObjectObservedWhole: ctx.propsObjectObservedWhole,
     restPropsName: ctx.restPropsName,
     restPropsExpandedKeys: ctx.restPropsExpandedKeys,
     signals: ctx.signals,
