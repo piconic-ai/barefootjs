@@ -6795,6 +6795,34 @@
       }
     }
   ],
+  "module-const-array-literal-index": [
+    {
+      "name": "gen:on:true",
+      "props": {
+        "PS": [
+          "p0",
+          "p\"1"
+        ],
+        "on": true
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "PS": [
+          "p0",
+          "p\"1"
+        ],
+        "on": false
+      }
+    },
+    {
+      "name": "gen:PS:empty",
+      "props": {
+        "PS": []
+      }
+    }
+  ],
   "module-const-arrow-helper": [
     {
       "name": "gen:label:empty",

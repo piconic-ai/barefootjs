@@ -108,7 +108,7 @@ function propsBindingNames(metadata: IRMetadata): Set<string> {
  * {@link ComputedConstContext.componentNames}. Not `componentBindings`, which
  * also lists every typed prop of a props object as a `prop` binding.
  */
-function componentScopeNames(metadata: IRMetadata): Set<string> {
+export function componentScopeNames(metadata: IRMetadata): Set<string> {
   const names = new Set<string>()
   if (metadata.propsObjectName !== null) names.add(metadata.propsObjectName)
   // With no props object the signature destructures, so every param is bound.

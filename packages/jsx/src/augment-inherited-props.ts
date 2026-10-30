@@ -14,6 +14,7 @@ import ts from 'typescript'
 
 import type { ComponentIR, IRMetadata, IRNode, IRElement, IRTemplatePart, TypeInfo } from './types.ts'
 import { isBooleanAttr } from './html-constants.ts'
+import { literalMemberIndex } from './literal-member-index.ts'
 
 /**
  * A `const x = useContext(SomeContext)` consumer in a component body. SSR
@@ -472,7 +473,9 @@ export function collectModuleStringConsts(
  * compile-time lookup (the icon registry's `strokePaths['chevron-down']`,
  * pagination's `variantClasses.ghost`; #1896 / #1897). Returns the
  * looked-up scalar, or `null` for any other shape so callers fall back
- * to their generic lowering. Shared by all seven template-string adapters;
+ * to their generic lowering. A module array-literal const read with a
+ * literal index (`QS[0]`) resolves the same way (`staticArrayElement`).
+ * Shared by all seven template-string adapters;
  * the prop-KEYED variant of the pattern lives in `parseRecordIndexAccess`.
  *
  * `isShadowed` is REQUIRED (#2482 Stage 2) rather than left to caller
@@ -493,7 +496,8 @@ export function lookupStaticRecordLiteral(
 ): { kind: 'string' | 'number'; text: string } | null {
   if (isShadowed(objectName)) return null
   const constInfo = (constants ?? []).find(c => c.name === objectName && c.isModule)
-  if (constInfo?.value === undefined) return null
+  // A prop or component binding of the name is what the read reaches.
+  if (constInfo?.value === undefined || constInfo.shadowedInComponent) return null
   const sf = ts.createSourceFile(
     '__rec.ts', `(${constInfo.value})`, ts.ScriptTarget.Latest, /*setParentNodes*/ true,
   )
@@ -502,6 +506,7 @@ export function lookupStaticRecordLiteral(
   if (!ts.isExpressionStatement(stmt)) return null
   let parsed: ts.Expression = stmt.expression
   while (ts.isParenthesizedExpression(parsed)) parsed = parsed.expression
+  if (ts.isArrayLiteralExpression(parsed)) return staticArrayElement(parsed, key)
   if (!ts.isObjectLiteralExpression(parsed)) return null
   for (const prop of parsed.properties) {
     if (!ts.isPropertyAssignment(prop)) continue
@@ -518,6 +523,35 @@ export function lookupStaticRecordLiteral(
       return { kind: 'string', text: v.text }
     }
     return null
+  }
+  return null
+}
+
+/**
+ * The scalar at `key` of a module array-literal const (`QS[0]`, `QS['1']`,
+ * `QS.length`): an index key must be canonical (`'01'` names no element), the
+ * element a string or number literal, or a negated number literal (`-0`
+ * reads as `0`, as JS prints it). A hole, a spread before the element, an
+ * out-of-range index or any other element shape is `null`, so the caller
+ * falls back to its generic lowering.
+ */
+function staticArrayElement(
+  array: ts.ArrayLiteralExpression,
+  key: string,
+): { kind: 'string' | 'number'; text: string } | null {
+  if (key === 'length') {
+    return array.elements.some(ts.isSpreadElement) ? null : { kind: 'number', text: String(array.elements.length) }
+  }
+  const index = literalMemberIndex(key)
+  if (index.kind !== 'literal' || typeof index.value !== 'number') return null
+  const elements = array.elements.slice(0, index.value + 1)
+  if (elements.length <= index.value || elements.some(ts.isSpreadElement)) return null
+  let v: ts.Expression = elements[index.value]
+  while (ts.isParenthesizedExpression(v)) v = v.expression
+  if (ts.isNumericLiteral(v)) return { kind: 'number', text: v.text }
+  if (ts.isStringLiteral(v) || ts.isNoSubstitutionTemplateLiteral(v)) return { kind: 'string', text: v.text }
+  if (ts.isPrefixUnaryExpression(v) && v.operator === ts.SyntaxKind.MinusToken && ts.isNumericLiteral(v.operand)) {
+    return { kind: 'number', text: String(-Number(v.operand.text)) }
   }
   return null
 }
