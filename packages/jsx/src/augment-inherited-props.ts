@@ -13,6 +13,7 @@
 import ts from 'typescript'
 
 import type { ComponentIR, IRMetadata, IRNode, IRElement, IRTemplatePart, TypeInfo } from './types.ts'
+import type { ParsedExpr } from './expression-parser.ts'
 import { isBooleanAttr } from './html-constants.ts'
 import { literalMemberIndex } from './literal-member-index.ts'
 
@@ -474,7 +475,7 @@ export function collectModuleStringConsts(
  * pagination's `variantClasses.ghost`; #1896 / #1897). Returns the
  * looked-up scalar, or `null` for any other shape so callers fall back
  * to their generic lowering. A module array-literal const read with a
- * literal index (`QS[0]`) resolves the same way (`staticArrayElement`).
+ * literal index (`QS[0]`) goes through `lookupStaticArrayElement` instead.
  * Shared by all seven template-string adapters;
  * the prop-KEYED variant of the pattern lives in `parseRecordIndexAccess`.
  *
@@ -506,7 +507,6 @@ export function lookupStaticRecordLiteral(
   if (!ts.isExpressionStatement(stmt)) return null
   let parsed: ts.Expression = stmt.expression
   while (ts.isParenthesizedExpression(parsed)) parsed = parsed.expression
-  if (ts.isArrayLiteralExpression(parsed)) return staticArrayElement(parsed, key)
   if (!ts.isObjectLiteralExpression(parsed)) return null
   for (const prop of parsed.properties) {
     if (!ts.isPropertyAssignment(prop)) continue
@@ -528,30 +528,47 @@ export function lookupStaticRecordLiteral(
 }
 
 /**
- * The scalar at `key` of a module array-literal const (`QS[0]`, `QS['1']`,
- * `QS.length`): an index key must be canonical (`'01'` names no element), the
- * element a string or number literal, or a negated number literal (`-0`
- * reads as `0`, as JS prints it). A hole, a spread before the element, an
- * out-of-range index or any other element shape is `null`, so the caller
- * falls back to its generic lowering.
+ * The element at `key` of a module array-literal const (`QS[0]`, `QS['1']`)
+ * or its `length`, as the element's own typed `ParsedExpr`: a string or
+ * number `literal`, or a unary `-` over a number literal. The caller emits
+ * it through its own expression emitter, exactly as if the source had
+ * written the element in place, so a value such as `-0` keeps its sign in
+ * arithmetic and a comparison (`1 / QS[0] < 0`) and is spelled `0` only
+ * where JS stringifies it. An index key must be canonical (`'01'` names no
+ * element). A hole or spread at or before the element (either also makes
+ * `length` unknown), an out-of-range index or any other element shape is
+ * `null`, so the caller falls back to its generic lowering.
+ *
+ * `isShadowed` is REQUIRED for the same reason as in
+ * `lookupStaticRecordLiteral`; a const the component scope shadows
+ * (`shadowedInComponent`) is not resolved either.
  */
-function staticArrayElement(
-  array: ts.ArrayLiteralExpression,
+export function lookupStaticArrayElement(
+  objectName: string,
   key: string,
-): { kind: 'string' | 'number'; text: string } | null {
+  constants: IRMetadata['localConstants'] | undefined,
+  isShadowed: (name: string) => boolean,
+): ParsedExpr | null {
+  if (isShadowed(objectName)) return null
+  const constInfo = (constants ?? []).find(c => c.name === objectName && c.isModule)
+  if (!constInfo || constInfo.shadowedInComponent || constInfo.mutatedAfterDeclaration) return null
+  const array = constInfo.parsed
+  if (array?.kind !== 'array-literal') return null
   if (key === 'length') {
-    return array.elements.some(ts.isSpreadElement) ? null : { kind: 'number', text: String(array.elements.length) }
+    if (array.elements.some(e => e.kind === 'unsupported')) return null
+    return { kind: 'literal', value: array.elements.length, literalType: 'number', raw: String(array.elements.length) }
   }
   const index = literalMemberIndex(key)
   if (index.kind !== 'literal' || typeof index.value !== 'number') return null
-  const elements = array.elements.slice(0, index.value + 1)
-  if (elements.length <= index.value || elements.some(ts.isSpreadElement)) return null
-  let v: ts.Expression = elements[index.value]
-  while (ts.isParenthesizedExpression(v)) v = v.expression
-  if (ts.isNumericLiteral(v)) return { kind: 'number', text: v.text }
-  if (ts.isStringLiteral(v) || ts.isNoSubstitutionTemplateLiteral(v)) return { kind: 'string', text: v.text }
-  if (ts.isPrefixUnaryExpression(v) && v.operator === ts.SyntaxKind.MinusToken && ts.isNumericLiteral(v.operand)) {
-    return { kind: 'number', text: String(-Number(v.operand.text)) }
+  const upTo = array.elements.slice(0, index.value + 1)
+  if (upTo.length <= index.value || upTo.some(e => e.kind === 'unsupported')) return null
+  const element = upTo[index.value]
+  if (element.kind === 'literal' && (element.literalType === 'string' || element.literalType === 'number')) return element
+  if (
+    element.kind === 'unary' && element.op === '-' &&
+    element.argument.kind === 'literal' && element.argument.literalType === 'number'
+  ) {
+    return element
   }
   return null
 }

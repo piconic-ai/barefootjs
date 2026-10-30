@@ -77,6 +77,8 @@ export interface MemberAndMethodsHost {
   isMapSeededSignalChain(node: ParsedExpr): boolean
   /** A static `Const.key` / `Const["key"]` / `Const[0]` lookup on a module literal const, or null. */
   resolveStaticConstMember(objectName: string, key: string): string | null
+  /** The element (or `length`) of a module array-literal const at a literal key, as a typed `ParsedExpr`, or null. */
+  staticArrayElement(objectName: string, key: string): ParsedExpr | null
   /** Whether `name` is the innermost loop item and a record (has fields). */
   isCurrentLoopRecord(name: string): boolean
   /** The nil-safe `bf_get` read of `property` on `object`. */
@@ -223,6 +225,8 @@ function renderBindingMemberRead(
   // `resolveStaticRecordLiteralIndex`, reached here when the access is
   // nested inside a larger ParsedExpr tree.
   if (object.kind === 'identifier') {
+    const element = host.staticArrayElement(object.name, property)
+    if (element !== null) return emit(element)
     const staticValue = host.resolveStaticConstMember(object.name, property)
     if (staticValue !== null) return staticValue
   }

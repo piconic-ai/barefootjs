@@ -71,7 +71,7 @@ import {
   type ContextConsumer,
   collectModuleStringConsts as collectModuleStringConstsShared,
   lookupLiteralConst,
-  lookupStaticRecordLiteral,
+  lookupStaticArrayElement,
   prepareLoweringMatchers,
   envSignalReaderFor,
   computeSsrSeedPlan,
@@ -368,6 +368,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     extractHtmlChildren: (children) => this.extractHtmlChildren(children),
     extractScopedHtmlChildren: (children) => this.extractScopedHtmlChildren(children),
     resolveStaticConstMember: (objectName, key) => this.resolveStaticConstMember(objectName, key),
+    staticArrayElement: (objectName, key) => this.staticArrayElement(objectName, key),
   }
 
   /** Diagnostics from the current compile (backed by `CompileState`); `generate()` also merges these into `ir.errors`. */
@@ -6126,10 +6127,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * `objectName[key]` over a module literal const: a record's string/number
-   * value (below), or the element of an array-literal const at a literal
-   * index (`QS[0]`), resolved by the shared `lookupStaticRecordLiteral`.
-   * Returns the value as a Go literal, or null.
+   * The element (or `length`) of a module array-literal const read with a
+   * literal key (`QS[0]`), as the typed `ParsedExpr` the caller spells in
+   * its own context (`lookupStaticArrayElement`), or null.
+   */
+  private staticArrayElement(objectName: string, key: string): ParsedExpr | null {
+    return lookupStaticArrayElement(objectName, key, this.state.localConstants, n => this.isLoopShadowedName(n))
+  }
+
+  /**
+   * `objectName[key]` over a module record literal const: its string/number
+   * value as a Go literal, or null.
    */
   private resolveStaticConstMember(objectName: string, key: string): string | null {
     // The base name may be an enclosing loop callback's own (shadowing)
@@ -6143,11 +6151,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     )
     // A prop or component binding of the name is what the read reaches.
     if (constInfo?.value === undefined || constInfo.shadowedInComponent) return null
-    if (constInfo.parsed?.kind === 'array-literal') {
-      const element = lookupStaticRecordLiteral(objectName, key, this.state.localConstants, n => this.isLoopShadowedName(n))
-      if (element === null) return null
-      return element.kind === 'string' ? JSON.stringify(element.text) : element.text
-    }
 
     // Read the IR-carried structured value: the analyzer parses a module
     // record's `{ key: 'lit' }` once into an `object-literal`, so the key lookup
@@ -7024,6 +7027,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     emitPlus: (leftExpr, rightExpr, leftRendered, rightRendered) => this._emitPlus(leftExpr, rightExpr, leftRendered, rightRendered),
     resolveLiteralConstAsGo: (name) => this.resolveLiteralConstAsGo(name),
     resolveStaticConstMember: (objectName, key) => this.resolveStaticConstMember(objectName, key),
+    staticArrayElement: (objectName, key) => this.staticArrayElement(objectName, key),
     isCurrentLoopItem: (name) => this.isCurrentLoopItem(name),
     currentLoopItemRef: () => this.currentLoopItemRef(),
     isOuterLoopParam: (name) => this.isOuterLoopParam(name),
@@ -7051,6 +7055,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     isMapRootedPropChain: (node) => this.isMapRootedPropChain(node),
     isMapSeededSignalChain: (node) => this.isMapSeededSignalChain(node),
     resolveStaticConstMember: (objectName, key) => this.resolveStaticConstMember(objectName, key),
+    staticArrayElement: (objectName, key) => this.staticArrayElement(objectName, key),
     isCurrentLoopRecord: (name) => this.isCurrentLoopRecord(name),
     renderOptionalMember: (object, property) => this.renderOptionalMember(object, property),
     emitOperand: (n, emit) => this.emitOperand(n, emit),

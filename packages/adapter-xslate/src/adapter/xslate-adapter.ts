@@ -61,6 +61,7 @@ import {
   collectContextConsumers,
   type ContextConsumer,
   lookupStaticRecordLiteral,
+  lookupStaticArrayElement,
   lookupLiteralConst,
   isLowerableLoopDestructure,
   childTemplateName,
@@ -1254,6 +1255,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
       _rootPropReadName: (name) => rootPropReadName(name, this.scope, this.rootPropAliases),
       _isRootPropsObject: (expr) => isRootPropsObject(expr, n => this.scope.isBound(n)),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
+      _staticArrayElement: (o, k) => lookupStaticArrayElement(o, k, this.localConstants, n => this.scope.isBound(n)),
       _isStringValueName: (name, property) => this._isStringValueName(name, property),
       _jsStringOutput: (parsed, kolon) => this.jsStringOutput(parsed, kolon),
       _isBooleanValueName: (name, property) => property ? !this.scope.shadowsPropsObject() && this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
@@ -1473,7 +1475,8 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     }
     if (parsed.kind === 'member' && parsed.object.kind === 'identifier') {
       if (isRootPropsObject(parsed.object, n => this.scope.isBound(n))) return false
-      return this._resolveStaticRecordLiteral(parsed.object.name, parsed.property) !== null
+      return this._resolveStaticRecordLiteral(parsed.object.name, parsed.property) !== null ||
+        lookupStaticArrayElement(parsed.object.name, parsed.property, this.localConstants, n => this.scope.isBound(n)) !== null
     }
     return false
   }

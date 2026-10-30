@@ -102,6 +102,9 @@ export const renderDivergences: RenderDivergences = {
   // it renders like Hono.
   'module-const-destructure-default': { limitation: 'module-const-destructure-default' },
   'module-const-default-hydrate': { limitation: 'module-const-destructure-default' },
+  // A `-0` literal is spelled as an integer zero, so `1 / -0` is
+  // `Infinity` rather than `-Infinity`.
+  'module-const-array-negative-zero': { limitation: 'negative-zero-literal' },
 }
 
 /**

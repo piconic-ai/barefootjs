@@ -5554,6 +5554,62 @@
           ]
         }
       },
+      "module-const-array-negative-zero": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "negative-zero-literal"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "negative-zero-literal"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "negative-zero-literal"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "negative-zero-literal"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "negative-zero-literal"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "negative-zero-literal"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "negative-zero-literal"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "negative-zero-literal"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "negative-zero-literal"
+          ]
+        }
+      },
       "module-const-arrow-helper": {
         "blade": {
           "kind": "refusal",
@@ -8761,6 +8817,10 @@
         "description": "A memo reading a module-scope binding named like a typed prop reads the binding, not the prop",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-module-binding-named-like-prop.ts"
       },
+      "module-const-array-negative-zero": {
+        "description": "a -0 element of a module array const keeps its sign in arithmetic and prints as 0",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-array-negative-zero.ts"
+      },
       "module-const-arrow-helper": {
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-arrow-helper.ts"
@@ -9684,6 +9744,27 @@
         "BF013"
       ],
       "reason": "Without a type checker the analyzer fast path matches only a bare identifier callee, so the declaration would be silently dropped and every reference would throw at hydrate. The loud refusal is the permanent answer for checker-less compiles; a compile that supplies a shared program (the Vite plugin does) resolves the primitive normally and never reaches it. Importing the primitive by name is the supported form."
+    },
+    "negative-zero-literal": {
+      "title": "A negative zero number literal loses its sign",
+      "kind": "silent",
+      "given": "a `-0` number literal, written in place or as a module array const element (`const NZ = [-0]`), read in arithmetic or a comparison (`1 / NZ[0] < 0`)",
+      "expected": "`-0` keeps its sign in arithmetic (`1 / -0` is `-Infinity`, so `1 / NZ[0] < 0` is true) and prints as `0`",
+      "actual": "renders `1 / NZ[0] < 0` as false: the template spells `-0` as an integer zero, so `1 / NZ[0]` is `Infinity`",
+      "fixtures": [
+        "module-const-array-negative-zero"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
     },
     "nested-callback-in-filter-predicate": {
       "title": "Nested higher-order callback inside a filter predicate",

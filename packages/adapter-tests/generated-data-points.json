@@ -7411,6 +7411,20 @@
       }
     }
   ],
+  "module-const-array-negative-zero": [
+    {
+      "name": "gen:on:true",
+      "props": {
+        "on": true
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "on": false
+      }
+    }
+  ],
   "module-const-arrow-helper": [
     {
       "name": "gen:label:empty",

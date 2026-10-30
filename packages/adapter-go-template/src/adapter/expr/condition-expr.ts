@@ -73,6 +73,8 @@ export interface ConditionExprHost {
   resolveLiteralConstAsGo(name: string): string | null
   /** A static `Const.key` / `Const[0]` read of a module literal const, as Go, or null. */
   resolveStaticConstMember(objectName: string, key: string): string | null
+  /** The element (or `length`) of a module array-literal const at a literal key, as a typed `ParsedExpr`, or null. */
+  staticArrayElement(objectName: string, key: string): ParsedExpr | null
   /** Whether `name` is the innermost loop's plain item param (Go's `.`). */
   isCurrentLoopItem(name: string): boolean
   /** The innermost loop item's reference (`.`, or a scalar wrapper row's field). */
@@ -663,6 +665,8 @@ function renderConditionMember(
   // (`REC.lf`, `QS[0]`) resolves at compile time, as in value position:
   // the template has no field of the const's name.
   if (expr.object.kind === 'identifier') {
+    const element = host.staticArrayElement(expr.object.name, expr.property)
+    if (element !== null) return renderConditionExpr(host, element)
     const staticValue = host.resolveStaticConstMember(expr.object.name, expr.property)
     if (staticValue !== null) return plain(staticValue)
   }
