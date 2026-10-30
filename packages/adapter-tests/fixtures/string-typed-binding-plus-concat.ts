@@ -16,7 +16,10 @@ import { createFixture } from '../src/types'
  * A `concat` keeps the row type only when its arguments share it:
  * `none.concat(extras)` with `extras: any[]` can hold rows whose `id` is a
  * number (`r.id + 1` is `3`), while `none.concat(rows)` stays `Row`, and
- * `none.concat(others)` over a same-shaped `Other` keeps `id: string`.
+ * `none.concat(others)` over a same-shaped `Other` keeps `id: string`. A
+ * nested loop over a concat row's `children` keeps the children's field
+ * types the same way, and a `Loose` row whose child `id` is a number makes
+ * `c.id + 1` addition.
  * Optional fields are `omitted-optional-row-field-plus`.
  */
 export const fixture = createFixture({
@@ -44,8 +47,11 @@ function Rows({ rows, label, nums }: { rows: Row[]; label: string; nums: number[
 }
 
 interface Other { id: string }
+interface Node { id: string; children: { id: string }[] }
+interface Twin { id: string; children: { id: string }[] }
+interface Loose { id: string; children: { id: number }[] }
 
-export function StringTypedBindingPlusConcat(props: { rows: Row[]; pairs: { k: string; v: number }[]; none: Row[]; extras: any[]; others: Other[]; label: string; nums: number[]; on: boolean }) {
+export function StringTypedBindingPlusConcat(props: { rows: Row[]; pairs: { k: string; v: number }[]; none: Row[]; extras: any[]; others: Other[]; nodes: Node[]; noNodes: Node[]; twins: Twin[]; loose: Loose[]; label: string; nums: number[]; on: boolean }) {
   const [items] = createSignal<Row[]>(props.rows)
   return (
     <div data-l={props.label + 1}>
@@ -75,6 +81,9 @@ export function StringTypedBindingPlusConcat(props: { rows: Row[]; pairs: { k: s
       <p>{props.none.concat(props.extras).map(r => <s key={r.id}>{r.id + 1}</s>)}</p>
       <p>{props.none.concat(props.rows).map(r => <s key={r.id}>{r.id + 1}</s>)}</p>
       <p>{props.none.concat(props.others).map((r, i) => <s key={i}>{r.id + 1}</s>)}</p>
+      <div>{props.nodes.concat(props.noNodes).map((r, i) => <section key={i}>{r.children.map((c, j) => <b key={j}>{c.id + 1}</b>)}</section>)}</div>
+      <div>{props.noNodes.concat(props.twins).map((r, i) => <section key={i}>{r.children.map((c, j) => <b key={j}>{c.id + 1}</b>)}</section>)}</div>
+      <div>{props.noNodes.concat(props.loose).map((r, i) => <section key={i}>{r.children.map((c, j) => <b key={j}>{c.id + 1}</b>)}</section>)}</div>
       <Rows rows={props.rows} label={props.label} nums={props.nums} />
     </div>
   )
@@ -91,12 +100,16 @@ export function StringTypedBindingPlusConcat(props: { rows: Row[]; pairs: { k: s
     none: [],
     extras: [{ id: 2 }],
     others: [{ id: 'c' }],
+    nodes: [{ id: 'r', children: [{ id: 'c' }] }],
+    noNodes: [],
+    twins: [{ id: 't', children: [{ id: 'd' }] }],
+    loose: [{ id: 'l', children: [{ id: 5 }] }],
     label: 'L',
     nums: [0, 2],
     on: true,
   },
   expectedHtml: `
-    <div bf-s="test" bf="s32" data-l="L1">
+    <div bf-s="test" bf="s41" data-l="L1">
       <span bf="s1"><!--bf:s0-->L1<!--/--></span>
       <ul bf="s13">
         <li bf="s12" data-k="a0" data-key="a" title="a1">
@@ -131,7 +144,10 @@ export function StringTypedBindingPlusConcat(props: { rows: Row[]; pairs: { k: s
         <s data-key="b"><!--bf:s27-->b1<!--/--></s>
       </p>
       <p bf="s30"><s data-key="0"><!--bf:s29-->c1<!--/--></s></p>
-      <section bf-s="test_s31" bf="s7" data-l="L1">
+      <div bf="s33"><section bf="s32" data-key="0"><b data-key-1="0"><!--bf:s31-->c1<!--/--></b></section></div>
+      <div bf="s36"><section bf="s35" data-key="0"><b data-key-1="0"><!--bf:s34-->d1<!--/--></b></section></div>
+      <div bf="s39"><section bf="s38" data-key="0"><b data-key-1="0"><!--bf:s37-->6<!--/--></b></section></div>
+      <section bf-s="test_s40" bf="s7" data-l="L1">
         <p bf="s1"><!--bf:s0-->L2<!--/--></p>
         <i bf="s3" data-k="a0" data-key="a"><!--bf:s2-->a1<!--/--></i>
         <i bf="s3" data-k="b1" data-key="b"><!--bf:s2-->b2.5<!--/--></i>

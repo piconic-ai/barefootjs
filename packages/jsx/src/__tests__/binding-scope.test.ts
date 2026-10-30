@@ -7,7 +7,7 @@
  */
 
 import { describe, test, expect } from 'bun:test'
-import { BindingScope } from '../scope/binding-scope.ts'
+import { arrayElementType, BindingScope, isSameLoopValueShape, loopValueTypeAt, unionOfLoopValueTypes } from '../scope/binding-scope.ts'
 
 describe('BindingScope', () => {
   test('EMPTY: nothing bound, lookup null, empty boundNames, shadow predicate false', () => {
@@ -318,5 +318,38 @@ describe('optional row fields (#3762 review)', () => {
       paramBindings: [{ name: 'id', segments: [{ kind: 'field', key: 'id', isIdent: true }] }],
     })
     expect(destructured.isStringValueName('id', () => true, false, [], named)).toBe(false)
+  })
+})
+
+describe('arrayElementType and union normalisation (#3762 review)', () => {
+  const row = { kind: 'interface', raw: 'Row' }
+  const other = { kind: 'interface', raw: 'Other' }
+  const rows = { kind: 'array', raw: 'Row[]', elementType: row }
+
+  test('an array reads its element; a union of arrays reads the union of their elements', () => {
+    expect(arrayElementType(rows)).toBe(row)
+    const mixed = { kind: 'union', unionTypes: [rows, { kind: 'array', raw: 'Other[]', elementType: other }] }
+    expect(arrayElementType(mixed)?.unionTypes).toEqual([row, other])
+  })
+
+  test('a union with a non-array member, a scalar or nothing has no element type', () => {
+    expect(arrayElementType({ kind: 'union', unionTypes: [rows, { kind: 'primitive', primitive: 'undefined' }] })).toBeUndefined()
+    expect(arrayElementType({ kind: 'primitive', primitive: 'string' })).toBeUndefined()
+    expect(arrayElementType(null)).toBeUndefined()
+  })
+
+  test('structurally identical members collapse to one; different ones stay a union', () => {
+    const copy = { kind: 'array', raw: 'Row[]', elementType: { kind: 'interface', raw: 'Row' } }
+    expect(unionOfLoopValueTypes([rows, copy])).toBe(rows)
+    expect(unionOfLoopValueTypes([row])).toBe(row)
+    expect(unionOfLoopValueTypes([row, other]).unionTypes).toEqual([row, other])
+    expect(isSameLoopValueShape(row, other)).toBe(false)
+  })
+
+  test('a nested array field read across a union keeps its element type', () => {
+    const child = { kind: 'object', raw: '{ id: string }', properties: [{ name: 'id', type: { primitive: 'string' } }] }
+    const withChildren = (raw: string) => ({ kind: 'interface', raw, properties: [{ name: 'children', type: { kind: 'array', raw: 'C[]', elementType: child } }] })
+    const children = loopValueTypeAt(unionOfLoopValueTypes([withChildren('A'), withChildren('B')]), [{ kind: 'field', key: 'children', isIdent: true }])
+    expect(arrayElementType(children)).toEqual(child)
   })
 })

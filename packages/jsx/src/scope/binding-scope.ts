@@ -144,11 +144,54 @@ export function loopValueTypeAt(
   if (segments.length === 0) return type
   if (type.unionTypes && type.unionTypes.length > 0) {
     const members = type.unionTypes.map(member => loopValueTypeAt(member, segments, namedFields))
-    return members.every(m => m !== null) ? { kind: 'union', unionTypes: members as LoopValueType[] } : null
+    return members.every(m => m !== null) ? unionOfLoopValueTypes(members as LoopValueType[]) : null
   }
   const [segment, ...rest] = segments
-  const next = segment.kind === 'index' ? type.elementType : fieldType(type, segment.key, namedFields)
+  const next = segment.kind === 'index' ? arrayElementType(type) : fieldType(type, segment.key, namedFields)
   return next ? loopValueTypeAt(next, rest, namedFields) : null
+}
+
+/**
+ * The element type of an array type, or of a union whose every member is an
+ * array (a `concat` of arrays, a field read across `concat` rows): the union
+ * of their element types. Undefined for anything else. Every reader of an
+ * element type goes through this, so a union of arrays reads like an array
+ * (#3762 review).
+ */
+export function arrayElementType<T extends LoopValueType>(type: T | null | undefined): T | undefined {
+  if (!type) return undefined
+  if (type.elementType) return type.elementType as T
+  const members = type.unionTypes
+  if (!members || members.length === 0) return undefined
+  const elements = members.map(member => arrayElementType(member))
+  return elements.every(e => e !== undefined) ? unionOfLoopValueTypes(elements as T[]) : undefined
+}
+
+/**
+ * The union of `members`, normalised: one member, or members that are all
+ * structurally the same type, is that member itself, so `Row[] ∪ Row[]`
+ * keeps the plain `Row[]` shape.
+ */
+export function unionOfLoopValueTypes<T extends LoopValueType>(members: readonly T[]): T {
+  const [first] = members
+  if (members.every(member => isSameLoopValueShape(member, first))) return first
+  return { kind: 'union', raw: members.map(m => m.raw ?? 'unknown').join(' | '), unionTypes: members } as unknown as T
+}
+
+/** Whether two types have the same structure: kind, name, primitive, fields, elements and members. */
+export function isSameLoopValueShape(a: LoopValueType | undefined, b: LoopValueType | undefined): boolean {
+  if (a === b) return true
+  if (!a || !b) return false
+  return a.kind === b.kind && a.raw === b.raw && a.primitive === b.primitive &&
+    isSameLoopValueShape(a.elementType, b.elementType) &&
+    sameMembers(a.unionTypes, b.unionTypes, isSameLoopValueShape) &&
+    sameMembers(a.properties, b.properties, (x, y) =>
+      x.name === y.name && Boolean(x.optional) === Boolean(y.optional) && isSameLoopValueShape(x.type, y.type))
+}
+
+function sameMembers<T>(a: readonly T[] | undefined, b: readonly T[] | undefined, same: (x: T, y: T) => boolean): boolean {
+  if (!a || !b) return a === b
+  return a.length === b.length && a.every((x, i) => same(x, b[i]))
 }
 
 /** A field's declared type; an optional one may also be `undefined`. */

@@ -12,7 +12,9 @@
 import type { ParsedExpr } from '../expression-parser.ts'
 import type { ComponentIR, TypeInfo } from '../types.ts'
 import {
+  arrayElementType,
   loopValueTypeAt,
+  unionOfLoopValueTypes,
   type BindingScope,
   type LoopValueType,
   type NamedTypeFields,
@@ -62,7 +64,7 @@ export function loopRowType(
   // An `.entries()` / `Object.entries(…)` row is a tuple, not an element.
   if (loop.iterationShape !== undefined || loop.objectIteration || !loop.arrayParsed) return null
   const type = valueType(types, loop.arrayParsed, scope)
-  return type?.elementType ?? null
+  return arrayElementType(type) ?? null
 }
 
 function valueType(types: DeclaredValueTypes, expr: ParsedExpr, scope: BindingScope): LoopValueType | null {
@@ -83,7 +85,7 @@ function valueType(types: DeclaredValueTypes, expr: ParsedExpr, scope: BindingSc
     }
     case 'index-access': {
       const object = valueType(types, expr.object, scope)
-      return object?.elementType ?? null
+      return arrayElementType(object) ?? null
     }
     case 'call':
       return callType(types, expr, scope)
@@ -107,12 +109,12 @@ function valueType(types: DeclaredValueTypes, expr: ParsedExpr, scope: BindingSc
  * result with no element type.
  */
 export function concatType<T extends LoopValueType>(receiver: T | null, args: readonly (T | null)[]): T | null {
-  const element = receiver?.elementType
+  const element = arrayElementType(receiver)
   if (!receiver || !element) return receiver
-  if (args.some(arg => arg === null)) return { ...receiver, elementType: undefined }
-  const members = [element, ...(args as T[]).map(arg => arg.elementType ?? arg)]
-  if (members.every(member => member === element)) return receiver
-  return { ...receiver, elementType: { kind: 'union', raw: members.map(m => m.raw ?? 'unknown').join(' | '), unionTypes: members } }
+  const asArray = (elementType: T | undefined): T => ({ ...receiver, kind: 'array', unionTypes: undefined, elementType })
+  if (args.some(arg => arg === null)) return asArray(undefined)
+  const members = [element, ...(args as T[]).map(arg => arrayElementType(arg) ?? arg)]
+  return asArray(unionOfLoopValueTypes(members))
 }
 
 /** A prop's declared type; a destructured prop whose type stays `unknown` carries it as `declaredType`. */

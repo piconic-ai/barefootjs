@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test'
-import { loopRowType, type DeclaredValueTypes } from '../adapters/loop-row-type'
+import { concatType, loopRowType, type DeclaredValueTypes } from '../adapters/loop-row-type'
 import { parseExpression } from '../expression-parser'
 import { BindingScope } from '../scope/binding-scope'
 import type { PropertyInfo, TypeInfo } from '../types'
@@ -50,5 +50,15 @@ describe('concat row type', () => {
     expect(idIsString('props.row.concat(props.bare)')).toBe(false)
     expect(idIsString('props.row.concat(props.other).concat(props.extras)')).toBe(false)
     expect(idIsString('props.row.concat(props.missing)')).toBe(false)
+  })
+})
+
+describe('concat of the same row type keeps the plain array shape (#3762 review)', () => {
+  test('Row[] concat Row[] is Row[], not a union', () => {
+    const rows: TypeInfo = { kind: 'array', raw: 'Row[]', elementType: { kind: 'interface', raw: 'Row' } }
+    const copy: TypeInfo = { kind: 'array', raw: 'Row[]', elementType: { kind: 'interface', raw: 'Row' } }
+    const result = concatType(rows, [copy])
+    expect(result?.elementType).toBe(rows.elementType)
+    expect(result?.unionTypes).toBeUndefined()
   })
 })

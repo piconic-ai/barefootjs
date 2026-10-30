@@ -17,6 +17,7 @@
  */
 
 import {
+  arrayElementType,
   concatType,
   loopValueTypeAt,
   isChildrenPropParam,
@@ -119,7 +120,8 @@ export function loopRowType(
   // An `.entries()` / `Object.entries(…)` row is a tuple, not an element.
   if (loop.iterationShape !== undefined || loop.objectIteration) return null
   const type = loop.arrayParsed ? valueType(ctx, loop.arrayParsed, scope) : null
-  if (type?.kind === 'array') return type.elementType ?? null
+  const element = arrayElementType(type)
+  if (element) return element
   // A destructured prop whose field type Go leaves untyped (`rows: Row[]`
   // where `Row` has a union field) still declares its element type (#3762).
   const declared = sharedLoopRowType(goDeclaredValueTypes(ctx), loop, scope)
@@ -174,7 +176,7 @@ function valueType(ctx: GoEmitContext, expr: ParsedExpr, scope: BindingScope): T
     }
     case 'index-access': {
       const object = valueType(ctx, expr.object, scope)
-      return object?.kind === 'array' ? object.elementType ?? null : null
+      return arrayElementType(object) ?? null
     }
     case 'call':
       return callType(ctx, expr, scope)
