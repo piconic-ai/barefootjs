@@ -30,9 +30,10 @@ import {
   type TemplateAttr,
 } from '@barefootjs/jsx'
 
+import { escapeHtml } from '@barefootjs/shared'
 import type { GoEmitContext } from '../emit-context.ts'
 import { lowerRegisteredAttrCall } from '../expr/url-builder.ts'
-import { goAttrNameToken, wrapIfMultiToken } from '../lib/go-emit.ts'
+import { escapeGoStaticText, escapeGoString, goAttrNameToken, wrapIfMultiToken } from '../lib/go-emit.ts'
 
 /**
  * What the attribute emission needs from the adapter beyond the shared
@@ -350,6 +351,22 @@ export function emitSpreadAttr(host: ElementAttrHost, value: SpreadAttr): string
   return `{{bf_spread_attrs .${value.slotId}}}`
 }
 
+/**
+ * A literal attribute value (`title="…"`). A brace in it that would open a Go
+ * action prints through `{{"{"}}` (#3767), but html/template escapes that
+ * action by the attribute's context, unlike literal text: `{` comes out as
+ * `%7b` in a URL attribute (`href`, `src`), as a JS string in a handler and
+ * as `\7b ` in `style`. Such a value is emitted whole as one `bf_attr`
+ * action instead, which html/template does not classify and which only
+ * HTML-escapes it, as Hono does. The value is a compile-time constant, so no
+ * contextual sanitizing is skipped for data.
+ */
+export function emitLiteralAttr(name: string, value: string): string {
+  const html = escapeHtml(value)
+  const text = escapeGoStaticText(html)
+  return text === html ? `${name}="${html}"` : `{{bf_attr ${JSON.stringify(name)} "${escapeGoString(value)}"}}`
+}
+
 /** A template-literal attribute value (`class={`a ${b}`}`). */
 export function emitTemplateAttr(host: ElementAttrHost, value: TemplateAttr, name: string): string {
   return `${goAttrNameToken(name)}="${renderTemplateLiteralParts(host, value.parts)}"`
@@ -404,12 +421,12 @@ function renderTemplateExpression(host: ElementAttrHost, expr: JsSourceText, par
  * lexer is contextual, so escape them too.
  */
 function escapeAttrText(s: string): string {
-  return s
+  return escapeGoStaticText(s
     .replace(/&/g, '&amp;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;')
     .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
+    .replace(/>/g, '&gt;'))
 }
 
 function renderTemplateLiteralParts(host: ElementAttrHost, parts: IRTemplatePart[]): string {

@@ -22,7 +22,7 @@ import type {
   FlatDepth,
   CallbackEvalSpelling,
 } from '@barefootjs/jsx'
-import { escapeBladeSingleQuoted, bladeHashKey } from '../lib/blade-naming.ts'
+import { bladeStringLiteral, bladeHashKey } from '../lib/blade-naming.ts'
 
 // The undefined literal is the `slice` end the source left out; Blade (PHP) reads `null`.
 const ARRAY_METHOD_SPELLING = prefixedArrayMethodSpelling('$bf->', 'null')
@@ -48,7 +48,7 @@ export function renderArrayMethod(
  */
 export const EVAL_SPELLING: CallbackEvalSpelling = {
   call: (helper, operands) => `$bf->${helper}(${operands.join(', ')})`,
-  string: (value) => `'${escapeBladeSingleQuoted(value)}'`,
+  string: (value) => bladeStringLiteral(value),
   boolean: (value) => (value ? 'true' : 'false'),
   env: (entries) =>
     `[${entries.map(([name, value]) => `${bladeHashKey(name)} => ${value}`).join(', ')}]`,

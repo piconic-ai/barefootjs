@@ -1012,7 +1012,9 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
    * AttrValue lowering for intrinsic-element attributes (Kolon).
    */
   private readonly elementAttrEmitter: AttrValueEmitter = {
-    emitLiteral: (value, name) => `${name}="${escapeHtml(value.value)}"`,
+    // A literal value can span lines; a line-leading `:` in it would be
+    // read as a line statement, as in text (#3767).
+    emitLiteral: (value, name) => `${name}="${escapeLineStatementSigil(escapeHtml(value.value), ':', "<: ':' :>")}"`,
     emitExpression: (source, name) => {
       // A computed const reads as its initializer (#3494).
       const value = inlineComputedConstAttr(source, this.computedConsts)
