@@ -76,6 +76,8 @@ export class CompileState {
    * callbacks can classify a spread expression against it.
    */
   restPropsName: string | null = null
+  /** The rest bag's Go field (`restBagField`), or null when the component has none. */
+  restBagField: string | null = null
 
   /**
    * Module-scope pure string-literal constants (`const X = 'literal'` at

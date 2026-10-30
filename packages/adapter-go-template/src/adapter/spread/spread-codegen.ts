@@ -28,7 +28,7 @@ import type {
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
-import { restBagBinding, type SpreadSlotInfo } from '../lib/types.ts'
+import { restBagBinding, restBagField, type SpreadSlotInfo } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 
 /** A raw top-level intrinsic-element spread attr, before bag-source classification. */
@@ -167,8 +167,8 @@ function classifySpreadBagSource(ctx: GoEmitContext, spreadExpr: string): 'input
  * A SolidJS-style props object's `{...props}` bag: every Input field as a
  * bag key (caller-facing name, as the spread's external shape has it; the
  * props-object pattern has no aliasing). A props object read as a whole
- * also carries the caller's undeclared keys, in the rest bag named after it
- * (`restBagBinding`). The two key sets are disjoint, so the merge order only
+ * also carries the caller's undeclared keys, in its rest bag
+ * (`restBagBinding`, field `restBagField`). The two key sets are disjoint, so the merge order only
  * fixes which map wins a key neither should hold: the declared one, as
  * written last.
  */
@@ -177,9 +177,8 @@ function propsObjectSpreadInitializer(ir: ComponentIR, propsObject: string): str
     `${JSON.stringify(p.sourceName ?? p.name)}: in.${capitalizeFieldName(p.sourceName ?? p.name)}`,
   )
   const declared = `map[string]any{${entries.join(', ')}}`
-  return restBagBinding(ir.metadata) === propsObject
-    ? `bf.Merge(in.${capitalizeFieldName(propsObject)}, ${declared})`
-    : declared
+  const bag = restBagBinding(ir.metadata) === propsObject ? restBagField(ir.metadata) : null
+  return bag ? `bf.Merge(in.${bag}, ${declared})` : declared
 }
 
 /**
@@ -297,7 +296,7 @@ export function buildSpreadInitializer(
     //    `XxxInput{Rest: ...}` with the same identifier they saw in source.
     //    Forward it through.
     if (ir.metadata.restPropsName === trimmed) {
-      return `in.${capitalizeFieldName(trimmed)}`
+      return `in.${restBagField(ir.metadata)!}`
     }
     // 4. Function-scope local const holding a conditional inline-object spread:
     //    `const sizeAttrs = size ? {…} : {}` then `{...sizeAttrs}`. Resolve to

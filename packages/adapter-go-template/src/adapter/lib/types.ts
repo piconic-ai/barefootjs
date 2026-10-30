@@ -5,6 +5,8 @@
  * `GoTemplateAdapterOptions`. Pure type surface — no behaviour.
  */
 
+import { collectContextConsumers, type IRMetadata } from '@barefootjs/jsx'
+import { capitalizeFieldName } from './go-naming.ts'
 import type {
   BindingScope,
   HigherOrderMethod,
@@ -265,18 +267,49 @@ export function hasNoInputSlot(shape: ChildComponentShape | undefined, jsxName: 
 }
 
 /**
- * The binding whose name the component's open-ended rest bag field takes
- * (`Capitalize(binding)` on its Input and Props structs), or null when it
- * has none. A destructured rest (`{ a, ...rest }`) is one; so is a props
- * object the component reads as a whole (`<b {...props}>`,
- * `IRMetadata.propsObjectObservedWhole`), whose undeclared keys a caller
- * delivers through the same bag (`Props: map[string]any{...}`).
+ * The binding whose undeclared keys the component's open-ended rest bag
+ * holds, or null when it has none. A destructured rest (`{ a, ...rest }`)
+ * is one; so is a props object the component reads as a whole
+ * (`<b {...props}>`, `IRMetadata.propsObjectObservedWhole`), whose
+ * undeclared keys a caller delivers through the same bag. The bag's Go field
+ * name is {@link restBagField}'s.
  */
 export function restBagBinding(
-  meta: { restPropsName: string | null; propsObjectName: string | null; propsObjectObservedWhole?: boolean },
+  meta: { restPropsName?: string | null; propsObjectName: string | null; propsObjectObservedWhole?: boolean },
 ): string | null {
   if (meta.restPropsName) return meta.restPropsName
   return meta.propsObjectName && meta.propsObjectObservedWhole ? meta.propsObjectName : null
+}
+
+/** Fields every generated `<C>Input` / `<C>Props` struct may carry besides the component's own. */
+const GENERATED_STRUCT_FIELDS: ReadonlySet<string> = new Set([
+  'ScopeID', 'BfParent', 'BfMount', 'BfDataKey', 'BfCallerProps', 'BfIsChild', 'BfIsRoot',
+  'BfRowVars', 'BfLoopItem', 'Scripts', 'Portals', 'SearchParams',
+])
+
+/**
+ * The Go field of the component's rest bag (`restBagBinding`) on its Input
+ * and Props structs, or null when it has none: `Capitalize(binding)`, with
+ * `_` appended until it is no generated field (`ScopeID`, `BfParent`, …, a
+ * `Spread_<slot>` bag) and no field of the component's own params, signals,
+ * memos or context consumers. A rest named `scopeID` gets `ScopeID_`. Every
+ * site that writes or reads the bag uses this one name.
+ */
+export function restBagField(meta: IRMetadata): string | null {
+  const binding = restBagBinding(meta)
+  if (!binding) return null
+  const taken = new Set<string>(GENERATED_STRUCT_FIELDS)
+  for (const p of meta.propsParams ?? []) {
+    if (p.isRest) continue
+    taken.add(capitalizeFieldName(p.name))
+    taken.add(capitalizeFieldName(p.sourceName ?? p.name))
+  }
+  for (const s of meta.signals ?? []) taken.add(capitalizeFieldName(s.getter))
+  for (const m of meta.memos ?? []) taken.add(capitalizeFieldName(m.name))
+  for (const c of collectContextConsumers(meta)) taken.add(capitalizeFieldName(c.localName))
+  let field = capitalizeFieldName(binding)
+  while (taken.has(field) || field.startsWith('Spread_')) field += '_'
+  return field
 }
 
 /**

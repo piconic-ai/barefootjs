@@ -1683,6 +1683,22 @@
         "attribute"
       ]
     },
+    "child-rest-bag-generated-field-name": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "child-string-prop-literal-lookalike": {
       "kinds": [
         "binary",
