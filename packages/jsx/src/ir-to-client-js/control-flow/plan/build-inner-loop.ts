@@ -69,7 +69,12 @@ function wrapAttrValueExpression(value: AttrValue, wrap: (s: string) => string):
       return AttrValueOf.expression(wrap(flat ?? 'undefined'))
     }
     case 'spread':
-      return AttrValueOf.spread(wrap(value.expr), value.templateExpr ? wrap(value.templateExpr) : undefined)
+      // Keep the Phase-1 props-object marker: the props object merges this
+      // spread in source order (#3713).
+      return {
+        ...AttrValueOf.spread(wrap(value.expr), value.templateExpr ? wrap(value.templateExpr) : undefined),
+        ...(value.propsObject && { propsObject: true as const }),
+      }
   }
 }
 import type { DepthLevel } from '../shared.ts'

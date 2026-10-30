@@ -9862,7 +9862,11 @@ function markPropsObjectSpread<T extends { value: AttrValue }>(prop: T, ctx: Tra
   if (value.kind !== 'spread') return prop
   const constants = constantValuesByName(ctx)
   for (const name of new Set([value.expr, value.templateExpr])) {
-    if (name && resolveRestSpreadOriginCore(ctx.analyzer, constants, name) === 'props') {
+    // A name an enclosing loop row or callback binds is that binding, not
+    // the component's props object (#3713: `items.map((props) => <Tag
+    // {...props} />)`).
+    if (!name || ctx.scope.isBound(name)) continue
+    if (resolveRestSpreadOriginCore(ctx.analyzer, constants, name) === 'props') {
       return { ...prop, value: { ...value, propsObject: true } }
     }
   }

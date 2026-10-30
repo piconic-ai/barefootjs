@@ -1999,6 +1999,17 @@
       }
     }
   ],
+  "component-rest-spread-in-loop-row": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "tone": "warm",
+        "size": "l",
+        "label": "ignored"
+      }
+    }
+  ],
   "component-spread-explicit-null": [
     {
       "name": "gen:label:absent",
@@ -2159,6 +2170,253 @@
     {
       "name": "gen:label:absent",
       "props": {}
+    }
+  ],
+  "component-spread-props-in-loop-row": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "tone": "warm",
+        "size": "l",
+        "label": "ignored"
+      }
+    },
+    {
+      "name": "gen:tone:absent",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "size": "l",
+        "label": "ignored"
+      }
+    },
+    {
+      "name": "gen:tone:empty",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "tone": "",
+        "size": "l",
+        "label": "ignored"
+      }
+    },
+    {
+      "name": "gen:tone:markup",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "tone": "<b>&\"'</b>",
+        "size": "l",
+        "label": "ignored"
+      }
+    },
+    {
+      "name": "gen:tone:multibyte",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "tone": "日本語",
+        "size": "l",
+        "label": "ignored"
+      }
+    },
+    {
+      "name": "gen:size:absent",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "tone": "warm",
+        "label": "ignored"
+      }
+    },
+    {
+      "name": "gen:size:empty",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "tone": "warm",
+        "size": "",
+        "label": "ignored"
+      }
+    },
+    {
+      "name": "gen:size:markup",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "tone": "warm",
+        "size": "<b>&\"'</b>",
+        "label": "ignored"
+      }
+    },
+    {
+      "name": "gen:size:multibyte",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "tone": "warm",
+        "size": "日本語",
+        "label": "ignored"
+      }
+    },
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "tone": "warm",
+        "size": "l"
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "tone": "warm",
+        "size": "l",
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "tone": "warm",
+        "size": "l",
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ],
+        "tone": "warm",
+        "size": "l",
+        "label": "日本語"
+      }
+    }
+  ],
+  "component-spread-props-in-static-loop-row": [
+    {
+      "name": "gen:tone:absent",
+      "props": {
+        "size": "l",
+        "label": "ignored"
+      }
+    },
+    {
+      "name": "gen:tone:empty",
+      "props": {
+        "tone": "",
+        "size": "l",
+        "label": "ignored"
+      }
+    },
+    {
+      "name": "gen:tone:markup",
+      "props": {
+        "tone": "<b>&\"'</b>",
+        "size": "l",
+        "label": "ignored"
+      }
+    },
+    {
+      "name": "gen:tone:multibyte",
+      "props": {
+        "tone": "日本語",
+        "size": "l",
+        "label": "ignored"
+      }
+    },
+    {
+      "name": "gen:size:absent",
+      "props": {
+        "tone": "warm",
+        "label": "ignored"
+      }
+    },
+    {
+      "name": "gen:size:empty",
+      "props": {
+        "tone": "warm",
+        "size": "",
+        "label": "ignored"
+      }
+    },
+    {
+      "name": "gen:size:markup",
+      "props": {
+        "tone": "warm",
+        "size": "<b>&\"'</b>",
+        "label": "ignored"
+      }
+    },
+    {
+      "name": "gen:size:multibyte",
+      "props": {
+        "tone": "warm",
+        "size": "日本語",
+        "label": "ignored"
+      }
+    },
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "tone": "warm",
+        "size": "l"
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "tone": "warm",
+        "size": "l",
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "tone": "warm",
+        "size": "l",
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "tone": "warm",
+        "size": "l",
+        "label": "日本語"
+      }
     }
   ],
   "component-spread-props-rest-bag": [

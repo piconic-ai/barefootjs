@@ -2476,6 +2476,14 @@
           ]
         }
       },
+      "component-spread-props-in-static-loop-row": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "props-spread-static-loop-row"
+          ]
+        }
+      },
       "computed-const-loop-source-parenthesized": {
         "blade": {
           "kind": "refusal",
@@ -8695,6 +8703,10 @@
         "description": "An explicit null forwarded through two props spreads overrides the earlier explicit prop",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-forwarded-null.ts"
       },
+      "component-spread-props-in-static-loop-row": {
+        "description": "A props spread onto a child component in a static-array loop row",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-props-in-static-loop-row.ts"
+      },
       "computed-const-loop-source-parenthesized": {
         "description": "A parenthesized computed-const loop source refuses (BF101) like the bare one (#3473)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/computed-const-loop-source-parenthesized.ts"
@@ -10148,6 +10160,19 @@
         "component-spread-explicit-undefined-prop",
         "component-spread-forwarded-absent",
         "component-spread-forwarded-null"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
+    "props-spread-static-loop-row": {
+      "title": "A props spread onto a child component in a static-array loop row",
+      "kind": "silent",
+      "given": "a `.map()` over a local constant array whose row is a child component that spreads the props object (`fixed.map((it) => <Child key={it} size=\"s\" {...props} label={it} />)`)",
+      "expected": "each row's child receives the caller's keys, merged with the call's explicit props in source order",
+      "actual": "drops the spread: each row's child receives only the call's explicit props",
+      "fixtures": [
+        "component-spread-props-in-static-loop-row"
       ],
       "adapters": [
         "go-template"

@@ -4,13 +4,14 @@
 
 import { type IRNode, type IRElement, type IRComponent, type IRConditional, type IRLoop, type IRProp, pickAttrMetaFromIR } from '../types.ts'
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBindings, LoopChildBranchSummary, LoopChildConditional, LoopOffset, NestedLoop } from './types.ts'
-import { attrValueToString, freeIdsFromRefs, quotePropName, PROPS_PARAM, toHtmlAttrName, rowBoundNames, withRowAccessor, type LoopParamSpec } from './utils.ts'
+import { attrValueToString, freeIdsFromRefs, PROPS_PARAM, toHtmlAttrName, rowBoundNames, withRowAccessor, type LoopParamSpec } from './utils.ts'
 import { classifyReactivity, needsEffectWrapper, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectConditionalBranchComponentNodes, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings, buildLoopRowScope, anyNameIn } from './reactivity.ts'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, jsxChildrenPropGetterExpr, buildLoopSkeletonTemplate, computeSkeletonSlotPaths, renderFlatMapClientBody, renderFlatMapProjectionClientBody, flatMapCallbackHasKeyedLeaf, type SkeletonSlotPaths } from './html-template.ts'
 import { detectRootNamespaceWrapTag } from './control-flow/stringify/template-parse.ts'
 import { expandDynamicPropValue, expandConstantForReactivity, resolveRestSpreadOrigin, resolveRestSpreadNames } from './prop-handling.ts'
 import { extractFreeIdentifiersFromText } from './csr-substitute.ts'
 import { walkIR, stopAt } from './walker.ts'
+import { callerFirstPropExpr, childPropsObjectExpr, isSpreadPropName, lastPropsObjectSpreadIndex } from './child-props-object.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { classifyDOMProp } from '@barefootjs/shared'
 import type { BindingScope } from '../scope/binding-scope.ts'
@@ -568,34 +569,6 @@ function componentInitPropValue(prop: IRProp, ctx: ClientJsContext): { expr: str
 }
 
 /**
- * Index of the last spread of the component's own props object in a child
- * component call (`<Tag tone="first" {...props} />`), or -1. An explicit
- * prop written before it is only a default: the spread overrides it when
- * the caller passed that key, as in JS (#3688). This is the one source-order
- * decision `initChild`'s props and both reactive DOM mirrors
- * (`ctx.reactiveProps`, `ctx.reactiveChildProps`) read, so an overridden
- * explicit expression can't overwrite the spread-selected value on update.
- */
-function lastPropsObjectSpreadIndex(props: IRProp[]): number {
-  let at = -1
-  props.forEach((p, index) => {
-    if (p.value.kind === 'spread' && p.value.propsObject === true) at = index
-  })
-  return at
-}
-
-/**
- * The value of an explicit prop a later props-object spread overrides (see
- * `lastPropsObjectSpreadIndex`): the caller's own value when it passed the
- * key, `expr` otherwise. `forwardProps` lets every override win, so the
- * merge is spelled into the value itself.
- */
-function callerFirstPropExpr(name: string, expr: string): string {
-  const key = JSON.stringify(name)
-  return `(${key} in ${PROPS_PARAM} ? ${PROPS_PARAM}[${key}] : ${expr})`
-}
-
-/**
  * The merged value of the explicit prop at `index` for a reactive DOM
  * mirror: caller-first when a later props-object spread (at `spreadAt`, see
  * `lastPropsObjectSpreadIndex`) overrides it, `expr` as written otherwise.
@@ -607,36 +580,16 @@ function mergedMirrorExpr(name: string, expr: string, index: number, spreadAt: n
 /** Build propsExpr for a child component from its IR props. */
 function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string {
   const knownSpreadProp = props.find(p => {
-    if (p.name !== '...' && !p.name.startsWith('...')) return false
+    if (!isSpreadPropName(p.name)) return false
     if (p.value.kind !== 'spread' && p.value.kind !== 'expression') return false
     const expr = p.value.kind === 'spread' ? p.value.expr : p.value.expr
     // #2723: resolve through any `const x__alias = x` hop onto the
     // rest/props binding — see `resolveRestSpreadOrigin`'s docstring.
     return resolveRestSpreadOrigin(ctx, expr) !== null
   })
-  const spreadSource = knownSpreadProp ? PROPS_PARAM : null
-  const spreadAt = lastPropsObjectSpreadIndex(props)
-
-  const propsForInit: string[] = []
-  const explicitPropNames: string[] = []
-  props.forEach((prop, index) => {
-    if (prop.name === '...' || prop.name.startsWith('...')) return
-    explicitPropNames.push(prop.name)
-    const key = quotePropName(prop.name)
-    const { expr, getter } = componentInitPropValue(prop, ctx)
-    if (index < spreadAt) {
-      propsForInit.push(`get ${key}() { return ${callerFirstPropExpr(prop.name, expr)} }`)
-    } else {
-      propsForInit.push(getter ? `get ${key}() { return ${expr} }` : `${key}: ${expr}`)
-    }
+  return childPropsObjectExpr(props, prop => componentInitPropValue(prop, ctx), {
+    forwardCaller: knownSpreadProp !== undefined,
   })
-
-  if (spreadSource) {
-    const overrides = propsForInit.length > 0 ? `{ ${propsForInit.join(', ')} }` : '{}'
-    const excludeKeys = JSON.stringify(explicitPropNames)
-    return `forwardProps(${spreadSource}, ${overrides}, ${excludeKeys})`
-  }
-  return propsForInit.length > 0 ? `{ ${propsForInit.join(', ')} }` : '{}'
 }
 
 /**

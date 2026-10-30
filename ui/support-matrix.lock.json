@@ -315,6 +315,12 @@
               ]
             },
             {
+              "fixture": "component-spread-props-in-static-loop-row",
+              "limitations": [
+                "props-spread-static-loop-row"
+              ]
+            },
+            {
               "fixture": "conditional-nested-loop-signal-reactivity",
               "limitations": [
                 "conditional-nested-const-loop-source"
@@ -8436,6 +8442,12 @@
               ]
             },
             {
+              "fixture": "component-spread-props-in-static-loop-row",
+              "limitations": [
+                "props-spread-static-loop-row"
+              ]
+            },
+            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -11879,6 +11891,12 @@
               ]
             },
             {
+              "fixture": "component-spread-props-in-static-loop-row",
+              "limitations": [
+                "props-spread-static-loop-row"
+              ]
+            },
+            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -15078,6 +15096,12 @@
               "fixture": "component-spread-forwarded-null",
               "limitations": [
                 "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "component-spread-props-in-static-loop-row",
+              "limitations": [
+                "props-spread-static-loop-row"
               ]
             },
             {
@@ -25015,6 +25039,12 @@
               "fixture": "component-spread-forwarded-null",
               "limitations": [
                 "props-spread-explicit-null-override"
+              ]
+            },
+            {
+              "fixture": "component-spread-props-in-static-loop-row",
+              "limitations": [
+                "props-spread-static-loop-row"
               ]
             },
             {

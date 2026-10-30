@@ -870,14 +870,17 @@ export function sourceRowChildInputFields(
   const rowFields = sourceRowReadFields(host, ir, nested, shape)
   if (rowFields === null) return null
   const state = host.ctx.state
-  const rowIndependent = nested.rowProps.filter(prop => prop.name !== 'key' && !propReadsRow(prop, nested.rowScope))
   const errorCount = state.errors.length
   const { usesFmt, usesHtmlTemplate } = state
+  // The whole call goes to the lowering, which skips each prop reading the
+  // row (`rowScope`): a `{...props}` spread's per-key plan must still see a
+  // later row-reading prop of the same key as that key's writer (#3713).
   const { fields, unlowered } = lowerChildInputFields(
     host,
-    { name: nested.name, props: rowIndependent },
+    { name: nested.name, props: nested.rowProps.filter(prop => prop.name !== 'key') },
     ir,
     propFallbackVars,
+    nested.rowScope,
   )
   const declined =
     state.errors.length > errorCount || unlowered.some(p => isUndeliveredSsrData(host, p, nested.name, ir))

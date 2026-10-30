@@ -24,7 +24,7 @@ import type {
   LoopParamBinding,
 } from '../../../types.ts'
 import { AttrValueOf, pickAttrMeta } from '../../../types.ts'
-import { quotePropName, wrapLoopParamAsAccessor, attrValueToString, rowBoundNames, unionNames, type ShadowableWrap } from '../../utils.ts'
+import { wrapLoopParamAsAccessor, attrValueToString, rowBoundNames, unionNames, type ShadowableWrap } from '../../utils.ts'
 import { addCondAttrToTemplate, irChildrenToJsExpr } from '../../html-template.ts'
 import type { ReactiveAttrSlot } from './reactive-effects.ts'
 
@@ -58,12 +58,18 @@ function wrapAttrValueExpression(value: AttrValue, wrap: (s: string) => string):
       return AttrValueOf.expression(wrap(flat ?? 'undefined'))
     }
     case 'spread':
-      return AttrValueOf.spread(wrap(value.expr), value.templateExpr ? wrap(value.templateExpr) : undefined)
+      // Keep the Phase-1 props-object marker: the props object merges this
+      // spread in source order (#3713).
+      return {
+        ...AttrValueOf.spread(wrap(value.expr), value.templateExpr ? wrap(value.templateExpr) : undefined),
+        ...(value.propsObject && { propsObject: true as const }),
+      }
   }
 }
 import { destructureLoopParam, loopKeyFn, buildCompSelector, nestedLoopIndexAlias } from '../shared.ts'
 import { BF_HOST, BF_AT } from '@barefootjs/shared'
 import { isEventHandlerName } from '../../../event-handler-name.ts'
+import { childPropsObjectExpr, type ChildPropValue } from '../../child-props-object.ts'
 import type {
   BranchChildComponentInit,
   BranchChildComponentInitsPlan,
@@ -172,35 +178,30 @@ export function buildBranchChildComponentInitsPlan(
   for (const comp of components) {
     const selector = buildCompSelector(comp)
 
-    const propsEntries = comp.props
-      .filter(p => p.name !== 'key')
-      .map(p => {
-        if (isEventHandlerName(p.name)) {
-          return `${quotePropName(p.name)}: ${wrap(attrValueToString(p.value) ?? 'undefined')}`
-        }
-        switch (p.value.kind) {
-          case 'literal':
-            return `get ${quotePropName(p.name)}() { return ${JSON.stringify(p.value.value)} }`
-          case 'boolean-shorthand':
-          case 'boolean-attr':
-            return `get ${quotePropName(p.name)}() { return true }`
-          case 'jsx-children':
-          case 'expression':
-          case 'template':
-          case 'spread': {
-            const expr = attrValueToString(p.value) ?? 'undefined'
-            return `get ${quotePropName(p.name)}() { return ${wrap(expr)} }`
-          }
-        }
-      })
-
     // Children are needed for CSR createComponent; SSR initChild ignores them
     // (text already lives in the rendered HTML).
     const childrenExpr = comp.children?.length ? irChildrenToJsExpr(comp.children) : null
-    if (childrenExpr) {
-      propsEntries.push(`get children() { return ${wrap(childrenExpr)} }`)
-    }
-    const propsExpr = propsEntries.length > 0 ? `{ ${propsEntries.join(', ')} }` : '{}'
+    const trailing = childrenExpr ? [`get children() { return ${wrap(childrenExpr)} }`] : []
+    // A props-object spread merges in source order through the shared door
+    // (#3713) instead of becoming a getter named `...`.
+    const propsExpr = childPropsObjectExpr(comp.props, (p): ChildPropValue | null => {
+      if (p.name === 'key') return null
+      if (isEventHandlerName(p.name)) {
+        return { expr: wrap(attrValueToString(p.value) ?? 'undefined'), getter: false }
+      }
+      switch (p.value.kind) {
+        case 'literal':
+          return { expr: JSON.stringify(p.value.value), getter: true }
+        case 'boolean-shorthand':
+        case 'boolean-attr':
+          return { expr: 'true', getter: true }
+        case 'jsx-children':
+        case 'expression':
+        case 'template':
+        case 'spread':
+          return { expr: wrap(attrValueToString(p.value) ?? 'undefined'), getter: true }
+      }
+    }, { trailing })
 
     inits.push({
       name: comp.name,

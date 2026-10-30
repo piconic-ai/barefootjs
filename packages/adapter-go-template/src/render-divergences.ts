@@ -195,6 +195,11 @@ export const renderDivergences: RenderDivergences = {
   'component-spread-forwarded-null': { limitation: 'props-spread-explicit-null-override' },
   'component-spread-explicit-undefined-prop': { limitation: 'props-spread-explicit-null-override' },
   'component-prop-undefined-literal-spread': { limitation: 'props-spread-explicit-null-override' },
+  // A `{...props}` spread onto a child in a static-array loop row: the
+  // constructor bakes the rows only from scalar props and declines a spread,
+  // so the rows come from the caller-supplied `in.<Child>s`, which the
+  // spread never reaches.
+  'component-spread-props-in-static-loop-row': { limitation: 'props-spread-static-loop-row' },
   // `number-division-zero-divisor`, `nullish-operand-division-remainder`,
   // `string-index-non-finite` and `remainder-negative-zero-quotient` used to
   // sit here: `bf_div` gave `0` for a zero divisor. It is now IEEE division,
