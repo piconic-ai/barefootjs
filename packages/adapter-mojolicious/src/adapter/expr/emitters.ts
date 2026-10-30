@@ -37,6 +37,8 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   filterPredicateShapeRefusal,
   isUnloweredCall,
   isRootPropsObject,
+  PROPS_OBJECT_IDENTIFIER,
+  propsObjectIdentifier,
   unloweredCallRefusal,
   type CallbackLoweringOptions,
   type PredicateMethod,
@@ -103,8 +105,13 @@ const PREDICATE_METHODS: ReadonlySet<string> = new Set([
  * `props.a.b` flattens only the inner hop, then the caller's own recursion
  * appends `.b`.
  */
-function flattenPropsMember(object: ParsedExpr, property: string, isBound: (name: string) => boolean): string | null {
-  if (isRootPropsObject(object, isBound)) return `$${property}`
+function flattenPropsMember(
+  object: ParsedExpr,
+  property: string,
+  isBound: (name: string) => boolean,
+  propsObject: string,
+): string | null {
+  if (isRootPropsObject(object, isBound, propsObject)) return `$${property}`
   return null
 }
 
@@ -217,6 +224,8 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   private readonly paramVar: string
   // Whether a binding enclosing the predicate (a loop row) binds `name`.
   private readonly isOuterBound: (name: string) => boolean
+  // The component's props object identifier (`BindingScope.propsObject`).
+  private readonly propsObject: string
   // Whether a getter/prop name is declared `number`, so a strict equality
   // against it keeps numeric `==` (`emitPerlEquality`).
   private readonly isNumberName: (n: string, componentProperty?: boolean) => boolean
@@ -230,6 +239,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     paramVar = `$${param}`,
     isOuterBound: (name: string) => boolean = () => false,
     isNumberName: (n: string, componentProperty?: boolean) => boolean = () => false,
+    propsObject: string = PROPS_OBJECT_IDENTIFIER,
   ) {
     this.param = param
     this.localVarMap = localVarMap
@@ -238,6 +248,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     this.enclosingParams = enclosingParams
     this.paramVar = paramVar
     this.isOuterBound = isOuterBound
+    this.propsObject = propsObject
     this.isNumberName = isNumberName
   }
 
@@ -260,7 +271,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     // This predicate's own param, an enclosing callback's or an enclosing
     // loop row's binding spelled `props` is that binding (#3693).
-    const flat = flattenPropsMember(object, property, n => n === this.param || this.enclosingParams.has(n) || this.isOuterBound(n))
+    const flat = flattenPropsMember(object, property, n => n === this.param || this.enclosingParams.has(n) || this.isOuterBound(n), this.propsObject)
     if (flat !== null) return flat
     // `.length` goes through the runtime's `bf->length`, which counts an
     // array ref's elements and a string's UTF-16 code units. That covers a
@@ -368,7 +379,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     const paramVar = grepLexical(param, enclosing)
     const predBody = emitParsedExpr(
       predicate,
-      new MojoFilterEmitter(param, this.localVarMap, this.isStringName, this.onUnsupported, enclosing, paramVar, this.isOuterBound, this.isNumberName),
+      new MojoFilterEmitter(param, this.localVarMap, this.isStringName, this.onUnsupported, enclosing, paramVar, this.isOuterBound, this.isNumberName, this.propsObject),
     )
     const grep = grepPredicate(method, paramVar, predBody, arrayExpr)
     if (grep !== null) return grep
@@ -720,7 +731,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     // The shared chain (`@barefootjs/jsx`'s `adapters/callback-method.ts`)
     // decides; this emitter only spells the result.
     const recv = emit(object)
-    const plan = lowerCallbackMethod(method, arrow, restArgs, CALLBACK_LOWERING)
+    const plan = lowerCallbackMethod(method, arrow, restArgs, CALLBACK_LOWERING, propsObjectIdentifier(this.ctx._propsObjectName))
     switch (plan.kind) {
       case 'eval':
         return emitCallbackEval(plan, recv, emit, EVAL_SPELLING)

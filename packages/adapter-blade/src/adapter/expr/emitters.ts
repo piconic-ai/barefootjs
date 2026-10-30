@@ -109,6 +109,8 @@ import {
   filterPredicateShapeRefusal,
   isUnloweredCall,
   isRootPropsObject,
+  PROPS_OBJECT_IDENTIFIER,
+  propsObjectIdentifier,
   unloweredCallRefusal,
   type CallbackLoweringOptions,
   type StringNameTest,
@@ -147,10 +149,15 @@ export function truthyTest(node: ParsedExpr, rendered: string): string {
  * other receiver so callers fall through to their generic member lowering —
  * `props.a.b` flattens only the inner hop.
  */
-function flattenPropsMember(object: ParsedExpr, property: string, isBound: (name: string) => boolean): string | null {
+function flattenPropsMember(
+  object: ParsedExpr,
+  property: string,
+  isBound: (name: string) => boolean,
+  propsObject: string,
+): string | null {
   // A `props` a binding shadows (`isBound`) is that binding, not the
   // component's props object (#3693).
-  if (isRootPropsObject(object, isBound)) return bladeVar(property)
+  if (isRootPropsObject(object, isBound, propsObject)) return bladeVar(property)
   return null
 }
 
@@ -213,6 +220,8 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
   private readonly onUnsupported?: (message: string, reason?: string) => void
   // Whether a binding enclosing the predicate (a loop row) binds `name`.
   private readonly isOuterBound: (name: string) => boolean
+  // The component's props object identifier (`BindingScope.propsObject`).
+  private readonly propsObject: string
 
   constructor(
     param: string,
@@ -220,12 +229,14 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
     isStringName: StringNameTest = () => false,
     onUnsupported?: (message: string, reason?: string) => void,
     isOuterBound: (name: string) => boolean = () => false,
+    propsObject: string = PROPS_OBJECT_IDENTIFIER,
   ) {
     this.param = param
     this.localVarMap = localVarMap
     this.isStringName = isStringName
     this.onUnsupported = onUnsupported
     this.isOuterBound = isOuterBound
+    this.propsObject = propsObject
   }
 
   identifier(name: string): string {
@@ -246,7 +257,7 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
     // A callback param spelled `props` (a `.map((props) => …)` row the
     // filter param was renamed to, #3404) or an enclosing binding of that
     // name (#3693) is that binding, not the component props.
-    const flat = flattenPropsMember(object, property, n => n === this.param || this.isOuterBound(n))
+    const flat = flattenPropsMember(object, property, n => n === this.param || this.isOuterBound(n), this.propsObject)
     if (flat !== null) return flat
     // `.length` — route through `$bf->length` (handles both array element
     // count and string char count, JS-compatibly).
@@ -635,7 +646,7 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     // The shared chain (`@barefootjs/jsx`'s `adapters/callback-method.ts`)
     // decides; this emitter only spells the result.
     const recv = emit(object)
-    const plan = lowerCallbackMethod(method, arrow, restArgs, CALLBACK_LOWERING)
+    const plan = lowerCallbackMethod(method, arrow, restArgs, CALLBACK_LOWERING, propsObjectIdentifier(this.ctx._propsObjectName))
     switch (plan.kind) {
       case 'eval':
         return emitCallbackEval(plan, recv, emit, EVAL_SPELLING)

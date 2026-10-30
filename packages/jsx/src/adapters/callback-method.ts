@@ -26,7 +26,6 @@ import {
   type ParsedExpr,
   type SortComparator,
 } from '../expression-parser.ts'
-import { PROPS_OBJECT_IDENTIFIER } from '../scope/binding-scope.ts'
 
 type Arrow = Extract<ParsedExpr, { kind: 'arrow' }>
 
@@ -106,17 +105,19 @@ export interface EvalBody {
 /**
  * Serialize a callback body for the runtime evaluator, with the captures its
  * env needs; `null` when the body is outside the evaluator surface. `bound`
- * are the callback's own params.
+ * are the callback's own params. `propsObject` is the component's props
+ * object identifier (`BindingScope.propsObject` / `propsObjectIdentifier`):
+ * `props`, or the props parameter's own name (`function C(p)`).
  *
- * A template has no `props` object: the props are its top-level variables,
+ * A template has no props object: the props are its top-level variables,
  * and the adapters spell `props.X` as the variable `X`. So each `props.X` the
  * body reads, where no param binds `props`, becomes a fresh env name bound to
  * the read itself, which the adapter spells as it spells `props.X` anywhere
  * else. Capturing `props` whole would bind it to an undefined template
  * variable, and the predicate would read every `props.X` as `undefined`.
  */
-export function evalBody(body: ParsedExpr, bound: ReadonlySet<string>): EvalBody | null {
-  const lifted = liftPropsReads(body, bound)
+export function evalBody(body: ParsedExpr, bound: ReadonlySet<string>, propsObject: string): EvalBody | null {
+  const lifted = liftPropsReads(body, bound, propsObject)
   const json = serializeParsedExpr(lifted.body)
   if (json === null) return null
   const captured = freeVarsInBody(lifted.body, bound).map((name) => ({
@@ -127,16 +128,17 @@ export function evalBody(body: ParsedExpr, bound: ReadonlySet<string>): EvalBody
 }
 
 /**
- * `body` with each `props.X` read that no arrow param shadows replaced by an
- * identifier no other name in `body` uses, and the read each identifier
- * stands for. A bare `props` (`props[key]`) is left as it is.
+ * `body` with each `<propsObject>.X` read that no arrow param shadows
+ * replaced by an identifier no other name in `body` uses, and the read each
+ * identifier stands for. A bare props object (`props[key]`) is left as it is.
  */
 function liftPropsReads(
   body: ParsedExpr,
   bound: ReadonlySet<string>,
+  propsObject: string,
 ): { body: ParsedExpr; values: Map<string, ParsedExpr> } {
   const values = new Map<string, ParsedExpr>()
-  if (bound.has(PROPS_OBJECT_IDENTIFIER)) return { body, values }
+  if (bound.has(propsObject)) return { body, values }
   const taken = new Set<string>(bound)
   collectNames(body, taken)
   const aliases = new Map<string, string>()
@@ -154,9 +156,9 @@ function liftPropsReads(
     if (Array.isArray(value)) return value.map(walk)
     if (value === null || typeof value !== 'object') return value
     const node = value as { kind?: unknown } & Record<string, unknown>
-    if (isPropsRead(node)) return { kind: 'identifier', name: aliasFor(node) }
-    // An arrow that binds `props` makes it a different value in its body.
-    if (node.kind === 'arrow' && (node.params as string[]).includes(PROPS_OBJECT_IDENTIFIER)) return node
+    if (isPropsRead(node, propsObject)) return { kind: 'identifier', name: aliasFor(node) }
+    // An arrow that binds the props object name makes it a different value in its body.
+    if (node.kind === 'arrow' && (node.params as string[]).includes(propsObject)) return node
     const out: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(node)) out[k] = walk(v)
     return out
@@ -164,12 +166,12 @@ function liftPropsReads(
   return { body: walk(body) as ParsedExpr, values }
 }
 
-function isPropsRead(node: { kind?: unknown }): node is Extract<ParsedExpr, { kind: 'member' }> {
+function isPropsRead(node: { kind?: unknown }, propsObject: string): node is Extract<ParsedExpr, { kind: 'member' }> {
   const read = node as Partial<Extract<ParsedExpr, { kind: 'member' }>>
   return (
     read.kind === 'member' &&
     read.object?.kind === 'identifier' &&
-    read.object.name === PROPS_OBJECT_IDENTIFIER
+    read.object.name === propsObject
   )
 }
 
@@ -217,20 +219,24 @@ export interface CallbackLoweringOptions {
   nativePredicate?: boolean
 }
 
-/** Lower `<recv>.<method>(arrow, ...restArgs)`. */
+/**
+ * Lower `<recv>.<method>(arrow, ...restArgs)`. `propsObject`: the
+ * component's props object identifier (see {@link evalBody}).
+ */
 export function lowerCallbackMethod(
   method: string,
   arrow: Arrow,
   restArgs: readonly ParsedExpr[],
   options: CallbackLoweringOptions,
+  propsObject: string,
 ): CallbackPlan {
   const { adapterName } = options
   const { body, params } = arrow
-  if (isPredicateMethod(method)) return lowerPredicate(method, arrow, options)
-  if (method === 'sort' || method === 'toSorted') return lowerSortComparator(method, arrow, adapterName)
+  if (isPredicateMethod(method)) return lowerPredicate(method, arrow, options, propsObject)
+  if (method === 'sort' || method === 'toSorted') return lowerSortComparator(method, arrow, adapterName, propsObject)
   if (method === 'reduce' || method === 'reduceRight') {
     const init = restArgs[0]
-    const plan = init ? reduceEvalPlan(body, params, init, method === 'reduceRight' ? 'right' : 'left') : null
+    const plan = init ? reduceEvalPlan(body, params, init, method === 'reduceRight' ? 'right' : 'left', propsObject) : null
     return (
       plan ?? {
         kind: 'refuse',
@@ -240,7 +246,7 @@ export function lowerCallbackMethod(
     )
   }
   if (method === 'flatMap' || method === 'map') {
-    const plan = projectionEvalPlan(method === 'map' ? 'map_eval' : 'flat_map_eval', body, params)
+    const plan = projectionEvalPlan(method === 'map' ? 'map_eval' : 'flat_map_eval', body, params, propsObject)
     return (
       plan ?? {
         kind: 'refuse',
@@ -252,7 +258,12 @@ export function lowerCallbackMethod(
   return { kind: 'receiver' }
 }
 
-function lowerPredicate(method: PredicateMethod, arrow: Arrow, options: CallbackLoweringOptions): CallbackPlan {
+function lowerPredicate(
+  method: PredicateMethod,
+  arrow: Arrow,
+  options: CallbackLoweringOptions,
+  propsObject: string,
+): CallbackPlan {
   const param = String(arrow.params[0])
   const native: CallbackPlan = { kind: 'native-predicate', method, param, predicate: arrow.body }
   // A native form lowers an opaque call to a read of its callee, silently, and
@@ -262,7 +273,7 @@ function lowerPredicate(method: PredicateMethod, arrow: Arrow, options: Callback
     options.nativePredicate === true && !hasOpaqueCall(arrow.body) && !readsNestedCallbackIndex(arrow.body)
   const identity = method === 'filter' && arrow.body.kind === 'identifier' && arrow.body.name === param
   if (nativeOk && identity) return native
-  const evaluable = evalBody(arrow.body, new Set(arrow.params.slice(0, 1)))
+  const evaluable = evalBody(arrow.body, new Set(arrow.params.slice(0, 1)), propsObject)
   if (evaluable !== null) {
     const { helper, forward } = PREDICATE_EVAL[method]
     const operands: CallbackEvalOperand[] = [
@@ -285,8 +296,13 @@ function lowerPredicate(method: PredicateMethod, arrow: Arrow, options: Callback
  * structured `{keys: …}` descriptor, otherwise BF101. A loop source's sort
  * (`planLoop`) and `.sort(cmp)` at an expression position decide the same.
  */
-export function lowerSortComparator(method: 'sort' | 'toSorted', arrow: Arrow, adapterName: string): SortPlan {
-  const plan = sortEvalPlan(arrow.body, arrow.params)
+export function lowerSortComparator(
+  method: 'sort' | 'toSorted',
+  arrow: Arrow,
+  adapterName: string,
+  propsObject: string,
+): SortPlan {
+  const plan = sortEvalPlan(arrow.body, arrow.params, propsObject)
   if (plan) return plan
   const comparator = sortComparatorFromArrow(arrow)
   if (comparator) return { kind: 'structured-sort', comparator }
@@ -299,8 +315,8 @@ export function lowerSortComparator(method: 'sort' | 'toSorted', arrow: Arrow, a
  * has fewer than the two params a comparator needs. The loop-source sort
  * shares this with `.sort(cmp)` at an expression position.
  */
-export function sortEvalPlan(body: ParsedExpr, params: readonly string[]): CallbackEvalPlan | null {
-  const evaluable = evalBody(body, new Set(params))
+export function sortEvalPlan(body: ParsedExpr, params: readonly string[], propsObject: string): CallbackEvalPlan | null {
+  const evaluable = evalBody(body, new Set(params), propsObject)
   if (evaluable === null || params.length < 2) return null
   return {
     kind: 'eval',
@@ -333,8 +349,9 @@ function reduceEvalPlan(
   params: readonly string[],
   init: ParsedExpr,
   direction: 'left' | 'right',
+  propsObject: string,
 ): CallbackEvalPlan | null {
-  const evaluable = evalBody(body, new Set(params))
+  const evaluable = evalBody(body, new Set(params), propsObject)
   if (evaluable === null || init.kind !== 'literal' || params.length < 2) return null
   let seed: CallbackEvalOperand
   if (init.literalType === 'string') seed = { kind: 'string', value: String(init.value) }
@@ -358,8 +375,9 @@ function projectionEvalPlan(
   helper: 'map_eval' | 'flat_map_eval',
   body: ParsedExpr,
   params: readonly string[],
+  propsObject: string,
 ): CallbackEvalPlan | null {
-  const evaluable = evalBody(body, new Set(params.slice(0, 1)))
+  const evaluable = evalBody(body, new Set(params.slice(0, 1)), propsObject)
   if (evaluable === null) return null
   return {
     kind: 'eval',

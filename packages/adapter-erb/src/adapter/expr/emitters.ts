@@ -58,6 +58,7 @@ import {
   filterPredicateShapeRefusal,
   isUnloweredCall,
   isRootPropsObject,
+  propsObjectIdentifier,
   unloweredCallRefusal,
   type CallbackLoweringOptions,
   type PredicateMethod,
@@ -129,8 +130,13 @@ function concatOperand(
  * callers fall through to their generic member lowering — `props.a.b`
  * flattens only the inner hop.
  */
-function flattenPropsMember(object: ParsedExpr, property: string, isBound: (name: string) => boolean): string | null {
-  if (isRootPropsObject(object, isBound)) return `v[${rubySymbolLiteral(property)}]`
+function flattenPropsMember(
+  object: ParsedExpr,
+  property: string,
+  isBound: (name: string) => boolean,
+  propsObject: string,
+): string | null {
+  if (isRootPropsObject(object, isBound, propsObject)) return `v[${rubySymbolLiteral(property)}]`
   return null
 }
 
@@ -246,7 +252,12 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
   member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
     // This predicate's own param, an enclosing callback's or an enclosing
     // loop row's binding spelled `props` is that binding (#3693).
-    const flat = flattenPropsMember(object, property, n => n === this.param || this.outerLocals.has(n) || this.isLoopBoundOuter(n))
+    const flat = flattenPropsMember(
+      object,
+      property,
+      n => n === this.param || this.outerLocals.has(n) || this.isLoopBoundOuter(n),
+      this.stringTyping.scope.propsObject,
+    )
     if (flat !== null) return flat
     // `.length` needs no special higher-order form here — see the file
     // docstring's simplification (2): `.select { ... }.length` just works
@@ -510,7 +521,7 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
   }
 
   member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
-    const flat = flattenPropsMember(object, property, n => this.ctx.isLoopBoundName(n))
+    const flat = flattenPropsMember(object, property, n => this.ctx.isLoopBoundName(n), propsObjectIdentifier(this.ctx._propsObjectName))
     if (flat !== null) return flat
     // Static property access on a module object-literal const
     // (`variantClasses.ghost`) resolves at compile time — the generic Hash
@@ -689,7 +700,7 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     // The shared chain (`@barefootjs/jsx`'s `adapters/callback-method.ts`)
     // decides; this emitter only spells the result.
     const recv = emit(object)
-    const plan = lowerCallbackMethod(method, arrow, restArgs, CALLBACK_LOWERING)
+    const plan = lowerCallbackMethod(method, arrow, restArgs, CALLBACK_LOWERING, propsObjectIdentifier(this.ctx._propsObjectName))
     switch (plan.kind) {
       case 'eval':
         return emitCallbackEval(plan, recv, emit, EVAL_SPELLING)

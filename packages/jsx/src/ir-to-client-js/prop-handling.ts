@@ -2,7 +2,7 @@
  * Props expansion, dependency analysis, and controlled component detection.
  */
 
-import type { ParamInfo, SignalInfo } from '../types.ts'
+import type { ConstantInfo, ParamInfo, SignalInfo } from '../types.ts'
 import type { ClientJsContext } from './types.ts'
 import type { BindingScope } from '../scope/binding-scope.ts'
 import { resolveRestSpreadOriginCore } from '../props-binding.ts'
@@ -118,11 +118,30 @@ export function expandDynamicPropValue(value: string, ctx: ClientJsContext, scop
   // Re-embedding it here would silently drop the mutation; keep the bare
   // reference instead so the emitted getter reads the LIVE binding.
   if (constant?.mutatedAfterDeclaration) return value
-  if (constant && constant.value) {
+  if (constant && constant.value && !initializerCapturedBy(constant, scope)) {
     return constant.value
   }
 
   return value
+}
+
+/**
+ * Would `constant`'s initializer text, spliced in place of a reference to it
+ * at a site inside `scope`, read a different binding than the declaration
+ * does (#3736)? The initializer resolves in the scope the const is declared
+ * in, so a name it reads that a loop row or callback here binds
+ * (`const b = a` read in `rows.map(a => …)`) would re-resolve to the row's
+ * binding. The reference then stays the const itself, which init declares.
+ *
+ * A SHADOW GUARD, so `isBound` (every binding source hides the outer name),
+ * not `valueBoundNames`.
+ */
+function initializerCapturedBy(constant: ConstantInfo, scope: BindingScope | undefined): boolean {
+  if (!scope || !constant.freeIdentifiers) return false
+  for (const name of constant.freeIdentifiers) {
+    if (scope.isBound(name)) return true
+  }
+  return false
 }
 
 /**
@@ -165,7 +184,7 @@ export function expandConstantForReactivity(
   // binding's `value` is a stale pre-mutation snapshot, so it must not be
   // substituted in place of a live reference.
   if (constant?.mutatedAfterDeclaration) return { expr, freeIds: originalFreeIds }
-  if (constant && constant.value) {
+  if (constant && constant.value && !initializerCapturedBy(constant, scope)) {
     return { expr: constant.value, freeIds: constant.freeIdentifiers }
   }
   return { expr, freeIds: originalFreeIds }

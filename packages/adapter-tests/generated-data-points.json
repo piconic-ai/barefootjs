@@ -3174,6 +3174,29 @@
       }
     }
   ],
+  "const-alias-loop-shadow-hydrate": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "__instanceId": "ConstAliasLoopShadowHydrate_test"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "__instanceId": "ConstAliasLoopShadowHydrate_test"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "__instanceId": "ConstAliasLoopShadowHydrate_test"
+      }
+    }
+  ],
   "const-getter-read-loop-shadowed": [
     {
       "name": "gen:rows:empty",
@@ -11050,6 +11073,121 @@
       "props": {
         "empty": "",
         "zero": 1234567890
+      }
+    }
+  ],
+  "props-object-non-props-name-operand-typing": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "on": true,
+        "n": 7
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "on": true,
+        "n": 7
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "on": true,
+        "n": 7
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "label": "L",
+        "on": false,
+        "n": 7
+      }
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "label": "L",
+        "on": true,
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "label": "L",
+        "on": true,
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "label": "L",
+        "on": true,
+        "n": 1234567890
+      }
+    }
+  ],
+  "props-object-non-props-name-row-binding-props": [
+    {
+      "name": "gen:value:empty",
+      "props": {
+        "value": "",
+        "rows": [
+          {
+            "id": "a",
+            "value": 2
+          },
+          {
+            "id": "b",
+            "value": 5
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:value:markup",
+      "props": {
+        "value": "<b>&\"'</b>",
+        "rows": [
+          {
+            "id": "a",
+            "value": 2
+          },
+          {
+            "id": "b",
+            "value": 5
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:value:multibyte",
+      "props": {
+        "value": "日本語",
+        "rows": [
+          {
+            "id": "a",
+            "value": 2
+          },
+          {
+            "id": "b",
+            "value": 5
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "value": "v",
+        "rows": []
       }
     }
   ],
