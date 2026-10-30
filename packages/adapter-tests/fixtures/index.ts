@@ -746,6 +746,8 @@ import { fixture as atSignBesideBrace } from './at-sign-beside-brace'
 import { fixture as templateDelimiterStaticText } from './template-delimiter-static-text'
 import { fixture as templateDelimiterContextualEscape } from './template-delimiter-contextual-escape'
 import { fixture as templateDelimiterStaticTextPropsObject } from './template-delimiter-static-text-props-object'
+import { fixture as percentDelimiterStringLiteral } from './percent-delimiter-string-literal'
+import { fixture as percentDelimiterStringLiteralPropsObject } from './percent-delimiter-string-literal-props-object'
 import { fixture as memoChain } from './memo-chain'
 import { fixture as memoMultiStatementBlock } from './memo-multi-statement-block'
 import { fixture as childPropFromPropsObject } from './child-prop-from-props-object'
@@ -1875,6 +1877,8 @@ export const jsxFixtures: JSXFixture[] = [
   templateDelimiterStaticText,
   templateDelimiterContextualEscape,
   templateDelimiterStaticTextPropsObject,
+  percentDelimiterStringLiteral,
+  percentDelimiterStringLiteralPropsObject,
   memoChain,
   memoMultiStatementBlock,
   childPropFromPropsObject,

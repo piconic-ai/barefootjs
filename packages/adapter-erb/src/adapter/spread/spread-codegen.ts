@@ -26,7 +26,7 @@ import { parseRecordIndexAccess, stringifyParsedExpr, isLiteralIndex } from '@ba
 import type { ParsedExpr } from '@barefootjs/jsx'
 
 import type { ErbSpreadContext } from '../emit-context.ts'
-import { rubySymbolKey, escapeRubySingleQuoted } from '../lib/ruby-naming.ts'
+import { rubySymbolKey, rubyStringLiteral } from '../lib/ruby-naming.ts'
 
 /**
  * Lower a `cond ? {…} : {…}` conditional-spread expression — carried as the
@@ -165,7 +165,7 @@ export function recordIndexAccessToRuby(ctx: ErbSpreadContext, val: ParsedExpr):
   if (!parsed) return null
   const entries = parsed.entries.map(e => {
     const mapVal =
-      e.value.kind === 'number' ? e.value.text : `'${escapeRubySingleQuoted(e.value.text)}'`
+      e.value.kind === 'number' ? e.value.text : rubyStringLiteral(e.value.text)
     return `${rubySymbolKey(e.key)} ${mapVal}`
   })
   return `{ ${entries.join(', ')} }[v[:${parsed.indexPropName}].to_sym]`

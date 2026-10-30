@@ -806,9 +806,9 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     // interpolates simple `$var` reads inside `"..."`, so complex `${...}`
     // parts — arithmetic, helper calls (`bf->json(...)`), ternaries —
     // would render unevaluated if inlined into a quoted string.
-    //   - Static chunks are emitted as quoted literals with the sigils
-    //     that interpolate inside `"..."` (`$`/`@`) plus `"`/`\` escaped,
-    //     so literal text survives verbatim.
+    //   - Static chunks are emitted through `perlStringLiteral`, the
+    //     single string-literal door, so literal text survives verbatim
+    //     (control characters and EP tag delimiters included).
     //   - Expression terms whose Perl precedence is below `.` (binary /
     //     logical / conditional) wrap in parens so they bind before the
     //     concatenation.
@@ -816,7 +816,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     for (const part of parts) {
       if (part.type === 'string') {
         if (part.value !== '') {
-          terms.push(`"${part.value.replace(/[\\"$@]/g, m => `\\${m}`)}"`)
+          terms.push(perlStringLiteral(part.value))
         }
       } else {
         // Each substitution prints as JS `String(v)` does

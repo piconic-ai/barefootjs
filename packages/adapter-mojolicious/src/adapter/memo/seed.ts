@@ -17,12 +17,13 @@ import {
 } from '@barefootjs/jsx'
 
 import type { MojoMemoContext } from '../emit-context.ts'
+import { perlStringLiteral } from '../lib/perl-naming.ts'
 
 /** Perl literal for a context-consumer's `createContext` default. */
 export function contextDefaultPerl(c: ContextConsumer): string {
   const d = c.defaultValue
   if (d === null || d === undefined) return 'undef'
-  if (typeof d === 'string') return `'${d.replace(/[\\']/g, m => `\\${m}`)}'`
+  if (typeof d === 'string') return perlStringLiteral(d)
   if (typeof d === 'boolean') return d ? '1' : '0'
   return String(d)
 }
