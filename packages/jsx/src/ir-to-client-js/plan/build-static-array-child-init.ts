@@ -19,7 +19,8 @@
 
 import type { IRLoopChildComponent, MapCallbackPreamble } from '../../types.ts'
 import type { ClientJsContext, LoopChildReactiveAttr, NestedLoop, TopLevelLoop } from '../types.ts'
-import { quotePropName, varSlotId, attrValueToString, buildLoopChildIndexExpr } from '../utils.ts'
+import { varSlotId, attrValueToString, buildLoopChildIndexExpr } from '../utils.ts'
+import { childPropsObjectExpr, type ChildPropValue } from '../child-props-object.ts'
 import { jsxChildrenPropGetterExpr, renderPreamble, irToHtmlTemplate } from '../html-template.ts'
 
 /**
@@ -293,29 +294,30 @@ function buildComponentRootedInnerLoopPlan(
  *     property, NOT a getter), matching the legacy emitter byte-for-byte.
  */
 function buildStaticPropsExpr(props: readonly LoopChildCompProp[]): PropsExpr {
-  const entries = props.map(p => {
+  // A props-object spread merges in source order through the shared door
+  // (#3713) instead of becoming a getter named `...`.
+  return childPropsObjectExpr(props, (p): ChildPropValue => {
     if (p.isEventHandler) {
-      return `${quotePropName(p.name)}: ${attrValueToString(p.value) ?? 'undefined'}`
+      return { expr: attrValueToString(p.value) ?? 'undefined', getter: false }
     }
     switch (p.value.kind) {
       case 'literal':
-        return `${quotePropName(p.name)}: ${JSON.stringify(p.value.value)}`
+        return { expr: JSON.stringify(p.value.value), getter: false }
       case 'boolean-shorthand':
       case 'boolean-attr':
-        return `${quotePropName(p.name)}: true`
+        return { expr: 'true', getter: false }
       case 'jsx-children':
         // Brand via the shared door (#2651/#2702) — see
         // `jsxChildrenPropGetterExpr`'s docstring. A named jsx-children
         // prop on a component instantiated inside a static-array `.map()`
         // loop used to reach its getter unbranded (pullfrog review, PR
         // #2820).
-        return `get ${quotePropName(p.name)}() { return ${jsxChildrenPropGetterExpr(p.value.children, p.name)} }`
+        return { expr: jsxChildrenPropGetterExpr(p.value.children, p.name), getter: true }
       case 'expression':
       case 'template':
       case 'spread':
-        return `get ${quotePropName(p.name)}() { return ${attrValueToString(p.value) ?? 'undefined'} }`
+        return { expr: attrValueToString(p.value) ?? 'undefined', getter: true }
     }
   })
-  return entries.length > 0 ? `{ ${entries.join(', ')} }` : '{}'
 }
 

@@ -238,6 +238,9 @@ import { fixture as fillUnsupportedClient } from './fill-unsupported-client'
 import { fixture as componentSpreadRest } from './component-spread-rest'
 import { fixture as componentSpreadPropsThenExplicit } from './component-spread-props-then-explicit'
 import { fixture as componentSpreadExplicitThenProps } from './component-spread-explicit-then-props'
+import { fixture as componentSpreadPropsInLoopRow } from './component-spread-props-in-loop-row'
+import { fixture as componentRestSpreadInLoopRow } from './component-rest-spread-in-loop-row'
+import { fixture as componentSpreadPropsInStaticLoopRow } from './component-spread-props-in-static-loop-row'
 import { fixture as componentSpreadPropsSubset } from './component-spread-props-subset'
 import { fixture as componentChildTemplateLiteralModuleLines } from './component-child-template-literal-module-lines'
 import { fixture as componentSpreadPropsRestBag } from './component-spread-props-rest-bag'
@@ -1434,6 +1437,9 @@ export const jsxFixtures: JSXFixture[] = [
   componentSpreadRest,
   componentSpreadPropsThenExplicit,
   componentSpreadExplicitThenProps,
+  componentSpreadPropsInLoopRow,
+  componentRestSpreadInLoopRow,
+  componentSpreadPropsInStaticLoopRow,
   componentSpreadPropsSubset,
   componentChildTemplateLiteralModuleLines,
   componentSpreadPropsRestBag,

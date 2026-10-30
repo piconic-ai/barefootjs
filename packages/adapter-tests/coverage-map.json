@@ -2401,6 +2401,23 @@
         "text"
       ]
     },
+    "component-rest-spread-in-loop-row": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "component-root-client-scope": {
       "kinds": [
         "call",
@@ -2517,6 +2534,43 @@
         "logical:??"
       ],
       "contexts": [
+        "text"
+      ]
+    },
+    "component-spread-props-in-loop-row": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "component-spread-props-in-static-loop-row": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
         "text"
       ]
     },

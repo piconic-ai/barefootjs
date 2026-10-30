@@ -15,9 +15,10 @@
 import type { LoopChildBindings, LoopChildEvent, LoopChildRef, TopLevelLoop, NestedLoop, CollectedLoop } from '../types.ts'
 import type { IRLoopChildComponent, IRExpression, IRNode, LoopParamBinding } from '../../types.ts'
 import { preambleAnalysisText } from '../../types.ts'
-import { quotePropName, wrapLoopParamAsAccessor, irChildrenFreeIds, attrValueToString } from '../utils.ts'
+import { wrapLoopParamAsAccessor, irChildrenFreeIds, attrValueToString } from '../utils.ts'
 import { irChildrenToJsExpr, jsxChildrenPropGetterExpr } from '../html-template.ts'
 import { spliceChildValue } from '../safe-html.ts'
+import { childPropsObjectExpr, type ChildPropValue } from '../child-props-object.ts'
 import { emitListenerBlock } from './stringify/event-listener.ts'
 import { nameForRegistryRef } from '../component-scope.ts'
 import { BF_SCOPE, BF_HOST, BF_AT } from '@barefootjs/shared'
@@ -284,43 +285,40 @@ export function buildComponentPropsExpr(
   loopIndex?: string | null,
 ): string {
   const wrap = loopParam ? (expr: string) => wrapLoopParamAsAccessor(expr, loopParam, loopParamBindings, loopIndex) : (expr: string) => expr
-  const entries = comp.props.map((p) => {
+  // A props-object spread merges in source order through the shared door
+  // (#3713) instead of becoming a getter named `...`.
+  const trailing: string[] = []
+  if ('children' in comp && Array.isArray(comp.children) && comp.children.length > 0) {
+    const childrenExpr = irChildrenToJsExpr(comp.children)
+    if (childrenExpr && childrenExpr !== "''") {
+      trailing.push(`get children() { return ${wrap(childrenExpr)} }`)
+    }
+  }
+  return childPropsObjectExpr(comp.props, (p): ChildPropValue => {
     if (p.isEventHandler) {
-      const handlerExpr = attrValueToString(p.value) ?? 'undefined'
-      return `${quotePropName(p.name)}: ${wrap(handlerExpr)}`
+      return { expr: wrap(attrValueToString(p.value) ?? 'undefined'), getter: false }
     }
     switch (p.value.kind) {
       case 'literal':
         // Literal string values must NOT be wrapped — they don't reference loop params
-        return `get ${quotePropName(p.name)}() { return ${JSON.stringify(p.value.value)} }`
+        return { expr: JSON.stringify(p.value.value), getter: true }
       case 'boolean-shorthand':
       case 'boolean-attr':
-        return `get ${quotePropName(p.name)}() { return true }`
-      case 'jsx-children': {
+        return { expr: 'true', getter: true }
+      case 'jsx-children':
         // Brand via the shared door (#2651/#2702) — see
         // `jsxChildrenPropGetterExpr`'s docstring. This builder is shared
         // by loop and conditional-branch component reconciliation, so a
         // named jsx-children prop on a component instantiated in either
         // context used to reach its getter unbranded (pullfrog review, PR
         // #2820).
-        const childExpr = jsxChildrenPropGetterExpr(p.value.children, p.name)
-        return `get ${quotePropName(p.name)}() { return ${wrap(childExpr)} }`
-      }
+        return { expr: wrap(jsxChildrenPropGetterExpr(p.value.children, p.name)), getter: true }
       case 'expression':
       case 'template':
-      case 'spread': {
-        const valueExpr = attrValueToString(p.value)!
-        return `get ${quotePropName(p.name)}() { return ${wrap(valueExpr)} }`
-      }
+      case 'spread':
+        return { expr: wrap(attrValueToString(p.value)!), getter: true }
     }
-  })
-  if ('children' in comp && Array.isArray(comp.children) && comp.children.length > 0) {
-    const childrenExpr = irChildrenToJsExpr(comp.children)
-    if (childrenExpr && childrenExpr !== "''") {
-      entries.push(`get children() { return ${wrap(childrenExpr)} }`)
-    }
-  }
-  return entries.length > 0 ? `{ ${entries.join(', ')} }` : '{}'
+  }, { trailing })
 }
 
 /** Per-inner-loop data for composite loop emission. */
