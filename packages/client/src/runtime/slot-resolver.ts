@@ -17,11 +17,17 @@ import { hydratedScopes } from './hydration-state.ts'
 
 /** Resolve the host scope id for a slot lookup. Prefers the explicit
  *  `anchorScope` because the immediate `parent` element may be a freshly-
- *  created detached fragment whose `closest()` returns null. */
+ *  created detached fragment whose `closest()` returns null.
+ *
+ *  `ownScopeId`, not the raw `bf-s` attribute: a fragment-rooted host's
+ *  `anchorScope` is a comment-scope proxy with no `bf-s` of its own (or
+ *  one naming the wrapped child, #2910), so the attribute read gave a
+ *  client-built row's child `bf-h=""` and a random scope id — never the
+ *  `${host}_${slot}` id its host's slot lookups expect. */
 export function parentScopeOf(parent: Element, anchorScope?: Element | null): string {
   const ancestor = anchorScope ?? parent.closest(`[${BF_SCOPE}]`)
   if (!ancestor) return ''
-  return ancestor.getAttribute(BF_SCOPE) ?? ''
+  return ownScopeId(ancestor) ?? ''
 }
 
 /** Build the (host, slot) metadata for a fresh component about to be

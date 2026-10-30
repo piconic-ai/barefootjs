@@ -1004,6 +1004,26 @@ describe('qsa', () => {
     expect(qsa(row, '[bf="^s1"]', ['s2'], 'Parent_abc')).toBeNull()
   })
 
+  test('#3695: a fragment-rooted (comment-delimited) receiver matches by its ${host}_${slot} scope id', () => {
+    // The receivers are fragment roots: no element carries their scope, a
+    // `<!--bf-scope:-->` pair does. One is Parent's (`Parent_abc_s5`), the
+    // other belongs to a different host.
+    document.body.innerHTML = `
+      <div bf-s="Parent_abc">
+        <span class="own-row"><!--bf-scope:Parent_abc_s5|h=Parent_abc|m=s5--><span class="chip"><button bf="^s4">own</button></span><!--bf-/scope:Parent_abc_s5--></span>
+        <span class="other-row"><!--bf-scope:Other_xyz_s5|h=Other_xyz|m=s5--><span class="chip"><button bf="^s4">other</button></span><!--bf-/scope:Other_xyz_s5--></span>
+        <span class="nested-row"><!--bf-scope:Parent_abc_s5--><span class="chip"><!--bf-scope:Inner_rand--><b><button bf="^s4">inner</button></b><!--bf-/scope:Inner_rand--></span><!--bf-/scope:Parent_abc_s5--></span>
+      </div>
+    `
+    const ownRow = document.querySelector('.own-row')!
+    expect(qsa(ownRow, '[bf="^s4"]', ['s5'], 'Parent_abc')?.textContent).toBe('own')
+    // A slot the compiler did not name, or another host: nothing.
+    expect(qsa(ownRow, '[bf="^s4"]', ['s6'], 'Parent_abc')).toBeNull()
+    expect(qsa(document.querySelector('.other-row')!, '[bf="^s4"]', ['s5'], 'Parent_abc')).toBeNull()
+    // A receiver's own fragment-rooted component in between: nothing.
+    expect(qsa(document.querySelector('.nested-row')!, '[bf="^s4"]', ['s5'], 'Parent_abc')).toBeNull()
+  })
+
   // qsa() doubles as the child-scope-resolution lookup for compiled
   // component-loop / branch-nested-child code (feeding initChild()) — its
   // target legitimately carries bf-s itself. The nested-child-scope skip
