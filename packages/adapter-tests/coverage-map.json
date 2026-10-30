@@ -8888,6 +8888,60 @@
         "text"
       ]
     },
+    "module-const-array-literal-index": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "binary:>",
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "member:computed",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-array-negative-zero": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:/",
+        "binary:<",
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "member:computed",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "module-const-array-seed": {
       "kinds": [
         "array-literal",

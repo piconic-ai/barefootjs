@@ -75,8 +75,10 @@ export interface MemberAndMethodsHost {
   isMapRootedPropChain(node: ParsedExpr): boolean
   /** Whether `node` reads a member chain of a source-keyed signal seed map. */
   isMapSeededSignalChain(node: ParsedExpr): boolean
-  /** A static `Const.key` / `Const["key"]` lookup on a module object literal, or null. */
-  resolveStaticRecordLiteralIndex(jsExpr: string): string | null
+  /** A static `Const.key` / `Const["key"]` / `Const[0]` lookup on a module literal const, or null. */
+  resolveStaticConstMember(objectName: string, key: string): string | null
+  /** The element (or `length`) of a module array-literal const at a literal key, as a typed `ParsedExpr`, or null. */
+  staticArrayElement(objectName: string, key: string): ParsedExpr | null
   /** Whether `name` is the innermost loop item and a record (has fields). */
   isCurrentLoopRecord(name: string): boolean
   /** The nil-safe `bf_get` read of `property` on `object`. */
@@ -217,15 +219,15 @@ function renderBindingMemberRead(
     return `bf_get ${wrapIfMultiToken(objGo)} ${JSON.stringify(property)}`
   }
 
-  // Static property access on a module object-literal const
-  // (`variantClasses.ghost` in a class template literal) resolves at compile
-  // time — same lookup as the bracket-index form in
-  // `resolveStaticRecordLiteralIndex`, reached here when the access is nested
-  // inside a larger ParsedExpr tree.
+  // Static property access on a module object- or array-literal const
+  // (`variantClasses.ghost` in a class template literal, `QS[0]`) resolves
+  // at compile time — same lookup as the bracket-index form in
+  // `resolveStaticRecordLiteralIndex`, reached here when the access is
+  // nested inside a larger ParsedExpr tree.
   if (object.kind === 'identifier') {
-    const staticValue = host.resolveStaticRecordLiteralIndex(
-      `${object.name}.${property}`,
-    )
+    const element = host.staticArrayElement(object.name, property)
+    if (element !== null) return emit(element)
+    const staticValue = host.resolveStaticConstMember(object.name, property)
     if (staticValue !== null) return staticValue
   }
 

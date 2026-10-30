@@ -71,6 +71,7 @@ import {
   type ContextConsumer,
   collectModuleStringConsts as collectModuleStringConstsShared,
   lookupLiteralConst,
+  lookupStaticArrayElement,
   prepareLoweringMatchers,
   envSignalReaderFor,
   computeSsrSeedPlan,
@@ -366,6 +367,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     extractTextChildren: (children) => this.extractTextChildren(children),
     extractHtmlChildren: (children) => this.extractHtmlChildren(children),
     extractScopedHtmlChildren: (children) => this.extractScopedHtmlChildren(children),
+    resolveStaticConstMember: (objectName, key) => this.resolveStaticConstMember(objectName, key),
+    staticArrayElement: (objectName, key) => this.staticArrayElement(objectName, key),
   }
 
   /** Diagnostics from the current compile (backed by `CompileState`); `generate()` also merges these into `ir.errors`. */
@@ -6120,17 +6123,34 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // ordinary props/locals never match.
       /^([A-Za-z_$][\w$]*)\.([A-Za-z_$][\w$]*)$/.exec(jsExpr)
     if (!m) return null
+    return this.resolveStaticConstMember(m[1], m[2] ?? m[3])
+  }
+
+  /**
+   * The element (or `length`) of a module array-literal const read with a
+   * literal key (`QS[0]`), as the typed `ParsedExpr` the caller spells in
+   * its own context (`lookupStaticArrayElement`), or null.
+   */
+  private staticArrayElement(objectName: string, key: string): ParsedExpr | null {
+    return lookupStaticArrayElement(objectName, key, this.state.localConstants, n => this.isLoopShadowedName(n))
+  }
+
+  /**
+   * `objectName[key]` over a module record literal const: its string/number
+   * value as a Go literal, or null.
+   */
+  private resolveStaticConstMember(objectName: string, key: string): string | null {
     // The base name may be an enclosing loop callback's own (shadowing)
     // param (`rows.map((cfg) => cfg.x)` under a module `const cfg = {...}`)
     // — the record-member sibling of the #2236 bare-identifier gap, found
     // by the loop-param-shadows-record-const fixture. Fall through to the
     // generic lowering, which resolves the member through the loop binding.
-    if (this.isLoopShadowedName(m[1])) return null
-    const key = m[2] ?? m[3]
+    if (this.isLoopShadowedName(objectName)) return null
     const constInfo = (this.state.localConstants ?? []).find(
-      c => c.name === m[1] && c.isModule,
+      c => c.name === objectName && c.isModule,
     )
-    if (constInfo?.value === undefined) return null
+    // A prop or component binding of the name is what the read reaches.
+    if (constInfo?.value === undefined || constInfo.shadowedInComponent) return null
 
     // Read the IR-carried structured value: the analyzer parses a module
     // record's `{ key: 'lit' }` once into an `object-literal`, so the key lookup
@@ -7006,6 +7026,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     renderFilterLengthExpr: (filterExpr, renderArray) => this.renderFilterLengthExpr(filterExpr, renderArray),
     emitPlus: (leftExpr, rightExpr, leftRendered, rightRendered) => this._emitPlus(leftExpr, rightExpr, leftRendered, rightRendered),
     resolveLiteralConstAsGo: (name) => this.resolveLiteralConstAsGo(name),
+    resolveStaticConstMember: (objectName, key) => this.resolveStaticConstMember(objectName, key),
+    staticArrayElement: (objectName, key) => this.staticArrayElement(objectName, key),
     isCurrentLoopItem: (name) => this.isCurrentLoopItem(name),
     currentLoopItemRef: () => this.currentLoopItemRef(),
     isOuterLoopParam: (name) => this.isOuterLoopParam(name),
@@ -7032,7 +7054,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     isMapRootedContextChain: (node) => this.isMapRootedContextChain(node),
     isMapRootedPropChain: (node) => this.isMapRootedPropChain(node),
     isMapSeededSignalChain: (node) => this.isMapSeededSignalChain(node),
-    resolveStaticRecordLiteralIndex: (jsExpr) => this.resolveStaticRecordLiteralIndex(jsExpr),
+    resolveStaticConstMember: (objectName, key) => this.resolveStaticConstMember(objectName, key),
+    staticArrayElement: (objectName, key) => this.staticArrayElement(objectName, key),
     isCurrentLoopRecord: (name) => this.isCurrentLoopRecord(name),
     renderOptionalMember: (object, property) => this.renderOptionalMember(object, property),
     emitOperand: (n, emit) => this.emitOperand(n, emit),

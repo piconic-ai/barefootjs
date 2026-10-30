@@ -421,6 +421,8 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     // generic dot lowering below would reference a Kolon var that
     // doesn't exist server-side and silently render ''.
     if (object.kind === 'identifier') {
+      const element = this.ctx._staticArrayElement(object.name, property)
+      if (element !== null) return emit(element)
       const staticValue = this.ctx._resolveStaticRecordLiteral(object.name, property)
       if (staticValue !== null) return staticValue
     }
