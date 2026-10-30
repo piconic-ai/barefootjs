@@ -3174,6 +3174,29 @@
       }
     }
   ],
+  "const-alias-loop-shadow-hydrate": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "__instanceId": "ConstAliasLoopShadowHydrate_test"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "__instanceId": "ConstAliasLoopShadowHydrate_test"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "__instanceId": "ConstAliasLoopShadowHydrate_test"
+      }
+    }
+  ],
   "const-getter-read-loop-shadowed": [
     {
       "name": "gen:rows:empty",
