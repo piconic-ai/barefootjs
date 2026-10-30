@@ -35,6 +35,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 instead of silently rendering empty — see
 // `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A boolean text child prints `true` / `false`; JSX renders nothing.
+  'boolean-text-child': { limitation: 'boolean-text-child' },
+  'boolean-text-child-destructured': { limitation: 'boolean-text-child' },
   // A list index read inside a callback the evaluator runs
   // (`rows.map(r => r[k])`) converts the key with ToNumber, so `'01'`,
   // `'-0'` and `'1e0'` read an element where JS reads nothing.
@@ -86,7 +89,7 @@ export const renderDivergences: RenderDivergences = {
   // through `string`'s JS `Number::toString` (#3380).
   // `nullish-ternary-false-branch-attr` used to sit here: a taken `false`
   // branch next to a non-boolean branch lowered to Perl `0`. Such branches
-  // are now rewritten to `'true'` / `'false'` (`stringifyBooleanTernaryBranches`);
+  // are now rewritten to `'true'` / `'false'` (`stringifyBooleanBranches`);
   // it renders like Hono.
 
   // `memo-dependency-loop-shadow` used to sit here: a row param `label`

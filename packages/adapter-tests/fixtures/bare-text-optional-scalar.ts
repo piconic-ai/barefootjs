@@ -7,10 +7,10 @@ import { createFixture } from '../src/types'
  * concrete zero-valued struct field (`int`) instead prints its zero value
  * (`0`).
  *
- * A boolean twin (`{active}`) isn't representable here: JSX itself never
- * renders a bare boolean child (`{true}`/`{false}` are both invisible in
- * the oracle), so there's no oracle-diverging case to pin for that type —
- * the zero-value leak is numeric-only in bare text position.
+ * A boolean twin (`{active}`) isn't this case: JSX renders no boolean
+ * child (`{true}` / `{false}` are both invisible in the oracle), so its
+ * absent and `false` values render the same. A present boolean text child
+ * is `boolean-text-child`.
  */
 export const fixture = createFixture({
   id: 'bare-text-optional-scalar',

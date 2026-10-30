@@ -12,6 +12,7 @@ import {
   asCallbackMethodCall,
   collectAbsentPropSeedReads,
   collectNullishAttrContext,
+  nullablePropsYieldedBy,
   hasComputedDefault,
   inDefaultReadOrder,
   isBooleanAttr,
@@ -340,6 +341,24 @@ function barePropReadName(propsObject: string | null, parsed: ParsedExpr | undef
 }
 
 /**
+ * The props an omittable attribute's value reads whole: a bare read, and a
+ * prop the value can be read whole from (`on && 'y'`, a ternary branch),
+ * whose absence omits the attribute (`attrValueMayBeNullish`).
+ */
+function omittableAttrPropReads(
+  attr: { name: string; value: Record<string, unknown> },
+  propsObject: string | null,
+  nullableProps: ReadonlyMap<string, string>,
+): string[] {
+  if (attr.name === 'class' || attr.name === 'className' || attr.name === 'style') return []
+  if (isBooleanAttr(attr.name)) return []
+  if (attr.value?.kind !== 'expression' || attr.value.presenceOrUndefined) return []
+  const parsed = attr.value.parsed as ParsedExpr | undefined
+  const bare = barePropReadName(propsObject, parsed)
+  return [...(bare === null ? [] : [bare]), ...nullablePropsYieldedBy(parsed, nullableProps)]
+}
+
+/**
  * Names of OPTIONAL no-default props consumed as the BARE value of an
  * omittable attribute (`rows={rows}` / `rows={props.rows}`) anywhere in the
  * component's element tree.
@@ -364,6 +383,7 @@ export function collectOmittableAttrConsumedPropNames(ctx: GoEmitContext, ir: Co
   if (optionalParams.size === 0) return names
 
   const propsObject = ctx.state.propsObjectName
+  const nullableProps = collectNullishAttrContext(ir).nullableProps ?? new Map<string, string>()
   const walk = (node: unknown): void => {
     if (!node || typeof node !== 'object') return
     if (Array.isArray(node)) {
@@ -373,11 +393,9 @@ export function collectOmittableAttrConsumedPropNames(ctx: GoEmitContext, ir: Co
     const rec = node as Record<string, unknown>
     if (rec.type === 'element' && Array.isArray(rec.attrs)) {
       for (const attr of rec.attrs as Array<{ name: string; value: Record<string, unknown> }>) {
-        if (attr.name === 'class' || attr.name === 'className' || attr.name === 'style') continue
-        if (isBooleanAttr(attr.name)) continue
-        if (attr.value?.kind !== 'expression' || attr.value.presenceOrUndefined) continue
-        const propName = barePropReadName(propsObject, attr.value.parsed as ParsedExpr | undefined)
-        if (propName !== null && optionalParams.has(propName)) names.add(propName)
+        for (const propName of omittableAttrPropReads(attr, propsObject, nullableProps)) {
+          if (optionalParams.has(propName)) names.add(propName)
+        }
       }
     }
     for (const value of Object.values(rec)) walk(value)

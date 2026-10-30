@@ -58,6 +58,14 @@ subtest 'json — a negative zero is written as 0 (JS JSON.stringify(-0) is "0")
     is $bf->json([$neg_zero, 1]), '[0,1]', 'json() end to end';
 };
 
+subtest 'boolean — a JS boolean the JSON encoder writes as true / false' => sub {
+    is $bf->json([$bf->boolean(1), $bf->boolean(0), $bf->boolean(''), $bf->boolean(2 > 1)]),
+        '[true,false,false,true]', 'booleans inside an array';
+    is $bf->json({ ok => $bf->boolean(1 == 2) }), '{"ok":false}', 'a boolean inside an object';
+    is $bf->string($bf->boolean(1)), 'true', 'prints as JS String(true)';
+    ok !$bf->boolean(0), 'false stays falsy';
+};
+
 subtest 'string — JS String(v) mirror' => sub {
     is $bf->string(42),    '42', 'int';
     is $bf->string('hi'),  'hi', 'string passthrough';

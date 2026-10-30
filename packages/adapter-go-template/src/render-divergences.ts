@@ -117,6 +117,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // in markup outside a `{{…}}` action, so a `"` no longer closes the
 // surrounding attribute.
 export const renderDivergences: RenderDivergences = {
+  // A boolean text child prints `true` / `false`; JSX renders nothing.
+  'boolean-text-child': { limitation: 'boolean-text-child' },
+  'boolean-text-child-destructured': { limitation: 'boolean-text-child' },
   // `===` / `!==` between objects or arrays compares contents, not references.
   'strict-equality-distinct-reference': { limitation: 'object-equality-by-contents' },
   // An array compared with itself reads unequal.

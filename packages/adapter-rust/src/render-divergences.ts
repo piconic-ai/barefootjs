@@ -42,6 +42,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A boolean text child prints `true` / `false`; JSX renders nothing.
+  'boolean-text-child': { limitation: 'boolean-text-child' },
+  'boolean-text-child-destructured': { limitation: 'boolean-text-child' },
   // A list index read in the template with the string key `'1'` reads
   // nothing: the engine's `[]` looks a string up as a mapping key.
   'index-key-canonical-form': { limitation: 'string-key-list-index' },

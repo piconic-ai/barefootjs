@@ -1031,6 +1031,196 @@
       }
     }
   ],
+  "boolean-text-child": [
+    {
+      "name": "gen:flag:true",
+      "props": {
+        "flag": true,
+        "off": false,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:off:absent",
+      "props": {
+        "flag": false,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:off:true",
+      "props": {
+        "flag": false,
+        "off": true,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:on:absent",
+      "props": {
+        "flag": false,
+        "off": false,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "flag": false,
+        "off": false,
+        "on": false,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:missing:true",
+      "props": {
+        "flag": false,
+        "off": false,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ],
+        "missing": true
+      }
+    },
+    {
+      "name": "gen:missing:false",
+      "props": {
+        "flag": false,
+        "off": false,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ],
+        "missing": false
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "flag": false,
+        "off": false,
+        "on": true,
+        "items": []
+      }
+    }
+  ],
+  "boolean-text-child-destructured": [
+    {
+      "name": "gen:flag:true",
+      "props": {
+        "flag": true,
+        "off": false,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:off:absent",
+      "props": {
+        "flag": false,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:off:true",
+      "props": {
+        "flag": false,
+        "off": true,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:on:absent",
+      "props": {
+        "flag": false,
+        "off": false,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "flag": false,
+        "off": false,
+        "on": false,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:missing:true",
+      "props": {
+        "flag": false,
+        "off": false,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ],
+        "missing": true
+      }
+    },
+    {
+      "name": "gen:missing:false",
+      "props": {
+        "flag": false,
+        "off": false,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ],
+        "missing": false
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "flag": false,
+        "off": false,
+        "on": true,
+        "items": []
+      }
+    }
+  ],
   "branch-local-filter-join": [
     {
       "name": "gen:on:true",
@@ -5214,6 +5404,84 @@
       }
     }
   ],
+  "json-stringify-boolean-literal": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "n": 1,
+        "items": []
+      }
+    }
+  ],
+  "json-stringify-boolean-literal-destructured": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "n": 1,
+        "items": []
+      }
+    }
+  ],
   "jsx-spread-props-object": [
     {
       "name": "gen:label:empty",
@@ -5344,6 +5612,238 @@
       }
     }
   ],
+  "logical-and-absent-optional-attr": [
+    {
+      "name": "gen:on:true",
+      "props": {
+        "off": false,
+        "items": [
+          "a",
+          "b"
+        ],
+        "on": true
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "off": false,
+        "items": [
+          "a",
+          "b"
+        ],
+        "on": false
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "off": false,
+        "items": [
+          "a",
+          "b"
+        ],
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "off": false,
+        "items": [
+          "a",
+          "b"
+        ],
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "off": false,
+        "items": [
+          "a",
+          "b"
+        ],
+        "label": "日本語"
+      }
+    },
+    {
+      "name": "gen:count:zero",
+      "props": {
+        "off": false,
+        "items": [
+          "a",
+          "b"
+        ],
+        "count": 0
+      }
+    },
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "off": false,
+        "items": [
+          "a",
+          "b"
+        ],
+        "count": -7
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "off": false,
+        "items": [
+          "a",
+          "b"
+        ],
+        "count": 1234567890
+      }
+    },
+    {
+      "name": "gen:off:absent",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:off:true",
+      "props": {
+        "off": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "off": false,
+        "items": []
+      }
+    }
+  ],
+  "logical-and-absent-optional-attr-destructured": [
+    {
+      "name": "gen:on:true",
+      "props": {
+        "off": false,
+        "items": [
+          "a",
+          "b"
+        ],
+        "on": true
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "off": false,
+        "items": [
+          "a",
+          "b"
+        ],
+        "on": false
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "off": false,
+        "items": [
+          "a",
+          "b"
+        ],
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "off": false,
+        "items": [
+          "a",
+          "b"
+        ],
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "off": false,
+        "items": [
+          "a",
+          "b"
+        ],
+        "label": "日本語"
+      }
+    },
+    {
+      "name": "gen:count:zero",
+      "props": {
+        "off": false,
+        "items": [
+          "a",
+          "b"
+        ],
+        "count": 0
+      }
+    },
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "off": false,
+        "items": [
+          "a",
+          "b"
+        ],
+        "count": -7
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "off": false,
+        "items": [
+          "a",
+          "b"
+        ],
+        "count": 1234567890
+      }
+    },
+    {
+      "name": "gen:off:absent",
+      "props": {
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:off:true",
+      "props": {
+        "off": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "off": false,
+        "items": []
+      }
+    }
+  ],
   "logical-and-zero": [
     {
       "name": "gen:n:negative",
@@ -5354,6 +5854,38 @@
     {
       "name": "gen:n:large",
       "props": {
+        "n": 1234567890
+      }
+    }
+  ],
+  "logical-comparison-output-positions": [
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "items": [],
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "items": [],
+        "n": 1234567890
+      }
+    }
+  ],
+  "logical-comparison-output-positions-destructured": [
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "items": [],
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "items": [],
         "n": 1234567890
       }
     }
@@ -7987,6 +8519,186 @@
       "props": {
         "label": "Custom",
         "size": 1234567890
+      }
+    }
+  ],
+  "nullish-concrete-field-positions": [
+    {
+      "name": "gen:flag:true",
+      "props": {
+        "flag": true,
+        "label": "",
+        "count": 0,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "flag": false,
+        "label": "<b>&\"'</b>",
+        "count": 0,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "flag": false,
+        "label": "日本語",
+        "count": 0,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "flag": false,
+        "label": "",
+        "count": -7,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "flag": false,
+        "label": "",
+        "count": 1234567890,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "flag": false,
+        "label": "",
+        "count": 0,
+        "on": false,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "flag": false,
+        "label": "",
+        "count": 0,
+        "on": true,
+        "items": []
+      }
+    }
+  ],
+  "nullish-concrete-field-positions-destructured": [
+    {
+      "name": "gen:flag:true",
+      "props": {
+        "flag": true,
+        "label": "",
+        "count": 0,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "flag": false,
+        "label": "<b>&\"'</b>",
+        "count": 0,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "flag": false,
+        "label": "日本語",
+        "count": 0,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "flag": false,
+        "label": "",
+        "count": -7,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "flag": false,
+        "label": "",
+        "count": 1234567890,
+        "on": true,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "flag": false,
+        "label": "",
+        "count": 0,
+        "on": false,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "flag": false,
+        "label": "",
+        "count": 0,
+        "on": true,
+        "items": []
       }
     }
   ],

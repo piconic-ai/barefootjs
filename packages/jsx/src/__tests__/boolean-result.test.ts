@@ -1,10 +1,10 @@
 import { describe, test, expect } from 'bun:test'
-import { collectBooleanValueNames, isBooleanResultParsed, stringifyBooleanTernaryBranches } from '../adapters/boolean-result'
+import { collectBooleanValueNames, isBooleanResultParsed, stringifyBooleanBranches } from '../adapters/boolean-result'
 import { exprToString, parseExpression } from '../expression-parser'
 
-const rewrite = (src: string) => exprToString(stringifyBooleanTernaryBranches(parseExpression(src)!))
+const rewrite = (src: string) => exprToString(stringifyBooleanBranches(parseExpression(src)!))
 
-describe('stringifyBooleanTernaryBranches (#3349)', () => {
+describe('stringifyBooleanBranches (#3349, #3789)', () => {
   test('a literal boolean branch next to a non-boolean branch becomes a string literal', () => {
     expect(rewrite("yes() ? false : s()")).toBe(exprToString(parseExpression("yes() ? 'false' : s()")!))
   })
@@ -17,12 +17,22 @@ describe('stringifyBooleanTernaryBranches (#3349)', () => {
     expect(rewrite("a() ? (b() ? 'x' : false) : 'y'")).toBe(exprToString(parseExpression("a() ? (b() ? 'x' : 'false') : 'y'")!))
   })
 
+  test('a comparison an && / || / ?? operand returns is stringified where it decides the result', () => {
+    expect(rewrite("n() > 0 && 'y'")).toBe(exprToString(parseExpression("n() > 0 ? 'y' : 'false'")!))
+    expect(rewrite("n() > 0 || 'y'")).toBe(exprToString(parseExpression("n() > 0 ? 'true' : 'y'")!))
+    expect(rewrite("!n() ?? 'y'")).toBe(exprToString(parseExpression("!n() ? 'true' : 'false'")!))
+    expect(rewrite("s() || n() > 0")).toBe(exprToString(parseExpression("s() || (n() > 0 ? 'true' : 'false')")!))
+    expect(rewrite("n() > 0 && (m() < 0 || 'y')")).toBe(exprToString(parseExpression("n() > 0 ? (m() < 0 ? 'true' : 'y') : 'false'")!))
+    const plain = parseExpression("s() && 'y'")!
+    expect(stringifyBooleanBranches(plain)).toBe(plain)
+  })
+
   test('a wholly boolean ternary and a non-ternary are left unchanged', () => {
     const whole = parseExpression('c() ? true : false')!
     expect(isBooleanResultParsed(whole)).toBe(true)
-    expect(stringifyBooleanTernaryBranches(whole)).toBe(whole)
+    expect(stringifyBooleanBranches(whole)).toBe(whole)
     const plain = parseExpression('s()')!
-    expect(stringifyBooleanTernaryBranches(plain)).toBe(plain)
+    expect(stringifyBooleanBranches(plain)).toBe(plain)
   })
 })
 

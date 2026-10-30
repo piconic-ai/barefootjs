@@ -55,6 +55,7 @@ import {
   refuseAmbiguousNilMemoArithmetic,
   type ArithmeticCoercion,
   collectNullishAttrContext,
+  isNeverNullishOperand,
   parseExpression,
   stringifyParsedExpr,
   isSupported,
@@ -5307,6 +5308,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     right: ParsedExpr,
     emit: (e: ParsedExpr) => string,
   ): string {
+    // `x ?? y` over a value that is never nullish (a comparison, a required
+    // scalar prop) is `x`, even when it is `false` / `''` / `0`, which `or`
+    // would replace.
+    if (op === '??' && isNeverNullishOperand(left, { propsParams: this.state.currentPropsParams, propsObjectName: this.state.propsObjectName }, n => this.scope.isBound(n))) {
+      return this.emitOperand(left, emit)
+    }
     // Go's `and`/`or` are prefix builtins, so every operand that renders to more
     // than one token (a call like `.SearchParams.Get "sort"`, an arithmetic
     // `bf_add a b`, a comparison `eq a b`, a nested `not …` / `or …`) must be

@@ -96,36 +96,48 @@ export function isBooleanResultParsed(
 }
 
 /**
- * Rewrites the boolean-result branches of a ternary whose OTHER branch is
- * not boolean (`yes() ? false : s()`), so a taken boolean branch carries
- * JS `String(boolean)` instead of Perl's `0` / `''` / `1` (#3349). The whole
- * value isn't boolean-shaped, so `bool_str` can't wrap it; instead a literal
- * `true` / `false` branch becomes the string literal `'true'` / `'false'`,
- * and any other boolean-result branch `b` becomes `b ? 'true' : 'false'`.
- * The existing ternary lowering then renders the rewritten tree unchanged.
- * Nested ternary branches are rewritten recursively; anything that is not
- * a mixed ternary is returned as is.
+ * Rewrites the boolean-result values a mixed expression can evaluate to, so
+ * a taken boolean carries JS `String(boolean)` instead of Perl's `0` / `''`
+ * / `1`. The whole value isn't boolean-shaped, so `bool_str` can't wrap it.
+ *
+ * - A ternary branch (`yes() ? false : s()`, #3349): a literal `true` /
+ *   `false` becomes the string literal `'true'` / `'false'`, any other
+ *   boolean-result branch `b` becomes `b ? 'true' : 'false'`.
+ * - An operand JS `&&` / `||` / `??` returns (`n > 0 && 'y'`): a
+ *   boolean-result left operand is returned only when it decides the
+ *   result, so `b && r` becomes `b ? r : 'false'`, `b || r` becomes
+ *   `b ? 'true' : r`, and `b ?? r` is `b` stringified (a boolean is never
+ *   nullish). The right operand is rewritten as a branch.
+ *
+ * The existing lowering then renders the rewritten tree unchanged. Nested
+ * values are rewritten recursively; a tree with nothing to rewrite is
+ * returned as is (the same object). Only an output position may take the
+ * rewrite: a `'false'` string is truthy.
  */
-export function stringifyBooleanTernaryBranches(node: ParsedExpr): ParsedExpr {
-  if (node.kind !== 'conditional' || isBooleanResultParsed(node)) return node
-  return {
-    ...node,
-    consequent: stringifyBooleanBranch(node.consequent),
-    alternate: stringifyBooleanBranch(node.alternate),
+export function stringifyBooleanBranches(node: ParsedExpr): ParsedExpr {
+  if (isBooleanResultParsed(node)) return node
+  if (node.kind === 'conditional') {
+    const consequent = stringifyBooleanBranch(node.consequent)
+    const alternate = stringifyBooleanBranch(node.alternate)
+    return consequent === node.consequent && alternate === node.alternate ? node : { ...node, consequent, alternate }
   }
+  if (node.kind !== 'logical') return node
+  const right = stringifyBooleanBranch(node.right)
+  if (!isBooleanResultParsed(node.left)) return right === node.right ? node : { ...node, right }
+  if (node.op === '??') return stringifyBooleanBranch(node.left)
+  return node.op === '&&'
+    ? { kind: 'conditional', test: node.left, consequent: right, alternate: stringLiteral('false') }
+    : { kind: 'conditional', test: node.left, consequent: stringLiteral('true'), alternate: right }
+}
+
+function stringLiteral(value: string): ParsedExpr {
+  return { kind: 'literal', value, literalType: 'string' }
 }
 
 function stringifyBooleanBranch(branch: ParsedExpr): ParsedExpr {
-  if (!isBooleanResultParsed(branch)) return stringifyBooleanTernaryBranches(branch)
-  if (branch.kind === 'literal') {
-    return { kind: 'literal', value: String(branch.value), literalType: 'string' }
-  }
-  return {
-    kind: 'conditional',
-    test: branch,
-    consequent: { kind: 'literal', value: 'true', literalType: 'string' },
-    alternate: { kind: 'literal', value: 'false', literalType: 'string' },
-  }
+  if (!isBooleanResultParsed(branch)) return stringifyBooleanBranches(branch)
+  if (branch.kind === 'literal') return stringLiteral(String(branch.value))
+  return { kind: 'conditional', test: branch, consequent: stringLiteral('true'), alternate: stringLiteral('false') }
 }
 
 
