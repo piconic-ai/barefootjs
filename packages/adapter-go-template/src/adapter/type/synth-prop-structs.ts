@@ -61,7 +61,7 @@ export function localTypeDefinitionNames(
  * already have its name resolved when the parent's own fields are built.
  */
 export function planSynthPropStructs(
-  metadata: Pick<IRMetadata, 'typeDefinitions' | 'propsParams'>,
+  metadata: Pick<IRMetadata, 'typeDefinitions' | 'propsParams'> & Partial<Pick<IRMetadata, 'signals'>>,
   componentName: string,
 ): SynthPropStructPlanEntry[] {
   const taken = new Set(localTypeDefinitionNames(metadata.typeDefinitions, componentName))
@@ -110,6 +110,16 @@ export function planSynthPropStructs(
   // `value: { v: () => number }` required-object prop).
   for (const param of metadata.propsParams) {
     visit(param.type, componentName, param.name)
+  }
+
+  // Walk root 3: a signal's inline array element type
+  // (`createSignal<{ id: string }[]>([...])`), named like an untyped
+  // object-array signal's synthesized row (`<component><Getter>Item`), so its
+  // seed bakes into a struct slice instead of `nil`. Only an array's element:
+  // a scalar object signal keeps the source-keyed map, which leaves an
+  // omitted optional member absent.
+  for (const signal of metadata.signals ?? []) {
+    if (signal.type.kind === 'array') visitArrayElem(signal.type.elementType, componentName, signal.getter)
   }
 
   return order

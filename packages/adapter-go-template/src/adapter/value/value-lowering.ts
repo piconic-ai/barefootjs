@@ -192,11 +192,8 @@ export function convertInitialValue(
     if (inlinedConst !== null) return inlinedConst
   }
 
-  const propName = seedPassthroughPropName(ctx, preParsed)
-  const param = propName ? propsParams?.find(p => p.name === propName) : undefined
-  if (param) {
-    return propRef(param)
-  }
+  const propSeed = propSliceFallbackSeed(ctx, preParsed, propsParams) ?? passthroughPropSeed(ctx, preParsed, propsParams, propRef)
+  if (propSeed !== null) return propSeed
 
   // A member of an object-typed prop (`createSignal(initial.items)`) bakes
   // as its Input field path (`in.Initial.Items`), typed exactly like the
@@ -348,6 +345,44 @@ export function convertInitialValue(
   }
 
   return 'nil'
+}
+
+/** A seed that reads a prop whole (`props.x`, `x ?? 'd'`): that prop's field, else null. */
+function passthroughPropSeed(
+  ctx: GoEmitContext,
+  preParsed: ParsedExpr | undefined,
+  propsParams: { name: string; sourceName?: string }[] | undefined,
+  propRef: (param: { name: string; sourceName?: string }) => string,
+): string | null {
+  const propName = seedPassthroughPropName(ctx, preParsed)
+  const param = propName ? propsParams?.find(p => p.name === propName) : undefined
+  return param ? propRef(param) : null
+}
+
+/**
+ * A slice prop seed with an array-literal fallback (`props.items ?? [{ id:
+ * 'z' }]`, or `items || [...]`): the prop's slice when the caller passed one,
+ * else the fallback baked as that slice. An array is never falsy, so `||`
+ * falls back exactly when `??` does. Null for any other seed, so a scalar
+ * fallback keeps its hoisted local and the bare prop read its field.
+ */
+function propSliceFallbackSeed(
+  ctx: GoEmitContext,
+  preParsed: ParsedExpr | undefined,
+  propsParams: { name: string; sourceName?: string }[] | undefined,
+): string | null {
+  if (preParsed?.kind !== 'logical' || (preParsed.op !== '??' && preParsed.op !== '||')) return null
+  if (preParsed.right.kind !== 'array-literal') return null
+  const propName = seedPassthroughPropName(ctx, preParsed)
+  if (!propName || !propsParams?.some(p => p.name === propName)) return null
+  const param = ctx.state.currentPropsParams.find(p => p.name === propName)
+  if (!param) return null
+  const goType = typeInfoToGo(ctx, param.type)
+  if (!goType.startsWith('[]')) return null
+  const fallback = parsedLiteralToGo(ctx, preParsed.right, param.type)
+  if (fallback === null) return null
+  const ref = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
+  return `func() ${goType} { if ${ref} != nil { return ${ref} }; return ${fallback} }()`
 }
 
 /**

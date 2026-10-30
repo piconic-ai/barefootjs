@@ -1301,6 +1301,9 @@ import { fixture as loopParamNamedPropsMemberPropsObject } from './loop-param-na
 import { fixture as loopKeyToString } from './loop-key-to-string'
 import { fixture as loopKeyToStringNumberComponentRow } from './loop-key-to-string-number-component-row'
 import { fixture as loopKeyToStringNumberComponentRowClient } from './loop-key-to-string-number-component-row-client'
+import { fixture as signalArraySeedRowStruct } from './signal-array-seed-row-struct'
+import { fixture as signalArrayPropFallbackSeed } from './signal-array-prop-fallback-seed'
+import { fixture as signalArrayPropFallbackSeedDestructured } from './signal-array-prop-fallback-seed-destructured'
 
 import type { JSXFixture } from '../src/types'
 
@@ -2266,4 +2269,7 @@ export const jsxFixtures: JSXFixture[] = [
   strictEqualitySameReference,
   strictEqualityDistinctReference,
   escapedTernaryBranch,
+  signalArraySeedRowStruct,
+  signalArrayPropFallbackSeed,
+  signalArrayPropFallbackSeedDestructured,
 ]

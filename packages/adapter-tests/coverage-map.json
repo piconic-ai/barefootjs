@@ -12621,6 +12621,85 @@
         "text"
       ]
     },
+    "signal-array-prop-fallback-seed": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "signal-array-prop-fallback-seed-destructured": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "signal-array-seed-row-struct": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:>",
+        "literal:null",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "signal-attr-and-text": {
       "kinds": [
         "call",

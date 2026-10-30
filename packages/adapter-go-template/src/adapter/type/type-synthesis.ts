@@ -35,11 +35,12 @@ import {
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { loopArraySignal } from '../analysis/component-tree.ts'
-import { findModuleScopeConst } from '../lib/compile-state.ts'
+import { findModuleScopeConst, findValuedLocalConst } from '../lib/compile-state.ts'
 import { GO_IDENTIFIER, capitalizeFieldName } from '../lib/go-naming.ts'
 import type { NestedComponentInfo } from '../lib/types.ts'
 import { resolveBlockBodyMemoModuleConst } from '../memo/memo-value.ts'
 import { planSynthPropStructs } from './synth-prop-structs.ts'
+import { typeInfoToGo } from './type-codegen.ts'
 import { signalLoopRows } from './state-fields.ts'
 
 /**
@@ -125,14 +126,21 @@ export function synthesizeStructsFromElements(
       properties.push({ name: key, type: scalarGoTypeToTypeInfo(shape.goType), optional: false, readonly: false })
       continue
     }
-    const nestedList = nestedElements.get(key)!
     // Every row's array for this key was empty — no row's data to infer
-    // a shape from (distinct from a MISSING key, already ruled out
-    // above); matches the top-level empty-array rule this function
+    // an element type from (distinct from a MISSING key, already ruled
+    // out above); matches the top-level empty-array rule this function
     // already applies to the signal's own outer array.
-    if (nestedList.length === 0) return null
+    if (shape.element === null) return null
+    if (shape.element !== 'object') {
+      // A scalar array (`tags: ['a', 'b']`) types its field the way a
+      // declared `string[]` property does, so its literal bakes as that slice.
+      const type = scalarArrayTypeInfo(shape.element)
+      fields.push({ tsName: key, goName: capitalizeFieldName(key), goType: typeInfoToGo(ctx, type) })
+      properties.push({ name: key, type, optional: false, readonly: false })
+      continue
+    }
     const nestedName = `${name}${capitalizeFieldName(key)}Item`
-    const nested = synthesizeStructsFromElements(ctx, nestedList, nestedName)
+    const nested = synthesizeStructsFromElements(ctx, nestedElements.get(key)!, nestedName)
     if (!nested) return null
     nestedStructs.push(...nested)
     fields.push({ tsName: key, goName: capitalizeFieldName(key), goType: `[]${nestedName}` })
@@ -142,7 +150,48 @@ export function synthesizeStructsFromElements(
   return [...nestedStructs, { name, fields, properties }]
 }
 
-type PropShape = { kind: 'scalar'; goType: string } | { kind: 'nested-array' }
+/**
+ * The object-literal rows an untyped array signal is seeded with, for
+ * `synthesizeStructsFromElements` to infer its row struct from: the seed's own
+ * array literal (`createSignal([{ id: 'a' }])`), or the array literal of an
+ * untyped module const it names (`const SEED = [...]; createSignal(SEED)`).
+ * The const is read only where the seed name is that const: a prop or a
+ * component-scope const of the same name shadows it. Null for any other seed,
+ * or a signal whose declared element type is not `unknown`.
+ */
+export function untypedSignalSeedRows(
+  ctx: GoEmitContext,
+  signal: { type: TypeInfo; parsed?: ParsedExpr },
+  propsParams: readonly { name: string }[],
+): ParsedExpr[] | null {
+  const seed = signal.parsed
+  if (signal.type.kind === 'array') {
+    const elem = signal.type.elementType
+    if (elem && elem.kind !== 'unknown') return null
+    return seed?.kind === 'array-literal' && seed.elements.length > 0 ? seed.elements : null
+  }
+  if (signal.type.kind !== 'unknown' || seed?.kind !== 'identifier') return null
+  if (propsParams.some(p => p.name === seed.name) || findValuedLocalConst(ctx.state, seed.name)) return null
+  const constant = findModuleScopeConst(ctx.state, seed.name)
+  if (!constant || constant.containsArrow || !isUntypedObjectArrayType(constant.type)) return null
+  const node = constant.parsed
+  return node?.kind === 'array-literal' && node.elements.length > 0 ? node.elements : null
+}
+
+/** Whether a module const's declared type leaves its row type to the literal. */
+function isUntypedObjectArrayType(type: TypeInfo | null | undefined): boolean {
+  if (!type || type.kind === 'unknown') return true
+  if (type.kind !== 'array') return false
+  const elem = type.elementType
+  return !elem || elem.kind === 'unknown' || elem.kind === 'object'
+}
+
+/**
+ * A key's shape across the rows. An array's `element` is `'object'` for an
+ * array of object literals, a scalar Go type (`string` / `float64` / `bool`)
+ * for an array of scalar literals, or null while every row's array was empty.
+ */
+type PropShape = { kind: 'scalar'; goType: string } | { kind: 'array'; element: string | null }
 
 /** The per-key shapes `collectRowShapes` reads off the rows, in first-row key order. */
 type RowShapes = {
@@ -192,24 +241,8 @@ function collectRowShapes(elements: ParsedExpr[]): RowShapes | null {
  * disagrees with the shape the earlier rows gave that key.
  */
 function recordPropShape(rowShapes: RowShapes, i: number, key: string, value: ParsedExpr): boolean {
-  const { order, shapes, nestedElements } = rowShapes
-  const isNestedArray =
-    value.kind === 'array-literal' &&
-    value.elements.every(e => e.kind === 'object-literal')
-
-  if (isNestedArray) {
-    const prevShape = shapes.get(key)
-    if (prevShape === undefined) {
-      if (i !== 0) return false // key absent from the first element → shape differs
-      order.push(key)
-      shapes.set(key, { kind: 'nested-array' })
-      nestedElements.set(key, [])
-    } else if (prevShape.kind !== 'nested-array') {
-      return false // this key is a scalar in some rows, a nested array in others
-    }
-    nestedElements.get(key)!.push(...(value as { elements: ParsedExpr[] }).elements)
-    return true
-  }
+  const { order, shapes } = rowShapes
+  if (value.kind === 'array-literal') return recordArrayShape(rowShapes, i, key, value.elements)
 
   const goType = scalarParsedGoType(value)
   if (!goType) return false
@@ -224,6 +257,51 @@ function recordPropShape(rowShapes: RowShapes, i: number, key: string, value: Pa
     if (prevShape.goType !== goType) return false
   }
   return true
+}
+
+/**
+ * Record one row's array value for `key`: its element shape must agree with
+ * the other rows' (an empty array agrees with any), and an array of objects
+ * contributes its rows to the nested struct's shape.
+ */
+function recordArrayShape(rowShapes: RowShapes, i: number, key: string, elements: ParsedExpr[]): boolean {
+  const { order, shapes, nestedElements } = rowShapes
+  const element = arrayElementShape(elements)
+  if (element === undefined) return false
+  const prevShape = shapes.get(key)
+  if (prevShape === undefined) {
+    if (i !== 0) return false // key absent from the first element → shape differs
+    order.push(key)
+    shapes.set(key, { kind: 'array', element })
+    nestedElements.set(key, [])
+  } else if (prevShape.kind !== 'array') {
+    return false // this key is a scalar in some rows, an array in others
+  } else if (element !== null) {
+    if (prevShape.element !== null && prevShape.element !== element) return false
+    shapes.set(key, { kind: 'array', element })
+  }
+  if (element === 'object') nestedElements.get(key)!.push(...elements)
+  return true
+}
+
+/**
+ * The element shape of one array literal: `'object'` when every element is
+ * an object literal, the shared scalar Go type when every element is a
+ * scalar literal of one type, null for an empty array, and undefined for
+ * anything else.
+ */
+function arrayElementShape(elements: ParsedExpr[]): string | null | undefined {
+  if (elements.length === 0) return null
+  if (elements.every(e => e.kind === 'object-literal')) return 'object'
+  const first = scalarParsedGoType(elements[0])
+  if (first === null) return undefined
+  return elements.every(e => scalarParsedGoType(e) === first) ? first : undefined
+}
+
+/** The `TypeInfo` of an array of the scalar Go type `goType`. */
+function scalarArrayTypeInfo(goType: string): TypeInfo {
+  const elementType = scalarGoTypeToTypeInfo(goType)
+  return { kind: 'array', raw: `${elementType.raw}[]`, elementType }
 }
 
 /** `PropertyInfo.type` for a scalar Go field type — consumed only as a

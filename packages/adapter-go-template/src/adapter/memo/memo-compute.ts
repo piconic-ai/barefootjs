@@ -371,7 +371,24 @@ function signalSeedValueGo(
     propsParams,
     propFallbackVars,
   )
-  return computed ?? getSignalInitialValueAsGo(ctx, signal.initialValue, propsParams, propFallbackVars, signalType, signal.parsed)
+  if (computed !== null) return computed
+  // An array or object seed bakes as the signal's own field does, against
+  // the row struct synthesized for an untyped array signal when there is one.
+  const synthType = ctx.state.synthStructTypes.get(signal.getter)
+  if (synthType || isCompositeSeed(signal.parsed)) {
+    const bakeType = synthType ?? signalType ?? signal.type ?? { kind: 'unknown', raw: 'unknown' }
+    return convertInitialValue(ctx, signal.initialValue, bakeType, propsParams, signal.parsed)
+  }
+  return getSignalInitialValueAsGo(ctx, signal.initialValue, propsParams, propFallbackVars, signalType, signal.parsed)
+}
+
+/**
+ * An array or object literal seed, or a prop read with an array-literal
+ * fallback (`props.items ?? [...]`).
+ */
+function isCompositeSeed(parsed: ParsedExpr | undefined): boolean {
+  if (parsed?.kind === 'array-literal' || parsed?.kind === 'object-literal') return true
+  return parsed?.kind === 'logical' && (parsed.op === '??' || parsed.op === '||') && parsed.right.kind === 'array-literal'
 }
 
 /**

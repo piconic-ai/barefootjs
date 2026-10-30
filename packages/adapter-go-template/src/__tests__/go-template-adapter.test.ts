@@ -1309,21 +1309,37 @@ export function List() {
     })
 
     test('keeps nil for an untyped object array with non-scalar values (#1680)', () => {
-      // A nested object/array value has no scalar Go type to infer, so the
-      // shape can't be synthesised — bail to nil. `tags` is a nested array
-      // of SCALARS (not objects) — #2800 only teaches synthesis to recurse
-      // into an array of OBJECT literals, so this shape is unchanged.
+      // A nested object value has no scalar Go type to infer, so the shape
+      // can't be synthesised — bail to nil.
       const adapter = new GoTemplateAdapter()
       const ir = compileToIR(`
 "use client"
 import { createSignal } from "@barefootjs/client"
 
 export function List() {
-  const [items] = createSignal([{ id: "a", tags: ["x"] }])
+  const [items] = createSignal([{ id: "a", meta: { n: 1 } }])
   return <ul>{items().map((t) => <li key={t.id}>{t.id}</li>)}</ul>
 }
 `)
       expect(adapter.generate(ir).types!).toContain('Items: nil,')
+    })
+
+    test('types a nested scalar-array field and bakes it', () => {
+      // `tags` is an array of scalars: the field takes the slice type a
+      // declared `string[]` takes, and an empty array in another row agrees.
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function List() {
+  const [items] = createSignal([{ id: "a", tags: ["x"] }, { id: "b", tags: [] }])
+  return <ul>{items().map((t) => <li key={t.id}>{t.id}</li>)}</ul>
+}
+`)
+      const types = adapter.generate(ir).types!
+      expect(types).toContain('Tags []string')
+      expect(types).toContain('Items: []ListItemsItem{ListItemsItem{ID: "a", Tags: []string{"x"}}, ListItemsItem{ID: "b", Tags: []string{}}},')
     })
 
     // #2800: a nested array-of-objects field (`children: [{...}]`) recurses
