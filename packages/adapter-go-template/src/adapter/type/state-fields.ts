@@ -33,7 +33,7 @@ import { findNestedComponents } from '../analysis/component-tree.ts'
 import { isBooleanMemo, isListFilterMemo, isStringTernaryMemo } from '../memo/memo-type.ts'
 import { resolveBlockBodyMemoModuleConst } from '../memo/memo-value.ts'
 import { isIntegerValued } from '../memo/memo-compute.ts'
-import { memoSeedRepresentation } from '../memo/memo-seed-shape.ts'
+import { getterCallName, memoSeedRepresentation } from '../memo/memo-seed-shape.ts'
 import { NULLISH_SCALAR_GO_TYPES, bareSeedPropName, buildPropTypeOverrides, propLiteralDefaultGo, resolvePropGoType, seedPassthroughPropName } from '../props/prop-types.ts'
 import { isMathMinMax, propMemberSeedGoType, resolvePropMemberSeed } from '../value/prop-member-seed.ts'
 import { convertInitialValue, seedFallbackVar } from '../value/value-lowering.ts'
@@ -329,6 +329,8 @@ export function inferMemoType(
   const declaredIsUnknown = typeInfoToGo(ctx, memo.type) === 'interface{}'
   if (declaredIsUnknown && isStringTernaryMemo(ctx, memo.parsed)) return 'string'
   if (declaredIsUnknown && isBooleanMemo(ctx, memo, signals, propsParamMap)) return 'bool'
+  const sliceDependency = identityMemoSliceGoType(ctx, memo, signals, propsParamMap, new Set([memo.name]))
+  if (sliceDependency !== null) return sliceDependency
   const blockReturn = resolveBlockBodyMemoModuleConst(ctx, memo, signals)
   if (blockReturn?.constType?.kind === 'array') {
     return typeInfoToGo(ctx, blockReturn.constType)
@@ -336,6 +338,32 @@ export function inferMemoType(
   const declared = typeInfoToGo(ctx, memo.type)
   if (declared === 'float64' && memo.parsed && isIntegerValued(memo.parsed)) return 'int'
   return declared
+}
+
+/**
+ * The Go slice type an identity memo (`() => rows()`, or `() => other()` over
+ * such a memo) holds: its dependency's own field type, so the memo field takes
+ * the dependency's seed (a synthesized row struct slice) as it is. Null for
+ * any other memo, or a dependency that isn't a slice.
+ */
+function identityMemoSliceGoType(
+  ctx: GoEmitContext,
+  memo: StateMemo,
+  signals: StateSignal[],
+  propsParamMap: Map<string, StatePropParam>,
+  resolving: Set<string>,
+): string | null {
+  const dep = memo.parsed ? getterCallName(memo.parsed) : null
+  if (dep === null) return null
+  const signal = signals.find(s => s.getter === dep)
+  if (signal) {
+    const goType = signalFieldGoType(ctx, signal, propsParamMap)
+    return goType.startsWith('[]') ? goType : null
+  }
+  const depMemo = ctx.state.currentMemos.find(m => m.name === dep)
+  if (!depMemo || resolving.has(dep)) return null
+  resolving.add(dep)
+  return identityMemoSliceGoType(ctx, depMemo, signals, propsParamMap, resolving)
 }
 
 /**

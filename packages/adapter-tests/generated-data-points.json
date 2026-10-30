@@ -11410,6 +11410,20 @@
       }
     }
   ],
+  "signal-array-prop-fallback-seed-default": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    },
+    {
+      "name": "gen:tags:empty",
+      "props": {
+        "tags": []
+      }
+    }
+  ],
   "signal-computed-call-seed": [
     {
       "name": "gen:label:absent",
