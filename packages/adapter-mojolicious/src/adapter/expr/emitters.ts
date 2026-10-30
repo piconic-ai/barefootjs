@@ -531,6 +531,8 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     // generic hash lowering below would dereference a Perl var that
     // doesn't exist server-side.
     if (object.kind === 'identifier') {
+      const element = this.ctx.staticArrayElement(object.name, property)
+      if (element !== null) return emit(element)
       const staticValue = this.ctx.resolveStaticRecordLiteral(object.name, property)
       if (staticValue !== null) return staticValue
     }

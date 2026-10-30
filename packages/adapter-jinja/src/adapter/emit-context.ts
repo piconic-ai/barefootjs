@@ -68,6 +68,13 @@ export interface JinjaEmitContext {
    */
   _resolveStaticRecordLiteral(objectName: string, key: string): string | null
 
+  /**
+   * The element (or `length`) of a module array-literal const read with a
+   * literal key (`QS[0]`), as a typed `ParsedExpr` the emitter spells in
+   * context, or null (`lookupStaticArrayElement`).
+   */
+  _staticArrayElement(objectName: string, key: string): ParsedExpr | null
+
   /** Record a BF101 unsupported-expression diagnostic. */
   /**
    * #3144: whether `name` is a component-body local bound to an opaque

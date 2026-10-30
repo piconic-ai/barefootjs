@@ -27,6 +27,7 @@ import { applyCssLayerPrefix, applyCssLayerPrefixToFile } from './css-layer-pref
 import { preprocessInlineJsxCallbacks } from './preprocess-inline-jsx-callbacks.ts'
 import { extractSsrDefaults } from './ssr-defaults.ts'
 import { computeSsrSeedPlan } from './ssr-seed-plan.ts'
+import { componentScopeNames } from './adapters/computed-const.ts'
 import { checkRichTypeMethodCalls, checkRichTypePropSerialization } from './rich-type-refusal.ts'
 import { checkAuthoredFormatDateCalls } from './format-date-refusal.ts'
 import { checkAsyncActionReads } from './async-action-refusal.ts'
@@ -698,10 +699,24 @@ export function buildMetadata(
     localFunctions: ctx.localFunctions,
     localConstants: ctx.localConstants,
   }
+  metadata.localConstants = markShadowedModuleConsts(metadata)
   // Computed from the assembled metadata (not `ctx`): the plan reads the
   // exact fields adapters see, so the two can never disagree.
   metadata.ssrSeedPlan = computeSsrSeedPlan(metadata)
   return metadata
+}
+
+/**
+ * `metadata.localConstants` with each module const the component scope
+ * shadows marked `shadowedInComponent` (`const QS = [...]` beside
+ * `function C({ QS })`). A copy, not a mutation: the analyzer's records may
+ * be shared by the other components of the file.
+ */
+function markShadowedModuleConsts(metadata: IRMetadata): IRMetadata['localConstants'] {
+  const names = componentScopeNames(metadata)
+  return metadata.localConstants.map(c =>
+    c.isModule && names.has(c.name) ? { ...c, shadowedInComponent: true } : c,
+  )
 }
 
 // =============================================================================

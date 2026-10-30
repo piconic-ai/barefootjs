@@ -59,6 +59,13 @@ export interface ErbEmitContext {
   resolveStaticRecordLiteral(objectName: string, key: string): string | null
 
   /**
+   * The element (or `length`) of a module array-literal const read with a
+   * literal key (`QS[0]`), as a typed `ParsedExpr` the emitter spells in
+   * context, or null (`lookupStaticArrayElement`).
+   */
+  staticArrayElement(objectName: string, key: string): ParsedExpr | null
+
+  /**
    * Whether `name` currently names a bare Ruby local bound by an enclosing
    * loop/block (`todos().map(todo => ...)` → `|todo|`) — as opposed to a
    * prop / signal / memo / module const, which always resolves through the

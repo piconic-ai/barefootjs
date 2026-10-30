@@ -517,6 +517,8 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     // lowering below would read a vars-Hash key that doesn't exist
     // server-side.
     if (object.kind === 'identifier') {
+      const element = this.ctx.staticArrayElement(object.name, property)
+      if (element !== null) return emit(element)
       const staticValue = this.ctx.resolveStaticRecordLiteral(object.name, property)
       if (staticValue !== null) return staticValue
     }

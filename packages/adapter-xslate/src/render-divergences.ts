@@ -123,6 +123,9 @@ export const renderDivergences: RenderDivergences = {
   // field is the template's nil, not JS `undefined` (`undefined!` / `NaN`),
   // and a present one is not known to be a string.
   'omitted-optional-row-field-plus': { limitation: 'omitted-optional-row-field-plus' },
+  // A `-0` literal is spelled as an integer zero, so `1 / -0` is
+  // `Infinity` rather than `-Infinity`.
+  'module-const-array-negative-zero': { limitation: 'negative-zero-literal' },
 }
 
 /**
