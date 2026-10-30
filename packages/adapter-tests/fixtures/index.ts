@@ -1293,6 +1293,7 @@ import { fixture as childrenRenamedBesideChildrenLocal } from './children-rename
 import { fixture as childrenAliasLoopShadow } from './children-alias-loop-shadow'
 import { fixture as childrenAliasHopShadowedIntermediate } from './children-alias-hop-shadowed-intermediate'
 import { fixture as constAliasHopLoopShadow } from './const-alias-hop-loop-shadow'
+import { fixture as constAliasLoopShadowHydrate } from './const-alias-loop-shadow-hydrate'
 import { fixture as constAliasDefaultPropLoopShadow } from './const-alias-default-prop-loop-shadow'
 import { fixture as constGetterReadLoopShadowed } from './const-getter-read-loop-shadowed'
 import { fixture as moduleConstHopLoopShadow } from './module-const-hop-loop-shadow'
@@ -2283,6 +2284,7 @@ export const jsxFixtures: JSXFixture[] = [
   childrenAliasLoopShadow,
   childrenAliasHopShadowedIntermediate,
   constAliasHopLoopShadow,
+  constAliasLoopShadowHydrate,
   constAliasDefaultPropLoopShadow,
   constGetterReadLoopShadowed,
   moduleConstHopLoopShadow,

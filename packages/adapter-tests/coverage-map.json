@@ -3323,6 +3323,26 @@
         "text"
       ]
     },
+    "const-alias-loop-shadow-hydrate": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "const-boolean-conditional-test": {
       "kinds": [
         "literal"
