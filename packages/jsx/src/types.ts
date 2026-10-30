@@ -127,6 +127,15 @@ export interface ParamInfo {
   /** When true, the default value contains an arrow function or function expression (computed from AST). */
   defaultContainsArrow?: boolean
   /**
+   * The free identifiers the default reads, from the initializer's own AST
+   * (`extractFreeIdentifiersFromNode`): an object key, a member name or a
+   * callback parameter inside the default is not one (`{ m = ({ label: 'm' })
+   * .label }` reads nothing outer). The client reference graph traces these,
+   * since the emitted read `_p.m ?? <default>` evaluates the default. Set
+   * only when the default reads at least one name.
+   */
+  defaultFreeIdentifiers?: readonly string[]
+  /**
    * `defaultValue` split at each read of an EARLIER binding of the same props
    * destructure (`{ off = false, on = off }` → `on`'s parts are one `param`
    * part naming `off`). The analyzer resolves the references against the

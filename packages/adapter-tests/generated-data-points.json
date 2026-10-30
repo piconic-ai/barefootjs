@@ -6279,6 +6279,71 @@
       }
     }
   ],
+  "module-const-default-hydrate": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "__instanceId": "ModuleConstDefaultHydrate_test",
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "__instanceId": "ModuleConstDefaultHydrate_test",
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "__instanceId": "ModuleConstDefaultHydrate_test",
+        "label": "日本語"
+      }
+    },
+    {
+      "name": "gen:start:zero",
+      "props": {
+        "__instanceId": "ModuleConstDefaultHydrate_test",
+        "start": 0
+      }
+    },
+    {
+      "name": "gen:start:negative",
+      "props": {
+        "__instanceId": "ModuleConstDefaultHydrate_test",
+        "start": -7
+      }
+    },
+    {
+      "name": "gen:start:large",
+      "props": {
+        "__instanceId": "ModuleConstDefaultHydrate_test",
+        "start": 1234567890
+      }
+    },
+    {
+      "name": "gen:tone:empty",
+      "props": {
+        "__instanceId": "ModuleConstDefaultHydrate_test",
+        "tone": ""
+      }
+    },
+    {
+      "name": "gen:tone:markup",
+      "props": {
+        "__instanceId": "ModuleConstDefaultHydrate_test",
+        "tone": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:tone:multibyte",
+      "props": {
+        "__instanceId": "ModuleConstDefaultHydrate_test",
+        "tone": "日本語"
+      }
+    }
+  ],
   "module-const-hop-loop-shadow": [
     {
       "name": "gen:rows:empty",

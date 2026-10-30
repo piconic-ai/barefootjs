@@ -280,6 +280,8 @@ export const renderDivergences: RenderDivergences = {
   // (`<Item>` → `Items` next to an `items` prop) took that field for its own
   // rows, so the `items` loop rendered empty. A loop's rows field is now
   // renamed when a different prop owns the plural (`nestedRowsFieldName`).
+  'module-const-destructure-default': { limitation: 'module-const-destructure-default' },
+  'module-const-default-hydrate': { limitation: 'module-const-destructure-default' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches
