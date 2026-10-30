@@ -765,34 +765,32 @@ final class BarefootJS
     // `{{ bf.json(val) }}`, `{{ bf.floor(val) }}`, etc.
     // -----------------------------------------------------------------
 
-    /** JS `JSON.stringify`. JS writes `-0` as `0` (`JSON.stringify(-4 % 2)`
-     * is `"0"`), where `json_encode` keeps the sign of the float `-0.0`
-     * that `mod` gives for a negative dividend, so a zero float is written
-     * as the int `0`, also inside an array or object (#3698). */
+    /** JS `JSON.stringify`. A number is written as JS writes it
+     * (`Evaluator::formatNumber`): an integral float has no `.0`, `-0` is
+     * `0`, an exponent is unpadded (`-4e-8`, `-4e+21`), and NaN / Infinity
+     * are `null`, at any depth (#3698, #3787). `json_encode` would write
+     * `-4.0e-8` / `-0.0`. Lists and objects are walked here with sorted
+     * keys, as the canonical encoder does; strings and other leaves go
+     * through the backend's encoder. */
     public function json($value): string
     {
-        return $this->backend->encode_json(self::unsignZero($value));
-    }
-
-    /** `$value` with every float zero, at any depth of a list, an assoc
-     * array or a `stdClass`, replaced by the int `0`. A value holding no
-     * float zero comes back unchanged. */
-    private static function unsignZero($value)
-    {
-        if (is_float($value)) {
-            return $value === 0.0 ? 0 : $value;
+        if (is_int($value) || is_float($value)) {
+            $n = (float) $value;
+            return (is_nan($n) || is_infinite($n)) ? 'null' : Evaluator::formatNumber($n);
         }
-        if (is_array($value)) {
-            return array_map(fn ($v) => self::unsignZero($v), $value);
+        if (is_array($value) && array_is_list($value)) {
+            return '[' . implode(',', array_map(fn ($v) => $this->json($v), $value)) . ']';
         }
-        if ($value instanceof \stdClass) {
-            $out = new \stdClass();
-            foreach (get_object_vars($value) as $k => $v) {
-                $out->$k = self::unsignZero($v);
+        if (is_array($value) || $value instanceof \stdClass) {
+            $vars = is_array($value) ? $value : get_object_vars($value);
+            ksort($vars, SORT_STRING);
+            $members = [];
+            foreach ($vars as $k => $v) {
+                $members[] = $this->backend->encode_json((string) $k) . ':' . $this->json($v);
             }
-            return $out;
+            return '{' . implode(',', $members) . '}';
         }
-        return $value;
+        return $this->backend->encode_json($value);
     }
 
     /** JS `String(v)` mirror: `null` renders as the empty string (not

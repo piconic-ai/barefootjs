@@ -1030,6 +1030,23 @@ class BarefootJS:
     # -----------------------------------------------------------------
 
     def json(self, value: Any) -> str:
+        """JS `JSON.stringify`. A number is written as JS writes it
+        (`_format_js_number`): an integral float has no `.0`, `-0` is `0`,
+        an exponent is unpadded (`-4e-8`, `-4e+21`), and NaN / Infinity are
+        `null`, at any depth (#3787); `json.dumps` would write `-2.0` /
+        `-4e-08`. Lists and dicts are walked here with sorted keys, as the
+        default encoder does; strings and other leaves go through the
+        backend's encoder."""
+        if _evaluator._is_number(value):
+            n = float(value)
+            return "null" if math.isnan(n) or math.isinf(n) else _format_js_number(n)
+        if isinstance(value, (list, tuple)):
+            return "[" + ",".join(self.json(v) for v in value) + "]"
+        if isinstance(value, dict):
+            members = sorted(((str(k), v) for k, v in value.items()), key=lambda kv: kv[0])
+            return "{" + ",".join(
+                self.backend.encode_json(k) + ":" + self.json(v) for k, v in members
+            ) + "}"
         return self.backend.encode_json(value)
 
     def string(self, value: Any) -> str:

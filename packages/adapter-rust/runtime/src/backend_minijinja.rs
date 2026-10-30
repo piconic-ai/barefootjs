@@ -107,11 +107,46 @@ fn bf_formatter(out: &mut Output, state: &State, value: &MjValue) -> Result<(), 
 }
 
 /// Canonical JSON encoding for `bf.json` / `bf-p` / `bf-scope`: sorted keys
-/// (free, since [`JsValue::Object`] is a `BTreeMap`), compact separators
-/// (`serde_json::to_string`'s default), non-finite floats -> JSON `null`
-/// recursively (`JsValue::to_json`'s documented contract -- see `num.rs`).
+/// (free, since [`JsValue::Object`] is a `BTreeMap`), compact separators,
+/// non-finite floats -> JSON `null` recursively. A number is written as JS
+/// `JSON.stringify` writes it ([`num::format_js_number`]: `-2`, `-4e-8`,
+/// `-400000000000000000000`, `-4e+21`), where `serde_json` writes a float
+/// beyond `i64` as `-4e+20` (#3787). Strings and dates are written by
+/// `serde_json` as before.
 pub fn encode_json(v: &JsValue) -> String {
-    serde_json::to_string(&v.to_json()).expect("JsValue::to_json always produces a JSON-encodable document")
+    let mut out = String::new();
+    write_json(v, &mut out);
+    out
+}
+
+fn write_json(v: &JsValue, out: &mut String) {
+    match v {
+        JsValue::Number(n) if n.is_finite() => out.push_str(&num::format_js_number(*n)),
+        JsValue::Array(a) => {
+            out.push('[');
+            for (i, el) in a.iter().enumerate() {
+                if i > 0 {
+                    out.push(',');
+                }
+                write_json(el, out);
+            }
+            out.push(']');
+        }
+        JsValue::Object(o) => {
+            out.push('{');
+            for (i, (k, el)) in o.iter().enumerate() {
+                if i > 0 {
+                    out.push(',');
+                }
+                out.push_str(&serde_json::Value::String(k.clone()).to_string());
+                out.push(':');
+                write_json(el, out);
+            }
+            out.push('}');
+        }
+        // Null, booleans, strings, dates and non-finite numbers (`null`).
+        _ => out.push_str(&v.to_json().to_string()),
+    }
 }
 
 fn build_context(bf_value: MjValue, vars: &JsValue) -> BTreeMap<String, MjValue> {

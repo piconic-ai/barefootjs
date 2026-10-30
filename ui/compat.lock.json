@@ -4676,6 +4676,32 @@
           ]
         }
       },
+      "json-stringify-compared-string-prop": {
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "string-number-relational-comparison"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "string-number-relational-comparison"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "string-number-relational-comparison"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "string-number-relational-comparison"
+          ]
+        }
+      },
       "jsx-element-prop-array": {
         "blade": {
           "kind": "refusal",
@@ -8627,6 +8653,10 @@
         "description": "A list index inside a map callback reads element 1 for 1 and \"1\" but nothing for \"01\", \"-0\" or \"1e0\"",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/index-key-canonical-form-callback.ts"
       },
+      "json-stringify-compared-string-prop": {
+        "description": "JSON.stringify of a numeric-looking string prop stays quoted after a numeric comparison",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/json-stringify-compared-string-prop.ts"
+      },
       "jsx-element-prop-array": {
         "description": "Array literal wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-array.ts"
@@ -9986,6 +10016,22 @@
       "adapters": [
         "jinja",
         "minijinja"
+      ]
+    },
+    "string-number-relational-comparison": {
+      "title": "Relational comparison between a string and a number",
+      "kind": "silent",
+      "given": "`<` / `>` / `<=` / `>=` with a string operand and a number operand (a string prop compared with `0`)",
+      "expected": "the string is converted to a number first, so `'-2.0' < 0` is true and `'1e5' < 0` is false",
+      "actual": "throws a type error at render time, or renders the comparison without converting the string (`'-2.0' < 0` is false)",
+      "fixtures": [
+        "json-stringify-compared-string-prop"
+      ],
+      "adapters": [
+        "erb",
+        "jinja",
+        "minijinja",
+        "pebble"
       ]
     },
     "unlowerable-loop-filter-predicate": {

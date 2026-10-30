@@ -163,7 +163,10 @@ significant-digit doubles), `String(null)` → `"null"`,
 JS `JSON.stringify(v)`, single-argument form. Object key **order** is
 not part of the contract (value-compat); vectors use objects whose
 insertion order is alphabetical so serialized strings compare equal.
-Vectors avoid booleans inside the value (hosts without a boolean type
+Numbers are written as JS writes them, at any depth: shortest
+round-trip digits, no `.0` on an integral float, `-0` as `0`, decimal
+within [1e-6, 1e21) and an unpadded exponent outside it (`-4e-8`,
+`1e+21`), and `NaN` / `±Infinity` as `null`. Vectors avoid booleans inside the value (hosts without a boolean type
 cannot round-trip them) and non-finite numbers below the top level.
 
 ### number

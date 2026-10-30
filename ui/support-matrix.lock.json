@@ -215,6 +215,12 @@
               ]
             },
             {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -583,6 +589,12 @@
               ]
             },
             {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -716,6 +728,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
               ]
             },
             {
@@ -982,6 +1000,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
               ]
             },
             {
@@ -3383,6 +3407,12 @@
               ]
             },
             {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -3733,6 +3763,12 @@
               ]
             },
             {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -3848,6 +3884,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
               ]
             },
             {
@@ -4066,6 +4108,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
               ]
             },
             {
@@ -4764,6 +4812,12 @@
               ]
             },
             {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -5450,6 +5504,12 @@
               ]
             },
             {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -5721,6 +5781,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
               ]
             },
             {
@@ -6257,6 +6323,12 @@
               "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
+              ]
+            },
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
               ]
             },
             {
@@ -7748,6 +7820,12 @@
               ]
             },
             {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -8638,6 +8716,12 @@
               ]
             },
             {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -8981,6 +9065,12 @@
               "fixture": "index-key-canonical-form",
               "limitations": [
                 "string-key-list-index"
+              ]
+            },
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
               ]
             },
             {
@@ -9649,6 +9739,12 @@
               "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
+              ]
+            },
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
               ]
             },
             {
@@ -11047,6 +11143,12 @@
               ]
             },
             {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -11733,6 +11835,12 @@
               ]
             },
             {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -11980,6 +12088,12 @@
               "fixture": "index-key-canonical-form",
               "limitations": [
                 "string-key-list-index"
+              ]
+            },
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
               ]
             },
             {
@@ -12480,6 +12594,12 @@
               "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
+              ]
+            },
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
               ]
             },
             {
@@ -14075,6 +14195,12 @@
               ]
             },
             {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -14737,6 +14863,12 @@
               ]
             },
             {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -14978,6 +15110,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
               ]
             },
             {
@@ -15460,6 +15598,12 @@
               "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
+              ]
+            },
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
               ]
             },
             {
@@ -19608,6 +19752,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -19706,6 +19856,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -19739,6 +19895,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            },
             {
               "fixture": "module-const-destructure-default",
               "limitations": [
@@ -19807,6 +19969,12 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            },
             {
               "fixture": "module-const-destructure-default",
               "limitations": [
@@ -19983,12 +20151,48 @@
       "cells": {
         "hono": {},
         "blade": {},
-        "erb": {},
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            }
+          ]
+        },
         "go-template": {},
-        "jinja": {},
-        "minijinja": {},
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            }
+          ]
+        },
         "mojolicious": {},
-        "pebble": {},
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            }
+          ]
+        },
         "twig": {},
         "xslate": {}
       },
@@ -21626,6 +21830,12 @@
               ]
             },
             {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            },
+            {
               "fixture": "markup-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -21976,6 +22186,12 @@
               ]
             },
             {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            },
+            {
               "fixture": "markup-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -22115,6 +22331,12 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
               ]
             },
             {
@@ -22405,6 +22627,12 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
               ]
             },
             {
@@ -23061,6 +23289,12 @@
               ]
             },
             {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -23531,6 +23765,12 @@
               ]
             },
             {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -23688,6 +23928,12 @@
               "fixture": "index-key-canonical-form",
               "limitations": [
                 "string-key-list-index"
+              ]
+            },
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
               ]
             },
             {
@@ -24008,6 +24254,12 @@
               "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
+              ]
+            },
+            {
+              "fixture": "json-stringify-compared-string-prop",
+              "limitations": [
+                "string-number-relational-comparison"
               ]
             },
             {

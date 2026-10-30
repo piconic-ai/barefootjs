@@ -1701,14 +1701,13 @@ func RawHTML(v any) template.HTML {
 // (alphabetical for maps, declaration order for structs) — the
 // #1187 contract requires value-compat, not order-compat.
 //
-// Top-level NaN / ±Inf are pre-handled to match JS — JS's
-// `JSON.stringify(NaN)` and `JSON.stringify(Infinity)` both produce
-// `"null"`, but Go's `encoding/json` rejects them with
-// `UnsupportedValueError`. Without this carve-out the common
-// composition `JSON.stringify(Number("garbage"))` would error
-// instead of emitting `"null"` like JS does. Nested NaN/Inf inside
-// a struct/map still surfaces an error — covering that needs a
-// custom marshaller; out of V1 scope.
+// NaN / ±Inf are written as `null`, as JS's `JSON.stringify(NaN)` and
+// `JSON.stringify([-Infinity])` do, where Go's `encoding/json` rejects
+// them with `UnsupportedValueError` (#3787). They are replaced at the top
+// level and inside slices and string-keyed maps (`bf_arr` rows, decoded
+// props); a NaN/Inf held in a struct field still surfaces an error.
+// Finite numbers already take JS's spelling: `encoding/json` writes a
+// float64 as ES6 Number::toString does (`-2`, `-4e-8`, `-4e+21`).
 //
 // Returns the marshal error so a `template.Execute` call fails
 // loudly on cycles / unsupported values rather than silently
@@ -1716,14 +1715,121 @@ func RawHTML(v any) template.HTML {
 // #1187 was filed against. Go's text/template treats a non-nil
 // error return from a func as an execution failure.
 func JSON(v any) (string, error) {
-	if f, ok := v.(float64); ok && (math.IsNaN(f) || math.IsInf(f, 0)) {
-		return "null", nil
+	prepared, err := nullNonFinite(v, nil)
+	if err != nil {
+		return "", err
 	}
-	b, err := json.Marshal(v)
+	b, err := json.Marshal(prepared)
 	if err != nil {
 		return "", err
 	}
 	return string(unsignJSONZeros(b)), nil
+}
+
+// containerID identifies a map or slice on the walk's current path: its
+// data pointer, plus the length for a slice (as `encoding/json` does), so
+// a slice and a sub-slice sharing a backing array are told apart.
+type containerID struct {
+	ptr uintptr
+	len int
+}
+
+// nullNonFinite returns v with every NaN / ±Inf float replaced by nil,
+// at any depth of a slice or a string-keyed map. A slice or map is
+// copied (as []any / map[string]any) only when it can hold a float and
+// does not marshal itself; v itself is never mutated. path holds the
+// containers being walked: one met again on its own path is a cycle,
+// reported with `encoding/json`'s own error instead of recursing until
+// the stack overflows. A container reached twice on different paths is
+// not a cycle.
+func nullNonFinite(v any, path map[containerID]bool) (any, error) {
+	if _, ok := v.(json.Marshaler); ok {
+		return v, nil // the type spells itself
+	}
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Float32, reflect.Float64:
+		if f := rv.Float(); math.IsNaN(f) || math.IsInf(f, 0) {
+			return nil, nil
+		}
+	case reflect.Slice, reflect.Array:
+		if rv.Kind() == reflect.Slice && (rv.IsNil() || rv.Type().Elem().Kind() == reflect.Uint8) {
+			return v, nil // nil encodes as `null`, []byte as a base64 string
+		}
+		if !holdsFloat(rv.Type().Elem()) {
+			return v, nil
+		}
+		return nullNonFiniteElems(rv, path)
+	case reflect.Map:
+		if rv.IsNil() || rv.Type().Key().Kind() != reflect.String || !holdsFloat(rv.Type().Elem()) {
+			return v, nil
+		}
+		return nullNonFiniteEntries(rv, path)
+	}
+	return v, nil
+}
+
+// enterContainer adds rv (a map or slice) to path, or reports the cycle
+// when it is already there. An array has no identity and never cycles.
+func enterContainer(rv reflect.Value, path map[containerID]bool) (containerID, map[containerID]bool, error) {
+	if rv.Kind() == reflect.Array {
+		return containerID{}, path, nil
+	}
+	id := containerID{ptr: rv.Pointer()}
+	if rv.Kind() == reflect.Slice {
+		id.len = rv.Len()
+	}
+	if path[id] {
+		return id, path, &json.UnsupportedValueError{Value: rv, Str: fmt.Sprintf("encountered a cycle via %s", rv.Type())}
+	}
+	if path == nil {
+		path = map[containerID]bool{}
+	}
+	path[id] = true
+	return id, path, nil
+}
+
+func nullNonFiniteElems(rv reflect.Value, path map[containerID]bool) (any, error) {
+	id, path, err := enterContainer(rv, path)
+	if err != nil {
+		return nil, err
+	}
+	defer delete(path, id)
+	out := make([]any, rv.Len())
+	for i := range out {
+		if out[i], err = nullNonFinite(rv.Index(i).Interface(), path); err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
+}
+
+func nullNonFiniteEntries(rv reflect.Value, path map[containerID]bool) (any, error) {
+	id, path, err := enterContainer(rv, path)
+	if err != nil {
+		return nil, err
+	}
+	defer delete(path, id)
+	out := make(map[string]any, rv.Len())
+	iter := rv.MapRange()
+	for iter.Next() {
+		if out[iter.Key().String()], err = nullNonFinite(iter.Value().Interface(), path); err != nil {
+			return nil, err
+		}
+	}
+	return out, nil
+}
+
+// holdsFloat reports whether a value of type t can be or contain a float
+// that nullNonFinite rewrites (an interface may hold anything).
+func holdsFloat(t reflect.Type) bool {
+	switch t.Kind() {
+	case reflect.Float32, reflect.Float64, reflect.Interface:
+		return true
+	case reflect.Slice, reflect.Array, reflect.Map:
+		return holdsFloat(t.Elem())
+	}
+	return false
 }
 
 // unsignJSONZeros rewrites every `-0` number in encoded JSON to `0`, at
