@@ -67,6 +67,13 @@ export interface BladeEmitContext {
    */
   _resolveStaticRecordLiteral(objectName: string, key: string): string | null
 
+  /**
+   * The element (or `length`) of a module array-literal const read with a
+   * literal key (`QS[0]`), as a typed `ParsedExpr` the emitter spells in
+   * context, or null (`lookupStaticArrayElement`).
+   */
+  _staticArrayElement(objectName: string, key: string): ParsedExpr | null
+
   /** Whether a getter/prop name resolves to a string-typed SSR value. */
   _isStringValueName(name: string, componentProperty?: boolean): boolean
   /** How the emitter coerces an arithmetic operand over a nullish value

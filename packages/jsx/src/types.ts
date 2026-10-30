@@ -2338,6 +2338,15 @@ export interface ConstantInfo {
    */
   mutatedAfterDeclaration?: boolean
   /**
+   * When true, this module-level const is shadowed inside the component: a
+   * destructured prop, the props object, or a component-scope const,
+   * function, signal or memo binds the same name, so a read of the name in
+   * the component is that binding, never this const. Set by
+   * `buildMetadata`; a compile-time lookup of a module const's value must
+   * check it before resolving a read.
+   */
+  shadowedInComponent?: boolean
+  /**
    * Set when the component writes the binding anywhere in its body, event
    * handlers and other callbacks included — the same fact
    * `ParamInfo.reassigned` records for a destructured prop, from the same

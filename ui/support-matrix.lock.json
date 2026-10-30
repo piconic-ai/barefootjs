@@ -97,6 +97,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -224,6 +230,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -441,6 +453,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -601,6 +619,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -743,6 +767,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -864,6 +894,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -1015,6 +1051,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -1145,6 +1187,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -1272,6 +1320,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -3301,6 +3355,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -3410,6 +3470,12 @@
               "fixture": "json-stringify-compared-string-prop",
               "limitations": [
                 "string-number-relational-comparison"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -3651,6 +3717,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -3781,6 +3853,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -3905,6 +3983,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -4008,6 +4092,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -4129,6 +4219,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -4232,6 +4328,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -4350,6 +4452,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -7564,6 +7672,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -7895,6 +8009,12 @@
               "fixture": "memo-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -8424,6 +8544,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -8812,6 +8938,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -9164,6 +9296,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -9489,6 +9627,12 @@
               "fixture": "memo-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -9838,6 +9982,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -10163,6 +10313,12 @@
               "fixture": "memo-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -10503,6 +10659,12 @@
               "fixture": "memo-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -10965,6 +11127,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -11212,6 +11380,12 @@
               "fixture": "memo-const-declared-after-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -11627,6 +11801,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -11919,6 +12099,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -12175,6 +12361,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -12416,6 +12608,12 @@
               "fixture": "memo-const-declared-after-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -12681,6 +12879,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -12910,6 +13114,12 @@
               "fixture": "memo-const-declared-after-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -13154,6 +13364,12 @@
               "fixture": "memo-const-declared-after-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -14059,6 +14275,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -14294,6 +14516,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -14697,6 +14925,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -14971,6 +15205,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -15221,6 +15461,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -15450,6 +15696,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -15709,6 +15961,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -15953,6 +16211,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -16194,6 +16458,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -17060,6 +17330,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -17069,6 +17345,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
             {
               "fixture": "preamble-cells",
               "limitations": [
@@ -17083,6 +17365,12 @@
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -17102,6 +17390,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -17118,6 +17412,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -17127,6 +17427,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
             {
               "fixture": "preamble-cells",
               "limitations": [
@@ -17141,6 +17447,12 @@
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -17160,6 +17472,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -17173,6 +17491,12 @@
               "fixture": "filter-nested-callback-predicate",
               "limitations": [
                 "nested-callback-in-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -20218,8 +20542,26 @@
     "binary:/": {
       "cells": {
         "hono": {},
-        "blade": {},
-        "erb": {},
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
         "go-template": {
           "gaps": [
             {
@@ -20227,15 +20569,75 @@
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
             }
           ]
         },
-        "jinja": {},
-        "minijinja": {},
-        "mojolicious": {},
-        "pebble": {},
-        "twig": {},
-        "xslate": {}
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -20252,7 +20654,16 @@
     "binary:<": {
       "cells": {
         "hono": {},
-        "blade": {},
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
         "erb": {
           "gaps": [
             {
@@ -20260,16 +20671,37 @@
               "limitations": [
                 "string-number-relational-comparison"
               ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
             }
           ]
         },
-        "go-template": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
         "jinja": {
           "gaps": [
             {
               "fixture": "json-stringify-compared-string-prop",
               "limitations": [
                 "string-number-relational-comparison"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             }
           ]
@@ -20281,10 +20713,25 @@
               "limitations": [
                 "string-number-relational-comparison"
               ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
             }
           ]
         },
-        "mojolicious": {},
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
         "pebble": {
           "gaps": [
             {
@@ -20292,11 +20739,35 @@
               "limitations": [
                 "string-number-relational-comparison"
               ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
             }
           ]
         },
-        "twig": {},
-        "xslate": {}
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -21222,6 +21693,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -21241,6 +21718,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -21290,6 +21773,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -21318,6 +21807,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -21340,6 +21835,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -21359,6 +21860,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -21396,6 +21903,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -21418,6 +21931,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -21437,6 +21956,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -21496,6 +22021,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -21521,6 +22052,12 @@
               "fixture": "boolean-text-child-destructured",
               "limitations": [
                 "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -21576,6 +22113,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -21601,6 +22144,12 @@
               "fixture": "boolean-text-child-destructured",
               "limitations": [
                 "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -21632,6 +22181,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -21657,6 +22212,12 @@
               "fixture": "boolean-text-child-destructured",
               "limitations": [
                 "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -21688,6 +22249,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -21707,6 +22274,12 @@
               "fixture": "boolean-text-child-destructured",
               "limitations": [
                 "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -21735,6 +22308,12 @@
               "fixture": "boolean-text-child-destructured",
               "limitations": [
                 "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -21823,6 +22402,12 @@
               "fixture": "memo-const-declared-after-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -21971,6 +22556,12 @@
               "fixture": "memo-const-declared-after-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -22182,6 +22773,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -22342,6 +22939,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -22490,6 +23093,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -22629,6 +23238,12 @@
               "fixture": "memo-const-declared-after-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -22786,6 +23401,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -22913,6 +23534,12 @@
               "fixture": "memo-const-declared-after-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -23055,6 +23682,12 @@
               "fixture": "memo-const-declared-after-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -23279,6 +23912,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -23436,6 +24075,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -23737,6 +24382,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -23927,6 +24578,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -24093,6 +24750,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -24244,6 +24907,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -24419,6 +25088,12 @@
               ]
             },
             {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -24558,6 +25233,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -24712,6 +25393,12 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
               ]
             },
             {
@@ -25544,8 +26231,26 @@
     "member:computed": {
       "cells": {
         "hono": {},
-        "blade": {},
-        "erb": {},
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
         "go-template": {
           "gaps": [
             {
@@ -25553,15 +26258,75 @@
               "limitations": [
                 "non-identifier-literal-key"
               ]
+            },
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
             }
           ]
         },
-        "jinja": {},
-        "minijinja": {},
-        "mojolicious": {},
-        "pebble": {},
-        "twig": {},
-        "xslate": {}
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -25952,15 +26717,96 @@
     "unary:-": {
       "cells": {
         "hono": {},
-        "blade": {},
-        "erb": {},
-        "go-template": {},
-        "jinja": {},
-        "minijinja": {},
-        "mojolicious": {},
-        "pebble": {},
-        "twig": {},
-        "xslate": {}
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "module-const-array-negative-zero",
+              "limitations": [
+                "negative-zero-literal"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",

@@ -448,6 +448,8 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     // generic dot lowering below would reference a context var that
     // doesn't exist server-side and silently resolve to Undefined.
     if (object.kind === 'identifier') {
+      const element = this.ctx._staticArrayElement(object.name, property)
+      if (element !== null) return emit(element)
       const staticValue = this.ctx._resolveStaticRecordLiteral(object.name, property)
       if (staticValue !== null) return staticValue
     }
