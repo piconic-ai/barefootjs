@@ -212,6 +212,7 @@ import {
   type ElementShellSpelling,
   inlineComputedConstAttr,
   inlineComputedConsts,
+  escapeBraceDelimiters,
 } from '@barefootjs/jsx'
 import type { ParsedExpr } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
@@ -394,8 +395,9 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
 
   emitText(node: IRText): string {
     // IRText carries the entity-DECODED value (Phase 1 decodes JSX
-    // character references); re-escape for direct HTML emission.
-    return escapeHtml(node.value)
+    // character references); re-escape for direct HTML emission, then
+    // keep any tag opener (`{{`, `{%`, `{#`) away from the Twig lexer.
+    return escapeTwigStaticText(escapeHtml(node.value))
   }
 
   emitExpression(node: IRExpression): string {
@@ -997,7 +999,7 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
    * AttrValue lowering for intrinsic-element attributes (Twig).
    */
   private readonly elementAttrEmitter: AttrValueEmitter = {
-    emitLiteral: (value, name) => `${name}="${escapeHtml(value.value)}"`,
+    emitLiteral: (value, name) => `${name}="${escapeTwigStaticText(escapeHtml(value.value))}"`,
     emitExpression: (source, name) => {
       // A computed const reads as its initializer (#3494).
       const value = inlineComputedConstAttr(source, this.computedConsts)
@@ -1470,3 +1472,13 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
 }
 
 export const twigAdapter = new TwigAdapter()
+
+/**
+ * Static template text (an element's text run or a literal attribute value,
+ * already HTML-escaped) with every brace that could open a Twig tag
+ * (`{{`, `{%`, `{#`, or a trailing `{` before the adapter's next tag)
+ * printed through an output tag, so Twig renders it as written.
+ */
+function escapeTwigStaticText(s: string): string {
+  return escapeBraceDelimiters(s, '{%#', "{{ '{' }}")
+}

@@ -316,7 +316,7 @@ import {
   bladeHashKey,
   bladeIdent,
   bladeVar,
-  escapeBladeSingleQuoted,
+  bladeStringLiteral,
   escapeBladeStaticText,
   bladeLoopBindingAccessor,
 } from './lib/blade-naming.ts'
@@ -341,7 +341,7 @@ import type { BladeAdapterOptions } from './lib/types.ts'
 const DESTRUCTURE_SPELLING: DestructureSpelling = {
   accessor: bladeLoopBindingAccessor,
   slice: (parent, from) => `$bf->slice(${parent}, ${from}, null)`,
-  omit: (parent, keys) => `$bf->omit(${parent}, [${keys.map((k) => `'${escapeBladeSingleQuoted(k)}'`).join(', ')}])`,
+  omit: (parent, keys) => `$bf->omit(${parent}, [${keys.map((k) => bladeStringLiteral(k)).join(', ')}])`,
 }
 
 /** The wording of the loop refusals the plan decides (BF104 / BF101). */
@@ -550,7 +550,7 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     const v = valueProp.value
     if (v.kind === 'literal') {
       if (typeof v.value === 'string') {
-        return `'${escapeBladeSingleQuoted(v.value)}'`
+        return bladeStringLiteral(v.value)
       }
       if (typeof v.value === 'boolean') return v.value ? 'true' : 'false'
       return String(v.value)
@@ -935,7 +935,7 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
    * buffering mechanism below, not threaded through the entry list.
    */
   private readonly componentPropEmitter: AttrValueEmitter = {
-    emitLiteral: (value, name) => `${bladeHashKey(name)} => '${escapeBladeSingleQuoted(value.value)}'`,
+    emitLiteral: (value, name) => `${bladeHashKey(name)} => ${bladeStringLiteral(value.value)}`,
     emitExpression: (value, name) => {
       if (value.parts) {
         return `${bladeHashKey(name)} => ${this.convertTemplateLiteralPartsToBlade(value.parts)}`
@@ -1245,8 +1245,8 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     const entries = planStyleObject(value)
     if (!entries) return null
     const args = entries.flatMap(e => [
-      `'${escapeBladeSingleQuoted(e.cssKey)}'`,
-      e.kind === 'literal' ? `'${escapeBladeSingleQuoted(e.value)}'` : this.convertExpressionToBlade(e.expr, e.parsed),
+      bladeStringLiteral(e.cssKey),
+      e.kind === 'literal' ? bladeStringLiteral(e.value) : this.convertExpressionToBlade(e.expr, e.parsed),
     ])
     return `{!! $bf->style_object(${args.join(', ')}) !!}`
   }
@@ -1309,7 +1309,7 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     const parts: string[] = []
     for (const part of literalParts) {
       if (part.type === 'string') {
-        parts.push(`'${escapeBladeSingleQuoted(part.value)}'`)
+        parts.push(bladeStringLiteral(part.value))
       } else if (part.type === 'expression') {
         parts.push(`$bf->string(${this.convertExpressionToBlade(part.expr, part.parsed)})`)
       } else if (part.type === 'ternary') {
@@ -1317,7 +1317,7 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
         // Symbolic PHP ternary (same syntax as Twig's own — see this file's
         // header syntax table) — `(test ? a : b)`.
         parts.push(
-          `(${cond} ? '${escapeBladeSingleQuoted(part.whenTrue)}' : '${escapeBladeSingleQuoted(part.whenFalse)}')`,
+          `(${cond} ? ${bladeStringLiteral(part.whenTrue)} : ${bladeStringLiteral(part.whenFalse)})`,
         )
       } else if (part.type === 'lookup') {
         // `${MAP[KEY]}` against a Record<T, string> literal — emit a PHP
@@ -1330,7 +1330,7 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
         // either) needed `??` for.
         const keyExpr = this.convertExpressionToBlade(part.key)
         const entries = Object.entries(part.cases)
-          .map(([k, v]) => `${bladeHashKey(k)} => '${escapeBladeSingleQuoted(v)}'`)
+          .map(([k, v]) => `${bladeHashKey(k)} => ${bladeStringLiteral(v)}`)
           .join(', ')
         parts.push(`$bf->string(([${entries}][${keyExpr}]) ?? '')`)
       }
@@ -1538,7 +1538,7 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     if (lit.kind === 'number') return lit.text
     if (lit.kind === 'boolean') return lit.text === 'true' ? 'true' : 'false'
     if (lit.kind === 'null') return 'null'
-    return `'${escapeBladeSingleQuoted(lit.text)}'`
+    return bladeStringLiteral(lit.text)
   }
 
   /**
@@ -1562,7 +1562,7 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     if (!hit) return null
     return hit.kind === 'number'
       ? hit.text
-      : `'${escapeBladeSingleQuoted(hit.text)}'`
+      : bladeStringLiteral(hit.text)
   }
 
   private _resolveModuleStringConst(name: string): string | null {
@@ -1572,7 +1572,7 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     if (this.inLoop) return null
     const value = this.moduleStringConsts.get(name)
     if (value === undefined) return null
-    return `'${escapeBladeSingleQuoted(value)}'`
+    return bladeStringLiteral(value)
   }
 
   private _recordExprBF101(message: string, reason?: string): void {

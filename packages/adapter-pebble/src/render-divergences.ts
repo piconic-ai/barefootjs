@@ -27,6 +27,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // runtime's shape-check method, `java/.../Bf.java`) ahead of `call()`'s
 // generic fallback, so it never reaches the refusal at all.
 export const renderDivergences: RenderDivergences = {
+  // A boolean text child prints `true` / `false`; JSX renders nothing.
+  'boolean-text-child': { limitation: 'boolean-text-child' },
+  'boolean-text-child-destructured': { limitation: 'boolean-text-child' },
   // A string prop compared with a number (`s < 0`) is not converted to a
   // number first.
   'json-stringify-compared-string-prop': { limitation: 'string-number-relational-comparison' },

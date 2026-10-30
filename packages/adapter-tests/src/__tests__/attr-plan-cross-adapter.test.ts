@@ -13,7 +13,7 @@
  *
  * The one declared difference: Mojolicious and Xslate also route a boolean
  * branch of a ternary attribute through `bool_str`, because Perl has no
- * boolean to stringify (`stringifyBooleanTernaryBranches`).
+ * boolean to stringify (`stringifyBooleanBranches`).
  */
 import { describe, test, expect } from 'bun:test'
 import { readdirSync } from 'node:fs'

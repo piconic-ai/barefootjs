@@ -287,6 +287,20 @@ import { fixture as memoNumberOutputPositions } from './memo-number-output-posit
 import { fixture as memoNumberOutputPositionsDestructured } from './memo-number-output-positions-destructured'
 import { fixture as nullishBooleanOutputPositions } from './nullish-boolean-output-positions'
 import { fixture as nullishBooleanOutputPositionsDestructured } from './nullish-boolean-output-positions-destructured'
+import { fixture as booleanTextChild } from './boolean-text-child'
+import { fixture as booleanTextChildDestructured } from './boolean-text-child-destructured'
+import { fixture as logicalComparisonOutputPositions } from './logical-comparison-output-positions'
+import { fixture as logicalComparisonOutputPositionsDestructured } from './logical-comparison-output-positions-destructured'
+import { fixture as logicalMixedLeftOutput } from './logical-mixed-left-output'
+import { fixture as logicalMixedLeftOutputDestructured } from './logical-mixed-left-output-destructured'
+import { fixture as logicalMixedLeftNullish } from './logical-mixed-left-nullish'
+import { fixture as logicalMixedLeftNullishDestructured } from './logical-mixed-left-nullish-destructured'
+import { fixture as nullishConcreteFieldPositions } from './nullish-concrete-field-positions'
+import { fixture as nullishConcreteFieldPositionsDestructured } from './nullish-concrete-field-positions-destructured'
+import { fixture as logicalAndAbsentOptionalAttr } from './logical-and-absent-optional-attr'
+import { fixture as logicalAndAbsentOptionalAttrDestructured } from './logical-and-absent-optional-attr-destructured'
+import { fixture as jsonStringifyBooleanLiteral } from './json-stringify-boolean-literal'
+import { fixture as jsonStringifyBooleanLiteralDestructured } from './json-stringify-boolean-literal-destructured'
 import { fixture as unaryMinusCompoundOperand } from './unary-minus-compound-operand'
 import { fixture as omittedOptionalNumberNegation } from './omitted-optional-number-negation'
 import { fixture as omittedOptionalNullableNumberArithmetic } from './omitted-optional-nullable-number-arithmetic'
@@ -719,6 +733,9 @@ import { fixture as adjacentDynamicText } from './adjacent-dynamic-text'
 import { fixture as atSignBeforeDynamicText } from './at-sign-before-dynamic-text'
 import { fixture as atSignBeforeDynamicTextPropsObject } from './at-sign-before-dynamic-text-props-object'
 import { fixture as atSignBesideBrace } from './at-sign-beside-brace'
+import { fixture as templateDelimiterStaticText } from './template-delimiter-static-text'
+import { fixture as templateDelimiterContextualEscape } from './template-delimiter-contextual-escape'
+import { fixture as templateDelimiterStaticTextPropsObject } from './template-delimiter-static-text-props-object'
 import { fixture as memoChain } from './memo-chain'
 import { fixture as memoMultiStatementBlock } from './memo-multi-statement-block'
 import { fixture as childPropFromPropsObject } from './child-prop-from-props-object'
@@ -1445,6 +1462,20 @@ export const jsxFixtures: JSXFixture[] = [
   memoNumberOutputPositionsDestructured,
   nullishBooleanOutputPositions,
   nullishBooleanOutputPositionsDestructured,
+  booleanTextChild,
+  booleanTextChildDestructured,
+  logicalComparisonOutputPositions,
+  logicalComparisonOutputPositionsDestructured,
+  logicalMixedLeftOutput,
+  logicalMixedLeftOutputDestructured,
+  logicalMixedLeftNullish,
+  logicalMixedLeftNullishDestructured,
+  nullishConcreteFieldPositions,
+  nullishConcreteFieldPositionsDestructured,
+  logicalAndAbsentOptionalAttr,
+  logicalAndAbsentOptionalAttrDestructured,
+  jsonStringifyBooleanLiteral,
+  jsonStringifyBooleanLiteralDestructured,
   unaryMinusCompoundOperand,
   omittedOptionalNumberNegation,
   omittedOptionalNullableNumberArithmetic,
@@ -1814,6 +1845,9 @@ export const jsxFixtures: JSXFixture[] = [
   atSignBeforeDynamicText,
   atSignBeforeDynamicTextPropsObject,
   atSignBesideBrace,
+  templateDelimiterStaticText,
+  templateDelimiterContextualEscape,
+  templateDelimiterStaticTextPropsObject,
   memoChain,
   memoMultiStatementBlock,
   childPropFromPropsObject,

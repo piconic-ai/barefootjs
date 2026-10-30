@@ -10,13 +10,13 @@
  * the caller falls back to its existing BF101 refusal instead of guessing.
  */
 
-import { escapeBladeSingleQuoted, bladeHashKey } from './blade-naming.ts'
+import { bladeStringLiteral, bladeHashKey } from './blade-naming.ts'
 
 export function staticValueToBlade(value: unknown): string | null {
   if (value === null || value === undefined) return 'null'
   if (typeof value === 'boolean') return value ? 'true' : 'false'
   if (typeof value === 'number') return String(value)
-  if (typeof value === 'string') return `'${escapeBladeSingleQuoted(value)}'`
+  if (typeof value === 'string') return bladeStringLiteral(value)
   if (Array.isArray(value)) {
     const items: string[] = []
     for (const el of value) {

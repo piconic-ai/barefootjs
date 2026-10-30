@@ -16,8 +16,9 @@
  */
 
 import type { ParsedExpr } from './expression-parser.ts'
+import { isBooleanResultParsed } from './adapters/boolean-result.ts'
 import { BindingScope } from './scope/binding-scope.ts'
-import type { ComponentIR, MemoInfo, SignalInfo, TypeInfo } from './types.ts'
+import type { ComponentIR, IRMetadata, MemoInfo, SignalInfo, TypeInfo } from './types.ts'
 
 function isNullishType(type: TypeInfo): boolean {
   return type.kind === 'primitive' && (type.primitive === 'undefined' || type.primitive === 'null')
@@ -102,6 +103,57 @@ function collectNullablePropReads(ir: ComponentIR): ReadonlyMap<string, string> 
   return names
 }
 
+/** A required string / number / boolean, or a union of them: a value that is never nullish. */
+function isNonNullishScalar(type: TypeInfo | undefined): boolean {
+  if (!type) return false
+  if (type.kind === 'union') return (type.unionTypes ?? []).length > 0 && (type.unionTypes ?? []).every(isNonNullishScalar)
+  return type.kind === 'primitive' && (type.primitive === 'string' || type.primitive === 'number' || type.primitive === 'boolean')
+}
+
+/**
+ * Whether `expr` is never `undefined` / `null` at SSR, so JS `expr ?? y` is
+ * `expr`, even when it is `false`, `''` or `0`: a boolean-result expression
+ * (a comparison, `!`, a boolean literal, `isBooleanResultParsed`), or a read
+ * of a required (not optional, not rest) prop declared as a string, number
+ * or boolean, or a union of them, read as its binding (`flag`) or as
+ * `<propsObjectName>.<key>`, with no binding shadowing the read.
+ */
+export function isNeverNullishOperand(
+  expr: ParsedExpr,
+  metadata: Pick<IRMetadata, 'propsParams' | 'propsObjectName'>,
+  isBound: (name: string) => boolean,
+): boolean {
+  if (isBooleanResultParsed(expr)) return true
+  const objectName = metadata.propsObjectName
+  let matches: (p: IRMetadata['propsParams'][number]) => boolean
+  if (objectName && expr.kind === 'member' && !expr.computed && expr.object.kind === 'identifier' && expr.object.name === objectName) {
+    if (isBound(objectName)) return false
+    matches = p => (p.sourceName ?? p.name) === expr.property
+  } else if (!objectName && expr.kind === 'identifier') {
+    if (isBound(expr.name)) return false
+    matches = p => p.name === expr.name
+  } else {
+    return false
+  }
+  const param = metadata.propsParams.find(matches)
+  return !!param && !param.optional && !param.isRest && isNonNullishScalar(param.declaredType ?? param.type)
+}
+
+/**
+ * The params of `nullableProps` (`NullishAttrContext.nullableProps`) that
+ * `expr`'s value can be read whole from (`collectSeedPropReads`): the props
+ * whose absence an attribute bound to `expr` omits it for. A backend that
+ * types a prop by value (Go) makes these props nillable.
+ */
+export function nullablePropsYieldedBy(
+  expr: ParsedExpr | undefined,
+  nullableProps: ReadonlyMap<string, string>,
+): Set<string> {
+  const out = new Set<string>()
+  collectSeedPropReads(expr, nullableProps, out)
+  return out
+}
+
 /**
  * Add to `out` the params of `nullableProps` a seed's value can be read
  * whole from: a bare read, a ternary branch, the right operand of `??` /
@@ -176,6 +228,10 @@ export interface NullishAttrContext {
    * (`arithmeticOperandIsUndefined`). */
   readonly undefinedSeededSignals?: ReadonlySet<string>
   readonly memos: ReadonlyMap<string, MemoInfo>
+  /** Props that can be absent or `null` at SSR (no default, optional or
+   * typed with `undefined` / `null`), by the name a read uses
+   * (`collectNullablePropReads`). */
+  readonly nullableProps?: ReadonlyMap<string, string>
   /** Props declared as a number that may be `null` or absent (`n: number |
    * null`, `n?: number`), by the name a read uses: the binding name, and
    * `<propsObjectName>.<key>` for a member read (#3474), mapped to what the
@@ -208,6 +264,7 @@ export function collectNullishAttrContext(ir: ComponentIR): NullishAttrContext {
       signals.filter(s => s.parsed?.kind === 'identifier' && s.parsed.name === 'undefined').map(s => s.getter),
     ),
     memos: new Map((ir.metadata.memos ?? []).map(m => [m.name, m])),
+    nullableProps: collectNullablePropReads(ir),
     nullableNumberProps: collectNullableNumberProps(ir),
   }
 }
@@ -248,7 +305,8 @@ function collectNullableNumberProps(ir: ComponentIR): ReadonlyMap<string, Nullab
  * nullish value through:
  *
  * - a read of a nullable signal or of a memo whose type or body can be
- *   nullish (`label()` with `label = createMemo(() => s())`);
+ *   nullish (`label()` with `label = createMemo(() => s())`), or of a prop
+ *   that can be absent (`props.on && 'y'`);
  * - an optional member read (`user()?.name`), an index or computed-key read
  *   (`pair[1]`, `row[key]`), or a member read of a value that can itself be
  *   nullish;
@@ -273,7 +331,7 @@ export function attrValueMayBeNullish(
   // loop bindings at the top level, none inside a memo body — its getters
   // resolve where the memo is declared, not where it is read.
   const walk = (expr: ParsedExpr, shadowed: (name: string) => boolean): boolean => {
-    if (methodMayReturnUndefined(expr)) return true
+    if (readsUndefinedLeaf(expr, ctx, shadowed)) return true
     switch (expr.kind) {
       case 'identifier':
         return expr.name === 'undefined'
@@ -308,6 +366,22 @@ export function attrValueMayBeNullish(
     }
   }
   return parsed !== undefined && walk(parsed, isShadowed)
+}
+
+/** A method call that can miss (`methodMayReturnUndefined`), or a read of a prop that can be absent. */
+function readsUndefinedLeaf(expr: ParsedExpr, ctx: NullishAttrContext, shadowed: (name: string) => boolean): boolean {
+  return methodMayReturnUndefined(expr) || readsNullableProp(expr, ctx, shadowed)
+}
+
+/**
+ * A read of a prop that can be absent (`NullishAttrContext.nullableProps`):
+ * its binding (`on`) or `props.<key>`, unless a binding shadows the name.
+ */
+function readsNullableProp(expr: ParsedExpr, ctx: NullishAttrContext, shadowed: (name: string) => boolean): boolean {
+  if (!ctx.nullableProps?.size) return false
+  if (expr.kind === 'identifier') return !shadowed(expr.name) && ctx.nullableProps.has(expr.name)
+  if (expr.kind !== 'member' || expr.computed || expr.object.kind !== 'identifier' || shadowed(expr.object.name)) return false
+  return ctx.nullableProps.has(`${expr.object.name}.${expr.property}`)
 }
 
 /** Array / string methods that read `undefined` when nothing matches. */

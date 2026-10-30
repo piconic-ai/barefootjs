@@ -11,6 +11,8 @@ import {
   collectAbsentPropSeedReads,
   collectNullableSignalGetters,
   collectNullishAttrContext,
+  isNeverNullishOperand,
+  nullablePropsYieldedBy,
   nullableSignalAttrGetter,
 } from '../nullable-signal-attr'
 import { BindingScope } from '../scope/binding-scope'
@@ -324,5 +326,51 @@ describe('ambiguousNilArithmeticOperands (#3700)', () => {
     expect(found('n * 2', BindingScope.EMPTY.enterCallback(['n']))).toEqual([])
     // A sibling arrow's param does not leak out of its own body.
     expect(found('items.filter(n => n > 1).length * n')).toEqual(['n'])
+  })
+})
+
+describe('a prop that can be absent, and an operand that is never nullish', () => {
+  function irOf(signature: string): ComponentIR {
+    const source = `
+      export function C(${signature}) {
+        return <p>x</p>
+      }
+    `
+    return { metadata: analyzeComponent(source, 'C.tsx') } as unknown as ComponentIR
+  }
+  const mayBeNullish = (ir: ComponentIR, src: string, shadowed: (n: string) => boolean = () => false) =>
+    attrValueMayBeNullish(parseExpression(src), collectNullishAttrContext(ir), shadowed)
+
+  test('an && / ternary over an absent-able prop may be nullish, in both props forms', () => {
+    const object = irOf('props: { on?: boolean; label: string | undefined; n: number; d?: string }')
+    expect(mayBeNullish(object, "props.on && 'y'")).toBe(true)
+    expect(mayBeNullish(object, "props.n > 0 ? props.label : 'x'")).toBe(true)
+    expect(mayBeNullish(object, "props.n && 'y'")).toBe(false)
+    expect(mayBeNullish(object, "props.on ?? 'y'")).toBe(false)
+    expect(mayBeNullish(object, "props.on && 'y'", n => n === 'props')).toBe(false)
+    const destructured = irOf("{ on, d = 'z' }: { on?: boolean; d?: string }")
+    expect(mayBeNullish(destructured, "on && 'y'")).toBe(true)
+    expect(mayBeNullish(destructured, "on && 'y'", n => n === 'on')).toBe(false)
+    expect(mayBeNullish(destructured, "d && 'y'")).toBe(false)
+  })
+
+  test('nullablePropsYieldedBy names the props a value can be read whole from', () => {
+    const ir = irOf('props: { on?: boolean; label?: string; n?: number }')
+    const nullable = collectNullishAttrContext(ir).nullableProps!
+    expect([...nullablePropsYieldedBy(parseExpression("props.on && (props.n > 0 ? props.label : 'x')"), nullable)].sort()).toEqual(['label', 'on'])
+    expect([...nullablePropsYieldedBy(parseExpression("props.on ?? props.label"), nullable)]).toEqual(['label'])
+  })
+
+  test('isNeverNullishOperand: a comparison and a required scalar prop, not an optional or shadowed one', () => {
+    const object = irOf("props: { flag: boolean; s: string; n: number; tone: 'a' | 'b'; opt?: boolean; u: string | undefined; list: string[] }").metadata
+    const never = (src: string, isBound: (n: string) => boolean = () => false) =>
+      isNeverNullishOperand(parseExpression(src)!, object, isBound)
+    for (const src of ['props.flag', 'props.s', 'props.n', 'props.tone', 'props.n > 1', '!props.opt']) expect(never(src)).toBe(true)
+    for (const src of ['props.opt', 'props.u', 'props.list', 'flag']) expect(never(src)).toBe(false)
+    expect(never('props.flag', n => n === 'props')).toBe(false)
+    const destructured = irOf('{ flag, opt }: { flag: boolean; opt?: boolean }').metadata
+    expect(isNeverNullishOperand(parseExpression('flag')!, destructured, () => false)).toBe(true)
+    expect(isNeverNullishOperand(parseExpression('flag')!, destructured, n => n === 'flag')).toBe(false)
+    expect(isNeverNullishOperand(parseExpression('opt')!, destructured, () => false)).toBe(false)
   })
 })

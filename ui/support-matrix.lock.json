@@ -3621,6 +3621,18 @@
               ]
             },
             {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
               "fixture": "loop-row-child-caller-rows-outer-state-key",
               "limitations": [
                 "loop-row-key-outer-state"
@@ -7121,6 +7133,18 @@
               ]
             },
             {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -7359,6 +7383,18 @@
         },
         "blade": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -7688,6 +7724,18 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -7998,6 +8046,18 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -8268,6 +8328,18 @@
               ]
             },
             {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
               "fixture": "loop-key-to-string-number-component-row",
               "limitations": [
                 "caller-rows-computed-key"
@@ -8526,6 +8598,12 @@
               ]
             },
             {
+              "fixture": "template-delimiter-contextual-escape",
+              "limitations": [
+                "brace-delimiter-in-contextual-escape"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -8541,6 +8619,18 @@
         },
         "jinja": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -8882,6 +8972,18 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -9222,6 +9324,18 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -9531,6 +9645,18 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -9860,6 +9986,18 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -10187,6 +10325,18 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -10689,6 +10839,18 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -10920,6 +11082,18 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -11159,6 +11333,18 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -11387,6 +11573,18 @@
               ]
             },
             {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -11582,6 +11780,18 @@
         },
         "jinja": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -11827,6 +12037,18 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -12071,6 +12293,18 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -12309,6 +12543,18 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -12541,6 +12787,18 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -12772,6 +13030,18 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -13027,6 +13297,18 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -13060,6 +13342,18 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -13100,6 +13394,18 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "component-prop-undefined-literal-spread",
               "limitations": [
@@ -13215,6 +13521,18 @@
               ]
             },
             {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -13248,6 +13566,18 @@
         },
         "jinja": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -13289,6 +13619,18 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -13328,6 +13670,18 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -13369,6 +13723,18 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -13409,6 +13775,18 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -13442,6 +13820,18 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -13524,6 +13914,12 @@
         },
         "blade": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -13763,6 +14159,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -13982,6 +14384,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -14229,6 +14637,12 @@
               ]
             },
             {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
               "fixture": "loop-key-to-string-number-component-row",
               "limitations": [
                 "caller-rows-computed-key"
@@ -14406,6 +14820,12 @@
         },
         "jinja": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -14651,6 +15071,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -14895,6 +15321,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -15120,6 +15552,12 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -15371,6 +15809,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -15608,6 +16052,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -16344,6 +16794,18 @@
               ]
             },
             {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -16365,6 +16827,12 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "template-delimiter-contextual-escape",
+              "limitations": [
+                "brace-delimiter-in-contextual-escape"
               ]
             }
           ]
@@ -16574,10 +17042,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L179"
       },
       "example": {
-        "fixture": "template-literal-attribute-escape",
-        "description": "Flat and nested attribute template literals HTML-escape `\"`, `<`, `>`, `&` in their literal segments",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/template-literal-attribute-escape.ts",
-        "code": "`n-<\"y\"> ${tag}`"
+        "fixture": "template-delimiter-contextual-escape",
+        "description": "A tag-opening brace in a template-literal URL attribute and in style element text prints as written",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/template-delimiter-contextual-escape.ts",
+        "code": "`/p{${a}}`"
       }
     },
     "unary": {
@@ -19432,6 +19900,18 @@
               ]
             },
             {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
               "fixture": "loop-row-child-caller-rows-outer-state-key",
               "limitations": [
                 "loop-row-key-outer-state"
@@ -20536,6 +21016,18 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
             }
           ]
         },
@@ -20786,6 +21278,18 @@
               ]
             },
             {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -20980,6 +21484,18 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -20996,6 +21512,18 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -21011,6 +21539,18 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "component-spread-explicit-null-positions",
               "limitations": [
@@ -21052,6 +21592,18 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -21067,6 +21619,18 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "module-const-destructure-default",
               "limitations": [
@@ -21084,6 +21648,18 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -21100,6 +21676,18 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -21109,6 +21697,18 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "module-const-destructure-default",
               "limitations": [
@@ -21125,6 +21725,18 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "module-const-destructure-default",
               "limitations": [
@@ -21531,6 +22143,18 @@
               "fixture": "literal-index-own-key",
               "limitations": [
                 "non-identifier-literal-key"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
               ]
             },
             {
@@ -22559,6 +23183,18 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -22700,6 +23336,18 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -22848,6 +23496,18 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -23041,6 +23701,18 @@
               ]
             },
             {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -23146,6 +23818,18 @@
         },
         "jinja": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -23301,6 +23985,18 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -23455,6 +24151,18 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -23603,6 +24311,18 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -23745,6 +24465,18 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -23886,6 +24618,18 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -24075,6 +24819,18 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
             }
           ]
         },
@@ -24157,6 +24913,18 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -24184,6 +24952,18 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "index-key-canonical-form-callback",
               "limitations": [
@@ -24218,6 +24998,18 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "component-prop-undefined-literal-spread",
               "limitations": [
@@ -24327,6 +25119,18 @@
               ]
             },
             {
+              "fixture": "logical-mixed-left-nullish",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
+              "fixture": "logical-mixed-left-nullish-destructured",
+              "limitations": [
+                "nullish-over-false-yielding-operand"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -24360,6 +25164,18 @@
         },
         "jinja": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "index-key-canonical-form",
               "limitations": [
@@ -24395,6 +25211,18 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "index-key-canonical-form",
               "limitations": [
                 "string-key-list-index"
@@ -24428,6 +25256,18 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "index-key-canonical-form-callback",
               "limitations": [
@@ -24463,6 +25303,18 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "index-key-canonical-form-callback",
               "limitations": [
                 "callback-noncanonical-index-key"
@@ -24497,6 +25349,18 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -24524,6 +25388,18 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "boolean-text-child",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
+            {
+              "fixture": "boolean-text-child-destructured",
+              "limitations": [
+                "boolean-text-child"
+              ]
+            },
             {
               "fixture": "index-key-canonical-form-callback",
               "limitations": [
