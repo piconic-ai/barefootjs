@@ -1333,6 +1333,327 @@
       }
     }
   ],
+  "callback-prop-capture-methods": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c"
+          ],
+          [
+            "d",
+            "e"
+          ]
+        ],
+        "n": 2.5,
+        "k": 2,
+        "at": 1,
+        "desc": true
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "items": [
+          1,
+          2.5,
+          3,
+          4
+        ],
+        "rows": [],
+        "n": 2.5,
+        "k": 2,
+        "at": 1,
+        "desc": true
+      }
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "items": [
+          1,
+          2.5,
+          3,
+          4
+        ],
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c"
+          ],
+          [
+            "d",
+            "e"
+          ]
+        ],
+        "n": 0,
+        "k": 2,
+        "at": 1,
+        "desc": true
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "items": [
+          1,
+          2.5,
+          3,
+          4
+        ],
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c"
+          ],
+          [
+            "d",
+            "e"
+          ]
+        ],
+        "n": -7,
+        "k": 2,
+        "at": 1,
+        "desc": true
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "items": [
+          1,
+          2.5,
+          3,
+          4
+        ],
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c"
+          ],
+          [
+            "d",
+            "e"
+          ]
+        ],
+        "n": 1234567890,
+        "k": 2,
+        "at": 1,
+        "desc": true
+      }
+    },
+    {
+      "name": "gen:k:zero",
+      "props": {
+        "items": [
+          1,
+          2.5,
+          3,
+          4
+        ],
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c"
+          ],
+          [
+            "d",
+            "e"
+          ]
+        ],
+        "n": 2.5,
+        "k": 0,
+        "at": 1,
+        "desc": true
+      }
+    },
+    {
+      "name": "gen:k:negative",
+      "props": {
+        "items": [
+          1,
+          2.5,
+          3,
+          4
+        ],
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c"
+          ],
+          [
+            "d",
+            "e"
+          ]
+        ],
+        "n": 2.5,
+        "k": -7,
+        "at": 1,
+        "desc": true
+      }
+    },
+    {
+      "name": "gen:k:large",
+      "props": {
+        "items": [
+          1,
+          2.5,
+          3,
+          4
+        ],
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c"
+          ],
+          [
+            "d",
+            "e"
+          ]
+        ],
+        "n": 2.5,
+        "k": 1234567890,
+        "at": 1,
+        "desc": true
+      }
+    },
+    {
+      "name": "gen:at:zero",
+      "props": {
+        "items": [
+          1,
+          2.5,
+          3,
+          4
+        ],
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c"
+          ],
+          [
+            "d",
+            "e"
+          ]
+        ],
+        "n": 2.5,
+        "k": 2,
+        "at": 0,
+        "desc": true
+      }
+    },
+    {
+      "name": "gen:at:negative",
+      "props": {
+        "items": [
+          1,
+          2.5,
+          3,
+          4
+        ],
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c"
+          ],
+          [
+            "d",
+            "e"
+          ]
+        ],
+        "n": 2.5,
+        "k": 2,
+        "at": -7,
+        "desc": true
+      }
+    },
+    {
+      "name": "gen:at:large",
+      "props": {
+        "items": [
+          1,
+          2.5,
+          3,
+          4
+        ],
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c"
+          ],
+          [
+            "d",
+            "e"
+          ]
+        ],
+        "n": 2.5,
+        "k": 2,
+        "at": 1234567890,
+        "desc": true
+      }
+    },
+    {
+      "name": "gen:desc:false",
+      "props": {
+        "items": [
+          1,
+          2.5,
+          3,
+          4
+        ],
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c"
+          ],
+          [
+            "d",
+            "e"
+          ]
+        ],
+        "n": 2.5,
+        "k": 2,
+        "at": 1,
+        "desc": false
+      }
+    }
+  ],
   "checkbox": [
     {
       "name": "gen:defaultChecked:true",

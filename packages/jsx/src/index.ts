@@ -164,6 +164,7 @@ export {
 } from './adapters/array-method.ts'
 export {
   emitCallbackEval,
+  evalBody,
   isPredicateMethod,
   lowerCallbackMethod,
   lowerSortComparator,
@@ -176,12 +177,14 @@ export {
   sortRefusal,
 } from './adapters/callback-method.ts'
 export type {
+  CallbackCapture,
   CallbackEvalHelper,
   CallbackEvalOperand,
   CallbackEvalPlan,
   CallbackEvalSpelling,
   CallbackLoweringOptions,
   CallbackPlan,
+  EvalBody,
   PredicateMethod,
   SortPlan,
 } from './adapters/callback-method.ts'

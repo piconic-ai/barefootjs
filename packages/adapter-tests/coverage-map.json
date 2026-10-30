@@ -1368,6 +1368,35 @@
         "text"
       ]
     },
+    "callback-prop-capture-methods": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "index-access",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:*",
+        "binary:+",
+        "binary:-",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "camelcase-attributes": {
       "kinds": [
         "literal"
@@ -8479,6 +8508,62 @@
       ],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "memo-filter-prop-capture": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:!==",
+        "binary:>",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:&&"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "memo-filter-prop-capture-destructured": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:!==",
+        "binary:>",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:&&"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
         "text"
       ]
     },

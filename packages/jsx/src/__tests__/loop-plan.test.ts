@@ -117,7 +117,7 @@ describe('planLoop', () => {
       refuse: (message) => refusals.push(message),
     }
     expect(spellSortedSource(null, 'xs', spelling)).toBe('xs')
-    const evaluated = spellSortedSource({ kind: 'eval', helper: 'sort_eval', operands: [{ kind: 'string', value: 'body' }], captured: ['k'] }, 'xs', spelling)
+    const evaluated = spellSortedSource({ kind: 'eval', helper: 'sort_eval', operands: [{ kind: 'string', value: 'body' }], captured: [{ name: 'k', value: { kind: 'identifier', name: 'k' } }] }, 'xs', spelling)
     expect(evaluated).toBe(`sort_eval(xs, 'body', {k: v.k})`)
     const structured = plan(`export function Test(props: { items: { name: string }[] }) { return <ul>{props.items.toSorted((a, b) => a.name.localeCompare(b.name)).map(x => <li key={x.name}>{x.name}</li>)}</ul> }`)
     expect(spellSortedSource(structured.sort, 'xs', spelling)).toBe('sort(xs, name)')

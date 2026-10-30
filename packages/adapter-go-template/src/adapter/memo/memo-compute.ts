@@ -14,11 +14,13 @@ import {
   asCallbackMethodCall,
   BindingScope,
   refuseAmbiguousNilArithmetic,
+  evalBody,
   freeIdentifiers,
   freeVarsInBody,
   materializeGetterCalls,
   isNullishLiteral,
   serializeParsedExpr,
+  type CallbackCapture,
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
@@ -120,23 +122,24 @@ function resolveLengthReadGo(
   return recvGo === null ? null : `bf.Length(${recvGo})`
 }
 
-/** A `() => props.X.filter((p) => <predicate>)` match: the array prop name,
- *  the predicate serialized to the runtime evaluator's ParsedExpr JSON, the
- *  arrow's param name, and the free variable names its predicate captures.
- *  Null when `body` isn't this shape, `propName` doesn't resolve to a known
- *  prop, or the predicate isn't representable (`serializeParsedExpr` refusal).
- *  Shared by the SSR-value emitter ({@link memoInitialFromParsedBody}) and the
- *  constructor's sibling-memo hoisting pre-pass so both walk the shape
+/** A `() => props.X.filter((p) => <predicate>)` match (or `X.filter(…)` over a
+ *  destructured prop): the array prop name, the predicate serialized to the
+ *  runtime evaluator's ParsedExpr JSON, the arrow's param name, and the
+ *  captures its env needs (`evalBody`: a free name, or a lifted `props.X`
+ *  read). Null when `body` isn't this shape, the receiver doesn't resolve to
+ *  a known prop, or the predicate isn't representable (`serializeParsedExpr`
+ *  refusal). Shared by the SSR-value emitter ({@link memoInitialFromParsedBody})
+ *  and the constructor's sibling-memo hoisting pre-pass so both walk the shape
  *  identically. */
 export function matchFilterArmMemo(
   ctx: GoEmitContext,
   body: ParsedExpr,
   signals: { getter: string; initialValue: JsSourceText; type?: TypeInfo; parsed?: ParsedExpr }[],
   propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
-): { propName: string; predJSON: string; paramName: string; freeVars: string[] } | null {
+): { propName: string; predJSON: string; paramName: string; captured: CallbackCapture[] } | null {
   const cb = asCallbackMethodCall(body)
   if (!cb || cb.method !== 'filter') return null
-  const propName = propsMemberName(cb.object)
+  const propName = propNameForPropsBinding(ctx, cb.object)
   const param = propName ? propsParams.find(p => p.name === propName) : undefined
   if (!propName || !param) return null
 
@@ -149,12 +152,11 @@ export function matchFilterArmMemo(
   )
 
   const materialized = materializeGetterCalls(cb.arrow.body, knownGetterNames)
-  const predJSON = serializeParsedExpr(materialized)
-  if (predJSON === null) return null
+  const evaluable = evalBody(materialized, new Set(cb.arrow.params))
+  if (evaluable === null) return null
 
   const paramName = cb.arrow.params[0] ?? '_'
-  const freeVars = freeVarsInBody(materialized, new Set(cb.arrow.params))
-  return { propName, predJSON, paramName, freeVars }
+  return { propName, predJSON: evaluable.json, paramName, captured: evaluable.captured }
 }
 
 /**
@@ -181,7 +183,8 @@ export function filterArmEarlierSiblingRefs(
   const currentIndex = memos.findIndex(m => m.name === memo.name)
   if (currentIndex < 0) return []
   const refs: string[] = []
-  for (const name of match.freeVars) {
+  for (const { name, value } of match.captured) {
+    if (value.kind !== 'identifier') continue
     const idx = memos.findIndex(m => m.name === name)
     if (idx >= 0 && idx < currentIndex) refs.push(name)
   }
@@ -845,22 +848,28 @@ function envGetDefaultArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
 function filterArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
   const match = matchFilterArmMemo(env.ctx, body, env.signals, env.propsParams)
   if (!match) return undefined
-  const { propName, predJSON, paramName, freeVars } = match
+  const { propName, predJSON, paramName, captured } = match
   const currentIndex = (env.ctx.state.currentMemos ?? []).findIndex(m => m.name === env.currentMemoName)
   const envEntries: string[] = []
-  for (const name of freeVars) {
-    const goExpr = filterEnvEntryGo(env, name, currentIndex)
+  for (const { name, value } of captured) {
+    const goExpr = filterEnvEntryGo(env, value, currentIndex)
     if (goExpr === null) return undefined
     envEntries.push(`${JSON.stringify(name)}: ${goExpr}`)
   }
-  const itemsField = `in.${capitalizeFieldName(propName)}`
+  const itemsField = env.propRef(propName)
   const envMap = `map[string]any{${envEntries.join(', ')}}`
   return `bf.FilterEval(${itemsField}, "${escapeGoString(predJSON)}", ${JSON.stringify(paramName)}, ${envMap})`
 }
 
-/** One free variable of a filter-arm predicate → its constructor value, else null. */
-function filterEnvEntryGo(env: SeedEmitEnv, name: string, currentIndex: number): string | null {
+/** One capture of a filter-arm predicate → its constructor value, else null. */
+function filterEnvEntryGo(env: SeedEmitEnv, value: ParsedExpr, currentIndex: number): string | null {
   const { ctx, signals, propsParams, propFallbackVars, resolving } = env
+  if (value.kind !== 'identifier') {
+    // A lifted `props.X` read.
+    const propName = propNameForPropsBinding(ctx, value)
+    return propName !== null && propsParams.some(p => p.name === propName) ? env.propRef(propName) : null
+  }
+  const name = value.name
   const memos = ctx.state.currentMemos ?? []
   const siblingIndex = memos.findIndex(m => m.name === name)
   if (siblingIndex >= 0) {

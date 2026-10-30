@@ -227,6 +227,9 @@ import { fixture as filterNestedFindPredicate } from './filter-nested-find-predi
 import { fixture as filterNestedFindPredicateClient } from './filter-nested-find-predicate-client'
 import { fixture as filterPredicateSignalAlias } from './filter-predicate-signal-alias'
 import { fixture as filterPredicateRenamedProp } from './filter-predicate-renamed-prop'
+import { fixture as memoFilterPropCapture } from './memo-filter-prop-capture'
+import { fixture as memoFilterPropCaptureDestructured } from './memo-filter-prop-capture-destructured'
+import { fixture as callbackPropCaptureMethods } from './callback-prop-capture-methods'
 import { fixture as filterPredicatePropsMember } from './filter-predicate-props-member'
 import { fixture as filterPredicateModulo } from './filter-predicate-modulo'
 import { fixture as fillUnsupported } from './fill-unsupported'
@@ -1407,6 +1410,9 @@ export const jsxFixtures: JSXFixture[] = [
   filterNestedFindPredicateClient,
   filterPredicateSignalAlias,
   filterPredicateRenamedProp,
+  memoFilterPropCapture,
+  memoFilterPropCaptureDestructured,
+  callbackPropCaptureMethods,
   filterPredicatePropsMember,
   filterPredicateModulo,
   fillUnsupported,
