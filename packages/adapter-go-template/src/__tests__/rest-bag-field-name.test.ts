@@ -41,6 +41,9 @@ describe('GoTemplateAdapter - rest bag field name', () => {
     ['a props object read as a whole named scopeID', 'export function Kid(scopeID: { label: string }) { return <b {...scopeID}>{scopeID.label}</b> }', 'ScopeID_'],
     ['a props object read as a whole named bfParent', 'export function Kid(bfParent: { label: string }) { return <b {...bfParent}>{bfParent.label}</b> }', 'BfParent_'],
     ['a rest destructure named scopeID', 'export function Kid({ label, ...scopeID }: { label: string; [k: string]: any }) { return <b {...scopeID}>{label}</b> }', 'ScopeID_'],
+    // Appending `_` never leaves the `Spread_` namespace, so this used to loop forever.
+    ['a rest destructure named spread_s0', 'export function Kid({ label, ...spread_s0 }: { label: string; [k: string]: any }) { return <b {...spread_s0}>{label}</b> }', 'BagSpread_s0'],
+    ['a props object read as a whole named Spread_s0', 'export function Kid(Spread_s0: { label: string }) { return <b {...Spread_s0}>{Spread_s0.label}</b> }', 'BagSpread_s0'],
   ] as const) {
     test(`${label} gets a field no generated field shares`, async () => {
       const types = typesOf(child)

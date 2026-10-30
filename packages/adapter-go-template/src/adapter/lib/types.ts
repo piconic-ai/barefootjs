@@ -289,11 +289,12 @@ const GENERATED_STRUCT_FIELDS: ReadonlySet<string> = new Set([
 
 /**
  * The Go field of the component's rest bag (`restBagBinding`) on its Input
- * and Props structs, or null when it has none: `Capitalize(binding)`, with
- * `_` appended until it is no generated field (`ScopeID`, `BfParent`, …, a
- * `Spread_<slot>` bag) and no field of the component's own params, signals,
- * memos or context consumers. A rest named `scopeID` gets `ScopeID_`. Every
- * site that writes or reads the bag uses this one name.
+ * and Props structs, or null when it has none: `Capitalize(binding)`
+ * (prefixed `Bag` when it falls in the `Spread_<slot>` namespace), with `_`
+ * appended until it is no generated field (`ScopeID`, `BfParent`, …) and no
+ * field of the component's own params, signals, memos or context consumers.
+ * A rest named `scopeID` gets `ScopeID_`; `spread_s0` gets `BagSpread_s0`.
+ * Every site that writes or reads the bag uses this one name.
  */
 export function restBagField(meta: IRMetadata): string | null {
   const binding = restBagBinding(meta)
@@ -307,8 +308,11 @@ export function restBagField(meta: IRMetadata): string | null {
   for (const s of meta.signals ?? []) taken.add(capitalizeFieldName(s.getter))
   for (const m of meta.memos ?? []) taken.add(capitalizeFieldName(m.name))
   for (const c of collectContextConsumers(meta)) taken.add(capitalizeFieldName(c.localName))
+  // `Spread_<slot>` is a whole namespace of element-spread bags, and appending
+  // `_` keeps the prefix, so a binding in it moves out first (`Bag` prefix).
   let field = capitalizeFieldName(binding)
-  while (taken.has(field) || field.startsWith('Spread_')) field += '_'
+  if (field.startsWith('Spread_')) field = `Bag${field}`
+  while (taken.has(field)) field += '_'
   return field
 }
 
