@@ -3,10 +3,10 @@
  * `.map()` of child components made the loop's array look, to
  * `isArrayExprDirectPropRef` (jsx-to-ir.ts), like a local constant with no
  * prop/signal origin. The loop was then classified `isStaticArray: true`
- * and compiled to the static `qsaChildScopes` + `forEach` init path instead
+ * and compiled to the static `childScopesBySlot` + `forEach` init path instead
  * of `mapArray`. That static path's `renderChild()` calls (client runtime)
  * carry no `bf-h`/`bf-m` scope-relationship attributes on a CSR-only mount
- * (no existing SSR markup to hydrate against), so the `qsaChildScopes`
+ * (no existing SSR markup to hydrate against), so the `childScopesBySlot`
  * selector in the static init never matches — the row's child component
  * never gets `initChild`ed, so its signals and event listeners never wire
  * up. Found by the #2481 mutation sweep's `alias-props` mutation against
@@ -100,7 +100,7 @@ describe('#2724 — prop-alias keyed loop stays on mapArray, not the static path
       }
     `, 'AliasHop.tsx')
     expect(clientJs).toMatch(/\bmapArray(Lazy)?\s*\(/)
-    expect(clientJs).not.toMatch(/qsaChildScopes\(/)
+    expect(clientJs).not.toMatch(/childScopesBySlot\(/)
   })
 
   test('local const derived from a whole-props member access uses mapArray', () => {
@@ -115,7 +115,7 @@ describe('#2724 — prop-alias keyed loop stays on mapArray, not the static path
       }
     `, 'MemberAlias.tsx')
     expect(clientJs).toMatch(/\bmapArray(Lazy)?\s*\(/)
-    expect(clientJs).not.toMatch(/qsaChildScopes\(/)
+    expect(clientJs).not.toMatch(/childScopesBySlot\(/)
   })
 
   test('two-hop alias chain uses mapArray', () => {
@@ -131,7 +131,7 @@ describe('#2724 — prop-alias keyed loop stays on mapArray, not the static path
       }
     `, 'TwoHop.tsx')
     expect(clientJs).toMatch(/\bmapArray(Lazy)?\s*\(/)
-    expect(clientJs).not.toMatch(/qsaChildScopes\(/)
+    expect(clientJs).not.toMatch(/childScopesBySlot\(/)
   })
 
   test('an alias of the WHOLE props object, accessed via property access, uses mapArray', () => {
@@ -202,7 +202,7 @@ describe('#2724 — prop-alias keyed loop stays on mapArray, not the static path
         return <div>{ITEMS.map((item) => <Item key={item.label} label={item.label} />)}</div>
       }
     `, 'ModuleConst.tsx')
-    expect(clientJs).toMatch(/qsaChildScopes\(/)
+    expect(clientJs).toMatch(/childScopesBySlot\(/)
     expect(clientJs).not.toMatch(/\bmapArray(Lazy)?\s*\(/)
   })
 
@@ -221,7 +221,7 @@ describe('#2724 — prop-alias keyed loop stays on mapArray, not the static path
         return <div>{state.items.map((item) => <Item key={item.label} label={item.label} />)}</div>
       }
     `, 'NameCollision.tsx')
-    expect(clientJs).toMatch(/qsaChildScopes\(/)
+    expect(clientJs).toMatch(/childScopesBySlot\(/)
     expect(clientJs).not.toMatch(/\bmapArray(Lazy)?\s*\(/)
   })
 

@@ -1,4 +1,4 @@
-import { $, $c, $t, applyRestAttrs, createComponent, createDisposableEffect, createEffect, createMemo, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, forwardProps, hydrate, initChild, insert, lazySlots, mapArray, markupOrEmpty, qsa, qsaChildScope, qsaChildScopes, renderChild, spreadAttrs } from '@barefootjs/client/runtime'
+import { $, $c, $t, applyRestAttrs, childScopeBySlot, childScopesBySlot, createComponent, createDisposableEffect, createEffect, createMemo, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, forwardProps, hydrate, initChild, insert, lazySlots, mapArray, markupOrEmpty, qsa, renderChild, spreadAttrs } from '@barefootjs/client/runtime'
 
 export function initTable(__scope, _p = {}) {
   if (!__scope) return
@@ -3895,7 +3895,7 @@ export function initDataTableSelectionDemo(__scope, _p = {}) {
 
   // Initialize static array children (hydrate skips nested instances)
   if (_s19) {
-    const __childScopes = qsaChildScopes(_s19, `[bf-h="${__scopeId}"][bf-m="s18"], [bf-s$="_s18"]`)
+    const __childScopes = childScopesBySlot(_s19, __scopeId, 's18')
     __childScopes.forEach((childScope, index) => {
       const payment = payments[index]
       initChild('TableRow', childScope, { get "data-state"() { return selected()[index] ? 'selected' : undefined } })
@@ -3907,7 +3907,7 @@ export function initDataTableSelectionDemo(__scope, _p = {}) {
     payments.forEach((payment, index) => {
       const __iterEl = _s19.children[index]
       if (__iterEl) {
-        const __compEl = qsaChildScope(__iterEl, `[bf-h="${__scopeId}"][bf-m="s9"], [bf-s$="_s9"]`)
+        const __compEl = childScopeBySlot(__iterEl, __scopeId, 's9')
         if (__compEl) initChild('TableCell', __compEl, {})
       }
     })
@@ -3918,7 +3918,7 @@ export function initDataTableSelectionDemo(__scope, _p = {}) {
     payments.forEach((payment, index) => {
       const __iterEl = _s19.children[index]
       if (__iterEl) {
-        const __compEl = qsaChildScope(__iterEl, `[bf-h="${__scopeId}"][bf-m="s8"], [bf-s$="_s8"]`)
+        const __compEl = childScopeBySlot(__iterEl, __scopeId, 's8')
         if (__compEl) initChild('Checkbox', __compEl, { get checked() { return selected()[index] }, onCheckedChange: () => toggleRow(index), get "aria-label"() { return `Select ${payment.id}` } })
       }
     })
@@ -3929,7 +3929,7 @@ export function initDataTableSelectionDemo(__scope, _p = {}) {
     payments.forEach((payment, index) => {
       const __iterEl = _s19.children[index]
       if (__iterEl) {
-        const __compEl = qsaChildScope(__iterEl, `[bf-h="${__scopeId}"][bf-m="s11"], [bf-s$="_s11"]`)
+        const __compEl = childScopeBySlot(__iterEl, __scopeId, 's11')
         if (__compEl) initChild('TableCell', __compEl, { className: "font-medium" })
       }
     })
@@ -3940,7 +3940,7 @@ export function initDataTableSelectionDemo(__scope, _p = {}) {
     payments.forEach((payment, index) => {
       const __iterEl = _s19.children[index]
       if (__iterEl) {
-        const __compEl = qsaChildScope(__iterEl, `[bf-h="${__scopeId}"][bf-m="s13"], [bf-s$="_s13"]`)
+        const __compEl = childScopeBySlot(__iterEl, __scopeId, 's13')
         if (__compEl) initChild('TableCell', __compEl, {})
       }
     })
@@ -3951,7 +3951,7 @@ export function initDataTableSelectionDemo(__scope, _p = {}) {
     payments.forEach((payment, index) => {
       const __iterEl = _s19.children[index]
       if (__iterEl) {
-        const __compEl = qsaChildScope(__iterEl, `[bf-h="${__scopeId}"][bf-m="s15"], [bf-s$="_s15"]`)
+        const __compEl = childScopeBySlot(__iterEl, __scopeId, 's15')
         if (__compEl) initChild('TableCell', __compEl, {})
       }
     })
@@ -3962,7 +3962,7 @@ export function initDataTableSelectionDemo(__scope, _p = {}) {
     payments.forEach((payment, index) => {
       const __iterEl = _s19.children[index]
       if (__iterEl) {
-        const __compEl = qsaChildScope(__iterEl, `[bf-h="${__scopeId}"][bf-m="s17"], [bf-s$="_s17"]`)
+        const __compEl = childScopeBySlot(__iterEl, __scopeId, 's17')
         if (__compEl) initChild('TableCell', __compEl, { className: "text-right" })
       }
     })
