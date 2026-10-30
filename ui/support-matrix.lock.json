@@ -8598,6 +8598,12 @@
               ]
             },
             {
+              "fixture": "template-delimiter-contextual-escape",
+              "limitations": [
+                "brace-delimiter-in-contextual-escape"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -16822,6 +16828,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "template-delimiter-contextual-escape",
+              "limitations": [
+                "brace-delimiter-in-contextual-escape"
+              ]
             }
           ]
         },
@@ -17030,10 +17042,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L179"
       },
       "example": {
-        "fixture": "template-literal-attribute-escape",
-        "description": "Flat and nested attribute template literals HTML-escape `\"`, `<`, `>`, `&` in their literal segments",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/template-literal-attribute-escape.ts",
-        "code": "`n-<\"y\"> ${tag}`"
+        "fixture": "template-delimiter-contextual-escape",
+        "description": "A tag-opening brace in a template-literal URL attribute and in style element text prints as written",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/template-delimiter-contextual-escape.ts",
+        "code": "`/p{${a}}`"
       }
     },
     "unary": {

@@ -26,7 +26,7 @@ import { parseRecordIndexAccess, stringifyParsedExpr, isLiteralIndex } from '@ba
 import type { ParsedExpr } from '@barefootjs/jsx'
 
 import type { BladeSpreadContext } from '../emit-context.ts'
-import { escapeBladeSingleQuoted, bladeHashKey, bladeVar } from '../lib/blade-naming.ts'
+import { bladeStringLiteral, bladeHashKey, bladeVar } from '../lib/blade-naming.ts'
 
 /**
  * Lower a conditional inline-object spread
@@ -168,7 +168,7 @@ export function recordIndexAccessToBlade(ctx: BladeSpreadContext, val: ParsedExp
   if (!parsed) return null
   const entries = parsed.entries.map(e => {
     const mapVal =
-      e.value.kind === 'number' ? e.value.text : `'${escapeBladeSingleQuoted(e.value.text)}'`
+      e.value.kind === 'number' ? e.value.text : bladeStringLiteral(e.value.text)
     return `${bladeHashKey(e.key)} => ${mapVal}`
   })
   return `[${entries.join(', ')}][${bladeVar(parsed.indexPropName)}]`

@@ -5,9 +5,20 @@
  */
 
 import type { SortComparator, SupportResult, ParsedExpr } from '@barefootjs/jsx'
-import { arithmeticHelper, serializeParsedExpr, freeVarsInBody } from '@barefootjs/jsx'
+import { arithmeticHelper, escapeBraceDelimiters, serializeParsedExpr, freeVarsInBody } from '@barefootjs/jsx'
 
 import { capitalize } from "./go-naming.ts"
+
+/**
+ * Keep static template text (a text run or attribute text, already
+ * HTML-escaped) from opening a Go action: each `{` before another `{`, or at
+ * the end of the text where the adapter may write an action next, prints
+ * through `{{"{"}}`, so text that decodes to `{{ 1 }}` renders as written
+ * instead of running the action (#3767).
+ */
+export function escapeGoStaticText(s: string): string {
+  return escapeBraceDelimiters(s, '{', '{{"{"}}')
+}
 
 /**
  * Escape a value for embedding in a Go double-quoted string — a Go-template

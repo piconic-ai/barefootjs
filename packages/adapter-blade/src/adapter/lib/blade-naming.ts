@@ -63,35 +63,89 @@ export function escapeBladeSingleQuoted(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
 }
 
-const BLADE_AT_SIGN = "<?php echo '@'; ?>"
+/**
+ * A PHP string literal for `s`, spelled so that Blade's compiler cannot read
+ * template syntax inside it. Blade compiles echoes and directives with
+ * regular expressions over the template text, string literals included, and
+ * runs them one after another over the same text: the PHP an echo compiles
+ * to (`<?php echo e('{{ 1 }}'); ?>`) is matched again by the next echo
+ * pattern, and a `}}` or `!!}` in a literal ends the echo it sits in. So a
+ * JSX string `'{{ 1 }}'` rendered `<?php echo e(1); ?>` (#3767), and an `@`
+ * right after a non-word character (`'@if(…)'`) starts a directive.
+ *
+ * A `{` before `{` or `!`, a `}` before `}` or after `!`, and an `@` after a
+ * non-word character are written as `"\x7b"`, `"\x7d"` and `"\x40"` and
+ * concatenated with the single-quoted runs around them, inside parentheses so
+ * the concatenation binds as one operand. Any other text stays a plain
+ * single-quoted literal.
+ */
+export function bladeStringLiteral(s: string): string {
+  const pieces: string[] = []
+  let run = ''
+  let split = false
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i]
+    if (!isBladeSyntaxInString(ch, s[i - 1], s[i + 1])) {
+      run += ch
+      continue
+    }
+    if (run !== '') pieces.push(`'${escapeBladeSingleQuoted(run)}'`)
+    pieces.push(`"\\x${ch.charCodeAt(0).toString(16)}"`)
+    run = ''
+    split = true
+  }
+  if (!split) return `'${escapeBladeSingleQuoted(s)}'`
+  if (run !== '') pieces.push(`'${escapeBladeSingleQuoted(run)}'`)
+  return pieces.length === 1 ? pieces[0] : `(${pieces.join('.')})`
+}
+
+function isBladeSyntaxInString(ch: string, prev: string | undefined, next: string | undefined): boolean {
+  if (ch === '{') return next === '{' || next === '!'
+  if (ch === '}') return next === '}' || prev === '!'
+  if (ch === '@') return prev === undefined || !/\w/.test(prev)
+  return false
+}
 
 /**
  * Escape static template text (an element's text run or a literal attribute
- * value, already HTML-escaped) so Blade's compiler prints every `@` instead
- * of reading it. A raw `@` is not inert in a Blade template: `@word` runs a
- * directive (`@php`, `@json(…)`, `@verbatim`), `@@word` collapses to
- * `@word`, and `@{{` / `@{!!` keep the following echo as literal source —
- * so a JSX text run ending in `@` right before a dynamic expression printed
- * that expression's own text marker echo verbatim (#3758).
+ * value, already HTML-escaped) so Blade's compiler prints every `@` and every
+ * echo-opening `{` instead of reading them. A raw `@` is not inert in a Blade
+ * template: `@word` runs a directive (`@php`, `@json(…)`, `@verbatim`),
+ * `@@word` collapses to `@word`, and `@{{` / `@{!!` keep the following echo
+ * as literal source — so a JSX text run ending in `@` right before a dynamic
+ * expression printed that expression's own text marker echo verbatim
+ * (#3758). A `{` followed by `{` or `!` opens an echo (`{{ … }}`,
+ * `{!! … !!}`, `{{-- … --}}`), so text that decodes to `{{ 1 }}` printed `1`
+ * (#3767); a `{` that ends the text is escaped too, because the adapter may
+ * write an echo right after it.
  *
- * Each `@` becomes a raw PHP block, not a Blade echo. Blade compiles only
- * the inline-HTML tokens between PHP blocks, one token at a time, so the
- * block cannot fuse with the literal text on either side: a Blade echo
- * such as `{{ '@' }}` would turn a preceding literal `{` into a `{{{ … }}}`
- * echo opener, and `{!! '@' !!}` would close a preceding literal `{!!`.
- * PHP drops the one newline (`\n`, `\r\n` or `\r`) right after `?>`, so a
- * newline that follows the `@` in the same text gets an extra `\n` for PHP
- * to drop. A newline the adapter itself places after the text (before a
- * directive line) is template layout, not content, and is dropped as it is
- * after any directive.
+ * Each such character becomes a raw PHP block, not a Blade echo. Blade
+ * compiles only the inline-HTML tokens between PHP blocks, one token at a
+ * time, so the block cannot fuse with the literal text on either side: a
+ * Blade echo such as `{{ '@' }}` would turn a preceding literal `{` into a
+ * `{{{ … }}}` echo opener, and `{!! '@' !!}` would close a preceding literal
+ * `{!!`. PHP drops the one newline (`\n`, `\r\n` or `\r`) right after `?>`,
+ * so a newline that follows an escaped character in the same text gets an
+ * extra `\n` for PHP to drop. A newline the adapter itself places after the
+ * text (before a directive line) is template layout, not content, and is
+ * dropped as it is after any directive.
  */
 export function escapeBladeStaticText(s: string): string {
-  const [head, ...rest] = s.split('@')
-  return head + rest.map(part => BLADE_AT_SIGN + (startsWithNewline(part) ? '\n' : '') + part).join('')
+  let out = ''
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i]
+    const next = s[i + 1]
+    if (!isBladeSyntaxChar(ch, next)) {
+      out += ch
+      continue
+    }
+    out += `<?php echo '${ch}'; ?>` + (next === '\n' || next === '\r' ? '\n' : '')
+  }
+  return out
 }
 
-function startsWithNewline(s: string): boolean {
-  return s.startsWith('\n') || s.startsWith('\r')
+function isBladeSyntaxChar(ch: string, next: string | undefined): boolean {
+  return ch === '@' || (ch === '{' && (next === undefined || next === '{' || next === '!'))
 }
 
 /**
@@ -103,7 +157,7 @@ function startsWithNewline(s: string): boolean {
  * `twigHashKey`/`jinjaHashKey`).
  */
 export function bladeHashKey(name: string): string {
-  return `'${escapeBladeSingleQuoted(name)}'`
+  return bladeStringLiteral(name)
 }
 
 /**
@@ -171,7 +225,7 @@ export function bladeVar(name: string): string {
  * `{ 'a.b': x }`) is read through `bladeIndexAccess` instead (#3744).
  */
 export function bladeMemberAccess(objectExpr: string, property: string): string {
-  const key = `'${escapeBladeSingleQuoted(property)}'`
+  const key = bladeStringLiteral(property)
   return isIdentifierName(property) ? `data_get(${objectExpr}, ${key})` : bladeIndexAccess(objectExpr, key)
 }
 
