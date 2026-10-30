@@ -35,7 +35,7 @@ import {
   unwrapNullableUnion,
 } from '../value/value-lowering.ts'
 import { embeddedPropMemberChain } from '../value/prop-member-seed.ts'
-import { appliesDefaultOnNil, defaultedBindingGo, evaluatedDefaultBindingGo, resolvePropGoType } from '../props/prop-types.ts'
+import { appliesDefaultOnNil, defaultedBindingGo, evaluatedDefaultBindingGo, isConcreteStringPropField, resolvePropGoType } from '../props/prop-types.ts'
 import { typeInfoToGo } from '../type/type-codegen.ts'
 import { parsedLiteralToGo } from '../value/parsed-literal-to-go.ts'
 import { computeTemplateLiteralMemoInitialValue } from './template-interp.ts'
@@ -918,12 +918,13 @@ function boolPassthroughArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
 }
 
 /**
- * A prop leaf of a string-concatenation chain: its concrete input field. A
- * nillable (`interface{}`) field is no Go string operand, so it declines
- * (null) and the evaluator computes the chain over the prop's own value.
+ * A prop leaf of a string-concatenation chain: its concrete `string` input
+ * field. A nillable (`interface{}`) or number field is no Go string operand,
+ * so it declines (null) and the evaluator computes the chain over the prop's
+ * own value, with JS's string conversion.
  */
 function concatPropLeafGo(ctx: GoEmitContext, propName: string, propRef: (propName: string) => string): string | null {
-  return isNillablePropField(ctx, propName) ? null : propRef(propName)
+  return isConcreteStringPropField(ctx, propName) ? propRef(propName) : null
 }
 
 /** Whether prop `propName`'s input field lowers to the nillable `interface{}`. */

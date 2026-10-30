@@ -5462,6 +5462,118 @@
           }
         }
       },
+      "module-const-default-hydrate": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "module-const-destructure-default"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "module-const-destructure-default"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "module-const-destructure-default"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "module-const-destructure-default"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "module-const-destructure-default"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "module-const-destructure-default"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "module-const-destructure-default"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "module-const-destructure-default"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "module-const-destructure-default"
+          ]
+        }
+      },
+      "module-const-destructure-default": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "module-const-destructure-default"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "module-const-destructure-default"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "module-const-destructure-default"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "module-const-destructure-default"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "module-const-destructure-default"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "module-const-destructure-default"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "module-const-destructure-default"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "module-const-destructure-default"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "module-const-destructure-default"
+          ]
+        }
+      },
       "module-const-loop-source-computed": {
         "blade": {
           "kind": "refusal",
@@ -8411,6 +8523,14 @@
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-arrow-helper.ts"
       },
+      "module-const-default-hydrate": {
+        "description": "A module const read only through a destructure default is declared in the client module, so the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-default-hydrate.ts"
+      },
+      "module-const-destructure-default": {
+        "description": "A destructure default reading a module-scope const renders that const in every read position, and…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-destructure-default.ts"
+      },
       "module-const-loop-source-computed": {
         "description": "A module-scope const computed via a function call refuses loudly (BF101) on every SSR template…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-loop-source-computed.ts"
@@ -9179,6 +9299,28 @@
       "actual": "renders nothing, or fails to render: the template reads the const as a variable that is never set",
       "fixtures": [
         "const-getter-read-loop-shadowed"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "module-const-destructure-default": {
+      "title": "A destructure default that reads a module-scope const",
+      "kind": "silent",
+      "given": "a props destructure default that reads a module-scope const (`const DEFAULT_LABEL = 'm'`, `{ label = DEFAULT_LABEL }`; `const START = 2`, `{ start = START }`), with the prop omitted: read as text, an attribute, a template literal, a concatenation or a loop row, or seeding a signal (`createSignal(start)`) rendered as text",
+      "expected": "the omitted prop, and a signal seeded from it, take the const's value",
+      "actual": "renders the signal seeded from the omitted prop as an empty value; some backends also render the prop itself empty in every read position",
+      "fixtures": [
+        "module-const-default-hydrate",
+        "module-const-destructure-default"
       ],
       "adapters": [
         "blade",

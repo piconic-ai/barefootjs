@@ -8395,6 +8395,58 @@
         "text"
       ]
     },
+    "memo-template-literal-nillable-prop": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "memo-template-literal-nillable-prop-destructured": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "memo-ternary-comparison-test": {
       "kinds": [
         "binary",
@@ -8477,6 +8529,51 @@
         "literal:boolean"
       ],
       "contexts": []
+    },
+    "module-const-default-hydrate": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "module-const-destructure-default": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
     },
     "module-const-hop-loop-shadow": {
       "kinds": [

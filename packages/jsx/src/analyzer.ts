@@ -3791,10 +3791,11 @@ function bindingElementDefaultFields(
   initializer: ts.Expression | undefined,
   ctx: AnalyzerContext,
   earlier: ReadonlyMap<string, PropDefaultRead> = new Map(),
-): Pick<ParamInfo, 'defaultValue' | 'parsed' | 'defaultContainsArrow' | 'defaultParts'> {
+): Pick<ParamInfo, 'defaultValue' | 'parsed' | 'defaultContainsArrow' | 'defaultFreeIdentifiers' | 'defaultParts'> {
   const defaultValue = initializer ? ctx.getJS(initializer) : undefined
   const defaultContainsArrow = initializer ? nodeContainsArrow(initializer) : false
   const parsedDefault = initializer ? tsNodeToParsedExpr(initializer) : undefined
+  const defaultFreeIdentifiers = initializer ? [...extractFreeIdentifiersFromNode(initializer)] : []
   const defaultParts = initializer && defaultValue !== undefined
     ? defaultPartsReadingEarlierBindings(initializer, defaultValue, earlier)
     : undefined
@@ -3802,6 +3803,7 @@ function bindingElementDefaultFields(
     defaultValue,
     ...(parsedDefault && parsedDefault.kind !== 'unsupported' && { parsed: parsedDefault }),
     defaultContainsArrow: defaultContainsArrow || undefined,
+    ...(defaultFreeIdentifiers.length > 0 && { defaultFreeIdentifiers }),
     ...(defaultParts && { defaultParts }),
   }
 }
