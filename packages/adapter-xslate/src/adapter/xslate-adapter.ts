@@ -157,9 +157,6 @@ function kolonSegmentAccessor(base: string, segments: readonly LoopBindingPathSe
 }
 
 
-/** A Kolon string or number literal, the whole of a lowered value. */
-const KOLON_LITERAL = /^(?:'(?:[^'\\]|\\.)*'|-?\d+(?:\.\d+)?)$/
-
 /** How a lowered loop destructure binding reads off the row item. */
 const DESTRUCTURE_SPELLING: DestructureSpelling = {
   accessor: kolonSegmentAccessor,
@@ -1071,7 +1068,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
           // A literal is never nil, and Text::Xslate folds `defined` of a
           // local bound to a string literal to false, which would drop the
           // attribute (a computed-key read resolved at compile time, #3497).
-          if (plan.kind === 'plain' || KOLON_LITERAL.test(v)) {
+          if (plan.kind === 'plain' || this.isStaticNonNilValue(valueParsed)) {
             return attr(v, plan.boolStr, mixedParsed)
           }
           const tmp = `$bf_pu${this.presenceVarCounter++}`
@@ -1447,6 +1444,38 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
    * same-named const elsewhere in the component, outside any loop that
    * shadows it, still inlines.
    */
+  /**
+   * Whether `parsed` lowers to a value that is never nil because its leaves
+   * resolve at compile time: a non-null literal, a module string const, a
+   * non-null literal const, or a module record member read, or a ternary /
+   * `||` / `??` / `&&` over them. Decided from the tree with the same
+   * resolvers the expression emitter inlines through, in its order, so it
+   * holds for every spelling of the resolved literal (single- or
+   * double-quoted, number).
+   */
+  private isStaticNonNilValue(parsed: ParsedExpr): boolean {
+    if (parsed.kind === 'literal') return parsed.literalType !== 'null'
+    if (parsed.kind === 'conditional') {
+      return this.isStaticNonNilValue(parsed.consequent) && this.isStaticNonNilValue(parsed.alternate)
+    }
+    if (parsed.kind === 'logical') {
+      // `a || b` / `a ?? b` yields `b` whenever `a` is nil; `a && b` may yield `a`.
+      const right = this.isStaticNonNilValue(parsed.right)
+      return parsed.op === '&&' ? right && this.isStaticNonNilValue(parsed.left) : right
+    }
+    if (parsed.kind === 'identifier') {
+      if (parsed.name === 'undefined' || parsed.name === 'null') return false
+      if (this._resolveModuleStringConst(parsed.name) !== null) return true
+      const lit = lookupLiteralConst(parsed.name, this.localConstants, n => this.scope.isBound(n))
+      return lit !== null && lit.kind !== 'null'
+    }
+    if (parsed.kind === 'member' && parsed.object.kind === 'identifier') {
+      if (isRootPropsObject(parsed.object, n => this.scope.isBound(n))) return false
+      return this._resolveStaticRecordLiteral(parsed.object.name, parsed.property) !== null
+    }
+    return false
+  }
+
   private _resolveLiteralConst(name: string): string | null {
     const lit = lookupLiteralConst(name, this.localConstants, n => this.scope.isBound(n))
     if (lit === null) return null

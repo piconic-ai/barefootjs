@@ -13781,7 +13781,9 @@
         "conditional",
         "identifier",
         "literal",
+        "logical",
         "member",
+        "object-literal",
         "template-literal"
       ],
       "axes": [
@@ -13789,7 +13791,9 @@
         "binary:===",
         "literal:boolean",
         "literal:null",
-        "literal:string"
+        "literal:string",
+        "logical:||",
+        "member:computed"
       ],
       "contexts": [
         "attribute",
