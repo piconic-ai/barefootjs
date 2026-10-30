@@ -215,7 +215,7 @@ final class Evaluator
             );
         }
         if ($kind === 'index-access') {
-            return self::readIndex(
+            return self::index(
                 self::evaluate(self::get($node, 'object'), $env),
                 self::evaluate(self::get($node, 'index'), $env)
             );
@@ -785,28 +785,53 @@ final class Evaluator
         return null;
     }
 
-    private static function readIndex($obj, $index)
+    /** JS `target[key]`: a single-level read of the target's own key or
+     * element. The one implementation of an index read: the evaluator's
+     * `index-access` node and the template runtime's `BarefootJS::index()`
+     * (Blade / Twig `a[i]`) both call it, so moving a read into a callback
+     * (`rows.map(r => r[k])`) cannot change its answer.
+     *
+     * A key is never a path: Laravel's `data_get` splits `"a.b"` into the
+     * nested `a.b` and reads `"*"` as a wildcard, and Twig's `attribute()`
+     * truncates a float key, so `xs[1.1]` read `xs[1]`. The key is first
+     * turned into the property name JS reads (`propertyKey`), and a list
+     * holds only its canonical index names: `1` and `"1"` name element 1,
+     * while `"01"`, `"-0"` and `"1e0"` are other names no list holds. A
+     * missing key, a nil target or a nil key gives `null`. */
+    public static function index($target, $key)
     {
-        if (is_array($obj) && array_is_list($obj)) {
-            $f = self::toNumber($index);
-            if (is_nan($f) || is_infinite($f)) {
-                return null;
-            }
-            $i = (int) $f;
-            if ((float) $i !== $f || $i < 0 || $i >= count($obj)) {
-                return null;
-            }
-            return $obj[$i];
+        if ($target === null || $key === null) {
+            return null;
         }
-        if ($obj instanceof \stdClass) {
-            $k = self::toStringJs($index);
-            return property_exists($obj, $k) ? $obj->$k : null;
+        $k = self::propertyKey($key);
+        if (is_array($target)) {
+            return array_key_exists($k, $target) ? $target[$k] : null;
         }
-        if (is_array($obj)) { // assoc, treated as object
-            $k = self::toStringJs($index);
-            return array_key_exists($k, $obj) ? $obj[$k] : null;
+        if ($target instanceof \ArrayAccess) {
+            return $target->offsetExists($k) ? $target[$k] : null;
+        }
+        if (is_object($target)) {
+            $name = (string) $k;
+            return property_exists($target, $name) || isset($target->{$name}) ? $target->{$name} : null;
         }
         return null;
+    }
+
+    /** The property name JS reads for a key (`ToPropertyKey`): an integral
+     * float within the int range is that int (`-0.0` is `0`), any other
+     * number is its JS spelling (`1.1`, `1e+21`, `NaN`), and a boolean is
+     * `"true"` / `"false"`. A string stays as written: PHP itself reads a
+     * canonical int string (`"1"`, not `"01"`, `"-0"` or `"1e0"`) as that
+     * int key, as JS reads exactly those strings as an array index. */
+    private static function propertyKey($key): int|string
+    {
+        if (is_int($key) || is_string($key)) {
+            return $key;
+        }
+        if (is_float($key) && is_finite($key) && floor($key) === $key && abs($key) < 9.0e15) {
+            return (int) $key;
+        }
+        return self::toStringJs($key);
     }
 
     // -----------------------------------------------------------------

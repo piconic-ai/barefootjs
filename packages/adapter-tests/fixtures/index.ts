@@ -271,6 +271,10 @@ import { fixture as numberSynthRowKey } from './number-synth-row-key'
 import { fixture as numberPreambleAlias } from './number-preamble-alias'
 import { fixture as numberPropNamedLength } from './number-prop-named-length'
 import { fixture as remainderNegativeZeroQuotient } from './remainder-negative-zero-quotient'
+import { fixture as computedIndexOwnKey } from './computed-index-own-key'
+import { fixture as literalIndexOwnKey } from './literal-index-own-key'
+import { fixture as indexKeyCanonicalForm } from './index-key-canonical-form'
+import { fixture as indexKeyCanonicalFormCallback } from './index-key-canonical-form-callback'
 import { fixture as remainderNegativeZeroString } from './remainder-negative-zero-string'
 import { fixture as remainderNegativeZeroConcat } from './remainder-negative-zero-concat'
 import { fixture as remainderNegativeZeroJson } from './remainder-negative-zero-json'
@@ -1422,6 +1426,10 @@ export const jsxFixtures: JSXFixture[] = [
   numberPreambleAlias,
   numberPropNamedLength,
   remainderNegativeZeroQuotient,
+  computedIndexOwnKey,
+  literalIndexOwnKey,
+  indexKeyCanonicalForm,
+  indexKeyCanonicalFormCallback,
   remainderNegativeZeroString,
   remainderNegativeZeroConcat,
   remainderNegativeZeroJson,

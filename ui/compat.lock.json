@@ -4524,6 +4524,46 @@
           ]
         }
       },
+      "index-key-canonical-form": {
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "string-key-list-index"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "string-key-list-index"
+          ]
+        }
+      },
+      "index-key-canonical-form-callback": {
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "callback-noncanonical-index-key"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "callback-noncanonical-index-key"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "callback-noncanonical-index-key"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "callback-noncanonical-index-key"
+          ]
+        }
+      },
       "jsx-element-prop-array": {
         "blade": {
           "kind": "refusal",
@@ -4713,6 +4753,14 @@
           "kind": "render",
           "limitations": [
             "nested-component-in-jsx-prop-forwarded"
+          ]
+        }
+      },
+      "literal-index-own-key": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "non-identifier-literal-key"
           ]
         }
       },
@@ -8451,6 +8499,14 @@
         "description": "An authored formatDate(...) call refuses with BF056 on every adapter",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/format-date.ts"
       },
+      "index-key-canonical-form": {
+        "description": "A list index reads element 1 for 1 and \"1\" but nothing for \"01\", \"-0\" or \"1e0\" in a direct read",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/index-key-canonical-form.ts"
+      },
+      "index-key-canonical-form-callback": {
+        "description": "A list index inside a map callback reads element 1 for 1 and \"1\" but nothing for \"01\", \"-0\" or \"1e0\"",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/index-key-canonical-form-callback.ts"
+      },
       "jsx-element-prop-array": {
         "description": "Array literal wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-array.ts"
@@ -8462,6 +8518,10 @@
       "jsx-prop-nested-component-forwarded": {
         "description": "A named JSX prop holding a nested component, forwarded by the receiving component to a grandchild…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-prop-nested-component-forwarded.ts"
+      },
+      "literal-index-own-key": {
+        "description": "A literal non-identifier key reads the own key (obj['a.b'], obj['*'])",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/literal-index-own-key.ts"
       },
       "loop-key-to-string-number-component-row": {
         "description": "A component loop row over a number array keyed by n.toString() renders data-key",
@@ -8982,6 +9042,22 @@
         "BF101"
       ]
     },
+    "callback-noncanonical-index-key": {
+      "title": "A non-canonical numeric key indexing a list inside a callback",
+      "kind": "silent",
+      "given": "a list index read inside a callback the runtime evaluator runs (`rows.map(r => r[k])`) with a string key that spells a number but is not the canonical index name (`'01'`, `'-0'`, `'1e0'`)",
+      "expected": "nothing (`undefined`): JS reads a list element only through a canonical index name (`1` or `'1'`), the same answer as the read outside the callback",
+      "actual": "renders the element at the key's numeric value (`'01'` and `'1e0'` read element 1, `'-0'` element 0): the evaluator converts the key with ToNumber before reading the list",
+      "fixtures": [
+        "index-key-canonical-form-callback"
+      ],
+      "adapters": [
+        "erb",
+        "mojolicious",
+        "pebble",
+        "xslate"
+      ]
+    },
     "callback-outside-evaluator": {
       "title": "A higher-order callback outside the template evaluator",
       "kind": "refusal",
@@ -9457,6 +9533,19 @@
         "xslate"
       ]
     },
+    "non-identifier-literal-key": {
+      "title": "A literal object key that is not an identifier",
+      "kind": "silent",
+      "given": "a member read with a literal string key that is not an identifier (`obj['a.b']`, `obj['*']`), in the component body, a loop row or a destructured row param (`({ 'a.b': ab }) =>`)",
+      "expected": "the value of the object's own key of that name (`obj['a.b']` is the own `\"a.b\"` key, not the nested `a.b`)",
+      "actual": "renders nothing for a key read as a field name derived from the key (`'a.b'`), and fails to render for a key that is not valid in a template field path (`'*'`)",
+      "fixtures": [
+        "literal-index-own-key"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
     "object-equality-by-contents": {
       "title": "Strict equality between distinct objects or arrays with the same contents",
       "kind": "silent",
@@ -9740,6 +9829,20 @@
         "mojolicious",
         "twig",
         "xslate"
+      ]
+    },
+    "string-key-list-index": {
+      "title": "A canonical index string indexing a list in the template",
+      "kind": "silent",
+      "given": "a list index read in the template with a string key that is a canonical index name (`row[k]` where `k` is `'1'`)",
+      "expected": "the element at that index (JS reads the key `'1'` as index 1, as it reads the number `1`)",
+      "actual": "renders nothing: the template engine's `[]` looks a string key up as a missing mapping key on a list",
+      "fixtures": [
+        "index-key-canonical-form"
+      ],
+      "adapters": [
+        "jinja",
+        "minijinja"
       ]
     },
     "unlowerable-loop-filter-predicate": {

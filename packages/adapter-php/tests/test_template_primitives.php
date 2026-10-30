@@ -21,6 +21,7 @@ bf_require_runtime();
 bf_reset();
 
 use Barefoot\BarefootJS;
+use Barefoot\Evaluator;
 
 $backend = new class {
     public function encode_json($data): string
@@ -77,16 +78,84 @@ bf_test('mod', function () use ($bf) {
     bf_assert_nan($bf->mod(2, null));
 });
 
-bf_test('index_key', function () use ($bf) {
-    // Blade's `data_get` spells the float -0.0 as the key "-0" and misses;
-    // JS reads the key -0 as "0" (#3698).
-    bf_assert_eq($bf->index_key($bf->mod(-4, 2)), 0);
-    bf_assert_eq($bf->index_key(0.0), 0);
-    // Any other key is returned as is.
-    bf_assert_eq($bf->index_key(1), 1);
-    bf_assert_eq($bf->index_key(1.0), 1.0);
-    bf_assert_eq($bf->index_key('a'), 'a');
-    bf_assert_eq($bf->index_key(null), null);
+bf_test('index', function () use ($bf) {
+    $list = ['a', 'b', 'c'];
+    $rows = [[10, 20], [30, 40]];
+    // JS reads the key -0 as "0" (#3698), and an integral float as that index.
+    bf_assert_eq($bf->index($list, $bf->mod(-4, 2)), 'a');
+    bf_assert_eq($bf->index($list, 0.0), 'a');
+    bf_assert_eq($bf->index($list, 1.0), 'b');
+    bf_assert_eq($bf->index($list, 1e3), null);
+    bf_assert_eq($bf->index($list, 0x1), 'b');
+    // A fractional index names no element; it is not truncated (Twig's
+    // `attribute()`) or read as a path into the element (`data_get`).
+    bf_assert_eq($bf->index($rows, 1.1), null);
+    bf_assert_eq($bf->index($rows, 0.5), null);
+    bf_assert_eq($bf->index($rows, '1.1'), null);
+    bf_assert_eq($bf->index($rows, 1e20), null);
+    bf_assert_eq($bf->index($rows, NAN), null);
+    bf_assert_eq($bf->index($rows, INF), null);
+    // A canonical int string reads that index; any other spelling does not.
+    bf_assert_eq($bf->index($list, '1'), 'b');
+    bf_assert_eq($bf->index($list, '01'), null);
+    bf_assert_eq($bf->index($list, '-0'), null);
+    bf_assert_eq($bf->index($list, -1), null);
+    bf_assert_eq($bf->index($list, 3), null);
+    // A key with a dot or a `*` names the own key, not a path or a wildcard.
+    $obj = json_decode('{"a.b":1,"a":{"b":2},"*":3,"{first}":4,"1.5":5,"1e+21":6,"true":7,"x":null}');
+    bf_assert_eq($bf->index($obj, 'a.b'), 1);
+    bf_assert_eq($bf->index($obj, '*'), 3);
+    bf_assert_eq($bf->index($obj, '{first}'), 4);
+    bf_assert_eq($bf->index($obj, 1.5), 5);
+    bf_assert_eq($bf->index($obj, 1e21), 6);
+    bf_assert_eq($bf->index($obj, true), 7);
+    bf_assert_eq($bf->index($obj, 'x'), null);
+    bf_assert_eq($bf->index($obj, 'missing'), null);
+    bf_assert_eq($bf->index((array) $obj, 'a.b'), 1);
+    bf_assert_eq($bf->index((array) $obj, '*'), 3);
+    // A numeric own key of a decoded object.
+    bf_assert_eq($bf->index(json_decode('{"1":"one"}'), 1), 'one');
+    bf_assert_eq($bf->index(json_decode('{"1":"one"}'), 1.0), 'one');
+    // A nil target or key reads nothing.
+    bf_assert_eq($bf->index(null, 0), null);
+    bf_assert_eq($bf->index($list, null), null);
+    bf_assert_eq($bf->index('abc', 'missing'), null);
+});
+
+bf_test('index: the template read and the evaluator read share one answer', function () use ($bf) {
+    // `xs[k]` in a template (`$bf->index`) and `xs[k]` inside a callback
+    // (the evaluator's `index-access` node) go through one implementation,
+    // so moving a read into `.map(r => r[k])` cannot change its result.
+    $list = ['a', 'b'];
+    $obj = json_decode('{"1":"one","01":"padded","-0":"negzero","1e0":"exp","true":"t"}');
+    $node = [
+        'kind' => 'index-access',
+        'object' => ['kind' => 'identifier', 'name' => 'xs'],
+        'index' => ['kind' => 'identifier', 'name' => 'k'],
+    ];
+    $cases = [
+        [$list, '1', 'b'],
+        [$list, 1, 'b'],
+        [$list, 1.0, 'b'],
+        [$list, -0.0, 'a'],
+        [$list, '01', null],
+        [$list, '-0', null],
+        [$list, '1e0', null],
+        [$list, ' 1', null],
+        [$list, '1.0', null],
+        [$list, true, null],
+        [$list, null, null],
+        [$list, 1.5, null],
+        [$obj, '01', 'padded'],
+        [$obj, '-0', 'negzero'],
+        [$obj, '1e0', 'exp'],
+        [$obj, 1, 'one'],
+        [$obj, true, 't'],
+    ];
+    foreach ($cases as [$xs, $k, $want]) {
+        bf_assert_eq($bf->index($xs, $k), $want);
+        bf_assert_eq(Evaluator::evaluate($node, ['xs' => $xs, 'k' => $k]), $want);
+    }
 });
 
 bf_test('div', function () use ($bf) {

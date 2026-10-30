@@ -405,6 +405,12 @@
               ]
             },
             {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -1443,6 +1449,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -1789,6 +1801,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -1862,6 +1880,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -2008,6 +2032,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -2230,6 +2260,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -2753,6 +2789,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -2868,6 +2910,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -3098,6 +3146,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -3528,6 +3582,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
               ]
             },
             {
@@ -4698,6 +4758,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -5053,6 +5119,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
               ]
             },
             {
@@ -5908,6 +5980,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -6173,6 +6251,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -6703,6 +6787,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -7628,6 +7718,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -8088,6 +8184,12 @@
               ]
             },
             {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
+              ]
+            },
+            {
               "fixture": "loop-key-to-string-number-component-row",
               "limitations": [
                 "caller-rows-computed-key"
@@ -8482,6 +8584,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form",
+              "limitations": [
+                "string-key-list-index"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -8810,6 +8918,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form",
+              "limitations": [
+                "string-key-list-index"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -9117,6 +9231,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -9439,6 +9559,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -10077,6 +10203,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -10308,6 +10440,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -10328,6 +10466,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "index-key-canonical-form",
+              "limitations": [
+                "string-key-list-index"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -10337,6 +10481,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "index-key-canonical-form",
+              "limitations": [
+                "string-key-list-index"
+              ]
+            },
             {
               "fixture": "unlowered-global-call",
               "limitations": [
@@ -10348,6 +10498,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -10357,6 +10513,12 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
             {
               "fixture": "unlowered-global-call",
               "limitations": [
@@ -10377,6 +10539,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
             {
               "fixture": "unlowered-global-call",
               "limitations": [
@@ -10738,6 +10906,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -11105,6 +11279,12 @@
               ]
             },
             {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -11391,6 +11571,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form",
+              "limitations": [
+                "string-key-list-index"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -11623,6 +11809,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form",
+              "limitations": [
+                "string-key-list-index"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -11846,6 +12038,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -12084,6 +12282,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -12530,6 +12734,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -12737,6 +12947,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -12919,6 +13135,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form",
+              "limitations": [
+                "string-key-list-index"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -12950,6 +13172,12 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form",
+              "limitations": [
+                "string-key-list-index"
               ]
             },
             {
@@ -12987,6 +13215,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -13018,6 +13252,12 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -13086,6 +13326,12 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -13487,6 +13733,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -13842,6 +14094,12 @@
               "fixture": "jsx-prop-nested-component-forwarded",
               "limitations": [
                 "nested-component-in-jsx-prop-forwarded"
+              ]
+            },
+            {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
               ]
             },
             {
@@ -14589,6 +14847,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -14824,6 +15088,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -15297,6 +15567,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -15510,6 +15786,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
+              ]
+            },
             {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
               "limitations": [
@@ -15909,6 +16191,12 @@
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
               ]
             },
             {
@@ -17316,6 +17604,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -17548,6 +17842,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -17603,6 +17903,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -17713,6 +18019,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -19502,6 +19814,12 @@
               ]
             },
             {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -20508,6 +20826,12 @@
               ]
             },
             {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -20991,6 +21315,12 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
               ]
             },
             {
@@ -22215,6 +22545,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -22465,6 +22801,12 @@
               ]
             },
             {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -22649,6 +22991,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form",
+              "limitations": [
+                "string-key-list-index"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -22791,6 +23139,12 @@
               ]
             },
             {
+              "fixture": "index-key-canonical-form",
+              "limitations": [
+                "string-key-list-index"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -22924,6 +23278,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -23072,6 +23432,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -23338,6 +23704,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -23561,6 +23933,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -23731,6 +24109,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "index-key-canonical-form",
+              "limitations": [
+                "string-key-list-index"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -23758,6 +24142,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "index-key-canonical-form",
+              "limitations": [
+                "string-key-list-index"
+              ]
+            },
             {
               "fixture": "module-const-default-hydrate",
               "limitations": [
@@ -23787,6 +24177,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -23814,6 +24210,12 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
             {
               "fixture": "module-const-default-hydrate",
               "limitations": [
@@ -23870,6 +24272,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "index-key-canonical-form-callback",
+              "limitations": [
+                "callback-noncanonical-index-key"
+              ]
+            },
             {
               "fixture": "module-const-default-hydrate",
               "limitations": [
@@ -24010,7 +24418,16 @@
         "hono": {},
         "blade": {},
         "erb": {},
-        "go-template": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "literal-index-own-key",
+              "limitations": [
+                "non-identifier-literal-key"
+              ]
+            }
+          ]
+        },
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},

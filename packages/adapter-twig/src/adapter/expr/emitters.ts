@@ -278,8 +278,11 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
     // resolve stdClass properties, assoc-array keys, and numeric list
     // indices identically to `.`. #1897 (data-table's
     // `selected()[index]`) still works — `attribute()` is a strict
-    // superset of `[]` for that numeric-index case.
-    return `attribute(${emit(object)}, ${emit(index)})`
+    // superset of `[]` for that numeric-index case. `attribute()` truncates
+    // a float key, though (`xs[1.1]` read `xs[1]`), so the read goes
+    // through the runtime's `bf.index`, the same single-level own-key
+    // lookup over stdClass / arrays / null, with JS's key names (#3744).
+    return `bf.index(${emit(object)}, ${emit(index)})`
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
@@ -510,8 +513,10 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     // — the runtime-polymorphic accessor a dynamic-key row access
     // (`tone[k]`) needs (#2491). #1897 (data-table's
     // `selected()[index]`) keeps working — `attribute()` is a strict
-    // superset of `[]` for that numeric-index case.
-    return `attribute(${emit(object)}, ${emit(index)})`
+    // superset of `[]` for that numeric-index case. The read goes through
+    // `bf.index` rather than `attribute()`, which truncates a float key
+    // (#3744).
+    return `bf.index(${emit(object)}, ${emit(index)})`
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {

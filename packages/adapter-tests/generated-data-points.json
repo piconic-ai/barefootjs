@@ -4668,6 +4668,542 @@
       }
     }
   ],
+  "index-key-canonical-form": [
+    {
+      "name": "gen:row:empty",
+      "props": {
+        "row": [],
+        "one": "1",
+        "padded": "01",
+        "negZero": "-0",
+        "exp": "1e0",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:one:empty",
+      "props": {
+        "row": [
+          "a",
+          "b"
+        ],
+        "one": "",
+        "padded": "01",
+        "negZero": "-0",
+        "exp": "1e0",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:one:markup",
+      "props": {
+        "row": [
+          "a",
+          "b"
+        ],
+        "one": "<b>&\"'</b>",
+        "padded": "01",
+        "negZero": "-0",
+        "exp": "1e0",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:one:multibyte",
+      "props": {
+        "row": [
+          "a",
+          "b"
+        ],
+        "one": "日本語",
+        "padded": "01",
+        "negZero": "-0",
+        "exp": "1e0",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:padded:empty",
+      "props": {
+        "row": [
+          "a",
+          "b"
+        ],
+        "one": "1",
+        "padded": "",
+        "negZero": "-0",
+        "exp": "1e0",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:padded:markup",
+      "props": {
+        "row": [
+          "a",
+          "b"
+        ],
+        "one": "1",
+        "padded": "<b>&\"'</b>",
+        "negZero": "-0",
+        "exp": "1e0",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:padded:multibyte",
+      "props": {
+        "row": [
+          "a",
+          "b"
+        ],
+        "one": "1",
+        "padded": "日本語",
+        "negZero": "-0",
+        "exp": "1e0",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:negZero:empty",
+      "props": {
+        "row": [
+          "a",
+          "b"
+        ],
+        "one": "1",
+        "padded": "01",
+        "negZero": "",
+        "exp": "1e0",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:negZero:markup",
+      "props": {
+        "row": [
+          "a",
+          "b"
+        ],
+        "one": "1",
+        "padded": "01",
+        "negZero": "<b>&\"'</b>",
+        "exp": "1e0",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:negZero:multibyte",
+      "props": {
+        "row": [
+          "a",
+          "b"
+        ],
+        "one": "1",
+        "padded": "01",
+        "negZero": "日本語",
+        "exp": "1e0",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:exp:empty",
+      "props": {
+        "row": [
+          "a",
+          "b"
+        ],
+        "one": "1",
+        "padded": "01",
+        "negZero": "-0",
+        "exp": "",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:exp:markup",
+      "props": {
+        "row": [
+          "a",
+          "b"
+        ],
+        "one": "1",
+        "padded": "01",
+        "negZero": "-0",
+        "exp": "<b>&\"'</b>",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:exp:multibyte",
+      "props": {
+        "row": [
+          "a",
+          "b"
+        ],
+        "one": "1",
+        "padded": "01",
+        "negZero": "-0",
+        "exp": "日本語",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:num:zero",
+      "props": {
+        "row": [
+          "a",
+          "b"
+        ],
+        "one": "1",
+        "padded": "01",
+        "negZero": "-0",
+        "exp": "1e0",
+        "num": 0
+      }
+    },
+    {
+      "name": "gen:num:negative",
+      "props": {
+        "row": [
+          "a",
+          "b"
+        ],
+        "one": "1",
+        "padded": "01",
+        "negZero": "-0",
+        "exp": "1e0",
+        "num": -7
+      }
+    },
+    {
+      "name": "gen:num:large",
+      "props": {
+        "row": [
+          "a",
+          "b"
+        ],
+        "one": "1",
+        "padded": "01",
+        "negZero": "-0",
+        "exp": "1e0",
+        "num": 1234567890
+      }
+    }
+  ],
+  "index-key-canonical-form-callback": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": [],
+        "one": "1",
+        "padded": "01",
+        "negZero": "-0",
+        "exp": "1e0",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:one:empty",
+      "props": {
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c",
+            "d"
+          ]
+        ],
+        "one": "",
+        "padded": "01",
+        "negZero": "-0",
+        "exp": "1e0",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:one:markup",
+      "props": {
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c",
+            "d"
+          ]
+        ],
+        "one": "<b>&\"'</b>",
+        "padded": "01",
+        "negZero": "-0",
+        "exp": "1e0",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:one:multibyte",
+      "props": {
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c",
+            "d"
+          ]
+        ],
+        "one": "日本語",
+        "padded": "01",
+        "negZero": "-0",
+        "exp": "1e0",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:padded:empty",
+      "props": {
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c",
+            "d"
+          ]
+        ],
+        "one": "1",
+        "padded": "",
+        "negZero": "-0",
+        "exp": "1e0",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:padded:markup",
+      "props": {
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c",
+            "d"
+          ]
+        ],
+        "one": "1",
+        "padded": "<b>&\"'</b>",
+        "negZero": "-0",
+        "exp": "1e0",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:padded:multibyte",
+      "props": {
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c",
+            "d"
+          ]
+        ],
+        "one": "1",
+        "padded": "日本語",
+        "negZero": "-0",
+        "exp": "1e0",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:negZero:empty",
+      "props": {
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c",
+            "d"
+          ]
+        ],
+        "one": "1",
+        "padded": "01",
+        "negZero": "",
+        "exp": "1e0",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:negZero:markup",
+      "props": {
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c",
+            "d"
+          ]
+        ],
+        "one": "1",
+        "padded": "01",
+        "negZero": "<b>&\"'</b>",
+        "exp": "1e0",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:negZero:multibyte",
+      "props": {
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c",
+            "d"
+          ]
+        ],
+        "one": "1",
+        "padded": "01",
+        "negZero": "日本語",
+        "exp": "1e0",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:exp:empty",
+      "props": {
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c",
+            "d"
+          ]
+        ],
+        "one": "1",
+        "padded": "01",
+        "negZero": "-0",
+        "exp": "",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:exp:markup",
+      "props": {
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c",
+            "d"
+          ]
+        ],
+        "one": "1",
+        "padded": "01",
+        "negZero": "-0",
+        "exp": "<b>&\"'</b>",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:exp:multibyte",
+      "props": {
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c",
+            "d"
+          ]
+        ],
+        "one": "1",
+        "padded": "01",
+        "negZero": "-0",
+        "exp": "日本語",
+        "num": 1
+      }
+    },
+    {
+      "name": "gen:num:zero",
+      "props": {
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c",
+            "d"
+          ]
+        ],
+        "one": "1",
+        "padded": "01",
+        "negZero": "-0",
+        "exp": "1e0",
+        "num": 0
+      }
+    },
+    {
+      "name": "gen:num:negative",
+      "props": {
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c",
+            "d"
+          ]
+        ],
+        "one": "1",
+        "padded": "01",
+        "negZero": "-0",
+        "exp": "1e0",
+        "num": -7
+      }
+    },
+    {
+      "name": "gen:num:large",
+      "props": {
+        "rows": [
+          [
+            "a",
+            "b"
+          ],
+          [
+            "c",
+            "d"
+          ]
+        ],
+        "one": "1",
+        "padded": "01",
+        "negZero": "-0",
+        "exp": "1e0",
+        "num": 1234567890
+      }
+    }
+  ],
   "input": [
     {
       "name": "gen:className:absent",

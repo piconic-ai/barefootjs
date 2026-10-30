@@ -19,7 +19,7 @@
  *      (this adapter's helper, `lib/blade-naming.ts`) wraps `bladeIdent`
  *      with the `$`. Every `identifier`/zero-arg-`call` (signal getter) site
  *      below uses `bladeVar`, not `bladeIdent` alone.
- *   2. **Member/index access lowers to `data_get(...)`, not `.`/`[]`.**
+ *   2. **Member/index access lowers to `data_get(...)` / `$bf->index(...)`, not `.`/`[]`.**
  *      Twig's dot/bracket are polymorphic over {stdClass, array, null}; raw
  *      PHP has no equivalent single operator. See `blade-naming.ts`'s file
  *      header (divergence 3) for the full rationale — every `member`/
@@ -257,9 +257,9 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    // `data_get` is polymorphic (list index or hash key), mirroring JS — no
+    // `$bf->index` reads a list index or an own key, as JS does — no
     // list/hash split is needed. #1897 (data-table's `selected()[index]`).
-    return bladeIndexAccess(emit(object), emit(index), index.kind !== 'literal')
+    return bladeIndexAccess(emit(object), emit(index))
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
@@ -480,9 +480,9 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    // `data_get` is polymorphic (list index or hash key), mirroring JS.
+    // `$bf->index` reads a list index or an own key, as JS does.
     // #1897 (data-table's `selected()[index]`).
-    return bladeIndexAccess(emit(object), emit(index), index.kind !== 'literal')
+    return bladeIndexAccess(emit(object), emit(index))
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
