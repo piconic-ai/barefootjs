@@ -27,6 +27,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // runtime's shape-check method, `java/.../Bf.java`) ahead of `call()`'s
 // generic fallback, so it never reaches the refusal at all.
 export const renderDivergences: RenderDivergences = {
+  // A list index read inside a callback the evaluator runs
+  // (`rows.map(r => r[k])`) converts the key with ToNumber, so `'01'`,
+  // `'-0'` and `'1e0'` read an element where JS reads nothing.
+  'index-key-canonical-form-callback': { limitation: 'callback-noncanonical-index-key' },
   // A const reading a signal getter (`const b = count()`) read in a loop row
   // that binds the getter's name (`rows.map(count => …{b}…)`): the template
   // reads `b` as a variable that is never set.
@@ -85,6 +89,8 @@ export const renderDivergences: RenderDivergences = {
   // graduated `nested-child-static-prop-text-slot-elided` marker bug),
   // so nobody re-ran them to notice. No divergence remains on this
   // adapter (verified against a real render of both fixtures).
+  'module-const-destructure-default': { limitation: 'module-const-destructure-default' },
+  'module-const-default-hydrate': { limitation: 'module-const-destructure-default' },
 }
 
 /**

@@ -911,8 +911,7 @@ final class BarefootJS
      * dividend is not negative. A negative dividend keeps `fmod`'s float
      * `-0.0`: JS gives `-4 % 2` as `-0`, so `1 / (-4 % 2)` is `-Infinity`.
      * It still prints `"0"`, compares equal to `0`, and indexes a list as
-     * `0` (Twig's `attribute()` takes it; Blade's index access passes it
-     * through `index_key`).
+     * `0` through the runtime's `index`.
      *
      * A nil operand reads as `0`, as with `div`: the adapters spell JS's
      * `null` operand as the nil itself (`null % 2` is `0`). */
@@ -922,13 +921,13 @@ final class BarefootJS
         return $r === 0.0 && is_int($a) && is_int($b) && $a >= 0 ? 0 : $r;
     }
 
-    /** A computed index as Blade's `data_get` key (`a[i]` is
-     * `data_get($a, $bf->index_key($i))`). JS reads the key `-0` as `"0"`;
-     * `data_get` spells the float `-0.0` as the key `"-0"` and misses, so a
-     * zero float becomes the int `0`. Any other key is returned as is. */
-    public function index_key($key)
+    /** JS `target[key]`: a single-level read of the target's own key or
+     * element. Delegates to `Evaluator::index()`, the one implementation
+     * the callback evaluator's index read shares, so a template read and
+     * the same read inside a callback give the same answer. */
+    public function index($target, $key)
     {
-        return is_float($key) && $key === 0.0 ? 0 : $key;
+        return Evaluator::index($target, $key);
     }
 
     public function floor($value): float

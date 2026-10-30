@@ -132,6 +132,10 @@ export const renderDivergences: RenderDivergences = {
   // that binds the getter's name (`rows.map(count => …{b}…)`): the template
   // reads `b` as a variable that is never set.
   'const-getter-read-loop-shadowed': { limitation: 'loop-shadowed-const-alias-hop' },
+  // A literal key that is not an identifier (`obj['a.b']`, `obj['*']`) is
+  // spelled as a struct field (`.Obj.AB`), which reads nothing, or as a
+  // template field path the template parser rejects (`*`).
+  'literal-index-own-key': { limitation: 'non-identifier-literal-key' },
   // A destructure default that calls a callback and reads no earlier prop
   // (`{ b = ['y', ''].filter((x) => x !== '') }`): the props constructor
   // has no conversion from the evaluated array to the field's slice type,
@@ -280,6 +284,8 @@ export const renderDivergences: RenderDivergences = {
   // (`<Item>` → `Items` next to an `items` prop) took that field for its own
   // rows, so the `items` loop rendered empty. A loop's rows field is now
   // renamed when a different prop owns the plural (`nestedRowsFieldName`).
+  'module-const-destructure-default': { limitation: 'module-const-destructure-default' },
+  'module-const-default-hydrate': { limitation: 'module-const-destructure-default' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches

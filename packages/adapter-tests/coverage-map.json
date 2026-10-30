@@ -2591,6 +2591,34 @@
         "text"
       ]
     },
+    "computed-index-own-key": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:||",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "computed-let-shadows-prop-reassigned": {
       "kinds": [
         "conditional",
@@ -5623,6 +5651,41 @@
         "text"
       ]
     },
+    "index-key-canonical-form": {
+      "kinds": [
+        "identifier",
+        "index-access",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "index-key-canonical-form-callback": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "inline-array-map": {
       "kinds": [
         "array-literal",
@@ -6136,6 +6199,31 @@
         "literal:number",
         "literal:string",
         "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "literal-index-own-key": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "member:computed"
       ],
       "contexts": [
         "attribute",
@@ -8423,6 +8511,58 @@
         "text"
       ]
     },
+    "memo-template-literal-nillable-prop": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "memo-template-literal-nillable-prop-destructured": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "memo-ternary-comparison-test": {
       "kinds": [
         "binary",
@@ -8505,6 +8645,51 @@
         "literal:boolean"
       ],
       "contexts": []
+    },
+    "module-const-default-hydrate": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "module-const-destructure-default": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
     },
     "module-const-hop-loop-shadow": {
       "kinds": [
@@ -13798,6 +13983,34 @@
       ],
       "contexts": [
         "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "string-const-quote-newline": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "literal:boolean",
+        "literal:null",
+        "literal:string",
+        "logical:||",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
         "loop",
         "text"
       ]

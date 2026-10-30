@@ -78,8 +78,8 @@ export const renderDivergences: RenderDivergences = {
   // `remainder-negative-zero-quotient` used to sit here: the runtime's `mod`
   // kept an int `0` for `-4 % 2`, which dropped JS's `-0` sign, so
   // `1 / (-4 % 2)` rendered `Infinity`. `mod` now keeps the float `-0.0`,
-  // and Blade's index access reads it as `0` through the runtime's
-  // `index_key` (#3698).
+  // and index access reads it as `0` through the runtime's `index`
+  // (#3698, #3744).
   // `remainder-nan-operand` used to sit here: PHP's `%` converted both
   // operands to integers, so `NaN % 2` rendered an integer. `%` now goes
   // through the runtime's `mod`, PHP's `fmod` (#3474).
@@ -112,6 +112,8 @@ export const renderDivergences: RenderDivergences = {
   // graduated `nested-child-static-prop-text-slot-elided` marker bug),
   // so nobody re-ran them to notice. No divergence remains on this
   // adapter (verified against a real render of both fixtures).
+  'module-const-destructure-default': { limitation: 'module-const-destructure-default' },
+  'module-const-default-hydrate': { limitation: 'module-const-destructure-default' },
 }
 
 /**

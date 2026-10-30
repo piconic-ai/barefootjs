@@ -42,6 +42,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A list index read in the template with the string key `'1'` reads
+  // nothing: the engine's `[]` looks a string up as a mapping key.
+  'index-key-canonical-form': { limitation: 'string-key-list-index' },
   // `===` / `!==` between objects or arrays compares contents, not references.
   'strict-equality-distinct-reference': { limitation: 'object-equality-by-contents' },
   // `.at(i)` on half of a surrogate pair: the runtime string can't hold a
@@ -102,6 +105,8 @@ export const renderDivergences: RenderDivergences = {
   // graduated `nested-child-static-prop-text-slot-elided` marker bug),
   // so nobody re-ran them to notice. No divergence remains on this
   // adapter (verified against a real render of both fixtures).
+  'module-const-destructure-default': { limitation: 'module-const-destructure-default' },
+  'module-const-default-hydrate': { limitation: 'module-const-destructure-default' },
 }
 
 /**

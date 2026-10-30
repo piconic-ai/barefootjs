@@ -108,7 +108,7 @@ import { BF_SLOT, BF_COND, escapeHtml } from '@barefootjs/shared'
 
 import type { XslateRenderCtx } from './lib/types.ts'
 import { XSLATE_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
-import { kolonHashKey, escapeKolonSingleQuoted } from './lib/kolon-naming.ts'
+import { kolonHashKey, kolonStringLiteral } from './lib/kolon-naming.ts'
 import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToKolon } from './lib/static-value.ts'
 import { XslateFilterEmitter, XslateTopLevelEmitter, CALLBACK_LOWERING } from './expr/emitters.ts'
@@ -156,20 +156,6 @@ function kolonSegmentAccessor(base: string, segments: readonly LoopBindingPathSe
   return expr
 }
 
-/**
- * Quote a string as a Kolon single-quoted literal, unconditionally — unlike
- * `kolonHashKey` (which leaves an identifier-safe name unquoted for `key =>
- * val` hashref-literal position), a plain array-literal element
- * (`$bf.omit($x, [id, title])`) is NOT hash-key position: Kolon has no
- * bareword-as-string convention there, so every object-rest exclude key
- * needs an explicit string literal.
- */
-function kolonStringLiteral(s: string): string {
-  return `'${escapeKolonSingleQuoted(s)}'`
-}
-
-/** A Kolon string or number literal, the whole of a lowered value. */
-const KOLON_LITERAL = /^(?:'(?:[^'\\]|\\.)*'|-?\d+(?:\.\d+)?)$/
 
 /** How a lowered loop destructure binding reads off the row item. */
 const DESTRUCTURE_SPELLING: DestructureSpelling = {
@@ -400,7 +386,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     const v = valueProp.value
     if (v.kind === 'literal') {
       return typeof v.value === 'string'
-        ? `'${v.value.replace(/[\\']/g, m => `\\${m}`)}'`
+        ? kolonStringLiteral(v.value)
         : String(v.value)
     }
     if (v.kind === 'expression') {
@@ -437,7 +423,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     const entries = members.map(m => {
       // String-literal JS keys can carry `'` / `\` — escape for the
       // single-quoted Kolon key string.
-      const key = `'${m.name.replace(/[\\']/g, c => `\\${c}`)}'`
+      const key = kolonStringLiteral(m.name)
       if (m.kind === 'function' || /^on[A-Z]/.test(m.name)) return `${key} => nil`
       const src = m.kind === 'getter' ? m.body : m.expr
       return `${key} => ${this.convertExpressionToKolon(src)}`
@@ -831,7 +817,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
    * below, not threaded through the hashref entry list.
    */
   private readonly componentPropEmitter: AttrValueEmitter = {
-    emitLiteral: (value, name) => `${kolonHashKey(name)} => '${value.value}'`,
+    emitLiteral: (value, name) => `${kolonHashKey(name)} => ${kolonStringLiteral(value.value)}`,
     emitExpression: (value, name) => {
       if (value.parts) {
         return `${kolonHashKey(name)} => ${this.convertTemplateLiteralPartsToKolon(value.parts)}`
@@ -1082,7 +1068,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
           // A literal is never nil, and Text::Xslate folds `defined` of a
           // local bound to a string literal to false, which would drop the
           // attribute (a computed-key read resolved at compile time, #3497).
-          if (plan.kind === 'plain' || KOLON_LITERAL.test(v)) {
+          if (plan.kind === 'plain' || this.isStaticNonNilValue(valueParsed)) {
             return attr(v, plan.boolStr, mixedParsed)
           }
           const tmp = `$bf_pu${this.presenceVarCounter++}`
@@ -1155,8 +1141,8 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     const entries = planStyleObject(value)
     if (!entries) return null
     const args = entries.flatMap(e => [
-      `'${escapeKolonSingleQuoted(e.cssKey)}'`,
-      e.kind === 'literal' ? `'${escapeKolonSingleQuoted(e.value)}'` : this.convertExpressionToKolon(e.expr, e.parsed),
+      kolonStringLiteral(e.cssKey),
+      e.kind === 'literal' ? kolonStringLiteral(e.value) : this.convertExpressionToKolon(e.expr, e.parsed),
     ])
     return `<: $bf.style_object(${args.join(', ')}) | mark_raw :>`
   }
@@ -1238,7 +1224,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
         // adapter's "empty when no case matches" semantics.
         const keyExpr = this.convertExpressionToKolon(part.key)
         const entries = Object.entries(part.cases)
-          .map(([k, v]) => `'${k}' => '${v}'`)
+          .map(([k, v]) => `${kolonStringLiteral(k)} => ${kolonStringLiteral(v)}`)
           .join(', ')
         parts.push(`({ ${entries} }[${keyExpr}] // '')`)
       }
@@ -1458,13 +1444,45 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
    * same-named const elsewhere in the component, outside any loop that
    * shadows it, still inlines.
    */
+  /**
+   * Whether `parsed` lowers to a value that is never nil because its leaves
+   * resolve at compile time: a non-null literal, a module string const, a
+   * non-null literal const, or a module record member read, or a ternary /
+   * `||` / `??` / `&&` over them. Decided from the tree with the same
+   * resolvers the expression emitter inlines through, in its order, so it
+   * holds for every spelling of the resolved literal (single- or
+   * double-quoted, number).
+   */
+  private isStaticNonNilValue(parsed: ParsedExpr): boolean {
+    if (parsed.kind === 'literal') return parsed.literalType !== 'null'
+    if (parsed.kind === 'conditional') {
+      return this.isStaticNonNilValue(parsed.consequent) && this.isStaticNonNilValue(parsed.alternate)
+    }
+    if (parsed.kind === 'logical') {
+      // `a || b` / `a ?? b` yields `b` whenever `a` is nil; `a && b` may yield `a`.
+      const right = this.isStaticNonNilValue(parsed.right)
+      return parsed.op === '&&' ? right && this.isStaticNonNilValue(parsed.left) : right
+    }
+    if (parsed.kind === 'identifier') {
+      if (parsed.name === 'undefined' || parsed.name === 'null') return false
+      if (this._resolveModuleStringConst(parsed.name) !== null) return true
+      const lit = lookupLiteralConst(parsed.name, this.localConstants, n => this.scope.isBound(n))
+      return lit !== null && lit.kind !== 'null'
+    }
+    if (parsed.kind === 'member' && parsed.object.kind === 'identifier') {
+      if (isRootPropsObject(parsed.object, n => this.scope.isBound(n))) return false
+      return this._resolveStaticRecordLiteral(parsed.object.name, parsed.property) !== null
+    }
+    return false
+  }
+
   private _resolveLiteralConst(name: string): string | null {
     const lit = lookupLiteralConst(name, this.localConstants, n => this.scope.isBound(n))
     if (lit === null) return null
     if (lit.kind === 'number') return lit.text
     if (lit.kind === 'boolean') return lit.text === 'true' ? '1' : '0'
     if (lit.kind === 'null') return 'nil'
-    return `'${lit.text.replace(/[\\']/g, m => `\\${m}`)}'`
+    return kolonStringLiteral(lit.text)
   }
 
   /**
@@ -1488,7 +1506,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     if (!hit) return null
     return hit.kind === 'number'
       ? hit.text
-      : `'${hit.text.replace(/[\\']/g, m => `\\${m}`)}'`
+      : kolonStringLiteral(hit.text)
   }
 
   private _resolveModuleStringConst(name: string): string | null {
@@ -1497,7 +1515,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     if (this.inLoop) return null
     const value = this.moduleStringConsts.get(name)
     if (value === undefined) return null
-    return `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
+    return kolonStringLiteral(value)
   }
 
   private _recordExprBF101(message: string, reason?: string): void {

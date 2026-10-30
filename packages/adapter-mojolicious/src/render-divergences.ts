@@ -27,6 +27,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 at compile time instead of silently crashing
 // Perl `strict`-mode template execution — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A list index read inside a callback the evaluator runs
+  // (`rows.map(r => r[k])`) converts the key with ToNumber, so `'01'`,
+  // `'-0'` and `'1e0'` read an element where JS reads nothing.
+  'index-key-canonical-form-callback': { limitation: 'callback-noncanonical-index-key' },
   // `.at(i)` on half of a surrogate pair: the runtime string can't hold a
   // lone surrogate, so it returns U+FFFD (halves compare equal, and
   // rejoining them renders `��` instead of the emoji).
@@ -93,6 +97,8 @@ export const renderDivergences: RenderDivergences = {
   // branch next to a non-boolean branch lowered to Perl `0`. Such branches
   // are now rewritten to `'true'` / `'false'` (`stringifyBooleanTernaryBranches`);
   // it renders like Hono.
+  'module-const-destructure-default': { limitation: 'module-const-destructure-default' },
+  'module-const-default-hydrate': { limitation: 'module-const-destructure-default' },
 }
 
 /**

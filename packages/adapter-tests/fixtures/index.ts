@@ -181,6 +181,8 @@ import { fixture as signalSeedRenamedDefaultBesideRawNullish } from './signal-se
 import { fixture as memoPropReadBesideSignalNullishSeed } from './memo-prop-read-beside-signal-nullish-seed'
 import { fixture as memoPropReadBesideSignalNullishSeedDestructured } from './memo-prop-read-beside-signal-nullish-seed-destructured'
 import { fixture as memoPropArithmeticBesideSignalNullishSeed } from './memo-prop-arithmetic-beside-signal-nullish-seed'
+import { fixture as memoTemplateLiteralNillableProp } from './memo-template-literal-nillable-prop'
+import { fixture as memoTemplateLiteralNillablePropDestructured } from './memo-template-literal-nillable-prop-destructured'
 import { fixture as signalSeedDependentDefaultNullishLiteral } from './signal-seed-dependent-default-nullish-literal'
 import { fixture as signalSeedDependentDefaultNullishLiteralBody } from './signal-seed-dependent-default-nullish-literal-body'
 import { fixture as signalSeedLocalHelperCall } from './signal-seed-local-helper-call'
@@ -269,6 +271,10 @@ import { fixture as numberSynthRowKey } from './number-synth-row-key'
 import { fixture as numberPreambleAlias } from './number-preamble-alias'
 import { fixture as numberPropNamedLength } from './number-prop-named-length'
 import { fixture as remainderNegativeZeroQuotient } from './remainder-negative-zero-quotient'
+import { fixture as computedIndexOwnKey } from './computed-index-own-key'
+import { fixture as literalIndexOwnKey } from './literal-index-own-key'
+import { fixture as indexKeyCanonicalForm } from './index-key-canonical-form'
+import { fixture as indexKeyCanonicalFormCallback } from './index-key-canonical-form-callback'
 import { fixture as remainderNegativeZeroString } from './remainder-negative-zero-string'
 import { fixture as remainderNegativeZeroConcat } from './remainder-negative-zero-concat'
 import { fixture as remainderNegativeZeroJson } from './remainder-negative-zero-json'
@@ -992,6 +998,8 @@ import { fixture as moduleConstArrowHelper } from './module-const-arrow-helper'
 // `functionReferencesDeclaredName` check that flagged any reference to a
 // declared name (even a safe one) as unsafe.
 import { fixture as moduleFunctionHelperChain } from './module-function-helper-chain'
+import { fixture as moduleConstDestructureDefault } from './module-const-destructure-default'
+import { fixture as moduleConstDefaultHydrate } from './module-const-default-hydrate'
 // #3012: the boolean-test-position companion of moduleConstArrowHelper /
 // moduleFunctionHelperChain above — a module-scope helper called from
 // inside a ternary's `test` (not `isValidElement`), pinning that the
@@ -1215,6 +1223,7 @@ import { fixture as constBooleanConditionalTest } from './const-boolean-conditio
 import { fixture as moduleConstBooleanConditionalTest } from './module-const-boolean-conditional-test'
 import { fixture as constStringConditionalTest } from './const-string-conditional-test'
 import { fixture as literalConstConditionalShapes } from './literal-const-conditional-shapes'
+import { fixture as stringConstQuoteNewline } from './string-const-quote-newline'
 // Static text starting with `:` / `%` right after a ternary, or as a
 // ternary branch — a template line the engine must not read as a line
 // statement (#3311).
@@ -1334,6 +1343,8 @@ export const jsxFixtures: JSXFixture[] = [
   memoPropReadBesideSignalNullishSeed,
   memoPropReadBesideSignalNullishSeedDestructured,
   memoPropArithmeticBesideSignalNullishSeed,
+  memoTemplateLiteralNillableProp,
+  memoTemplateLiteralNillablePropDestructured,
   signalSeedDependentDefaultNullishLiteral,
   signalSeedDependentDefaultNullishLiteralBody,
   signalSeedLocalHelperCall,
@@ -1416,6 +1427,10 @@ export const jsxFixtures: JSXFixture[] = [
   numberPreambleAlias,
   numberPropNamedLength,
   remainderNegativeZeroQuotient,
+  computedIndexOwnKey,
+  literalIndexOwnKey,
+  indexKeyCanonicalForm,
+  indexKeyCanonicalFormCallback,
   remainderNegativeZeroString,
   remainderNegativeZeroConcat,
   remainderNegativeZeroJson,
@@ -1959,6 +1974,8 @@ export const jsxFixtures: JSXFixture[] = [
   moduleHelperAsync,
   moduleConstArrowHelper,
   moduleFunctionHelperChain,
+  moduleConstDestructureDefault,
+  moduleConstDefaultHydrate,
   moduleHelperBoolcontextCall,
   opaqueLocalAccessorCall,
   opaqueLocalAccessorCallClient,
@@ -2103,6 +2120,7 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstBooleanConditionalTest,
   constStringConditionalTest,
   literalConstConditionalShapes,
+  stringConstQuoteNewline,
   conditionalThenColonText,
   conditionalThenPercentText,
   conditionalBranchSigilText,

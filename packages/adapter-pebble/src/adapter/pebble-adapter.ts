@@ -1136,8 +1136,13 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
       }
     },
     emitBooleanAttr: (_value, name) => name,
+    // Routed through `bf.string(...)` so the engine's autoescaper always
+    // escapes it: Pebble leaves a constant expression unescaped (a bare string
+    // literal, or a ternary whose branches are literals), so `'a"b'` would
+    // otherwise close the attribute. The joined parts are already a string,
+    // so the call does not change the value.
     emitTemplate: (value, name) =>
-      `${name}="{{ ${this.convertTemplateLiteralPartsToPebble(value.parts)} }}"`,
+      `${name}="{{ bf.string(${this.convertTemplateLiteralPartsToPebble(value.parts)}) }}"`,
     // Spread attributes (`<div {...attrs()} />`) lower through the
     // `bf.spread_attrs` runtime helper, mirroring the Jinja/Twig adapters.
     emitSpread: (value) => {
