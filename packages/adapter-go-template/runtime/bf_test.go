@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"math"
 	"reflect"
+	"runtime/debug"
 	"strings"
 	"testing"
 )
@@ -2036,6 +2037,14 @@ func TestJSON(t *testing.T) {
 		{"-0.5", -0.5, "-0.5"},
 		{"-10", -10.0, "-10"},
 		{"-0 string", []any{"-0", `x\"-0`, math.Copysign(0, -1)}, `["-0","x\\\"-0",0]`},
+		// NaN / ±Inf are null at any depth of a slice or map (#3787),
+		// and finite floats take JS's spelling.
+		{"-Inf nested", []any{math.Inf(-1), []any{math.NaN()}}, `[null,[null]]`},
+		{"+Inf in map", map[string]any{"a": math.Inf(1)}, `{"a":null}`},
+		{"Inf in []float64", []float64{math.Inf(1), -2}, `[null,-2]`},
+		{"Inf in map of slices", map[string][]any{"a": {math.NaN(), 1.5}}, `{"a":[null,1.5]}`},
+		{"exponents", []any{-4e-8, -4e20, -4e21, -1e-6, -1e-7}, `[-4e-8,-400000000000000000000,-4e+21,-0.000001,-1e-7]`},
+		{"bytes", []byte("hi"), `"aGk="`},
 	}
 	for _, c := range cases {
 		got, err := JSON(c.in)
@@ -2045,6 +2054,33 @@ func TestJSON(t *testing.T) {
 		if got != c.want {
 			t.Errorf("JSON(%s) = %v, want %v", c.name, got, c.want)
 		}
+	}
+}
+
+// A self-referencing container is a marshal error, as with
+// `encoding/json` alone, not a stack overflow in the non-finite walk
+// (#3787 review). The input is left as it was. The stack is bounded so
+// a regression fails fast.
+func TestJSONCyclicContainer(t *testing.T) {
+	defer debug.SetMaxStack(debug.SetMaxStack(64 << 20))
+	m := map[string]any{"n": math.Inf(1)}
+	m["self"] = m
+	s := make([]any, 2)
+	s[0] = math.NaN()
+	s[1] = s
+	for name, in := range map[string]any{"map": m, "slice": s} {
+		got, err := JSON(in)
+		if err == nil || !strings.Contains(err.Error(), "encountered a cycle") {
+			t.Errorf("JSON(cyclic %s) = %q, %v; want a cycle error", name, got, err)
+		}
+	}
+	if !math.IsInf(m["n"].(float64), 1) || !math.IsNaN(s[0].(float64)) {
+		t.Errorf("JSON mutated its cyclic input")
+	}
+	// A value reached twice without a cycle is not one.
+	shared := []any{math.Inf(-1)}
+	if got, err := JSON([]any{shared, shared}); err != nil || got != `[[null],[null]]` {
+		t.Errorf("JSON(shared) = %q, %v", got, err)
 	}
 }
 

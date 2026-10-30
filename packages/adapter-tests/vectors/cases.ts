@@ -352,6 +352,8 @@ export const cases: HelperCase[] = [
   { fn: 'json', args: [{ a: 1 }], note: 'single-key object' },
   { fn: 'json', args: [{ a: 1, b: 'two' }], note: 'object with alphabetical insertion order' },
   { fn: 'json', args: [{ a: [1, { b: 'x' }] }], note: 'nested array/object' },
+  { fn: 'json', args: [[-4e-8, 1e21, -1e-6, -1e-7, 0.1 + 0.2, 1 / 3]], note: 'numbers take JS notation and shortest digits' },
+  { fn: 'json', args: [{ a: [-4e-8, 1e21], b: 1.5e-7 }], note: 'numbers take JS notation inside an object' },
 
   { fn: 'number', args: [42], note: 'integer passthrough' },
   { fn: 'number', args: [3.14], note: 'float passthrough' },

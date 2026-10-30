@@ -42,6 +42,24 @@ fn json_helper() {
 }
 
 #[test]
+fn json_helper_writes_numbers_in_js_notation() {
+    // #3787: `serde_json` writes a float beyond `i64` as `-4e+20`; JS
+    // writes it out in full below 1e21 and as `-4e+21` from there on.
+    let enc = barefootjs::backend_minijinja::encode_json;
+    assert_eq!(enc(&arr(vec![n(-2.0), n(-0.5), n(-0.0)])), "[-2,-0.5,0]");
+    assert_eq!(
+        enc(&arr(vec![n(-4e-8), n(-4e20), n(-4e21), n(-1e-6), n(-1e-7), n(0.1 + 0.2)])),
+        "[-4e-8,-400000000000000000000,-4e+21,-0.000001,-1e-7,0.30000000000000004]"
+    );
+    assert_eq!(enc(&obj(&[("b", arr(vec![n(-4e20)])), ("a", s("x\"y"))])), "{\"a\":\"x\\\"y\",\"b\":[-400000000000000000000]}");
+    assert_eq!(
+        enc(&arr(vec![n(f64::NEG_INFINITY), n(f64::INFINITY), n(f64::NAN), arr(vec![n(f64::NEG_INFINITY)])])),
+        "[null,null,null,[null]]"
+    );
+    assert_eq!(enc(&arr(vec![s("-2.0"), JsValue::Bool(true), JsValue::Null])), "[\"-2.0\",true,null]");
+}
+
+#[test]
 fn string_helper() {
     assert_eq!(runtime::js_string(&n(42.0)), "42");
     assert_eq!(runtime::js_string(&s("hi")), "hi");

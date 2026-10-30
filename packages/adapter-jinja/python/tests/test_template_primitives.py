@@ -95,6 +95,21 @@ class TemplatePrimitivesTest(unittest.TestCase):
         self.assertEqual(self.bf.json("hi"), '"hi"')
         self.assertEqual(self.bf.json(None), "null")
 
+    def test_json_numbers_use_js_notation(self):
+        # #3787: `json.dumps` writes `-2.0` / `-4e-08` and the pure backend
+        # here would raise on a non-finite float; JS writes neither.
+        self.assertEqual(self.bf.json([self.bf.div(-4, 2), -0.5, -0.0]), "[-2,-0.5,0]")
+        self.assertEqual(
+            self.bf.json([-4e-8, -4e20, -4e21, -1e-6, -1e-7, 0.1 + 0.2]),
+            "[-4e-8,-400000000000000000000,-4e+21,-0.000001,-1e-7,0.30000000000000004]",
+        )
+        self.assertEqual(self.bf.json({"b": [-2.0], "a": 10**21}), '{"a":1e+21,"b":[-2]}')
+        self.assertEqual(self.bf.json(self.bf.div(-4, 0)), "null")
+        self.assertEqual(
+            self.bf.json([-math.inf, math.inf, math.nan, [-math.inf]]), "[null,null,null,[null]]"
+        )
+        self.assertEqual(self.bf.json(["-2.0", True, False, None]), '["-2.0",true,false,null]')
+
     def test_string(self):
         self.assertEqual(self.bf.string(42), "42")
         self.assertEqual(self.bf.string("hi"), "hi")

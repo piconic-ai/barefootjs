@@ -419,6 +419,35 @@
       "note": "nested array/object"
     },
     {
+      "fn": "json",
+      "args": [
+        [
+          -4e-8,
+          1e+21,
+          -0.000001,
+          -1e-7,
+          0.30000000000000004,
+          0.3333333333333333
+        ]
+      ],
+      "expect": "[-4e-8,1e+21,-0.000001,-1e-7,0.30000000000000004,0.3333333333333333]",
+      "note": "numbers take JS notation and shortest digits"
+    },
+    {
+      "fn": "json",
+      "args": [
+        {
+          "a": [
+            -4e-8,
+            1e+21
+          ],
+          "b": 1.5e-7
+        }
+      ],
+      "expect": "{\"a\":[-4e-8,1e+21],\"b\":1.5e-7}",
+      "note": "numbers take JS notation inside an object"
+    },
+    {
       "fn": "number",
       "args": [
         42
