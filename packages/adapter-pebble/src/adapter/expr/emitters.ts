@@ -129,6 +129,7 @@ import {
   isRootPropsObject,
   unloweredCallRefusal,
   type CallbackLoweringOptions,
+  type StringNameTest,
 } from '@barefootjs/jsx'
 
 import type { PebbleEmitContext } from '../emit-context.ts'
@@ -203,7 +204,7 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
   // [ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX]`), only plain type annotations.
   private readonly param: string
   private readonly localVarMap: Map<string, string>
-  private readonly isStringName: (n: string) => boolean
+  private readonly isStringName: StringNameTest
   // Records a BF101 for predicate shapes this emitter can only degrade.
   // Optional so emitter construction stays possible without an adapter; a
   // missing hook keeps the old silent-degrade emit.
@@ -214,7 +215,7 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
   constructor(
     param: string,
     localVarMap: Map<string, string>,
-    isStringName: (n: string) => boolean = () => false,
+    isStringName: StringNameTest = () => false,
     onUnsupported?: (message: string, reason?: string) => void,
     isOuterBound: (name: string) => boolean = () => false,
   ) {
@@ -624,7 +625,7 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     // implementation above for the full `bf.string`-wrapping rationale).
     // The adapter's string-value registry catches getter/prop/local-const
     // operands with no literal present (`firstName() + lastName()`).
-    if (isStringConcatBinary(op, left, right, (n, property) => this.ctx._isStringValueName(n, property))) {
+    if (isStringConcatBinary(op, left, right, (n, property, path) => this.ctx._isStringValueName(n, property, path))) {
       return `bf.string(${l}) ~ bf.string(${r})`
     }
     // `/` and `%` go through the runtime's JS division and remainder

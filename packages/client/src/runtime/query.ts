@@ -571,9 +571,15 @@ function findForwardedThroughReceivers(
 
 /** True when every scope from `element` (itself included — a
  *  fragment-rooted receiver stamps its scope onto the forwarded element)
- *  up to `root` is a receiver `root` hosts at one of `receiverSlotIds`. A
- *  comment-delimited (fragment-rooted) scope carries no host, so it is
- *  never one. */
+ *  up to `root` is a receiver `root` hosts at one of `receiverSlotIds`.
+ *
+ *  A comment-delimited (fragment-rooted) scope has no element to carry
+ *  `bf-h`/`bf-m`, so it is matched by its scope id instead: a receiver
+ *  `root` hosts at slot `sN` is named `${rootScopeId}_sN` — by SSR, and by
+ *  `createComponent`'s `slot`-derived id on a client-built row — the same
+ *  convention `findCommentChildScope` resolves a fragment-root child by.
+ *  Any other comment scope (a receiver's own internal fragment root, a
+ *  row's randomly named root) is never one (#3695 under `fragment-wrap`). */
 function isForwardedThroughReceivers(
   element: Element,
   root: Element,
@@ -585,9 +591,34 @@ function isForwardedThroughReceivers(
       if (cur.getAttribute(BF_HOST) !== rootScopeId) return false
       if (!receiverSlotIds.includes(cur.getAttribute(BF_AT) ?? '')) return false
     }
-    if (isTopLevelCommentScopeNode(cur)) return false
+    for (const scopeId of enclosingCommentScopeIds(cur)) {
+      if (!receiverSlotIds.some(slotId => scopeId === `${rootScopeId}_${slotId}`)) return false
+    }
   }
   return true
+}
+
+/**
+ * Scope ids of every `<!--bf-scope:-->` range among `node`'s own siblings
+ * that `node` sits inside — the backward twin of
+ * `isTopLevelCommentScopeNode`'s depth walk, which answers only whether
+ * there is one. More than one when a fragment root's first root is itself
+ * a fragment-root child. Missing end markers leave a range open, as there.
+ */
+function enclosingCommentScopeIds(node: Node): string[] {
+  const ids: string[] = []
+  let closed = 0
+  for (let sib: Node | null = node.previousSibling; sib; sib = sib.previousSibling) {
+    if (sib.nodeType !== Node.COMMENT_NODE) continue
+    const value = (sib as Comment).nodeValue ?? ''
+    if (value.startsWith(BF_SCOPE_COMMENT_END_PREFIX)) {
+      closed++
+    } else if (value.startsWith(BF_SCOPE_COMMENT_PREFIX)) {
+      if (closed > 0) closed--
+      else ids.push(parseCommentScopeId(value, BF_SCOPE_COMMENT_PREFIX)!)
+    }
+  }
+  return ids
 }
 
 /** Selector form `[bf="^sN"]` — a compiler slot lookup for a parent-owned

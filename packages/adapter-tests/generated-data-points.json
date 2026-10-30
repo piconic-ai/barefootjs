@@ -9837,6 +9837,14 @@
       }
     }
   ],
+  "omitted-optional-row-field-plus": [
+    {
+      "name": "gen:opts:empty",
+      "props": {
+        "opts": []
+      }
+    }
+  ],
   "optional-chain-computed-condition": [
     {
       "name": "gen:items:empty",

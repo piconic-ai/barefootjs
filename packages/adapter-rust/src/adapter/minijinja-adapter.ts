@@ -1166,7 +1166,7 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
       new JinjaFilterEmitter(
         param,
         localVarMap,
-        (n, property) => this._isStringValueName(n, property, predicateScope),
+        (n, property, path) => this._isStringValueName(n, property, path, predicateScope),
         // A nested callback method inside the predicate has no Jinja scalar
         // form — surface BF101 (#2038) instead of silently degrading it to
         // its receiver.
@@ -1240,7 +1240,7 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
       _staticArrayElement: (o, k) => lookupStaticArrayElement(o, k, this.localConstants, n => this.scope.isBound(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),
-      _isStringValueName: (name, property) => this._isStringValueName(name, property),
+      _isStringValueName: (name, property, path) => this._isStringValueName(name, property, path),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderJinjaFilterExprPublic: (e, p) => this._renderJinjaFilterExprPublic(e, p),
     }
@@ -1366,8 +1366,8 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
    *  `!=` compare strings and numbers correctly, so equality does not
    *  consume it). A loop row or callback binding of the same name shadows
    *  the outer typing. */
-  private _isStringValueName(name: string, componentProperty = false, scope = this.scope): boolean {
-    return scope.isStringValueName(name, n => this.stringValueNames.has(n), componentProperty)
+  private _isStringValueName(name: string, componentProperty = false, path: readonly string[] = [], scope = this.scope): boolean {
+    return this.isStringValueNameAt(name, componentProperty, path, scope)
   }
 
   /**

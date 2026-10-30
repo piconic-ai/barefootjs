@@ -235,7 +235,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     this.booleanCarrierNames = collectBooleanCarrierNames(ir.metadata)
     this.numberSeedNames = numberValuedSeedNames(
       ir.metadata.ssrSeedPlan ?? computeSsrSeedPlan(ir.metadata),
-      (n, c) => this._isStringValueName(n, c),
+      (n, c, path) => this._isStringValueName(n, c, path),
       (n, c) => c ? this.numberValueNames.props.has(n) : this.numberValueNames.names.has(n),
     )
     // Before any body rendering: memo reads in the body must use the same
@@ -1187,12 +1187,14 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
   ): string {
     // Arithmetic over a prop whose nil the type cannot classify (#3700).
     this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
+    // The predicate's own param and locals shadow an outer string-typed name.
+    const predicateScope = this.scope.enterCallback([param, ...localVarMap.keys()])
     return emitParsedExpr(
       expr,
       new XslateFilterEmitter(
         param,
         localVarMap,
-        (n, property) => this._isStringValueName(n, property),
+        (n, property, path) => this._isStringValueName(n, property, path, predicateScope),
         // A nested callback method inside the predicate has no Kolon scalar
         // form — surface BF101 (#2038) instead of silently degrading it to
         // its receiver.
@@ -1256,7 +1258,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
       _isRootPropsObject: (expr) => isRootPropsObject(expr, n => this.scope.isBound(n)),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _staticArrayElement: (o, k) => lookupStaticArrayElement(o, k, this.localConstants, n => this.scope.isBound(n)),
-      _isStringValueName: (name, property) => this._isStringValueName(name, property),
+      _isStringValueName: (name, property, path) => this._isStringValueName(name, property, path),
       _jsStringOutput: (parsed, kolon) => this.jsStringOutput(parsed, kolon),
       _isBooleanValueName: (name, property) => property ? !this.scope.shadowsPropsObject() && this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
       _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),
@@ -1374,7 +1376,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
    * `0` / `1` (#3783).
    */
   private jsStringOutput(parsed: ParsedExpr | null | undefined, kolon: string): string {
-    const isNumber = isNumberValuedExpr(parsed, (n, c) => this._isStringValueName(n, c), (n, c) => this._isNumberOutputName(n, c))
+    const isNumber = isNumberValuedExpr(parsed, (n, c, path) => this._isStringValueName(n, c, path), (n, c) => this._isNumberOutputName(n, c))
     return isNumber || mayYieldBooleanCarrier(parsed, (n, c) => this._isBooleanCarrierName(n, c))
       ? `$bf.string(${kolon})`
       : kolon
@@ -1396,8 +1398,8 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
 
   /** Whether `name` (a signal getter or prop) holds a string value, so an
    *  equality comparison against it should use Perl `eq`/`ne`. */
-  private _isStringValueName(name: string, componentProperty = false): boolean {
-    return this.scope.isStringValueName(name, n => this.stringValueNames.has(n), componentProperty)
+  private _isStringValueName(name: string, componentProperty = false, path: readonly string[] = [], scope = this.scope): boolean {
+    return this.isStringValueNameAt(name, componentProperty, path, scope)
   }
 
   /**

@@ -224,7 +224,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     this.booleanCarrierNames = collectBooleanCarrierNames(ir.metadata)
     this.numberSeedNames = numberValuedSeedNames(
       ir.metadata.ssrSeedPlan ?? computeSsrSeedPlan(ir.metadata),
-      (n, c) => this._isStringValueName(n, c),
+      (n, c, path) => this._isStringValueName(n, c, path),
       (n, c) => this._isNumberValueName(n, c),
     )
   }
@@ -1211,7 +1211,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       new MojoFilterEmitter(
         param,
         localVarMap,
-        (n, property) => this._isStringValueName(n, property),
+        (n, property, path) => this._isStringValueName(n, property, path, predicateScope),
         (message, reason) => this._recordExprBF101(message, reason),
         new Map(),
         paramVar,
@@ -1274,7 +1274,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       isRootPropsObject: (expr) => isRootPropsObject(expr, n => this.scope.isBound(n)),
       resolveStaticRecordLiteral: (o, k) => this.resolveStaticRecordLiteral(o, k),
       staticArrayElement: (o, k) => lookupStaticArrayElement(o, k, this.localConstants, n => this.scope.isBound(n)),
-      _isStringValueName: (name, property) => this._isStringValueName(name, property),
+      _isStringValueName: (name, property, path) => this._isStringValueName(name, property, path),
       _isBooleanValueName: (name, property) => property ? !this.scope.shadowsPropsObject() && this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
       _isNumberValueName: (name, property) => this._isNumberValueName(name, property),
       _jsStringOutput: (parsed, perl) => this.jsStringOutput(parsed, perl),
@@ -1390,7 +1390,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
    * `0` / `1` (#3783).
    */
   private jsStringOutput(parsed: ParsedExpr | null | undefined, perl: string): string {
-    const isNumber = isNumberValuedExpr(parsed, (n, c) => this._isStringValueName(n, c), (n, c) => this._isNumberOutputName(n, c))
+    const isNumber = isNumberValuedExpr(parsed, (n, c, path) => this._isStringValueName(n, c, path), (n, c) => this._isNumberOutputName(n, c))
     return isNumber || mayYieldBooleanCarrier(parsed, (n, c) => this._isBooleanCarrierName(n, c))
       ? `bf->string(${perl})`
       : perl
@@ -1412,8 +1412,8 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
 
   /** Whether `name` (a signal getter or prop) holds a string value, so an
    *  equality comparison against it should use Perl `eq`/`ne` (#1672). */
-  private _isStringValueName(name: string, componentProperty = false): boolean {
-    return this.scope.isStringValueName(name, n => this.stringValueNames.has(n), componentProperty)
+  private _isStringValueName(name: string, componentProperty = false, path: readonly string[] = [], scope = this.scope): boolean {
+    return this.isStringValueNameAt(name, componentProperty, path, scope)
   }
 
   /** Whether `name` (a getter, prop or const) is declared `number` here and

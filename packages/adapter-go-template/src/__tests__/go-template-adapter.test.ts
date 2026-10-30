@@ -7393,28 +7393,21 @@ export function Foo({ items }: { items: number[] }) {
     expect(template).toContain('{{range $_, $count := .Items}}<li data-key="{{bf_text .}}">')
   })
 
-  // Slice B's guard, by contrast, is the coarse #2212 trade-off (a flat,
-  // scope-blind `Set<string>` with the loop-bound name subtracted
-  // component-wide): a genuinely non-shadowed occurrence OUTSIDE the loop,
-  // whose name happens to be loop-bound elsewhere, also loses its
-  // string-typed classification and falls back to numeric `bf_add`. This is
-  // the accepted, already-documented residual (same as Blade's #2212
-  // comment) — the suppressed case is safe (numeric fallback, never
-  // silently-wrong string output), just imprecise.
-  test('slice B guard is coarse (accepted #2212 trade-off): a string prop shadowed elsewhere loses bf_concat_str even outside the loop', () => {
+  // Slice B (string typing) is scope-precise too since #3762: the shared
+  // `BindingScope` resolves `count` at the read, so the non-shadowed outer
+  // string prop concatenates while the loop's own `count` stays numeric.
+  test('slice B is scope-precise: a string prop shadowed elsewhere keeps bf_concat_str outside the loop', () => {
     const { template } = compileAndGenerate(`
 export function Foo({ count, arr }: { count: string; arr: number[] }) {
   return <div>
     <p>{1 + count}</p>
-    <ul>{arr.map((count) => <li key={count}>{count}</li>)}</ul>
+    <ul>{arr.map((count) => <li key={count}>{count + 1}</li>)}</ul>
   </div>
 }
 `)
-    // Coarse trade-off: falls back to numeric bf_add outside the loop too,
-    // even though this occurrence of `count` is the genuinely string-typed
-    // outer prop, not shadowed.
-    expect(template).toContain('bf_add 1 .Count')
-    expect(template).not.toContain('bf_concat_str')
+    expect(template).toContain('bf_concat_str 1 .Count')
+    expect(template).not.toContain('bf_add 1 .Count')
+    expect(template).toContain('bf_add . 1')
   })
 
   test('end-to-end via real `go run`: shadowed const/type resolution renders correct HTML', async () => {

@@ -6501,6 +6501,62 @@
           }
         }
       },
+      "omitted-optional-row-field-plus": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "omitted-optional-row-field-plus"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "omitted-optional-row-field-plus"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "omitted-optional-row-field-plus"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "omitted-optional-row-field-plus"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "omitted-optional-row-field-plus"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "omitted-optional-row-field-plus"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "omitted-optional-row-field-plus"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "omitted-optional-row-field-plus"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "omitted-optional-row-field-plus"
+          ]
+        }
+      },
       "opaque-local-accessor-call": {
         "blade": {
           "kind": "refusal",
@@ -8857,6 +8913,10 @@
         "description": "Arithmetic over an omitted destructured optional prop typed number | null",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-nullable-number-arithmetic-destructured.ts"
       },
+      "omitted-optional-row-field-plus": {
+        "description": "A + over an optional string row field renders undefined / NaN when the row omits it and…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-row-field-plus.ts"
+      },
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call.ts"
@@ -9956,6 +10016,27 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "omitted-optional-row-field-plus": {
+      "title": "A `+` over an optional string row field",
+      "kind": "silent",
+      "given": "a `+` in a `.map()` row whose operand is a row field declared optional and string (`id?: string`), read as `row.id` or destructured, over rows that omit the field and rows that have it",
+      "expected": "an omitted field reads `undefined` (`o.id + '!'` is `undefined!`, `o.id + 1` is `NaN`) and a present one concatenates (`o1`)",
+      "actual": "renders an omitted field as empty or `0` or throws at render time, and adds a present one as a number",
+      "fixtures": [
+        "omitted-optional-row-field-plus"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "opaque-local-accessor-call": {

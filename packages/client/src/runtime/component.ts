@@ -1276,11 +1276,18 @@ function hasDomElements(value: unknown): boolean {
  * Arrays may contain a mix of DOM elements and HTML strings.
  */
 function insertGetterChildren(element: HTMLElement, children: unknown): void {
-  if (children instanceof Element) {
+  // A `Node`, not only an `Element`: a fragment-root child built by a bare
+  // `createComponent(...)` (no `mountAt`, no row mount — the getter's own
+  // shape) comes back as a `DocumentFragment` carrying its
+  // `<!--bf-scope:-->` boundary comments and every root. An
+  // `Element`-only check dropped it whole, so a client-built row of
+  // `<Chip><Chip>…</Chip></Chip>` with a fragment-rooted `Chip` rendered
+  // its outer chip empty.
+  if (children instanceof Node) {
     element.appendChild(children)
   } else if (Array.isArray(children)) {
     for (const child of (children as unknown[]).flat()) {
-      if (child instanceof Element) {
+      if (child instanceof Node) {
         element.appendChild(child)
       } else if (typeof child === 'string' && child.length > 0) {
         element.appendChild(parseHTML(child.trim()))
