@@ -29,7 +29,7 @@ export function Kid(props: { xs: string[] }) {
   return <i title={props.xs[1]}>{props.xs[0]}|{props.xs.length}</i>
 }
 `,
-    './List': `
+    './List.tsx': `
 export function List({ items }: { items: string[] }) {
   return <ul>{items.map(item => <li key={item}>{item}</li>)}</ul>
 }
