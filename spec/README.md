@@ -17,6 +17,9 @@ normative documents for contributors and adapter authors; user-facing docs live 
 - [`dsl-adapter-shared-lowering.md`](./dsl-adapter-shared-lowering.md) — design note (#3426):
   which functions the eight DSL template adapters duplicate, which of them are one
   semantic decision spelled eight times, and the follow-up work to share them.
+- [`js-primitive-semantics.md`](./js-primitive-semantics.md) — design note (#3824): one
+  Phase-1 decision per JS primitive operation (native operator or runtime helper), the
+  shared helpers, and the vectors that pin them on every runtime.
 - [`callback-fidelity.md`](./callback-fidelity.md) — callback-body fidelity across backends.
 - [`template-helpers.md`](./template-helpers.md) — the language-independent, JS-normative
   spec for the pure template helpers every adapter ships.
