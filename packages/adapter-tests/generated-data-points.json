@@ -6278,6 +6278,68 @@
       }
     }
   ],
+  "local-const-literal-index": [
+    {
+      "name": "gen:on:true",
+      "props": {
+        "PS": [
+          "p0",
+          "p\"1"
+        ],
+        "RS": [
+          {
+            "id": "z",
+            "REC": {
+              "k": "row-rec"
+            }
+          }
+        ],
+        "on": true
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "PS": [
+          "p0",
+          "p\"1"
+        ],
+        "RS": [
+          {
+            "id": "z",
+            "REC": {
+              "k": "row-rec"
+            }
+          }
+        ],
+        "on": false
+      }
+    },
+    {
+      "name": "gen:PS:empty",
+      "props": {
+        "PS": [],
+        "RS": [
+          {
+            "id": "z",
+            "REC": {
+              "k": "row-rec"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:RS:empty",
+      "props": {
+        "PS": [
+          "p0",
+          "p\"1"
+        ],
+        "RS": []
+      }
+    }
+  ],
   "logical-and-absent-optional-attr": [
     {
       "name": "gen:on:true",

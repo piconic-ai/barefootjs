@@ -1,6 +1,8 @@
 import { describe, expect, test } from 'bun:test'
 import { lookupStaticArrayElement, lookupStaticRecordLiteral } from '../augment-inherited-props.ts'
 import { parseExpression } from '../expression-parser.ts'
+import { analyzeComponent } from '../analyzer.ts'
+import { buildMetadata } from '../compiler.ts'
 import type { ConstantInfo } from '../types.ts'
 
 const loc = { file: 'c.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } }
@@ -75,5 +77,95 @@ describe('lookupStaticArrayElement', () => {
     const rec = moduleConst('REC', `{ lf: 'r1' }`)
     expect(lookupStaticArrayElement('REC', 'lf', [rec], notShadowed)).toBeNull()
     expect(lookupStaticRecordLiteral('QS', '0', [QS], notShadowed)).toBeNull()
+  })
+})
+
+describe('resolveStaticConstBinding: a component-local literal const', () => {
+  const constantsOf = (source: string) => buildMetadata(analyzeComponent(source, 'c.tsx')).localConstants
+  const element = (source: string, key = '0') => lookupStaticArrayElement('QS', key, constantsOf(source), notShadowed)
+  const member = (source: string, key = 'k') => lookupStaticRecordLiteral('REC', key, constantsOf(source), notShadowed)
+
+  test('a component-local array or record const resolves like a module const', () => {
+    const source = `export function C() {
+  const QS = ['a', 'b']
+  const REC = { k: 'v', n: 3 }
+  return <p>{QS[0]}{REC.k}</p>
+}`
+    expect(element(source, '1')).toEqual(str('b'))
+    expect(element(source, 'length')).toEqual(num(2))
+    expect(member(source)).toEqual({ kind: 'string', text: 'v' })
+    expect(member(source, 'n')).toEqual({ kind: 'number', text: '3' })
+  })
+
+  test('a component-local const shadows the module const of the same name', () => {
+    const source = `const QS = ['module']
+const REC = { k: 'module' }
+export function C() {
+  const QS = ['local']
+  const REC = { k: 'local' }
+  return <p>{QS[0]}{REC.k}</p>
+}`
+    expect(element(source)).toEqual(str('local'))
+    expect(member(source)).toEqual({ kind: 'string', text: 'local' })
+  })
+
+  test('a loop binding of the name keeps the read live', () => {
+    const constants = constantsOf(`export function C() {
+  const QS = ['a']
+  return <p>{QS[0]}</p>
+}`)
+    expect(lookupStaticArrayElement('QS', '0', constants, name => name === 'QS')).toBeNull()
+  })
+
+  test('a const the component changes during render is not resolved, local or module', () => {
+    expect(element(`export function C() {
+  const QS = ['a']
+  QS.push('b')
+  return <p>{QS[1]}</p>
+}`, '1')).toBeNull()
+    expect(member(`export function C() {
+  const REC = { k: 'v' }
+  REC.k = 'w'
+  return <p>{REC.k}</p>
+}`)).toBeNull()
+    expect(member(`const REC = { k: 'v' }
+export function C() {
+  REC.k = 'w'
+  return <p>{REC.k}</p>
+}`)).toBeNull()
+  })
+
+  test('a let is not resolved', () => {
+    expect(element(`export function C() {
+  let QS = ['a']
+  return <p>{QS[0]}</p>
+}`)).toBeNull()
+  })
+
+  test("an early-return branch's own const does not leak into the main return", () => {
+    const source = `export function C({ on }: { on: boolean }) {
+  if (on) {
+    const QS = ['inner']
+    return <p>{QS[0]}</p>
+  }
+  const QS = ['outer']
+  return <p>{QS[0]}</p>
+}`
+    expect(element(source)).toEqual(str('outer'))
+  })
+
+  test('each component of a file reads its own declaration', () => {
+    const source = `export function A() {
+  const QS = ['a']
+  return <p>{QS[0]}</p>
+}
+export function B() {
+  const QS = ['b']
+  return <p>{QS[0]}</p>
+}`
+    const read = (name: string) =>
+      lookupStaticArrayElement('QS', '0', buildMetadata(analyzeComponent(source, 'c.tsx', name)).localConstants, notShadowed)
+    expect(read('A')).toEqual(str('a'))
+    expect(read('B')).toEqual(str('b'))
   })
 })
