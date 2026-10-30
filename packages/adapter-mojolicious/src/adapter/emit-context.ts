@@ -68,7 +68,7 @@ export interface MojoEmitContext {
   resolveStaticRecordLiteral(objectName: string, key: string): string | null
 
   /** Whether a getter/prop name resolves to a string-typed SSR value. */
-  _isStringValueName(name: string, componentProperty?: boolean): boolean
+  _isStringValueName(name: string, componentProperty?: boolean, path?: readonly string[]): boolean
   /** Whether a name is declared `boolean` at this position (#3443). */
   _isBooleanValueName(name: string, componentProperty?: boolean): boolean
   /** Whether a name is declared `number` at this position (`emitPerlEquality`). */

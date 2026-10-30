@@ -39,6 +39,7 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   type CallbackLoweringOptions,
   type PredicateMethod,
   type ArithmeticHelper,
+  type StringNameTest,
 } from '@barefootjs/jsx'
 
 import type { XslateEmitContext } from '../emit-context.ts'
@@ -129,7 +130,7 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
   // [ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX]`), only plain type annotations.
   private readonly param: string
   private readonly localVarMap: Map<string, string>
-  private readonly isStringName: (n: string, componentProperty?: boolean) => boolean
+  private readonly isStringName: StringNameTest
   // Records a BF101 for predicate shapes this emitter can only degrade
   // (#2038). Optional so emitter construction stays possible without an
   // adapter; a missing hook keeps the old silent-degrade emit.
@@ -151,7 +152,7 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
   constructor(
     param: string,
     localVarMap: Map<string, string>,
-    isStringName: (n: string, componentProperty?: boolean) => boolean = () => false,
+    isStringName: StringNameTest = () => false,
     onUnsupported?: (message: string, reason?: string) => void,
     memoKolonName: (name: string) => string = name => name,
     rowLocalName: (name: string) => string = name => name,
@@ -549,7 +550,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     // (#2176). Lower to Kolon's `~` concat operator. The adapter's
     // string-value registry catches getter/prop operands with no literal
     // present (`firstName() + lastName()`).
-    if (isStringConcatBinary(op, left, right, (n, property) => this.ctx._isStringValueName(n, property))) {
+    if (isStringConcatBinary(op, left, right, (n, property, path) => this.ctx._isStringValueName(n, property, path))) {
       // A number or boolean operand is stringified as JS does, not as Perl's `~` does (#3711, #3783).
       return `${this.ctx._jsStringOutput(left, l)} ~ ${this.ctx._jsStringOutput(right, r)}`
     }

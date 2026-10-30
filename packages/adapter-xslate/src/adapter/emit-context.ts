@@ -68,7 +68,7 @@ export interface XslateEmitContext {
   _resolveStaticRecordLiteral(objectName: string, key: string): string | null
 
   /** Whether a getter/prop name resolves to a string-typed SSR value. */
-  _isStringValueName(name: string, componentProperty?: boolean): boolean
+  _isStringValueName(name: string, componentProperty?: boolean, path?: readonly string[]): boolean
   /** `kolon` wrapped in `$bf.string` when `parsed` yields a number, which JS
    *  stringifies with `Number::toString` (#3711), or may yield a decoded
    *  JSON boolean, which Perl prints as `0` / `1` (#3783). */

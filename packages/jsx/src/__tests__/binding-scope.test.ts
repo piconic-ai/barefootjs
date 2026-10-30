@@ -265,3 +265,42 @@ describe('enterAliases (#3402)', () => {
     expect(BindingScope.EMPTY.enterAliases(new Map([['a', 'b']]))).toBe(BindingScope.EMPTY)
   })
 })
+
+describe('row field string typing (#3762)', () => {
+  const fields = { Row: [{ name: 'id', type: { primitive: 'string' } }, { name: 'n', type: { primitive: 'number' } }] }
+  const named = (name: string) => fields[name as keyof typeof fields]
+  const rowType = { raw: 'Row' }
+
+  test('a row read resolves its field through the named type', () => {
+    const scope = BindingScope.EMPTY.enterLoopRow({ param: 'r', rowType })
+    expect(scope.isStringValueName('r', () => true, false, ['id'], named)).toBe(true)
+    expect(scope.isStringValueName('r', () => true, false, ['n'], named)).toBe(false)
+    expect(scope.isStringValueName('r', () => true, false, ['id'])).toBe(false)
+    expect(scope.isStringValueName('r', () => true)).toBe(false)
+  })
+
+  test('a destructured binding resolves its own path', () => {
+    const scope = BindingScope.EMPTY.enterLoopRow({
+      param: '{ id, n }',
+      rowType,
+      paramBindings: [
+        { name: 'id', segments: [{ kind: 'field', key: 'id', isIdent: true }] },
+        { name: 'n', segments: [{ kind: 'field', key: 'n', isIdent: true }] },
+      ],
+    })
+    expect(scope.isStringValueName('id', () => false, false, [], named)).toBe(true)
+    expect(scope.isStringValueName('n', () => true, false, [], named)).toBe(false)
+  })
+
+  test('an outer name types itself, not its members; a shadowing props row types props.<field>', () => {
+    expect(BindingScope.EMPTY.isStringValueName('label', () => true, false, ['length'])).toBe(false)
+    const props = BindingScope.EMPTY.enterLoopRow({ param: 'props', rowType })
+    expect(props.isStringValueName('id', () => false, true, [], named)).toBe(true)
+    expect(props.isStringValueName('n', () => true, true, [], named)).toBe(false)
+  })
+
+  test('a callback param shadows an outer string name', () => {
+    const scope = BindingScope.EMPTY.enterCallback(['label'])
+    expect(scope.isStringValueName('label', () => true)).toBe(false)
+  })
+})

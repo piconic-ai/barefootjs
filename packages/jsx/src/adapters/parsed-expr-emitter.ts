@@ -233,6 +233,24 @@ export interface ParsedExprEmitter {
 }
 
 /**
+ * The adapter's string typing of a name at the emission site (its
+ * `BindingScope`): `componentProperty` when the read is `props.<name>`,
+ * `path` when it is the member chain `name.<path…>` (`row.id`).
+ */
+export type StringNameTest = (name: string, componentProperty?: boolean, path?: readonly string[]) => boolean
+
+/** `row.id.label` as its root name and field path; null for any other shape. */
+function memberChain(expr: Extract<ParsedExpr, { kind: 'member' }>): { root: string; path: string[] } | null {
+  const path: string[] = []
+  let current: ParsedExpr = expr
+  while (current.kind === 'member' && !current.computed) {
+    path.unshift(current.property)
+    current = current.object
+  }
+  return current.kind === 'identifier' ? { root: current.name, path } : null
+}
+
+/**
  * Whether an operand is string-typed, as far as the ParsedExpr tree can
  * tell: a string literal, a template literal, a zero-arg getter call /
  * `props.x` member whose name the adapter knows to be string-valued
@@ -244,7 +262,7 @@ export interface ParsedExprEmitter {
  * Consumed by `===`/`!==` lowering on backends whose `==` is numeric
  * (Perl `eq`/`ne`) and by `isStringConcatBinary` below.
  */
-export function isStringTypedOperand(expr: ParsedExpr, isStringName: (n: string, componentProperty?: boolean) => boolean): boolean {
+export function isStringTypedOperand(expr: ParsedExpr, isStringName: StringNameTest): boolean {
   if (expr.kind === 'literal' && expr.literalType === 'string') return true
   if (expr.kind === 'template-literal') return true
   if (expr.kind === 'call' && expr.callee.kind === 'identifier' && expr.args.length === 0) {
@@ -252,6 +270,14 @@ export function isStringTypedOperand(expr: ParsedExpr, isStringName: (n: string,
   }
   if (expr.kind === 'member' && expr.object.kind === 'identifier' && expr.object.name === 'props') {
     return isStringName(expr.property, true)
+  }
+  // A field read (`row.id`, `row.meta.label`): string-typed when the
+  // binding's declared type says the field is (#3762). A member of a
+  // string-typed name is never itself a string (`label.length`), which also
+  // keeps a test that types the name alone from typing its members.
+  if (expr.kind === 'member') {
+    const chain = memberChain(expr)
+    return chain !== null && !isStringName(chain.root) && isStringName(chain.root, false, chain.path)
   }
   // A bare identifier (#2212): a destructured prop param or a same-file
   // local const, string-typed per the caller's `isStringName` set — each
@@ -282,7 +308,7 @@ export function isStringConcatBinary(
   op: string,
   left: ParsedExpr,
   right: ParsedExpr,
-  isStringName: (n: string, componentProperty?: boolean) => boolean,
+  isStringName: StringNameTest,
 ): boolean {
   return op === '+' && (isStringTypedOperand(left, isStringName) || isStringTypedOperand(right, isStringName))
 }
@@ -296,7 +322,7 @@ export function isStringConcatBinary(
  */
 export function isNumericArithmeticResult(
   expr: ParsedExpr | null | undefined,
-  isStringName: (n: string, componentProperty?: boolean) => boolean,
+  isStringName: StringNameTest,
 ): boolean {
   if (!expr) return false
   if (expr.kind === 'unary') return expr.op === '-'

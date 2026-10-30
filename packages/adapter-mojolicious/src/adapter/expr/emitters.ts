@@ -40,6 +40,7 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   type CallbackLoweringOptions,
   type PredicateMethod,
   type ArithmeticHelper,
+  type StringNameTest,
 } from '@barefootjs/jsx'
 
 import type { MojoEmitContext } from '../emit-context.ts'
@@ -200,7 +201,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   // Reports whether a getter/prop name is string-typed, so `===`/`!==`
   // against it lowers to `eq`/`ne` (#1672). Defaults to "never" for callers
   // that don't thread it through.
-  private readonly isStringName: (n: string, componentProperty?: boolean) => boolean
+  private readonly isStringName: StringNameTest
   // Records a BF101 for nested callback shapes this emitter can only
   // degrade — `find*` and the non-predicate methods (#2038). Optional so
   // emitter construction stays possible without an adapter; a missing hook
@@ -222,7 +223,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   constructor(
     param: string,
     localVarMap: Map<string, string>,
-    isStringName: (n: string, componentProperty?: boolean) => boolean = () => false,
+    isStringName: StringNameTest = () => false,
     onUnsupported?: (message: string, reason?: string) => void,
     enclosingParams: ReadonlyMap<string, string> = new Map(),
     paramVar = `$${param}`,
@@ -548,7 +549,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    return emitIndexAccessPerl(object, index, emit, (n: string, property?: boolean) => this.ctx._isStringValueName(n, property))
+    return emitIndexAccessPerl(object, index, emit, (n: string, property?: boolean, path?: readonly string[]) => this.ctx._isStringValueName(n, property, path))
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
@@ -655,7 +656,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
-    const lookupEquality = emitLookupLiteralEquality(op, left, right, emit, (n: string, property?: boolean) => this.ctx._isStringValueName(n, property))
+    const lookupEquality = emitLookupLiteralEquality(op, left, right, emit, (n: string, property?: boolean, path?: readonly string[]) => this.ctx._isStringValueName(n, property, path))
     if (lookupEquality !== null) return lookupEquality
     const nullishEquality = emitNullishEquality(op, left, right, emit)
     if (nullishEquality !== null) return nullishEquality
@@ -665,7 +666,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     const l = this.coerceUndefinedOperand(op, left, right, groupBinaryOperand(left, emit(left)))
     const r = this.coerceUndefinedOperand(op, right, left, groupBinaryOperand(right, emit(right)))
     const equality = emitPerlEquality(op, left, right, l, r, {
-      isStringName: (n: string, property?: boolean) => this.ctx._isStringValueName(n, property),
+      isStringName: (n: string, property?: boolean, path?: readonly string[]) => this.ctx._isStringValueName(n, property, path),
       isNumberName: (n: string, property?: boolean) => this.ctx._isNumberValueName(n, property),
       isBooleanName: (n: string, property?: boolean) => this.ctx._isBooleanValueName(n, property),
     })
@@ -673,7 +674,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     // JS `+` with a string-typed operand is CONCATENATION, not addition —
     // Perl's numeric `+` coerces `'Hello, ' + $name` to 0 (#2176). Lower
     // to Perl's `.` concat operator.
-    if (isStringConcatBinary(op, left, right, (n: string, property?: boolean) => this.ctx._isStringValueName(n, property))) {
+    if (isStringConcatBinary(op, left, right, (n: string, property?: boolean, path?: readonly string[]) => this.ctx._isStringValueName(n, property, path))) {
       // A number or boolean operand is stringified as JS does, not as Perl's `.` does (#3711, #3783).
       return `${this.ctx._jsStringOutput(left, l)} . ${this.ctx._jsStringOutput(right, r)}`
     }

@@ -131,6 +131,8 @@ export { JsxAdapter } from './adapters/jsx-adapter.ts'
 export type { JsxAdapterConfig } from './adapters/jsx-adapter.ts'
 export { rewriteImportsForTemplate, rewriteDynamicImportsInSource } from './adapters/template-imports.ts'
 export { emitParsedExpr, arithmeticHelper, groupBinaryOperand, groupUnaryOperand, groupObjectLiteralSegments, isStringTypedOperand, isStringConcatBinary, isNumericArithmeticResult } from './adapters/parsed-expr-emitter.ts'
+export type { StringNameTest } from './adapters/parsed-expr-emitter.ts'
+export { declaredValueTypes, loopRowType, type DeclaredValueTypes } from './adapters/loop-row-type.ts'
 export { collectNumberValueNames, isNumberValuedExpr, numberValuedSeedNames } from './adapters/number-value.ts'
 export { collectBooleanCarrierNames, mayYieldBooleanCarrier } from './adapters/boolean-carrier.ts'
 export type { ArithmeticHelper, ParsedExprEmitter, LoweringEmitter, HigherOrderMethod, ArrayMethod, SortMethod, LiteralType } from './adapters/parsed-expr-emitter.ts'
@@ -361,7 +363,7 @@ export { isLowerableLoopDestructure, isLowerableObjectRestDestructure } from './
 
 // Binding scope (#2482) — shared loop-bound-name resolution service
 export { BindingScope } from './scope/binding-scope.ts'
-export type { ScopeBindingSource, ScopeBinding, ScopeFrame, LoopBindingSource } from './scope/binding-scope.ts'
+export type { ScopeBindingSource, ScopeBinding, ScopeFrame, LoopBindingSource, LoopValueType, NamedTypeFields } from './scope/binding-scope.ts'
 export { isRootPropsObject, rootPropAliasNames, rootPropAliasesForLoop, rootPropReadName } from './scope/root-prop-alias.ts'
 
 // Debug analysis

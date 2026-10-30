@@ -16,7 +16,14 @@
  * "provably not a number" half.
  */
 
-import { isChildrenPropParam, type BindingScope, type ParsedExpr, type TypeInfo } from '@barefootjs/jsx'
+import {
+  isChildrenPropParam,
+  loopRowType as sharedLoopRowType,
+  type BindingScope,
+  type DeclaredValueTypes,
+  type ParsedExpr,
+  type TypeInfo,
+} from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { collapseLiteralUnion } from './type-codegen.ts'
@@ -106,7 +113,23 @@ export function loopRowType(
   // An `.entries()` / `Object.entries(…)` row is a tuple, not an element.
   if (loop.iterationShape !== undefined || loop.objectIteration) return null
   const type = loop.arrayParsed ? valueType(ctx, loop.arrayParsed, scope) : null
-  return type?.kind === 'array' ? type.elementType ?? null : null
+  if (type?.kind === 'array') return type.elementType ?? null
+  // A destructured prop whose field type Go leaves untyped (`rows: Row[]`
+  // where `Row` has a union field) still declares its element type (#3762).
+  const declared = sharedLoopRowType(goDeclaredValueTypes(ctx), loop, scope)
+  return declared ? declared as TypeInfo : null
+}
+
+/** The shared `DeclaredValueTypes` view of the component being compiled. */
+function goDeclaredValueTypes(ctx: GoEmitContext): DeclaredValueTypes {
+  const state = ctx.state
+  return {
+    propsParams: state.currentPropsParams,
+    signals: state.currentSignals,
+    memos: state.currentMemos,
+    propsObjectName: state.propsObjectName,
+    namedFields: name => state.currentTypeDefinitions.find(td => td.name === name)?.properties,
+  }
 }
 
 /**

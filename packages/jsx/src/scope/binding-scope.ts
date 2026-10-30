@@ -90,7 +90,23 @@ export interface LoopBindingSource {
 export interface LoopValueType {
   readonly primitive?: string
   readonly unionTypes?: readonly LoopValueType[]
+  /** A named type's name (`Row`), resolved through {@link NamedTypeFields}. */
+  readonly raw?: string
+  readonly properties?: readonly LoopValueField[]
+  readonly elementType?: LoopValueType
 }
+
+/** Structural pick of `PropertyInfo` (`packages/jsx/src/types.ts`). */
+export interface LoopValueField {
+  readonly name: string
+  readonly type: LoopValueType
+}
+
+/**
+ * The fields of a named type (`type Row = { … }`, an interface), by name;
+ * undefined when the component's file does not define it as an object type.
+ */
+export type NamedTypeFields = (name: string) => readonly LoopValueField[] | undefined
 
 /** Structural copy of `LoopBindingPathSegment` (`packages/jsx/src/types.ts`). */
 export type RowPathSegment =
@@ -100,6 +116,29 @@ export type RowPathSegment =
 function isStringLoopValue(type: LoopValueType): boolean {
   return type.primitive === 'string' ||
     (type.unionTypes !== undefined && type.unionTypes.length > 0 && type.unionTypes.every(isStringLoopValue))
+}
+
+/**
+ * The type at `segments` below `type`, through object types, named types
+ * (`namedFields`) and array elements; null when a step is not known.
+ */
+export function loopValueTypeAt(
+  type: LoopValueType,
+  segments: readonly RowPathSegment[],
+  namedFields: NamedTypeFields = () => undefined,
+): LoopValueType | null {
+  let current: LoopValueType | undefined = type
+  for (const segment of segments) {
+    if (!current) return null
+    if (segment.kind === 'index') {
+      current = current.elementType
+      continue
+    }
+    const fields: readonly LoopValueField[] | undefined =
+      current.properties ?? (current.raw !== undefined ? namedFields(current.raw) : undefined)
+    current = fields?.find(field => field.name === segment.key)?.type
+  }
+  return current ?? null
 }
 
 /**
@@ -144,8 +183,8 @@ export class BindingScope {
    *   `adapters/loop-bound-names.ts`'s `collectLoopBoundNames` adds BOTH
    *   `node.param` AND every `paramBindings[i].name` unconditionally
    *   (never skipping `param` in the destructured case) — a deliberately
-   *   coarser, over-inclusive collection used only to subtract names from
-   *   a flat string-typing Set (safe to over-exclude there). This method
+   *   coarser, over-inclusive collection for whole-component "may be
+   *   shadowed somewhere" checks (safe to over-exclude there). This method
    *   follows the precise `jsx-to-ir.ts` `ctx.loopParams` semantics, since
    *   that is the mechanism actually doing scope-shadowed name RESOLUTION
    *   (the behavior `BindingScope` replaces), not coarse exclusion.
@@ -227,13 +266,33 @@ export class BindingScope {
   /**
    * Resolve string typing at this position, respecting the nearest binding.
    * `componentProperty`: `name` is read as `props.<name>`, which is the
-   * component's prop only while no binding shadows `props`; a shadowing
-   * binding's member has no typing here.
+   * component's prop only while no binding shadows `props`; while one does,
+   * it is that binding's member. `path`: the read is the member chain
+   * `name.<path…>` (`row.id`). A loop row binding resolves the chain against
+   * its row type (`LoopBindingSource.rowType`), through `namedFields` for a
+   * named type; an outer name has typing for itself only.
    */
-  isStringValueName(name: string, outer: (name: string) => boolean, componentProperty = false): boolean {
-    if (componentProperty) return !this.shadowsPropsObject() && outer(name)
+  isStringValueName(
+    name: string,
+    outer: (name: string) => boolean,
+    componentProperty = false,
+    path: readonly string[] = [],
+    namedFields?: NamedTypeFields,
+  ): boolean {
+    if (componentProperty) {
+      if (!this.shadowsPropsObject()) return path.length === 0 && outer(name)
+      // `props.<name>` reads the shadowing binding's member.
+      return this.isStringValueName(PROPS_OBJECT_IDENTIFIER, outer, false, [name, ...path], namedFields)
+    }
     const hit = this.lookup(name)
-    return hit ? hit.binding.stringValue === true : outer(name)
+    // An outer name's typing covers the name itself, not a member of it.
+    if (!hit) return path.length === 0 && outer(name)
+    const { stringValue, row } = hit.binding
+    if (path.length === 0 && stringValue !== undefined) return stringValue
+    if (!row) return false
+    const segments = [...row.segments, ...path.map(key => ({ kind: 'field' as const, key, isIdent: true }))]
+    const type = loopValueTypeAt(row.itemType, segments, namedFields)
+    return type !== null && isStringLoopValue(type)
   }
 
   /** Whether any frame is a loop row: the position sits inside a `.map()` row body. */

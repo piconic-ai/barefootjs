@@ -5262,8 +5262,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     rightExpr: ParsedExpr,
     leftRendered: string,
     rightRendered: string,
+    callbackParams: readonly string[] = [],
   ): string {
-    if (isStringConcatBinary('+', leftExpr, rightExpr, (n, property) => this._isStringValueName(n, property))) {
+    const scope = callbackParams.length > 0 ? this.scope.enterCallback(callbackParams) : this.scope
+    if (isStringConcatBinary('+', leftExpr, rightExpr, (n, property, path) => this._isStringValueName(n, property, path, scope))) {
       return `bf_concat_str ${leftRendered} ${rightRendered}`
     }
     return `bf_add ${leftRendered} ${rightRendered}`
@@ -5271,9 +5273,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /** Whether `name` (a signal getter or prop) holds a string value — drives
    *  `isStringConcatBinary`'s string-vs-numeric `+` decision (#2168
-   *  string-concat-plus). */
-  private _isStringValueName(name: string, componentProperty = false): boolean {
-    return this.scope.isStringValueName(name, n => this.state.stringValueNames.has(n), componentProperty)
+   *  string-concat-plus). A loop binding shadows the outer typing, and a row
+   *  field read (`path`: `row.id`) takes the row type's field type (#3762). */
+  private _isStringValueName(name: string, componentProperty = false, path: readonly string[] = [], scope = this.scope): boolean {
+    return scope.isStringValueName(
+      name,
+      n => this.state.stringValueNames.has(n),
+      componentProperty,
+      path,
+      typeName => this.state.currentTypeDefinitions.find(td => td.name === typeName)?.properties,
+    )
   }
 
   /**
@@ -6994,7 +7003,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     renderOptionalMember: (object, property) => this.renderOptionalMember(object, property),
     higherOrderShapeOf: (node) => this.higherOrderShapeOf(node),
     renderFilterLengthExpr: (filterExpr, renderArray) => this.renderFilterLengthExpr(filterExpr, renderArray),
-    emitPlus: (leftExpr, rightExpr, leftRendered, rightRendered) => this._emitPlus(leftExpr, rightExpr, leftRendered, rightRendered),
+    emitPlus: (leftExpr, rightExpr, leftRendered, rightRendered, callbackParams) =>
+      this._emitPlus(leftExpr, rightExpr, leftRendered, rightRendered, callbackParams),
     resolveLiteralConstAsGo: (name) => this.resolveLiteralConstAsGo(name),
     isCurrentLoopItem: (name) => this.isCurrentLoopItem(name),
     currentLoopItemRef: () => this.currentLoopItemRef(),

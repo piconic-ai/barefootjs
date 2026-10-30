@@ -1,7 +1,15 @@
 /**
  * Every name a `.map()`/`.filter()` loop callback binds as its item or
  * index parameter, anywhere in a component's IR tree (#2212 review
- * finding). `isStringTypedOperand`'s identifier arm resolves a bare
+ * finding).
+ *
+ * The string-typing use described below is retired: every template adapter
+ * now resolves a name's string typing at the read through the shared
+ * `BindingScope` (#3762), and no longer subtracts this set. The remaining
+ * callers use it as a whole-component "may be shadowed somewhere" set
+ * (root prop aliases, Go's static loop sources, Xslate's memo seeds).
+ *
+ * Original rationale: `isStringTypedOperand`'s identifier arm resolves a bare
  * identifier against `collectStringValueNames`'s flat, scope-BLIND
  * `Set<string>` — so a loop callback whose param happens to reuse a
  * string prop's name (`items.map((name) => ... 1 + name ...)`, where the

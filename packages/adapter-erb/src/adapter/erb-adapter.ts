@@ -1365,7 +1365,11 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
         localVarMap,
         n => this.isLoopBoundName(n),
         // The predicate's own param shadows an outer string-typed name.
-        { scope: this.scope.enterCallback([param]), isStringValueName: n => this.stringValueNames.has(n) },
+        {
+          scope: this.scope.enterCallback([param]),
+          isStringValueName: n => this.stringValueNames.has(n),
+          namedFields: this.declaredTypes?.namedFields,
+        },
         (message, reason) => this._recordExprBF101(message, reason),
         renderParamAs,
       ),
@@ -1423,7 +1427,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       resolveLiteralConst: (name) => this.resolveLiteralConst(name),
       resolveStaticRecordLiteral: (o, k) => this.resolveStaticRecordLiteral(o, k),
       isLoopBoundName: (name) => this.isLoopBoundName(name),
-      _isStringValueName: (name, property) => this._isStringValueName(name, property),
+      _isStringValueName: (name, property, path) => this._isStringValueName(name, property, path),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
@@ -1526,8 +1530,8 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
    *  current binding scope — gates index-access Hash-vs-Array lowering (see
    *  `expr/operand.ts`) and `+` string concatenation. A loop row or callback
    *  binding of the same name shadows the outer typing. */
-  private _isStringValueName(name: string, componentProperty = false): boolean {
-    return this.scope.isStringValueName(name, n => this.stringValueNames.has(n), componentProperty)
+  private _isStringValueName(name: string, componentProperty = false, path: readonly string[] = [], scope = this.scope): boolean {
+    return this.isStringValueNameAt(name, componentProperty, path, scope)
   }
 
   /**

@@ -89,6 +89,7 @@ import {
   isRootPropsObject,
   unloweredCallRefusal,
   type CallbackLoweringOptions,
+  type StringNameTest,
 } from '@barefootjs/jsx'
 
 import type { TwigEmitContext } from '../emit-context.ts'
@@ -156,7 +157,7 @@ function flattenPropsMember(object: ParsedExpr, property: string, isBound: (name
 function concatOperand(
   operand: ParsedExpr,
   emitted: string,
-  isStringName: (n: string, componentProperty?: boolean) => boolean,
+  isStringName: StringNameTest,
 ): string {
   return isStringTypedOperand(operand, isStringName) ? emitted : `bf.string(${emitted})`
 }
@@ -211,7 +212,7 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
   // [ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX]`), only plain type annotations.
   private readonly param: string
   private readonly localVarMap: Map<string, string>
-  private readonly isStringName: (n: string, componentProperty?: boolean) => boolean
+  private readonly isStringName: StringNameTest
   // Records a BF101 for predicate shapes this emitter can only degrade
   // (#2038). Optional so emitter construction stays possible without an
   // adapter; a missing hook keeps the old silent-degrade emit.
@@ -222,7 +223,7 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
   constructor(
     param: string,
     localVarMap: Map<string, string>,
-    isStringName: (n: string, componentProperty?: boolean) => boolean = () => false,
+    isStringName: StringNameTest = () => false,
     onUnsupported?: (message: string, reason?: string) => void,
     isOuterBound: (name: string) => boolean = () => false,
   ) {
@@ -630,7 +631,7 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     // non-numeric strings, #2176). Lower to Twig's `~` concat operator.
     // The adapter's string-value registry catches getter/prop operands
     // with no literal present (`firstName() + lastName()`).
-    const isStringName = (n: string, property?: boolean) => this.ctx._isStringValueName(n, property)
+    const isStringName = (n: string, property?: boolean, path?: readonly string[]) => this.ctx._isStringValueName(n, property, path)
     if (isStringConcatBinary(op, left, right, isStringName)) {
       return `${concatOperand(left, l, isStringName)} ~ ${concatOperand(right, r, isStringName)}`
     }

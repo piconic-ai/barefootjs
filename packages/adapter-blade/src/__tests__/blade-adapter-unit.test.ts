@@ -467,7 +467,9 @@ function Widget({ values }: { values: number[] }) {
   </div>
 }
 `)
-    expect(template).toContain("1 + 'x'")
+    // Outside the loop `label` is the string const: JS `1 + 'x'` is `"1x"`
+    // (#3762). Inside, the numeric row shadows it.
+    expect(template).toContain("$bf->string(1) . 'x'")
     expect(template).toContain('2 + $label')
   })
 })
@@ -785,9 +787,9 @@ export function ConcatRenamedProp(props: { fallbackLabel: string }) {
   )
 }
 `)
-    // The row field is not string-typed to the shared classifier, so it
-    // goes through `$bf->string` (#3698); the operator is still `.`.
-    expect(result.template).toContain("$bf->string(data_get($t, 'label')) . $fallbackLabel")
+    // The row field is declared `string` on the row type (#3762).
+    expect(result.template).toContain("data_get($t, 'label') . $fallbackLabel")
+    expect(result.template).not.toContain("$bf->string(data_get($t, 'label'))")
   })
 })
 

@@ -14418,6 +14418,30 @@
         "text"
       ]
     },
+    "string-typed-binding-plus-concat": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:!==",
+        "binary:+",
+        "binary:>",
+        "literal:null",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "style-3-signals": {
       "kinds": [
         "call",

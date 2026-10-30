@@ -7,7 +7,7 @@
  * function over `ir.metadata`; no adapter instance state.
  */
 
-import { collectLoopBoundNames, resolveBodyDestructuredPropAliases, type ComponentIR, type TypeInfo } from '@barefootjs/jsx'
+import { resolveBodyDestructuredPropAliases, type ComponentIR, type TypeInfo } from '@barefootjs/jsx'
 import type { JsSourceText } from '@barefootjs/jsx'
 
 /** True when `type` is the `string` primitive. */
@@ -32,24 +32,13 @@ function isBareStringLiteral(initialValue: JsSourceText | undefined): boolean {
  * concatenation rather than numeric addition (Go's `html/template` has no
  * native `+` at all; `binary()` always emits a runtime call, `bf_add` for
  * addition or `bf_concat_str` for concatenation — see
- * `go-template-adapter.ts`'s `binary()`). Local consts matter for exactly
- * the shadowing shape this exclusion exists for: with a loop-bound `label`
- * subtracted, an outer `{label + suffix}` (where `suffix = '!'`) must
- * still classify as string concat via its OTHER operand, or it would fall
- * back to `bf_add` and render `0`.
+ * `go-template-adapter.ts`'s `binary()`). A local const counts the same
+ * way: `{label + suffix}` (where `suffix = '!'`) classifies as string
+ * concat through either operand, where `bf_add` would render `0`.
  *
- * Excludes any name bound as a `.map()`/`.filter()` loop callback's item or
- * index parameter ANYWHERE in the component (#2212, ported here for #2236):
- * this lookup is a flat, scope-blind `Set<string>` with no notion of a loop
- * param shadowing an outer string-typed binding of the same name
- * (`values.map((label) => 1 + label)` inside a component that also has a
- * string `label` prop) — left unguarded, that shadowed `label` would be
- * misdetected as string-typed and `1 + label` would silently lower to
- * `bf_concat_str` instead of staying numeric `bf_add`. Subtracting loop-bound
- * names is coarse (it also suppresses a genuinely non-shadowed same-named
- * string elsewhere in the component) but safe: the suppressed case just
- * falls back to today's numeric `bf_add` — the same, already-accepted
- * residual as an unresolvable operand — never silently-wrong output.
+ * The set is scope-blind on purpose: the adapter reads it through the
+ * shared `BindingScope` (`isStringValueName`), where a loop row, filter
+ * predicate or preamble binding of the same name takes precedence.
  *
  * A bare-props-form component's BODY-destructured, RENAMED prop (`const {
  * fallbackLabel: skipLabel } = props`, the #2788 alias family) has no
@@ -85,6 +74,5 @@ export function collectStringValueNames(ir: ComponentIR): Set<string> {
       names.add(c.name)
     }
   }
-  for (const bound of collectLoopBoundNames(ir)) names.delete(bound)
   return names
 }

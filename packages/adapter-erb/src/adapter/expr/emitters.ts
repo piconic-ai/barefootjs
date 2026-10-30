@@ -62,6 +62,8 @@ import {
   type CallbackLoweringOptions,
   type PredicateMethod,
   BindingScope,
+  type StringNameTest,
+  type NamedTypeFields,
 } from '@barefootjs/jsx'
 
 import type { ErbEmitContext } from '../emit-context.ts'
@@ -94,6 +96,8 @@ const PREDICATE_METHODS: ReadonlySet<string> = new Set([
 export interface ErbStringTyping {
   readonly scope: BindingScope
   readonly isStringValueName: (name: string) => boolean
+  /** A named row type's fields, for a row field read (`row.id`). */
+  readonly namedFields?: NamedTypeFields
 }
 
 const NO_STRING_TYPING: ErbStringTyping = { scope: BindingScope.EMPTY, isStringValueName: () => false }
@@ -109,7 +113,7 @@ const NO_STRING_TYPING: ErbStringTyping = { scope: BindingScope.EMPTY, isStringV
 function concatOperand(
   operand: ParsedExpr,
   emitted: string,
-  isStringName: (n: string, componentProperty?: boolean) => boolean,
+  isStringName: StringNameTest,
 ): string {
   return isStringTypedOperand(operand, isStringName) ? emitted : `bf.string(${emitted})`
 }
@@ -219,8 +223,8 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     this.outerLocals = outerLocals
   }
 
-  private readonly isStringName = (n: string, componentProperty?: boolean): boolean =>
-    this.stringTyping.scope.isStringValueName(n, this.stringTyping.isStringValueName, componentProperty)
+  private readonly isStringName: StringNameTest = (n, componentProperty, path) =>
+    this.stringTyping.scope.isStringValueName(n, this.stringTyping.isStringValueName, componentProperty, path, this.stringTyping.namedFields)
 
   identifier(name: string): string {
     if (name === this.param) return this.renderParamAs
@@ -654,7 +658,7 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     // JS `+` with a string-typed operand is concatenation; Ruby's `+` raises
     // on a String plus a number, so the other operand goes through
     // `bf.string`.
-    const isStringName = (n: string, property?: boolean) => this.ctx._isStringValueName(n, property)
+    const isStringName = (n: string, property?: boolean, path?: readonly string[]) => this.ctx._isStringValueName(n, property, path)
     if (isStringConcatBinary(op, left, right, isStringName)) {
       return `(${concatOperand(left, l, isStringName)} + ${concatOperand(right, r, isStringName)})`
     }
