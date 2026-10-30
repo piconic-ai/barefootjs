@@ -150,7 +150,7 @@ export {
   isBooleanResultExpr,
   isBooleanResultParsed,
   isExplicitStringCall,
-  stringifyBooleanTernaryBranches,
+  stringifyBooleanBranches,
 } from './adapters/boolean-result.ts'
 export { isBareStringLiteral, isLiteralIndex, isStringTypeInfo } from './adapters/literal-value.ts'
 export { collectBooleanTypedProps, collectNullableOptionalProps, isBooleanTypedPropRef } from './adapters/prop-classes.ts'
@@ -226,6 +226,8 @@ export {
   collectAbsentPropSeedReads,
   collectNullableSignalGetters,
   collectNullishAttrContext,
+  nullablePropsYieldedBy,
+  isNeverNullishOperand,
   isNullableSignal,
   isNullishLiteral,
   NULL_COERCING_ARITHMETIC_OPS,

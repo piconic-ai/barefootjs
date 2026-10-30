@@ -87,7 +87,7 @@ import {
   isOpaqueLocalAccessorName,
   mayYieldBooleanCarrier,
   numberValuedSeedNames,
-  stringifyBooleanTernaryBranches,
+  stringifyBooleanBranches,
 } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, escapeHtml } from '@barefootjs/shared'
 
@@ -1053,7 +1053,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
           // A mixed boolean / string branch renders its boolean as JS does.
           const m = plan.ternary
           const cond = this.convertExpressionToPerl('', m.testParsed)
-          const val = this.convertExpressionToPerl('', stringifyBooleanTernaryBranches(m.consequentParsed))
+          const val = this.convertExpressionToPerl('', stringifyBooleanBranches(m.consequentParsed))
           const shown = isBooleanResultParsed(m.consequentParsed)
             ? `bf->bool_str(${val})`
             : this.jsStringOutput(m.consequentParsed, val)
@@ -1063,7 +1063,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
         case 'plain': {
           // A ternary with a boolean and a string branch renders its boolean
           // as JS does, unless the whole value goes through `bool_str`.
-          const mixedParsed = valueParsed && !plan.boolStr ? stringifyBooleanTernaryBranches(valueParsed) : value.parsed
+          const mixedParsed = valueParsed && !plan.boolStr ? stringifyBooleanBranches(valueParsed) : value.parsed
           const v = this.convertExpressionToPerl(value.expr, mixedParsed)
           if (plan.kind === 'plain') return attr(v, plan.boolStr, mixedParsed)
           const tmp = `$bf_pu${this.presenceVarCounter++}`

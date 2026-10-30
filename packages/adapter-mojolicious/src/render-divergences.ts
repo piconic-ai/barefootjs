@@ -27,6 +27,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 at compile time instead of silently crashing
 // Perl `strict`-mode template execution — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A boolean text child prints `true` / `false`; JSX renders nothing.
+  'boolean-text-child': { limitation: 'boolean-text-child' },
+  'boolean-text-child-destructured': { limitation: 'boolean-text-child' },
   // A list index read inside a callback the evaluator runs
   // (`rows.map(r => r[k])`) converts the key with ToNumber, so `'01'`,
   // `'-0'` and `'1e0'` read an element where JS reads nothing.
@@ -95,7 +98,7 @@ export const renderDivergences: RenderDivergences = {
   // adapter (verified against a real render of both fixtures).
   // `nullish-ternary-false-branch-attr` used to sit here: a taken `false`
   // branch next to a non-boolean branch lowered to Perl `0`. Such branches
-  // are now rewritten to `'true'` / `'false'` (`stringifyBooleanTernaryBranches`);
+  // are now rewritten to `'true'` / `'false'` (`stringifyBooleanBranches`);
   // it renders like Hono.
   'module-const-destructure-default': { limitation: 'module-const-destructure-default' },
   'module-const-default-hydrate': { limitation: 'module-const-destructure-default' },

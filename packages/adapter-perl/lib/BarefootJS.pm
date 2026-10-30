@@ -7,6 +7,7 @@ use feature 'signatures';
 no warnings 'experimental::signatures';
 
 use B ();
+use JSON::PP ();
 use POSIX ();
 use Time::Local ();
 use Scalar::Util qw(looks_like_number weaken);
@@ -766,6 +767,13 @@ sub string ($self, $value) {
     # (#3380); a string passes through unchanged.
     return BarefootJS::Evaluator::_format_number($value + 0) if BarefootJS::Evaluator::_is_number($value);
     return "$value";
+}
+
+# A JS boolean as a value the JSON encoder writes as `true` / `false`
+# (`JSON.stringify([n, true])`): Perl holds a boolean as `1` / `''` / `0`,
+# which encodes as a number or a string.
+sub boolean ($self, $value) {
+    return $value ? JSON::PP::true() : JSON::PP::false();
 }
 
 # A decoded JSON boolean (`Mojo::JSON::true` / `false`, a `JSON::PP::Boolean`).

@@ -302,7 +302,8 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
     // `jinja-adapter.ts` already uses for nullable-optional-prop attribute
     // omission (see that file's header, divergence 5, and the `is defined
     // and is not none` call sites).
-    return `(${l} if (${l} is defined and ${l} is not none) else ${r})`
+    const t = groupNullishOperand(left, l)
+    return `(${l} if (${t} is defined and ${t} is not none) else ${r})`
   }
 
   callbackMethod(
@@ -621,7 +622,8 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     // fix): guard with `is defined` too, so a context var that was never
     // seeded (Jinja's `ChainableUndefined`, not Python `None`) still
     // coalesces to `r` instead of leaking the Undefined sentinel through.
-    return `(${l} if (${l} is defined and ${l} is not none) else ${r})`
+    const t = groupNullishOperand(left, l)
+    return `(${l} if (${t} is defined and ${t} is not none) else ${r})`
   }
 
   callbackMethod(
@@ -746,4 +748,13 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     const segments = groupObjectLiteralSegments(properties, literalOf, emit)
     return segments.reduce((acc, seg) => `dict(${acc}, **${seg.includes(' ') ? `(${seg})` : seg})`)
   }
+}
+
+/**
+ * The `??` left operand as the subject of an `is defined` / `is none` test.
+ * A test binds tighter than a comparison or arithmetic, so `n > 1 is
+ * defined` would test `1`; such an operand is parenthesised.
+ */
+function groupNullishOperand(left: ParsedExpr, l: string): string {
+  return left.kind === 'binary' || left.kind === 'unary' ? `(${l})` : l
 }
