@@ -1113,6 +1113,7 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
         // its receiver.
         (message, reason) => this._recordExprBF101(message, reason),
         n => this.scope.isBound(n),
+        this.scope.propsObject,
       ),
     )
   }
@@ -1170,7 +1171,7 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
       _resolveModuleStringConst: (name) => this._resolveModuleStringConst(name),
       _resolveLiteralConst: (name) => this._resolveLiteralConst(name),
       _rootPropReadName: (name) => rootPropReadName(name, this.scope, this.rootPropAliases),
-      _isRootPropsObject: (expr) => isRootPropsObject(expr, n => this.scope.isBound(n)),
+      _isRootPropsObject: (expr) => isRootPropsObject(expr, n => this.scope.isBound(n), this.scope.propsObject),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _staticArrayElement: (o, k) => lookupStaticArrayElement(o, k, this.localConstants, n => this.scope.isBound(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),

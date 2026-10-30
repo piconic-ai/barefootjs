@@ -117,6 +117,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // in markup outside a `{{…}}` action, so a `"` no longer closes the
 // surrounding attribute.
 export const renderDivergences: RenderDivergences = {
+  // A props object parameter not named `props` (`function C(p)`): its
+  // members are not typed as the component's props, so `p.label + p.n`
+  // does not concatenate (or the boolean `p.on` prints as `1`).
+  'props-object-non-props-name-operand-typing': { limitation: 'props-object-non-props-name-operand-typing' },
   // A boolean text child prints `true` / `false`; JSX renders nothing.
   'boolean-text-child': { limitation: 'boolean-text-child' },
   'boolean-text-child-destructured': { limitation: 'boolean-text-child' },

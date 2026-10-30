@@ -30,6 +30,7 @@ import {
   type ScopeFrame,
   type SourceLocation,
   type TypeInfo,
+  propsObjectIdentifier,
 } from '@barefootjs/jsx'
 
 import { analyzeBakeableStaticElementLoop } from '../analysis/static-element-loop-bake.ts'
@@ -442,7 +443,7 @@ function sortedLoopArray(host: LoopRenderHost, sortComparator: NonNullable<IRLoo
   const body = cmpArrow.kind === 'arrow' ? cmpArrow.body : cmpArrow
   const params = cmpArrow.kind === 'arrow' ? cmpArrow.params : []
   const sorted =
-    emitSortEval(goArray, body, params, sortEmit) ??
+    emitSortEval(goArray, body, params, sortEmit, propsObjectIdentifier(host.ctx.state.propsObjectName)) ??
     emitBfSort(goArray, sortComparatorFromArrow(cmpArrow)!)
   return `(${sorted})`
 }

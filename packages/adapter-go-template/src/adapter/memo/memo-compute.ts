@@ -21,6 +21,7 @@ import {
   isNullishLiteral,
   serializeParsedExpr,
   type CallbackCapture,
+  propsObjectIdentifier,
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
@@ -152,7 +153,7 @@ export function matchFilterArmMemo(
   )
 
   const materialized = materializeGetterCalls(cb.arrow.body, knownGetterNames)
-  const evaluable = evalBody(materialized, new Set(cb.arrow.params))
+  const evaluable = evalBody(materialized, new Set(cb.arrow.params), propsObjectIdentifier(ctx.state.propsObjectName))
   if (evaluable === null) return null
 
   const paramName = cb.arrow.params[0] ?? '_'

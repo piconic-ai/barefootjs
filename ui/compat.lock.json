@@ -6881,6 +6881,62 @@
           }
         }
       },
+      "props-object-non-props-name-operand-typing": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "props-object-non-props-name-operand-typing"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "props-object-non-props-name-operand-typing"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "props-object-non-props-name-operand-typing"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "props-object-non-props-name-operand-typing"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "props-object-non-props-name-operand-typing"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "props-object-non-props-name-operand-typing"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "props-object-non-props-name-operand-typing"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "props-object-non-props-name-operand-typing"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "props-object-non-props-name-operand-typing"
+          ]
+        }
+      },
       "reduce-nonliteral-seed": {
         "blade": {
           "kind": "refusal",
@@ -8999,6 +9055,10 @@
         "description": "a signal seeded from `.length` of an array member of an object prop renders its seed at SSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/prop-member-length-signal-seed.ts"
       },
+      "props-object-non-props-name-operand-typing": {
+        "description": "A props object named p types its string, number and boolean props in +, || and attribute positions",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/props-object-non-props-name-operand-typing.ts"
+      },
       "reduce-nonliteral-seed": {
         "description": "A `.reduce()` seeded with a non-literal value — DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reduce-nonliteral-seed.ts"
@@ -10145,6 +10205,27 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "props-object-non-props-name-operand-typing": {
+      "title": "Operand typing of a props object not named props",
+      "kind": "silent",
+      "given": "a component whose props object parameter is not named `props` (`function C(p)`) uses a prop member as a typed operand: `p.label + p.n` with a string and a number prop, or `p.on || 'none'` yielding a boolean prop as an attribute value",
+      "expected": "the string concatenation renders `L7` / `7L`, and the boolean renders `true`",
+      "actual": "renders the `+` as a numeric addition (`7`) or with the number formatted as `7.0`, or throws a type error; renders the boolean as `1`",
+      "fixtures": [
+        "props-object-non-props-name-operand-typing"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "props-spread-explicit-null-override": {

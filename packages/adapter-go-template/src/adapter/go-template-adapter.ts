@@ -98,6 +98,7 @@ import {
   inlineComputedConstAttr,
   inlineComputedConsts,
   nullableSignalAttrGetter,
+  propsObjectIdentifier,
 } from '@barefootjs/jsx'
 import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
@@ -5771,7 +5772,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   ): string | null {
     const { method, predicate, param } = expr
     const pe = (fn: string, extra: string[] = []) =>
-      emitPredicateEval(fn, arrayExpr, predicate, param, emit, extra)
+      emitPredicateEval(fn, arrayExpr, predicate, param, emit, propsObjectIdentifier(this.state.propsObjectName), extra)
     switch (method) {
       case 'filter':
         // `.filter(Boolean)` (identity predicate `_t => _t`) keeps its
@@ -5957,6 +5958,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // method-call predicate the evaluator can't model.
     const evalForm = emitPredicateEval(
       'bf_filter_eval', arrayExpr, filterExpr.predicate, filterExpr.param, renderArray,
+      propsObjectIdentifier(this.state.propsObjectName),
     )
     if (evalForm !== null) return `len (${evalForm})`
 
