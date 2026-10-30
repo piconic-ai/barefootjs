@@ -107,7 +107,7 @@ export interface LoopValueField {
 }
 
 /** The value of a field that may be absent: its declared type or `undefined`. */
-const ABSENT: LoopValueType = { primitive: 'undefined' }
+const ABSENT: LoopValueType = { kind: 'primitive', raw: 'undefined', primitive: 'undefined' }
 
 /**
  * The fields of a named type (`type Row = { … }`, an interface), by name;
@@ -128,52 +128,37 @@ function isStringLoopValue(type: LoopValueType): boolean {
 /**
  * The type at `segments` below `type`, through object types, named types
  * (`namedFields`) and array elements; null when a step is not known.
+ *
+ * A union resolves the path in each member and is the union of the results,
+ * null when any member has no such path. A field is therefore definitely a
+ * string only when it is one in every member: the element type of a
+ * `concat` (`loopRowType`) is the union of its receiver's and arguments'
+ * element types, so `Row` and a same-shaped `Other` both read `id: string`,
+ * while an `any` member or an omitted field reads nothing (#3762 review).
  */
 export function loopValueTypeAt(
   type: LoopValueType,
   segments: readonly RowPathSegment[],
   namedFields: NamedTypeFields = () => undefined,
 ): LoopValueType | null {
-  let current: LoopValueType | undefined = type
-  for (const segment of segments) {
-    if (!current) return null
-    if (segment.kind === 'index') {
-      current = current.elementType
-      continue
-    }
-    const fields: readonly LoopValueField[] | undefined =
-      current.properties ?? (current.raw !== undefined ? namedFields(current.raw) : undefined)
-    const field = fields?.find(f => f.name === segment.key)
-    // An optional field reads `undefined` when the row omits it, so it is
-    // never definitely its declared type (#3762 review).
-    current = field && (field.optional ? { unionTypes: [field.type, ABSENT] } : field.type)
+  if (segments.length === 0) return type
+  if (type.unionTypes && type.unionTypes.length > 0) {
+    const members = type.unionTypes.map(member => loopValueTypeAt(member, segments, namedFields))
+    return members.every(m => m !== null) ? { kind: 'union', unionTypes: members as LoopValueType[] } : null
   }
-  return current ?? null
+  const [segment, ...rest] = segments
+  const next = segment.kind === 'index' ? type.elementType : fieldType(type, segment.key, namedFields)
+  return next ? loopValueTypeAt(next, rest, namedFields) : null
 }
 
-/**
- * Whether two declared types are the same type: the same primitive, named
- * type, element type, union members and fields. An `any` / `unknown` type
- * is never the same as anything, itself included.
- */
-export function isSameLoopValueType(a: LoopValueType, b: LoopValueType): boolean {
-  if (a === b) return !isUnknownLoopValue(a)
-  if (isUnknownLoopValue(a) || isUnknownLoopValue(b)) return false
-  if (a.primitive !== b.primitive || a.raw !== b.raw) return false
-  if ((a.elementType === undefined) !== (b.elementType === undefined)) return false
-  if (a.elementType && b.elementType && !isSameLoopValueType(a.elementType, b.elementType)) return false
-  return sameList(a.unionTypes, b.unionTypes, isSameLoopValueType) &&
-    sameList(a.properties, b.properties, (x, y) =>
-      x.name === y.name && Boolean(x.optional) === Boolean(y.optional) && isSameLoopValueType(x.type, y.type))
-}
-
-function isUnknownLoopValue(type: LoopValueType): boolean {
-  return type.kind === 'unknown' || type.raw === 'any' || type.raw === 'unknown'
-}
-
-function sameList<T>(a: readonly T[] | undefined, b: readonly T[] | undefined, same: (x: T, y: T) => boolean): boolean {
-  if (a === undefined || b === undefined) return a === b
-  return a.length === b.length && a.every((x, i) => same(x, b[i]))
+/** A field's declared type; an optional one may also be `undefined`. */
+function fieldType(type: LoopValueType, key: string, namedFields: NamedTypeFields): LoopValueType | undefined {
+  const fields: readonly LoopValueField[] | undefined =
+    type.properties ?? (type.raw !== undefined ? namedFields(type.raw) : undefined)
+  const field = fields?.find(f => f.name === key)
+  // An optional field reads `undefined` when the row omits it, so it is
+  // never definitely its declared type (#3762 review).
+  return field && (field.optional ? { kind: 'union', unionTypes: [field.type, ABSENT] } : field.type)
 }
 
 /**

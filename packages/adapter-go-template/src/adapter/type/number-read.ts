@@ -18,6 +18,7 @@
 
 import {
   concatType,
+  loopValueTypeAt,
   isChildrenPropParam,
   loopRowType as sharedLoopRowType,
   type BindingScope,
@@ -33,8 +34,8 @@ type RowSegment = { kind: 'field'; key: string; isIdent: boolean } | { kind: 'in
 
 /**
  * Array methods whose result holds the receiver's elements. `concat` also
- * holds its arguments' elements, so it keeps the element type only when they
- * match (`concatType`, #3762 review).
+ * holds its arguments' elements, so its element type is the union of theirs
+ * (`concatType`, #3762 review).
  */
 const SAME_ELEMENT_METHODS: ReadonlySet<string> = new Set([
   'filter', 'slice', 'sort', 'toSorted', 'reverse', 'toReversed',
@@ -243,19 +244,10 @@ function propRead(ctx: GoEmitContext, expr: ParsedExpr, scope: BindingScope) {
 
 /** The TS type at `segments` below `type`, through object, named and array types; null when unknown. */
 function pathType(ctx: GoEmitContext, type: TypeInfo, segments: readonly RowSegment[]): TypeInfo | null {
-  let current: TypeInfo | undefined = type
-  for (const segment of segments) {
-    if (!current) return null
-    if (segment.kind === 'index') {
-      current = current.kind === 'array' ? current.elementType : undefined
-      continue
-    }
-    const named = current.raw
-    const properties = current.properties ??
-      ctx.state.currentTypeDefinitions.find(td => td.name === named)?.properties
-    current = properties?.find(p => p.name === segment.key)?.type
-  }
-  return current ?? null
+  // The shared resolution the scope's string typing uses: a union (a
+  // `concat` of differently named rows) resolves in every member.
+  const fields = (name: string) => ctx.state.currentTypeDefinitions.find(td => td.name === name)?.properties
+  return loopValueTypeAt(type, segments, fields) as TypeInfo | null
 }
 
 /**

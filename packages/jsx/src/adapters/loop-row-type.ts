@@ -12,7 +12,6 @@
 import type { ParsedExpr } from '../expression-parser.ts'
 import type { ComponentIR, TypeInfo } from '../types.ts'
 import {
-  isSameLoopValueType,
   loopValueTypeAt,
   type BindingScope,
   type LoopValueType,
@@ -99,18 +98,21 @@ function valueType(types: DeclaredValueTypes, expr: ParsedExpr, scope: BindingSc
 }
 
 /**
- * The type of `receiver.concat(...args)`: the receiver's array type when every
- * argument is an array of the same element type, or one such element (#3762
- * review). An argument of another or an unknown type (`extras: any[]`) can
- * put rows of any shape into the result, so the result is then still the
- * receiver's kind of array, but with no declared element type.
+ * The type of `receiver.concat(...args)`: an array whose element type is the
+ * union of the receiver's element type and each argument's (an array
+ * argument's elements, or the argument itself). A field read on a row of it
+ * is then a definite string only when it is one in every member
+ * (`loopValueTypeAt`), so an `any[]` argument or a field one member lacks
+ * types nothing (#3762 review). An argument of unknown type leaves the
+ * result with no element type.
  */
 export function concatType<T extends LoopValueType>(receiver: T | null, args: readonly (T | null)[]): T | null {
   const element = receiver?.elementType
   if (!receiver || !element) return receiver
-  const sameElements = args.every(arg =>
-    arg !== null && (arg.elementType ? isSameLoopValueType(arg.elementType, element) : isSameLoopValueType(arg, element)))
-  return sameElements ? receiver : { ...receiver, elementType: undefined }
+  if (args.some(arg => arg === null)) return { ...receiver, elementType: undefined }
+  const members = [element, ...(args as T[]).map(arg => arg.elementType ?? arg)]
+  if (members.every(member => member === element)) return receiver
+  return { ...receiver, elementType: { kind: 'union', raw: members.map(m => m.raw ?? 'unknown').join(' | '), unionTypes: members } }
 }
 
 /** A prop's declared type; a destructured prop whose type stays `unknown` carries it as `declaredType`. */

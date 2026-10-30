@@ -15,7 +15,8 @@ import { createFixture } from '../src/types'
  *
  * A `concat` keeps the row type only when its arguments share it:
  * `none.concat(extras)` with `extras: any[]` can hold rows whose `id` is a
- * number (`r.id + 1` is `3`), while `none.concat(rows)` stays `Row`.
+ * number (`r.id + 1` is `3`), while `none.concat(rows)` stays `Row`, and
+ * `none.concat(others)` over a same-shaped `Other` keeps `id: string`.
  * Optional fields are `omitted-optional-row-field-plus`.
  */
 export const fixture = createFixture({
@@ -42,7 +43,9 @@ function Rows({ rows, label, nums }: { rows: Row[]; label: string; nums: number[
   )
 }
 
-export function StringTypedBindingPlusConcat(props: { rows: Row[]; pairs: { k: string; v: number }[]; none: Row[]; extras: any[]; label: string; nums: number[]; on: boolean }) {
+interface Other { id: string }
+
+export function StringTypedBindingPlusConcat(props: { rows: Row[]; pairs: { k: string; v: number }[]; none: Row[]; extras: any[]; others: Other[]; label: string; nums: number[]; on: boolean }) {
   const [items] = createSignal<Row[]>(props.rows)
   return (
     <div data-l={props.label + 1}>
@@ -71,6 +74,7 @@ export function StringTypedBindingPlusConcat(props: { rows: Row[]; pairs: { k: s
       <ol>{props.nums.filter(label => label + 1 !== 1).map(v => <li key={v}>{v}</li>)}</ol>
       <p>{props.none.concat(props.extras).map(r => <s key={r.id}>{r.id + 1}</s>)}</p>
       <p>{props.none.concat(props.rows).map(r => <s key={r.id}>{r.id + 1}</s>)}</p>
+      <p>{props.none.concat(props.others).map((r, i) => <s key={i}>{r.id + 1}</s>)}</p>
       <Rows rows={props.rows} label={props.label} nums={props.nums} />
     </div>
   )
@@ -86,12 +90,13 @@ export function StringTypedBindingPlusConcat(props: { rows: Row[]; pairs: { k: s
     ],
     none: [],
     extras: [{ id: 2 }],
+    others: [{ id: 'c' }],
     label: 'L',
     nums: [0, 2],
     on: true,
   },
   expectedHtml: `
-    <div bf-s="test" bf="s30" data-l="L1">
+    <div bf-s="test" bf="s32" data-l="L1">
       <span bf="s1"><!--bf:s0-->L1<!--/--></span>
       <ul bf="s13">
         <li bf="s12" data-k="a0" data-key="a" title="a1">
@@ -125,7 +130,8 @@ export function StringTypedBindingPlusConcat(props: { rows: Row[]; pairs: { k: s
         <s data-key="a"><!--bf:s27-->a1<!--/--></s>
         <s data-key="b"><!--bf:s27-->b1<!--/--></s>
       </p>
-      <section bf-s="test_s29" bf="s7" data-l="L1">
+      <p bf="s30"><s data-key="0"><!--bf:s29-->c1<!--/--></s></p>
+      <section bf-s="test_s31" bf="s7" data-l="L1">
         <p bf="s1"><!--bf:s0-->L2<!--/--></p>
         <i bf="s3" data-k="a0" data-key="a"><!--bf:s2-->a1<!--/--></i>
         <i bf="s3" data-k="b1" data-key="b"><!--bf:s2-->b2.5<!--/--></i>
