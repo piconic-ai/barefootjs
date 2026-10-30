@@ -4524,6 +4524,44 @@
           ]
         }
       },
+      "index-key-canonical-form": {
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "callback-noncanonical-index-key"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "string-key-list-index"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "string-key-list-index"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "callback-noncanonical-index-key"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "callback-noncanonical-index-key"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "callback-noncanonical-index-key"
+          ]
+        }
+      },
       "jsx-element-prop-array": {
         "blade": {
           "kind": "refusal",
@@ -8347,6 +8385,10 @@
         "description": "An authored formatDate(...) call refuses with BF056 on every adapter",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/format-date.ts"
       },
+      "index-key-canonical-form": {
+        "description": "A list index reads element 1 for 1 and \"1\" but nothing for \"01\", \"-0\" or \"1e0\", directly and in a…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/index-key-canonical-form.ts"
+      },
       "jsx-element-prop-array": {
         "description": "Array literal wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-array.ts"
@@ -8872,6 +8914,22 @@
       "diagnostics": [
         "BF021",
         "BF101"
+      ]
+    },
+    "callback-noncanonical-index-key": {
+      "title": "A non-canonical numeric key indexing a list inside a callback",
+      "kind": "silent",
+      "given": "a list index read inside a callback the runtime evaluator runs (`rows.map(r => r[k])`) with a string key that spells a number but is not the canonical index name (`'01'`, `'-0'`, `'1e0'`)",
+      "expected": "nothing (`undefined`): JS reads a list element only through a canonical index name (`1` or `'1'`), the same answer as the read outside the callback",
+      "actual": "the element at the key's numeric value (`'01'` and `'1e0'` read element 1, `'-0'` element 0): the evaluator converts the key with ToNumber before reading the list",
+      "fixtures": [
+        "index-key-canonical-form"
+      ],
+      "adapters": [
+        "erb",
+        "mojolicious",
+        "pebble",
+        "xslate"
       ]
     },
     "callback-outside-evaluator": {
@@ -9623,6 +9681,20 @@
         "mojolicious",
         "twig",
         "xslate"
+      ]
+    },
+    "string-key-list-index": {
+      "title": "A canonical index string indexing a list in the template",
+      "kind": "silent",
+      "given": "a list index read in the template with a string key that is a canonical index name (`row[k]` where `k` is `'1'`)",
+      "expected": "the element at that index (JS reads the key `'1'` as index 1, as it reads the number `1`)",
+      "actual": "renders nothing: the template engine's `[]` looks a string key up as a missing mapping key on a list",
+      "fixtures": [
+        "index-key-canonical-form"
+      ],
+      "adapters": [
+        "jinja",
+        "minijinja"
       ]
     },
     "unlowerable-loop-filter-predicate": {

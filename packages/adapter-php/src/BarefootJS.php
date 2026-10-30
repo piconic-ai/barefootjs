@@ -924,50 +924,12 @@ final class BarefootJS
     }
 
     /** JS `target[key]`: a single-level read of the target's own key or
-     * element. A key is never a path: Laravel's `data_get` splits `"a.b"`
-     * into the nested `a.b` and reads `"*"` as a wildcard, and Twig's
-     * `attribute()` truncates a float key, so `xs[1.1]` read `xs[1]`. The
-     * key is first turned into the property name JS reads
-     * (`property_key`): a float `-0.0` names `0`, `1.0` names `1`, and a
-     * fractional `1.1` names `"1.1"`, which no list holds. A missing key, a
-     * nil target or a nil key gives `null`. */
+     * element. Delegates to `Evaluator::index()`, the one implementation
+     * the callback evaluator's index read shares, so a template read and
+     * the same read inside a callback give the same answer. */
     public function index($target, $key)
     {
-        if ($target === null || $key === null) {
-            return null;
-        }
-        $k = $this->property_key($key);
-        if (is_array($target)) {
-            return array_key_exists($k, $target) ? $target[$k] : null;
-        }
-        if ($target instanceof \ArrayAccess) {
-            return $target->offsetExists($k) ? $target[$k] : null;
-        }
-        if (is_object($target)) {
-            $name = (string) $k;
-            return property_exists($target, $name) || isset($target->{$name}) ? $target->{$name} : null;
-        }
-        return null;
-    }
-
-    /** The property name JS reads for a key (`ToPropertyKey`): an integral
-     * float within the int range is that int (`-0.0` is `0`), any other
-     * number is its JS spelling (`1.1`, `1e+21`, `NaN`), and a boolean is
-     * `"true"` / `"false"`. A string stays as written; PHP itself reads a
-     * canonical int string (`"1"`, not `"01"` or `"-0"`) as that int key,
-     * as JS reads it as that index. */
-    private function property_key($key): int|string
-    {
-        if (is_int($key) || is_string($key)) {
-            return $key;
-        }
-        if (is_float($key)) {
-            if (is_finite($key) && floor($key) === $key && abs($key) < 9.0e15) {
-                return (int) $key;
-            }
-            return $this->string($key);
-        }
-        return (string) $this->string($key);
+        return Evaluator::index($target, $key);
     }
 
     public function floor($value): float

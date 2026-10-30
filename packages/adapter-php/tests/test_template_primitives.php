@@ -21,6 +21,7 @@ bf_require_runtime();
 bf_reset();
 
 use Barefoot\BarefootJS;
+use Barefoot\Evaluator;
 
 $backend = new class {
     public function encode_json($data): string
@@ -119,6 +120,42 @@ bf_test('index', function () use ($bf) {
     bf_assert_eq($bf->index(null, 0), null);
     bf_assert_eq($bf->index($list, null), null);
     bf_assert_eq($bf->index('abc', 'missing'), null);
+});
+
+bf_test('index: the template read and the evaluator read share one answer', function () use ($bf) {
+    // `xs[k]` in a template (`$bf->index`) and `xs[k]` inside a callback
+    // (the evaluator's `index-access` node) go through one implementation,
+    // so moving a read into `.map(r => r[k])` cannot change its result.
+    $list = ['a', 'b'];
+    $obj = json_decode('{"1":"one","01":"padded","-0":"negzero","1e0":"exp","true":"t"}');
+    $node = [
+        'kind' => 'index-access',
+        'object' => ['kind' => 'identifier', 'name' => 'xs'],
+        'index' => ['kind' => 'identifier', 'name' => 'k'],
+    ];
+    $cases = [
+        [$list, '1', 'b'],
+        [$list, 1, 'b'],
+        [$list, 1.0, 'b'],
+        [$list, -0.0, 'a'],
+        [$list, '01', null],
+        [$list, '-0', null],
+        [$list, '1e0', null],
+        [$list, ' 1', null],
+        [$list, '1.0', null],
+        [$list, true, null],
+        [$list, null, null],
+        [$list, 1.5, null],
+        [$obj, '01', 'padded'],
+        [$obj, '-0', 'negzero'],
+        [$obj, '1e0', 'exp'],
+        [$obj, 1, 'one'],
+        [$obj, true, 't'],
+    ];
+    foreach ($cases as [$xs, $k, $want]) {
+        bf_assert_eq($bf->index($xs, $k), $want);
+        bf_assert_eq(Evaluator::evaluate($node, ['xs' => $xs, 'k' => $k]), $want);
+    }
 });
 
 bf_test('div', function () use ($bf) {

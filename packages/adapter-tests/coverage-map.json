@@ -5651,6 +5651,26 @@
         "text"
       ]
     },
+    "index-key-canonical-form": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "inline-array-map": {
       "kinds": [
         "array-literal",
