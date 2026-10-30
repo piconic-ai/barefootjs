@@ -175,7 +175,7 @@ import { renderConditionExpr, renderFilterExpr, type ConditionExprHost } from ".
 import { PREDICATE_METHODS, renderArrayMethod, renderCallbackMethod, renderMember, type MemberAndMethodsHost } from "./expr/member-and-methods.ts"
 import { loopRowChildPropOverrides, renderLoop as renderLoopWithHost, type LoopRenderHost } from "./loop/render-loop.ts"
 import { collectBodyChildInstances, collectStaticChildInstances, type StaticChildrenHost } from "./children/static-children.ts"
-import { buildLocalTypeTables, resolveNestedLoopItemTypes, synthesizeStructsFromElements, synthSliceTypeInfo, type TypeSynthesisHost } from "./type/type-synthesis.ts"
+import { buildLocalTypeTables, resolveNestedLoopItemTypes, synthesizeStructsFromElements, synthSliceTypeInfo, untypedSignalSeedRows, type TypeSynthesisHost } from "./type/type-synthesis.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
 
@@ -1873,18 +1873,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private synthesizeStructFromSignal(
     signal: { getter: string; type: TypeInfo; initialValue: JsSourceText; parsed?: ParsedExpr },
     componentName: string,
+    propsParams: readonly { name: string }[],
   ): Array<{ name: string; fields: Array<{ tsName: string; goName: string; goType: string }>; properties: PropertyInfo[] }> | null {
     // Only untyped arrays: typed (`Item[]`) / scalar (`string[]`) elements bake
     // through the normal path.
-    if (signal.type.kind !== 'array') return null
-    const elem = signal.type.elementType
-    if (elem && elem.kind !== 'unknown') return null
-
-    const node = signal.parsed
-    if (!node || node.kind !== 'array-literal' || node.elements.length === 0) return null
-
+    const rows = untypedSignalSeedRows(this.emitCtx, signal, propsParams)
+    if (!rows) return null
     const name = `${componentName}${capitalizeFieldName(signal.getter)}Item`
-    return synthesizeStructsFromElements(this.emitCtx, node.elements, name)
+    return synthesizeStructsFromElements(this.emitCtx, rows, name)
   }
 
   /**
@@ -3097,7 +3093,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // docstring for the full rationale — so emitting the struct itself is
       // dead output that still leaks the internal `__bfGet_<action>` name.
       if (isElidedFactoryGetter(signal)) continue
-      const synth = this.synthesizeStructFromSignal(signal, componentName)
+      const synth = this.synthesizeStructFromSignal(signal, componentName, ir.metadata.propsParams)
       if (!synth) continue
       // Nested-first order (`synthesizeStructFromSignal`'s contract): a
       // struct referencing an earlier entry by name is always registered
