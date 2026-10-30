@@ -6,7 +6,6 @@ use utf8;
 use feature 'signatures';
 no warnings 'experimental::signatures';
 
-use B ();
 use POSIX ();
 use Time::Local ();
 use Scalar::Util qw(looks_like_number weaken);
@@ -700,9 +699,6 @@ sub async_resolve ($self, $id, $content_html) {
 # ---------------------------------------------------------------------------
 
 sub json ($self, $value) {
-    # Mojo::JSON::to_json returns a character string (not bytes), suitable
-    # for embedding in HTML output via Mojo::ByteStream / `<%==`.
-    #
     # Documented divergence from JS: JS distinguishes `null` (renders as
     # "null") from `undefined` (`JSON.stringify(undefined)` returns the
     # JS value `undefined`, not a string). Perl has no such distinction
@@ -710,24 +706,29 @@ sub json ($self, $value) {
     # ergonomics: an unset prop becomes the string "null" rather than
     # the literal text "undefined" or an empty attribute. Matches the
     # `null` case of JS exactly; diverges from the `undefined` case.
-    return $self->backend->encode_json(_json_zero($value));
-}
-
-# JS `JSON.stringify` writes a negative zero as `0` (`JSON.stringify(-0)`
-# is "0"). Perl's `mod` keeps `-0.0` for a negative dividend, and some
-# encoders (Mojo::JSON on newer Perls) spell it `-0.0`, so a value the
-# encoder would emit as a number is rewritten to the integer 0 when it is
-# zero. Returns a copy at every depth; the argument is never mutated.
-sub _json_zero ($value) {
+    #
+    # A number is written as JS writes it (`_format_number`): shortest
+    # round-trip digits, `-0` as `0`, an unpadded exponent (`-4e-8`,
+    # `-4e+21`), and NaN / Infinity as `null`, at any depth (#3787). The
+    # encoders print `%.15g` (`0.3` for `0.1 + 0.2`), pad the exponent
+    # (`-4e-08`) and spell Infinity `-Inf` or `"-Inf"`. Arrays and hashes
+    # are walked here with sorted keys, as the canonical encoders do;
+    # strings and other leaves go through the backend's encoder (Mojo's
+    # `to_json` returns a character string, suitable for embedding in HTML
+    # output via Mojo::ByteStream / `<%==`).
     my $ref = ref $value;
-    return [ map { _json_zero($_) } @$value ] if $ref eq 'ARRAY';
-    return { map { ($_ => _json_zero($value->{$_})) } keys %$value } if $ref eq 'HASH';
-    return $value if $ref || !defined $value;
-    my $flags = B::svref_2object(\$value)->FLAGS;
-    return $value unless $flags & (B::SVp_IOK | B::SVp_NOK);
-    no warnings qw(numeric);
-    return $value unless 0 + $value eq $value && $value == 0;
-    return 0;
+    return '[' . CORE::join(',', map { $self->json($_) } @$value) . ']' if $ref eq 'ARRAY';
+    if ($ref eq 'HASH') {
+        return '{' . CORE::join(',', map {
+            $self->backend->encode_json("$_") . ':' . $self->json($value->{$_})
+        } sort keys %$value) . '}';
+    }
+    if (BarefootJS::Evaluator::_is_number($value)) {
+        my $n = BarefootJS::Evaluator::_double($value + 0);
+        return 'null' if $n != $n || $n == 9**9**9 || $n == -(9**9**9);
+        return BarefootJS::Evaluator::_format_number($n);
+    }
+    return $self->backend->encode_json($value);
 }
 
 sub string ($self, $value) {

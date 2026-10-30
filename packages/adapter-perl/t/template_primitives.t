@@ -39,23 +39,27 @@ subtest 'json — mirrors JS JSON.stringify (with documented undef divergence)' 
     is $bf->json(undef),     'null',    'undef → "null" (matches JS null; diverges from JS undefined)';
 };
 
-subtest 'json — a negative zero is written as 0 (JS JSON.stringify(-0) is "0")' => sub {
-    # `mod` keeps `-0.0` for a negative dividend; whether the encoder spells
-    # it `-0`, `-0.0` or `0` depends on the Perl / JSON module version, so
-    # check the value handed to the encoder (`%g` keeps the sign).
+subtest 'json — numbers are written as JS writes them' => sub {
+    # The json helper spells numbers itself, so the output no longer
+    # depends on how the Perl / JSON module version spells `-0.0`, a padded
+    # exponent or `Inf`.
     my $neg_zero = POSIX::fmod(-4, 2);
+    my $inf = 9**9**9;
     is sprintf('%g', $neg_zero), '-0', 'precondition: fmod(-4, 2) is -0.0';
-    is sprintf('%g', BarefootJS::_json_zero($neg_zero)), '0', 'scalar';
-    my $nested = BarefootJS::_json_zero({ a => [$neg_zero, 1], b => $neg_zero });
-    is sprintf('%g', $nested->{a}[0]), '0', 'inside an array inside a hash';
-    is sprintf('%g', $nested->{b}),    '0', 'hash value';
-    is $nested->{a}[1], 1, 'non-zero numbers kept';
-    is BarefootJS::_json_zero('-0'),  '-0',  'a string stays a string';
-    is BarefootJS::_json_zero('0.0'), '0.0', 'a "0.0" string stays a string';
+    is $bf->json($neg_zero), '0', 'a negative zero is 0';
+    is $bf->json([$neg_zero, 1]), '[0,1]', 'a negative zero inside an array';
+    is $bf->json({ a => [$neg_zero, 1], b => $neg_zero }), '{"a":[0,1],"b":0}', 'inside a hash';
+    is $bf->json([-4 / 2, -4 / 8]), '[-2,-0.5]', 'integral and fractional quotients';
+    is $bf->json([-4e-8, -4e20, -4e21, -1e-6, -1e-7]),
+        '[-4e-8,-400000000000000000000,-4e+21,-0.000001,-1e-7]', 'JS exponent notation';
+    is $bf->json([0.1 + 0.2, -4 / 3]), '[0.30000000000000004,-1.3333333333333333]', 'shortest round-trip digits';
+    is $bf->json(-$inf), 'null', 'top-level -Infinity is null';
+    is $bf->json([-$inf, $inf, $inf - $inf, [-$inf]]), '[null,null,null,[null]]', 'non-finite at any depth';
+    is $bf->json(['-0', '0.0', '-Inf', '1e5']), '["-0","0.0","-Inf","1e5"]', 'strings stay strings';
+    is $bf->json([JSON::PP::true, JSON::PP::false, undef]), '[true,false,null]', 'booleans and undef';
     my $input = [$neg_zero];
-    BarefootJS::_json_zero($input);
+    $bf->json($input);
     is sprintf('%g', $input->[0]), '-0', 'the argument is not mutated';
-    is $bf->json([$neg_zero, 1]), '[0,1]', 'json() end to end';
 };
 
 subtest 'string — JS String(v) mirror' => sub {

@@ -2036,6 +2036,14 @@ func TestJSON(t *testing.T) {
 		{"-0.5", -0.5, "-0.5"},
 		{"-10", -10.0, "-10"},
 		{"-0 string", []any{"-0", `x\"-0`, math.Copysign(0, -1)}, `["-0","x\\\"-0",0]`},
+		// NaN / ±Inf are null at any depth of a slice or map (#3787),
+		// and finite floats take JS's spelling.
+		{"-Inf nested", []any{math.Inf(-1), []any{math.NaN()}}, `[null,[null]]`},
+		{"+Inf in map", map[string]any{"a": math.Inf(1)}, `{"a":null}`},
+		{"Inf in []float64", []float64{math.Inf(1), -2}, `[null,-2]`},
+		{"Inf in map of slices", map[string][]any{"a": {math.NaN(), 1.5}}, `{"a":[null,1.5]}`},
+		{"exponents", []any{-4e-8, -4e20, -4e21, -1e-6, -1e-7}, `[-4e-8,-400000000000000000000,-4e+21,-0.000001,-1e-7]`},
+		{"bytes", []byte("hi"), `"aGk="`},
 	}
 	for _, c := range cases {
 		got, err := JSON(c.in)
