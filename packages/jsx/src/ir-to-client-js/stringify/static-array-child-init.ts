@@ -7,7 +7,8 @@
  *   single-comp:
  *     <i>// Initialize static array children (hydrate skips nested instances)
  *     <i>if (<container>) {
- *     <i>  const __childScopes = qsaChildScopes(<container>, <selector>)
+ *     <i>  const __childScopes = childScopesBySlot(<container>, __scopeId, '<slot>')
+ *     <i>                       // or qsaChildScopes(<container>, <selector>) without a slot
  *     <i>  __childScopes.forEach((childScope, <idx>) => {
  *     <i>    const <param> = <array>[<idx>]
  *     <i>    <outerPreludeStatements*>   // raw outer preamble (#1064)
@@ -23,7 +24,7 @@
  *     <i>    const __iterEl = <container>.children[<offset>]
  *     <i>    if (__iterEl) {
  *     <i>      <outerPreludeStatements*>   // raw outer preamble (#1064)
- *     <i>      const __compEl = qsaChildScope(__iterEl, <selector>)
+ *     <i>      const __compEl = childScopeBySlot(__iterEl, __scopeId, '<slot>')
  *     <i>      if (__compEl) initChild('<name>', __compEl, <props>)
  *     <i>    }
  *     <i>  })
@@ -51,6 +52,7 @@
  */
 
 import type {
+  ChildScopesLookup,
   ComponentRootedInnerLoopInitPlan,
   InnerLoopNestedInitPlan,
   OuterNestedInitPlan,
@@ -92,11 +94,25 @@ function stringifyOne(lines: string[], plan: StaticArrayChildInitPlan): void {
   }
 }
 
+/** Spell a `ChildScopesLookup` as the runtime call that finds every scope. */
+function childScopesCall(containerVar: string, lookup: ChildScopesLookup): string {
+  return lookup.by === 'slot'
+    ? `childScopesBySlot(${containerVar}, __scopeId, '${lookup.slotId}')`
+    : `qsaChildScopes(${containerVar}, ${lookup.selector})`
+}
+
+/** Spell a `ChildScopesLookup` as the runtime call that finds one scope. */
+function childScopeCall(elVar: string, lookup: ChildScopesLookup): string {
+  return lookup.by === 'slot'
+    ? `childScopeBySlot(${elVar}, __scopeId, '${lookup.slotId}')`
+    : `qsaChildScope(${elVar}, ${lookup.selector})`
+}
+
 function emitSingleComp(lines: string[], plan: SingleCompInitPlan): void {
-  const { containerVar, componentName, childSelector, arrayExpr, param, indexParam, outerPreludeStatements, propsExpr, rowEvents, innerLoops } = plan
+  const { containerVar, componentName, lookup, arrayExpr, param, indexParam, outerPreludeStatements, propsExpr, rowEvents, innerLoops } = plan
   lines.push(`  // Initialize static array children (hydrate skips nested instances)`)
   lines.push(`  if (${containerVar}) {`)
-  lines.push(`    const __childScopes = qsaChildScopes(${containerVar}, ${childSelector})`)
+  lines.push(`    const __childScopes = ${childScopesCall(containerVar, lookup)}`)
   lines.push(`    __childScopes.forEach((childScope, ${indexParam}) => {`)
   lines.push(`      const ${param} = ${arrayExpr}[${indexParam}]`)
   // Outer `.map()` callback preamble locals — emitted unwrapped after
@@ -114,7 +130,7 @@ function emitSingleComp(lines: string[], plan: SingleCompInitPlan): void {
 }
 
 function emitOuterNested(lines: string[], plan: OuterNestedInitPlan): void {
-  const { containerVar, componentName, selector, arrayExpr, param, indexParam, offsetExpr, outerPreludeStatements, propsExpr } = plan
+  const { containerVar, componentName, lookup, arrayExpr, param, indexParam, offsetExpr, outerPreludeStatements, propsExpr } = plan
   lines.push(`  // Initialize nested ${componentName} in static array`)
   lines.push(`  if (${containerVar}) {`)
   lines.push(`    ${arrayExpr}.forEach((${param}, ${indexParam}) => {`)
@@ -127,7 +143,7 @@ function emitOuterNested(lines: string[], plan: OuterNestedInitPlan): void {
   for (const stmt of outerPreludeStatements) {
     lines.push(`        ${stmt}`)
   }
-  lines.push(`        const __compEl = qsaChildScope(__iterEl, ${selector})`)
+  lines.push(`        const __compEl = ${childScopeCall('__iterEl', lookup)}`)
   lines.push(`        if (__compEl) initChild('${nameForRegistryRef(componentName)}', __compEl, ${propsExpr})`)
   lines.push(`      }`)
   lines.push(`    })`)
@@ -183,7 +199,7 @@ function emitInnerLoopNested(lines: string[], plan: InnerLoopNestedInitPlan): vo
   // re-declare `const __compEl` in the same scope (#1664).
   comps.forEach((comp, i) => {
     const compElVar = comps.length > 1 ? `__compEl${i}` : '__compEl'
-    lines.push(`        const ${compElVar} = qsaChildScope(__innerEl, ${comp.selector})`)
+    lines.push(`        const ${compElVar} = ${childScopeCall('__innerEl', comp.lookup)}`)
     lines.push(`        if (${compElVar}) initChild('${nameForRegistryRef(comp.componentName)}', ${compElVar}, ${comp.propsExpr})`)
   })
   // Plain-element reactive attrs / texts / refs inside this inner loop's
@@ -229,7 +245,7 @@ function emitInnerLoopNested(lines: string[], plan: InnerLoopNestedInitPlan): vo
  *
  *   <i>// Initialize component-rooted inner-loop components (depth N)
  *   <i>if (<container>) {
- *   <i>  const <scopes_c> = qsaChildScopes(<container>, <selector_c>)   // per comp
+ *   <i>  const <scopes_c> = childScopesBySlot(<container>, __scopeId, '<slot_c>')   // per comp
  *   <i>  let <cursor_c> = 0
  *   <i>  <outerArr>.forEach((<outerParam>[, <outerIdx>]) => {
  *   <i>    <outerPreludeStatements*>
@@ -270,7 +286,7 @@ function emitComponentRootedInnerLoop(lines: string[], plan: ComponentRootedInne
   lines.push(`  // Initialize component-rooted inner-loop components (depth ${depth})`)
   lines.push(`  if (${containerVar}) {`)
   comps.forEach((comp, i) => {
-    lines.push(`    const ${scopesVar(i)} = qsaChildScopes(${containerVar}, ${comp.selector})`)
+    lines.push(`    const ${scopesVar(i)} = ${childScopesCall(containerVar, comp.lookup)}`)
     lines.push(`    let ${cursorVar(i)} = 0`)
   })
   // Declared index names are appended to the forEach heads (#2231);

@@ -84,7 +84,7 @@ describe('#3044 — nested array off a destructured object prop uses mapArray, n
       }
     `, 'ReproChild.tsx')
     expect(clientJs).toMatch(/\bmapArray(Lazy)?\s*\(/)
-    expect(clientJs).not.toMatch(/qsaChildScopes\(/)
+    expect(clientJs).not.toMatch(/childScopesBySlot\(/)
   })
 
   test('flags: `data.items.map(...)` is classified isPropDerivedArray / non-static', () => {

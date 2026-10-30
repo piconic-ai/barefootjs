@@ -1,4 +1,4 @@
-import { createComponent, hydrate, markupOrEmpty, $, createEffect, createSignal, escapeText, escapeTextOrMarkup, escapeTextOrNode, initChild, lazySlots, qsaChildScopes, renderChild } from '@barefootjs/client/runtime'
+import { createComponent, hydrate, markupOrEmpty, $, childScopesBySlot, createEffect, createSignal, escapeText, escapeTextOrMarkup, escapeTextOrNode, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
 
 function initTag() {}
 
@@ -33,7 +33,7 @@ export function initLoopRowFragmentRootChild(__scope, _p = {}) {
 
   // Initialize static array children (hydrate skips nested instances)
   if (_s4) {
-    const __childScopes = qsaChildScopes(_s4, `[bf-h="${__scopeId}"][bf-m="s1"], [bf-s$="_s1"]`)
+    const __childScopes = childScopesBySlot(_s4, __scopeId, 's1')
     __childScopes.forEach((childScope, __idx) => {
       const opt = opts[__idx]
       initChild('Tag__a3cb3a83', childScope, {})

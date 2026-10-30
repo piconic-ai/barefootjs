@@ -250,10 +250,10 @@ describe('#1247 — static-loop CSR self-heal', () => {
     expect(clientJs).not.toMatch(/__bfItem\(\)/)
     // The `static-array-child-inits` phase still emits its `initChild`
     // pass — it runs after materialize, finds the cloned children via
-    // `qsaChildScopes`, and wires them with the same prop getters as
+    // `childScopesBySlot`, and wires them with the same prop getters as
     // before. Pinning this here is a guard against an accidental
     // double-init by emitting renderChild AND createComponent.
-    expect(clientJs).toMatch(/qsaChildScopes\(/)
+    expect(clientJs).toMatch(/childScopesBySlot\(/)
     expect(clientJs).toMatch(/initChild\('Tag',/)
   })
 

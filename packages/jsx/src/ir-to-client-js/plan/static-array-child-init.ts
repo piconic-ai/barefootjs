@@ -33,14 +33,30 @@ import type { LoopChildReactiveAttr, LoopChildReactiveText } from '../types.ts'
 /** Pre-built `{ name: value, ... }` props object expression. */
 export type PropsExpr = string
 
-/** A single child-component initialiser inside an inner-loop body. */
+/**
+ * How a static array's row init finds every child scope of one component in
+ * a container, in document order (#3821). Decided once by
+ * `buildChildScopesLookup`:
+ *
+ *   - `slot` — the component sits at a known slot: the runtime's
+ *     `childScopesBySlot` / `childScopeBySlot(el, __scopeId, slotId)` find
+ *     both an element-rooted scope and a fragment-rooted one (declared by a
+ *     `<!--bf-scope:-->` comment, which no element selector can match).
+ *   - `name` — no slot id: `qsaChildScopes` / `qsaChildScope` with the
+ *     `[bf-s^="Name_"]` selector.
+ */
+export type ChildScopesLookup =
+  | { by: 'slot'; slotId: string }
+  | { by: 'name'; selector: string }
+
+/**
+ * A child-component initialiser inside an inner-loop body, or zipped by
+ * document order against loop items.
+ */
 export interface InnerLoopComp {
   componentName: string
-  /**
-   * JS source expression (a single-quoted string literal) embedded into
-   * `__innerEl.querySelector(<here>)`. See `buildCompSelector`.
-   */
-  selector: string
+  /** How the component's scope is found (#3821). See `ChildScopesLookup`. */
+  lookup: ChildScopesLookup
   /** Pre-built props object expression. */
   propsExpr: PropsExpr
 }
@@ -51,12 +67,8 @@ export interface SingleCompInitPlan {
   /** Container variable name — e.g. `_s4` (already prefixed). */
   containerVar: string
   componentName: string
-  /**
-   * JS source expression (single-quoted string literal) embedded into
-   * `containerVar.querySelectorAll(<here>)`. Combines slotId-suffix match
-   * with name-prefix match.
-   */
-  childSelector: string
+  /** How every row's child scope is found under `containerVar` (#3821). */
+  lookup: ChildScopesLookup
   /** Array expression as written in user code. */
   arrayExpr: string
   /** Loop parameter identifier. */
@@ -92,11 +104,8 @@ export interface OuterNestedInitPlan {
   kind: 'outer-nested'
   containerVar: string
   componentName: string
-  /**
-   * JS source expression (single-quoted string literal) embedded into
-   * `__iterEl.querySelector(<here>)`. See `buildCompSelector`.
-   */
-  selector: string
+  /** How the component's scope is found in `__iterEl` (#3821). */
+  lookup: ChildScopesLookup
   arrayExpr: string
   param: string
   indexParam: string
@@ -190,7 +199,7 @@ export interface InnerLoopNestedInitPlan {
  * the parent container with no per-group element to index.
  *
  * Instead this shape zips the inner component scopes — found in document order
- * via `qsaChildScopes(container, <selector>)` — against the flattened
+ * by the comp's `ChildScopesLookup` — against the flattened
  * `outer.forEach(o => inner.forEach(i => ...))` iteration. Document order is
  * the SSR render order, so position `__ci++` pairs each scope with its data
  * item regardless of whether the outer component root is an element or a

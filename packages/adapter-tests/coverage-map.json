@@ -8145,6 +8145,25 @@
         "text"
       ]
     },
+    "loop-row-fragment-root-static-handler": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-nested-child-children-handler": {
       "kinds": [
         "array-literal",
