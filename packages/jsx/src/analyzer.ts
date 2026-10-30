@@ -3842,7 +3842,10 @@ function defaultPartsReadingEarlierBindings(
  * alias declaration and the destructure must both be direct statements of
  * the component body (no nested block can shadow the alias between them),
  * and the alias must be declared before the destructure. A `let` alias is
- * refused, since a reassignment can make it name another object.
+ * refused, since a reassignment can make it name another object. Any alias
+ * is refused when the props parameter itself is assigned anywhere in the
+ * body (`props = …`): the alias keeps the object it captured, so it may no
+ * longer be what `props` names.
  */
 function destructuresPropsObject(
   decl: ts.VariableDeclaration,
@@ -3862,10 +3865,67 @@ function isPropsObjectReference(
   if (expr.text === ctx.propsObjectName) return true
   const body = ctx.componentBodyBlock
   if (body === null || !isComponentBodyStatementDeclaration(use, body)) return false
+  // A const alias keeps the object it captured, but the props parameter can
+  // be reassigned after the capture. Then the alias is not the props object.
+  if (assignsIdentifier(body, ctx.propsObjectName)) return false
   const alias = componentConstDeclaration(expr.text, body)
   if (alias === null || alias.pos >= use.pos || visiting.has(alias) || !alias.initializer) return false
   visiting.add(alias)
   return isPropsObjectReference(alias.initializer, alias, ctx, visiting)
+}
+
+/**
+ * Whether anything under `root` assigns the identifier `name`: `name = …`,
+ * a compound assignment, `name++` / `--name`, or a destructuring assignment
+ * target. Conservative: a nested binding that shadows `name` counts too.
+ */
+function assignsIdentifier(root: ts.Node, name: string | null): boolean {
+  if (name === null) return false
+  const isTarget = (target: ts.Expression): boolean => {
+    const e = skipParens(target)
+    if (ts.isIdentifier(e)) return e.text === name
+    if (ts.isArrayLiteralExpression(e)) return e.elements.some(el => isTarget(ts.isSpreadElement(el) ? el.expression : el))
+    if (ts.isObjectLiteralExpression(e)) {
+      return e.properties.some(prop => {
+        if (ts.isShorthandPropertyAssignment(prop)) return prop.name.text === name
+        if (ts.isPropertyAssignment(prop)) return isTarget(prop.initializer)
+        if (ts.isSpreadAssignment(prop)) return isTarget(prop.expression)
+        return false
+      })
+    }
+    if (ts.isBinaryExpression(e) && e.operatorToken.kind === ts.SyntaxKind.EqualsToken) return isTarget(e.left)
+    return false
+  }
+  let found = false
+  const visit = (node: ts.Node): void => {
+    if (found) return
+    if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
+      node.operatorToken.kind <= ts.SyntaxKind.LastAssignment &&
+      isTarget(node.left)
+    ) {
+      found = true
+      return
+    }
+    if (
+      (ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) &&
+      (node.operator === ts.SyntaxKind.PlusPlusToken || node.operator === ts.SyntaxKind.MinusMinusToken) &&
+      isTarget(node.operand)
+    ) {
+      found = true
+      return
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(root)
+  return found
+}
+
+function skipParens(expr: ts.Expression): ts.Expression {
+  let e = expr
+  while (ts.isParenthesizedExpression(e)) e = e.expression
+  return e
 }
 
 /** Whether `decl` belongs to a variable statement that is a direct child of `body`. */

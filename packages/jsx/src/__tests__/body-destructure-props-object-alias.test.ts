@@ -9,8 +9,9 @@
  *
  * Shapes that are not provably the props object stay unrecognized: a `let`
  * alias (a reassignment can repoint it), an alias declared after the
- * destructure, and a destructure in a nested block (a block-local binding
- * can shadow the alias there).
+ * destructure, a destructure in a nested block (a block-local binding
+ * can shadow the alias there), and any alias when the props parameter
+ * itself is reassigned (the alias keeps the object it captured).
  */
 
 import { describe, test, expect } from 'bun:test'
@@ -83,6 +84,27 @@ describe('body destructure of a const alias of the props object', () => {
       const { value } = p
       const p = props
     `)).toEqual([])
+  })
+
+  for (const [label, reassign] of [
+    ['an assignment', `props = { value: 2 }`],
+    ['a destructuring assignment', `;({ props } = { props: { value: 2 } })`],
+    ['an assignment inside a handler', `const reset = () => { props = { value: 2 } }`],
+  ] as const) {
+    test(`an alias is not the props object when the props parameter is reassigned by ${label}`, () => {
+      expect(destructured(`
+        const p = props
+        ${reassign}
+        const { value } = p
+      `)).toEqual([])
+    })
+  }
+
+  test('reassigning the props parameter still leaves a direct destructure of it alone', () => {
+    expect(destructured(`
+      props = { value: 2 }
+      const { value } = props
+    `)).toEqual([{ name: 'value', value: 'props.value', sourceKey: 'value' }])
   })
 
   test('a destructure in a nested block does not resolve the alias', () => {
