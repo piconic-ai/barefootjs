@@ -100,13 +100,19 @@ vector divergences (`*/vector-divergences.json`) show `number(null)` and
 `number("")` return `NaN` on six of seven runtimes (deliberately, "unset
 props must not silently zero downstream arithmetic"), `string(null)` returns
 `""` on all seven, and Perl's `filter_truthy` treats `"0"` as falsy. They are
-display and defensive helpers. The JS-exact versions already exist on every
-runtime, inside the callback evaluator: `_to_number`, `_to_string`,
-`_truthy`, `_relational`, `_strict_eq`, `_read_index`
+display and defensive helpers. The versions meant to be JS-exact already
+exist on every runtime, inside the callback evaluator: `_to_number`,
+`_to_string`, `_truthy`, `_relational`, `_strict_eq`, `_read_index`
 (`packages/adapter-jinja/python/barefootjs/evaluator.py`,
 `packages/adapter-perl/lib/BarefootJS/Evaluator.pm`, and the Go, Ruby, PHP,
 Java and Rust evaluators), held to `eval-vectors.json` with **no** divergence
-allowance (`packages/adapter-tests/vectors/README.md`).
+allowance (`packages/adapter-tests/vectors/README.md`). They are the closest
+thing to a JS reference on each runtime, but they are only as exact as that
+corpus is wide. Two cases it does not cover diverge on Python today:
+`_relational('<', '😀', '｡')` compares by code point and returns `false`
+(JS compares UTF-16 code units: `true`), and `_binary('+', [1, 2], '')`
+returns `'[1, 2]'` because `_to_string` falls through to `str(v)` (JS:
+`'1,2'`). Other runtimes have not been probed for these cases.
 
 ### Issues this explains
 
@@ -150,7 +156,12 @@ allowance (`packages/adapter-tests/vectors/README.md`).
 Every new helper delegates to the runtime's evaluator primitive of the same
 operation, as PHP's `index` already delegates to `Evaluator::index`
 (`packages/adapter-php/src/BarefootJS.php`). One implementation per runtime,
-two entry points, two vector corpora.
+two entry points, two vector corpora. Delegation alone does not make a
+helper JS-exact: each rollout step first runs the operation's
+`primitives/` vectors against the evaluator primitive and corrects the
+evaluator where it diverges (the Python relational and array-concatenation
+cases above are the known ones), so the fix reaches the callback evaluator
+and the template helper together.
 
 ### Status by adapter
 
@@ -423,8 +434,9 @@ comment), which is the "boolean value" row.
 - **Loose `==` / `!=`.** Out of the evaluator subset (`spec/compiler.md`);
   this note does not add them.
 - **ToPrimitive on objects** (`[1,2] + ''`). Covered by `plus` and
-  `to_string` returning JS's array join; the plan never proves an object
-  native-safe.
+  `to_string`, which must return JS's array join; Python's `_to_string`
+  does not yet (it returns `'[1, 2]'`) and is corrected in step 4. The
+  plan never proves an object native-safe.
 
 ## Decision point
 
@@ -491,7 +503,10 @@ export function planPrimitive(node: ParsedExpr, typing: ScopedOperandTyping, tar
 
 Before planning, Phase 1 rewrites a nil-capable operand of a ToNumber or
 ToString consumer by its nil reading, the same way `stringifyBooleanBranches`
-rewrites a tree today:
+rewrites a tree today. The rewrite applies only where the consumer's
+coercion is known statically: a numeric operator, a template-literal part,
+or a `+` whose other operand is proven `number` (numeric) or proven `string`
+(concatenation):
 
 | Consumer | nil reads as `null` | nil reads as `undefined` |
 | --- | --- | --- |
@@ -507,6 +522,21 @@ and stay identical to the evaluator's `_to_number` / `_to_string` (nil reads
 as `null`). This generalizes `arithmeticOperandCoercion` (#3474) from number
 props to every typed read, and closes the #3750 gaps by construction: the
 rewrite runs wherever the plan runs.
+
+A `+` whose other operand is a union or `unknown` picks numeric addition or
+concatenation only at runtime, so neither row of the table preserves the
+result. For an omitted `n?: number`, `n + x` is `'undefinedx'` when `x` is
+`'x'` and `NaN` when `x` is `1`; `n ?? NaN` turns the first into `'NaNx'`,
+and `n ?? 'undefined'` turns the second into `'undefined1'` (both checked in
+Node). The runtimes have one nil, so `plus` cannot tell `undefined` from
+`null` once the operand is evaluated. Step 4 therefore refuses this shape
+with BF101: a nil-capable operand whose nil reads as `undefined`, under a
+`+` whose coercion is decided at runtime. Nil reading as `null` needs no
+refusal, since `plus(nil, x)` already gives `'nullx'` and `0 + x`. The
+alternative, a `plus` variant that receives the static nil reading as an
+argument, is open question 8. The `primitives/plus` vectors and the step 4
+position fixture include this case: an omitted optional operand with the
+other operand tested as both a string and a number.
 
 ### How it reaches emitters
 
@@ -585,8 +615,11 @@ test pins the compile-time half; shared fixtures pin the positions.
    two PHP adapters, share one table per runtime, read by the harness from a
    JSON file the TS table is generated from (or checked against).
 4. **No divergence allowance** for `primitives/`, as for `eval-vectors.json`.
-   A helper that delegates to the evaluator primitive passes both corpora by
-   construction.
+   A helper that delegates to the evaluator primitive passes `primitives/`
+   only once that primitive has been corrected against it (see "Summary"),
+   so each rollout step runs the new vectors on the evaluator first. After
+   that, the helper and the callback evaluator cannot drift apart, because
+   they share one implementation.
 5. **Plan test.** A cross-adapter test, in the style of
    `arithmetic-cross-adapter.test.ts` over `dsl-helper-calls.ts`, compiles
    one component per operation and position with every adapter and asserts
@@ -616,8 +649,8 @@ output only where the fixture shows the JS answer.
 | 0 | Infrastructure: `primitive-plan.ts`, `collectOperandTyping`, plan parameter, `NativeSafeTable` = today's behaviour, `primitives/` corpus, `-0` sentinel | — | — | Low: byte-identical (constitution rule 6) |
 | 1 | ToBoolean | #3823 | Perl `filter_truthy/the string "0" is truthy` vector divergence | Low: helper exists on six runtimes; real change on Perl and Go `and` / `or` |
 | 2 | Index read and literal keys | #3802, #3795 | `callback-noncanonical-index-key`, `string-key-list-index`, `non-identifier-literal-key` | Low: helpers exist; evaluator fixes are local |
-| 3 | Relational and ToNumber | #3805 | `string-number-relational-comparison` | Medium: every `<` on a DSL adapter not proven `number × number` becomes a helper call |
-| 4 | Nil reading, ToString, `+` | #3740, #3750, #3700 (if refusal stays) | `omitted-optional-row-field-plus`; `omitted-optional-nullable-number-arithmetic` stays a refusal | High: touches every concatenation and template literal; needs the `either` decision |
+| 3 | Relational and ToNumber | #3805 | `string-number-relational-comparison` | Medium: every `<` on a DSL adapter not proven `number × number` becomes a helper call; corrects evaluator string ordering to UTF-16 code units (Python known) |
+| 4 | Nil reading, ToString, `+` | #3740, #3750, #3700 (if refusal stays) | `omitted-optional-row-field-plus`; `omitted-optional-nullable-number-arithmetic` stays a refusal | High: touches every concatenation and template literal; needs the `either` decision; corrects evaluator array ToString (Python known); refuses `undefined`-reading operands under a dynamic `+` |
 | 5 | Boolean values and display | #3808, #3789 items 1–2 and the JSON comment | `boolean-text-child` | Medium: Perl value representation |
 | 6 | Unary `-` and number literals | #3819, #3814, #3720 | `negative-zero-literal` | Low: literal spelling only |
 | 7 | Nullish on Go | #3789 items 3–4 | `nullish-over-false-yielding-operand` | Low: Go only |
@@ -678,3 +711,8 @@ The plan supports either: (a) is `strict_eq` with an identity branch, (b) is
    runtimes keep their spellings through `helperNames` (`index` for `get` on
    PHP, `bf_eq` for `strict_eq` on Go, as Perl spells `div` `divide`).
    Rename the runtime methods instead?
+8. **Dynamic `+` with an `undefined`-reading operand.** Refuse it (the
+   step 4 default above), or add a `plus` variant that receives the
+   operand's static nil reading so it can produce `'undefinedx'` and `NaN`
+   on the right runtime branch? The variant costs one more helper per
+   runtime and a vector set of its own.
