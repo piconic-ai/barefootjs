@@ -10715,6 +10715,24 @@
         "text"
       ]
     },
+    "omitted-optional-row-field-plus": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "on-prefixed-data-prop": {
       "kinds": [
         "array-literal",
@@ -14750,6 +14768,7 @@
     },
     "string-typed-binding-plus-concat": {
       "kinds": [
+        "array-method",
         "binary",
         "call",
         "identifier",
@@ -14758,6 +14777,7 @@
         "template-literal"
       ],
       "axes": [
+        "array-method:concat",
         "binary:!==",
         "binary:+",
         "binary:>",

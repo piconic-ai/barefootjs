@@ -12,6 +12,11 @@ import { createFixture } from '../src/types'
  * (`r.n + i`) and the loop's numeric `label + 1` stay addition. Both props
  * forms (`props.x` and a destructured `{ x }`), in an attribute, text, a
  * ternary, an `&&`, a template literal and a child prop.
+ *
+ * A `concat` keeps the row type only when its arguments share it:
+ * `none.concat(extras)` with `extras: any[]` can hold rows whose `id` is a
+ * number (`r.id + 1` is `3`), while `none.concat(rows)` stays `Row`.
+ * Optional fields are `omitted-optional-row-field-plus`.
  */
 export const fixture = createFixture({
   id: 'string-typed-binding-plus-concat',
@@ -37,7 +42,7 @@ function Rows({ rows, label, nums }: { rows: Row[]; label: string; nums: number[
   )
 }
 
-export function StringTypedBindingPlusConcat(props: { rows: Row[]; pairs: { k: string; v: number }[]; label: string; nums: number[]; on: boolean }) {
+export function StringTypedBindingPlusConcat(props: { rows: Row[]; pairs: { k: string; v: number }[]; none: Row[]; extras: any[]; label: string; nums: number[]; on: boolean }) {
   const [items] = createSignal<Row[]>(props.rows)
   return (
     <div data-l={props.label + 1}>
@@ -64,6 +69,8 @@ export function StringTypedBindingPlusConcat(props: { rows: Row[]; pairs: { k: s
       <p>{items().map(r => <s key={r.id}>{r.id + r.n}</s>)}</p>
       <p>{props.pairs.map((p, i) => <q key={p.k} data-k={p.k + i}>{p.k + p.v}</q>)}</p>
       <ol>{props.nums.filter(label => label + 1 !== 1).map(v => <li key={v}>{v}</li>)}</ol>
+      <p>{props.none.concat(props.extras).map(r => <s key={r.id}>{r.id + 1}</s>)}</p>
+      <p>{props.none.concat(props.rows).map(r => <s key={r.id}>{r.id + 1}</s>)}</p>
       <Rows rows={props.rows} label={props.label} nums={props.nums} />
     </div>
   )
@@ -77,12 +84,14 @@ export function StringTypedBindingPlusConcat(props: { rows: Row[]; pairs: { k: s
     pairs: [
       { k: 'k', v: 7 },
     ],
+    none: [],
+    extras: [{ id: 2 }],
     label: 'L',
     nums: [0, 2],
     on: true,
   },
   expectedHtml: `
-    <div bf-s="test" bf="s26" data-l="L1">
+    <div bf-s="test" bf="s30" data-l="L1">
       <span bf="s1"><!--bf:s0-->L1<!--/--></span>
       <ul bf="s13">
         <li bf="s12" data-k="a0" data-key="a" title="a1">
@@ -111,7 +120,12 @@ export function StringTypedBindingPlusConcat(props: { rows: Row[]; pairs: { k: s
       </p>
       <p bf="s22"><q bf="s21" data-k="k0" data-key="k"><!--bf:s20-->k7<!--/--></q></p>
       <ol bf="s24"><li data-key="2"><!--bf:s23-->2<!--/--></li></ol>
-      <section bf-s="test_s25" bf="s7" data-l="L1">
+      <p bf="s26"><s data-key="2"><!--bf:s25-->3<!--/--></s></p>
+      <p bf="s28">
+        <s data-key="a"><!--bf:s27-->a1<!--/--></s>
+        <s data-key="b"><!--bf:s27-->b1<!--/--></s>
+      </p>
+      <section bf-s="test_s29" bf="s7" data-l="L1">
         <p bf="s1"><!--bf:s0-->L2<!--/--></p>
         <i bf="s3" data-k="a0" data-key="a"><!--bf:s2-->a1<!--/--></i>
         <i bf="s3" data-k="b1" data-key="b"><!--bf:s2-->b2.5<!--/--></i>

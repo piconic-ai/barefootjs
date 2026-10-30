@@ -17,6 +17,7 @@
  */
 
 import {
+  concatType,
   isChildrenPropParam,
   loopRowType as sharedLoopRowType,
   type BindingScope,
@@ -30,9 +31,13 @@ import { collapseLiteralUnion } from './type-codegen.ts'
 
 type RowSegment = { kind: 'field'; key: string; isIdent: boolean } | { kind: 'index'; index: number }
 
-/** Array methods whose result holds the receiver's elements. */
+/**
+ * Array methods whose result holds the receiver's elements. `concat` also
+ * holds its arguments' elements, so it keeps the element type only when they
+ * match (`concatType`, #3762 review).
+ */
 const SAME_ELEMENT_METHODS: ReadonlySet<string> = new Set([
-  'filter', 'slice', 'sort', 'toSorted', 'reverse', 'toReversed', 'concat',
+  'filter', 'slice', 'sort', 'toSorted', 'reverse', 'toReversed',
 ])
 
 /** Methods whose result is a string or a boolean, never a number. */
@@ -173,6 +178,9 @@ function valueType(ctx: GoEmitContext, expr: ParsedExpr, scope: BindingScope): T
     case 'call':
       return callType(ctx, expr, scope)
     case 'array-method':
+      if (expr.method === 'concat') {
+        return concatType(valueType(ctx, expr.object, scope), expr.args.map(arg => valueType(ctx, arg, scope)))
+      }
       return SAME_ELEMENT_METHODS.has(expr.method) ? valueType(ctx, expr.object, scope) : null
     default:
       return null
@@ -196,6 +204,9 @@ function callType(ctx: GoEmitContext, expr: Extract<ParsedExpr, { kind: 'call' }
     const name = ctx.state.getterAliases.get(callee.name) ?? callee.name
     const getter = ctx.state.currentSignals.find(s => s.getter === name) ?? ctx.state.currentMemos.find(m => m.name === name)
     return getter ? declaredGetterType(ctx, name, getter.type) : null
+  }
+  if (callee.kind === 'member' && !callee.computed && callee.property === 'concat') {
+    return concatType(valueType(ctx, callee.object, scope), expr.args.map(arg => valueType(ctx, arg, scope)))
   }
   if (callee.kind === 'member' && !callee.computed && SAME_ELEMENT_METHODS.has(callee.property)) {
     return valueType(ctx, callee.object, scope)

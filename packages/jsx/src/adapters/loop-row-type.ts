@@ -12,15 +12,19 @@
 import type { ParsedExpr } from '../expression-parser.ts'
 import type { ComponentIR, TypeInfo } from '../types.ts'
 import {
+  isSameLoopValueType,
   loopValueTypeAt,
   type BindingScope,
   type LoopValueType,
   type NamedTypeFields,
 } from '../scope/binding-scope.ts'
 
-/** Array methods whose result has the receiver's element type. */
+/**
+ * Array methods whose result has the receiver's element type. `concat` is
+ * not one: its result also holds its arguments' elements ({@link concatType}).
+ */
 const SAME_ELEMENT_METHODS: ReadonlySet<string> = new Set([
-  'filter', 'slice', 'sort', 'toSorted', 'reverse', 'toReversed', 'concat',
+  'filter', 'slice', 'sort', 'toSorted', 'reverse', 'toReversed',
 ])
 
 /** What a component declares about the types of the values it reads. */
@@ -82,25 +86,48 @@ function valueType(types: DeclaredValueTypes, expr: ParsedExpr, scope: BindingSc
       const object = valueType(types, expr.object, scope)
       return object?.elementType ?? null
     }
-    case 'call': {
-      const callee = expr.callee
-      if (callee.kind === 'identifier' && expr.args.length === 0 && !scope.isBound(callee.name)) {
-        return types.signals.find(s => s.getter === callee.name)?.type ??
-          types.memos.find(m => m.name === callee.name)?.type ?? null
-      }
-      if (callee.kind === 'member' && !callee.computed && SAME_ELEMENT_METHODS.has(callee.property)) {
-        return valueType(types, callee.object, scope)
-      }
-      return null
-    }
+    case 'call':
+      return callType(types, expr, scope)
     case 'array-method':
+      if (expr.method === 'concat') {
+        return concatType(valueType(types, expr.object, scope), expr.args.map(arg => valueType(types, arg, scope)))
+      }
       return SAME_ELEMENT_METHODS.has(expr.method) ? valueType(types, expr.object, scope) : null
     default:
       return null
   }
 }
 
+/**
+ * The type of `receiver.concat(...args)`: the receiver's array type when every
+ * argument is an array of the same element type, or one such element (#3762
+ * review). An argument of another or an unknown type (`extras: any[]`) can
+ * put rows of any shape into the result, so the result is then still the
+ * receiver's kind of array, but with no declared element type.
+ */
+export function concatType<T extends LoopValueType>(receiver: T | null, args: readonly (T | null)[]): T | null {
+  const element = receiver?.elementType
+  if (!receiver || !element) return receiver
+  const sameElements = args.every(arg =>
+    arg !== null && (arg.elementType ? isSameLoopValueType(arg.elementType, element) : isSameLoopValueType(arg, element)))
+  return sameElements ? receiver : { ...receiver, elementType: undefined }
+}
+
 /** A prop's declared type; a destructured prop whose type stays `unknown` carries it as `declaredType`. */
+/** A signal or memo getter's type, or the receiver's type through an element-keeping array method. */
+function callType(types: DeclaredValueTypes, expr: Extract<ParsedExpr, { kind: 'call' }>, scope: BindingScope): LoopValueType | null {
+  const callee = expr.callee
+  if (callee.kind === 'identifier' && expr.args.length === 0 && !scope.isBound(callee.name)) {
+    return types.signals.find(s => s.getter === callee.name)?.type ??
+      types.memos.find(m => m.name === callee.name)?.type ?? null
+  }
+  if (callee.kind !== 'member' || callee.computed) return null
+  if (callee.property === 'concat') {
+    return concatType(valueType(types, callee.object, scope), expr.args.map(arg => valueType(types, arg, scope)))
+  }
+  return SAME_ELEMENT_METHODS.has(callee.property) ? valueType(types, callee.object, scope) : null
+}
+
 function propType(types: DeclaredValueTypes, name: string): LoopValueType | null {
   const param = types.propsParams.find(p => !p.isRest && p.name === name)
   if (!param) return null

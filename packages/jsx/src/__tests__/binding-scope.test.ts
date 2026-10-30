@@ -304,3 +304,19 @@ describe('row field string typing (#3762)', () => {
     expect(scope.isStringValueName('label', () => true)).toBe(false)
   })
 })
+
+describe('optional row fields (#3762 review)', () => {
+  const fields = { Opt: [{ name: 'id', type: { primitive: 'string' }, optional: true }] }
+  const named = (name: string) => fields[name as keyof typeof fields]
+
+  test('an optional string field is not definitely a string, read or destructured', () => {
+    const row = BindingScope.EMPTY.enterLoopRow({ param: 'o', rowType: { raw: 'Opt' } })
+    expect(row.isStringValueName('o', () => true, false, ['id'], named)).toBe(false)
+    const destructured = BindingScope.EMPTY.enterLoopRow({
+      param: '{ id }',
+      rowType: { raw: 'Opt' },
+      paramBindings: [{ name: 'id', segments: [{ kind: 'field', key: 'id', isIdent: true }] }],
+    })
+    expect(destructured.isStringValueName('id', () => true, false, [], named)).toBe(false)
+  })
+})

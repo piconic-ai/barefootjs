@@ -88,6 +88,8 @@ export interface LoopBindingSource {
 
 /** Structural pick of `TypeInfo` (`packages/jsx/src/types.ts`). */
 export interface LoopValueType {
+  /** `TypeInfo.kind`; `'unknown'` for `any`, `unknown` and unresolved types. */
+  readonly kind?: string
   readonly primitive?: string
   readonly unionTypes?: readonly LoopValueType[]
   /** A named type's name (`Row`), resolved through {@link NamedTypeFields}. */
@@ -100,7 +102,12 @@ export interface LoopValueType {
 export interface LoopValueField {
   readonly name: string
   readonly type: LoopValueType
+  /** `name?:` — the field may be absent, so its value may be `undefined`. */
+  readonly optional?: boolean
 }
+
+/** The value of a field that may be absent: its declared type or `undefined`. */
+const ABSENT: LoopValueType = { primitive: 'undefined' }
 
 /**
  * The fields of a named type (`type Row = { … }`, an interface), by name;
@@ -136,9 +143,37 @@ export function loopValueTypeAt(
     }
     const fields: readonly LoopValueField[] | undefined =
       current.properties ?? (current.raw !== undefined ? namedFields(current.raw) : undefined)
-    current = fields?.find(field => field.name === segment.key)?.type
+    const field = fields?.find(f => f.name === segment.key)
+    // An optional field reads `undefined` when the row omits it, so it is
+    // never definitely its declared type (#3762 review).
+    current = field && (field.optional ? { unionTypes: [field.type, ABSENT] } : field.type)
   }
   return current ?? null
+}
+
+/**
+ * Whether two declared types are the same type: the same primitive, named
+ * type, element type, union members and fields. An `any` / `unknown` type
+ * is never the same as anything, itself included.
+ */
+export function isSameLoopValueType(a: LoopValueType, b: LoopValueType): boolean {
+  if (a === b) return !isUnknownLoopValue(a)
+  if (isUnknownLoopValue(a) || isUnknownLoopValue(b)) return false
+  if (a.primitive !== b.primitive || a.raw !== b.raw) return false
+  if ((a.elementType === undefined) !== (b.elementType === undefined)) return false
+  if (a.elementType && b.elementType && !isSameLoopValueType(a.elementType, b.elementType)) return false
+  return sameList(a.unionTypes, b.unionTypes, isSameLoopValueType) &&
+    sameList(a.properties, b.properties, (x, y) =>
+      x.name === y.name && Boolean(x.optional) === Boolean(y.optional) && isSameLoopValueType(x.type, y.type))
+}
+
+function isUnknownLoopValue(type: LoopValueType): boolean {
+  return type.kind === 'unknown' || type.raw === 'any' || type.raw === 'unknown'
+}
+
+function sameList<T>(a: readonly T[] | undefined, b: readonly T[] | undefined, same: (x: T, y: T) => boolean): boolean {
+  if (a === undefined || b === undefined) return a === b
+  return a.length === b.length && a.every((x, i) => same(x, b[i]))
 }
 
 /**
