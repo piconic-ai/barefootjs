@@ -180,6 +180,7 @@ import {
   type ElementShellSpelling,
   inlineComputedConstAttr,
   inlineComputedConsts,
+  escapeBraceDelimiters,
 } from '@barefootjs/jsx'
 import type { ParsedExpr, LoopBindingPathSegment } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
@@ -379,8 +380,9 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
 
   emitText(node: IRText): string {
     // IRText carries the entity-DECODED value (Phase 1 decodes JSX
-    // character references); re-escape for direct HTML emission.
-    return escapeHtml(node.value)
+    // character references); re-escape for direct HTML emission, then
+    // keep any tag opener (`{{`, `{%`, `{#`) away from the MiniJinja lexer.
+    return escapeMinijinjaStaticText(escapeHtml(node.value))
   }
 
   emitExpression(node: IRExpression): string {
@@ -995,7 +997,7 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
    * AttrValue lowering for intrinsic-element attributes (Jinja).
    */
   private readonly elementAttrEmitter: AttrValueEmitter = {
-    emitLiteral: (value, name) => `${name}="${escapeHtml(value.value)}"`,
+    emitLiteral: (value, name) => `${name}="${escapeMinijinjaStaticText(escapeHtml(value.value))}"`,
     emitExpression: (source, name) => {
       // A computed const reads as its initializer (#3494).
       const value = inlineComputedConstAttr(source, this.computedConsts)
@@ -1471,3 +1473,13 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
 }
 
 export const minijinjaAdapter = new MinijinjaAdapter()
+
+/**
+ * Static template text (an element's text run or a literal attribute value,
+ * already HTML-escaped) with every brace that could open a MiniJinja tag
+ * (`{{`, `{%`, `{#`, or a trailing `{` before the adapter's next tag)
+ * printed through an output tag, so MiniJinja renders it as written.
+ */
+function escapeMinijinjaStaticText(s: string): string {
+  return escapeBraceDelimiters(s, '{%#', "{{ '{' }}")
+}

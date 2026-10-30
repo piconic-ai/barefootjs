@@ -117,6 +117,13 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // in markup outside a `{{…}}` action, so a `"` no longer closes the
 // surrounding attribute.
 export const renderDivergences: RenderDivergences = {
+  // A boolean text child prints `true` / `false`; JSX renders nothing.
+  'boolean-text-child': { limitation: 'boolean-text-child' },
+  'boolean-text-child-destructured': { limitation: 'boolean-text-child' },
+  // `??` over a logical or ternary left operand that yields `false` takes
+  // the fallback: `or` tests truthiness.
+  'logical-mixed-left-nullish': { limitation: 'nullish-over-false-yielding-operand' },
+  'logical-mixed-left-nullish-destructured': { limitation: 'nullish-over-false-yielding-operand' },
   // `===` / `!==` between objects or arrays compares contents, not references.
   'strict-equality-distinct-reference': { limitation: 'object-equality-by-contents' },
   // An array compared with itself reads unequal.
@@ -128,6 +135,12 @@ export const renderDivergences: RenderDivergences = {
   // lone surrogate, so it returns U+FFFD (halves compare equal, and
   // rejoining them renders `��` instead of the emoji).
   'string-at-lone-surrogate': { limitation: 'string-at-lone-surrogate' },
+  // A `{` that would open an action is printed through `{{"{"}}`, which
+  // html/template escapes by context: `%7b` in a template-literal URL
+  // attribute, `ZgotmplZ` in a `<style>` element. A literal attribute value
+  // goes through `bf_attr` and prints as written; a template literal keeps
+  // the attribute's contextual escaping for its dynamic part.
+  'template-delimiter-contextual-escape': { limitation: 'brace-delimiter-in-contextual-escape' },
   // A const reading a signal getter (`const b = count()`) read in a loop row
   // that binds the getter's name (`rows.map(count => …{b}…)`): the template
   // reads `b` as a variable that is never set.

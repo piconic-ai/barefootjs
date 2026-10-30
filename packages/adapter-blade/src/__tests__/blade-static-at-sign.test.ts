@@ -5,9 +5,8 @@
  * PHP drops the one newline right after `?>`, so a newline that follows an
  * `@` must survive through the extra `\n` the adapter adds. The shared
  * conformance fixtures cannot see this: `normalizeHTML` collapses
- * whitespace, including inside `<pre>`. The doubled-brace cases (`{{@`,
- * `@{{`) live here instead of the shared fixture because a lone `{{` is a
- * delimiter on other engines, a separate gap.
+ * whitespace, including inside `<pre>`. An echo-opening `{` is spelled the
+ * same way (#3767), so a newline right after it is checked here too.
  */
 import { test, expect } from 'bun:test'
 import { BladeAdapter } from '../adapter'
@@ -19,6 +18,7 @@ export function AtSignNewline() {
     <div title="{@" data-b="{{@" data-c="@{{">
       <pre>a@&#10;b@&#13;&#10;c@&#10;&#10;d{'{'}@</pre>
       <p>&#123;&#123;@|@&#123;&#123;|@@|@&#125;</p>
+      <pre>&#123;&#10;e&#123;&#123;&#10;f&#123;!&#10;g&#123;</pre>
     </div>
   )
 }
@@ -40,4 +40,5 @@ test('a newline right after a static @ is kept, and @ beside a brace or @ stays 
   expect(html).toContain('data-b="{{@"')
   expect(html).toContain('data-c="@{{"')
   expect(html).toContain('<p>{{@|@{{|@@|@}</p>')
+  expect(html).toContain('<pre>{\ne{{\nf{!\ng{</pre>')
 })

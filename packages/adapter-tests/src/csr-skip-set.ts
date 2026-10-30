@@ -203,6 +203,10 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
  * and that the entry lists the fixture.
  */
 export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: string }>> = {
+  // A boolean text child: the CSR template prints `true` / `false`; JSX
+  // renders nothing.
+  'boolean-text-child': { limitation: 'boolean-text-child' },
+  'boolean-text-child-destructured': { limitation: 'boolean-text-child' },
   // `{ label = 'd' }` read through `const a = label`: the CSR template reads
   // `_p.label` without the default, so an omitted prop renders empty (the
   // init body's `const a` keeps the default).

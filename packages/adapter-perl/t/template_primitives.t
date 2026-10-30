@@ -72,6 +72,14 @@ subtest 'json — numbers are written as JS writes them' => sub {
     is sprintf('%g', $input->[0]), '-0', 'the argument is not mutated';
 };
 
+subtest 'boolean — a JS boolean the JSON encoder writes as true / false' => sub {
+    is $bf->json([$bf->boolean(1), $bf->boolean(0), $bf->boolean(''), $bf->boolean(2 > 1)]),
+        '[true,false,false,true]', 'booleans inside an array';
+    is $bf->json({ ok => $bf->boolean(1 == 2) }), '{"ok":false}', 'a boolean inside an object';
+    is $bf->string($bf->boolean(1)), 'true', 'prints as JS String(true)';
+    ok !$bf->boolean(0), 'false stays falsy';
+};
+
 subtest 'string — JS String(v) mirror' => sub {
     is $bf->string(42),    '42', 'int';
     is $bf->string('hi'),  'hi', 'string passthrough';

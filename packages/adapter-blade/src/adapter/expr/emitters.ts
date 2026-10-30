@@ -116,7 +116,7 @@ import {
 
 import type { BladeEmitContext } from '../emit-context.ts'
 import { BLADE_TEMPLATE_PRIMITIVES } from '../lib/constants.ts'
-import { bladeVar, escapeBladeSingleQuoted, bladeMemberAccess, bladeIndexAccess, bladeHashKey } from '../lib/blade-naming.ts'
+import { bladeVar, bladeStringLiteral, bladeMemberAccess, bladeIndexAccess, bladeHashKey } from '../lib/blade-naming.ts'
 import {
   renderArrayMethod,
   renderSortMethod,
@@ -236,7 +236,7 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
-    if (literalType === 'string') return `'${escapeBladeSingleQuoted(String(value))}'`
+    if (literalType === 'string') return bladeStringLiteral(String(value))
     if (literalType === 'boolean') return value ? 'true' : 'false'
     if (literalType === 'null') return 'null'
     return String(value)
@@ -453,7 +453,7 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType): string {
-    if (literalType === 'string') return `'${escapeBladeSingleQuoted(String(value))}'`
+    if (literalType === 'string') return bladeStringLiteral(String(value))
     if (literalType === 'boolean') return value ? 'true' : 'false'
     if (literalType === 'null') return 'null'
     return String(value)
@@ -693,7 +693,7 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     for (const part of parts) {
       if (part.type === 'string') {
         if (part.value !== '') {
-          terms.push(`'${escapeBladeSingleQuoted(part.value)}'`)
+          terms.push(bladeStringLiteral(part.value))
         }
       } else {
         const rendered = emit(part.expr)

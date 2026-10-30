@@ -83,11 +83,6 @@
         32
       ]
     },
-    "packages/adapter-go-template/src/adapter/props/prop-types.ts": {
-      "collectOmittableAttrConsumedPropNames/walk": [
-        27
-      ]
-    },
     "packages/adapter-go-template/src/adapter/spread/spread-codegen.ts": {
       "buildSpreadInitializer": [
         31

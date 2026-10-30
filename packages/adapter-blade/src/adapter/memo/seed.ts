@@ -35,13 +35,13 @@ import {
 } from '@barefootjs/jsx'
 
 import type { BladeMemoContext } from '../emit-context.ts'
-import { bladeVar, escapeBladeSingleQuoted } from '../lib/blade-naming.ts'
+import { bladeVar, bladeStringLiteral } from '../lib/blade-naming.ts'
 
 /** Blade/PHP literal for a context-consumer's `createContext` default. */
 export function contextDefaultBlade(c: ContextConsumer): string {
   const d = c.defaultValue
   if (d === null || d === undefined) return 'null'
-  if (typeof d === 'string') return `'${escapeBladeSingleQuoted(d)}'`
+  if (typeof d === 'string') return bladeStringLiteral(d)
   if (typeof d === 'boolean') return d ? 'true' : 'false'
   return String(d)
 }

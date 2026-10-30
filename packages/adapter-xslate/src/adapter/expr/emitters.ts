@@ -13,6 +13,7 @@
 
 import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   isBooleanResultParsed,
+  stringifyBooleanBranches,
   literalMemberIndex,
   groupObjectLiteralSegments,
   isStringConcatBinary,
@@ -474,7 +475,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
       // A boolean's JSON text is its `String()` text (`true` / `false`).
       if (path === 'JSON.stringify' && args.length === 1 && isBooleanResultParsed(args[0], this.isBooleanName)) return stringifyTerm(args[0], emit, this.isBooleanName)
       if (args.length === spec.arity) {
-        return spec.emit(args.map(emit))
+        return spec.emit(path === 'JSON.stringify' ? args.map(a => this.jsonValue(a, emit)) : args.map(emit))
       }
       this.ctx._recordExprBF101(
         `templatePrimitive '${path}' expects ${spec.arity} arg(s), got ${args.length}`,
@@ -552,7 +553,13 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     // present (`firstName() + lastName()`).
     if (isStringConcatBinary(op, left, right, (n, property, path) => this.ctx._isStringValueName(n, property, path))) {
       // A number or boolean operand is stringified as JS does, not as Perl's `~` does (#3711, #3783).
-      return `${this.ctx._jsStringOutput(left, l)} ~ ${this.ctx._jsStringOutput(right, r)}`
+      // A comparison an operand returns (`'v=' + (n > 0 && 'y')`) prints as
+      // JS does, through the rewrite `stringifyBooleanBranches` makes.
+      const ls = stringifyBooleanBranches(left)
+      const rs = stringifyBooleanBranches(right)
+      const lText = ls === left ? l : groupBinaryOperand(ls, emit(ls))
+      const rText = rs === right ? r : groupBinaryOperand(rs, emit(rs))
+      return `${this.ctx._jsStringOutput(ls, lText)} ~ ${this.ctx._jsStringOutput(rs, rText)}`
     }
     // Kolon's `==` / `!=` are value-equality operators handling both strings
     // and numbers (unlike Perl's numeric `==`, which the Mojo adapter must
@@ -627,6 +634,19 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     }
     const predBody = this.ctx._renderKolonFilterExprPublic(predicate, param, this.onRead)
     return `$bf.${helper[method]}(${arrayExpr}, -> ${kolonVar(param, this.onRead)} { ${predBody} })`
+  }
+
+  /**
+   * A `JSON.stringify` argument. A boolean inside an array or object literal
+   * (`[n, true]`, `{ ok: n > 0 }`) is passed as a JSON boolean
+   * (`$bf.boolean`), which the encoder writes as `true` / `false`, not as the
+   * `1` / `0` / `''` Perl holds for it.
+   */
+  private jsonValue(expr: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    const nested = (e: ParsedExpr): string => this.jsonValue(e, emit)
+    if (expr.kind === 'array-literal') return this.arrayLiteral(expr.elements, nested)
+    if (expr.kind === 'object-literal') return this.objectLiteral(expr.properties, expr.raw, nested)
+    return isBooleanResultParsed(expr, this.isBooleanName) ? `$bf.boolean(${emit(expr)})` : emit(expr)
   }
 
   arrayLiteral(elements: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
@@ -726,12 +746,13 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
  * `||` — `isBooleanResultParsed`, #3443) is a Perl `1` / `''` / `0` at
  * runtime, so it prints through `bool_str`; anything else through
  * `string`, which also prints a decoded JSON boolean as `true` / `false`
- * (#3440).
+ * (#3440), after `stringifyBooleanBranches` rewrites a comparison the value
+ * can evaluate to (`n > 0 && 'y'`).
  */
 function stringifyTerm(
   expr: ParsedExpr,
   emit: (e: ParsedExpr) => string,
   isBooleanName: (name: string, componentProperty?: boolean) => boolean,
 ): string {
-  return isBooleanResultParsed(expr, isBooleanName) ? `$bf.bool_str(${emit(expr)})` : `$bf.string(${emit(expr)})`
+  return isBooleanResultParsed(expr, isBooleanName) ? `$bf.bool_str(${emit(expr)})` : `$bf.string(${emit(stringifyBooleanBranches(expr))})`
 }

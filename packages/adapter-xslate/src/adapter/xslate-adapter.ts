@@ -102,7 +102,7 @@ import {
   isOpaqueLocalAccessorName,
   mayYieldBooleanCarrier,
   numberValuedSeedNames,
-  stringifyBooleanTernaryBranches,
+  stringifyBooleanBranches,
 } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, escapeHtml } from '@barefootjs/shared'
 
@@ -1012,7 +1012,9 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
    * AttrValue lowering for intrinsic-element attributes (Kolon).
    */
   private readonly elementAttrEmitter: AttrValueEmitter = {
-    emitLiteral: (value, name) => `${name}="${escapeHtml(value.value)}"`,
+    // A literal value can span lines; a line-leading `:` in it would be
+    // read as a line statement, as in text (#3767).
+    emitLiteral: (value, name) => `${name}="${escapeLineStatementSigil(escapeHtml(value.value), ':', "<: ':' :>")}"`,
     emitExpression: (source, name) => {
       // A computed const reads as its initializer (#3494).
       const value = inlineComputedConstAttr(source, this.computedConsts)
@@ -1053,7 +1055,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
           // A mixed boolean / string branch renders its boolean as JS does.
           const m = plan.ternary
           const cond = this.convertExpressionToKolon('', m.testParsed)
-          const val = this.convertExpressionToKolon('', stringifyBooleanTernaryBranches(m.consequentParsed))
+          const val = this.convertExpressionToKolon('', stringifyBooleanBranches(m.consequentParsed))
           const shown = isBooleanResultParsed(m.consequentParsed)
             ? `$bf.bool_str(${val})`
             : this.jsStringOutput(m.consequentParsed, val)
@@ -1063,7 +1065,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
         case 'plain': {
           // A ternary with a boolean and a string branch renders its boolean
           // as JS does, unless the whole value goes through `bool_str`.
-          const mixedParsed = valueParsed && !plan.boolStr ? stringifyBooleanTernaryBranches(valueParsed) : value.parsed
+          const mixedParsed = valueParsed && !plan.boolStr ? stringifyBooleanBranches(valueParsed) : value.parsed
           const v = this.convertExpressionToKolon(value.expr, mixedParsed)
           // A literal is never nil, and Text::Xslate folds `defined` of a
           // local bound to a string literal to false, which would drop the
