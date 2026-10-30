@@ -559,7 +559,9 @@ function Widget({ values }: { values: number[] }) {
   </div>
 }
 `)
-    expect(template).toContain("$bf.add(1, 'x')")
+    // Outside the loop `label` is the string const, so JS `1 + 'x'` is the
+    // concatenation `"1x"` (#3762); inside, the numeric row shadows it.
+    expect(template).toContain("1 ~ 'x'")
     expect(template).toContain('$bf.add(2, $label)')
   })
 })

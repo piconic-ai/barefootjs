@@ -79,7 +79,7 @@ export interface ErbEmitContext {
 
   /** Whether a getter/prop name resolves to a string-typed SSR value at the
    *  current binding scope. `componentProperty`: read as `props.<name>`. */
-  _isStringValueName(name: string, componentProperty?: boolean): boolean
+  _isStringValueName(name: string, componentProperty?: boolean, path?: readonly string[]): boolean
 
   /**
    * #3144: whether `name` is a component-body local bound to an opaque

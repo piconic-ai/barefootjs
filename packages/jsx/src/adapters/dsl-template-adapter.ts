@@ -16,6 +16,7 @@ import {
   type NullishAttrContext,
 } from '../nullable-signal-attr.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
+import { declaredValueTypes, loopRowType, type DeclaredValueTypes } from './loop-row-type.ts'
 import { rootPropAliasesForLoop, rootPropAliasNames } from '../scope/root-prop-alias.ts'
 import type {
   CompilerError,
@@ -128,6 +129,8 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
   protected booleanTypedProps: Set<string> = new Set()
   /** Names (signal getters + props) whose value is a string (`stringValueNamesFor`). */
   protected stringValueNames: Set<string> = new Set()
+  /** The declared types a loop row's type is read from (`loopRowType`, #3762). */
+  protected declaredTypes: DeclaredValueTypes | null = null
   /**
    * Module-scope pure-string consts (`const x = 'literal'`), keyed by name →
    * unescaped value. A className template literal that references such a
@@ -220,6 +223,23 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
    * above and before any diagnostic or rendering.
    */
   protected resetAdapterState(_ir: ComponentIR): void {}
+
+  /**
+   * Whether `name` (a signal getter, prop, local constant or loop binding)
+   * holds a string value at `scope`, which picks the template's string
+   * concatenation for a JS `+` (`isStringConcatBinary`). A loop row or
+   * callback binding of the same name shadows the outer typing; a row field
+   * read (`path`: `row.id`) takes the row type's declared field type.
+   * `componentProperty`: read as `props.<name>`.
+   */
+  protected isStringValueNameAt(
+    name: string,
+    componentProperty = false,
+    path: readonly string[] = [],
+    scope: BindingScope = this.scope,
+  ): boolean {
+    return scope.isStringValueName(name, n => this.stringValueNames.has(n), componentProperty, path, this.declaredTypes?.namedFields)
+  }
 
   /** `render()` under `scope`, the current scope restored afterwards. */
   protected renderInScope<T>(scope: BindingScope, render: () => T): T {
@@ -317,7 +337,8 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
    */
   protected renderLoopRow(loop: IRLoop, spelling: LoopRowSpelling): LoopRow {
     const outside = this.scope
-    const row = outside.enterLoopRow(loop)
+    const rowType = this.declaredTypes ? loopRowType(this.declaredTypes, loop, outside) : null
+    const row = outside.enterLoopRow(rowType ? { ...loop, rowType } : loop)
     return this.renderInScope(row, () => {
       spelling.enter?.(row, outside)
       const preamble = (loop.preamble?.declarations ?? []).map(d => spelling.preamble(d))
@@ -409,6 +430,7 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     this.nullableSignalGetters = collectNullableSignalGetters(ir)
     this.nullishAttrCtx = collectNullishAttrContext(ir)
     this.stringValueNames = this.stringValueNamesFor(ir)
+    this.declaredTypes = declaredValueTypes(ir)
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
     this._loweringMatchers = prepareLoweringMatchers(ir.metadata)

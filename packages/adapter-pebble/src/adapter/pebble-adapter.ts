@@ -1254,12 +1254,14 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
   ): string {
     // Arithmetic over a prop whose nil the type cannot classify (#3700).
     this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
+    // The predicate's own param and locals shadow an outer string-typed name.
+    const predicateScope = this.scope.enterCallback([param, ...localVarMap.keys()])
     return emitParsedExpr(
       expr,
       new PebbleFilterEmitter(
         param,
         localVarMap,
-        n => this._isStringValueName(n),
+        (n, property, path) => this._isStringValueName(n, property, path, predicateScope),
         // A nested callback method inside the predicate has no Pebble
         // scalar form — surface BF101 (#2038) instead of silently
         // degrading it to its receiver.
@@ -1344,7 +1346,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
       _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderPebbleFilterExprPublic: (e, p) => this._renderPebbleFilterExprPublic(e, p),
-      _isStringValueName: (name, property) => this._isStringValueName(name, property),
+      _isStringValueName: (name, property, path) => this._isStringValueName(name, property, path),
     }
   }
 
@@ -1471,11 +1473,11 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
    *  `_isStringValueName` on the `PebbleEmitContext` seam) to pick `~` over
    *  JS `+`'s (unverified) numeric fallback. See this file's header,
    *  divergence tied to `expr/emitters.ts`'s divergence 7.
-   *  `componentProperty`: `name` is read as `props.<name>`, which has no
-   *  typing while a binding shadows `props` (#3693). */
-  private _isStringValueName(name: string, componentProperty = false): boolean {
-    if (componentProperty) return this.scope.isStringValueName(name, n => this.stringValueNames.has(n), true)
-    return this.stringValueNames.has(name)
+   *  `componentProperty`: `name` is read as `props.<name>` (#3693). Resolved
+   *  at `scope`, where a loop or callback binding shadows the outer typing
+   *  and a row field read (`path`) takes the row type's field (#3762). */
+  private _isStringValueName(name: string, componentProperty = false, path: readonly string[] = [], scope = this.scope): boolean {
+    return this.isStringValueNameAt(name, componentProperty, path, scope)
   }
 
   /**

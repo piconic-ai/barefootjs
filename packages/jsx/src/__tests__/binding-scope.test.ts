@@ -7,7 +7,7 @@
  */
 
 import { describe, test, expect } from 'bun:test'
-import { BindingScope } from '../scope/binding-scope.ts'
+import { arrayElementType, BindingScope, isSameLoopValueShape, loopValueTypeAt, unionOfLoopValueTypes } from '../scope/binding-scope.ts'
 
 describe('BindingScope', () => {
   test('EMPTY: nothing bound, lookup null, empty boundNames, shadow predicate false', () => {
@@ -263,5 +263,93 @@ describe('enterAliases (#3402)', () => {
     expect(aliased.isStringValueName('__bf_cap_l0_name', () => false)).toBe(true)
     expect(aliased.isBound('__bf_cap_l0_x')).toBe(false)
     expect(BindingScope.EMPTY.enterAliases(new Map([['a', 'b']]))).toBe(BindingScope.EMPTY)
+  })
+})
+
+describe('row field string typing (#3762)', () => {
+  const fields = { Row: [{ name: 'id', type: { primitive: 'string' } }, { name: 'n', type: { primitive: 'number' } }] }
+  const named = (name: string) => fields[name as keyof typeof fields]
+  const rowType = { raw: 'Row' }
+
+  test('a row read resolves its field through the named type', () => {
+    const scope = BindingScope.EMPTY.enterLoopRow({ param: 'r', rowType })
+    expect(scope.isStringValueName('r', () => true, false, ['id'], named)).toBe(true)
+    expect(scope.isStringValueName('r', () => true, false, ['n'], named)).toBe(false)
+    expect(scope.isStringValueName('r', () => true, false, ['id'])).toBe(false)
+    expect(scope.isStringValueName('r', () => true)).toBe(false)
+  })
+
+  test('a destructured binding resolves its own path', () => {
+    const scope = BindingScope.EMPTY.enterLoopRow({
+      param: '{ id, n }',
+      rowType,
+      paramBindings: [
+        { name: 'id', segments: [{ kind: 'field', key: 'id', isIdent: true }] },
+        { name: 'n', segments: [{ kind: 'field', key: 'n', isIdent: true }] },
+      ],
+    })
+    expect(scope.isStringValueName('id', () => false, false, [], named)).toBe(true)
+    expect(scope.isStringValueName('n', () => true, false, [], named)).toBe(false)
+  })
+
+  test('an outer name types itself, not its members; a shadowing props row types props.<field>', () => {
+    expect(BindingScope.EMPTY.isStringValueName('label', () => true, false, ['length'])).toBe(false)
+    const props = BindingScope.EMPTY.enterLoopRow({ param: 'props', rowType })
+    expect(props.isStringValueName('id', () => false, true, [], named)).toBe(true)
+    expect(props.isStringValueName('n', () => true, true, [], named)).toBe(false)
+  })
+
+  test('a callback param shadows an outer string name', () => {
+    const scope = BindingScope.EMPTY.enterCallback(['label'])
+    expect(scope.isStringValueName('label', () => true)).toBe(false)
+  })
+})
+
+describe('optional row fields (#3762 review)', () => {
+  const fields = { Opt: [{ name: 'id', type: { primitive: 'string' }, optional: true }] }
+  const named = (name: string) => fields[name as keyof typeof fields]
+
+  test('an optional string field is not definitely a string, read or destructured', () => {
+    const row = BindingScope.EMPTY.enterLoopRow({ param: 'o', rowType: { raw: 'Opt' } })
+    expect(row.isStringValueName('o', () => true, false, ['id'], named)).toBe(false)
+    const destructured = BindingScope.EMPTY.enterLoopRow({
+      param: '{ id }',
+      rowType: { raw: 'Opt' },
+      paramBindings: [{ name: 'id', segments: [{ kind: 'field', key: 'id', isIdent: true }] }],
+    })
+    expect(destructured.isStringValueName('id', () => true, false, [], named)).toBe(false)
+  })
+})
+
+describe('arrayElementType and union normalisation (#3762 review)', () => {
+  const row = { kind: 'interface', raw: 'Row' }
+  const other = { kind: 'interface', raw: 'Other' }
+  const rows = { kind: 'array', raw: 'Row[]', elementType: row }
+
+  test('an array reads its element; a union of arrays reads the union of their elements', () => {
+    expect(arrayElementType(rows)).toBe(row)
+    const mixed = { kind: 'union', unionTypes: [rows, { kind: 'array', raw: 'Other[]', elementType: other }] }
+    expect(arrayElementType(mixed)?.unionTypes).toEqual([row, other])
+  })
+
+  test('a union with a non-array member, a scalar or nothing has no element type', () => {
+    expect(arrayElementType({ kind: 'union', unionTypes: [rows, { kind: 'primitive', primitive: 'undefined' }] })).toBeUndefined()
+    expect(arrayElementType({ kind: 'primitive', primitive: 'string' })).toBeUndefined()
+    expect(arrayElementType(null)).toBeUndefined()
+  })
+
+  test('structurally identical members collapse to one; different ones stay a union', () => {
+    const copy = { kind: 'array', raw: 'Row[]', elementType: { kind: 'interface', raw: 'Row' } }
+    expect(unionOfLoopValueTypes([rows, copy])).toBe(rows)
+    expect(unionOfLoopValueTypes([row])).toBe(row)
+    expect(unionOfLoopValueTypes([row, other]).unionTypes).toEqual([row, other])
+    expect(isSameLoopValueShape(row, other)).toBe(false)
+  })
+
+  test('a nested array field read across a union keeps its element type', () => {
+    const child = { kind: 'object', raw: '{ id: string }', properties: [{ name: 'id', type: { primitive: 'string' } }] }
+    const withChildren = (raw: string) => ({ kind: 'interface', raw, properties: [{ name: 'children', type: { kind: 'array', raw: 'C[]', elementType: child } }] })
+    const children = loopValueTypeAt(unionOfLoopValueTypes([withChildren('A'), withChildren('B')]), [{ kind: 'field', key: 'children', isIdent: true }])
+    expect(arrayElementType(children)).toEqual(child)
   })
 })

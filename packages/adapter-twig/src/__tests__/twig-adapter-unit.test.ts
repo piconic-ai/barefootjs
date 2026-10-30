@@ -497,7 +497,9 @@ function Widget({ values }: { values: number[] }) {
   </div>
 }
 `)
-    expect(template).toContain("1 + 'x'")
+    // Outside the loop `label` is the string const: JS `1 + 'x'` is `"1x"`
+    // (#3762). Inside, the numeric row shadows it.
+    expect(template).toContain("bf.string(1) ~ 'x'")
     expect(template).toContain('2 + label')
   })
 })
@@ -594,9 +596,9 @@ function Widget({ values }: { values: number[] }) {
 })
 
 // Fable review (#2212): a loop callback's own param can shadow an outer
-// string-typed prop/const of the same name — `collectLoopBoundNames`
-// excludes every such name from `collectStringValueNames` so the shadowed
-// occurrence never gets misdetected as string-typed. SSR-only (no Hono/CSR):
+// string-typed prop/const of the same name — the shared `BindingScope`
+// resolves the name at the read (#3762), so the shadowed occurrence never
+// gets misdetected as string-typed and the outer one keeps its typing. SSR-only (no Hono/CSR):
 // a real, PRE-EXISTING, unrelated bug in ir-to-client-js's prop-substitution
 // (filed as #2222) means ANY component where a loop param shadows an
 // outer prop/const currently produces broken CLIENT js — so this can't be
@@ -632,18 +634,10 @@ function Widget() {
     expect(template).not.toContain('1 ~ ')
   })
 
-  // `label + '!'` outside the loop concatenates via Twig's `~` regardless of
-  // whether `label` survives the loop-bound exclusion: a bare string
-  // *literal* operand (`'!'`) alone is decisive for `isStringConcatBinary`
-  // (JS `+` with a string literal is always string concat, independent of
-  // the other operand's type) — so this case never exercises the coarse
-  // exclusion trade-off at all. The trade-off documented above (a
-  // non-shadowed same-named string elsewhere in the component falling back
-  // to numeric `+`) only shows up when BOTH operands' string-ness is
-  // inferred solely from identifier lookup — e.g. `label + label`, where
-  // the only string-typed name involved is the one excluded for being
-  // loop-bound elsewhere in the component.
-  test('a same-named identifier added to itself outside the loop falls back to numeric + (the accepted coarse-exclusion trade-off)', () => {
+  // Shadowing is decided at the read through the shared `BindingScope`
+  // (#3762): outside the loop `label` is the string prop, so `label + label`
+  // concatenates; inside, the numeric row param stays numeric.
+  test('a same-named identifier added to itself outside the loop concatenates', () => {
     const { template } = compileAndGenerate(`
 function Widget({ label, values }: { label: string; values: number[] }) {
   return <div>
@@ -652,8 +646,8 @@ function Widget({ label, values }: { label: string; values: number[] }) {
   </div>
 }
 `)
-    expect(template).toContain('label + label')
-    expect(template).not.toContain('label ~ label')
+    expect(template).toContain('label ~ label')
+    expect(template).toContain('1 + label')
   })
 
   test('a string literal operand forces concat even for a name that is loop-bound elsewhere', () => {
@@ -665,19 +659,16 @@ function Widget({ label, values }: { label: string; values: number[] }) {
   </div>
 }
 `)
-    // `label` is excluded from the string set here, so it goes through
-    // `bf.string` (#3698); the operator is still `~`.
-    expect(template).toContain("bf.string(label) ~ '!'")
-    expect(template).not.toContain("label + '!'")
+    // Outside the loop `label` is the string prop (#3762).
+    expect(template).toContain("label ~ '!'")
+    expect(template).not.toContain("bf.string(label) ~ '!'")
   })
 
   // Fable re-review: a DESTRUCTURED loop param (`.map(({ name }) => ...)`)
   // shadows an outer string prop of the same name too. Twig lowers the
   // destructure to a `{% set name = __bf_item.name %}` local (#2087), which
-  // leaves `name` reachable as a bare identifier in the loop body —
-  // `collectLoopBoundNames` must read `paramBindings`, not just `param`
-  // (which holds the raw, un-parsed destructure pattern text here), to
-  // catch this shape.
+  // leaves `name` reachable as a bare identifier in the loop body; the row
+  // binding types it from the row type's `name: number` field.
   test('a destructured loop param shadowing an outer string PROP stays numeric + inside the loop', () => {
     const { template } = compileAndGenerate(`
 function Widget({ name, rows }: { name: string; rows: { name: number }[] }) {
@@ -960,9 +951,8 @@ export function ConcatRenamedProp(props: { fallbackLabel: string }) {
   )
 }
 `)
-    // The row field is not string-typed to the shared classifier, so it
-    // goes through `bf.string` (#3698); the operator is still `~`.
-    expect(result.template).toContain('bf.string(t.label) ~ fallbackLabel')
+    // The row field is declared `string` on the row type (#3762).
+    expect(result.template).toContain('t.label ~ fallbackLabel')
   })
 })
 

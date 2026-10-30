@@ -12,7 +12,7 @@
  * (Perl's `->[]` vs `->{}` split has no Kolon equivalent).
  */
 
-import { isBooleanResultParsed, isNumericArithmeticResult, isStringTypedOperand, type ParsedExpr } from '@barefootjs/jsx'
+import { isBooleanResultParsed, isNumericArithmeticResult, isStringTypedOperand, type ParsedExpr, type StringNameTest } from '@barefootjs/jsx'
 
 /**
  * Lower `arr[index]` to the runtime's polymorphic `bf->get` accessor
@@ -41,7 +41,7 @@ export function emitIndexAccessPerl(
 
 /** What the emitter knows about a name's declared type at this position. */
 export interface EqualityOperandTyping {
-  isStringName: (n: string, componentProperty?: boolean) => boolean
+  isStringName: StringNameTest
   isNumberName: (n: string, componentProperty?: boolean) => boolean
   isBooleanName?: (n: string, componentProperty?: boolean) => boolean
 }

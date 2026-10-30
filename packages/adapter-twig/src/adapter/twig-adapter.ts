@@ -1165,12 +1165,14 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
   ): string {
     // Arithmetic over a prop whose nil the type cannot classify (#3700).
     this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
+    // The predicate's own param and locals shadow an outer string-typed name.
+    const predicateScope = this.scope.enterCallback([param, ...localVarMap.keys()])
     return emitParsedExpr(
       expr,
       new TwigFilterEmitter(
         param,
         localVarMap,
-        (n, property) => this._isStringValueName(n, property),
+        (n, property, path) => this._isStringValueName(n, property, path, predicateScope),
         // A nested callback method inside the predicate has no Twig scalar
         // form — surface BF101 (#2038) instead of silently degrading it to
         // its receiver.
@@ -1238,7 +1240,7 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
       _isRootPropsObject: (expr) => isRootPropsObject(expr, n => this.scope.isBound(n)),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _staticArrayElement: (o, k) => lookupStaticArrayElement(o, k, this.localConstants, n => this.scope.isBound(n)),
-      _isStringValueName: (name, property) => this._isStringValueName(name, property),
+      _isStringValueName: (name, property, path) => this._isStringValueName(name, property, path),
       _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
@@ -1365,8 +1367,8 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
    *  for parity with the Perl-family adapters; the Twig emitters don't
    *  consume it (`===`/`!==` always routes through `bf.eq`/`bf.neq`
    *  regardless of operand type). */
-  private _isStringValueName(name: string, componentProperty = false): boolean {
-    return this.scope.isStringValueName(name, n => this.stringValueNames.has(n), componentProperty)
+  private _isStringValueName(name: string, componentProperty = false, path: readonly string[] = [], scope = this.scope): boolean {
+    return this.isStringValueNameAt(name, componentProperty, path, scope)
   }
 
   /**

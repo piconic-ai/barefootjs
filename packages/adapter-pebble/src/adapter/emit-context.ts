@@ -102,7 +102,7 @@ export interface PebbleEmitContext {
    * need; see `pebble-adapter.ts`'s file header for why this is a real
    * divergence here, unlike Jinja, which never needed this gate).
    */
-  _isStringValueName(name: string, componentProperty?: boolean): boolean
+  _isStringValueName(name: string, componentProperty?: boolean, path?: readonly string[]): boolean
 }
 
 /**

@@ -67,8 +67,9 @@ export interface ConditionExprHost {
   higherOrderShapeOf(node: ParsedExpr): HigherOrderShape | null
   /** `len (bf_filter …)` for `.filter(cb).length`, or null. */
   renderFilterLengthExpr(filterExpr: HigherOrderShape, renderArray: (e: ParsedExpr) => string): string | null
-  /** The JS `+` lowering (numeric add or string concat). */
-  emitPlus(leftExpr: ParsedExpr, rightExpr: ParsedExpr, leftRendered: string, rightRendered: string): string
+  /** The JS `+` lowering (numeric add or string concat). `callbackParams`:
+   *  the predicate's own bindings, which shadow an outer string-typed name. */
+  emitPlus(leftExpr: ParsedExpr, rightExpr: ParsedExpr, leftRendered: string, rightRendered: string, callbackParams?: readonly string[]): string
   /** A bare identifier naming a literal local const, as Go, or null. */
   resolveLiteralConstAsGo(name: string): string | null
   /** A static `Const.key` / `Const[0]` read of a module literal const, as Go, or null. */
@@ -412,7 +413,7 @@ function renderFilterBinary(
   if (call !== null) return call
   switch (expr.op) {
     case '+':
-      return host.emitPlus(expr.left, expr.right, wl, wr)
+      return host.emitPlus(expr.left, expr.right, wl, wr, [param, ...localVarMap.keys()])
     case '-':
       return `bf_sub ${wl} ${wr}`
     case '*':

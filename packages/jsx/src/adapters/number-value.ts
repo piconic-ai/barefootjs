@@ -6,6 +6,7 @@
  */
 
 import type { ParsedExpr } from '../expression-parser.ts'
+import type { StringNameTest } from './parsed-expr-emitter.ts'
 import type { SsrSeedPlan } from '../ssr-seed-plan.ts'
 import type { ComponentIR, TypeInfo } from '../types.ts'
 import { isNumericArithmeticResult } from './parsed-expr-emitter.ts'
@@ -54,7 +55,7 @@ export function collectNumberValueNames(ir: Pick<ComponentIR, 'metadata'>): { na
  */
 export function isNumberValuedExpr(
   expr: ParsedExpr | null | undefined,
-  isStringName: (n: string, componentProperty?: boolean) => boolean,
+  isStringName: StringNameTest,
   isNumberName: (n: string, componentProperty?: boolean) => boolean,
 ): boolean {
   if (!expr) return false
@@ -81,7 +82,7 @@ export function isNumberValuedExpr(
  */
 export function numberValuedSeedNames(
   plan: SsrSeedPlan,
-  isStringName: (n: string, componentProperty?: boolean) => boolean,
+  isStringName: StringNameTest,
   isNumberName: (n: string, componentProperty?: boolean) => boolean,
 ): Set<string> {
   const names = new Set<string>()

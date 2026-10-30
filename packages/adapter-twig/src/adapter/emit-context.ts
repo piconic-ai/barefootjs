@@ -75,7 +75,7 @@ export interface TwigEmitContext {
   _staticArrayElement(objectName: string, key: string): ParsedExpr | null
 
   /** Whether a getter/prop name resolves to a string-typed SSR value. */
-  _isStringValueName(name: string, componentProperty?: boolean): boolean
+  _isStringValueName(name: string, componentProperty?: boolean, path?: readonly string[]): boolean
   /** How the emitter coerces an arithmetic operand over a nullish value
    * (`arithmeticOperandCoercion`, #3474): `'null'` reads nil as `0`,
    * `'undefined'` as the runtime's JS `Number()` gives it, `NaN`. `other` is
