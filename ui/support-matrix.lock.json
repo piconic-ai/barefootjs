@@ -3439,6 +3439,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -3560,6 +3566,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -3813,6 +3825,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -3955,6 +3973,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -4091,6 +4115,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -4206,6 +4236,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -4339,6 +4375,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -4454,6 +4496,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -4584,6 +4632,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -7954,6 +8008,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -8303,6 +8363,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -8856,6 +8922,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -9250,6 +9322,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -9620,6 +9698,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -9963,6 +10047,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -10330,6 +10420,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -10673,6 +10769,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -11031,6 +11133,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -11499,6 +11607,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -11764,6 +11878,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -12197,6 +12317,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -12501,6 +12627,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -12775,6 +12907,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -13034,6 +13172,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -13317,6 +13461,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -13564,6 +13714,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -13829,6 +13985,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -13945,6 +14107,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -13994,6 +14162,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -14169,6 +14343,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -14218,6 +14398,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -14273,6 +14459,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -14322,6 +14514,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -14377,6 +14575,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -14420,6 +14624,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -14472,6 +14682,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -14716,6 +14932,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -14972,6 +15194,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -15399,6 +15627,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -15679,6 +15913,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -15947,6 +16187,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -16194,6 +16440,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -16471,6 +16723,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -16733,6 +16991,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -16992,6 +17256,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -20756,6 +21026,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -20799,6 +21075,12 @@
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -20884,6 +21166,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -20927,6 +21215,12 @@
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -20976,6 +21270,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -21013,6 +21313,12 @@
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -21062,6 +21368,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -21102,6 +21414,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -21139,6 +21457,12 @@
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -24752,6 +25076,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -24927,6 +25257,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -25246,6 +25582,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -25448,6 +25790,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -25632,6 +25980,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -25801,6 +26155,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -25994,6 +26354,12 @@
               ]
             },
             {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -26151,6 +26517,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -26323,6 +26695,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -27040,15 +27418,96 @@
     "logical:||": {
       "cells": {
         "hono": {},
-        "blade": {},
-        "erb": {},
-        "go-template": {},
-        "jinja": {},
-        "minijinja": {},
-        "mojolicious": {},
-        "pebble": {},
-        "twig": {},
-        "xslate": {}
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            }
+          ]
+        },
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            }
+          ]
+        },
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "props-object-non-props-name-operand-typing",
+              "limitations": [
+                "props-object-non-props-name-operand-typing"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",

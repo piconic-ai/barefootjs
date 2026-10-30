@@ -11672,6 +11672,60 @@
         "text"
       ]
     },
+    "props-object-non-props-name": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:!==",
+        "binary:+",
+        "binary:===",
+        "literal:null",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "props-object-non-props-name-operand-typing": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "props-object-non-props-name-spread": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "props-reactive": {
       "kinds": [
         "call",

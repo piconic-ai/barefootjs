@@ -298,7 +298,7 @@ export function planLoop<Spelled>(loop: IRLoop, ctx: LoopPlanContext<Spelled>): 
     destructure,
     staticSource,
     unresolvableConst: staticSource === null ? unresolvableConst(loop, ctx) : null,
-    sort: loop.sortComparator ? lowerSortComparator('sort', loop.sortComparator.arrow, ctx.callbackLowering.adapterName) : null,
+    sort: loop.sortComparator ? lowerSortComparator('sort', loop.sortComparator.arrow, ctx.callbackLowering.adapterName, ctx.scope.propsObject) : null,
     captureAliases,
     filter: filterPlan(loop, captureAliases, ctx.callbackLowering.adapterName),
     itemVar: loop.iterationShape === 'keys' || destructure === 'lowerable' ? '__bf_item' : loop.param,

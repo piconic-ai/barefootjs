@@ -30,9 +30,9 @@ function callOf(source: string) {
   return call
 }
 
-const lower = (source: string, options = jinja) => {
+const lower = (source: string, options = jinja, propsObject = 'props') => {
   const call = callOf(source)
-  return lowerCallbackMethod(call.method, call.arrow, call.args, options)
+  return lowerCallbackMethod(call.method, call.arrow, call.args, options, propsObject)
 }
 
 const spelling: CallbackEvalSpelling = {
@@ -267,11 +267,11 @@ describe('lowerCallbackMethod: props.X reads in an evaluator body', () => {
   // A template has no `props` object, so the env binds each `props.X` read
   // under a fresh name, spelled as the adapter spells `props.X` elsewhere.
   const emitPropsRead = (e: ParsedExpr) =>
-    e.kind === 'member' && e.object.kind === 'identifier' && e.object.name === 'props'
+    e.kind === 'member' && e.object.kind === 'identifier' && (e.object.name === 'props' || e.object.name === 'p')
       ? `$${e.property}`
       : emitIdentifier(e)
-  const renderProps = (source: string) => {
-    const plan = lower(source)
+  const renderProps = (source: string, propsObject = 'props') => {
+    const plan = lower(source, jinja, propsObject)
     if (plan.kind !== 'eval') throw new Error(`expected an eval plan, got ${plan.kind}`)
     return emitCallbackEval(plan, 'RECV', emitPropsRead, spelling)
   }
@@ -314,5 +314,11 @@ describe('lowerCallbackMethod: props.X reads in an evaluator body', () => {
     )
     expect(renderProps('props.items.reduce((acc, i) => acc + i * props.k, 0)')).toEndWith(`{__bf_props_k=$k})`)
     expect(renderProps('props.items.map(i => i * props.k)')).toEndWith(`{__bf_props_k=$k})`)
+  })
+
+  test('a props object named p lifts p.X reads, and props is then an ordinary name', () => {
+    expect(renderProps('p.items.filter(i => i > p.n)', 'p')).toEndWith(`'i', {__bf_props_n=$n})`)
+    expect(renderProps('p.items.some(p => p.on)', 'p')).toEndWith(`'p', {})`)
+    expect(renderProps('p.items.filter(i => i > props.n)', 'p')).toEndWith(`'i', {props=$props})`)
   })
 })

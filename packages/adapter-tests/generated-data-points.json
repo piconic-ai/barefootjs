@@ -10733,6 +10733,64 @@
       }
     }
   ],
+  "props-object-non-props-name-operand-typing": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "on": true,
+        "n": 7
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "on": true,
+        "n": 7
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "on": true,
+        "n": 7
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "label": "L",
+        "on": false,
+        "n": 7
+      }
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "label": "L",
+        "on": true,
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "label": "L",
+        "on": true,
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "label": "L",
+        "on": true,
+        "n": 1234567890
+      }
+    }
+  ],
   "props-reactive": [
     {
       "name": "gen:label:empty",
