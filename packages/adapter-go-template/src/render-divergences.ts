@@ -323,4 +323,7 @@ export const dataPointDivergences: Readonly<Record<string, { limitation: string 
   // The same fixture's root called with `label: null`, forwarded through two
   // `{...props}` spreads: the second keeps its earlier `"first"`.
   'component-spread-forwarded-absent:gen:label:union:1': { limitation: 'props-spread-explicit-null-override' },
+  // A JSON `null` and an omitted key both decode to a nil slice, so the
+  // destructure default applies to both and the `??` / `||` fallback never does.
+  'signal-array-prop-fallback-seed-default:items-null': { limitation: 'defaulted-array-prop-explicit-null' },
 }

@@ -376,7 +376,10 @@ function propSliceFallbackSeed(
   const propName = seedPassthroughPropName(ctx, preParsed)
   if (!propName || !propsParams?.some(p => p.name === propName)) return null
   const param = ctx.state.currentPropsParams.find(p => p.name === propName)
-  if (!param) return null
+  // A destructure default (`{ items: rows = [] }`) applies before `??` / `||`
+  // reads the binding, so the raw field's nil is not the fallback's cue:
+  // that seed keeps the defaulted prop read.
+  if (!param || param.defaultValue !== undefined) return null
   const goType = typeInfoToGo(ctx, param.type)
   if (!goType.startsWith('[]')) return null
   const fallback = parsedLiteralToGo(ctx, preParsed.right, param.type)

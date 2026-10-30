@@ -113,4 +113,7 @@ export const renderDivergences: RenderDivergences = {
  * `@barefootjs/go-template`'s `dataPointDivergences`.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
+  // The template reads `null` as absent, so the destructure default applies
+  // and the `??` / `||` fallback never does.
+  'signal-array-prop-fallback-seed-default:items-null': { limitation: 'defaulted-array-prop-explicit-null' },
 }

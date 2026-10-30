@@ -1304,6 +1304,7 @@ import { fixture as loopKeyToStringNumberComponentRowClient } from './loop-key-t
 import { fixture as signalArraySeedRowStruct } from './signal-array-seed-row-struct'
 import { fixture as signalArrayPropFallbackSeed } from './signal-array-prop-fallback-seed'
 import { fixture as signalArrayPropFallbackSeedDestructured } from './signal-array-prop-fallback-seed-destructured'
+import { fixture as signalArrayPropFallbackSeedDefault } from './signal-array-prop-fallback-seed-default'
 
 import type { JSXFixture } from '../src/types'
 
@@ -2272,4 +2273,5 @@ export const jsxFixtures: JSXFixture[] = [
   signalArraySeedRowStruct,
   signalArrayPropFallbackSeed,
   signalArrayPropFallbackSeedDestructured,
+  signalArrayPropFallbackSeedDefault,
 ]

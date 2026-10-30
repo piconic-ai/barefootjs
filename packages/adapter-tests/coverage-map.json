@@ -12648,6 +12648,27 @@
         "text"
       ]
     },
+    "signal-array-prop-fallback-seed-default": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "signal-array-prop-fallback-seed-destructured": {
       "kinds": [
         "array-literal",
