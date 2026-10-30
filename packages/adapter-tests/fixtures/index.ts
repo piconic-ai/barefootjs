@@ -95,6 +95,7 @@ import { fixture as propsReactivityComparison } from './props-reactivity-compari
 import { fixture as destructuredPropsLive } from './destructured-props-live'
 import { fixture as bodyDestructuredPropsLive } from './body-destructured-props-live'
 import { fixture as bodyDestructuredPropDefaultRenamed } from './body-destructured-prop-default-renamed'
+import { fixture as bodyDestructuredPropsObjectAlias } from './body-destructured-props-object-alias'
 import { fixture as bodyDestructuredPropDefaultArrow } from './body-destructured-prop-default-arrow'
 import { fixture as form } from './form'
 import { fixture as portal } from './portal'
@@ -746,6 +747,8 @@ import { fixture as atSignBesideBrace } from './at-sign-beside-brace'
 import { fixture as templateDelimiterStaticText } from './template-delimiter-static-text'
 import { fixture as templateDelimiterContextualEscape } from './template-delimiter-contextual-escape'
 import { fixture as templateDelimiterStaticTextPropsObject } from './template-delimiter-static-text-props-object'
+import { fixture as percentDelimiterStringLiteral } from './percent-delimiter-string-literal'
+import { fixture as percentDelimiterStringLiteralPropsObject } from './percent-delimiter-string-literal-props-object'
 import { fixture as memoChain } from './memo-chain'
 import { fixture as memoMultiStatementBlock } from './memo-multi-statement-block'
 import { fixture as childPropFromPropsObject } from './child-prop-from-props-object'
@@ -1340,6 +1343,7 @@ export const jsxFixtures: JSXFixture[] = [
   destructuredPropsLive,
   bodyDestructuredPropsLive,
   bodyDestructuredPropDefaultRenamed,
+  bodyDestructuredPropsObjectAlias,
   bodyDestructuredPropDefaultArrow,
   form,
   portal,
@@ -1876,6 +1880,8 @@ export const jsxFixtures: JSXFixture[] = [
   templateDelimiterStaticText,
   templateDelimiterContextualEscape,
   templateDelimiterStaticTextPropsObject,
+  percentDelimiterStringLiteral,
+  percentDelimiterStringLiteralPropsObject,
   memoChain,
   memoMultiStatementBlock,
   childPropFromPropsObject,

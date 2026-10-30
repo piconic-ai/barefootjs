@@ -36,6 +36,7 @@ import fs from 'node:fs'
 import { signalSecondBinding } from './signal-initializer.ts'
 import { observesWholePropsObject } from './props-object-whole-read.ts'
 import { separateSignalPropBindings, programWithSeparatedSource } from './signal-prop-name-collision.ts'
+import { isAssignmentTargetIdentifier } from './assignment-target.ts'
 
 // =============================================================================
 // TypeScript Program Creation
@@ -938,14 +939,10 @@ function visitComponentBody(node: ts.Node, ctx: AnalyzerContext): void {
       if (ts.isIdentifier(decl.name)) {
         const isLet = (node.declarationList.flags & ts.NodeFlags.Let) !== 0
         collectConstant(decl, ctx, false, isLet ? 'let' : 'const')
-      } else if (
-        ts.isObjectBindingPattern(decl.name) &&
-        decl.initializer &&
-        ts.isIdentifier(decl.initializer) &&
-        ctx.propsObjectName === decl.initializer.text
-      ) {
-        // Body-level destructure from `props` — `collectConstant` handles
-        // the expansion into one entry per destructured name.
+      } else if (destructuresPropsObject(decl, ctx)) {
+        // Body-level destructure from `props` (or a component-scope `const`
+        // alias of it) — `collectConstant` handles the expansion into one
+        // entry per destructured name.
         const isLet = (node.declarationList.flags & ts.NodeFlags.Let) !== 0
         collectConstant(decl, ctx, false, isLet ? 'let' : 'const')
       }
@@ -3837,6 +3834,89 @@ function defaultPartsReadingEarlierBindings(
   )
 }
 
+/**
+ * Whether `decl` is a component-body object destructure of the props object
+ * (`const { x } = props`) — the one decision both `visitComponentBody` and
+ * `collectConstant` use to expand it into per-name prop reads.
+ *
+ * The initializer may also be a component-scope `const` alias of the props
+ * object (`const p = props; const { x } = p`, transitively). Anything else
+ * is NOT the props object. The alias is resolved from real bindings: the
+ * alias declaration and the destructure must both be direct statements of
+ * the component body (no nested block can shadow the alias between them),
+ * and the alias must be declared before the destructure. A `let` alias is
+ * refused, since a reassignment can make it name another object. Any alias
+ * is refused when the props parameter itself is assigned anywhere in the
+ * body (`props = …`): the alias keeps the object it captured, so it may no
+ * longer be what `props` names.
+ */
+function destructuresPropsObject(
+  decl: ts.VariableDeclaration,
+  ctx: AnalyzerContext,
+): decl is ts.VariableDeclaration & { name: ts.ObjectBindingPattern; initializer: ts.Expression } {
+  if (!ts.isObjectBindingPattern(decl.name) || !decl.initializer || ctx.propsObjectName === null) return false
+  return isPropsObjectReference(decl.initializer, decl, ctx, new Set())
+}
+
+function isPropsObjectReference(
+  expr: ts.Expression,
+  use: ts.VariableDeclaration,
+  ctx: AnalyzerContext,
+  visiting: Set<ts.VariableDeclaration>,
+): boolean {
+  if (!ts.isIdentifier(expr)) return false
+  if (expr.text === ctx.propsObjectName) return true
+  const body = ctx.componentBodyBlock
+  if (body === null || !isComponentBodyStatementDeclaration(use, body)) return false
+  // A const alias keeps the object it captured, but the props parameter can
+  // be reassigned after the capture. Then the alias is not the props object.
+  if (assignsIdentifier(body, ctx.propsObjectName)) return false
+  const alias = componentConstDeclaration(expr.text, body)
+  if (alias === null || alias.pos >= use.pos || visiting.has(alias) || !alias.initializer) return false
+  visiting.add(alias)
+  return isPropsObjectReference(alias.initializer, alias, ctx, visiting)
+}
+
+/**
+ * Whether anything under `root` writes the identifier `name`, by the shared
+ * assignment-target rule (`isAssignmentTargetIdentifier`): an assignment or
+ * compound assignment, `++` / `--`, a destructuring-assignment target or a
+ * `for (… of / in …)` head. Conservative: a nested binding that shadows
+ * `name` counts too.
+ */
+function assignsIdentifier(root: ts.Node, name: string | null): boolean {
+  if (name === null) return false
+  let found = false
+  const visit = (node: ts.Node): void => {
+    if (found) return
+    if (ts.isIdentifier(node) && node.text === name && isAssignmentTargetIdentifier(node)) {
+      found = true
+      return
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(root)
+  return found
+}
+
+/** Whether `decl` belongs to a variable statement that is a direct child of `body`. */
+function isComponentBodyStatementDeclaration(decl: ts.VariableDeclaration, body: ts.Block): boolean {
+  const statement = decl.parent?.parent
+  return statement !== undefined && ts.isVariableStatement(statement) && statement.parent === body
+}
+
+/** The `const <name> = …` declaration among `body`'s direct statements, or null. */
+function componentConstDeclaration(name: string, body: ts.Block): ts.VariableDeclaration | null {
+  for (const stmt of body.statements) {
+    if (!ts.isVariableStatement(stmt)) continue
+    for (const d of stmt.declarationList.declarations) {
+      if (!ts.isIdentifier(d.name) || d.name.text !== name) continue
+      return (stmt.declarationList.flags & ts.NodeFlags.Const) !== 0 ? d : null
+    }
+  }
+  return null
+}
+
 /** {@link propDefaultReadOf} for a body destructure's binding (`const { label: text = 'x' } = props`). */
 function bodyBindingRead(
   localName: string,
@@ -3876,14 +3956,11 @@ function collectConstant(
   // declarations from `localConstants`). Expand into one `localConstants`
   // entry per destructured name, valued `props.X`, so the late-stage
   // props-object rename turns them into `const X = _p.X` in the init body.
-  if (
-    !_isModule &&
-    ts.isObjectBindingPattern(node.name) &&
-    node.initializer &&
-    ts.isIdentifier(node.initializer) &&
-    ctx.propsObjectName === node.initializer.text
-  ) {
-    const propsName = node.initializer.text
+  if (!_isModule && ctx.propsObjectName !== null && destructuresPropsObject(node, ctx)) {
+    // Always the props object's own name, even when the destructure reads
+    // it through a `const` alias (`const p = props; const { x } = p`), so
+    // every downstream `props.X` recognizer sees one spelling.
+    const propsName = ctx.propsObjectName
     // Bindings already destructured by this pattern, by local name: a later
     // default reads them (`const { off = false, on = off } = props`, #3531).
     const earlier = new Map<string, PropDefaultRead>()

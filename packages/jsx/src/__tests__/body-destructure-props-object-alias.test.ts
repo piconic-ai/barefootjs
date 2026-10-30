@@ -1,0 +1,123 @@
+/**
+ * A body destructure whose initializer is a component-scope `const` alias of
+ * the props object (`const p = props; const { x } = p`) is a destructure of
+ * the props object: the analyzer expands it into one `props.<key>`
+ * `localConstants` entry per name, exactly like `const { x } = props`.
+ * Before, only the literal props identifier was recognized and the
+ * destructure was dropped with no diagnostic, so every read of `x` was an
+ * unbound name (Hono SSR threw `ReferenceError`).
+ *
+ * Shapes that are not provably the props object stay unrecognized: a `let`
+ * alias (a reassignment can repoint it), an alias declared after the
+ * destructure, a destructure in a nested block (a block-local binding
+ * can shadow the alias there), and any alias when the props parameter
+ * itself is reassigned (the alias keeps the object it captured).
+ */
+
+import { describe, test, expect } from 'bun:test'
+import { analyzeComponent } from '../analyzer'
+
+function destructured(body: string) {
+  const source = `
+    type P = { value: number; label?: string; onPick?: () => void }
+    export function C(props: P) {
+      ${body}
+      return <div />
+    }
+  `
+  const ctx = analyzeComponent(source, 'test.tsx')
+  return ctx.localConstants
+    .filter(c => c.propsDestructure !== undefined)
+    .map(c => ({ name: c.name, value: c.value, sourceKey: c.propsDestructure?.sourceKey }))
+}
+
+const EXPANDED = [
+  { name: 'value', value: 'props.value', sourceKey: 'value' },
+  { name: 'label', value: "props.label ?? 'none'", sourceKey: 'label' },
+  { name: 'pick', value: 'props.onPick', sourceKey: 'onPick' },
+]
+
+describe('body destructure of a const alias of the props object', () => {
+  test('the props object itself (baseline)', () => {
+    expect(destructured(`const { value, label = 'none', onPick: pick } = props`)).toEqual(EXPANDED)
+  })
+
+  test('a const alias expands like the props object', () => {
+    expect(destructured(`
+      const p = props
+      const { value, label = 'none', onPick: pick } = p
+    `)).toEqual(EXPANDED)
+  })
+
+  test('a chain of const aliases expands like the props object', () => {
+    expect(destructured(`
+      const p = props
+      const q = p
+      const { value, label = 'none', onPick: pick } = q
+    `)).toEqual(EXPANDED)
+  })
+
+  test('a let alias is not the props object', () => {
+    expect(destructured(`
+      let p = props
+      const { value } = p
+    `)).toEqual([])
+  })
+
+  test('an alias of a let alias is not the props object', () => {
+    expect(destructured(`
+      let p = props
+      const q = p
+      const { value } = q
+    `)).toEqual([])
+  })
+
+  test('an alias of another object is not the props object', () => {
+    expect(destructured(`
+      const other = { value: 1 }
+      const { value } = other
+    `)).toEqual([])
+  })
+
+  test('an alias declared after the destructure is not resolved', () => {
+    expect(destructured(`
+      const { value } = p
+      const p = props
+    `)).toEqual([])
+  })
+
+  for (const [label, reassign] of [
+    ['an assignment', `props = { value: 2 }`],
+    ['a destructuring assignment', `;({ props } = { props: { value: 2 } })`],
+    ['an assignment inside a handler', `const reset = () => { props = { value: 2 } }`],
+    ['a for-of loop head inside a handler', `const reset = () => { for (props of [{ value: 2 }]) {} }`],
+    ['a destructuring for-of loop head', `for ({ props } of [{ props: { value: 2 } }]) {}`],
+    ['a for-in loop head', `for (props in { a: 1 }) {}`],
+    ['an update expression', `props++`],
+  ] as const) {
+    test(`an alias is not the props object when the props parameter is reassigned by ${label}`, () => {
+      expect(destructured(`
+        const p = props
+        ${reassign}
+        const { value } = p
+      `)).toEqual([])
+    })
+  }
+
+  test('reassigning the props parameter still leaves a direct destructure of it alone', () => {
+    expect(destructured(`
+      props = { value: 2 }
+      const { value } = props
+    `)).toEqual([{ name: 'value', value: 'props.value', sourceKey: 'value' }])
+  })
+
+  test('a destructure in a nested block does not resolve the alias', () => {
+    expect(destructured(`
+      const p = props
+      if (p) {
+        const p = { value: 2 }
+        const { value } = p
+      }
+    `)).toEqual([])
+  })
+})

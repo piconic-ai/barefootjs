@@ -14,21 +14,29 @@ export function escapePerlSingleQuoted(s: string): string {
 }
 
 /**
- * Spell a string value as a Perl string literal. A single-quoted literal
- * cannot spell a control character except raw, and a raw newline ends a
- * `%` line in a Mojolicious template, so a value holding a control
- * character is written double-quoted with each control character escaped
- * (and `$` / `@` escaped against interpolation). Any other value stays
- * single-quoted, as before.
+ * Spell a string value as a Perl string literal — the one door every
+ * string value the adapter writes into template code goes through.
+ *
+ * Two inputs cannot stay single-quoted:
+ *   - A control character, which a single-quoted literal can only spell
+ *     raw, and a raw newline ends a `%` line in a Mojolicious template.
+ *   - An EP tag delimiter (`<%` or `%>`). Mojo::Template splits the whole
+ *     template on these before Perl sees it, so one inside a literal opens
+ *     or ends the enclosing tag (`<%= 'a %> b' %>` is a syntax error). EP
+ *     has no in-code escape for them.
+ * Such a value is written double-quoted with each control character and
+ * every `%` hex-escaped (`\x{25}` is still `%` to Perl, but no longer
+ * spells a delimiter), and `\` / `"` / `$` / `@` escaped against
+ * interpolation. Any other value stays single-quoted, as before.
  */
 export function perlStringLiteral(s: string): string {
-  if (!/[\x00-\x1f\x7f]/.test(s)) return `'${escapePerlSingleQuoted(s)}'`
-  const body = s.replace(/[\\"$@\x00-\x1f\x7f]/g, ch => {
+  if (!/[\x00-\x1f\x7f]|<%|%>/.test(s)) return `'${escapePerlSingleQuoted(s)}'`
+  const body = s.replace(/[\\"$@%\x00-\x1f\x7f]/g, ch => {
     if (ch === '\n') return '\\n'
     if (ch === '\r') return '\\r'
     if (ch === '\t') return '\\t'
     const code = ch.charCodeAt(0)
-    return code < 0x20 || code === 0x7f ? `\\x{${code.toString(16)}}` : `\\${ch}`
+    return code < 0x20 || code === 0x7f || ch === '%' ? `\\x{${code.toString(16)}}` : `\\${ch}`
   })
   return `"${body}"`
 }

@@ -2130,13 +2130,21 @@ export function C() {
     // evaluates the arithmetic, and each substitution prints through
     // `bf->string` as JS `String(v)` does (#3440).
     const { template } = gen('`n=${count() + 1}`')
-    expect(template).toContain('"n=" . bf->string(bf->add($count, 1))')
+    expect(template).toContain("'n=' . bf->string(bf->add($count, 1))")
   })
 
-  test('static template-literal text escapes Perl $ and @ sigils', () => {
+  test('static template-literal text keeps Perl $ and @ sigils uninterpolated', () => {
+    // Static chunks go through `perlStringLiteral`: single-quoted, where
+    // `$` / `@` are plain characters.
     const { template } = gen('`Price: $${it()} @user`')
-    expect(template).toContain('\\$')
-    expect(template).toContain('\\@user')
+    expect(template).toContain("'Price: $' . ")
+    expect(template).toContain("' @user'")
+  })
+
+  test('static template-literal text spelling an EP tag delimiter does not end the tag', () => {
+    const { template } = gen('`<% ${it()} %>`')
+    expect(template).toContain('"<\\x{25} " . ')
+    expect(template).toContain('" \\x{25}>"')
   })
 
   test('wrong-arity templatePrimitive records BF101 and emits no hash-deref', () => {
