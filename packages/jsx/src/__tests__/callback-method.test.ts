@@ -262,3 +262,57 @@ describe('unloweredCallRefusal (#3493)', () => {
     expect(refusal.suggestion).toContain('pass it as a prop')
   })
 })
+
+describe('lowerCallbackMethod: props.X reads in an evaluator body', () => {
+  // A template has no `props` object, so the env binds each `props.X` read
+  // under a fresh name, spelled as the adapter spells `props.X` elsewhere.
+  const emitPropsRead = (e: ParsedExpr) =>
+    e.kind === 'member' && e.object.kind === 'identifier' && e.object.name === 'props'
+      ? `$${e.property}`
+      : emitIdentifier(e)
+  const renderProps = (source: string) => {
+    const plan = lower(source)
+    if (plan.kind !== 'eval') throw new Error(`expected an eval plan, got ${plan.kind}`)
+    return emitCallbackEval(plan, 'RECV', emitPropsRead, spelling)
+  }
+
+  test('a predicate reading props.n binds the read, not props', () => {
+    expect(renderProps('props.items.filter(i => i > props.n)')).toBe(
+      `bf.filter_eval(RECV, '{"kind":"binary","op":">","left":{"kind":"identifier","name":"i"},"right":{"kind":"identifier","name":"__bf_props_n"}}', 'i', {__bf_props_n=$n})`,
+    )
+  })
+
+  test('a param named like the prop keeps its own value', () => {
+    expect(renderProps('props.items.filter(n => n > props.n)')).toEndWith(`'n', {__bf_props_n=$n})`)
+  })
+
+  test('two reads of one prop share a name; other free names stay as they are', () => {
+    expect(renderProps('props.items.filter(i => i > props.n && i < props.n + limit)')).toEndWith(
+      `'i', {__bf_props_n=$n, limit=$limit})`,
+    )
+  })
+
+  test('the fresh name avoids every name the body uses', () => {
+    expect(renderProps('props.items.filter(__bf_props_n => __bf_props_n > props.n)')).toEndWith(
+      `'__bf_props_n', {__bf_props_n_=$n})`,
+    )
+  })
+
+  test('a param named props is not the props object', () => {
+    expect(renderProps('items.filter(props => props.n > 1)')).toEndWith(`'props', {})`)
+  })
+
+  test('a nested arrow that binds props shadows it in its body only', () => {
+    const out = renderProps('items.filter(i => i.tags.filter(props => props.on).length > props.n)')
+    expect(out).toContain('"object":{"kind":"identifier","name":"props"},"property":"on"')
+    expect(out).toEndWith(`'i', {__bf_props_n=$n})`)
+  })
+
+  test('sort, reduce and map bodies lift props.X reads too', () => {
+    expect(renderProps('props.items.toSorted((a, b) => props.desc ? b - a : a - b)')).toEndWith(
+      `{__bf_props_desc=$desc})`,
+    )
+    expect(renderProps('props.items.reduce((acc, i) => acc + i * props.k, 0)')).toEndWith(`{__bf_props_k=$k})`)
+    expect(renderProps('props.items.map(i => i * props.k)')).toEndWith(`{__bf_props_k=$k})`)
+  })
+})

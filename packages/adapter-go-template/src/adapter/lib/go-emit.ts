@@ -5,7 +5,7 @@
  */
 
 import type { SortComparator, SupportResult, ParsedExpr } from '@barefootjs/jsx'
-import { arithmeticHelper, escapeBraceDelimiters, serializeParsedExpr, freeVarsInBody } from '@barefootjs/jsx'
+import { arithmeticHelper, escapeBraceDelimiters, evalBody, type CallbackCapture } from '@barefootjs/jsx'
 
 import { capitalize } from "./go-naming.ts"
 
@@ -202,16 +202,14 @@ export function emitBfSort(recv: string, c: SortComparator): string {
 }
 
 /**
- * Build the `bf_env` base_env argument for a callback body: one `"name" <value>`
- * pair per captured free variable (a body identifier that isn't a callback
- * param), each lowered to its Go template value via `emit`. No captures →
- * the bare `bf_env` (an empty env).
+ * Build the `bf_env` base_env argument for a callback body's captures
+ * (`evalBody`): one `"name" <value>` pair each, the value lowered to its Go
+ * template value via `emit`. No captures → the bare `bf_env` (an empty env).
  */
-function emitEvalEnvArg(body: ParsedExpr, params: string[], emit: (e: ParsedExpr) => string): string {
-  const free = freeVarsInBody(body, new Set(params))
-  if (free.length === 0) return 'bf_env'
-  const pairs = free.map(
-    n => `"${escapeGoString(n)}" ${wrapIfMultiToken(emit({ kind: 'identifier', name: n }))}`,
+function emitEvalEnvArg(captured: readonly CallbackCapture[], emit: (e: ParsedExpr) => string): string {
+  if (captured.length === 0) return 'bf_env'
+  const pairs = captured.map(
+    ({ name, value }) => `"${escapeGoString(name)}" ${wrapIfMultiToken(emit(value))}`,
   )
   return `(bf_env ${pairs.join(' ')})`
 }
@@ -230,16 +228,16 @@ export function emitSortEval(
   params: string[],
   emit: (e: ParsedExpr) => string,
 ): string | null {
-  const json = serializeParsedExpr(body)
-  if (json === null) return null
   // A comparator needs both params; a wrong-arity arrow would bind the wrong
   // env (or treat a real param as a free var), so fail over to the structured
   // fallback / BF101 instead of inventing default names.
   if (params.length < 2) return null
   const paramA = params[0]
   const paramB = params[1]
-  const env = emitEvalEnvArg(body, [paramA, paramB], emit)
-  return `bf_sort_eval ${wrapIfMultiToken(recv)} "${escapeGoString(json)}" "${paramA}" "${paramB}" ${env}`
+  const evaluable = evalBody(body, new Set([paramA, paramB]))
+  if (evaluable === null) return null
+  const env = emitEvalEnvArg(evaluable.captured, emit)
+  return `bf_sort_eval ${wrapIfMultiToken(recv)} "${escapeGoString(evaluable.json)}" "${paramA}" "${paramB}" ${env}`
 }
 
 /**
@@ -258,8 +256,6 @@ export function emitReduceEval(
   direction: 'left' | 'right',
   emit: (e: ParsedExpr) => string,
 ): string | null {
-  const json = serializeParsedExpr(body)
-  if (json === null) return null
   // A reducer needs both the accumulator and the element param; a wrong-arity
   // arrow would bind the wrong env, so refuse cleanly (→ BF101) rather than
   // defaulting the names.
@@ -276,8 +272,10 @@ export function emitReduceEval(
   } else {
     return null
   }
-  const env = emitEvalEnvArg(body, [paramAcc, paramItem], emit)
-  return `bf_reduce_eval ${wrapIfMultiToken(recv)} "${escapeGoString(json)}" "${paramAcc}" "${paramItem}" ${initGo} "${direction}" ${env}`
+  const evaluable = evalBody(body, new Set([paramAcc, paramItem]))
+  if (evaluable === null) return null
+  const env = emitEvalEnvArg(evaluable.captured, emit)
+  return `bf_reduce_eval ${wrapIfMultiToken(recv)} "${escapeGoString(evaluable.json)}" "${paramAcc}" "${paramItem}" ${initGo} "${direction}" ${env}`
 }
 
 /**
@@ -304,11 +302,11 @@ export function emitPredicateEval(
   emit: (e: ParsedExpr) => string,
   extraArgs: string[] = [],
 ): string | null {
-  const json = serializeParsedExpr(predicate)
-  if (json === null) return null
-  const env = emitEvalEnvArg(predicate, [param], emit)
+  const evaluable = evalBody(predicate, new Set([param]))
+  if (evaluable === null) return null
+  const env = emitEvalEnvArg(evaluable.captured, emit)
   const extra = extraArgs.length > 0 ? ` ${extraArgs.join(' ')}` : ''
-  return `${funcName} ${wrapIfMultiToken(recv)} "${escapeGoString(json)}" "${param}"${extra} ${env}`
+  return `${funcName} ${wrapIfMultiToken(recv)} "${escapeGoString(evaluable.json)}" "${param}"${extra} ${env}`
 }
 
 /**
@@ -323,10 +321,10 @@ export function emitFlatMapEval(
   param: string,
   emit: (e: ParsedExpr) => string,
 ): string | null {
-  const json = serializeParsedExpr(body)
-  if (json === null) return null
-  const env = emitEvalEnvArg(body, [param], emit)
-  return `bf_flat_map_eval ${wrapIfMultiToken(recv)} "${escapeGoString(json)}" "${param}" ${env}`
+  const evaluable = evalBody(body, new Set([param]))
+  if (evaluable === null) return null
+  const env = emitEvalEnvArg(evaluable.captured, emit)
+  return `bf_flat_map_eval ${wrapIfMultiToken(recv)} "${escapeGoString(evaluable.json)}" "${param}" ${env}`
 }
 
 /**
@@ -343,10 +341,10 @@ export function emitMapEval(
   param: string,
   emit: (e: ParsedExpr) => string,
 ): string | null {
-  const json = serializeParsedExpr(body)
-  if (json === null) return null
-  const env = emitEvalEnvArg(body, [param], emit)
-  return `bf_map_eval ${wrapIfMultiToken(recv)} "${escapeGoString(json)}" "${param}" ${env}`
+  const evaluable = evalBody(body, new Set([param]))
+  if (evaluable === null) return null
+  const env = emitEvalEnvArg(evaluable.captured, emit)
+  return `bf_map_eval ${wrapIfMultiToken(recv)} "${escapeGoString(evaluable.json)}" "${param}" ${env}`
 }
 
 /**
