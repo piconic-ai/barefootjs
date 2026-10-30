@@ -1,4 +1,4 @@
-import { createComponent, hydrate, markupOrEmpty, $, createEffect, createSignal, escapeText, escapeTextOrMarkup, escapeTextOrNode, initChild, lazySlots, mapArray, qsa, qsaChildScopes, renderChild } from '@barefootjs/client/runtime'
+import { createComponent, hydrate, markupOrEmpty, $, childScopesBySlot, createEffect, createSignal, escapeText, escapeTextOrMarkup, escapeTextOrNode, initChild, lazySlots, mapArray, qsa, renderChild } from '@barefootjs/client/runtime'
 
 function initChip() {}
 
@@ -86,7 +86,7 @@ export function initLoopRowChildChildrenRef(__scope, _p = {}) {
 
   // Initialize static array children (hydrate skips nested instances)
   if (_s15) {
-    const __childScopes = qsaChildScopes(_s15, `[bf-h="${__scopeId}"][bf-m="s14"], [bf-s$="_s14"]`)
+    const __childScopes = childScopesBySlot(_s15, __scopeId, 's14')
     __childScopes.forEach((childScope, i) => {
       const o = STATIC_ROWS[i]
       initChild('Chip__ef8242e5', childScope, {})

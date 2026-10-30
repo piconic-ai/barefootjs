@@ -48,7 +48,7 @@ export const RUNTIME_IMPORT_CANDIDATES = [
   'markupOrEmpty',
   'qsa', 'qsaItem',
   // Loop-row elements a `ref` callback portals out of their row (#3318).
-  'adoptRowPortal', 'claimRowPortals', 'relayRowPortalEvents', 'isRowPortalOf', 'qsaChildScope', 'qsaChildScopes', 'upsertChildItem', '__slot', '__bfSlot', '__bfText',
+  'adoptRowPortal', 'claimRowPortals', 'relayRowPortalEvents', 'isRowPortalOf', 'qsaChildScope', 'qsaChildScopes', 'childScopesBySlot', 'childScopeBySlot', 'upsertChildItem', '__slot', '__bfSlot', '__bfText',
   // Claim-plan interpreter (slot unification A2/A3, spec/slot-unification.md)
   // — the "one claim mechanism" that replaced `patchSlotRange` and
   // `updateClientMarker` (both deleted) as the content-slot update door.

@@ -1230,7 +1230,7 @@ describe('child components inside .map() (#344)', () => {
       // Document-order zip shape — a flat cursor over the queried scopes
       // pairs each with its data item across the nested forEach. This shape
       // is fragment-root safe (no per-group wrapper element to index).
-      expect(content).toContain('qsaChildScopes')
+      expect(content).toContain('childScopesBySlot')
       expect(content).toMatch(/__compScopes\[__ci\+\+\]/)
       // No element-offset addressing (`__outerEl = ...children[...]`) — that
       // would break for a fragment-rooted passthrough.

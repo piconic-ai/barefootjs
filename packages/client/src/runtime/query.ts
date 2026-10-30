@@ -708,6 +708,103 @@ export function qsaChildScopes(scope: Element, selector: string): Element[] {
 }
 
 /**
+ * Every child scope mounted at slot `slotId` of the component whose scope id
+ * is `hostScopeId`, below `container`, in document order (#3821). This is the
+ * lookup a static array's row init zips with its array items.
+ *
+ * A row scope is found from either form it can take:
+ *   - an element-rooted child: an element with `bf-h="<host>"` and
+ *     `bf-m="<slot>"`, or whose `bf-s` ends in `_<slot>`;
+ *   - a fragment-rooted child: a `<!--bf-scope:<id>|h=<host>|m=<slot>…-->`
+ *     comment (or, with no `h=`/`m=`, one whose `<id>` ends in `_<slot>`).
+ *     It resolves to its proxy element (the first element after the
+ *     comment, else the comment's parent), registered in
+ *     `commentScopeRegistry` exactly as `findCommentChildScope` does for a
+ *     single `$c()` lookup.
+ *
+ * `qsaChildScopes` takes an element selector, so it can never see the second
+ * form: every fragment-rooted row of a static array went uninitialised and
+ * its handlers never attached. Scopes whose id carries a nested-slot path
+ * (`…_sM_sN`) are skipped, as there (#1220).
+ */
+export function childScopesBySlot(container: Element, hostScopeId: string | null, slotId: string): Element[] {
+  return [...slotChildScopes(container, hostScopeId, slotId)]
+}
+
+/**
+ * The first child scope at slot `slotId` of `hostScopeId` in `scope`, the
+ * scope element itself included — `childScopesBySlot`'s single-row twin,
+ * used where the row element is already known (a static array's nested
+ * component init). Replaces `qsaChildScope`'s element selector there, which
+ * missed a fragment-rooted component the same way (#3821).
+ */
+export function childScopeBySlot(scope: Element, hostScopeId: string | null, slotId: string): Element | null {
+  if (isSlotElementScope(scope, hostScopeId, slotId)) return scope
+  for (const el of slotChildScopes(scope, hostScopeId, slotId)) return el
+  return null
+}
+
+function isSlotElementScope(el: Element, hostScopeId: string | null, slotId: string): boolean {
+  const bfs = el.getAttribute(BF_SCOPE) || ''
+  if (NESTED_SLOT_SUFFIX.test(bfs)) return false
+  const mounted = hostScopeId !== null
+    && el.getAttribute(BF_HOST) === hostScopeId
+    && el.getAttribute(BF_AT) === slotId
+  return mounted || bfs.endsWith(`_${slotId}`)
+}
+
+function* slotChildScopes(container: Element, hostScopeId: string | null, slotId: string): Generator<Element> {
+  const seen = new Set<Element>()
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_COMMENT)
+  while (walker.nextNode()) {
+    const node = walker.currentNode
+    if (node.nodeType === Node.ELEMENT_NODE) {
+      const el = node as Element
+      if (!seen.has(el) && isSlotElementScope(el, hostScopeId, slotId)) {
+        seen.add(el)
+        yield el
+      }
+      continue
+    }
+    const scope = parseCommentScope((node as Comment).nodeValue ?? '')
+    if (!scope || NESTED_SLOT_SUFFIX.test(scope.id)) continue
+    // A comment that names its host and slot is matched on them alone: the
+    // `_<slot>` suffix fallback is for one that does not, and applied to a
+    // named one it would also take a deeper child that merely shares the
+    // slot number (`Row_x_s2` hosted by `Row_x`).
+    const matches = scope.host !== null || scope.mount !== null
+      ? hostScopeId !== null && scope.host === hostScopeId && scope.mount === slotId
+      : scope.id.endsWith(`_${slotId}`)
+    if (!matches) continue
+    const proxyEl = nextElementSibling(node) ?? node.parentElement
+    if (!proxyEl || seen.has(proxyEl)) continue
+    seen.add(proxyEl)
+    commentScopeRegistry.set(proxyEl, { commentNode: node as Comment, scopeId: scope.id })
+    yield proxyEl
+  }
+}
+
+/**
+ * Split a `<!--bf-scope:<id>|h=<host>|m=<slot>|<props>-->` start comment into
+ * its scope id and slot identity. The `h=`/`m=` segments come right after the
+ * id, before any props JSON, so reading segments in order until one is not
+ * `h=`/`m=` never looks inside the JSON. Null for any other comment.
+ */
+function parseCommentScope(value: string): { id: string; host: string | null; mount: string | null } | null {
+  if (!value.startsWith(BF_SCOPE_COMMENT_PREFIX)) return null
+  const segments = value.slice(BF_SCOPE_COMMENT_PREFIX.length).split('|')
+  let host: string | null = null
+  let mount: string | null = null
+  for (let i = 1; i < segments.length; i++) {
+    const seg = segments[i]
+    if (seg.startsWith('h=') && host === null) host = seg.slice(2)
+    else if (seg.startsWith('m=') && mount === null) mount = seg.slice(2)
+    else break
+  }
+  return { id: segments[0], host, mount }
+}
+
+/**
  * Find elements within a scope by slot IDs.
  * Used by compiler-generated code for regular slot element references.
  * Always returns an array — callers use destructuring.
