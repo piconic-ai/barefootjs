@@ -90,6 +90,10 @@ describe('body destructure of a const alias of the props object', () => {
     ['an assignment', `props = { value: 2 }`],
     ['a destructuring assignment', `;({ props } = { props: { value: 2 } })`],
     ['an assignment inside a handler', `const reset = () => { props = { value: 2 } }`],
+    ['a for-of loop head inside a handler', `const reset = () => { for (props of [{ value: 2 }]) {} }`],
+    ['a destructuring for-of loop head', `for ({ props } of [{ props: { value: 2 } }]) {}`],
+    ['a for-in loop head', `for (props in { a: 1 }) {}`],
+    ['an update expression', `props++`],
   ] as const) {
     test(`an alias is not the props object when the props parameter is reassigned by ${label}`, () => {
       expect(destructured(`

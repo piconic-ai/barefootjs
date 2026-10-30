@@ -35,6 +35,7 @@ import path from 'node:path'
 import fs from 'node:fs'
 import { signalSecondBinding } from './signal-initializer.ts'
 import { separateSignalPropBindings, programWithSeparatedSource } from './signal-prop-name-collision.ts'
+import { isAssignmentTargetIdentifier } from './assignment-target.ts'
 
 // =============================================================================
 // TypeScript Program Creation
@@ -3875,44 +3876,18 @@ function isPropsObjectReference(
 }
 
 /**
- * Whether anything under `root` assigns the identifier `name`: `name = …`,
- * a compound assignment, `name++` / `--name`, or a destructuring assignment
- * target. Conservative: a nested binding that shadows `name` counts too.
+ * Whether anything under `root` writes the identifier `name`, by the shared
+ * assignment-target rule (`isAssignmentTargetIdentifier`): an assignment or
+ * compound assignment, `++` / `--`, a destructuring-assignment target or a
+ * `for (… of / in …)` head. Conservative: a nested binding that shadows
+ * `name` counts too.
  */
 function assignsIdentifier(root: ts.Node, name: string | null): boolean {
   if (name === null) return false
-  const isTarget = (target: ts.Expression): boolean => {
-    const e = skipParens(target)
-    if (ts.isIdentifier(e)) return e.text === name
-    if (ts.isArrayLiteralExpression(e)) return e.elements.some(el => isTarget(ts.isSpreadElement(el) ? el.expression : el))
-    if (ts.isObjectLiteralExpression(e)) {
-      return e.properties.some(prop => {
-        if (ts.isShorthandPropertyAssignment(prop)) return prop.name.text === name
-        if (ts.isPropertyAssignment(prop)) return isTarget(prop.initializer)
-        if (ts.isSpreadAssignment(prop)) return isTarget(prop.expression)
-        return false
-      })
-    }
-    if (ts.isBinaryExpression(e) && e.operatorToken.kind === ts.SyntaxKind.EqualsToken) return isTarget(e.left)
-    return false
-  }
   let found = false
   const visit = (node: ts.Node): void => {
     if (found) return
-    if (
-      ts.isBinaryExpression(node) &&
-      node.operatorToken.kind >= ts.SyntaxKind.FirstAssignment &&
-      node.operatorToken.kind <= ts.SyntaxKind.LastAssignment &&
-      isTarget(node.left)
-    ) {
-      found = true
-      return
-    }
-    if (
-      (ts.isPrefixUnaryExpression(node) || ts.isPostfixUnaryExpression(node)) &&
-      (node.operator === ts.SyntaxKind.PlusPlusToken || node.operator === ts.SyntaxKind.MinusMinusToken) &&
-      isTarget(node.operand)
-    ) {
+    if (ts.isIdentifier(node) && node.text === name && isAssignmentTargetIdentifier(node)) {
       found = true
       return
     }
@@ -3920,12 +3895,6 @@ function assignsIdentifier(root: ts.Node, name: string | null): boolean {
   }
   visit(root)
   return found
-}
-
-function skipParens(expr: ts.Expression): ts.Expression {
-  let e = expr
-  while (ts.isParenthesizedExpression(e)) e = e.expression
-  return e
 }
 
 /** Whether `decl` belongs to a variable statement that is a direct child of `body`. */
