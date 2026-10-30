@@ -122,6 +122,7 @@ import {
   GO_REMEDIATION_OPTIONS,
   goPropDefault,
   applyGoFallback,
+  escapeGoStaticText,
 } from "./lib/go-emit.ts"
 import type {
   GoRenderCtx,
@@ -167,7 +168,7 @@ import { collectStringValueNames } from "./props/prop-classes.ts"
 import { emitMemoFieldInits, emitPropFallbackLocals, emitPropFieldInits, emitSignalFieldInits, hoistSiblingMemoLocals } from "./props/ctor-field-inits.ts"
 import { lowerChildInputFields, lowerLoopRowChildInputFields, lowerStaticChildDataKey, sourceRowChildInputFields, type ChildInputHost } from "./props/child-input-fields.ts"
 import { resolveLocalGetterAsGo } from "./value/child-prop-value.ts"
-import { emitParsedExpressionAttr, emitSpreadAttr, emitStyleOrPresenceAttr, emitTemplateAttr, type ElementAttrHost } from "./attr/element-attrs.ts"
+import { emitParsedExpressionAttr, emitSpreadAttr, emitStyleOrPresenceAttr, emitLiteralAttr, emitTemplateAttr, type ElementAttrHost } from "./attr/element-attrs.ts"
 import { renderConditionExpr, renderFilterExpr, type ConditionExprHost } from "./expr/condition-expr.ts"
 import { PREDICATE_METHODS, renderArrayMethod, renderCallbackMethod, renderMember, type MemberAndMethodsHost } from "./expr/member-and-methods.ts"
 import { loopRowChildPropOverrides, renderLoop as renderLoopWithHost, type LoopRenderHost } from "./loop/render-loop.ts"
@@ -4252,8 +4253,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   emitText(node: IRText): string {
     // IRText carries the entity-DECODED value (Phase 1 decodes JSX
-    // character references); re-escape for direct HTML emission.
-    return escapeHtml(node.value)
+    // character references); re-escape for direct HTML emission, then
+    // keep any `{{` away from Go's action lexer.
+    return escapeGoStaticText(escapeHtml(node.value))
   }
 
   emitExpression(node: IRExpression): string {
@@ -5490,8 +5492,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // The literal text lands in markup OUTSIDE any `{{…}}` action, so
         // html/template never escapes it. Escape it here, or a `"` in a
         // nested literal segment (`content-["x"]`) closes the surrounding
-        // `class="…"` and a `<` opens a tag in text position (#3706).
-        result += escapeHtml(part.value)
+        // `class="…"` and a `<` opens a tag in text position (#3706). A `{{`
+        // in it would open an action (#3767).
+        result += escapeGoStaticText(escapeHtml(part.value))
       } else {
         // A nested ternary emits a complete `{{if …}}…{{end}}` action chain (see
         // `conditional` above) — wrapping it again produces `{{{{if …}}` and a
@@ -6926,7 +6929,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * doesn't share a contract with the intrinsic-attribute one.
    */
   private readonly elementAttrEmitter: AttrValueEmitter = {
-    emitLiteral: (value, name) => `${name}="${escapeHtml(value.value)}"`,
+    emitLiteral: (value, name) => emitLiteralAttr(name, value.value),
     emitExpression: (source, name) => {
       // A computed const reads as its initializer (#3494).
       const value = inlineComputedConstAttr(source, this.state.computedConsts)
