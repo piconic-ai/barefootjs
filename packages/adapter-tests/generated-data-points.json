@@ -1437,6 +1437,56 @@
       }
     }
   ],
+  "child-undeclared-prop-whole-props-spread": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "tone": "warm"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "tone": "warm"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "tone": "warm"
+      }
+    },
+    {
+      "name": "gen:tone:absent",
+      "props": {
+        "label": "L"
+      }
+    },
+    {
+      "name": "gen:tone:empty",
+      "props": {
+        "label": "L",
+        "tone": ""
+      }
+    },
+    {
+      "name": "gen:tone:markup",
+      "props": {
+        "label": "L",
+        "tone": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:tone:multibyte",
+      "props": {
+        "label": "L",
+        "tone": "日本語"
+      }
+    }
+  ],
   "children-alias-hop-shadowed-intermediate": [
     {
       "name": "gen:rows:empty",

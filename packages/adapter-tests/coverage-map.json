@@ -1724,6 +1724,29 @@
         "text"
       ]
     },
+    "child-undeclared-prop-whole-props-spread": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "children-alias-hop": {
       "kinds": [
         "identifier",

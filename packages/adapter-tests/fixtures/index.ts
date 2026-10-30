@@ -731,6 +731,7 @@ import { fixture as childStringPropLiteralLookalike } from './child-string-prop-
 import { fixture as childStringPropLiteralLookalikePositions } from './child-string-prop-literal-lookalike-positions'
 import { fixture as childStringPropLiteralLookalikeRestBag } from './child-string-prop-literal-lookalike-rest-bag'
 import { fixture as childUndeclaredPropDropped } from './child-undeclared-prop-dropped'
+import { fixture as childUndeclaredPropWholePropsSpread } from './child-undeclared-prop-whole-props-spread'
 import { fixture as childInlineStringArrayProp } from './child-inline-string-array-prop'
 import { fixture as preWhitespace } from './pre-whitespace'
 import { fixture as tableDynamicRows } from './table-dynamic-rows'
@@ -1855,6 +1856,7 @@ export const jsxFixtures: JSXFixture[] = [
   childStringPropLiteralLookalikePositions,
   childStringPropLiteralLookalikeRestBag,
   childUndeclaredPropDropped,
+  childUndeclaredPropWholePropsSpread,
   childInlineStringArrayProp,
   preWhitespace,
   tableDynamicRows,

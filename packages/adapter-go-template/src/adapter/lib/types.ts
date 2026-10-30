@@ -256,12 +256,27 @@ export function routesToRestBag(shape: ChildComponentShape | undefined, jsxName:
 
 /**
  * True when the child neither declares `jsxName` nor collects undeclared
- * props in a rest object: its `<Child>Input` has no field the value could
- * go to. JS hands such a prop over and the child never reads it, so the
- * parent drops it. False when the child's shape is unknown.
+ * props in a rest bag (`restBagBinding`): its `<Child>Input` has no field
+ * the value could go to. JS hands such a prop over and the child never
+ * reads it, so the parent drops it. False when the child's shape is unknown.
  */
 export function hasNoInputSlot(shape: ChildComponentShape | undefined, jsxName: string): boolean {
   return !!shape && !shape.restBagField && !shape.paramNames.has(jsxName)
+}
+
+/**
+ * The binding whose name the component's open-ended rest bag field takes
+ * (`Capitalize(binding)` on its Input and Props structs), or null when it
+ * has none. A destructured rest (`{ a, ...rest }`) is one; so is a props
+ * object the component reads as a whole (`<b {...props}>`,
+ * `IRMetadata.propsObjectObservedWhole`), whose undeclared keys a caller
+ * delivers through the same bag (`Props: map[string]any{...}`).
+ */
+export function restBagBinding(
+  meta: { restPropsName: string | null; propsObjectName: string | null; propsObjectObservedWhole?: boolean },
+): string | null {
+  if (meta.restPropsName) return meta.restPropsName
+  return meta.propsObjectName && meta.propsObjectObservedWhole ? meta.propsObjectName : null
 }
 
 /**

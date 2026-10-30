@@ -34,6 +34,7 @@ import { CATALOGUED_RICH_TYPE_NAMES } from './date-lowering.ts'
 import path from 'node:path'
 import fs from 'node:fs'
 import { signalSecondBinding } from './signal-initializer.ts'
+import { observesWholePropsObject } from './props-object-whole-read.ts'
 import { separateSignalPropBindings, programWithSeparatedSource } from './signal-prop-name-collision.ts'
 
 // =============================================================================
@@ -855,6 +856,7 @@ function analyzeComponentBody(
   if (node.parameters.length > 0) {
     extractProps(node.parameters[0], ctx)
   }
+  if (ctx.propsObjectName) ctx.propsObjectObservedWhole = observesWholePropsObject(node, ctx.propsObjectName)
 
   // Visit component body
   const body = ts.isFunctionDeclaration(node) ? node.body : getArrowFunctionBody(node)

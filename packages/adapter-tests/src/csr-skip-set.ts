@@ -85,6 +85,9 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // Same `applyRestAttrs`-not-modeled harness class: `data-x` / `data-n` /
   // `title` reach `Box`'s root only through its `{...rest}` spread.
   'child-string-prop-literal-lookalike-rest-bag',
+  // Same `applyRestAttrs`-not-modeled harness class: `Kid` spreads its whole
+  // props object onto its root.
+  'child-undeclared-prop-whole-props-spread',
   // The harness now mounts the fixture's `componentName` (the #1467
   // multi-export class — `__lastComponent` rendering the last demo export
   // instead of the pinned basic demo — is gone; radio-group, tabs, dialog,
