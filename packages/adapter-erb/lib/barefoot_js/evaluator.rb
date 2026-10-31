@@ -612,7 +612,13 @@ module BarefootJS
       when Array, String
         return nil unless key.match?(/\A(?:0|[1-9][0-9]*)\z/)
 
-        obj.is_a?(Array) ? obj[key.to_i] : utf16_unit_at(obj, key.to_i)
+        i = key.to_i
+        return utf16_unit_at(obj, i) if obj.is_a?(String)
+
+        # An index past the end reads nil. Checking before `Array#[]` also
+        # keeps an oversized key ("9223372036854775808", 1e20) from raising
+        # RangeError: a Bignum cannot be converted to a C long.
+        i < obj.length ? obj[i] : nil
       end
     end
 

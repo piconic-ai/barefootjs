@@ -625,8 +625,14 @@ sub _read_index ($obj, $index) {
 # _utf16_unit_at: the UTF-16 code unit of string $s at index $i, as a
 # one-character string, or `undef` past the end. A unit that is one half of
 # a surrogate pair reads as U+FFFD: a lone surrogate cannot be written out
-# as UTF-8 (spec/js-primitive-semantics.md, "Out of scope").
+# as UTF-8 (spec/js-primitive-semantics.md, "Out of scope"). A string
+# without Perl's UTF8 flag holds UTF-8 bytes, so a decoded copy is iterated
+# (as `_codepoint_length` does): otherwise `"\xc3\xa9x"` would read one byte
+# per index instead of `é`, `x`.
 sub _utf16_unit_at ($s, $i) {
+    unless (utf8::is_utf8($s)) {
+        utf8::decode($s); # no-op on invalid-UTF-8 input
+    }
     my $pos = 0;
     for my $ch (split //, $s) {
         my $width = ord($ch) > 0xFFFF ? 2 : 1;

@@ -152,6 +152,11 @@ export const renderDivergences: RenderDivergences = {
   // a destructured `{ 'a.b': ab }` row param reads a derived field (`.AB`).
   // A literal-key read outside the loops reads through `bf_get` and passes.
   'literal-index-own-key': { limitation: 'non-identifier-literal-key' },
+  // An index read on a map retries the Go field spelling of the key
+  // (`name` → `Name`), because rows without a named Go struct are maps keyed
+  // by Go field names. A JS-keyed map holding only `Name` then answers a read
+  // of `name`; the two map shapes cannot be told apart at runtime.
+  'index-read-capitalised-key-only': { limitation: 'index-read-capitalised-key-only' },
   // A destructure default that calls a callback and reads no earlier prop
   // (`{ b = ['y', ''].filter((x) => x !== '') }`): the props constructor
   // has no conversion from the evaluated array to the field's slice type,

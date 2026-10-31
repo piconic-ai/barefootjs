@@ -35,7 +35,7 @@ var primitiveBindings = map[string]func(args []any) any{
 	"truthy":    func(a []any) any { return Truthy(a[0]) },
 	"to_number": func(a []any) any { return ToNumber(a[0]) },
 	"to_string": func(a []any) any { return ToString(a[0]) },
-	"get":       func(a []any) any { return getFieldValue(a[0], a[1]) },
+	"get":       func(a []any) any { return indexValue(a[0], a[1]) },
 	"strict_eq": func(a []any) any { return Eq(a[0], a[1]) },
 	"lt":        func(a []any) any { return Lt(a[0], a[1]) },
 	"le":        func(a []any) any { return Le(a[0], a[1]) },

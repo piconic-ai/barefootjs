@@ -4582,6 +4582,14 @@
           ]
         }
       },
+      "index-read-capitalised-key-only": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "index-read-capitalised-key-only"
+          ]
+        }
+      },
       "json-stringify-compared-string-prop": {
         "erb": {
           "kind": "render",
@@ -8743,6 +8751,10 @@
         "description": "An authored formatDate(...) call refuses with BF056 on every adapter",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/format-date.ts"
       },
+      "index-read-capitalised-key-only": {
+        "description": "A lowercase index key does not read an object key that differs only by its capitalised first letter",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/index-read-capitalised-key-only.ts"
+      },
       "json-stringify-compared-string-prop": {
         "description": "JSON.stringify of a numeric-looking string prop stays quoted after a numeric comparison",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/json-stringify-compared-string-prop.ts"
@@ -9546,6 +9558,19 @@
       ],
       "diagnostics": [
         "BF029"
+      ]
+    },
+    "index-read-capitalised-key-only": {
+      "title": "Lowercase index key on an object holding only the capitalised key",
+      "kind": "silent",
+      "given": "an index read `obj[k]` whose key starts with a lowercase letter, on an object that has no such key but has the same key with its first letter capitalised (`{ Name: \"upper\" }[\"name\"]`)",
+      "expected": "the read is `undefined`",
+      "actual": "renders the value of the capitalised key",
+      "fixtures": [
+        "index-read-capitalised-key-only"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "jsx-wrapped-in-non-children-prop": {

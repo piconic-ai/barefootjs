@@ -2555,6 +2555,12 @@
               ]
             },
             {
+              "fixture": "index-read-capitalised-key-only",
+              "limitations": [
+                "index-read-capitalised-key-only"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -5413,6 +5419,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "index-read-capitalised-key-only",
+              "limitations": [
+                "index-read-capitalised-key-only"
               ]
             },
             {
@@ -8610,6 +8622,12 @@
               ]
             },
             {
+              "fixture": "index-read-capitalised-key-only",
+              "limitations": [
+                "index-read-capitalised-key-only"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -11062,6 +11080,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "index-read-capitalised-key-only",
+              "limitations": [
+                "index-read-capitalised-key-only"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -11900,6 +11924,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "index-read-capitalised-key-only",
+              "limitations": [
+                "index-read-capitalised-key-only"
               ]
             },
             {
@@ -13893,6 +13923,12 @@
               ]
             },
             {
+              "fixture": "index-read-capitalised-key-only",
+              "limitations": [
+                "index-read-capitalised-key-only"
+              ]
+            },
+            {
               "fixture": "logical-mixed-left-nullish",
               "limitations": [
                 "nullish-over-false-yielding-operand"
@@ -14952,6 +14988,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "index-read-capitalised-key-only",
+              "limitations": [
+                "index-read-capitalised-key-only"
               ]
             },
             {
@@ -24742,6 +24784,12 @@
               ]
             },
             {
+              "fixture": "index-read-capitalised-key-only",
+              "limitations": [
+                "index-read-capitalised-key-only"
+              ]
+            },
+            {
               "fixture": "literal-index-own-key",
               "limitations": [
                 "non-identifier-literal-key"
@@ -26184,6 +26232,12 @@
               ]
             },
             {
+              "fixture": "index-read-capitalised-key-only",
+              "limitations": [
+                "index-read-capitalised-key-only"
+              ]
+            },
+            {
               "fixture": "logical-mixed-left-nullish",
               "limitations": [
                 "nullish-over-false-yielding-operand"
@@ -26610,6 +26664,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "index-read-capitalised-key-only",
+              "limitations": [
+                "index-read-capitalised-key-only"
+              ]
+            },
             {
               "fixture": "literal-index-own-key",
               "limitations": [
