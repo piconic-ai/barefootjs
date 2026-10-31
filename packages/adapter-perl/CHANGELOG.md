@@ -1,5 +1,36 @@
 # @barefootjs/perl
 
+## 0.40.2
+
+### Patch Changes
+
+- 7b7f84b: A falsy value that `&&`, `||` or `??` returns now reaches an output as JS renders it.
+  
+  - An attribute bound to `&&` or a ternary branch whose value is an absent optional prop (`data-x={props.on && 'y'}`) is omitted, as Hono omits an `undefined` attribute, on every template adapter. It rendered `data-x=""` (Go: `data-x="false"` / `"0"`).
+  - Mojolicious and Xslate print a comparison that `&&` / `||` / `??` returns as `true` / `false` in an attribute, a template literal and string concatenation (`data-x={items.length > 0 && 'y'}` rendered `data-x=""`, a template literal `0`), and write a boolean inside the array `JSON.stringify` writes as a JSON boolean (`[1,true,false]`, not `[1,1,0]`). The Perl runtime gains `boolean`, which returns a JSON boolean.
+  - Go templates keep the left operand of `??` when it can never be nullish: a required `boolean` / `string` / `number` prop holding `false` / `''` / `0`, or a comparison. They took the fallback.
+  - Jinja tests the left operand of `??` as a whole when it is a comparison or arithmetic (`(n > 1) ?? 'y'` tested `1` and took the fallback).
+- c4a28d5: A JS boolean now renders as it does in JSX on every template adapter and in the client runtime (#3824 step 5).
+  
+  - A text child whose value is a boolean renders nothing, as JSX renders no `true` / `false` child (#3789). The shared plan decides it from the types: a child proven a boolean (or nil) renders only its markers, and a child that may be a boolean among other types goes through the new runtime helper `display` (`bf_display` in Go), which blanks a boolean. The client runtime's text writes (`escapeText`, `textOrNode`, the 'text' slot writer and `__bfText`) render a boolean as no text too, and a loop row's text slot is written through `textOrNode` instead of `String`.
+  - Mojolicious and Xslate pass a boolean that leaves the expression as a JSON boolean (`boolean`), so it prints `true` / `false`, not Perl's `1` / `''` / `0`: a child prop (#3808), a signal seed, memo or loop-row local, a `JSON.stringify` element, a displayed text child, an inlined boolean `const`, a `createContext` default and a bare `<Child flag />`. A comparison concatenated to a string (`'c=' + (n > 1)`) prints `true` / `false` too. A test (`if`, `?:`, `!`) keeps Perl's own truthiness.
+  - A signal or local constant initialized with a comparison or `!` is typed `boolean`, so its tests are native where the target's table allows it.
+- 8a160ed: An index read (`a[k]`, `obj['a.b']`, `rows[1.1]`) now gives the JS answer on every template adapter and in every runtime's callback evaluator, decided once by the shared primitive plan (#3824 step 2).
+  
+  - An array, and a string, are read only through a canonical array index: `1`, `'1'` and `-0` read an element; `'01'`, `'1e0'`, `'-0'`, `1.1` and `-1` read nothing. A string reads one UTF-16 code unit (`'a😀b'[3]` is `'b'`). An object reads its own key by the key's string (`o[1]` reads `o['1']`, `o[null]` reads `o['null']`).
+  - The template helper `get` (PHP's `index`) and the callback evaluator's index read are one implementation on every runtime. The evaluators of Ruby, Perl, Java and Go no longer convert a list key with ToNumber, so `rows.map(r => r[k])` reads nothing for `k = '01'` (#3802).
+  - Jinja and MiniJinja spell their native `[]` only for a loop index on a proven array, and `bf.get` otherwise, so the string key `'1'` reads element 1 (#3802).
+  - Go reads a literal key through `bf_get` instead of a field derived from the key, so `obj['a.b']`, `obj['*']` and `rows[1.1]` render (#3795). Go filter predicates accept an index read.
+  - Blade reads a literal identifier key (`obj['id']`) through `$bf->index` like every other literal key.
+- ef72707: Each template runtime gains the JS primitive helpers it was missing (`to_number`, `to_string`, `plus`, `lt` / `le` / `gt` / `ge`, `strict_eq`, `neg`, and `truthy` on Perl). Each one calls the callback evaluator's implementation of the same operation, so a template that calls it and a callback body give the same answer. No compiled template calls them yet, so rendered output does not change. A runtime keeps its existing name where it has one: Go `bf_eq` / `bf_lt` / `bf_neg`, PHP and Java `eq`, Java `neg`.
+- bbd7cf3: `JSON.stringify` writes numbers as JS does, at any depth: an integral float without `.0` (`[-2,-0.5]`, not `[-2.0,-0.5]`), JS exponent notation (`-4e-8`, `-400000000000000000000`, `-4e+21`, not `-4e-08`, `-4.0e-8` or `-4e+20`), the shortest round-trip digits (`0.30000000000000004`, not `0.3`), and `Infinity`, `-Infinity` and `NaN` as `null`. Before, Jinja and ERB wrote `-2.0`; Blade, Twig, Rust, Mojolicious, Xslate and ERB used their host language's exponent spelling; Mojolicious and Xslate rounded to 15 significant digits and wrote a non-finite number as `"-Inf"` or `-Inf`; ERB failed to render a non-finite number, and go-template one inside an array. On Rust the same spelling also applies to the props JSON written for hydration.
+- a387250: `JSON.stringify` keeps a string prop quoted on Mojolicious and Xslate after the template compared it with a number (`'1e5' < 0` no longer makes `JSON.stringify('1e5')` render `100000`). On go-template a self-referencing map or slice passed to `JSON.stringify` aborts the render with a cycle error again, instead of overflowing the stack.
+- 934d844: A value-position `a && b` / `a || b` renders each operand once, so a chain such as `p.v0 || p.v1 || … || p.v15` grows the template linearly instead of doubling it at every link (a 16-operand chain was 0.9 to 2 MB of template). The operand JS yields, its JS truthiness and the short circuit are kept.
+  
+  - Go, Jinja, MiniJinja, Blade, ERB, Mojolicious and Xslate box the left operand by its JS test with the new runtime helpers `keep_truthy` / `keep_falsy` (`bf_keep_truthy` / `bf_keep_falsy` in Go) and pick it with the language's own short-circuiting `or` / `?:` / `||`.
+  - Twig spells them as `(l)|bf_js_or((__bf_lazy) => r)` / `bf_js_and`, filters from the new `Barefoot\BarefootExtension`, because Twig compiles its own `?:` / `??` to PHP that repeats the left operand. `TwigBackend` adds the extension to the Environment it builds or is given; a pre-built Environment must not have rendered before it is passed in.
+  - Pebble spells them with `||` / `&&` operators from the runtime's new `JsLogicalExtension`, which `Main` registers beside `SetBlockExtension`. An application that builds its own `PebbleEngine` must register it too.
+
 ## 0.40.1
 
 ### Patch Changes
