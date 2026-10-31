@@ -58,7 +58,7 @@ import {
   refuseAmbiguousNilMemoArithmetic,
   type ArithmeticCoercion,
   collectNullishAttrContext,
-  isNeverNullishOperand,
+  isNativePlan,
   parseExpression,
   stringifyParsedExpr,
   isSupported,
@@ -104,6 +104,8 @@ import {
   nullableSignalAttrGetter,
   propsObjectIdentifier,
   planTest,
+  planPrimitive,
+  operandFacts,
   planTextDisplay,
 } from '@barefootjs/jsx'
 import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
@@ -122,6 +124,10 @@ import {
   escapeGoString,
   wrapIfMultiToken,
   lowerJsLogicalValue,
+  lowerJsNullishValue,
+  isZeroLiteral,
+  isConcreteScalarGoType,
+  type NullishSpelling,
   lowerJsNot,
   wrapGoArg,
   emitPredicateEval,
@@ -788,7 +794,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `generate()` itself computing nillability against the PREVIOUS
     // compile's type tables.
     buildLocalTypeTables(this.typeSynthesisHost, ir, ir.metadata.componentName)
-    // Template-time readers (`nillablePropNameOf`, `resolvePropMemberSeed`
+    // Template-time readers (`readsAbsentAsGoZero`, `resolvePropMemberSeed`
     // via memo/getter lowering) run before `generateTypes`, so they need
     // the overrides now — computed against the same freshly built tables
     // `collectNillablePropNames` reads below. `generateTypes` recomputes it
@@ -4581,8 +4587,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /**
    * The nillable-prop name a bare TEXT-position expression refers to, or
-   * null. Mirrors `nillablePropNameOf` (the `??`-lowering gate) but keys on
-   * `textConsumedPropNames` instead of `nullishConsumedPropNames` — a
+   * null. Keys on `textConsumedPropNames`, not `nullishConsumedPropNames` — a
    * text-only optional scalar prop (`{size}`, never consumed by `??` or a
    * bare omittable attribute) is in neither of those other two sets.
    */
@@ -5359,134 +5364,90 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     emit: (e: ParsedExpr) => string,
     plan: PrimitivePlan | null,
   ): string {
-    // `x ?? y` over a value that is never nullish (a comparison, a required
-    // scalar prop) is `x`, even when it is `false` / `''` / `0`, which `or`
-    // would replace.
-    if (op === '??' && isNeverNullishOperand(left, { propsParams: this.state.currentPropsParams, propsObjectName: this.state.propsObjectName }, n => this.scope.isBound(n))) {
-      return this.emitOperand(left, emit)
-    }
+    // `x ?? y` over a value the plan proves never nil (a comparison, a
+    // required scalar prop) is `x`, even when it is `false` / `''` / `0`;
+    // `y` is never rendered.
+    if (op === '??' && isNativePlan(plan, 'nullish')) return this.emitOperand(left, emit)
     // Go's `and`/`or` are prefix builtins, so every operand that renders to more
     // than one token (a call like `.SearchParams.Get "sort"`, an arithmetic
     // `bf_add a b`, a comparison `eq a b`, a nested `not …` / `or …`) must be
     // parenthesised or it degrades into extra sibling args of the enclosing
-    // `and`/`or`. This makes `searchParams().get(k) ?? d` lower to
-    // `or (.SearchParams.Get "sort") "none"` instead of the broken
-    // `or .SearchParams.Get "sort" "none"`.
+    // `and`/`or`; the lowerings below wrap each operand.
     const leftRendered = this.emitOperand(left, emit)
     const rightRendered = this.emitOperand(right, emit)
     // JS `&&` / `||` yield an operand, picked by the left operand's ToBoolean
     // plan (#3824): Go's `and` / `or` on a proven boolean, a JS-truthiness
     // pick that keeps the short circuit otherwise (`lowerJsLogicalValue`).
     if (op !== '??') return lowerJsLogicalValue(op, plan, leftRendered, rightRendered)
-    const wrapLeft = wrapIfMultiToken(leftRendered)
-    const wrapRight = wrapIfMultiToken(rightRendered)
-    // `??` on a nillable prop needs true JS nullish semantics (#2248): Go's
-    // `or` is truthiness-based, so `{{or .Label "Default"}}` falls back on a
-    // present-but-empty `""` — JS `??` keeps it. `bf_nullish` tests nil-ness
-    // only. Non-nillable operands keep `or`: their concrete Go type can't
-    // represent "absent" at all, so `or` and `??` are indistinguishable there.
-    if (op === '??' && this.isNillableNullishLeft(left)) {
-      return `bf_nullish ${wrapLeft} ${wrapRight}`
+    // Any other `??` keeps every non-nil left operand, `false` / `0` / `''`
+    // included (#3824 step 7), by a nil-test pick that keeps the short circuit.
+    return lowerJsNullishValue({ plan, absentIsZero: this.nullishAbsentIsZero(left, right) }, leftRendered, rightRendered)
+  }
+
+  /**
+   * Whether `expr` reads a value Go stores as a concrete scalar although JS
+   * may see it omitted (#3824 step 7): an absent value then reads as the
+   * type's zero value, and no nil test can tell it from a present `''` /
+   * `0` / `false`. These reads are an optional no-default prop the nillable
+   * flip leaves concrete (`resolvePropGoType`: a named alias type such as
+   * `placement?: TooltipPlacement`), an optional scalar field of a loop row
+   * (a struct field), and `searchParams().get(k)` (`""` for an absent key).
+   * `params` are a predicate's own bindings, entered over the current scope.
+   */
+  private readsAbsentAsGoZero(expr: ParsedExpr, params?: readonly string[]): boolean {
+    const scope = params ? this.scope.enterCallback(params) : this.scope
+    if (expr.kind === 'call') {
+      return matchSearchParamsMethodCall(expr.callee, expr.args, this.state.searchParamsLocals)?.method === 'get'
     }
-    // `(c ? undefined : x) ?? d` — the guard an optional-chained call
-    // `props.s?.trim() ?? d` lowers to (#3435). Its `undefined` branch is
-    // nil (`lowerTernary`), so `bf_nullish` falls back only for it, keeping
-    // a present `''` / `0` result that `or` would replace.
-    if (op === '??' && left.kind === 'conditional' && left.consequent.kind === 'identifier' && left.consequent.name === 'undefined') {
-      return `bf_nullish ${wrapLeft} ${wrapRight}`
-    }
-    return `or ${wrapLeft} ${wrapRight}`
+    const param = this.optionalPropRead(expr, scope)
+    if (param) return isConcreteScalarGoType(resolvePropGoType(this.emitCtx, param, this.state.propTypeOverrides))
+    if (!this.readsRowField(expr, scope)) return false
+    const types = operandFacts(expr, this.state.operandTyping.at(scope)).types
+    const present = [...types].filter(t => t !== 'nil')
+    return types.has('nil') && present.length === 1 && (present[0] === 'string' || present[0] === 'number' || present[0] === 'boolean')
   }
 
-  /**
-   * The nillable-prop name a `??` left operand refers to, or null. Matches
-   * the two prop-reference shapes (`label` destructured, `props.label`
-   * object-style) against `nullishConsumedPropNames ∩ nillablePropNames`.
-   *
-   * The intersection matters: `nillablePropNames` alone OVERAPPROXIMATES —
-   * it is collected before local type aliases are registered, so an
-   * alias-typed prop (`placement?: TooltipPlacement`) can sit in the set
-   * while its emitted struct field is the concrete alias type. On such a
-   * concrete field "absent" is invisible (the zero value), so the
-   * truthiness-based `or` is the correct approximation and `bf_nullish`
-   * would wrongly KEEP the zero value (e.g. Tooltip's
-   * `placementClasses[props.placement ?? 'top']` would resolve to no
-   * class for an omitted placement). Requiring `nullishConsumedPropNames`
-   * membership pins the
-   * gate to props the `??` analysis actually saw — the same set that drives
-   * the `interface{}` flip in `resolvePropGoType`.
-   */
-  private isNillableNullishLeft(expr: ParsedExpr): boolean {
-    return this.nillablePropNameOf(expr) !== null || this.isNillableSignalField(expr) || this.isNillableSignalRead(expr)
-  }
-
-  /**
-   * `flag()` where `flag` is a nullable signal whose field is `interface{}`
-   * (`nillableSignalGetters`) and no binding shadows it: its `undefined` is
-   * nil, so `??` tests nil-ness and keeps a present `false` / `''` / `0`
-   * that the truthiness-based `or` would replace.
-   */
-  private isNillableSignalRead(expr: ParsedExpr): boolean {
-    const getter = nullableSignalAttrGetter(expr, this.state.nillableSignalGetters)
-    return getter !== null && !this.scope.isBound(getter)
-  }
-
-  /**
-   * `user().name` / `user()?.name` where `user` is a signal of a named
-   * object type whose `name` field is `interface{}`
-   * (`nullableSeedStructFields`, #3421): a missing field is nil there, so
-   * `??` can test nil-ness like it does for a nillable prop.
-   */
-  private isNillableSignalField(expr: ParsedExpr): boolean {
+  /** Whether `expr` reads a field of a loop row: `row.f`, or a row param destructured from it (`({ f }) => …`). */
+  private readsRowField(expr: ParsedExpr, scope: BindingScope): boolean {
+    if (expr.kind === 'identifier') return scope.lookup(expr.name)?.binding.row?.segments.at(-1)?.kind === 'field'
     if (expr.kind !== 'member' || expr.computed) return false
-    const call = expr.object
-    if (call.kind !== 'call' || call.args.length !== 0 || call.callee.kind !== 'identifier') return false
-    const getter = call.callee.name
-    const signal = this.state.currentSignals.find(sig => sig.getter === getter)
-    return !!signal && this.state.nullableSeedStructFields.has(`${signal.type.raw}.${expr.property}`)
+    let root: ParsedExpr = expr
+    while (root.kind === 'member' && !root.computed) root = root.object
+    return root.kind === 'identifier' && scope.isBound(root.name)
   }
 
-  private nillablePropNameOf(expr: ParsedExpr): string | null {
-    let name: string | null = null
-    let memberOfRoot = false
-    const key = propsObjectKeyRead(this.state.propsObjectName, expr)
-    if (expr.kind === 'identifier') {
-      name = expr.name
-    } else if (key !== null) {
-      name = key
-    } else if (expr.kind === 'member' && !expr.computed && expr.object.kind === 'identifier') {
-      // Single-hop member access rooted at a bare destructured optional
-      // OBJECT prop (`user?.name ?? '…'`, #2256) — the ROOT prop is what
-      // needs to be in the nillable/nullish-consumed sets, not the
-      // accessed field; `member()`'s own `bf_get` lowering for the `?.`
-      // hop already returns Go `nil` on a nil/missing root, so gating on
-      // the root here is sufficient. Mirrors
-      // `collectNullishConsumedPropNames`'s `propNameOfLeft`.
-      name = expr.object.name
-      memberOfRoot = true
+  /** The optional, no-default prop `expr` reads whole (`props.x`, or a bare destructured `x` no binding shadows); null otherwise. */
+  private optionalPropRead(expr: ParsedExpr, scope: BindingScope): IRMetadata['propsParams'][number] | null {
+    const objectName = this.state.propsObjectName
+    let matches: ((p: IRMetadata['propsParams'][number]) => boolean) | null = null
+    const key = propsObjectKeyRead(objectName, expr)
+    if (key !== null && objectName !== null && !scope.isBound(objectName)) {
+      matches = p => (p.sourceName ?? p.name) === key
+    } else if (objectName === null && expr.kind === 'identifier' && !scope.isBound(expr.name)) {
+      matches = p => p.name === expr.name
     }
-    if (name === null || !this.state.nullishConsumedPropNames.has(name)) return null
-    if (this.state.nillablePropNames.has(name)) return name
-    // A slice-typed prop is nil when absent and an empty non-nil slice when
-    // present as `[]`, so `bf_nullish` keeps a present `[]` where the
-    // truthiness-based `or` would fall back (#3362).
-    if (!memberOfRoot) {
-      const param = this.state.currentPropsParams.find(p => p.name === name)
-      if (param && resolvePropGoType(this.emitCtx, param, this.state.propTypeOverrides).startsWith('[]')) {
-        return name
-      }
-    }
-    // The root of a `user?.name` hop is also nillable when it lowers to the
-    // optional-object `map[string]interface{}` field (`resolvePropGoType`'s
-    // struct-map branch — an optional prop typed by a same-file object
-    // type): a nil map, like a missing key, makes that `bf_get` return nil.
-    if (memberOfRoot) {
-      const param = this.state.currentPropsParams.find(p => p.name === name)
-      if (param && resolvePropGoType(this.emitCtx, param, this.state.propTypeOverrides).startsWith('map[')) {
-        return name
-      }
-    }
-    return null
+    const param = matches ? this.state.currentPropsParams.find(matches) : undefined
+    return param && param.optional && param.defaultValue == null && !param.isRest ? param : null
+  }
+
+  /**
+   * Whether `l ?? r` reads an absent `l` as a Go zero
+   * ({@link readsAbsentAsGoZero}) where that changes the result (#3824
+   * step 7). Over such a read Go's `or` stays the spelling: it gives the
+   * fallback for an absent value, which a nil test would keep as `''` /
+   * `0`. A right operand that is the zero value itself (`?? ''`, `?? 0`,
+   * `?? false`) renders the same either way, so the plan's nil test is
+   * spelled there.
+   */
+  private nullishAbsentIsZero(left: ParsedExpr, right: ParsedExpr, params?: readonly string[]): boolean {
+    return !isZeroLiteral(right) && this.readsAbsentAsGoZero(left, params)
+  }
+
+  /** The spelling of a value-position `l ?? r` the condition and filter walkers lower (#3824 step 7). */
+  private nullishSpelling(expr: Extract<ParsedExpr, { kind: 'logical' }>, params?: readonly string[]): NullishSpelling {
+    const scope = params ? this.scope.enterCallback(params) : this.scope
+    const plan = planPrimitive(expr, this.state.operandTyping.at(scope), GO_NATIVE_SAFE)
+    return { plan, absentIsZero: this.nullishAbsentIsZero(expr.left, expr.right, params) }
   }
 
   // JSX-level ternaries (`{expr ? a : b}`) in TEXT position are handled at the
@@ -7067,6 +7028,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     ctx: this.emitCtx,
     testPlan: (test, params) =>
       planTest(test, this.state.operandTyping.at(params ? this.scope.enterCallback(params) : this.scope), GO_NATIVE_SAFE),
+    nullishSpelling: (expr, params) => this.nullishSpelling(expr, params),
     renderParsedExpr: (expr) => this.renderParsedExpr(expr),
     makeLoc: () => this.makeLoc(),
     hasScopeBinding: (name) => Boolean(this.scope.lookup(name)),
@@ -7095,7 +7057,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     isCurrentLoopRecord: (name) => this.isCurrentLoopRecord(name),
     conditionLengthFn: (expr) => this.conditionLengthFn(expr),
     isMapSeededSignalChain: (node) => this.isMapSeededSignalChain(node),
-    isNillableNullishLeft: (expr) => this.isNillableNullishLeft(expr),
     isTemplatePrimitive: (path) => Boolean(this.templatePrimitives[path]),
   }
 

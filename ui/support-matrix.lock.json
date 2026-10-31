@@ -3723,18 +3723,6 @@
               ]
             },
             {
-              "fixture": "logical-mixed-left-nullish",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
-              "fixture": "logical-mixed-left-nullish-destructured",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
               "fixture": "loop-row-child-caller-rows-outer-state-key",
               "limitations": [
                 "loop-row-key-outer-state"
@@ -7403,18 +7391,6 @@
               ]
             },
             {
-              "fixture": "logical-mixed-left-nullish",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
-              "fixture": "logical-mixed-left-nullish-destructured",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -8652,18 +8628,6 @@
               ]
             },
             {
-              "fixture": "logical-mixed-left-nullish",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
-              "fixture": "logical-mixed-left-nullish-destructured",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
               "fixture": "loop-key-to-string-number-component-row",
               "limitations": [
                 "caller-rows-computed-key"
@@ -8793,6 +8757,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "nullish-optional-row-field",
+              "limitations": [
+                "nullish-optional-scalar-row-field"
               ]
             },
             {
@@ -11945,18 +11915,6 @@
               ]
             },
             {
-              "fixture": "logical-mixed-left-nullish",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
-              "fixture": "logical-mixed-left-nullish-destructured",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -12032,6 +11990,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "nullish-optional-row-field",
+              "limitations": [
+                "nullish-optional-scalar-row-field"
               ]
             },
             {
@@ -13929,18 +13893,6 @@
               ]
             },
             {
-              "fixture": "logical-mixed-left-nullish",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
-              "fixture": "logical-mixed-left-nullish-destructured",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -13950,6 +13902,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "nullish-optional-row-field",
+              "limitations": [
+                "nullish-optional-scalar-row-field"
               ]
             },
             {
@@ -15021,12 +14979,6 @@
               ]
             },
             {
-              "fixture": "logical-mixed-left-nullish",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
               "fixture": "loop-key-to-string-number-component-row",
               "limitations": [
                 "caller-rows-computed-key"
@@ -15096,6 +15048,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "nullish-optional-row-field",
+              "limitations": [
+                "nullish-optional-scalar-row-field"
               ]
             },
             {
@@ -17343,18 +17301,6 @@
               "fixture": "literal-index-own-key",
               "limitations": [
                 "non-identifier-literal-key"
-              ]
-            },
-            {
-              "fixture": "logical-mixed-left-nullish",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
-              "fixture": "logical-mixed-left-nullish-destructured",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
               ]
             },
             {
@@ -20542,18 +20488,6 @@
               ]
             },
             {
-              "fixture": "logical-mixed-left-nullish",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
-              "fixture": "logical-mixed-left-nullish-destructured",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
               "fixture": "loop-row-child-caller-rows-outer-state-key",
               "limitations": [
                 "loop-row-key-outer-state"
@@ -21889,18 +21823,6 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
-            },
-            {
-              "fixture": "logical-mixed-left-nullish",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
-              "fixture": "logical-mixed-left-nullish-destructured",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
             }
           ]
         },
@@ -22172,18 +22094,6 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "logical-mixed-left-nullish",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
-              "fixture": "logical-mixed-left-nullish-destructured",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
               ]
             },
             {
@@ -23136,18 +23046,6 @@
               "fixture": "literal-index-own-key",
               "limitations": [
                 "non-identifier-literal-key"
-              ]
-            },
-            {
-              "fixture": "logical-mixed-left-nullish",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
-              "fixture": "logical-mixed-left-nullish-destructured",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
               ]
             },
             {
@@ -24796,18 +24694,6 @@
               ]
             },
             {
-              "fixture": "logical-mixed-left-nullish",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
-              "fixture": "logical-mixed-left-nullish-destructured",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -24847,6 +24733,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "nullish-optional-row-field",
+              "limitations": [
+                "nullish-optional-scalar-row-field"
               ]
             },
             {
@@ -25974,18 +25866,6 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
-            },
-            {
-              "fixture": "logical-mixed-left-nullish",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
-              "fixture": "logical-mixed-left-nullish-destructured",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
             }
           ]
         },
@@ -26238,18 +26118,6 @@
               ]
             },
             {
-              "fixture": "logical-mixed-left-nullish",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
-              "fixture": "logical-mixed-left-nullish-destructured",
-              "limitations": [
-                "nullish-over-false-yielding-operand"
-              ]
-            },
-            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -26259,6 +26127,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "nullish-optional-row-field",
+              "limitations": [
+                "nullish-optional-scalar-row-field"
               ]
             },
             {

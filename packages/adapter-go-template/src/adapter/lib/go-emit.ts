@@ -60,8 +60,9 @@ export function wrapIfMultiToken(rendered: string): string {
  * comparison, `===`, unary minus and index read is a runtime call (`bf_add`,
  * `bf_lt`, `bf_eq`, `bf_neg`, `bf_get`, …); a test is native only on a
  * proven `boolean` (a Go bool), since Go's own truthiness reads an empty
- * slice or map as false and NaN as true (#3824 step 1); `??` is `or` unless
- * `bf_nullish` is needed.
+ * slice or map as false and NaN as true (#3824 step 1); `??` is its left
+ * operand when the plan proves that never nil, and the nil-test box of
+ * `lowerJsNullishValue` otherwise (#3824 step 7): Go's `or` tests truthiness.
  * `primitive-plan-cross-adapter.test.ts` holds the emission to it.
  */
 export const GO_NATIVE_SAFE: NativeSafeTable = {
@@ -74,7 +75,7 @@ export const GO_NATIVE_SAFE: NativeSafeTable = {
   relational: [],
   neg: [],
   'number-literal': ['safe-integer', 'unproven'],
-  nullish: ['non-nil', 'unproven'],
+  nullish: ['non-nil'],
   get: [],
   // A comparison, `!` and a boolean literal are host booleans already (#3824 step 5).
   'boolean-value': ['boolean'],
@@ -135,6 +136,41 @@ export function lowerJsLogicalValue(op: '&&' | '||', plan: PrimitivePlan | null,
   if (lowerJsTruthyTest(plan, l) === l) return `${op === '&&' ? 'and' : 'or'} ${wl} ${wr}`
   const keep = op === '&&' ? 'bf_keep_falsy' : 'bf_keep_truthy'
   return `index (or (${keep} ${wl}) (bf_arr ${wr})) 0`
+}
+
+/** How a value-position `l ?? r` is spelled (#3824 step 7): its nullish plan, and whether `l` reads an absent value as a Go zero where that changes the result. */
+export interface NullishSpelling {
+  readonly plan: PrimitivePlan | null
+  readonly absentIsZero: boolean
+}
+
+/**
+ * JS `l ?? r`, given its spelling and the rendered operands (#3824 step 7).
+ * A left operand the plan proves never nil is the result itself, even when
+ * it is `false` / `0` / `''` / NaN. A left operand Go stores as a concrete
+ * zero when JS sees it omitted (`absentIsZero`) has no nil to test, so
+ * Go's truthiness `or` gives the fallback for the absent value. Any other
+ * `l` is boxed by its nil test: `bf_keep_nonnil l` is `[l]` unless `l` is
+ * nil, an empty slice otherwise, so Go's `or` stops at the box exactly when
+ * JS yields `l` and evaluates `r` only otherwise (the short circuit);
+ * `index … 0` unboxes the operand. Each operand is rendered once, so
+ * `a ?? b ?? c …` grows linearly.
+ */
+export function lowerJsNullishValue(spelling: NullishSpelling, l: string, r: string): string {
+  const { plan, absentIsZero } = spelling
+  if (plan?.mode === 'native' && plan.op === 'nullish') return l
+  if (absentIsZero) return `or ${wrapIfMultiToken(l)} ${wrapIfMultiToken(r)}`
+  return `index (or (bf_keep_nonnil ${wrapIfMultiToken(l)}) (bf_arr ${wrapIfMultiToken(r)})) 0`
+}
+
+/** Whether `expr` is a literal of a Go zero value: `''`, `0` or `false`. */
+export function isZeroLiteral(expr: ParsedExpr): boolean {
+  return expr.kind === 'literal' && (expr.value === '' || expr.value === false || (expr.literalType === 'number' && Number(expr.value) === 0))
+}
+
+/** Whether a Go field type is a concrete scalar, which cannot hold nil (not `interface{}`, a slice, a map or a pointer). */
+export function isConcreteScalarGoType(goType: string): boolean {
+  return goType !== 'interface{}' && goType !== 'any' && !goType.startsWith('[]') && !goType.startsWith('map[') && !goType.startsWith('*')
 }
 
 /**

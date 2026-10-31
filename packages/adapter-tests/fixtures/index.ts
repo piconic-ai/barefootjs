@@ -291,6 +291,8 @@ import { fixture as remainderNegativeZeroJson } from './remainder-negative-zero-
 import { fixture as remainderNegativeZeroJsonPositions } from './remainder-negative-zero-json-positions'
 import { fixture as jsonStringifyNumberSpelling } from './json-stringify-number-spelling'
 import { fixture as truthinessPositions } from './truthiness-positions'
+import { fixture as nullishPositions } from './nullish-positions'
+import { fixture as nullishOptionalRowField } from './nullish-optional-row-field'
 import { fixture as logicalValueChains } from './logical-value-chains'
 import { fixture as jsonStringifyComparedStringProp } from './json-stringify-compared-string-prop'
 import { fixture as numberDivisionZeroDivisor } from './number-division-zero-divisor'
@@ -1503,6 +1505,8 @@ export const jsxFixtures: JSXFixture[] = [
   remainderNegativeZeroJsonPositions,
   jsonStringifyNumberSpelling,
   truthinessPositions,
+  nullishPositions,
+  nullishOptionalRowField,
   logicalValueChains,
   jsonStringifyComparedStringProp,
   numberDivisionZeroDivisor,

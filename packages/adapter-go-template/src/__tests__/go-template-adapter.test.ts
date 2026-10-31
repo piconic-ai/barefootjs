@@ -2355,7 +2355,7 @@ export function Host() {
       const template = result.files.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
       expect(types).toContain('Name interface{} `json:"name,omitempty"`')
       expect(types).toContain('Age interface{} `json:"age,omitempty"`')
-      expect(template).toContain('bf_nullish (bf_get .Given "name") "anon"')
+      expect(template).toContain('index (or (bf_keep_nonnil (bf_get .Given "name")) (bf_arr "anon")) 0')
     })
 
     test('a missing field omits the attribute, a supplied empty value keeps it', async () => {
@@ -5357,7 +5357,7 @@ export function C(props: Props) {
     // `[UNSUPPORTED: …]` marker text, which would break `text/template` parsing
     // once spliced as an operand. `??` on a nillable prop lowers to the
     // nil-testing `bf_nullish` (#2248), equally valid template syntax.
-    expect(template).toContain('{{bf_text (bf_nullish .Config "")}}')
+    expect(template).toContain('{{bf_text (index (or (bf_keep_nonnil .Config) (bf_arr "")) 0)}}')
     expect(template).not.toContain('UNSUPPORTED')
   })
 
@@ -5459,7 +5459,7 @@ export function Root(props: Props) {
     // (case-tolerant `getFieldValue`), not a plain `.Ctx.Config.Label` dot
     // chain — the latter would require an exact-cased struct/map field that
     // never exists and crashes real `go run` execution.
-    expect(consumerTemplate).toContain('{{bf_text (or (bf_get (bf_get .Ctx "config") "label") "none")}}')
+    expect(consumerTemplate).toContain('{{bf_text (index (or (bf_keep_nonnil (bf_get (bf_get .Ctx "config") "label")) (bf_arr "none")) 0)}}')
     expect(consumerTemplate).not.toContain('.Ctx.Config')
   })
 
@@ -7461,7 +7461,7 @@ export function List() {
 // `bf_nullish` since #2248/#2252; this brings the condition-position
 // emitter in line with it.
 describe('GoTemplateAdapter - #2254 `??` in condition position on a nillable prop', () => {
-  test('ternary test comparing `props.label ?? "Default"` lowers to bf_nullish, not or', () => {
+  test('ternary test comparing `props.label ?? "Default"` tests nil-ness, not truthiness', () => {
     const adapter = new GoTemplateAdapter()
     const result = compileJSX(`
 "use client"
@@ -7472,7 +7472,7 @@ export function C(props: Props) {
 `.trimStart(), 'test.tsx', { adapter })
     expect(result.errors ?? []).toEqual([])
     const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
-    expect(template).toContain('bf_nullish .Label "Default"')
+    expect(template).toContain('index (or (bf_keep_nonnil .Label) (bf_arr "Default")) 0')
     expect(template).not.toContain('or .Label "Default"')
   })
 
@@ -7639,11 +7639,11 @@ export function C(props: Props) {
     // `html/template` parses those as `gt`/`len`/`eq` receiving 3/4 sibling
     // args instead of the intended 1/2.
     // A nillable signal's `??` tests nil only, keeping a present `[]` (#3783).
-    expect(template).toContain('gt (len (bf_nullish .Todos bf_arr)) 0')
+    expect(template).toContain('gt (len (index (or (bf_keep_nonnil .Todos) (bf_arr bf_arr)) 0)) 0')
     // `todos()?.length` takes the nil-safe `bf_length` (#3422).
-    expect(template).toContain('gt (or (bf_length .Todos) 0) 0')
-    expect(template).toContain('gt (or .Count 0) 0')
-    expect(template).toContain('eq (or .Count 0) 2')
+    expect(template).toContain('gt (index (or (bf_keep_nonnil (bf_length .Todos)) (bf_arr 0)) 0) 0')
+    expect(template).toContain('gt (index (or (bf_keep_nonnil .Count) (bf_arr 0)) 0) 0')
+    expect(template).toContain('eq (index (or (bf_keep_nonnil .Count) (bf_arr 0)) 0) 2')
   })
 
   test('end-to-end via real `go run`: truthy `??` condition operands compile and render the correct branch (not a render-time panic)', async () => {
@@ -7710,7 +7710,7 @@ export function C(props: Props) {
     // Optional object props are decoded as maps retaining JS-cased keys, so
     // `.Meta.Count` reads the wrong value. This must match the value-position
     // lowering: `bf_get .Meta "count"` handles both map keys and structs.
-    expect(template).toContain('gt (or (bf_get .Meta "count") 0) 0')
+    expect(template).toContain('gt (index (or (bf_keep_nonnil (bf_get .Meta "count")) (bf_arr 0)) 0) 0')
     expect(template).not.toContain('gt (or .Meta.Count 0) 0')
   })
 
@@ -7755,7 +7755,7 @@ export function C(props: Props) {
     // NOT `lt bf_neg or .N 0 0` — Go would read that as `lt` given `bf_neg`,
     // `or`, `.N`, `0`, `0` as five sibling args.
     // A nillable signal's `??` tests nil only, keeping a present `0` (#3783).
-    expect(template).toContain('lt (bf_neg (bf_nullish .N 0)) 0')
+    expect(template).toContain('lt (bf_neg (index (or (bf_keep_nonnil .N) (bf_arr 0)) 0)) 0')
 
     try {
       const negHtml = await renderGoTemplateComponent({ source, adapter: new GoTemplateAdapter(), props: { count: 2 } })
@@ -7786,7 +7786,8 @@ export function C(props: Props) {
     // changes what `.On` is read FROM. Unwrapped (`or .A .B.On`), the whole
     // `if` tests `.A` itself (a struct value: always truthy in Go
     // templates) and ignores `a.on` entirely, so it renders "on" no matter
-    // what `a.on` is. Wrapped (`(or .A .B).On`), it correctly reads `a.on`.
+    // what `a.on` is. Since #3824 step 7 the plan proves `a()` never nil, so
+    // `a() ?? b()` is `a()` itself and the read is `.A.On`.
     const source = `
 'use client'
 import { createSignal } from '@barefootjs/client'
@@ -7802,7 +7803,7 @@ export function C(props: Props) {
     const result = compileJSX(source.trimStart(), 'test.tsx', { adapter })
     expect(result.errors ?? []).toEqual([])
     const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
-    expect(template).toContain('(or .A .B).On')
+    expect(template).toContain('{{if (bf_truthy .A.On)}}')
 
     try {
       const offHtml = await renderGoTemplateComponent({

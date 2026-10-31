@@ -9855,6 +9855,14 @@
       }
     }
   ],
+  "nullish-optional-row-field": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "number-addition-text-formatting": [
     {
       "name": "gen:value:zero",

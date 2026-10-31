@@ -121,11 +121,10 @@ export const renderDivergences: RenderDivergences = {
   // members are not typed as the component's props, so `p.label + p.n`
   // does not concatenate (or the boolean `p.on` prints as `1`).
   'props-object-non-props-name-operand-typing': { limitation: 'props-object-non-props-name-operand-typing' },
-  // A boolean text child prints `true` / `false`; JSX renders nothing.
-  // `??` over a logical or ternary left operand that yields `false` takes
-  // the fallback: `or` tests truthiness.
-  'logical-mixed-left-nullish': { limitation: 'nullish-over-false-yielding-operand' },
-  'logical-mixed-left-nullish-destructured': { limitation: 'nullish-over-false-yielding-operand' },
+  // `??` over an optional scalar field of a typed loop row: the row struct
+  // stores an omitted field as its zero value, so the lowering keeps Go's
+  // `or` there and a present `''` / `0` takes the fallback.
+  'nullish-optional-row-field': { limitation: 'nullish-optional-scalar-row-field' },
   // `===` / `!==` between objects or arrays compares contents, not references.
   'strict-equality-distinct-reference': { limitation: 'object-equality-by-contents' },
   // An array compared with itself reads unequal.

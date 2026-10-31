@@ -69,7 +69,8 @@ function dslCall(prefix: string, names: Partial<Record<PrimitiveHelper, readonly
 const TRUTHY_NAMES = ['truthy', 'keep_truthy', 'keep_falsy']
 const GO_NAMES: Partial<Record<PrimitiveHelper, readonly string[]>> = {
   strict_eq: ['eq', 'ne'],
-  coalesce: ['nullish'],
+  // A value-position `??` boxes its left operand by its nil test (#3824 step 7).
+  coalesce: ['nullish', 'keep_nonnil'],
   truthy: TRUTHY_NAMES,
 }
 const PERL_NAMES = { sub: ['subtract'], mul: ['multiply'], div: ['divide'], truthy: TRUTHY_NAMES }
@@ -285,7 +286,20 @@ const CASES: readonly Case[] = [
   },
   {
     id: 'nullish',
-    positions: at({ text, attr }, { 'non-nil': "props.s ?? 'x'", optional: 'props.maybe ?? 0', 'optional-string': "props.ms ?? 'none'" }),
+    positions: {
+      ...at(
+        { text, attr, if: ifTest },
+        {
+          'non-nil': "props.s ?? 'x'",
+          optional: 'props.maybe ?? 0',
+          'optional-string': "props.ms ?? 'none'",
+          comparison: "(props.n > props.m) ?? 'x'",
+          'false-yielding': "(props.n > props.m && 'y') ?? 'z'",
+          chain: "props.ms ?? props.maybe ?? 'c'",
+        },
+      ),
+      filter: [filter('(x ?? 1) > 0', 'x ?? 1', 'row'), filter("(props.ms ?? 'a') === 'a'", "props.ms ?? 'a'", 'optional-string')],
+    },
   },
   {
     id: 'get',
@@ -342,9 +356,6 @@ const DISAGREEMENTS: Readonly<Record<string, string>> = {
   'go plus filter row': 'step 4 (`+`)',
   'mojolicious plus filter row': 'step 4 (`+`)',
   'xslate plus filter row': 'step 4 (`+`)',
-  // `??` on Go: `bf_nullish` for a nillable prop, `or` otherwise.
-  'go nullish text optional-string': 'step 7 (nullish on Go)',
-  'go nullish attr optional-string': 'step 7 (nullish on Go)',
   // `===`. Operands proven of different types are not folded to a constant;
   // Mojolicious spells `==` / `ne` for an operand it cannot type.
   'go strict-eq text different-types': 'step 8 (`===`)',
