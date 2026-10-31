@@ -125,7 +125,10 @@ import {
   wrapIfMultiToken,
   lowerJsLogicalValue,
   lowerJsNullishValue,
-  isZeroLiteral,
+  isGoZeroLiteralOf,
+  goZeroKindOfGoType,
+  regroupNullish,
+  type GoZeroKind,
   isConcreteScalarGoType,
   type NullishSpelling,
   lowerJsNot,
@@ -167,7 +170,7 @@ import {
 } from "./value/value-lowering.ts"
 import { parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
 import { propertyInfoToGo, typeInfoToGo } from "./type/type-codegen.ts"
-import { isKnownArray, isKnownNonNumber } from "./type/number-read.ts"
+import { isKnownArray, isKnownNonNumber, loopRowType } from "./type/number-read.ts"
 import { planSynthPropStructs } from "./type/synth-prop-structs.ts"
 import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, isPrimitiveLiteralArray, signalFieldGoType, signalLoopRows, signalSeedGo } from "./type/state-fields.ts"
 import { propsFieldName, propsFieldNames } from './lib/props-field-names.ts'
@@ -319,6 +322,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /** Captured enclosing names a filtered loop's own `{{range}}` redeclares,
    * mapped to the Go variable that holds the enclosing value (#3396). */
   private filterCaptureAliases: Map<string, string> = new Map()
+
+  /**
+   * The row type of each `.filter()` / `.find()` / `.every()` predicate param
+   * being rendered, keyed by the param (#3824 step 7). A predicate's params
+   * enter as plain callback bindings, so this is what types `t.s` in
+   * `rows.filter(t => (t.s ?? 'fb') === …)` for {@link absentGoZero}.
+   */
+  private predicateRowTypes: Map<string, TypeInfo> = new Map()
 
   /**
    * Identifier-path callees the Go runtime can render in template scope, keyed
@@ -794,7 +805,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `generate()` itself computing nillability against the PREVIOUS
     // compile's type tables.
     buildLocalTypeTables(this.typeSynthesisHost, ir, ir.metadata.componentName)
-    // Template-time readers (`readsAbsentAsGoZero`, `resolvePropMemberSeed`
+    // Template-time readers (`absentGoZero`, `resolvePropMemberSeed`
     // via memo/getter lowering) run before `generateTypes`, so they need
     // the overrides now — computed against the same freshly built tables
     // `collectNillablePropNames` reads below. `generateTypes` recomputes it
@@ -5368,6 +5379,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // required scalar prop) is `x`, even when it is `false` / `''` / `0`;
     // `y` is never rendered.
     if (op === '??' && isNativePlan(plan, 'nullish')) return this.emitOperand(left, emit)
+    // A compound left operand that can yield a read Go stores as a concrete
+    // zero is regrouped, so each of its operands gets its own `??` test.
+    const regrouped = op === '??' ? this.nullishRegrouped(left, right) : null
+    if (regrouped) return emit(regrouped)
     // Go's `and`/`or` are prefix builtins, so every operand that renders to more
     // than one token (a call like `.SearchParams.Get "sort"`, an arithmetic
     // `bf_add a b`, a comparison `eq a b`, a nested `not …` / `or …`) must be
@@ -5385,26 +5400,75 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Whether `expr` reads a value Go stores as a concrete scalar although JS
-   * may see it omitted (#3824 step 7): an absent value then reads as the
-   * type's zero value, and no nil test can tell it from a present `''` /
-   * `0` / `false`. These reads are an optional no-default prop the nillable
-   * flip leaves concrete (`resolvePropGoType`: a named alias type such as
+   * The Go zero value an absent `expr` reads as, for a read Go stores as a
+   * concrete scalar although JS may see it omitted (#3824 step 7); null for
+   * any other read. No nil test can tell such an absent value from a present
+   * `''` / `0` / `false`. These reads are an optional no-default prop the
+   * nillable flip leaves concrete (`resolvePropGoType`: a prop read only
+   * with a zero fallback, or a named alias type such as
    * `placement?: TooltipPlacement`), an optional scalar field of a loop row
    * (a struct field), and `searchParams().get(k)` (`""` for an absent key).
-   * `params` are a predicate's own bindings, entered over the current scope.
+   * A `??` / `&&` / `||` or a ternary reads as one when an operand that can
+   * be its value does. `params` are a predicate's own bindings, entered over
+   * the current scope.
    */
-  private readsAbsentAsGoZero(expr: ParsedExpr, params?: readonly string[]): boolean {
-    const scope = params ? this.scope.enterCallback(params) : this.scope
+  private absentGoZero(expr: ParsedExpr, params?: readonly string[]): GoZeroKind | null {
+    if (expr.kind === 'logical' || expr.kind === 'conditional') {
+      const operands = expr.kind === 'logical' ? [expr.left, expr.right] : [expr.consequent, expr.alternate]
+      const kinds = new Set(operands.map(o => this.absentGoZero(o, params)).filter(k => k !== null))
+      return kinds.size === 0 ? null : kinds.size === 1 ? [...kinds][0] : 'unknown'
+    }
+    const scope = params ? this.predicateScope(params) : this.scope
     if (expr.kind === 'call') {
-      return matchSearchParamsMethodCall(expr.callee, expr.args, this.state.searchParamsLocals)?.method === 'get'
+      return matchSearchParamsMethodCall(expr.callee, expr.args, this.state.searchParamsLocals)?.method === 'get' ? 'string' : null
     }
     const param = this.optionalPropRead(expr, scope)
-    if (param) return isConcreteScalarGoType(resolvePropGoType(this.emitCtx, param, this.state.propTypeOverrides))
-    if (!this.readsRowField(expr, scope)) return false
+    const isRowField = !param && this.readsRowField(expr, scope)
+    if (!param && !isRowField) return null
     const types = operandFacts(expr, this.state.operandTyping.at(scope)).types
     const present = [...types].filter(t => t !== 'nil')
-    return types.has('nil') && present.length === 1 && (present[0] === 'string' || present[0] === 'number' || present[0] === 'boolean')
+    const factsKind: GoZeroKind = present.length === 1 && (present[0] === 'string' || present[0] === 'number' || present[0] === 'boolean') ? present[0] : 'unknown'
+    if (param) {
+      const goType = resolvePropGoType(this.emitCtx, param, this.state.propTypeOverrides)
+      return isConcreteScalarGoType(goType) ? (goZeroKindOfGoType(goType) ?? factsKind) : null
+    }
+    return types.has('nil') && factsKind !== 'unknown' ? factsKind : null
+  }
+
+  /**
+   * Render `render` with `param` typed as a row of `rowType` for
+   * {@link absentGoZero}; the previous typing of `param` is restored after.
+   */
+  private withPredicateRow<T>(param: string, rowType: TypeInfo | null, render: () => T): T {
+    if (!rowType) return render()
+    const prev = this.predicateRowTypes
+    this.predicateRowTypes = new Map([...prev, [param, rowType]])
+    try {
+      return render()
+    } finally {
+      this.predicateRowTypes = prev
+    }
+  }
+
+  /** The `{{if}}` test of a `.find()` / `.every()` / `.some()` predicate, its param typed as a row of the array (#3824 step 7). */
+  private renderHigherOrderPredicate(expr: HigherOrderShape): string {
+    const rowType = loopRowType(this.emitCtx, { arrayParsed: expr.object }, this.scope)
+    // A refused predicate already reported BF101; `false` keeps the block valid.
+    return this.withPredicateRow(expr.param, rowType, () => renderFilterExpr(this.conditionExprHost, expr.predicate, expr.param) ?? 'false')
+  }
+
+  /**
+   * The scope a predicate's `params` read in: each enters as a callback
+   * binding, and one whose row type is known ({@link withPredicateRow}) as a
+   * row of it.
+   */
+  private predicateScope(params: readonly string[]): BindingScope {
+    let scope = this.scope.enterCallback(params)
+    for (const param of params) {
+      const rowType = this.predicateRowTypes.get(param)
+      if (rowType) scope = scope.enterLoopRow({ param, rowType })
+    }
+    return scope
   }
 
   /** Whether `expr` reads a field of a loop row: `row.f`, or a row param destructured from it (`({ f }) => …`). */
@@ -5432,15 +5496,30 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /**
    * Whether `l ?? r` reads an absent `l` as a Go zero
-   * ({@link readsAbsentAsGoZero}) where that changes the result (#3824
-   * step 7). Over such a read Go's `or` stays the spelling: it gives the
-   * fallback for an absent value, which a nil test would keep as `''` /
-   * `0`. A right operand that is the zero value itself (`?? ''`, `?? 0`,
-   * `?? false`) renders the same either way, so the plan's nil test is
-   * spelled there.
+   * ({@link absentGoZero}) where that changes the result (#3824 step 7).
+   * Over such a read Go's `or` stays the spelling: it gives the fallback for
+   * an absent value, which a nil test would keep as `''` / `0`. A right
+   * operand that is that same zero value (`s ?? ''` over a string, `n ?? 0`
+   * over a number, `b ?? false` over a boolean) renders the same either way,
+   * so the plan's nil test is spelled there; a zero of another type
+   * (`s ?? 0`) or a read of unknown scalar type keeps `or`.
    */
   private nullishAbsentIsZero(left: ParsedExpr, right: ParsedExpr, params?: readonly string[]): boolean {
-    return !isZeroLiteral(right) && this.readsAbsentAsGoZero(left, params)
+    const kind = this.absentGoZero(left, params)
+    return kind !== null && !isGoZeroLiteralOf(right, kind)
+  }
+
+  /**
+   * `l ?? r` regrouped by {@link regroupNullish} when `l` is a `??`, a `||`
+   * or a ternary that can yield a read Go stores as a concrete zero (#3824
+   * step 7): tested through the compound's result, such a read's absent
+   * zero would be kept, while regrouped it gets its own spelling and a
+   * present `''` in another operand still stops the chain. Null otherwise:
+   * a `&&` left operand keeps `or` ({@link nullishAbsentIsZero}).
+   */
+  private nullishRegrouped(left: ParsedExpr, right: ParsedExpr, params?: readonly string[]): ParsedExpr | null {
+    if (left.kind !== 'logical' && left.kind !== 'conditional') return null
+    return this.absentGoZero(left, params) === null ? null : regroupNullish(left, right)
   }
 
   /** The spelling of a value-position `l ?? r` the condition and filter walkers lower (#3824 step 7). */
@@ -5863,8 +5942,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     propertyAccess?: string
   ): string | null {
     const arrayExpr = renderArray(expr.object)
-    // A refused predicate already reported BF101; `false` keeps the block valid.
-    const condition = renderFilterExpr(this.conditionExprHost, expr.predicate, expr.param) ?? 'false'
+    const condition = this.renderHigherOrderPredicate(expr)
 
     if (expr.method === 'find') {
       const output = propertyAccess ? `{{.${propertyAccess}}}` : '{{.}}'
@@ -5902,8 +5980,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     renderArray: (e: ParsedExpr) => string
   ): string | null {
     const arrayExpr = renderArray(expr.object)
-    // A refused predicate already reported BF101; `false` keeps the block valid.
-    const condition = renderFilterExpr(this.conditionExprHost, expr.predicate, expr.param) ?? 'false'
+    const condition = this.renderHigherOrderPredicate(expr)
 
     if (expr.method === 'every') {
       const v = `$bf_r${this.state.templateVarCounter++}`
@@ -7029,6 +7106,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     testPlan: (test, params) =>
       planTest(test, this.state.operandTyping.at(params ? this.scope.enterCallback(params) : this.scope), GO_NATIVE_SAFE),
     nullishSpelling: (expr, params) => this.nullishSpelling(expr, params),
+    nullishRegrouped: (left, right, params) => this.nullishRegrouped(left, right, params),
     renderParsedExpr: (expr) => this.renderParsedExpr(expr),
     makeLoc: () => this.makeLoc(),
     hasScopeBinding: (name) => Boolean(this.scope.lookup(name)),
@@ -7100,6 +7178,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     setScalarWrapperRowCallSite: (callSite) => { this.scalarWrapperRowCallSite = callSite },
     filterCaptureAliases: () => this.filterCaptureAliases,
     setFilterCaptureAliases: (aliases) => { this.filterCaptureAliases = aliases },
+    withPredicateRow: (param, rowType, render) => this.withPredicateRow(param, rowType, render),
     staticLoopBakeFailed: () => this.staticLoopBakeFailed,
     setStaticLoopBakeFailed: (failed) => { this.staticLoopBakeFailed = failed },
     loopVarRefCount: () => this.loopVarRefCount,

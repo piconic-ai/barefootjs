@@ -163,9 +163,54 @@ export function lowerJsNullishValue(spelling: NullishSpelling, l: string, r: str
   return `index (or (bf_keep_nonnil ${wrapIfMultiToken(l)}) (bf_arr ${wrapIfMultiToken(r)})) 0`
 }
 
-/** Whether `expr` is a literal of a Go zero value: `''`, `0` or `false`. */
-export function isZeroLiteral(expr: ParsedExpr): boolean {
-  return expr.kind === 'literal' && (expr.value === '' || expr.value === false || (expr.literalType === 'number' && Number(expr.value) === 0))
+/**
+ * The JS type of the Go zero value an absent read takes (#3824 step 7):
+ * `''` for a string, `0` for a number, `false` for a boolean, and
+ * `'unknown'` when the read's scalar type is not one of them.
+ */
+export type GoZeroKind = 'string' | 'number' | 'boolean' | 'unknown'
+
+/**
+ * Whether `expr` is the literal Go zero value of `kind`: `''` for a string,
+ * `0` for a number, `false` for a boolean. A zero of another type (`?? 0`
+ * over a string) is not: it differs from the value an absent read takes.
+ */
+export function isGoZeroLiteralOf(expr: ParsedExpr, kind: GoZeroKind): boolean {
+  if (expr.kind !== 'literal') return false
+  if (kind === 'string') return expr.value === ''
+  if (kind === 'boolean') return expr.value === false
+  return kind === 'number' && expr.literalType === 'number' && Number(expr.value) === 0
+}
+
+/**
+ * The `GoZeroKind` of a concrete scalar Go type: `string`, a Go number type
+ * or `bool`; null for any other type (a named alias), whose kind the caller
+ * reads from the operand's facts instead.
+ */
+export function goZeroKindOfGoType(goType: string): GoZeroKind | null {
+  if (goType === 'string') return 'string'
+  if (goType === 'bool') return 'boolean'
+  return GO_NUMBER_TYPES.has(goType) ? 'number' : null
+}
+
+const GO_NUMBER_TYPES: ReadonlySet<string> = new Set([
+  'int', 'int8', 'int16', 'int32', 'int64', 'uint', 'uint8', 'uint16', 'uint32', 'uint64', 'float32', 'float64',
+])
+
+/**
+ * `l ?? r` with a compound `l`, regrouped so the `??` test reaches each
+ * operand that can be `l`'s value (#3824 step 7): `(a ?? b) ?? r` is
+ * `a ?? (b ?? r)`, `(a || b) ?? r` is `a || (b ?? r)` (a truthy `a` is never
+ * nil), and `(c ? x : y) ?? r` is `c ? (x ?? r) : (y ?? r)`. Each is the
+ * same value with the same short circuit, so an operand Go stores as a
+ * concrete zero gets its own spelling instead of being tested through the
+ * compound's result. Null for any other `l`.
+ */
+export function regroupNullish(left: ParsedExpr, right: ParsedExpr): ParsedExpr | null {
+  const nullish = (l: ParsedExpr): ParsedExpr => ({ kind: 'logical', op: '??', left: l, right })
+  if (left.kind === 'logical' && left.op !== '&&') return { kind: 'logical', op: left.op, left: left.left, right: nullish(left.right) }
+  if (left.kind === 'conditional') return { kind: 'conditional', test: left.test, consequent: nullish(left.consequent), alternate: nullish(left.alternate) }
+  return null
 }
 
 /** Whether a Go field type is a concrete scalar, which cannot hold nil (not `interface{}`, a slice, a map or a pointer). */

@@ -81,6 +81,8 @@ export interface LoopRenderHost {
   /** The `$name` aliases of enclosing range variables a `.filter()` predicate reads. */
   filterCaptureAliases(): Map<string, string>
   setFilterCaptureAliases(aliases: Map<string, string>): void
+  /** Render `render` with a predicate's `param` typed as a row of `rowType` (#3824 step 7). */
+  withPredicateRow<T>(param: string, rowType: TypeInfo | null, render: () => T): T
   /** Set when an unrolled static loop's body did not resolve against an item. */
   staticLoopBakeFailed(): boolean
   setStaticLoopBakeFailed(failed: boolean): void
@@ -513,13 +515,14 @@ function filterCondition(
     const prevAliases = host.filterCaptureAliases()
     host.setFilterCaptureAliases(new Map([...prevAliases, ...captureAliases]))
     try {
-      filterCond = renderPredicateCondition(
+      const predicate = filterPredicate.predicate
+      filterCond = host.withPredicateRow(filterPredicate.param, rowType, () => renderPredicateCondition(
         host,
-        filterPredicate.predicate,
+        predicate,
         filterPredicate.param,
         datumField,
         isFieldlessLoopRow(host, loop, rowType),
-      )
+      ))
     } finally {
       host.setFilterCaptureAliases(prevAliases)
     }

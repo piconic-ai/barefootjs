@@ -106,6 +106,12 @@ export interface ConditionExprHost {
   testPlan(test: ParsedExpr, params?: readonly string[]): PrimitivePlan
   /** How a value-position `l ?? r` is spelled (#3824 step 7), typed like {@link testPlan}. */
   nullishSpelling(expr: Extract<ParsedExpr, { kind: 'logical' }>, params?: readonly string[]): NullishSpelling
+  /**
+   * A value-position `l ?? r` regrouped so each operand of a compound `l`
+   * that can be its value gets its own `??` test (#3824 step 7), or null
+   * when it is spelled as written. Typed like {@link testPlan}.
+   */
+  nullishRegrouped(left: ParsedExpr, right: ParsedExpr, params?: readonly string[]): ParsedExpr | null
 }
 
 /**
@@ -244,15 +250,8 @@ function renderFilterExprNode(
     case 'index-access':
       return renderFilterIndexAccess(host, expr, param, localVarMap, datumField, fieldlessParam)
 
-    case 'logical': {
-      const left = renderFilterExprNode(host, expr.left, param, localVarMap, datumField, fieldlessParam)
-      if (left === null) return null
-      const right = renderFilterExprNode(host, expr.right, param, localVarMap, datumField, fieldlessParam)
-      if (right === null) return null
-      // A VALUE position (a comparison operand): the operand JS yields.
-      if (expr.op === '??') return lowerJsNullishValue(host.nullishSpelling(expr, [param]), `(${left})`, `(${right})`)
-      return lowerJsLogicalValue(expr.op, host.testPlan(expr.left, [param]), `(${left})`, `(${right})`)
-    }
+    case 'logical':
+      return renderFilterLogical(host, expr, param, localVarMap, datumField, fieldlessParam)
 
     default:
       // The filter predicate body contains a node kind we can't lower to a
@@ -437,6 +436,25 @@ function renderFilterIndexAccess(
   const idx = renderFilterExprNode(host, expr.index, param, localVarMap, datumField, fieldlessParam)
   if (idx === null) return null
   return `(bf_get ${wrapIfMultiToken(obj)} ${wrapIfMultiToken(idx)})`
+}
+
+/** The `logical` arm of {@link renderFilterExprNode}: a VALUE position (a comparison operand), so the operand JS yields. */
+function renderFilterLogical(
+  host: ConditionExprHost,
+  expr: Extract<ParsedExpr, { kind: 'logical' }>,
+  param: string,
+  localVarMap: Map<string, string>,
+  datumField: string | undefined,
+  fieldlessParam: boolean,
+): string | null {
+  const regrouped = expr.op === '??' ? host.nullishRegrouped(expr.left, expr.right, [param]) : null
+  if (regrouped) return renderFilterExprNode(host, regrouped, param, localVarMap, datumField, fieldlessParam)
+  const left = renderFilterExprNode(host, expr.left, param, localVarMap, datumField, fieldlessParam)
+  if (left === null) return null
+  const right = renderFilterExprNode(host, expr.right, param, localVarMap, datumField, fieldlessParam)
+  if (right === null) return null
+  if (expr.op === '??') return lowerJsNullishValue(host.nullishSpelling(expr, [param]), `(${left})`, `(${right})`)
+  return lowerJsLogicalValue(expr.op, host.testPlan(expr.left, [param]), `(${left})`, `(${right})`)
 }
 
 /** The `binary` arm of {@link renderFilterExprNode}. */
@@ -821,6 +839,8 @@ function renderConditionLogical(
   host: ConditionExprHost,
   expr: Extract<ParsedExpr, { kind: 'logical' }>,
 ): ConditionParts {
+  const regrouped = expr.op === '??' ? host.nullishRegrouped(expr.left, expr.right) : null
+  if (regrouped) return renderConditionExpr(host, regrouped)
   const leftResult = renderConditionExpr(host, expr.left)
   const rightResult = renderConditionExpr(host, expr.right)
   const preamble = leftResult.preamble + rightResult.preamble
