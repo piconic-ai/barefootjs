@@ -119,20 +119,20 @@ export function lowerJsNot(plan: PrimitivePlan | null, rendered: string): string
  * JS `l && r` / `l || r` in a VALUE position, which yields one of its
  * operands. When the plan proves `l` a boolean, Go's own `and` / `or` already
  * do that. Otherwise Go's `and` / `or` would test `l` by Go truthiness (an
- * empty slice is false, NaN true), so the operand is picked by `l`'s JS test
- * instead, keeping the short circuit: `bf_arr` boxes the chosen operand in a
- * one-element slice, which Go always reads as true, so `or` stops at the
- * first box built and `index … 0` unboxes it. `&&` builds `r`'s box only
- * after `l` tested true, `||` builds `r`'s only after it tested false; `l` is
- * rendered twice (a pure read).
+ * empty slice is false, NaN true), so `l` is kept or dropped by its JS test
+ * instead: `bf_keep_truthy l` (for `||`) is the one-element slice `[l]` when
+ * `l` is JS-truthy and an empty slice otherwise, `bf_keep_falsy l` (for
+ * `&&`) the reverse. Go reads a one-element slice as true and an empty one as
+ * false, so `or` stops at `l`'s box when it holds the result and only then
+ * skips `r` (the short circuit); `index … 0` unboxes the operand. Each
+ * operand is rendered once, so a chain `a || b || c …` grows linearly.
  */
 export function lowerJsLogicalValue(op: '&&' | '||', plan: PrimitivePlan | null, l: string, r: string): string {
   const wl = wrapIfMultiToken(l)
   const wr = wrapIfMultiToken(r)
-  const test = lowerJsTruthyTest(plan, l)
-  if (test === l) return `${op === '&&' ? 'and' : 'or'} ${wl} ${wr}`
-  const [taken, other] = op === '&&' ? [wr, wl] : [wl, wr]
-  return `index (or (and ${test} (bf_arr ${taken})) (bf_arr ${other})) 0`
+  if (lowerJsTruthyTest(plan, l) === l) return `${op === '&&' ? 'and' : 'or'} ${wl} ${wr}`
+  const keep = op === '&&' ? 'bf_keep_falsy' : 'bf_keep_truthy'
+  return `index (or (${keep} ${wl}) (bf_arr ${wr})) 0`
 }
 
 /**

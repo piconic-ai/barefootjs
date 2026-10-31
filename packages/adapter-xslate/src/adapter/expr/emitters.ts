@@ -101,14 +101,17 @@ export function truthyTest(plan: PrimitivePlan | null, rendered: string): string
 
 /**
  * JS `l && r` / `l || r`, which yield one of their operands: Kolon's own
- * `&&` / `||` when the plan proves `l` a boolean, otherwise a ternary over
- * `l`'s JS truthiness that still returns `l` itself. `l` is rendered twice;
- * every operand here is a pure read.
+ * `&&` / `||` when the plan proves `l` a boolean. Otherwise `l` is boxed by
+ * its JS test (#3824): `keep_truthy(l)` is the one-element array `[l]` when
+ * `l` is JS-truthy and undef otherwise, `keep_falsy(l)` the reverse, so
+ * Kolon's `||` stops at `l`'s box exactly when JS returns `l` and builds
+ * `[r]` only otherwise (the short circuit); `[0]` unboxes the operand.
+ * Each operand is rendered once, so a chain `a || b || c …` grows linearly.
  */
 function spellLogical(op: '&&' | '||', plan: PrimitivePlan | null, l: string, r: string): string {
-  const test = truthyTest(plan, l)
-  if (test === l) return `(${l} ${op} ${r})`
-  return op === '&&' ? `(${test} ? ${r} : ${l})` : `(${test} ? ${l} : ${r})`
+  if (truthyTest(plan, l) === l) return `(${l} ${op} ${r})`
+  const keep = op === '&&' ? 'keep_falsy' : 'keep_truthy'
+  return `($bf.${keep}(${l}) || [${r}])[0]`
 }
 
 /** Runtime helpers for JS arithmetic over numbers (#3454). */

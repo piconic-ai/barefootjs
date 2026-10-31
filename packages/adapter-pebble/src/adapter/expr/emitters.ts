@@ -22,23 +22,22 @@
  * explicitly rather than assuming a shared numbering.
  *
  *   1. **Symbolic ternary, not word-based `if`/`else`.** Confirmed: Pebble's
- *      ternary is `cond ? a : b`, not Jinja's `a if cond else b`. `logical`'s
- *      `&&`/`||` lowering and `conditional`'s ternary lowering both emit
- *      `(T ? A : B)` — same choice Twig makes, for the same reason (Twig has
- *      no word-ternary either).
+ *      ternary is `cond ? a : b`, not Jinja's `a if cond else b`.
+ *      `conditional`'s ternary lowering emits `(T ? A : B)` — same choice
+ *      Twig makes, for the same reason (Twig has no word-ternary either).
  *   2. **JS-truthy condition wrapping** (`truthyTest`) — unchanged in
  *      SHAPE from the Jinja/Twig ports: every condition-TEST position (`!x`,
- *      the left operand of `&&`/`||`, a ternary's test) routes through the
+ *      a ternary's test) routes through the
  *      shared `bf.truthy(...)` runtime helper unless the operand is
  *      structurally already boolean-shaped (the primitive plan's `boolean` proof, #3824) — see
  *      `@barefootjs/jsx`'s `adapters/boolean-result.ts`'s file header for why Pebble needs this (its
  *      `{% if %}` truthiness follows the same empty-container-is-falsy
- *      convention as Jinja/Twig, diverging from JS). `&&`/`||` still return
- *      the ORIGINAL operand VALUE (not a coerced bool) on the taken branch —
- *      matching JS `a || b` returning `a` itself — only the BRANCH TEST uses
- *      `bf.truthy`. The left operand's rendered text is emitted TWICE (once
- *      as the test, once as the value) — safe because every operand reaching
- *      this pipeline is a pure, side-effect-free read.
+ *      convention as Jinja/Twig, diverging from JS). `&&`/`||` return
+ *      the ORIGINAL operand VALUE (not a coerced bool) — matching JS
+ *      `a || b` returning `a` itself: they are the runtime's
+ *      `JsLogicalExtension` operators, which test the left operand by JS
+ *      truthiness and return it or the right one, each rendered once
+ *      (#3824).
  *   3. **`??` is NOT Pebble-native — REFUTED during Phase 3 research** (was
  *      previously assumed confirmed; see `pebble-adapter.ts`'s file header).
  *      Pebble has no `??` operator at all: `{{ a ?? b }}` is a template
@@ -366,15 +365,14 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
-    // See the file header, divergences 1 & 2: the branch TEST goes through
-    // `bf.truthy`, the RETURNED value stays the original operand text (`l`
-    // appears twice for `&&`/`||`), and the ternary is Pebble's symbolic
-    // `(test ? a : b)` form, not Jinja's word-based `(a if test else b)`.
-    if (op === '&&') return `(${truthyTest(plan, l)} ? ${r} : ${l})`
-    if (op === '||') return `(${truthyTest(plan, l)} ? ${l} : ${r})`
+    // JS `&&` / `||` yield an operand: the runtime's JsLogicalExtension
+    // operators test `l` by JS truthiness, return it when it decides the
+    // result and evaluate `r` only otherwise, each operand rendered once
+    // (#3824). The same spelling serves every plan.
+    if (op === '&&' || op === '||') return `(${l} ${op} ${r})`
     // See the file header, divergence 3 (REFUTED during Phase 3 research —
     // Pebble has NO `??` operator at all; it's a parse error, not a subtly
     // wrong runtime value). Routed through the `bf.coalesce(l, r)` runtime
@@ -698,12 +696,14 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
-    // See the file header, divergences 1 & 2.
-    if (op === '&&') return `(${truthyTest(plan, l)} ? ${r} : ${l})`
-    if (op === '||') return `(${truthyTest(plan, l)} ? ${l} : ${r})`
+    // JS `&&` / `||` yield an operand: the runtime's JsLogicalExtension
+    // operators test `l` by JS truthiness, return it when it decides the
+    // result and evaluate `r` only otherwise, each operand rendered once
+    // (#3824). The same spelling serves every plan.
+    if (op === '&&' || op === '||') return `(${l} ${op} ${r})`
     // See the file header, divergence 3 (REFUTED — see the other
     // `logical()` implementation above for the full explanation).
     return `bf.coalesce(${l}, ${r})`

@@ -73,7 +73,7 @@ export function P(props: { base: string; a: string; b: string }) {
 }
 `
     const { template } = generate(src)
-    expect(template).toContain('bf_query .Base (ne (index (or (and (bf_truthy .A) (bf_arr .B)) (bf_arr .A)) 0) "") "both" .A')
+    expect(template).toContain('bf_query .Base (ne (index (or (bf_keep_falsy .A) (bf_arr .B)) 0) "") "both" .A')
   })
 
   test('null / empty-string alternates are both treated as the omit branch', () => {

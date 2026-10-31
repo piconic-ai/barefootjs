@@ -81,6 +81,8 @@ func FuncMap() template.FuncMap {
 		"bf_raw_html":    RawHTML,
 		"bf_ternary":     Ternary,
 		"bf_truthy":      Truthy,
+		"bf_keep_truthy": KeepTruthy,
+		"bf_keep_falsy":  KeepFalsy,
 
 		// URL query builder (#1897 PostList href helpers): conditional
 		// (include, key, value) triples → "base?k=v&…", mirroring a
@@ -2642,6 +2644,31 @@ func FilterTruthy(items any) []any {
 //     built-in `not` (and `{{if}}`) treat an EMPTY slice/map as false, where
 //     JS treats `[]` / `{}` as true.
 func Truthy(v any) bool { return isTruthy(v) }
+
+// KeepTruthy boxes v for a value-position JS `l || r` (#3824): the
+// one-element slice [v] when v is JS-truthy (isTruthy), an empty slice
+// otherwise. The adapter lowers `l || r` to
+// `index (or (bf_keep_truthy l) (bf_arr r)) 0`: Go's `or` reads a
+// one-element slice as true and an empty one as false, so it stops at l's
+// box exactly when JS returns l, evaluates r only otherwise (the short
+// circuit), and `index … 0` unboxes the operand JS yields. Each operand
+// appears once, so a chain of `||` grows linearly.
+func KeepTruthy(v any) []any {
+	if isTruthy(v) {
+		return []any{v}
+	}
+	return []any{}
+}
+
+// KeepFalsy is KeepTruthy's twin for a value-position JS `l && r`: [v] when
+// v is JS-falsy (JS `&&` returns l itself, e.g. `0 && x` is 0), an empty
+// slice when v is truthy, so `or` moves on to r.
+func KeepFalsy(v any) []any {
+	if isTruthy(v) {
+		return []any{}
+	}
+	return []any{v}
+}
 
 // isTruthy mirrors JavaScript's `Boolean(x)` — false / 0 / NaN / "" and
 // null/undefined are falsy, everything else (including an EMPTY array or

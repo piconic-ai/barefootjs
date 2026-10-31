@@ -23,12 +23,10 @@
  *      (the primitive plan's `boolean` proof, #3824). `&&`/`||` still return the ORIGINAL
  *      operand VALUE (not a coerced bool) on the taken branch — matching JS
  *      `a || b` returning `a` itself, not `true` — only the BRANCH TEST uses
- *      `bf.truthy`. Because Jinja's `if/else` ternary has no way to reuse an
- *      already-computed test value for both the test and (conditionally) the
- *      result, the left operand's rendered text is emitted TWICE (once as
- *      the test, once as the value) — safe because every operand reaching
- *      this pipeline is a pure, side-effect-free read (a signal/prop lookup
- *      or a call into a pure runtime helper), never a stateful expression.
+ *      `bf.truthy`. Jinja's `if/else` ternary has no way to reuse an
+ *      already-computed test value, so `&&`/`||` box the left operand by
+ *      its JS test instead (`bf.keep_truthy` / `bf.keep_falsy`, see
+ *      `spellLogical`): each operand is rendered once (#3824).
  *   2. **No Jinja lambda for the predicate-callback fallback.** Kolon's
  *      `-> $x { … }` lambda is the Xslate top-level emitter's fallback when a
  *      `.filter`/`.every`/`.some`/`.find*` predicate can't be serialized to
@@ -150,6 +148,21 @@ function concatOperand(
  */
 export function truthyTest(plan: PrimitivePlan | null, rendered: string): string {
   return spellTest(plan, rendered, (r) => `bf.truthy(${r})`)
+}
+
+/**
+ * JS `l && r` / `l || r` in a value position, which yield one of their
+ * operands (#3824). When the plan proves `l` a boolean, minijinja's own `and` / `or` (which return an operand, as JS does, and agree with JS on a boolean `l`). Otherwise `l` is boxed by its JS test:
+ * `keep_truthy(l)` is the one-element list `[l]` when `l` is JS-truthy and
+ * `[]` otherwise, `keep_falsy(l)` the reverse, so minijinja's `or` stops at `l`'s box
+ * exactly when JS returns `l` itself and builds `[r]` only otherwise (the
+ * short circuit); `[0]` unboxes the operand. Each operand is rendered once,
+ * so a chain `a || b || c …` grows linearly.
+ */
+function spellLogical(op: '&&' | '||', plan: PrimitivePlan | null, l: string, r: string): string {
+  if (truthyTest(plan, l) === l) return `(${l} ${op === '&&' ? 'and' : 'or'} ${r})`
+  const keep = op === '&&' ? 'keep_falsy' : 'keep_truthy'
+  return `(bf.${keep}(${l}) or [${r}])[0]`
 }
 
 function emitComputedMember(object: ParsedExpr, property: string, emit: (e: ParsedExpr) => string): string {
@@ -336,12 +349,8 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
   logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
-    // See the file header, divergence 1: the branch TEST goes through
-    // `bf.truthy`, but the RETURNED value stays the original operand text —
-    // `l` appears twice for `&&`/`||` (test + fallback value), safe because
-    // every operand here is a pure lookup/call.
-    if (op === '&&') return `(${r} if ${truthyTest(plan, l)} else ${l})`
-    if (op === '||') return `(${l} if ${truthyTest(plan, l)} else ${r})`
+    // JS `&&` / `||` yield an operand, each rendered once (`spellLogical`).
+    if (op !== '??') return spellLogical(op, plan, l, r)
     // `l is not none` alone is NOT equivalent to JS `??`'s null-or-undefined
     // check: a context var that was never seeded at all (not merely set to
     // `None`) resolves to Jinja's `ChainableUndefined` sentinel under
@@ -652,9 +661,8 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
   logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
-    // See the file header, divergence 1.
-    if (op === '&&') return `(${r} if ${truthyTest(plan, l)} else ${l})`
-    if (op === '||') return `(${l} if ${truthyTest(plan, l)} else ${r})`
+    // JS `&&` / `||` yield an operand, each rendered once (`spellLogical`).
+    if (op !== '??') return spellLogical(op, plan, l, r)
     // See `JinjaFilterEmitter.logical`'s comment above (same file, same
     // fix): guard with `is defined` too, so a context var that was never
     // seeded (Jinja's `ChainableUndefined`, not Python `None`) still

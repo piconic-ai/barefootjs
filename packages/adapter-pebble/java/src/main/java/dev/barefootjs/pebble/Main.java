@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.ToNumberPolicy;
+import dev.barefootjs.pebble.ext.JsLogicalExtension;
 import dev.barefootjs.pebble.ext.SetBlockExtension;
 import io.pebbletemplates.pebble.PebbleEngine;
 import io.pebbletemplates.pebble.loader.FileLoader;
@@ -96,6 +97,9 @@ public final class Main {
         // block-capture (see SetBlockExtension's own doc comment for why
         // this REPLACES rather than adds to the stock tag).
         .extension(new SetBlockExtension())
+        // #3824: JS's value-position `||` / `&&`, which yield an operand
+        // (see JsLogicalExtension's own doc comment).
+        .extension(new JsLogicalExtension())
         .build();
 
     PebbleTemplate template = engine.getTemplate(entryName);

@@ -39,9 +39,9 @@
  *      already boolean-shaped (the primitive plan's `boolean` proof, #3824). `&&`/`||` still
  *      return the ORIGINAL operand VALUE (not a coerced bool) on the taken
  *      branch — matching JS `a || b` returning `a` itself — only the BRANCH
- *      TEST uses `$bf->truthy`. The left operand's rendered text is emitted
- *      TWICE (once as the test, once as the value) — safe because every
- *      operand reaching this pipeline is a pure, side-effect-free read.
+ *      TEST uses `$bf->truthy`. The left operand is boxed by its JS
+ *      test (`$bf->keep_truthy` / `$bf->keep_falsy`, see `spellLogical`),
+ *      so each operand is rendered once (#3824).
  *   5. **`??` is PHP-native**, covering undefined AND null in ONE operator —
  *      PHP's `??` silences BOTH an undefined-variable/index notice and a
  *      real `null` (`$missing ?? 'fb'` and `$x ?? 'fb'` with `$x = null`
@@ -167,6 +167,21 @@ export const NATIVE_SAFE: NativeSafeTable = {
  */
 export function truthyTest(plan: PrimitivePlan | null, rendered: string): string {
   return spellTest(plan, rendered, (r) => `$bf->truthy(${r})`)
+}
+
+/**
+ * JS `l && r` / `l || r` in a value position, which yield one of their
+ * operands (#3824). When the plan proves `l` a boolean, a ternary over `l` itself (`l ? r : false`, `l ? true : r`; PHP's `&&` / `||` yield a boolean, not `r`). Otherwise `l` is boxed by its JS test:
+ * `keep_truthy(l)` is the one-element array `[l]` when `l` is JS-truthy and
+ * `[]` otherwise, `keep_falsy(l)` the reverse, so PHP's `?:` stops at `l`'s box
+ * exactly when JS returns `l` itself and builds `[r]` only otherwise (the
+ * short circuit); `[0]` unboxes the operand. Each operand is rendered once,
+ * so a chain `a || b || c …` grows linearly.
+ */
+function spellLogical(op: '&&' | '||', plan: PrimitivePlan | null, l: string, r: string): string {
+  if (truthyTest(plan, l) === l) return op === '&&' ? `(${l} ? ${r} : false)` : `(${l} ? true : ${r})`
+  const keep = op === '&&' ? 'keep_falsy' : 'keep_truthy'
+  return `($bf->${keep}(${l}) ?: [${r}])[0]`
 }
 
 /**
@@ -365,12 +380,8 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
   logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
-    // See the file header, divergences 3 & 4: the branch TEST goes through
-    // `$bf->truthy`, the RETURNED value stays the original operand text (`l`
-    // appears twice for `&&`/`||`), and the ternary is the symbolic
-    // `(test ? a : b)` form.
-    if (op === '&&') return `(${truthyTest(plan, l)} ? ${r} : ${l})`
-    if (op === '||') return `(${truthyTest(plan, l)} ? ${l} : ${r})`
+    // JS `&&` / `||` yield an operand, each rendered once (`spellLogical`).
+    if (op !== '??') return spellLogical(op, plan, l, r)
     // See the file header, divergence 5: PHP's `??` is native and covers
     // both undefined and null in one operator.
     return `(${l} ?? ${r})`
@@ -677,9 +688,8 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
   logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
-    // See the file header, divergences 3 & 4.
-    if (op === '&&') return `(${truthyTest(plan, l)} ? ${r} : ${l})`
-    if (op === '||') return `(${truthyTest(plan, l)} ? ${l} : ${r})`
+    // JS `&&` / `||` yield an operand, each rendered once (`spellLogical`).
+    if (op !== '??') return spellLogical(op, plan, l, r)
     // See the file header, divergence 5: PHP's `??` is native.
     return `(${l} ?? ${r})`
   }
