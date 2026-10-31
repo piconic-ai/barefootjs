@@ -888,6 +888,48 @@ final class BarefootJS
         return Evaluator::truthy($value);
     }
 
+    /**
+     * Boxes for a value-position JS `l || r` / `l && r` (#3824): the Blade
+     * adapter spells `l || r` as `(keep_truthy(l) ?: [r])[0]` and
+     * `l && r` as `(keep_falsy(l) ?: [r])[0]`. `keepTruthy` is the
+     * one-element array `[$value]` when `$value` is JS-truthy and `[]`
+     * otherwise (`keepFalsy` the reverse), so PHP's `?:` stops at the box
+     * exactly when JS returns `$value` itself and builds `[r]` only
+     * otherwise (the short circuit); `[0]` unboxes the operand. Each operand
+     * appears once, so a chain grows linearly.
+     *
+     * @return array<int, mixed>
+     */
+    public function keep_truthy($value): array
+    {
+        return Evaluator::truthy($value) ? [$value] : [];
+    }
+
+    /** @return array<int, mixed> */
+    public function keep_falsy($value): array
+    {
+        return Evaluator::truthy($value) ? [] : [$value];
+    }
+
+    /**
+     * Value-position JS `l || r` / `l && r` for Twig (#3824). Twig compiles
+     * its own `?:` and `??` to PHP that repeats the left operand
+     * (`((test(l)) ? (l) : (r))`), so a chain nested through them grows
+     * exponentially however the template spells it. Twig spells `r` as an
+     * arrow function (`(__bf_lazy) => r`; Twig has no zero-parameter arrow),
+     * which these call only when JS evaluates `r` (the short circuit); `l`
+     * arrives evaluated once.
+     */
+    public function js_or($left, callable $right): mixed
+    {
+        return Evaluator::truthy($left) ? $left : $right(null);
+    }
+
+    public function js_and($left, callable $right): mixed
+    {
+        return Evaluator::truthy($left) ? $right(null) : $left;
+    }
+
     /** JS `/` (#3474): IEEE division. The quotient keeps its fraction, and
      * a zero divisor gives `NaN` or an infinity signed by both operands
      * (`1 / -0` is `-Infinity`), where PHP's `/` throws `DivisionByZeroError`.

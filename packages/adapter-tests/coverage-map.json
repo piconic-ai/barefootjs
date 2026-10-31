@@ -6930,6 +6930,21 @@
         "text"
       ]
     },
+    "logical-value-chains": {
+      "kinds": [
+        "identifier",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "logical:&&",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "loop-component-row-destructured-param": {
       "kinds": [
         "array-literal",
@@ -16067,6 +16082,36 @@
       ],
       "contexts": [
         "condition",
+        "text"
+      ]
+    },
+    "truthiness-positions": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:/",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "logical:||",
+        "unary:!",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
         "text"
       ]
     },

@@ -17,11 +17,12 @@ import {
   exprToString,
   identifierPath,
   type ParsedExpr,
+  type PrimitivePlan,
   type SourceLocation,
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
-import { goBinaryHelperCall, GO_REMEDIATION_OPTIONS, isLiteralKeyRead, lowerJsNot, wrapIfMultiToken } from '../lib/go-emit.ts'
+import { goBinaryHelperCall, GO_REMEDIATION_OPTIONS, isLiteralKeyRead, lowerJsLogicalTest, lowerJsLogicalValue, lowerJsTruthyTest, wrapIfMultiToken } from '../lib/go-emit.ts'
 import { isPropsObjectName } from '../lib/compile-state.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import type { HigherOrderShape } from '../lib/types.ts'
@@ -100,6 +101,11 @@ export interface ConditionExprHost {
    * parameter and locals), entered over the current scope.
    */
   refuseAmbiguousNilArithmetic(expr: ParsedExpr, params: readonly string[]): void
+  /**
+   * The ToBoolean plan of `test` (#3824): typed at the current scope, or,
+   * with `params`, at a predicate's scope with its own bindings entered.
+   */
+  testPlan(test: ParsedExpr, params?: readonly string[]): PrimitivePlan
 }
 
 /**
@@ -150,7 +156,31 @@ export function renderFilterExpr(
 ): string | null {
   // The predicate's operators lower without the operand coercion (#3700).
   host.refuseAmbiguousNilArithmetic(expr, [param, ...localVarMap.keys()])
-  return renderFilterExprNode(host, expr, param, localVarMap, datumField, fieldlessParam)
+  // Every caller tests the predicate's result (`{{if}}`), so it is a test.
+  return renderFilterTest(host, expr, param, localVarMap, datumField, fieldlessParam)
+}
+
+/**
+ * A predicate (sub)expression in a TEST position, spelled from its ToBoolean
+ * plan (#3824): `&&` / `||` as Go's `and` / `or` over each operand's test,
+ * anything else as its value under `lowerJsTruthyTest`.
+ */
+function renderFilterTest(
+  host: ConditionExprHost,
+  expr: ParsedExpr,
+  param: string,
+  localVarMap: Map<string, string>,
+  datumField?: string,
+  fieldlessParam = false,
+): string | null {
+  if (expr.kind === 'logical' && expr.op !== '??') {
+    const left = renderFilterTest(host, expr.left, param, localVarMap, datumField, fieldlessParam)
+    if (left === null) return null
+    const right = renderFilterTest(host, expr.right, param, localVarMap, datumField, fieldlessParam)
+    return right === null ? null : lowerJsLogicalTest(expr.op, left, right)
+  }
+  const value = renderFilterExprNode(host, expr, param, localVarMap, datumField, fieldlessParam)
+  return value === null ? null : lowerJsTruthyTest(host.testPlan(expr, [param]), value)
 }
 
 /** One node of {@link renderFilterExpr}; children recurse through it. */
@@ -195,9 +225,13 @@ function renderFilterExprNode(
       return renderFilterCall(host, expr, param, localVarMap, datumField, fieldlessParam, paramPrefix, paramHasFields)
 
     case 'unary': {
+      // `!x` negates `x`'s test.
+      if (expr.op === '!') {
+        const test = renderFilterTest(host, expr.argument, param, localVarMap, datumField, fieldlessParam)
+        return test === null ? null : `not ${wrapIfMultiToken(test)}`
+      }
       const arg = renderFilterExprNode(host, expr.argument, param, localVarMap, datumField, fieldlessParam)
       if (arg === null) return null
-      if (expr.op === '!') return lowerJsNot(expr.argument, arg)
       if (expr.op === '-') {
         return `bf_neg ${wrapIfMultiToken(arg)}`
       }
@@ -215,10 +249,9 @@ function renderFilterExprNode(
       if (left === null) return null
       const right = renderFilterExprNode(host, expr.right, param, localVarMap, datumField, fieldlessParam)
       if (right === null) return null
-      if (expr.op === '&&') {
-        return `and (${left}) (${right})`
-      }
-      return `or (${left}) (${right})`
+      // A VALUE position (a comparison operand): the operand JS yields.
+      if (expr.op === '??') return `or (${left}) (${right})`
+      return lowerJsLogicalValue(expr.op, host.testPlan(expr.left, [param]), `(${left})`, `(${right})`)
     }
 
     default:
@@ -510,10 +543,13 @@ export function renderConditionExpr(host: ConditionExprHost, expr: ParsedExpr): 
       return renderConditionBinary(host, expr)
 
     case 'unary': {
+      // `!x` negates `x`'s test (`renderConditionTest`), multi-token
+      // argument parenthesised.
+      if (expr.op === '!') {
+        const test = renderConditionTest(host, expr.argument)
+        return { preamble: test.preamble, expr: `not ${wrapIfMultiToken(test.expr)}` }
+      }
       const arg = renderConditionExpr(host, expr.argument)
-      // The same `lowerJsNot` as the main `unary()` emitter above: JS
-      // truthiness via `bf_truthy`, multi-token argument parenthesised.
-      if (expr.op === '!') return { preamble: arg.preamble, expr: lowerJsNot(expr.argument, arg.expr) }
       // Same rule as `!` just above: `bf_neg` is a prefix builtin too, so a
       // multi-token argument (`or .N 0`, from `-(n() ?? 0)`) must be
       // parenthesised or Go reads it as extra sibling args (#3249).
@@ -804,10 +840,29 @@ function renderConditionLogical(
   // nil-ness only. Mirrors the `logical()` emitter's own gate (used
   // for non-condition expression positions) — same
   // `nullishConsumed ∩ nillable` check via `nillablePropNameOf`.
-  const result = expr.op === '&&'
-    ? `and ${wrapLeft} ${wrapRight}`
-    : expr.op === '??' && host.isNillableNullishLeft(expr.left)
-      ? `bf_nullish ${wrapLeft} ${wrapRight}`
-      : `or ${wrapLeft} ${wrapRight}`
+  // A VALUE position (a comparison operand, a helper argument): JS `&&` /
+  // `||` yield an operand, picked by the left operand's test (#3824). A test
+  // position goes through `renderConditionTest` instead.
+  if (expr.op !== '??') return { preamble, expr: lowerJsLogicalValue(expr.op, host.testPlan(expr.left), leftResult.expr, rightResult.expr) }
+  const result = host.isNillableNullishLeft(expr.left)
+    ? `bf_nullish ${wrapLeft} ${wrapRight}`
+    : `or ${wrapLeft} ${wrapRight}`
   return { preamble, expr: result }
+}
+
+/**
+ * A condition (sub)expression in a TEST position — the whole `{{if}}`
+ * condition, an operand of `!`, an operand of a tested `&&` / `||` — spelled
+ * from its ToBoolean plan (#3824): `&&` / `||` as Go's short-circuiting
+ * `and` / `or` over each operand's test, anything else as its value under
+ * `lowerJsTruthyTest`.
+ */
+export function renderConditionTest(host: ConditionExprHost, expr: ParsedExpr): ConditionParts {
+  if (expr.kind === 'logical' && expr.op !== '??') {
+    const left = renderConditionTest(host, expr.left)
+    const right = renderConditionTest(host, expr.right)
+    return { preamble: left.preamble + right.preamble, expr: lowerJsLogicalTest(expr.op, left.expr, right.expr) }
+  }
+  const value = renderConditionExpr(host, expr)
+  return { preamble: value.preamble, expr: lowerJsTruthyTest(host.testPlan(expr), value.expr) }
 }

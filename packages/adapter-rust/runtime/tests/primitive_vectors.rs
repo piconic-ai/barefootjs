@@ -38,14 +38,21 @@ fn call_binding(fn_name: &str, a: &[JsValue]) -> Option<JsValue> {
 }
 
 /// One binding per op the MiniJinja adapter can spell natively, to the
-/// native MiniJinja operator: an index read is MiniJinja's own `[]`, over the
-/// values a template receives (`js_to_mj`; an undefined result reads as
-/// null). It runs over the cases whose domain the adapter's NATIVE_SAFE
-/// table claims (`primitives-native-safe.json`;
-/// spec/js-primitive-semantics.md, "Conformance" item 3). `None` for an op
-/// with no native binding, which fails.
+/// native MiniJinja operator, over the values a template receives
+/// (`js_to_mj`): a test is MiniJinja's own `{% if %}` / `not`; an index read
+/// is MiniJinja's own `[]` (an undefined result reads as null). It runs over
+/// the cases whose domain the adapter's NATIVE_SAFE table claims
+/// (`primitives-native-safe.json`; spec/js-primitive-semantics.md,
+/// "Conformance" item 3). `None` for an op with no native binding, which
+/// fails.
 fn call_native_binding(fn_name: &str, a: &[JsValue]) -> Option<JsValue> {
     Some(match fn_name {
+        "truthy" => {
+            let env = minijinja::Environment::new();
+            let ctx = minijinja::context! { v => runtime::js_to_mj(&a[0]) };
+            let out = env.render_str("{% if v %}1{% else %}0{% endif %}", ctx).expect("render the native test");
+            JsValue::Bool(out == "1")
+        }
         "get" => {
             let env = minijinja::Environment::new();
             let expr = env.compile_expression("recv[key]").expect("compile the native index read");

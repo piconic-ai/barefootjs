@@ -1130,6 +1130,21 @@ sub truthy ($self, $v) {
     return BarefootJS::Evaluator::_truthy($v) ? !!1 : !!0;
 }
 
+# Boxes for a value-position JS `l || r` / `l && r` (#3824): the adapters
+# spell `l || r` as `(keep_truthy(l) || [r])->[0]` and `l && r` as
+# `(keep_falsy(l) || [r])->[0]`. `keep_truthy` is the one-element arrayref
+# `[$v]` when `$v` is JS-truthy and undef otherwise (`keep_falsy` the
+# reverse), so Perl's `||` stops at `$v`'s box exactly when JS returns `$v`
+# itself and builds `[r]` only otherwise (the short circuit); `->[0]` unboxes
+# the operand. Each operand appears once, so a chain grows linearly.
+sub keep_truthy ($self, $v) {
+    return BarefootJS::Evaluator::_truthy($v) ? [$v] : undef;
+}
+
+sub keep_falsy ($self, $v) {
+    return BarefootJS::Evaluator::_truthy($v) ? undef : [$v];
+}
+
 sub to_number ($self, $v) { return BarefootJS::Evaluator::_to_number($v) }
 
 sub to_string ($self, $v) { return BarefootJS::Evaluator::_to_string($v) }

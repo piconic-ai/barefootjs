@@ -61,6 +61,8 @@ import {
   type EmitIRNode,
   type AttrValueEmitter,
   parseExpression,
+  planTest,
+  planTestOfSource,
   stringifyParsedExpr,
   fallbackChainParts,
   planStyleObject,
@@ -104,7 +106,7 @@ import {
   inlineComputedConsts,
 } from '@barefootjs/jsx'
 import { isExplicitStringCall } from './boolean-result.ts'
-import type { ParsedExpr, LoopBindingPathSegment, EscapeKind } from '@barefootjs/jsx'
+import type { ParsedExpr, LoopBindingPathSegment, EscapeKind, PrimitivePlan, BindingScope } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, escapeHtml } from '@barefootjs/shared'
 
@@ -119,7 +121,7 @@ import {
 } from './lib/ruby-naming.ts'
 import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToRuby } from './lib/static-value.ts'
-import { ErbFilterEmitter, ErbTopLevelEmitter, CALLBACK_LOWERING } from './expr/emitters.ts'
+import { ErbFilterEmitter, ErbTopLevelEmitter, CALLBACK_LOWERING, NATIVE_SAFE, truthyTest } from './expr/emitters.ts'
 import type { ErbEmitContext, ErbSpreadContext, ErbMemoContext } from './emit-context.ts'
 import {
   conditionalSpreadToRuby,
@@ -619,7 +621,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       const children = this.convertExpressionToRuby(stringifyParsedExpr(chain.head), chain.head)
       const fallback = this.convertExpressionToRuby(stringifyParsedExpr(chain.fallback), chain.fallback)
       if (op === '??') return `((${children}).nil? ? bf.h(${fallback}) : ${children})`
-      return `(bf.truthy?(${children}) ? ${children} : bf.h(${fallback}))`
+      return `(${truthyTest(this.testPlan(chain.head), children)} ? ${children} : bf.h(${fallback}))`
     }
     return `bf.h(${rubyExpr})`
   }
@@ -637,7 +639,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     // emitter's matching comment above for why a fresh re-parse of the raw
     // string would lose a seeded `<action>.isPending()` / `.error()`
     // substitution.
-    const condition = this.convertExpressionToRuby(cond.condition, cond.parsedCondition)
+    const condition = this.rubyTest(cond.condition, this.convertExpressionToRuby(cond.condition, cond.parsedCondition), cond.parsedCondition)
     const whenTrue = this.renderNode(cond.whenTrue)
     const whenFalse = this.renderNodeOrNull(cond.whenFalse)
 
@@ -660,16 +662,16 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     if (useCommentMarkers) {
       // Fragment branches: use comment markers
       const inner = whenFalse
-        ? `<% if bf.truthy?(${condition}) %>${whenTrue}<% else %>${whenFalse}<% end %>`
-        : `<% if bf.truthy?(${condition}) %>${whenTrue}<% end %>`
+        ? `<% if ${condition} %>${whenTrue}<% else %>${whenFalse}<% end %>`
+        : `<% if ${condition} %>${whenTrue}<% end %>`
       result = `<%= bf.comment("cond-start:${cond.slotId}") %>${inner}<%= bf.comment("cond-end:${cond.slotId}") %>`
     } else if (markedFalse) {
-      result = `<% if bf.truthy?(${condition}) %>${markedTrue}<% else %>${markedFalse}<% end %>`
+      result = `<% if ${condition} %>${markedTrue}<% else %>${markedFalse}<% end %>`
     } else if (cond.slotId) {
       // Conditional with no else: wrap with comment markers for client hydration
-      result = `<%= bf.comment("cond-start:${cond.slotId}") %><% if bf.truthy?(${condition}) %>${whenTrue}<% end %><%= bf.comment("cond-end:${cond.slotId}") %>`
+      result = `<%= bf.comment("cond-start:${cond.slotId}") %><% if ${condition} %>${whenTrue}<% end %><%= bf.comment("cond-end:${cond.slotId}") %>`
     } else {
-      result = `<% if bf.truthy?(${condition}) %>${whenTrue}<% end %>`
+      result = `<% if ${condition} %>${whenTrue}<% end %>`
     }
 
     return result
@@ -849,12 +851,12 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
         const matchParam =
           filter.param && !filter.param.startsWith('[') && !filter.param.startsWith('{') ? filter.param : param
         return this.renderInScope(row.enterAliases(filter.aliases), () =>
-          this.renderRubyFilterExpr(filter.captured, matchParam, undefined, rubyLocal(param)),
+          truthyTest(this.testPlan(filter.captured, this.scope.enterCallback([matchParam])), this.renderRubyFilterExpr(filter.captured, matchParam, undefined, rubyLocal(param))),
         )
       },
       refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
       refused: 'true',
-      open: (condition) => `<%- if bf.truthy?(${condition}) -%>`,
+      open: (condition) => `<%- if ${condition} -%>`,
       close: '<%- end -%>',
     }))
 
@@ -1087,11 +1089,11 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
   // ===========================================================================
 
   protected renderIfStatement(ifStmt: IRIfStatement): string {
-    const condition = this.convertExpressionToRuby(ifStmt.condition)
+    const condition = this.rubyTest(ifStmt.condition, this.convertExpressionToRuby(ifStmt.condition), ifStmt.parsedCondition)
     const consequent = ifStmt.consequent.type === 'if-statement'
       ? this.renderIfStatement(ifStmt.consequent as IRIfStatement)
       : this.renderNode(ifStmt.consequent)
-    let result = `<%- if bf.truthy?(${condition}) -%>\n${consequent}\n`
+    let result = `<%- if ${condition} -%>\n${consequent}\n`
 
     if (ifStmt.alternate) {
       if (ifStmt.alternate.type === 'if-statement') {
@@ -1186,17 +1188,17 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
           return `<% if !(${v}).nil? %>${attr(v, plan.boolStr)}<% end %>`
         }
         case 'boolean-attr':
-          return `<%= bf.truthy?(${this.convertExpressionToRuby(value.expr, value.parsed)}) ? '${name}' : '' %>`
+          return `<%= ${this.rubyTest(value.expr, this.convertExpressionToRuby(value.expr, value.parsed), value.parsed)} ? '${name}' : '' %>`
         case 'presence': {
           const v = this.convertExpressionToRuby(value.expr)
           const tmp = `__bf_pu${this.presenceVarCounter++}`
-          return `<% ${tmp} = ${v}; if bf.truthy?(${tmp}) %>${attr(tmp, plan.boolStr)}<% end %>`
+          return `<% ${tmp} = ${v}; if ${this.rubyTest(value.expr, tmp, value.parsed)} %>${attr(tmp, plan.boolStr)}<% end %>`
         }
         case 'undefined-alternate': {
           const m = plan.ternary
           const cond = this.convertExpressionToRuby('', m.testParsed)
           const val = this.convertExpressionToRuby('', m.consequentParsed)
-          return `<% if bf.truthy?(${cond}) %>${name}="<%= bf.h(${val}) %>"<% end %>`
+          return `<% if ${truthyTest(this.testPlan(m.testParsed), cond)} %>${name}="<%= bf.h(${val}) %>"<% end %>`
         }
         case 'omit-nil': {
           const v = this.convertExpressionToRuby(value.expr, value.parsed)
@@ -1390,7 +1392,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
         parts.push(`bf.string(${this.convertExpressionToRuby(part.expr, part.parsed)})`)
       } else if (part.type === 'ternary') {
         const cond = this.convertExpressionToRuby(part.condition)
-        parts.push(`(bf.truthy?(${cond}) ? ${rubyStringLiteral(part.whenTrue)} : ${rubyStringLiteral(part.whenFalse)})`)
+        parts.push(`(${this.rubyTest(part.condition, cond)} ? ${rubyStringLiteral(part.whenTrue)} : ${rubyStringLiteral(part.whenFalse)})`)
       } else if (part.type === 'lookup') {
         // `${MAP[KEY]}` against a Record<T, string> literal — emit a Ruby
         // Hash literal with an immediate symbol-key lookup, `|| ''`
@@ -1434,7 +1436,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
-      _renderRubyFilterExprPublic: (e, p) => this._renderRubyFilterExprPublic(e, p),
+      _renderRubyFilterTestPublic: (e, p) => this._renderRubyFilterTestPublic(e, p),
     }
   }
 
@@ -1562,8 +1564,19 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
   }
 
   /** Internal hook for higher-order: predicate body re-uses the filter emitter. */
-  private _renderRubyFilterExprPublic(expr: ParsedExpr, param: string): string {
-    return this.renderRubyFilterExpr(expr, param)
+  private _renderRubyFilterTestPublic(expr: ParsedExpr, param: string): string {
+    return truthyTest(this.testPlan(expr, this.scope.enterCallback([param])), this.renderRubyFilterExpr(expr, param))
+  }
+
+  /** The ToBoolean plan of a test position the dispatcher does not plan, typed at `scope` (#3824). */
+  private testPlan(expr: ParsedExpr | null | undefined, scope: BindingScope = this.scope): PrimitivePlan | null {
+    return expr ? planTest(expr, this.operandTypingAt(scope), NATIVE_SAFE) : null
+  }
+
+  /** A condition's rendered Ruby test, spelled from its ToBoolean plan (#3824). */
+  private rubyTest(source: string, rendered: string, parsed?: ParsedExpr | null): string {
+    const plan = parsed ? this.testPlan(parsed) : planTestOfSource(source, this.operandTypingAt(), NATIVE_SAFE)
+    return truthyTest(plan, rendered)
   }
 }
 

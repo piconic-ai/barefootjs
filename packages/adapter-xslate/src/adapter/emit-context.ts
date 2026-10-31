@@ -106,9 +106,10 @@ export interface XslateEmitContext {
 
   _recordExprBF101(message: string, reason?: string): void
 
-  /** Lower a filter/predicate body to its Kolon form, bound to `param`;
-   * `onRead` is told each template variable the body reads. */
-  _renderKolonFilterExprPublic(expr: ParsedExpr, param: string, onRead?: (name: string) => void): string
+  /** Lower a filter/predicate body to its Kolon form as a test, bound to
+   * `param` and spelled from its ToBoolean plan (#3824); `onRead` is told
+   * each template variable the body reads. */
+  _renderKolonFilterTestPublic(expr: ParsedExpr, param: string, onRead?: (name: string) => void): string
 }
 
 /**
@@ -143,6 +144,9 @@ export interface XslateSpreadContext {
    * from the tree), so callers may pass `''`.
    */
   convertExpressionToKolon(expr: string, preParsed?: ParsedExpr): string
+
+  /** Lower a JS test (a conditional spread's condition) to its Kolon form, spelled from its ToBoolean plan (#3824). */
+  convertTestToKolon(test: ParsedExpr): string
 }
 
 /**

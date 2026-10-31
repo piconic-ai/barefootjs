@@ -14,8 +14,9 @@
  * The freshness test (src/__tests__/primitive-vectors.test.ts) fails when
  * the committed JSON drifts from the tables.
  *
- * Only the ops whose native binding the harnesses wire are listed: `get`
- * (rollout step 2). Each rollout step adds its op here and to every harness.
+ * Only the ops whose native binding the harnesses wire are listed: `truthy`
+ * (rollout step 1) and `get` (step 2). Each later step adds its op here and
+ * to every harness.
  */
 import { dirname, join } from 'node:path'
 import type { NativeSafeTable, PrimitiveOp, Proof } from '@barefootjs/jsx'
@@ -49,6 +50,7 @@ export const RUNTIME_TABLES: Readonly<Record<string, readonly NativeSafeTable[]>
  * spells, and the vector domains a claimed proof covers.
  */
 const NATIVE_BINDINGS: Readonly<Record<string, { op: PrimitiveOp; domains: Partial<Record<Proof, readonly Domain[]>> }>> = {
+  truthy: { op: 'to-boolean', domains: { boolean: ['boolean'] } },
   get: { op: 'get', domains: { 'array-index': ['array-index'] } },
 }
 

@@ -56,13 +56,14 @@ my %bindings = (
 );
 
 # One binding per op the Perl adapters can spell natively, to the native
-# Perl operator: an array index read is Perl's own `->[]`. It runs over the
-# cases whose domain the two adapters' NATIVE_SAFE tables claim
-# (primitives-native-safe.json, "perl": their union, since they share this
-# operator; spec/js-primitive-semantics.md, "Conformance" item 3). The tables
-# claim nothing today, so no case runs.
+# Perl operator: a test is Perl's own truthiness (`if`, `!`, `&&`, `||`,
+# `?:`); an array index read is Perl's own `->[]`. It runs over the cases
+# whose domain the two adapters' NATIVE_SAFE tables claim
+# (primitives-native-safe.json, "perl": their union, since they share these
+# operators; spec/js-primitive-semantics.md, "Conformance" item 3).
 my %native_bindings = (
-    get => sub { $_[0]->[ $_[1] ] },
+    truthy => sub { $_[0] ? !!1 : !!0 },
+    get    => sub { $_[0]->[ $_[1] ] },
 );
 
 my $INF = 9**9**9;

@@ -54,7 +54,7 @@ export function conditionalSpreadToKolon(
   // Thread the condition's carried `ParsedExpr` tree straight through as
   // `preParsed` (#2018) — no stringify→re-parse round-trip; `convertExpressionToKolon`
   // uses the tree directly and derives any diagnostic text from it.
-  const condKolon = ctx.convertExpressionToKolon('', expr.test)
+  const condKolon = ctx.convertTestToKolon(expr.test)
   const trueKolon = objectLiteralToKolonHashref(ctx, whenTrue)
   const falseKolon = objectLiteralToKolonHashref(ctx, whenFalse)
   if (trueKolon === null || falseKolon === null) return null

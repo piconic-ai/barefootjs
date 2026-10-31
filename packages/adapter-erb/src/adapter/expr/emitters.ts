@@ -43,6 +43,8 @@ import {
   type NativeSafeTable,
   type OperandTyping,
   primitivesAt,
+  planTest,
+  spellTest,
   EMPTY_OPERAND_TYPING,
   BindingScope,
   type ArrayMethod,
@@ -105,6 +107,34 @@ export const NATIVE_SAFE: NativeSafeTable = {
   'number-literal': ['safe-integer', 'unproven'],
   nullish: ['non-nil', 'unproven'],
   get: [],
+}
+
+/**
+ * Spell the ToBoolean plan of a test position (#3824 step 1): the rendered
+ * test as is when the plan is native, `bf.truthy?(...)` otherwise. Ruby's own
+ * truthiness (only `nil` / `false` are falsy) agrees with JS on no other
+ * value, and `NATIVE_SAFE['to-boolean']` claims no proof, so every plan is
+ * the helper today. The `!`, `&&`, `||` and `?:` emitters receive the plan
+ * from `emitParsedExpr`; the adapter's IR-level conditions and the predicate
+ * blocks compute it with `planTest`.
+ */
+export function truthyTest(plan: PrimitivePlan | null, rendered: string): string {
+  return spellTest(plan, rendered, (r) => `bf.truthy?(${r})`)
+}
+
+/**
+ * JS `l && r` / `l || r` in a value position, which yield one of their
+ * operands (#3824). When the plan proves `l` a boolean, Ruby's own `&&` / `||` (which return an operand, as JS does, and agree with JS on a boolean `l`). Otherwise `l` is boxed by its JS test:
+ * `keep_truthy(l)` is the one-element array `[l]` when `l` is JS-truthy and
+ * `nil` otherwise, `keep_falsy(l)` the reverse, so Ruby's `||` stops at `l`'s box
+ * exactly when JS returns `l` itself and builds `[r]` only otherwise (the
+ * short circuit); `[0]` unboxes the operand. Each operand is rendered once,
+ * so a chain `a || b || c …` grows linearly.
+ */
+function spellLogical(op: '&&' | '||', plan: PrimitivePlan | null, l: string, r: string): string {
+  if (truthyTest(plan, l) === l) return `(${l} ${op} ${r})`
+  const keep = op === '&&' ? 'keep_falsy' : 'keep_truthy'
+  return `(bf.${keep}(${l}) || [${r}])[0]`
 }
 
 // Predicate-shaped higher-order methods (filter/every/some land here through
@@ -333,10 +363,10 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const arg = emit(argument)
     // JS `!x` tests JS truthiness, not Ruby's — wrap. See file docstring.
-    if (op === '!') return `!bf.truthy?(${arg})`
+    if (op === '!') return `!${truthyTest(plan, arg)}`
     if (op === '-') return `-(${arg})`
     return arg
   }
@@ -367,15 +397,14 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     return `(${l} ${opMap[op] ?? op} ${r})`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
     // JS `&&`/`||` are operand-returning under JS truthiness, which
     // diverges from Ruby's own `&&`/`||` (Ruby only treats nil/false as
     // falsy) — see file docstring. `??` only ever needs a null check, which
     // Ruby and JS agree on.
-    if (op === '&&') return `(bf.truthy?(${l}) ? ${r} : ${l})`
-    if (op === '||') return `(bf.truthy?(${l}) ? ${l} : ${r})`
+    if (op !== '??') return spellLogical(op, plan, l, r)
     return `((${l}).nil? ? ${r} : ${l})`
   }
 
@@ -415,10 +444,10 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
       blockParam,
       outerLocals,
     ).typedBy(this.operandTyping, this.operandScope.enterCallback([param]))
-    const predBody = emitParsedExpr(predicate, nested)
-    if (method === 'filter') return `${arrayExpr}.select { |${blockParam}| bf.truthy?(${predBody}) }`
-    if (method === 'every') return `${arrayExpr}.all? { |${blockParam}| bf.truthy?(${predBody}) }`
-    if (method === 'some') return `${arrayExpr}.any? { |${blockParam}| bf.truthy?(${predBody}) }`
+    const predTest = truthyTest(planTest(predicate, this.operandTyping.at(this.operandScope.enterCallback([param])), NATIVE_SAFE), emitParsedExpr(predicate, nested))
+    if (method === 'filter') return `${arrayExpr}.select { |${blockParam}| ${predTest} }`
+    if (method === 'every') return `${arrayExpr}.all? { |${blockParam}| ${predTest} }`
+    if (method === 'some') return `${arrayExpr}.any? { |${blockParam}| ${predTest} }`
     // `find` / `findIndex` / `findLast` / `findLastIndex` return an element
     // (or index), not a boolean — there is no inline predicate form.
     // Degrading to the receiver silently changes predicate semantics, so be
@@ -687,9 +716,9 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const arg = emit(argument)
-    if (op === '!') return `!bf.truthy?(${arg})`
+    if (op === '!') return `!${truthyTest(plan, arg)}`
     // Unary minus applies JS `ToNumber` like binary `-` (#3533).
     if (op === '-') return `-(${this.coerceNullishOperand(op, argument, undefined, arg)})`
     return arg
@@ -726,11 +755,11 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     return `(${l} ${opMap[op] ?? op} ${r})`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
-    if (op === '&&') return `(bf.truthy?(${l}) ? ${r} : ${l})`
-    if (op === '||') return `(bf.truthy?(${l}) ? ${l} : ${r})`
+    // JS `&&` / `||` yield an operand, each rendered once (`spellLogical`).
+    if (op !== '??') return spellLogical(op, plan, l, r)
     return `((${l}).nil? ? ${r} : ${l})`
   }
 
@@ -769,8 +798,7 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
    * `.filter(x => x)`, which composes through the array-method chain.
    */
   private _nativePredicate(method: PredicateMethod, param: string, predicate: ParsedExpr, arrayExpr: string): string {
-    const predBody = this.ctx._renderRubyFilterExprPublic(predicate, param)
-    const block = `{ |${rubyLocal(param)}| bf.truthy?(${predBody}) }`
+    const block = `{ |${rubyLocal(param)}| ${this.ctx._renderRubyFilterTestPublic(predicate, param)} }`
     if (method === 'filter') return `${arrayExpr}.select ${block}`
     if (method === 'every') return `${arrayExpr}.all? ${block}`
     if (method === 'some') return `${arrayExpr}.any? ${block}`
@@ -807,10 +835,10 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     consequent: ParsedExpr,
     alternate: ParsedExpr,
     emit: (e: ParsedExpr) => string,
-    _plan: PrimitivePlan | null,
+    plan: PrimitivePlan | null,
   ): string {
     // JS ternary tests JS truthiness — wrap (see file docstring).
-    return `(bf.truthy?(${emit(test)}) ? ${emit(consequent)} : ${emit(alternate)})`
+    return `(${truthyTest(plan, emit(test))} ? ${emit(consequent)} : ${emit(alternate)})`
   }
 
   templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string {

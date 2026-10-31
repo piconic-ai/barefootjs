@@ -5,26 +5,45 @@
   "about": "Per runtime, the vector domains each op's NATIVE operator binding runs over: the union of the NATIVE_SAFE tables of the adapters on that runtime. Generated; never hand-edited.",
   "runtimes": {
     "go": {
+      "truthy": [
+        "boolean"
+      ],
       "get": []
     },
     "java": {
+      "truthy": [
+        "boolean"
+      ],
       "get": []
     },
     "perl": {
+      "truthy": [
+        "boolean"
+      ],
       "get": []
     },
     "php": {
+      "truthy": [
+        "boolean"
+      ],
       "get": []
     },
     "python": {
+      "truthy": [
+        "boolean"
+      ],
       "get": [
         "array-index"
       ]
     },
     "ruby": {
+      "truthy": [],
       "get": []
     },
     "rust": {
+      "truthy": [
+        "boolean"
+      ],
       "get": [
         "array-index"
       ]

@@ -189,16 +189,18 @@ to `Evaluator::index`), so the template helper and the evaluator share
 one implementation.
 
 Each harness also binds an op to its runtime's **native** operator (for
-`get`, the host's own subscript: Go's `index` builtin, Perl's `->[]`,
-PHP's and Ruby's `[]`, a real Jinja, Pebble or MiniJinja `[]`) and runs
-it over exactly the cases whose `domain` the runtime
+`truthy`, the host's own `if`: Go's `template.IsTrue`, Perl's and PHP's
+truthiness, a real Jinja, Pebble or MiniJinja `{% if %}`, Ruby's
+truthiness; for `get`, the host's own subscript: Go's `index` builtin,
+Perl's `->[]`, PHP's and Ruby's `[]`, a real Jinja, Pebble or MiniJinja
+`[]`) and runs it over exactly the cases whose `domain` the runtime
 claims in `primitives-native-safe.json`. That file is generated from the
 adapters' `NATIVE_SAFE` tables by `primitives/native-safe.ts` (a runtime
 claims the union of its adapters' tables: Mojolicious and Xslate share
 Perl, Twig and Blade share PHP), and generation refuses a claimed proof no
 vector domain covers. A native claim the vectors refute fails the harness;
 no ledger applies to it. Only the ops a rollout step has wired are listed
-(`get`, step 2).
+(`truthy`, step 1; `get`, step 2).
 
 ### The expected-failure ledger
 

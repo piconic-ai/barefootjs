@@ -103,6 +103,7 @@ import {
   inlineComputedConsts,
   nullableSignalAttrGetter,
   propsObjectIdentifier,
+  planTest,
 } from '@barefootjs/jsx'
 import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
@@ -119,9 +120,8 @@ import { allocateRowsFields, loopDrivingProp, nestedRowsFieldName, rowsFieldSite
 import {
   escapeGoString,
   wrapIfMultiToken,
+  lowerJsLogicalValue,
   lowerJsNot,
-  lowerJsTruthyTest,
-  isBareValueRead,
   wrapGoArg,
   emitPredicateEval,
   goBinaryHelperCall,
@@ -177,7 +177,7 @@ import { emitMemoFieldInits, emitPropFallbackLocals, emitPropFieldInits, emitSig
 import { lowerChildInputFields, lowerLoopRowChildInputFields, lowerStaticChildDataKey, sourceRowChildInputFields, type ChildInputHost } from "./props/child-input-fields.ts"
 import { resolveLocalGetterAsGo } from "./value/child-prop-value.ts"
 import { emitParsedExpressionAttr, emitSpreadAttr, emitStyleOrPresenceAttr, emitLiteralAttr, emitTemplateAttr, type ElementAttrHost } from "./attr/element-attrs.ts"
-import { renderConditionExpr, renderFilterExpr, type ConditionExprHost } from "./expr/condition-expr.ts"
+import { renderConditionTest, renderFilterExpr, type ConditionExprHost } from "./expr/condition-expr.ts"
 import { PREDICATE_METHODS, renderArrayMethod, renderCallbackMethod, renderMember, type MemberAndMethodsHost } from "./expr/member-and-methods.ts"
 import { loopRowChildPropOverrides, renderLoop as renderLoopWithHost, type LoopRenderHost } from "./loop/render-loop.ts"
 import { collectBodyChildInstances, collectStaticChildInstances, type StaticChildrenHost } from "./children/static-children.ts"
@@ -661,6 +661,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       clientJsBasePath: options.clientJsBasePath ?? '/static/client/',
       barefootJsPath: options.barefootJsPath ?? '/static/client/barefoot.js',
     }
+    this.state.primitives = this.primitives
   }
 
   /**
@@ -5327,12 +5328,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return arithmeticCoercionOrRefuse(op, operand, other, this.state.nullishAttrCtx, n => this.scope.isBound(n), this.state)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const arg = this.emitOperand(argument, emit)
     // `lowerJsNot` parenthesises a multi-token argument (#2758: `not or a b`
-    // parses as `not` applied to 3 args, not 1) and routes a non-bool operand
-    // through `bf_truthy`, since Go's `not` reads an empty slice as false.
-    if (op === '!') return lowerJsNot(argument, arg)
+    // parses as `not` applied to 3 args, not 1) and spells the operand's
+    // ToBoolean plan: `bf_truthy` unless it is a proven boolean, since Go's
+    // `not` reads an empty slice as false.
+    if (op === '!') return lowerJsNot(plan, arg)
     // Unary minus applies JS `ToNumber` like binary `-` (#3533): an operand
     // whose nil reads as `undefined` goes through `bf_number`.
     if (op === '-') {
@@ -5348,7 +5350,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     left: ParsedExpr,
     right: ParsedExpr,
     emit: (e: ParsedExpr) => string,
-    _plan: PrimitivePlan | null,
+    plan: PrimitivePlan | null,
   ): string {
     // `x ?? y` over a value that is never nullish (a comparison, a required
     // scalar prop) is `x`, even when it is `false` / `''` / `0`, which `or`
@@ -5363,9 +5365,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `and`/`or`. This makes `searchParams().get(k) ?? d` lower to
     // `or (.SearchParams.Get "sort") "none"` instead of the broken
     // `or .SearchParams.Get "sort" "none"`.
-    const wrapLeft = wrapIfMultiToken(this.emitOperand(left, emit))
-    const wrapRight = wrapIfMultiToken(this.emitOperand(right, emit))
-    if (op === '&&') return `and ${wrapLeft} ${wrapRight}`
+    const leftRendered = this.emitOperand(left, emit)
+    const rightRendered = this.emitOperand(right, emit)
+    // JS `&&` / `||` yield an operand, picked by the left operand's ToBoolean
+    // plan (#3824): Go's `and` / `or` on a proven boolean, a JS-truthiness
+    // pick that keeps the short circuit otherwise (`lowerJsLogicalValue`).
+    if (op !== '??') return lowerJsLogicalValue(op, plan, leftRendered, rightRendered)
+    const wrapLeft = wrapIfMultiToken(leftRendered)
+    const wrapRight = wrapIfMultiToken(rightRendered)
     // `??` on a nillable prop needs true JS nullish semantics (#2248): Go's
     // `or` is truthiness-based, so `{{or .Label "Default"}}` falls back on a
     // present-but-empty `""` — JS `??` keeps it. `bf_nullish` tests nil-ness
@@ -6371,14 +6378,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return { condition: `false`, preamble: '' }
     }
 
-    // `renderConditionExpr` lowers operators without the operand coercion.
+    // `renderConditionTest` lowers operators without the operand coercion.
     this.conditionExprHost.refuseAmbiguousNilArithmetic(parsed, [])
-    const { preamble, expr: condition } = renderConditionExpr(this.conditionExprHost, parsed)
-    // A bare value read as the whole test (`{tags() ? … : …}`) gets JS
-    // truthiness: `{{if}}` alone reads an empty slice or map as false, where
-    // JS reads `[]` / `{}` as true. Operator tests (`&&`, comparisons) keep
-    // their own lowering.
-    return { condition: isBareValueRead(parsed) ? lowerJsTruthyTest(parsed, condition) : condition, preamble }
+    // The whole condition is a test, spelled from its ToBoolean plan (#3824):
+    // `{{if}}` alone reads an empty slice or map as false and NaN as true,
+    // where JS reads `[]` / `{}` as true and NaN as false.
+    const { preamble, expr: condition } = renderConditionTest(this.conditionExprHost, parsed)
+    return { condition, preamble }
   }
 
   /** The destructure accessor `name` resolves to, or undefined when the
@@ -7052,6 +7058,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /** The adapter-owned renders and lookups the condition and filter-predicate lowering (`expr/condition-expr.ts`) reads. */
   private readonly conditionExprHost: ConditionExprHost = {
     ctx: this.emitCtx,
+    testPlan: (test, params) =>
+      planTest(test, this.state.operandTyping.at(params ? this.scope.enterCallback(params) : this.scope), GO_NATIVE_SAFE),
     renderParsedExpr: (expr) => this.renderParsedExpr(expr),
     makeLoc: () => this.makeLoc(),
     hasScopeBinding: (name) => Boolean(this.scope.lookup(name)),

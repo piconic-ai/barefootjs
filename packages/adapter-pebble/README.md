@@ -137,6 +137,7 @@ packages/adapter-pebble/java/
     ext/SetBlockExtension.java     # registers SetBlockTokenParser as the engine's `set` tag handler
     ext/SetBlockTokenParser.java   # parses BOTH `{% set NAME = EXPR %}` and `{% set NAME %}...{% endset %}`
     ext/SetBlockNode.java          # renders a captured block body to a String and binds it in scope
+    ext/JsLogicalExtension.java    # JS value-position `||` / `&&` operators (operand-returning, short-circuit, #3824)
   src/test/java/dev/barefootjs/pebble/
     HelperVectorsTest.java  # vectors.json-driven (396 dynamic tests incl. the divergence-ledger check)
     EvalVectorsTest.java     # eval-vectors.json-driven (102 dynamic tests, no divergence allowance)

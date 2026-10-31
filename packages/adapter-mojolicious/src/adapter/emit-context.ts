@@ -103,8 +103,8 @@ export interface MojoEmitContext {
 
   _recordExprBF101(message: string, reason?: string): void
 
-  /** Lower a filter/predicate body to its Perl form, bound to `param`. */
-  _renderPerlFilterExprPublic(expr: ParsedExpr, param: string): string
+  /** A predicate body as a test: rendered in the predicate's scope, bound to `param`, and spelled from its ToBoolean plan (#3824). */
+  _renderPerlFilterTestPublic(expr: ParsedExpr, param: string): string
 }
 
 /**
@@ -139,6 +139,9 @@ export interface MojoSpreadContext {
    * from the tree), so callers may pass `''`.
    */
   convertExpressionToPerl(expr: string, preParsed?: ParsedExpr): string
+
+  /** Lower a JS test (a conditional spread's condition) to its Perl form, spelled from its ToBoolean plan (#3824). */
+  convertTestToPerl(test: ParsedExpr): string
 }
 
 /**

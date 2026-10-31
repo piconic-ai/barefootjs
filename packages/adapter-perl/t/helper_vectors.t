@@ -127,8 +127,9 @@ my %bindings = (
     join    => sub { $bf->join(@_) },
     # Array literals are native arrayrefs on the Perl backends.
     arr => sub { [@_] },
-    # Mirrors the Mojo inline `[grep { $_ } @{...}]` for filter(Boolean).
-    filter_truthy => sub { [grep { $_ } @{ $_[0] }] },
+    # Mirrors the Mojo inline `[grep { bf->truthy($_) } @{...}]` for
+    # filter(Boolean): the predicate is a JS ToBoolean test (#3823).
+    filter_truthy => sub { [grep { $bf->truthy($_) } @{ $_[0] }] },
 
     # searchParams().get(key) (#1922) via the lazy factory consumers use.
     # No divergence entry: get() returns undef for an absent key (~ JS null)

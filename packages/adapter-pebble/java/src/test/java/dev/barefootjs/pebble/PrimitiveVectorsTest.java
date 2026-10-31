@@ -61,25 +61,32 @@ class PrimitiveVectorsTest {
       Map.entry("plus", a -> BF.plus(a.get(0), a.get(1))),
       Map.entry("neg", a -> BF.neg(a.get(0))));
 
+  /** The engine the native bindings compile their real Pebble templates with. */
+  private static final PebbleEngine PEBBLE = new PebbleEngine.Builder()
+      .loader(new StringLoader())
+      .strictVariables(false)
+      .build();
+
+  /** A real Pebble {@code if}: the native test the adapter spells for a proven boolean. */
+  private static final PebbleTemplate PEBBLE_IF = PEBBLE.getTemplate("{% if v %}1{% else %}0{% endif %}");
+
   /**
    * A real Pebble subscript, {@code recv[key]}: the native index read. The
    * read value is handed back through {@code capture} rather than printed, so
    * it keeps its type.
    */
-  private static final PebbleTemplate PEBBLE_INDEX = new PebbleEngine.Builder()
-      .loader(new StringLoader())
-      .strictVariables(false)
-      .build()
-      .getTemplate("{{ capture.accept(recv[key]) }}");
+  private static final PebbleTemplate PEBBLE_INDEX = PEBBLE.getTemplate("{{ capture.accept(recv[key]) }}");
 
   /**
    * One binding per op the Pebble adapter can spell natively, to the native
-   * Pebble operator: an index read is Pebble's own {@code []}. It runs over
-   * the cases whose domain the adapter's NATIVE_SAFE table claims
+   * Pebble operator: a test is Pebble's own {@code if} / {@code not}; an
+   * index read is Pebble's own {@code []}. It runs over the cases whose
+   * domain the adapter's NATIVE_SAFE table claims
    * ({@code primitives-native-safe.json}; spec/js-primitive-semantics.md,
-   * "Conformance" item 3). The table claims nothing today, so no case runs.
+   * "Conformance" item 3).
    */
   private static final Map<String, Function<List<Object>, Object>> NATIVE_BINDINGS = Map.ofEntries(
+      Map.entry("truthy", a -> pebbleIf(a.get(0))),
       Map.entry("get", a -> pebbleIndex(a.get(0), a.get(1))));
 
   /** Hands a Pebble expression's value back to Java. */
@@ -90,6 +97,18 @@ class PrimitiveVectorsTest {
       value = v;
       return "";
     }
+  }
+
+  private static Object pebbleIf(Object v) {
+    Map<String, Object> context = new LinkedHashMap<>();
+    context.put("v", v);
+    StringWriter writer = new StringWriter();
+    try {
+      PEBBLE_IF.evaluate(writer, context);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    return writer.toString().equals("1");
   }
 
   private static Object pebbleIndex(Object recv, Object key) {

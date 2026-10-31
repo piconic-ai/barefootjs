@@ -258,6 +258,27 @@ function planToBoolean(test: ParsedExpr, typing: ScopedOperandTyping, target: Na
   return decide('to-boolean', isExactly(operandFacts(test, typing), 'boolean') ? 'boolean' : 'unproven', target, 'truthy')
 }
 
+/**
+ * The ToBoolean plan of a test position whose node `emitParsedExpr` does not
+ * plan, because the position, not an operator node, applies the conversion:
+ * an `if` condition (a JSX conditional, a conditional return), a `.filter()`
+ * / `.every()` / `.some()` predicate body, a loop filter's guard, an
+ * attribute's presence test. The `!`, `&&`, `||` and `?:` nodes receive the
+ * same plan from the dispatcher.
+ */
+export function planTest(test: ParsedExpr, typing: ScopedOperandTyping, target: NativeSafeTable): PrimitivePlan {
+  return planToBoolean(test, typing, target)
+}
+
+/**
+ * Spell a ToBoolean plan over a rendered test: the test itself when the plan
+ * is native, `helper(rendered)` otherwise. A null plan (an emitter method
+ * reached outside `emitParsedExpr`) takes the helper, which is never wrong.
+ */
+export function spellTest(plan: PrimitivePlan | null, rendered: string, helper: (rendered: string) => string): string {
+  return plan?.mode === 'native' && plan.op === 'to-boolean' ? rendered : helper(rendered)
+}
+
 function isNonZeroNumberLiteral(expr: ParsedExpr): boolean {
   return expr.kind === 'literal' && expr.literalType === 'number' && expr.value !== 0
 }

@@ -1058,6 +1058,20 @@ class BarefootJS:
     def truthy(self, value: Any) -> bool:
         return js_truthy(value)
 
+    # Boxes for a value-position JS `l || r` / `l && r` (#3824): the adapter
+    # spells `l || r` as `(bf.keep_truthy(l) or [r])[0]` and `l && r` as
+    # `(bf.keep_falsy(l) or [r])[0]`. `keep_truthy` is the one-element list
+    # `[value]` when `value` is JS-truthy and `[]` otherwise (`keep_falsy`
+    # the reverse), so Jinja's `or` stops at `value`'s box exactly when JS
+    # returns `value` itself and builds `[r]` only otherwise (the short
+    # circuit); `[0]` unboxes the operand. Each operand appears once, so a
+    # chain grows linearly.
+    def keep_truthy(self, value: Any) -> list[Any]:
+        return [value] if js_truthy(value) else []
+
+    def keep_falsy(self, value: Any) -> list[Any]:
+        return [] if js_truthy(value) else [value]
+
     # JS primitive helpers (spec/js-primitive-semantics.md, "Operation
     # table"): ToNumber, ToString, `===`, the relational operators, binary
     # `+` and unary `-`. Each delegates to the callback evaluator's primitive

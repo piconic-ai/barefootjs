@@ -47,14 +47,17 @@ BINDINGS = {
     "neg": bf.neg,
 }
 
+_JINJA_IF = Environment().from_string("{% if v %}1{% else %}0{% endif %}")
 _JINJA_INDEX = Environment().compile_expression("recv[key]")
 
 # One binding per op the Jinja adapter can spell natively, to the native Jinja
-# operator: an index read is Jinja's own `[]` (an undefined result reads as
-# None, as a template's nil). It runs over the cases whose domain the
-# adapter's NATIVE_SAFE table claims (primitives-native-safe.json;
-# spec/js-primitive-semantics.md, "Conformance" item 3).
+# operator: a test is Jinja's own `{% if %}` (`not`, `if … else`); an index
+# read is Jinja's own `[]` (an undefined result reads as None, as a template's
+# nil). It runs over the cases whose domain the adapter's NATIVE_SAFE table
+# claims (primitives-native-safe.json; spec/js-primitive-semantics.md,
+# "Conformance" item 3).
 NATIVE_BINDINGS = {
+    "truthy": lambda v: _JINJA_IF.render(v=v) == "1",
     "get": lambda recv, key: _JINJA_INDEX(recv=recv, key=key),
 }
 

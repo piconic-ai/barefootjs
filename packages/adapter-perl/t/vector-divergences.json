@@ -20,10 +20,6 @@
       "expect": "1",
       "reason": "Perl has no boolean type; template data carries 1/0"
     },
-    "filter_truthy/the string \"0\" is truthy": {
-      "expect": ["x"],
-      "reason": "Perl truthiness treats the string \"0\" as false"
-    },
     "sort/localeCompare orders case-insensitively (ICU collation)": {
       "expect": ["B", "a"],
       "reason": "cmp is byte order, not ICU collation"

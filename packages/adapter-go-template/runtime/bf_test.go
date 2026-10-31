@@ -1154,6 +1154,7 @@ func TestFuncMap(t *testing.T) {
 		"bf_lower", "bf_upper", "bf_trim", "bf_contains", "bf_join",
 		"bf_len", "bf_at", "bf_includes", "bf_first", "bf_last",
 		"bf_arr", "bf_map", "bf_merge", "bf_filter_truthy", "bf_ternary", "bf_truthy",
+		"bf_keep_truthy", "bf_keep_falsy",
 		"bf_every", "bf_some", "bf_filter", "bf_find", "bf_find_index", "bf_sort",
 		"bf_sort_eval", "bf_reduce_eval", "bf_env",
 		"bf_filter_eval", "bf_every_eval", "bf_some_eval",
@@ -3525,5 +3526,55 @@ func TestIndexMethods_StringReceiverUTF16(t *testing.T) {
 		if c.got != c.want {
 			t.Errorf("%s: got %v, want %v", c.name, c.got, c.want)
 		}
+	}
+}
+
+// A value-position JS `l || r` / `l && r` lowers to
+// `index (or (bf_keep_truthy l) (bf_arr r)) 0` /
+// `index (or (bf_keep_falsy l) (bf_arr r)) 0` (#3824): each operand appears
+// once, the operand JS yields comes back (a falsy `l` included), and `r` is
+// not evaluated when `l` decides the result.
+func TestKeepTruthyFalsyLogicalValue(t *testing.T) {
+	fm := FuncMap()
+	fm["boom"] = func() (any, error) { panic("r evaluated after the short circuit") }
+	render := func(src string, data map[string]any) string {
+		t.Helper()
+		var buf bytes.Buffer
+		tmpl := template.Must(template.New("t").Funcs(fm).Parse(src))
+		if err := tmpl.Execute(&buf, data); err != nil {
+			t.Fatalf("%s: %v", src, err)
+		}
+		return buf.String()
+	}
+	or := func(l, r string) string { return "(index (or (bf_keep_truthy " + l + ") (bf_arr " + r + ")) 0)" }
+	and := func(l, r string) string { return "(index (or (bf_keep_falsy " + l + ") (bf_arr " + r + ")) 0)" }
+	data := map[string]any{"Zero": 0, "Empty": "", "Nil": nil, "S": "s", "Arr": []any{}, "NaN": math.NaN()}
+	cases := []struct{ src, want string }{
+		// `||` returns the first JS-truthy operand, else the last one.
+		{"{{bf_text " + or(".Zero", ".S") + "}}", "s"},
+		{"{{bf_text " + or(".S", "boom") + "}}", "s"},
+		// An empty slice is JS-truthy (Go's own `or` would skip it).
+		{"{{bf_text (bf_len " + or(".Arr", ".S") + ")}}", "0"},
+		{"{{bf_text " + or(".NaN", ".S") + "}}", "s"},
+		{"{{bf_text " + or(".Nil", ".Empty") + "}}|", "|"},
+		// `&&` returns its falsy left operand itself, without evaluating `r`.
+		{"{{bf_text " + and(".Zero", "boom") + "}}", "0"},
+		{"{{bf_text " + and(".Empty", "boom") + "}}|", "|"},
+		{"{{bf_text " + and(".S", ".Zero") + "}}", "0"},
+		// Nested: `(0 || '') || 's'` and `('s' && 0) || 's'`.
+		{"{{bf_text " + or(or(".Zero", ".Empty"), ".S") + "}}", "s"},
+		{"{{bf_text " + or(and(".S", ".Zero"), ".S") + "}}", "s"},
+		{"{{bf_text " + and(or(".Zero", ".Nil"), "boom") + "}}|", "|"},
+	}
+	for _, c := range cases {
+		if got := render(c.src, data); got != c.want {
+			t.Errorf("%s = %q, want %q", c.src, got, c.want)
+		}
+	}
+	if got := KeepTruthy(0); len(got) != 0 {
+		t.Errorf("KeepTruthy(0) = %v, want empty", got)
+	}
+	if got := KeepFalsy(0); len(got) != 1 || got[0] != 0 {
+		t.Errorf("KeepFalsy(0) = %v, want [0]", got)
 	}
 }

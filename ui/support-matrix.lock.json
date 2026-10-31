@@ -26602,10 +26602,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L153"
       },
       "example": {
-        "fixture": "boolean-logical-stringify-dependent-default",
-        "description": "A stringified && over a boolean prop defaulted to an earlier boolean prop renders true / false",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/boolean-logical-stringify-dependent-default.ts",
-        "code": "on && true"
+        "fixture": "logical-value-chains",
+        "description": "A 16-operand `||` / `&&` chain and mixed chains keep JS operand values, truthiness and the short circuit",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/logical-value-chains.ts",
+        "code": "s && t"
       }
     },
     "logical:??": {
@@ -27209,10 +27209,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L153"
       },
       "example": {
-        "fixture": "loop-preamble-conditional-reactive",
-        "description": "Loop row preamble computes a conditional-condition value from item + prop",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-preamble-conditional-reactive.ts",
-        "code": "row.done || props.highlight"
+        "fixture": "logical-value-chains",
+        "description": "A 16-operand `||` / `&&` chain and mixed chains keep JS operand values, truthiness and the short circuit",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/logical-value-chains.ts",
+        "code": "s || zero"
       }
     },
     "lowering:date": {

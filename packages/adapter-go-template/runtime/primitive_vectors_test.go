@@ -52,10 +52,15 @@ var nativeIndex = template.Must(template.New("index").Funcs(template.FuncMap{
 }).Parse(`{{capture .Box (index .Recv .Key)}}`))
 
 // nativeBindings binds each op the adapter can spell natively to the native
-// Go-template operator: an index read is the `index` builtin.
-// TestPrimitiveNativeVectors runs it over the cases whose domain the adapter
-// claims (none today).
+// Go-template operator: a test is `{{if}}` / `not` / `and` / `or`, whose
+// truthiness is text/template's own IsTrue; an index read is the `index`
+// builtin. TestPrimitiveNativeVectors runs it over the cases whose domain
+// the adapter claims.
 var nativeBindings = map[string]func(args []any) any{
+	"truthy": func(a []any) any {
+		truth, _ := template.IsTrue(a[0])
+		return truth
+	},
 	"get": func(a []any) any {
 		var got any
 		if err := nativeIndex.Execute(io.Discard, map[string]any{"Box": &got, "Recv": a[0], "Key": a[1]}); err != nil {
