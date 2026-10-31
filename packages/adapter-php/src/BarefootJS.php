@@ -313,6 +313,15 @@ final class BarefootJS
         return $value ? 'true' : 'false';
     }
 
+    /**
+     * A JSX text child's value: JSX renders nothing for a boolean (#3824
+     * step 5). Any other value passes through to the text sink.
+     */
+    public function display($value)
+    {
+        return is_bool($value) ? '' : $value;
+    }
+
     public function text_start(string $slotId): string
     {
         return "<!--bf:{$slotId}-->";

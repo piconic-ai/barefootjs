@@ -34,6 +34,7 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   type FlatDepth,
   type TemplatePart,
   emitParsedExpr,
+  emitParsedValue,
   identifierPath,
   matchSearchParamsMethodCall,
   type LoweringEmitter,
@@ -89,6 +90,9 @@ export const NATIVE_SAFE: NativeSafeTable = {
   'number-literal': ['safe-integer', 'unproven'],
   nullish: ['non-nil', 'unproven'],
   get: [],
+  // Perl has no boolean type: a boolean that leaves the expression is
+  // materialized with the runtime's `boolean` (#3824 step 5).
+  'boolean-value': [],
 }
 
 /**
@@ -559,6 +563,16 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
   private readonly isBooleanName = (name: string, componentProperty?: boolean): boolean =>
     this.ctx._isBooleanValueName(name, componentProperty)
 
+  /** A boolean whose value leaves the expression, as a JSON boolean (#3824 step 5). */
+  booleanValue(rendered: string): string {
+    return `bf->boolean(${rendered})`
+  }
+
+  /** A concatenation operand, printed as JS `String()` does: a boolean as `true` / `false` (#3824 step 5). */
+  private concatTerm(expr: ParsedExpr, rendered: string): string {
+    return isBooleanResultParsed(expr, this.isBooleanName) ? `bf->bool_str(${rendered})` : this.ctx._jsStringOutput(expr, rendered)
+  }
+
   /**
    * Registered-lowering seam (#2843): `emitParsedExpr`'s shared `call` case
    * tries every matcher here BEFORE `call()` itself, so a registered call
@@ -776,7 +790,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
       const rs = stringifyBooleanBranches(right)
       const lText = ls === left ? l : groupBinaryOperand(ls, emit(ls))
       const rText = rs === right ? r : groupBinaryOperand(rs, emit(rs))
-      return `${this.ctx._jsStringOutput(ls, lText)} . ${this.ctx._jsStringOutput(rs, rText)}`
+      return `${this.concatTerm(ls, lText)} . ${this.concatTerm(rs, rText)}`
     }
     // `/` and `%` go through the runtime's JS division and remainder
     // (#3474, #3574).
@@ -843,16 +857,20 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
   }
 
   /**
-   * A `JSON.stringify` argument. A boolean inside an array or object literal
-   * (`[n, true]`, `{ ok: n > 0 }`) is passed as a JSON boolean
-   * (`bf->boolean`), which the encoder writes as `true` / `false`, not as the
-   * `1` / `0` / `''` Perl holds for it.
+   * A `JSON.stringify` argument, a value that leaves the expression: every
+   * boolean it can be (`[n, true]`, `{ ok: n > 0 }`, a ternary branch) is
+   * passed as a JSON boolean through the boolean-value plan
+   * (`emitParsedValue`, #3824 step 5), which the encoder writes as `true` /
+   * `false`, not as the `1` / `0` / `''` Perl holds for it. A read of a
+   * declared-`boolean` name inside an array or object literal is one too:
+   * a literal default or an inlined literal const holds `1` / `0`.
    */
   private jsonValue(expr: ParsedExpr, emit: (e: ParsedExpr) => string): string {
     const nested = (e: ParsedExpr): string => this.jsonValue(e, emit)
     if (expr.kind === 'array-literal') return this.arrayLiteral(expr.elements, nested)
     if (expr.kind === 'object-literal') return this.objectLiteral(expr.properties, expr.raw, nested)
-    return isBooleanResultParsed(expr, this.isBooleanName) ? `bf->boolean(${emit(expr)})` : emit(expr)
+    if (isNameRead(expr) && isBooleanResultParsed(expr, this.isBooleanName)) return this.booleanValue(emit(expr))
+    return emitParsedValue(expr, this)
   }
 
   arrayLiteral(elements: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
@@ -968,6 +986,11 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     )
     return `{ ${parts.join(', ')} }`
   }
+}
+
+/** A read of a name: an identifier, a getter call or a member chain. */
+function isNameRead(expr: ParsedExpr): boolean {
+  return expr.kind === 'identifier' || expr.kind === 'member' || (expr.kind === 'call' && expr.args.length === 0)
 }
 
 /**

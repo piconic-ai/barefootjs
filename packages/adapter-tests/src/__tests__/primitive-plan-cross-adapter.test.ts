@@ -22,11 +22,14 @@ import { describe, test, expect } from 'bun:test'
 import {
   analyzeComponent,
   BindingScope,
+  booleanValueSites,
   buildMetadata,
   collectOperandTyping,
   parseExpression,
   planPrimitive,
   type NativeSafeTable,
+  type ParsedExpr,
+  type ScopedOperandTyping,
   type PrimitiveHelper,
   type PrimitiveOp,
   type PrimitivePlan,
@@ -110,7 +113,7 @@ const OP_HELPERS: Readonly<Record<PrimitiveOp, readonly PrimitiveHelper[]>> = {
   'to-boolean': ['truthy'],
   'to-number': ['sub', 'mul', 'div', 'mod', 'to_number'],
   'to-string': [],
-  'boolean-value': [],
+  'boolean-value': ['boolean'],
   get: ['get'],
   'strict-eq': ['strict_eq'],
   relational: ['lt', 'le', 'gt', 'ge'],
@@ -135,6 +138,12 @@ interface Variant {
 type Position = (operand: string, label: string) => Variant
 
 const text: Position = (e, label) => ({ label, jsx: `<p>@{${e}}</p>`, node: e, scope: 'component' })
+/**
+ * A boolean operand displayed as text. A text child proven a boolean renders
+ * nothing (#3824 step 5), so the operand is displayed through `|| props.s`,
+ * which may be a string.
+ */
+const boolText: Position = (e, label) => ({ label, jsx: `<p>@{${e} || props.s}</p>`, node: e, scope: 'component' })
 const attr: Position = (e, label) => ({ label, jsx: `<p>@<i data-v={${e}} /></p>`, node: e, scope: 'component' })
 const ifTest: Position = (e, label) => ({ label, jsx: `<p>@{${e} ? <b>y</b> : <i>n</i>}</p>`, node: e, scope: 'component' })
 /** A `.filter()` predicate over `x`, lowered inline in the loop. */
@@ -148,6 +157,12 @@ const filter = (predicate: string, node: string, label: string): Variant => ({
 interface Case {
   id: string
   positions: Record<string, readonly Variant[]>
+  /**
+   * The plan of a variant's node, when `planPrimitive` does not plan it: a
+   * boolean value is planned where its value leaves the expression
+   * (`booleanValueSites`), not as an operator node.
+   */
+  plan?: (node: ParsedExpr, typing: ScopedOperandTyping, table: NativeSafeTable) => PrimitivePlan | null
 }
 
 /** The same operands at several positions. */
@@ -170,10 +185,28 @@ const testPositions = (positions: Record<string, (t: string) => { jsx: string; n
 
 const CASES: readonly Case[] = [
   {
+    // A boolean whose value leaves the expression (#3824 step 5): a
+    // `JSON.stringify` element and a displayed text child that may be a
+    // boolean among other types. The node is the boolean itself.
+    id: 'boolean-value',
+    plan: (node, _typing, table) => booleanValueSites(node, table).get(node) ?? null,
+    positions: {
+      json: [
+        { label: 'comparison', jsx: '<p>@{JSON.stringify([props.n, props.n > props.m])}</p>', node: 'props.n > props.m', scope: 'component' },
+        { label: 'literal', jsx: '<p>@{JSON.stringify([props.n, true])}</p>', node: 'true', scope: 'component' },
+        { label: 'not', jsx: '<p>@{JSON.stringify([props.n, !props.on])}</p>', node: '!props.on', scope: 'component' },
+      ],
+      display: [
+        { label: 'comparison', jsx: '<p>@{props.n > props.m || props.s}</p>', node: 'props.n > props.m', scope: 'component' },
+        { label: 'not', jsx: '<p>@{!props.on || props.s}</p>', node: '!props.on', scope: 'component' },
+      ],
+    },
+  },
+  {
     id: 'to-boolean',
     positions: {
       ...testPositions({
-        not: (t) => ({ jsx: `<p>@{!${t}}</p>`, node: `!${t}` }),
+        not: (t) => ({ jsx: `<p>@{!${t} || props.s}</p>`, node: `!${t}` }),
         ternary: (t) => ({ jsx: `<p>@<i data-v={${t} ? 'a' : 'b'} /></p>`, node: `${t} ? 'a' : 'b'` }),
         and: (t) => ({ jsx: `<p>@<i data-v={${t} && 'y'} /></p>`, node: `${t} && 'y'` }),
         or: (t) => ({ jsx: `<p>@{${t} || 'n'}</p>`, node: `${t} || 'n'` }),
@@ -186,7 +219,7 @@ const CASES: readonly Case[] = [
     id: 'relational',
     positions: {
       ...at(
-        { text, attr, if: ifTest },
+        { text: boolText, attr, if: ifTest },
         { 'number-pair': 'props.n < props.m', signal: 'count() >= props.n', strings: 'props.s > props.t', optional: 'props.n <= props.maybe' },
       ),
       filter: [filter('x < props.n', 'x < props.n', 'row'), filter('props.n < props.m', 'props.n < props.m', 'number-pair')],
@@ -196,7 +229,7 @@ const CASES: readonly Case[] = [
     id: 'strict-eq',
     positions: {
       ...at(
-        { text, attr, if: ifTest },
+        { text: boolText, attr, if: ifTest },
         {
           'number-pair': 'props.n === props.m',
           'string-pair': 'props.s !== props.t',
@@ -408,7 +441,7 @@ const COMPILE_TIMEOUT_MS = 120_000
 const seen = new Map<string, boolean>()
 
 describe('every template adapter spells the primitive plan its NativeSafeTable names (#3824)', () => {
-  for (const { id, positions } of CASES) {
+  for (const { id, positions, plan: planOf } of CASES) {
     for (const [position, variants] of Object.entries(positions)) {
       test(`${id} at ${position}`, () => {
         const src = source(variants)
@@ -418,7 +451,9 @@ describe('every template adapter spells the primitive plan its NativeSafeTable n
         for (const target of TARGETS) {
           const parts = segments(compile(src, target), variants.length)
           variants.forEach((v, i) => {
-            const plan = planPrimitive(parseExpression(v.node), typing.at(scopeFor(v.scope, metadata.propsObjectName)), target.table)
+            const node = parseExpression(v.node)
+            const scoped = typing.at(scopeFor(v.scope, metadata.propsObjectName))
+            const plan = planOf ? planOf(node, scoped, target.table) : planPrimitive(node, scoped, target.table)
             const want = expected(plan)
             const got = observed(parts[i]!, plan!, target)
             const key = `${target.name} ${id} ${position} ${v.label}`

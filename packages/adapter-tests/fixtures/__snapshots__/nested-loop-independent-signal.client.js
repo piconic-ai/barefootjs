@@ -1,4 +1,4 @@
-import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, lazySlots, mapArray, mountRowRoot, qsa } from '@barefootjs/client/runtime'
+import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, lazySlots, mapArray, mountRowRoot, qsa, textOrNode } from '@barefootjs/client/runtime'
 
 
 export function initNestedLoopIndependentSignal(__scope, _p = {}) {
@@ -29,11 +29,11 @@ export function initNestedLoopIndependentSignal(__scope, _p = {}) {
       let __innerEl1_0 = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = `<li data-key-1="${escapeAttr(t())}" class="tag"><!--bf:s2-->${escapeText(t())}<!--/--></li>`; return __t.content.firstElementChild.cloneNode(true) })()
       __innerEl1_0.setAttribute('data-key-1', String(t()))
       const __bfw_s2 = lazySlots(__innerEl1_0, [{ id: 's2', kind: 'text', path: [] }])
-      createEffect(() => { __bfw_s2('s2', String(t())) })
+      createEffect(() => { __bfw_s2('s2', textOrNode(t())) })
       return __innerEl1_0
     }, 'l0', undefined, "data-key-1") }
     const __bfw_s1 = lazySlots(__el, [{ id: 's1', kind: 'text', path: [] }])
-    createEffect(() => { __bfw_s1('s1', String(row().label)) })
+    createEffect(() => { __bfw_s1('s1', textOrNode(row().label)) })
     return __el
   }, 'l1')
 

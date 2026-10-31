@@ -65,10 +65,12 @@ export function rowTextSlotKind(text: RowTextSlot): 'text' | 'markup' {
  * The value a loop-row content slot's writer receives: `escapeTextOrNode`
  * for a markup slot (unwraps a `bfMarkup()` value, passes a Node or a
  * `__slot()` marker through, escapes a string before the markup writer's
- * `innerHTML`), `coerce(expr)` for a 'text' slot.
+ * `innerHTML`), `textOrNode(expr)` for a 'text' slot (passes a Node through
+ * for the claim to promote, and renders a boolean as no text, as JSX does,
+ * #3824 step 5).
  */
-export function rowTextSlotValue(text: RowTextSlot, expr: string, coerce: 'String' | 'textOrNode'): string {
-  return text.markup ? `escapeTextOrNode(${expr})` : `${coerce}(${expr})`
+export function rowTextSlotValue(text: RowTextSlot, expr: string): string {
+  return text.markup ? `escapeTextOrNode(${expr})` : `textOrNode(${expr})`
 }
 
 /** Render one `SlotSpec` as a source-text object literal. */

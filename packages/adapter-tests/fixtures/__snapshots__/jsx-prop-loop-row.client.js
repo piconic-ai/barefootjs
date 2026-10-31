@@ -13,7 +13,7 @@ export function initSlotLoopList(__scope, _p = {}) {
     const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = `<li data-key="${escapeAttr(i())}" bf="s11"><!--bf:s1-->${escapeText(i())}<!--/--><!--bf:s2-->${escapeTextOrMarkup(_p.footer)}<!--/--><span class="label" bf="s4"><!--bf:s3-->${escapeTextOrMarkup(_p.label)}<!--/--></span><span class="tern" bf="s7">${_p.flag ? `<!--bf-cond-start:s5--><!--bf:s6-->${escapeTextOrMarkup(_p.footer)}<!--/--><!--bf-cond-end:s5-->` : `<!--bf-cond-start:s5--><!--bf-cond-end:s5-->`}</span><span class="and" bf="s10">${_p.flag ? `<!--bf-cond-start:s8--><!--bf:s9-->${escapeTextOrMarkup(_p.footer)}<!--/--><!--bf-cond-end:s8-->` : `<!--bf-cond-start:s8--><!--bf-cond-end:s8-->`}</span></li>`; return __tpl.content.firstElementChild.cloneNode(true) })()
     const __bfw_s1 = lazySlots(__el, [{ id: 's1', kind: 'text', path: [] }, { id: 's2', kind: 'markup', path: [] }, { id: 's3', kind: 'markup', path: [] }])
     createEffect(() => {
-      __bfw_s1('s1', String(i()))
+      __bfw_s1('s1', textOrNode(i()))
       __bfw_s1('s2', escapeTextOrNode(_p.footer))
       __bfw_s1('s3', escapeTextOrNode(_p.label))
     })
@@ -165,7 +165,7 @@ export function initSlotLoopNested(__scope, _p = {}) {
       let __innerEl1_0 = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = `<p data-key-1="${escapeAttr(i())}" bf="s4"><!--bf:s2-->${escapeText(i())}<!--/--><!--bf:s3-->${escapeTextOrMarkup(_p.footer)}<!--/--></p>`; return __t.content.firstElementChild.cloneNode(true) })()
       __innerEl1_0.setAttribute('data-key-1', String(i()))
       const __bfw_s2 = lazySlots(__innerEl1_0, [{ id: 's2', kind: 'text', path: [] }, { id: 's3', kind: 'markup', path: [] }])
-      createEffect(() => { __bfw_s2('s2', String(i())) })
+      createEffect(() => { __bfw_s2('s2', textOrNode(i())) })
       createEffect(() => { __bfw_s2('s3', escapeTextOrNode(_p.footer)) })
       return __innerEl1_0
     }, 'l0', undefined, "data-key-1") }
@@ -191,7 +191,7 @@ export function initSlotLoopNested(__scope, _p = {}) {
       let __iterEl = _s12.children[__idx]
       if (__iterEl) {
         const __bfw_s9 = lazySlots(__iterEl, [{ id: 's9', kind: 'text', path: [] }, { id: 's10', kind: 'markup', path: [] }])
-        createEffect(() => { __bfw_s9('s9', String(s)) })
+        createEffect(() => { __bfw_s9('s9', textOrNode(s)) })
         createEffect(() => { __bfw_s9('s10', escapeTextOrNode(_p.footer)) })
       }
     })

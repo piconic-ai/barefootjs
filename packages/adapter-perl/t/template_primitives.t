@@ -80,6 +80,15 @@ subtest 'boolean — a JS boolean the JSON encoder writes as true / false' => su
     ok !$bf->boolean(0), 'false stays falsy';
 };
 
+subtest 'display — a JSX text child renders nothing for a boolean' => sub {
+    is $bf->display($bf->boolean(1)), '', 'JS true';
+    is $bf->display($bf->boolean(0)), '', 'JS false';
+    is $bf->display(JSON::PP::false), '', 'a decoded JSON boolean';
+    is $bf->display('none'), 'none', 'a string passes through';
+    is $bf->display(0), 0, 'a number passes through';
+    ok !defined $bf->display(undef), 'nil passes through';
+};
+
 subtest 'string — JS String(v) mirror' => sub {
     is $bf->string(42),    '42', 'int';
     is $bf->string('hi'),  'hi', 'string passthrough';

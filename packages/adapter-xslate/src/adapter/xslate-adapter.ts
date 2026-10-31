@@ -48,6 +48,7 @@ import {
   type AttrValueEmitter,
   parseExpression,
   planTest,
+  planTextDisplay,
   planTestOfSource,
   stringifyParsedExpr,
   parseProviderObjectLiteral,
@@ -56,6 +57,7 @@ import {
   isSupported,
   isSupportedValue,
   emitParsedExpr,
+  emitParsedValue,
   emitIRNode,
   emitAttrValue,
   parseRecordIndexAccess,
@@ -500,10 +502,14 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     // resolved bare-identifier `.map`/`.filter`/… callback
     // (`resolveCallbackMethodFunctionReferences`, #2206) isn't lost to a
     // fresh, unresolved re-parse of the raw string.
-    const perlExpr = this.jsStringOutput(
-      expr.parsed ?? parseExpression(expr.expr.trim()),
-      this.convertExpressionToKolon(expr.expr, expr.parsed),
-    )
+    // A boolean text child renders nothing (#3824 step 5, `planTextDisplay`);
+    // one that may be a boolean is displayed through `$bf.display`, after
+    // every boolean its value can be is materialized as a JSON boolean.
+    const parsed = expr.parsed ?? parseExpression(expr.expr.trim())
+    const display = planTextDisplay(parsed, this.operandTypingAt())
+    const converted = this.convertExpressionToKolon(expr.expr, expr.parsed, 'rendered', undefined, display === 'display')
+    if (display === 'empty') return expr.slotId ? `<: $bf.text_start("${expr.slotId}") | mark_raw :><: $bf.text_end() | mark_raw :>` : ''
+    const perlExpr = this.jsStringOutput(parsed, display === 'display' ? `$bf.display(${converted})` : converted)
 
     if (expr.slotId) {
       return `<: $bf.text_start("${expr.slotId}") | mark_raw :><: ${perlExpr} :><: $bf.text_end() | mark_raw :>`
@@ -694,7 +700,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
         const rowFrame = firstRenamed !== undefined ? row.lookup(firstRenamed)?.frame : undefined
         if (rowFrame) this.rowKolonRenames.set(rowFrame, rowNames)
       },
-      preamble: (d) => `: my $${my(d.name)} = ${this.convertExpressionToKolon(d.raw, d.valueParsed)};`,
+      preamble: (d) => `: my $${my(d.name)} = ${this.convertExpressionToKolon(d.raw, d.valueParsed, 'rendered', undefined, true)};`,
       keyAnchor: (key) => `<: $bf.comment("loop-i:" ~ $bf.escape_comment_key(${this.convertExpressionToKolon(key)})) | mark_raw :>`,
     })
 
@@ -840,7 +846,8 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
         const hashref = objectLiteralExprToKolonHashref(this.spreadCtx, value.parsed)
         if (hashref !== null) return `${kolonHashKey(name)} => ${hashref}`
       }
-      return `${kolonHashKey(name)} => ${this.convertExpressionToKolon(value.expr)}`
+      // A child prop is a value that leaves the expression (#3808).
+      return `${kolonHashKey(name)} => ${this.convertExpressionToKolon(value.expr, undefined, 'rendered', undefined, true)}`
     },
     emitSpread: (value) => {
       // Kolon hashrefs can't be splatted into the entry list the way Perl
@@ -853,8 +860,9 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     },
     emitTemplate: (value, name) =>
       `${kolonHashKey(name)} => ${this.convertTemplateLiteralPartsToKolon(value.parts)}`,
-    emitBooleanAttr: (_value, name) => `${kolonHashKey(name)} => 1`,
-    emitBooleanShorthand: (_value, name) => `${kolonHashKey(name)} => 1`,
+    // A bare `<C flag />` passes JS `true`, as a JSON boolean (#3824 step 5).
+    emitBooleanAttr: (_value, name) => `${kolonHashKey(name)} => $bf.boolean(1)`,
+    emitBooleanShorthand: (_value, name) => `${kolonHashKey(name)} => $bf.boolean(1)`,
     // JSX children flow through the Kolon macro capture below; they're not
     // part of the hashref entry list.
     emitJsxChildren: () => '',
@@ -1303,11 +1311,19 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     }
   }
 
+  /**
+   * `materialize` reads the expression as a value that leaves it (#3824 step
+   * 5): every boolean the value can be is spelled through the boolean-value
+   * plan (`emitParsedValue`), so it reaches the child, the stored seed or the
+   * display helper as a JSON boolean, not as Perl's `1` / `''` / `0`. A
+   * derived-seed RHS (`pos === 'value'`) is always one.
+   */
   private convertExpressionToKolon(
     expr: string,
     preParsed?: ParsedExpr,
     pos: 'rendered' | 'value' = 'rendered',
     onRead?: (name: string) => void,
+    materialize = pos === 'value',
   ): string {
     // Parse-first lowering — parity with the Mojo adapter's
     // `convertExpressionToPerl`. Parse the JS expression once, gate it on the
@@ -1363,7 +1379,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
       return "''"
     }
 
-    return this.renderParsedExprToKolon(parsed, onRead)
+    return this.renderParsedExprToKolon(parsed, onRead, materialize)
   }
 
   /**
@@ -1371,8 +1387,9 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
    * expressions where identifiers are signals / template vars. `onRead` is
    * told each template variable the rendering reads.
    */
-  private renderParsedExprToKolon(expr: ParsedExpr, onRead?: (name: string) => void): string {
-    return emitParsedExpr(expr, new XslateTopLevelEmitter(this.emitCtx, onRead))
+  private renderParsedExprToKolon(expr: ParsedExpr, onRead?: (name: string) => void, materialize = false): string {
+    const emitter = new XslateTopLevelEmitter(this.emitCtx, onRead)
+    return materialize ? emitParsedValue(expr, emitter) : emitParsedExpr(expr, emitter)
   }
 
   /**
@@ -1496,7 +1513,8 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     const lit = lookupLiteralConst(name, this.localConstants, n => this.scope.isBound(n))
     if (lit === null) return null
     if (lit.kind === 'number') return lit.text
-    if (lit.kind === 'boolean') return lit.text === 'true' ? '1' : '0'
+    // A JS boolean value, held as a JSON boolean (#3824 step 5).
+    if (lit.kind === 'boolean') return lit.text === 'true' ? '$bf.boolean(1)' : '$bf.boolean(0)'
     if (lit.kind === 'null') return 'nil'
     return kolonStringLiteral(lit.text)
   }

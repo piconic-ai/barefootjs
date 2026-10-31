@@ -252,6 +252,7 @@ import {
   isAriaBooleanAttr,
   isBooleanResultExpr,
   planTest,
+  planTextDisplay,
   planTestOfSource,
   isExplicitStringCall,
   hasClientInteractivity,
@@ -610,7 +611,11 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     // classify, expr.parsed)`) so a resolved bare-identifier
     // `.map`/`.filter`/… callback (`resolveCallbackMethodFunctionReferences`,
     // #2206) isn't lost to a fresh, unresolved re-parse of the raw string.
-    const pebbleExpr = `bf.string(${this.convertExpressionToPebble(expr.expr, expr.parsed)})`
+    // A boolean text child renders nothing (#3824 step 5, `planTextDisplay`).
+    const display = expr.parsed ? planTextDisplay(expr.parsed, this.operandTypingAt()) : 'plain'
+    const converted = this.convertExpressionToPebble(expr.expr, expr.parsed)
+    if (display === 'empty') return expr.slotId ? `{{ bf.text_start("${expr.slotId}") | raw }}{{ bf.text_end() | raw }}` : ''
+    const pebbleExpr = `bf.string(${display === 'display' ? `bf.display(${converted})` : converted})`
 
     if (expr.slotId) {
       return `{{ bf.text_start("${expr.slotId}") | raw }}{{ ${pebbleExpr} }}{{ bf.text_end() | raw }}`

@@ -209,6 +209,12 @@ module BarefootJS
       value ? 'true' : 'false'
     end
 
+    # A JSX text child's value: JSX renders nothing for a boolean (#3824
+    # step 5). Any other value passes through to the text sink.
+    def display(value)
+      value == true || value == false ? '' : value
+    end
+
     def text_start(slot_id)
       "<!--bf:#{slot_id}-->"
     end

@@ -208,7 +208,8 @@ export function Item(props: { defaultOn?: boolean }) {
   return <button>{on() ? 'ON' : 'OFF'}</button>
 }
 `)
-    expect(template).toContain(': my $on = ($defaultOn // 0);')
+    // The `false` fallback is stored as a JSON boolean (#3824 step 5).
+    expect(template).toContain(': my $on = ($defaultOn // $bf.boolean(0));')
   })
 
   // Kolon can't `: my $x = … $x …` directly (the declaration shadows the

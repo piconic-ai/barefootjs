@@ -34,6 +34,7 @@ import {
   type AttrValueEmitter,
   parseExpression,
   planTest,
+  planTextDisplay,
   planTestOfSource,
   stringifyParsedExpr,
   planStyleObject,
@@ -42,6 +43,7 @@ import {
   isSupportedValue,
   parseProviderObjectLiteral,
   emitParsedExpr,
+  emitParsedValue,
   emitIRNode,
   emitAttrValue,
   parseRecordIndexAccess,
@@ -277,7 +279,8 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     const lit = lookupLiteralConst(name, this.localConstants, n => this.scope.isBound(n))
     if (lit === null) return null
     if (lit.kind === 'number') return lit.text
-    if (lit.kind === 'boolean') return lit.text === 'true' ? '1' : '0'
+    // A JS boolean value, held as a JSON boolean (#3824 step 5).
+    if (lit.kind === 'boolean') return lit.text === 'true' ? 'bf->boolean(1)' : 'bf->boolean(0)'
     if (lit.kind === 'null') return 'undef'
     return perlStringLiteral(lit.text)
   }
@@ -548,10 +551,14 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     // resolved bare-identifier `.map`/`.filter`/… callback
     // (`resolveCallbackMethodFunctionReferences`, #2206) isn't lost to a
     // fresh, unresolved re-parse of the raw string.
-    const perlExpr = this.jsStringOutput(
-      expr.parsed ?? parseExpression(expr.expr.trim()),
-      this.convertExpressionToPerl(expr.expr, expr.parsed),
-    )
+    // A boolean text child renders nothing (#3824 step 5, `planTextDisplay`);
+    // one that may be a boolean is displayed through `bf->display`, after
+    // every boolean its value can be is materialized as a JSON boolean.
+    const parsed = expr.parsed ?? parseExpression(expr.expr.trim())
+    const display = planTextDisplay(parsed, this.operandTypingAt())
+    const converted = this.convertExpressionToPerl(expr.expr, expr.parsed, 'rendered', display === 'display')
+    if (display === 'empty') return expr.slotId ? `<%== bf->text_start("${expr.slotId}") %><%== bf->text_end %>` : ''
+    const perlExpr = this.jsStringOutput(parsed, display === 'display' ? `bf->display(${converted})` : converted)
 
     if (expr.slotId) {
       return `<%== bf->text_start("${expr.slotId}") %><%= ${perlExpr} %><%== bf->text_end %>`
@@ -732,7 +739,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     // and neutralizes `-` so it can't spell `-->` and close the comment
     // early — see its doc in `BarefootJS.pm`.
     const { row, rootAliases, preamble: preambleLines, body: children } = this.renderLoopRow(loop, {
-      preamble: (d) => `% my $${d.name} = ${this.convertExpressionToPerl(d.raw, d.valueParsed)};`,
+      preamble: (d) => `% my $${d.name} = ${this.convertExpressionToPerl(d.raw, d.valueParsed, 'rendered', true)};`,
       keyAnchor: (key) => `<%== bf->comment("loop-i:" . bf->escape_comment_key(${this.convertExpressionToPerl(key)})) %>`,
     })
 
@@ -876,7 +883,8 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
         const hashref = objectLiteralExprToPerlHashref(this.spreadCtx, value.parsed)
         if (hashref !== null) return `${perlHashKey(name)} => ${hashref}`
       }
-      return `${perlHashKey(name)} => ${this.convertExpressionToPerl(value.expr)}`
+      // A child prop is a value that leaves the expression (#3808).
+      return `${perlHashKey(name)} => ${this.convertExpressionToPerl(value.expr, undefined, 'rendered', true)}`
     },
     emitSpread: (value) => {
       // Perl has no JS-style spread — emit the source as a hash
@@ -890,8 +898,9 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     },
     emitTemplate: (value, name) =>
       `${perlHashKey(name)} => ${this.convertTemplateLiteralPartsToPerl(value.parts)}`,
-    emitBooleanAttr: (_value, name) => `${perlHashKey(name)} => 1`,
-    emitBooleanShorthand: (_value, name) => `${perlHashKey(name)} => 1`,
+    // A bare `<C flag />` passes JS `true`, as a JSON boolean (#3824 step 5).
+    emitBooleanAttr: (_value, name) => `${perlHashKey(name)} => bf->boolean(1)`,
+    emitBooleanShorthand: (_value, name) => `${perlHashKey(name)} => bf->boolean(1)`,
     // JSX children flow through Mojo's `begin %>…<% end` capture
     // below; they're not part of the named-arg list.
     emitJsxChildren: () => '',
@@ -1314,7 +1323,19 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     return { convertExpressionToPerl: (e, preParsed, pos) => this.convertExpressionToPerl(e, preParsed, pos) }
   }
 
-  private convertExpressionToPerl(expr: string, preParsed?: ParsedExpr, pos: 'rendered' | 'value' = 'rendered'): string {
+  /**
+   * `materialize` reads the expression as a value that leaves it (#3824 step
+   * 5): every boolean the value can be is spelled through the boolean-value
+   * plan (`emitParsedValue`), so it reaches the child, the stored seed or the
+   * display helper as a JSON boolean, not as Perl's `1` / `''` / `0`. A
+   * derived-seed RHS (`pos === 'value'`) is always one.
+   */
+  private convertExpressionToPerl(
+    expr: string,
+    preParsed?: ParsedExpr,
+    pos: 'rendered' | 'value' = 'rendered',
+    materialize = pos === 'value',
+  ): string {
     // Parse-first lowering — parity with the Go adapter's
     // `convertExpressionToGo`. Parse the JS expression once, gate it on
     // the shared `isSupported`, and render every supported shape through
@@ -1369,7 +1390,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       return "''"
     }
 
-    return this.renderParsedExprToPerl(parsed)
+    return this.renderParsedExprToPerl(parsed, materialize)
   }
 
 
@@ -1379,8 +1400,9 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
    * to the shared ParsedExpr dispatcher with `MojoTopLevelEmitter`
    * (#1250 phase 1B).
    */
-  private renderParsedExprToPerl(expr: ParsedExpr): string {
-    return emitParsedExpr(expr, new MojoTopLevelEmitter(this.emitCtx))
+  private renderParsedExprToPerl(expr: ParsedExpr, materialize = false): string {
+    const emitter = new MojoTopLevelEmitter(this.emitCtx)
+    return materialize ? emitParsedValue(expr, emitter) : emitParsedExpr(expr, emitter)
   }
 
   /**

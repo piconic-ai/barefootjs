@@ -123,6 +123,8 @@ export const NATIVE_SAFE: NativeSafeTable = {
   // and wraps a negative index, so every other read takes `bf.get` (#3824
   // step 2, pinned by the `primitives/get` vectors).
   get: ['array-index'],
+  // A comparison, `!` and a boolean literal are host booleans already (#3824 step 5).
+  'boolean-value': ['boolean'],
 }
 
 /**

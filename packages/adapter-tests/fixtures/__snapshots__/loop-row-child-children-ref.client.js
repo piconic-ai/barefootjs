@@ -1,4 +1,4 @@
-import { createComponent, hydrate, markupOrEmpty, $, childScopesBySlot, createEffect, createSignal, escapeText, escapeTextOrMarkup, escapeTextOrNode, initChild, lazySlots, mapArray, qsa, renderChild } from '@barefootjs/client/runtime'
+import { createComponent, hydrate, markupOrEmpty, $, childScopesBySlot, createEffect, createSignal, escapeText, escapeTextOrMarkup, escapeTextOrNode, initChild, lazySlots, mapArray, qsa, renderChild, textOrNode } from '@barefootjs/client/runtime'
 
 function initChip() {}
 
@@ -60,14 +60,14 @@ export function initLoopRowChildChildrenRef(__scope, _p = {}) {
     if (__existing) {
       initChild('Chip__ef8242e5', __existing, { get children() { return `<label><!--bf:^s9-->${escapeText(__bfItem().label)}<!--/--><button type="button" class="pick" bf="^s10">pick</button></label>` } })
       const __bfw_s9 = lazySlots(__existing, [{ id: '^s9', kind: 'text', path: [] }])
-      createEffect(() => { __bfw_s9('^s9', String(__bfItem().label)) })
+      createEffect(() => { __bfw_s9('^s9', textOrNode(__bfItem().label)) })
       { const __rf_s10 = qsa(__existing, '[bf="^s10"]')
       if (__rf_s10) ((el) => register(el, () => `${__bfItem().id}#${i()}`))?.(__rf_s10) }
       return __existing
     }
     const __csrEl = createComponent('Chip__ef8242e5', { get children() { return `<label><!--bf:^s9-->${escapeText(__bfItem().label)}<!--/--><button type="button" class="pick" bf="^s10">pick</button></label>` } }, __bfItem().id)
     const __bfw_s9 = lazySlots(__csrEl, [{ id: '^s9', kind: 'text', path: [] }])
-    createEffect(() => { __bfw_s9('^s9', String(__bfItem().label)) })
+    createEffect(() => { __bfw_s9('^s9', textOrNode(__bfItem().label)) })
     { const __rf_s10 = qsa(__csrEl, '[bf="^s10"]')
     if (__rf_s10) ((el) => register(el, () => `${__bfItem().id}#${i()}`))?.(__rf_s10) }
     return __csrEl

@@ -1540,6 +1540,14 @@ impl Object for BfInstance {
             return Ok(MjValue::from(js_string(arg(&js_args, 0))));
         }
 
+        // A JSX text child's value (#3824 step 5): JSX renders nothing for a
+        // boolean. Any other value passes through unchanged (a safe string
+        // stays safe), so it is dispatched before the `mj_to_js` conversion.
+        if method == "display" {
+            let value = args.first().cloned().unwrap_or_else(|| MjValue::from(()));
+            return Ok(if value.kind() == ValueKind::Bool { MjValue::from("") } else { value });
+        }
+
         // Boxes for a value-position JS `l || r` / `l && r` (#3824): the
         // adapter spells `l || r` as `(bf.keep_truthy(l) or [r])[0]` and
         // `l && r` as `(bf.keep_falsy(l) or [r])[0]`. `keep_truthy` is the

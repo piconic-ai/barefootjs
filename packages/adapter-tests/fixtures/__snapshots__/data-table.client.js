@@ -1,4 +1,4 @@
-import { $, $c, $t, applyRestAttrs, childScopeBySlot, childScopesBySlot, createComponent, createDisposableEffect, createEffect, createMemo, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, forwardProps, hydrate, initChild, insert, lazySlots, mapArray, markupOrEmpty, qsa, renderChild, spreadAttrs } from '@barefootjs/client/runtime'
+import { $, $c, $t, applyRestAttrs, childScopeBySlot, childScopesBySlot, createComponent, createDisposableEffect, createEffect, createMemo, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, forwardProps, hydrate, initChild, insert, lazySlots, mapArray, markupOrEmpty, qsa, renderChild, spreadAttrs, textOrNode } from '@barefootjs/client/runtime'
 
 export function initTable(__scope, _p = {}) {
   if (!__scope) return
@@ -3885,10 +3885,10 @@ export function initDataTableSelectionDemo(__scope, _p = {}) {
       let __iterEl = _s19.children[index]
       if (__iterEl) {
         const __bfw_s10 = lazySlots(__iterEl, [{ id: '^s10', kind: 'text', path: [] }, { id: '^s12', kind: 'text', path: [] }, { id: '^s14', kind: 'text', path: [] }, { id: '^s16', kind: 'text', path: [] }])
-        createEffect(() => { __bfw_s10('^s10', String(payment.id)) })
-        createEffect(() => { __bfw_s10('^s12', String(payment.status)) })
-        createEffect(() => { __bfw_s10('^s14', String(payment.email)) })
-        createEffect(() => { __bfw_s10('^s16', String(payment.amount.toFixed(2))) })
+        createEffect(() => { __bfw_s10('^s10', textOrNode(payment.id)) })
+        createEffect(() => { __bfw_s10('^s12', textOrNode(payment.status)) })
+        createEffect(() => { __bfw_s10('^s14', textOrNode(payment.email)) })
+        createEffect(() => { __bfw_s10('^s16', textOrNode(payment.amount.toFixed(2))) })
       }
     })
   }

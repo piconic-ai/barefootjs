@@ -1,4 +1,4 @@
-import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, getLoopChildren, hydrate, insert, lazySlots, mapArray, mountRowRoot, qsa } from '@barefootjs/client/runtime'
+import { $, __bfSlot, createComponent, createDisposableEffect, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, getLoopChildren, hydrate, insert, lazySlots, mapArray, mountRowRoot, qsa, textOrNode } from '@barefootjs/client/runtime'
 
 
 export function initConditionalNestedStatic(__scope, _p = {}) {
@@ -38,7 +38,7 @@ export function initConditionalNestedStatic(__scope, _p = {}) {
             __innerEl1_0.setAttribute('data-key-1', String(choice()))
             { const __e = qsa(__innerEl1_0, '[bf="s8"]'); if (__e) __e.addEventListener('click', () => setPicked(`${group()}${choice()}`)) }
             const __bfw_s6 = lazySlots(__innerEl1_0, [{ id: 's6', kind: 'text', path: [] }])
-            createEffect(() => { __bfw_s6('s6', String(picked() + ':' + `${group()}${choice()}`)) })
+            createEffect(() => { __bfw_s6('s6', textOrNode(picked() + ':' + `${group()}${choice()}`)) })
             const __l = []
             { const __ta_s8 = qsa(__innerEl1_0, '[bf="s8"]')
             if (__ta_s8) createEffect(() => {

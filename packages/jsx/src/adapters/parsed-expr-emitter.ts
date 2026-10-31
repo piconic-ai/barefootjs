@@ -36,7 +36,7 @@
 import type { ParsedExpr, FlatDepth, TemplatePart, ObjectLiteralProperty } from '../expression-parser.ts'
 import { asCallbackMethodCall } from '../expression-parser.ts'
 import type { LoweringMatcher, LoweringNode } from '../lowering-registry.ts'
-import { planPrimitive, type PrimitiveInputs, type PrimitivePlan } from './primitive-plan.ts'
+import { booleanValueSites, planPrimitive, type PrimitiveInputs, type PrimitivePlan } from './primitive-plan.ts'
 
 export type HigherOrderMethod = 'filter' | 'every' | 'some' | 'find' | 'findIndex' | 'findLast' | 'findLastIndex'
 
@@ -154,6 +154,13 @@ export interface ParsedExprEmitter {
   // registry inline in its own `call()` per #2842) — behaviour is then
   // byte-identical to before this field existed.
   lowering?: LoweringEmitter
+  /**
+   * Spell a boolean-value plan (#3824 step 5): materialize `rendered`, a
+   * boolean whose value leaves the expression, as the host's boolean.
+   * {@link emitParsedValue} calls it only for a `helper` plan, so a target
+   * whose `NativeSafeTable` claims `boolean-value` never needs it.
+   */
+  booleanValue?(rendered: string, plan: PrimitivePlan): string
   // `optional` is true for a `?.`-written access (`user?.name`); see the
   // `ParsedExpr` `member` variant's docstring in `expression-parser.ts`
   // for the single-hop caveat. Every adapter's `member()` implementation
@@ -495,8 +502,32 @@ export function primitivePlanFor(expr: ParsedExpr, emitter: Pick<ParsedExprEmitt
  * a TS compile error here — and, transitively, in every adapter that
  * hasn't extended its `ParsedExprEmitter` implementation.
  */
-export function emitParsedExpr(expr: ParsedExpr, emitter: ParsedExprEmitter): string {
-  const emit = (child: ParsedExpr): string => emitParsedExpr(child, emitter)
+export function emitParsedExpr(
+  expr: ParsedExpr,
+  emitter: ParsedExprEmitter,
+  sites?: ReadonlyMap<ParsedExpr, PrimitivePlan>,
+): string {
+  const rendered = dispatchParsedExpr(expr, emitter, sites)
+  const plan = sites?.get(expr)
+  return plan?.mode === 'helper' && emitter.booleanValue ? emitter.booleanValue(rendered, plan) : rendered
+}
+
+/**
+ * {@link emitParsedExpr} for `expr` read as a value that leaves the
+ * expression (a child prop, a stored seed, a `JSON.stringify` argument, a
+ * displayed text child): every boolean its value can be is spelled through
+ * the boolean-value plan `booleanValueSites` decides (#3824 step 5).
+ */
+export function emitParsedValue(expr: ParsedExpr, emitter: ParsedExprEmitter): string {
+  return emitParsedExpr(expr, emitter, booleanValueSites(expr, emitter.primitives.nativeSafe))
+}
+
+function dispatchParsedExpr(
+  expr: ParsedExpr,
+  emitter: ParsedExprEmitter,
+  sites: ReadonlyMap<ParsedExpr, PrimitivePlan> | undefined,
+): string {
+  const emit = (child: ParsedExpr): string => emitParsedExpr(child, emitter, sites)
   switch (expr.kind) {
     case 'identifier':
       return emitter.identifier(expr.name)

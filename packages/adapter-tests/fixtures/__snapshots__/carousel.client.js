@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, childScopesBySlot, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, lazySlots, markupOrEmpty, onCleanup, provideContext, renderChild, spreadAttrs, useContext } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, childScopesBySlot, createComponent, createContext, createEffect, createMemo, createSignal, escapeAttr, escapeText, forwardProps, hydrate, initChild, lazySlots, markupOrEmpty, onCleanup, provideContext, renderChild, spreadAttrs, textOrNode, useContext } from '@barefootjs/client/runtime'
 
 export function initCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -3146,7 +3146,7 @@ export function initCarouselPreviewDemo(__scope, _p = {}) {
       let __iterEl = _s2.children[__idx]
       if (__iterEl) {
         const __bfw_s0 = lazySlots(__iterEl, [{ id: '^s0', kind: 'text', path: [] }])
-        createEffect(() => { __bfw_s0('^s0', String(n)) })
+        createEffect(() => { __bfw_s0('^s0', textOrNode(n)) })
       }
     })
   }
@@ -3182,7 +3182,7 @@ export function initCarouselSizesDemo(__scope, _p = {}) {
       let __iterEl = _s2.children[__idx]
       if (__iterEl) {
         const __bfw_s0 = lazySlots(__iterEl, [{ id: '^s0', kind: 'text', path: [] }])
-        createEffect(() => { __bfw_s0('^s0', String(n)) })
+        createEffect(() => { __bfw_s0('^s0', textOrNode(n)) })
       }
     })
   }
@@ -3218,7 +3218,7 @@ export function initCarouselOrientationDemo(__scope, _p = {}) {
       let __iterEl = _s2.children[__idx]
       if (__iterEl) {
         const __bfw_s0 = lazySlots(__iterEl, [{ id: '^s0', kind: 'text', path: [] }])
-        createEffect(() => { __bfw_s0('^s0', String(n)) })
+        createEffect(() => { __bfw_s0('^s0', textOrNode(n)) })
       }
     })
   }

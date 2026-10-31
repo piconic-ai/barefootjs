@@ -130,12 +130,12 @@ export type {
 export { JsxAdapter } from './adapters/jsx-adapter.ts'
 export type { JsxAdapterConfig } from './adapters/jsx-adapter.ts'
 export { rewriteImportsForTemplate, rewriteDynamicImportsInSource } from './adapters/template-imports.ts'
-export { emitParsedExpr, primitivePlanFor, arithmeticHelper, groupBinaryOperand, groupUnaryOperand, groupObjectLiteralSegments, isStringTypedOperand, isStringConcatBinary, isNumericArithmeticResult } from './adapters/parsed-expr-emitter.ts'
+export { emitParsedExpr, emitParsedValue, primitivePlanFor, arithmeticHelper, groupBinaryOperand, groupUnaryOperand, groupObjectLiteralSegments, isStringTypedOperand, isStringConcatBinary, isNumericArithmeticResult } from './adapters/parsed-expr-emitter.ts'
 export type { StringNameTest } from './adapters/parsed-expr-emitter.ts'
 export { concatType, declaredValueTypes, loopRowType, type DeclaredValueTypes } from './adapters/loop-row-type.ts'
 export { collectNumberValueNames, isNumberValuedExpr, numberValuedSeedNames } from './adapters/number-value.ts'
-export { operandFacts, planPrimitive, planTest, spellTest, primitivesAt, isNativePlan } from './adapters/primitive-plan.ts'
-export type { PrimitiveOp, Proof, NativeSafeTable, PrimitiveHelper, PrimitivePlan, PrimitiveInputs } from './adapters/primitive-plan.ts'
+export { operandFacts, planPrimitive, planTest, spellTest, primitivesAt, isNativePlan, booleanValueSites, planTextDisplay } from './adapters/primitive-plan.ts'
+export type { PrimitiveOp, Proof, NativeSafeTable, PrimitiveHelper, PrimitivePlan, PrimitiveInputs, TextDisplay } from './adapters/primitive-plan.ts'
 export {
   collectOperandTyping,
   EMPTY_OPERAND_TYPING,

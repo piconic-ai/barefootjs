@@ -450,6 +450,24 @@ func TestIntegerArgsFromFloat64(t *testing.T) {
 
 // Text spells a float as JS does and passes every other value through
 // unchanged, so the template prints it as it would print the bare value.
+func TestDisplay(t *testing.T) {
+	if got := Display(true); got != "" {
+		t.Errorf("Display(true) = %#v, want \"\"", got)
+	}
+	if got := Display(false); got != "" {
+		t.Errorf("Display(false) = %#v, want \"\"", got)
+	}
+	if got := Display("none"); got != "none" {
+		t.Errorf("Display(\"none\") = %#v, want \"none\"", got)
+	}
+	if got := Display(0.0); got != 0.0 {
+		t.Errorf("Display(0.0) = %#v, want 0.0", got)
+	}
+	if got := Display(nil); got != nil {
+		t.Errorf("Display(nil) = %#v, want nil", got)
+	}
+}
+
 func TestText(t *testing.T) {
 	if got := Text(1500000.0); got != "1500000" {
 		t.Errorf("Text(1500000.0) = %#v, want \"1500000\"", got)

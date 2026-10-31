@@ -89,6 +89,13 @@ class TemplatePrimitivesTest(unittest.TestCase):
         self.assertEqual(_evaluator.evaluate(quotient, {}), float("-inf"))
         self.assertEqual(_evaluator.evaluate({**quotient, "left": num(-1)}, {}), float("inf"))
 
+    def test_display_blanks_a_boolean(self):
+        self.assertEqual(self.bf.display(True), "")
+        self.assertEqual(self.bf.display(False), "")
+        self.assertEqual(self.bf.display("none"), "none")
+        self.assertEqual(self.bf.display(0), 0)
+        self.assertIsNone(self.bf.display(None))
+
     def test_json(self):
         self.assertEqual(self.bf.json({"a": 1}), '{"a":1}')
         self.assertEqual(self.bf.json([1, 2, 3]), "[1,2,3]")

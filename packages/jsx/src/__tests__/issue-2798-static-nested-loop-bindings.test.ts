@@ -97,7 +97,7 @@ export function StaticNestedSignalCase() {
     const js = compileClientJs(source)
     // Pre-fix, this text was frozen at its SSR-baked value — no
     // `createEffect` at all inside the inner forEach body.
-    expect(js).toMatch(/createEffect\(\(\) => \{ __bfw_\w+\('s\d+', String\(count\(\)\)\) \}\)/)
+    expect(js).toMatch(/createEffect\(\(\) => \{ __bfw_\w+\('s\d+', textOrNode\(count\(\)\)\) \}\)/)
   })
 
   test('a static outer loop with a nested .map() wires a reactive attr on the inner element', () => {

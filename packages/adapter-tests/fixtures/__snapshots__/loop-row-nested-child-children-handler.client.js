@@ -1,4 +1,4 @@
-import { createComponent, hydrate, markupOrEmpty, $, childScopesBySlot, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, initChild, lazySlots, mapArray, mountRowRoot, qsa, renderChild, upsertChild } from '@barefootjs/client/runtime'
+import { createComponent, hydrate, markupOrEmpty, $, childScopesBySlot, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, initChild, lazySlots, mapArray, mountRowRoot, qsa, renderChild, textOrNode, upsertChild } from '@barefootjs/client/runtime'
 
 function initChip() {}
 
@@ -33,7 +33,7 @@ export function initLoopRowNestedChildChildrenHandler(__scope, _p = {}) {
       let __iterEl = _s7.children[__idx]
       if (__iterEl) {
         const __bfw_s3 = lazySlots(__iterEl, [{ id: '^s3', kind: 'text', path: [] }])
-        createEffect(() => { __bfw_s3('^s3', String(o.label)) })
+        createEffect(() => { __bfw_s3('^s3', textOrNode(o.label)) })
       }
     })
   }
@@ -47,7 +47,7 @@ export function initLoopRowNestedChildChildrenHandler(__scope, _p = {}) {
     upsertChild(__el, 'Chip__8c71a327', 's10', { get children() { return `<button type="button" class="pick" bf="^s9"><!--bf:^s8-->${escapeText(o().label)}<!--/--></button>` } }, undefined, __scope)
     { const __e = qsa(__el, '[bf="^s9"]', ["s10"], __scopeId); if (__e) __e.addEventListener('click', () => setPicked(`c-${o().id}`)) }
     const __bfw_s8 = lazySlots(__el, [{ id: '^s8', kind: 'text', path: [] }])
-    createEffect(() => { __bfw_s8('^s8', String(o().label)) })
+    createEffect(() => { __bfw_s8('^s8', textOrNode(o().label)) })
     return __el
   }, 'l1')
 
@@ -56,13 +56,13 @@ export function initLoopRowNestedChildChildrenHandler(__scope, _p = {}) {
       initChild('Chip__8c71a327', __existing, { get children() { return createComponent('Chip__8c71a327', { get children() { return `<button type="button" class="pick" bf="^s13"><!--bf:^s12-->${escapeText(o().label)}<!--/--></button>` } }, undefined, { parent: __scopeId, mount: 's14' }) } })
       { const __e = qsa(__existing, '[bf="^s13"]', ["s14"], __scopeId); if (__e) __e.addEventListener('click', () => setPicked(`s-${o().id}`)) }
       const __bfw_s12 = lazySlots(__existing, [{ id: '^s12', kind: 'text', path: [] }])
-      createEffect(() => { __bfw_s12('^s12', String(o().label)) })
+      createEffect(() => { __bfw_s12('^s12', textOrNode(o().label)) })
       return __existing
     }
     const __csrEl = createComponent('Chip__8c71a327', { get children() { return createComponent('Chip__8c71a327', { get children() { return `<button type="button" class="pick" bf="^s13"><!--bf:^s12-->${escapeText(o().label)}<!--/--></button>` } }, undefined, { parent: __scopeId, mount: 's14' }) } }, o().id)
     { const __e = qsa(__csrEl, '[bf="^s13"]', ["s14"], __scopeId); if (__e) __e.addEventListener('click', () => setPicked(`s-${o().id}`)) }
     const __bfw_s12 = lazySlots(__csrEl, [{ id: '^s12', kind: 'text', path: [] }])
-    createEffect(() => { __bfw_s12('^s12', String(o().label)) })
+    createEffect(() => { __bfw_s12('^s12', textOrNode(o().label)) })
     return __csrEl
   }, 'l2')
 

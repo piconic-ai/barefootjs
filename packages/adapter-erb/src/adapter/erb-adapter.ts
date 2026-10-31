@@ -62,6 +62,7 @@ import {
   type AttrValueEmitter,
   parseExpression,
   planTest,
+  planTextDisplay,
   planTestOfSource,
   stringifyParsedExpr,
   fallbackChainParts,
@@ -578,7 +579,11 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     // resolved bare-identifier `.map`/`.filter`/… callback
     // (`resolveCallbackMethodFunctionReferences`, #2206) isn't lost to a
     // fresh, unresolved re-parse of the raw string.
-    const rubyExpr = this.convertExpressionToRuby(expr.expr, expr.parsed)
+    // A boolean text child renders nothing (#3824 step 5, `planTextDisplay`).
+    const display = expr.parsed ? planTextDisplay(expr.parsed, this.operandTypingAt()) : 'plain'
+    const converted = this.convertExpressionToRuby(expr.expr, expr.parsed)
+    if (display === 'empty') return expr.slotId ? `<%= bf.text_start("${expr.slotId}") %><%= bf.text_end %>` : ''
+    const rubyExpr = display === 'display' ? `bf.display(${converted})` : converted
 
     // A read of the `children` prop (`IRExpression.childrenRead`, decided in
     // Phase 1 from the binding, #3539) is pre-rendered HTML — captured via the

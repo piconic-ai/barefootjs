@@ -471,7 +471,8 @@ function readText(slot: ClaimedTextSlot): string {
 function writeText(slot: ClaimedTextSlot, value: unknown): void {
   const node = slot.ref.nodeType === Node.TEXT_NODE ? (slot.ref as Text) : materializeText(slot)
   if (!node) return
-  node.nodeValue = String(value ?? '')
+  // JSX renders no text for a nullish or boolean child (#3824 step 5).
+  node.nodeValue = typeof value === 'boolean' ? '' : String(value ?? '')
 }
 
 /**
@@ -502,7 +503,8 @@ export function textOrNode(value: unknown): string | Node | SlotMarker {
   // A `__slot()` marker reaches `writeSlot` intact, which leaves the
   // server-rendered DOM alone (see `escapeTextOrNode`).
   if (isSlotMarker(value)) return value
-  return String(value)
+  // A boolean child renders no text (#3824 step 5).
+  return typeof value === 'boolean' ? '' : String(value)
 }
 
 /**

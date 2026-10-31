@@ -172,6 +172,8 @@ export const NATIVE_SAFE: NativeSafeTable = {
   'number-literal': ['safe-integer', 'unproven'],
   nullish: [],
   get: [],
+  // A comparison, `!` and a boolean literal are host booleans already (#3824 step 5).
+  'boolean-value': ['boolean'],
 }
 
 /**

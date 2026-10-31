@@ -299,6 +299,7 @@ import {
   isAriaBooleanAttr,
   isBooleanResultExpr,
   planTest,
+  planTextDisplay,
   planTestOfSource,
   isExplicitStringCall,
   hasClientInteractivity,
@@ -658,7 +659,11 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     // resolved bare-identifier `.map`/`.filter`/… callback
     // (`resolveCallbackMethodFunctionReferences`, #2206) isn't lost to a
     // fresh, unresolved re-parse of the raw string.
-    const bladeExpr = `$bf->string(${this.convertExpressionToBlade(expr.expr, expr.parsed)})`
+    // A boolean text child renders nothing (#3824 step 5, `planTextDisplay`).
+    const display = expr.parsed ? planTextDisplay(expr.parsed, this.operandTypingAt()) : 'plain'
+    const converted = this.convertExpressionToBlade(expr.expr, expr.parsed)
+    if (display === 'empty') return expr.slotId ? `{!! $bf->text_start("${expr.slotId}") !!}{!! $bf->text_end() !!}` : ''
+    const bladeExpr = `$bf->string(${display === 'display' ? `$bf->display(${converted})` : converted})`
 
     if (expr.slotId) {
       return `{!! $bf->text_start("${expr.slotId}") !!}{!! e(${bladeExpr}) !!}{!! $bf->text_end() !!}`

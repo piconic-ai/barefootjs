@@ -1,4 +1,4 @@
-import { createComponent, hydrate, markupOrEmpty, $, childScopesBySlot, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, initChild, lazySlots, mapArray, qsa, renderChild } from '@barefootjs/client/runtime'
+import { createComponent, hydrate, markupOrEmpty, $, childScopesBySlot, createEffect, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, initChild, lazySlots, mapArray, qsa, renderChild, textOrNode } from '@barefootjs/client/runtime'
 
 function initChip() {}
 
@@ -38,7 +38,7 @@ export function initLoopRowChildChildrenInnerLoopHandler(__scope, _p = {}) {
         __innerEl1_0.setAttribute('data-key-1', String(tag()))
         { const __e = qsa(__innerEl1_0, '[bf="^s9"]'); if (__e) __e.addEventListener('click', () => setPicked(`${o().id}-${tag()}@${i()}.${j()}`)) }
         const __bfw_s8 = lazySlots(__innerEl1_0, [{ id: '^s8', kind: 'text', path: [] }])
-        createEffect(() => { __bfw_s8('^s8', String(tag())) })
+        createEffect(() => { __bfw_s8('^s8', textOrNode(tag())) })
         return __innerEl1_0
       }, 'l2', undefined, "data-key-1") }
       return __existing
@@ -52,7 +52,7 @@ export function initLoopRowChildChildrenInnerLoopHandler(__scope, _p = {}) {
       __innerEl1_0.setAttribute('data-key-1', String(tag()))
       { const __e = qsa(__innerEl1_0, '[bf="^s9"]'); if (__e) __e.addEventListener('click', () => setPicked(`${o().id}-${tag()}@${i()}.${j()}`)) }
       const __bfw_s8 = lazySlots(__innerEl1_0, [{ id: '^s8', kind: 'text', path: [] }])
-      createEffect(() => { __bfw_s8('^s8', String(tag())) })
+      createEffect(() => { __bfw_s8('^s8', textOrNode(tag())) })
       return __innerEl1_0
     }, 'l2', undefined, "data-key-1") }
     return __csrEl
@@ -71,7 +71,7 @@ export function initLoopRowChildChildrenInnerLoopHandler(__scope, _p = {}) {
         __innerEl1_0.setAttribute('data-key-1', String(tag()))
         { const __e = qsa(__innerEl1_0, '[bf="^s4"]'); if (__e) __e.addEventListener('click', () => setPicked(`${o.id}-${tag()}`)) }
         const __bfw_s3 = lazySlots(__innerEl1_0, [{ id: '^s3', kind: 'text', path: [] }])
-        createEffect(() => { __bfw_s3('^s3', String(tag())) })
+        createEffect(() => { __bfw_s3('^s3', textOrNode(tag())) })
         return __innerEl1_0
       }, 'l0', undefined, "data-key-1") }
     })

@@ -299,6 +299,8 @@ import { fixture as nullishBooleanOutputPositions } from './nullish-boolean-outp
 import { fixture as nullishBooleanOutputPositionsDestructured } from './nullish-boolean-output-positions-destructured'
 import { fixture as booleanTextChild } from './boolean-text-child'
 import { fixture as booleanTextChildDestructured } from './boolean-text-child-destructured'
+import { fixture as booleanValuePositions } from './boolean-value-positions'
+import { fixture as booleanValuePositionsDestructured } from './boolean-value-positions-destructured'
 import { fixture as logicalComparisonOutputPositions } from './logical-comparison-output-positions'
 import { fixture as logicalComparisonOutputPositionsDestructured } from './logical-comparison-output-positions-destructured'
 import { fixture as logicalMixedLeftOutput } from './logical-mixed-left-output'
@@ -1507,6 +1509,8 @@ export const jsxFixtures: JSXFixture[] = [
   nullishBooleanOutputPositionsDestructured,
   booleanTextChild,
   booleanTextChildDestructured,
+  booleanValuePositions,
+  booleanValuePositionsDestructured,
   logicalComparisonOutputPositions,
   logicalComparisonOutputPositionsDestructured,
   logicalMixedLeftOutput,

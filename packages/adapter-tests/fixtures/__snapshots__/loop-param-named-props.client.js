@@ -1,4 +1,4 @@
-import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, $, escapeAttr, escapeText, mapArray, mountRowRoot, renderChild, upsertChild } from '@barefootjs/client/runtime'
+import { createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, $, escapeAttr, escapeText, mapArray, mountRowRoot, renderChild, textOrNode, upsertChild } from '@barefootjs/client/runtime'
 
 export function initTag(__scope, _p = {}) {
   if (!__scope) return
@@ -65,7 +65,7 @@ export function initLoopParamNamedProps(__scope, _p = {}) {
     upsertChild(__el, 'Tag__e7d377f0', 's12', { get label() { return props() }, get mark() { return _p.suffix } }, undefined, __scope)
     const __bfw_s9 = lazySlots(__el, [{ id: 's9', kind: 'text', path: [] }, { id: 's10', kind: 'markup', path: [] }])
     createEffect(() => {
-      __bfw_s9('s9', String(props()))
+      __bfw_s9('s9', textOrNode(props()))
       __bfw_s9('s10', escapeTextOrNode(_p.suffix))
     })
     return __el
