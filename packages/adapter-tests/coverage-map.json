@@ -5988,6 +5988,46 @@
         "text"
       ]
     },
+    "index-read-capitalised-key-only": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "index-read-exact-key": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "index-read-positions": {
       "kinds": [
         "arrow",

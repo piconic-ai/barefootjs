@@ -1056,9 +1056,9 @@ func Merge(maps ...any) map[string]any {
 }
 
 // evalReadIndex is JS `obj[index]`: the same implementation as the
-// template helper `bf_get` (getFieldValue), so the callback evaluator and a
+// template helper `bf_get` (indexValue), so the callback evaluator and a
 // template read cannot disagree on a key (spec/js-primitive-semantics.md,
 // "ToPropertyKey and index read").
 func evalReadIndex(obj any, index any) any {
-	return getFieldValue(obj, index)
+	return indexValue(obj, index)
 }

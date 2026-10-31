@@ -2003,6 +2003,34 @@ func TestGetFieldValue_MapDynamicStringKey(t *testing.T) {
 	}
 }
 
+// `bf_get` / the callback index read (indexValue) never lowers a key: JS
+// `{id: "present"}["ID"]` is undefined, so a JS-keyed map read with an
+// upper-case variant of its key reads nil. It still tries the Go field
+// spelling of a JS key (`a` → `A`) for a row map keyed by Go field names,
+// and a struct still resolves a JS key to its exported field.
+func TestIndexValue_MapKeyIsNotLowered(t *testing.T) {
+	obj := map[string]any{"id": "present"}
+	for _, k := range []string{"ID", "Id", "iD"} {
+		if got := indexValue(obj, k); got != nil {
+			t.Errorf("indexValue(obj, %q) = %v, want nil", k, got)
+		}
+	}
+	if got := indexValue(obj, "id"); got != "present" {
+		t.Errorf(`indexValue(obj, "id") = %v, want present`, got)
+	}
+	row := map[string]any{"ID": 1, "A": "row1-a"}
+	if got := indexValue(row, "a"); got != "row1-a" {
+		t.Errorf(`indexValue(row, "a") = %v, want row1-a`, got)
+	}
+	type rowStruct struct{ ID int }
+	if got := indexValue(rowStruct{ID: 7}, "id"); got != 7 {
+		t.Errorf(`indexValue(struct, "id") = %v, want 7`, got)
+	}
+	if got := evalReadIndex(obj, "ID"); got != nil {
+		t.Errorf(`evalReadIndex(obj, "ID") = %v, want nil`, got)
+	}
+}
+
 func TestGetFieldValue_NumericFieldAgainstMapReturnsNil(t *testing.T) {
 	row := map[string]any{"A": "row1-a"}
 	if got := getFieldValue(row, 0); got != nil {

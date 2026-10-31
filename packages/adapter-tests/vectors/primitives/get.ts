@@ -56,6 +56,7 @@ export const get: PrimitiveOp = {
     c('héllo', 1, 'a non-ASCII BMP character'),
     c({ a: 1 }, 'a', 'an object key'),
     c({ a: 1 }, 'b', 'a missing object key reads undefined'),
+    c({ id: 'present' }, 'ID', 'an object key matches exactly (no case variant)'),
     c({ '1': 'x' }, 1, 'a number key reads the object key "1"'),
     c({ 'a.b': 2 }, 'a.b', 'a non-identifier object key'),
     c({ null: 'n' }, null, 'a nil key reads the object key "null"'),

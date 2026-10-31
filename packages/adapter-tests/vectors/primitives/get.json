@@ -304,6 +304,18 @@
       "fn": "get",
       "args": [
         {
+          "id": "present"
+        },
+        "ID"
+      ],
+      "expect": null,
+      "domain": "object-key",
+      "note": "an object key matches exactly (no case variant)"
+    },
+    {
+      "fn": "get",
+      "args": [
+        {
           "1": "x"
         },
         1
