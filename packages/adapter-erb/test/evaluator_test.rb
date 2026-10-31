@@ -323,4 +323,14 @@ class EvaluatorTest < Minitest::Test
     assert_equal 3, Ev.evaluate(nmem(nid('arr'), 'length'), { arr: [1, 2, 3] })
     assert_equal 5, Ev.evaluate(nmem(nid('s'), 'length'), { s: 'hello' })
   end
+
+  # A callback `arr[key]` with an index key past the 64-bit range reads nil
+  # (JS `undefined`), like the `bf.get` helper; `Array#[]` would raise
+  # RangeError converting the Bignum to a C long.
+  def test_index_read_with_an_oversized_key_reads_nil
+    read = ->(key) { Ev.evaluate({ kind: 'index-access', object: nid('arr'), index: key }, { arr: ['a'] }) }
+    assert_nil read.call(nstr('9223372036854775808'))
+    assert_nil read.call(nnum(1e20))
+    assert_equal 'a', read.call(nnum(0))
+  end
 end

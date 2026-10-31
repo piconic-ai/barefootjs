@@ -219,6 +219,34 @@
     {
       "fn": "get",
       "args": [
+        [
+          10,
+          20,
+          30
+        ],
+        "9223372036854775808"
+      ],
+      "expect": null,
+      "domain": "array-key",
+      "note": "an index key past the 64-bit range reads undefined"
+    },
+    {
+      "fn": "get",
+      "args": [
+        [
+          10,
+          20,
+          30
+        ],
+        100000000000000000000
+      ],
+      "expect": null,
+      "domain": "array-index",
+      "note": "a number key past the 64-bit range reads undefined"
+    },
+    {
+      "fn": "get",
+      "args": [
         "abc",
         1
       ],
@@ -255,6 +283,16 @@
       "expect": null,
       "domain": "string-receiver",
       "note": "a negative string index reads undefined"
+    },
+    {
+      "fn": "get",
+      "args": [
+        "abc",
+        "9223372036854775808"
+      ],
+      "expect": null,
+      "domain": "string-receiver",
+      "note": "a string index key past the 64-bit range reads undefined"
     },
     {
       "fn": "get",
