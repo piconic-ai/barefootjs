@@ -28,9 +28,9 @@
  *      already boolean-shaped (the primitive plan's `boolean` proof, #3824). `&&`/`||` still
  *      return the ORIGINAL operand VALUE (not a coerced bool) on the taken
  *      branch — matching JS `a || b` returning `a` itself — only the BRANCH
- *      TEST uses `bf.truthy`. The left operand is boxed by its JS
- *      test (`bf.keep_truthy` / `bf.keep_falsy`, see `spellLogical`), so
- *      each operand is rendered once (#3824).
+ *      TEST uses `bf.truthy`. The runtime's `bf.js_or` / `bf.js_and` take
+ *      the right operand as an arrow function (see `spellLogical`), so each
+ *      operand is rendered and evaluated once (#3824).
  *   3. **`??` is Twig-native**, covering undefined (`strict_variables:
  *      false`) AND null in ONE operator — no `is defined and is not null`
  *      dance needed here (unlike Jinja's `ChainableUndefined` workaround).
@@ -149,17 +149,18 @@ export function truthyTest(plan: PrimitivePlan | null, rendered: string): string
 
 /**
  * JS `l && r` / `l || r` in a value position, which yield one of their
- * operands (#3824). When the plan proves `l` a boolean, a ternary over `l` itself (`l ? r : false`, `l ? true : r`; Twig's `and` / `or` yield a boolean, not `r`). Otherwise `l` is boxed by its JS test:
- * `keep_truthy(l)` is the one-element array `[l]` when `l` is JS-truthy and
- * `[]` otherwise, `keep_falsy(l)` the reverse, so PHP's `?:` stops at `l`'s box
- * exactly when JS returns `l` itself and builds `[r]` only otherwise (the
- * short circuit); `[0]` unboxes the operand. Each operand is rendered once,
- * so a chain `a || b || c …` grows linearly.
+ * operands (#3824). When the plan proves `l` a boolean, a ternary over `l`
+ * itself (`l ? r : false`, `l ? true : r`; Twig's `and` / `or` yield a
+ * boolean, not `r`). Otherwise the runtime's `js_or` / `js_and`, which test
+ * `l` by JS truthiness and call the arrow function holding `r` only when JS
+ * evaluates it. Twig compiles its own `?:` / `??` to PHP that repeats the
+ * left operand, so a chain spelled through them would grow exponentially;
+ * here each operand is rendered and evaluated once. Twig has no
+ * zero-parameter arrow, hence the unused `__bf_lazy`.
  */
 function spellLogical(op: '&&' | '||', plan: PrimitivePlan | null, l: string, r: string): string {
   if (truthyTest(plan, l) === l) return op === '&&' ? `(${l} ? ${r} : false)` : `(${l} ? true : ${r})`
-  const keep = op === '&&' ? 'keep_falsy' : 'keep_truthy'
-  return `(bf.${keep}(${l}) ?: [${r}])[0]`
+  return `bf.${op === '&&' ? 'js_and' : 'js_or'}(${l}, (__bf_lazy) => ${r})`
 }
 
 /**

@@ -62,8 +62,9 @@ function dslCall(prefix: string, names: Partial<Record<PrimitiveHelper, readonly
 }
 
 // A value-position `&&` / `||` tests its left operand inside the box that
-// keeps it (`keep_truthy` / `keep_falsy`), so those count as the truthy helper.
-const TRUTHY_NAMES = ['truthy', 'keep_truthy', 'keep_falsy']
+// keeps it (`keep_truthy` / `keep_falsy`) or Twig's `js_or` / `js_and`, so
+// those count as the truthy helper.
+const TRUTHY_NAMES = ['truthy', 'keep_truthy', 'keep_falsy', 'js_or', 'js_and']
 const GO_NAMES: Partial<Record<PrimitiveHelper, readonly string[]>> = {
   strict_eq: ['eq', 'ne'],
   coalesce: ['nullish'],
