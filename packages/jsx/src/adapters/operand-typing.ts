@@ -138,13 +138,18 @@ function factsOfLiteral(parsed: ParsedExpr | undefined): OperandFacts | null {
 }
 
 /**
- * A local constant's facts: a declared type that proves something, else its
- * initializer's (a body destructure `const { label: text = 'x' } = props`
- * is the initializer `props.label ?? 'x'`).
+ * A local constant's facts: a declared type that proves something, else a
+ * body destructure's ({@link bodyDestructureFacts}), else its initializer's
+ * (`const text = props.label ?? 'x'` is never nil: `??` replaces `null` too).
  */
-function constantFacts(constant: TypingMetadata['localConstants'][number], typed: TypedNames): OperandFacts {
+function constantFacts(
+  constant: TypingMetadata['localConstants'][number],
+  params: TypingMetadata['propsParams'],
+  typed: TypedNames,
+): OperandFacts {
   const declared = factsOfType(constant.type)
   if (!declared.types.has('unknown')) return declared
+  if (constant.propsDestructure) return bodyDestructureFacts(constant, constant.propsDestructure.sourceKey, params, typed)
   return initializerFacts(constant.parsed, typed) ?? UNKNOWN_FACTS
 }
 
@@ -252,16 +257,54 @@ function declaredPropFacts(param: TypingMetadata['propsParams'][number]): Operan
 }
 
 /**
- * A destructured prop binding's facts: its declared facts, with an omitted
- * value replaced by its default's (`{ n = 1 }` is a number, `{ on = undefined }`
- * may still be `undefined`). A default that proves nothing makes the binding
- * unknown.
+ * `facts` once a destructuring default has replaced `undefined`: JS applies
+ * the default to `undefined` only, so a `null` survives it. A nil read as
+ * `either` keeps its `null`; null when nothing but `undefined` was possible.
  */
+function withoutUndefined(facts: OperandFacts): OperandFacts | null {
+  if (facts.nil === undefined || facts.nil === 'null') return facts
+  if (facts.nil === 'either') return { ...facts, nil: 'null' }
+  return facts.types.size === 1 ? null : withoutNil(facts)
+}
+
+/**
+ * The facts of a destructured binding (`{ n = 1 }`, `const { label: text = 'x' } = props`)
+ * of a value with `declared` facts: with a default, the value without its
+ * `undefined`, or the default's facts (`{ on = undefined }` may still be
+ * `undefined`, a `label?: string | null` may still be `null`). A default that
+ * proves nothing makes the binding unknown.
+ */
+function destructuredFacts(declared: OperandFacts, fallbackExpr: ParsedExpr | undefined, hasDefault: boolean, typed: TypedNames): OperandFacts {
+  if (!hasDefault) return declared
+  const fallback = initializerFacts(fallbackExpr, typed)
+  if (!fallback) return UNKNOWN_FACTS
+  const kept = withoutUndefined(declared)
+  return kept ? unionFacts(kept, fallback) : fallback
+}
+
+/** A destructured prop parameter's facts ({@link destructuredFacts}). */
 function boundPropFacts(param: TypingMetadata['propsParams'][number], typed: TypedNames): OperandFacts {
-  const declared = declaredPropFacts(param)
-  if (param.defaultValue === undefined) return declared
-  const fallback = initializerFacts(param.parsed, typed)
-  return fallback ? unionFacts(withoutNil(declared), fallback) : UNKNOWN_FACTS
+  return destructuredFacts(declaredPropFacts(param), param.parsed, param.defaultValue !== undefined, typed)
+}
+
+/**
+ * A body destructure of the props object (`ConstantInfo.propsDestructure`):
+ * the prop's declared facts under the binding's own default
+ * ({@link destructuredFacts}), which the `propsParams` entry of the same
+ * name and key carries. Its initializer text (`props.label ?? 'x'`) is not
+ * read as a `??`: a destructuring default does not replace `null`.
+ */
+function bodyDestructureFacts(
+  constant: TypingMetadata['localConstants'][number],
+  sourceKey: string,
+  params: TypingMetadata['propsParams'],
+  typed: TypedNames,
+): OperandFacts {
+  const declared = typed.props.get(sourceKey) ?? UNKNOWN_FACTS
+  const param = params.find(p => p.name === constant.name && (p.sourceName ?? p.name) === sourceKey)
+  // No entry of its own: a binding without a default reads the prop itself.
+  if (!param) return constant.parsed?.kind === 'member' ? declared : UNKNOWN_FACTS
+  return destructuredFacts(declared, param.parsed, param.defaultValue !== undefined, typed)
 }
 
 /**
@@ -318,7 +361,7 @@ export function collectOperandTyping(metadata: TypingMetadata, options: OperandT
   for (const memo of metadata.memos ?? []) names.set(memo.name, factsOfType(memo.type))
   const typed: TypedNames = { names, props, propsObject: metadata.propsObjectName ?? null }
   for (const constant of metadata.localConstants ?? []) {
-    names.set(constant.name, constantFacts(constant, typed))
+    names.set(constant.name, constantFacts(constant, metadata.propsParams, typed))
   }
   const namedFields: NamedTypeFields =
     options.namedFields ?? (typeName => metadata.typeDefinitions?.find(td => td.name === typeName)?.properties)

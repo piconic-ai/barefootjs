@@ -317,6 +317,40 @@ describe('defaults, from analyzed components', () => {
     expect(factsOf('alias', at)).toBe('boolean')
   })
 
+  test('a destructuring default replaces only `undefined`: a declared `null` survives it', () => {
+    const param = analyzed("export function Foo({ label = 'none' }: { label?: string | null }) { return <div>{label ?? 'fallback'}</div> }")
+    expect(factsOf('label', param)).toBe('nil|string (null)')
+    expect(plan("label ?? 'fallback'", NON_NIL_NULLISH, param)).toBe('helper nullish coalesce unproven')
+    const renamed = analyzed(
+      "export function Foo(props: { label?: string | null }) { const { label: text = 'none' } = props; return <div>{text ?? 'fallback'}</div> }",
+    )
+    expect(factsOf('text', renamed)).toBe('nil|string (null)')
+    expect(plan("text ?? 'fallback'", NON_NIL_NULLISH, renamed)).toBe('helper nullish coalesce unproven')
+    const unrenamed = analyzed(
+      "export function Foo(props: { label?: string | null }) { const { label = 'none' } = props; return <div>{label ?? 'fallback'}</div> }",
+    )
+    expect(factsOf('label', unrenamed)).toBe('nil|string (null)')
+    // A required nullable prop keeps its `null` too.
+    const required = analyzed("export function Foo({ label = 'none' }: { label: string | null }) { return <div>{label}</div> }")
+    expect(factsOf('label', required)).toBe('nil|string (null)')
+  })
+
+  test('a hand-written `??` const is never nil: `??` replaces `null` too', () => {
+    const at = analyzed(
+      "export function Foo(props: { label?: string | null }) { const text = props.label ?? 'none'; return <div>{text ?? 'fallback'}</div> }",
+    )
+    expect(factsOf('text', at)).toBe('string')
+    expect(plan("text ?? 'fallback'", NON_NIL_NULLISH, at)).toBe('native nullish non-nil')
+  })
+
+  test('`||` and `&&` initializers prove nothing (a falsy non-nil left side survives `||`)', () => {
+    const at = analyzed(
+      "export function Foo(props: { label?: string | null; n: number }) { const a = props.label || 'none'; const b = props.n && 'x'; return <div>{a}{b}</div> }",
+    )
+    expect(factsOf('a', at)).toBe('unknown')
+    expect(factsOf('b', at)).toBe('unknown')
+  })
+
   test('a default that may be nil, or proves nothing, does not prove non-nil', () => {
     const at = analyzed(
       'export function Foo({ a = null, b = make() }: { a?: number | null; b?: number }) { return <div>{a}{b}</div> }\nfunction make(): number { return 1 }',
