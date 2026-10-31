@@ -353,6 +353,41 @@ public final class Bf {
     return !JsValue.strictEquals(a, b);
   }
 
+  // JS primitive helpers (spec/js-primitive-semantics.md, "Operation table"):
+  // ToNumber, ToString, the relational operators and binary `+`. Each
+  // delegates to the callback evaluator's primitive of the same operation,
+  // so a template helper call and a callback body share one implementation.
+  // Unlike `number` and `string` (display helpers: null -> NaN / ""), null
+  // reads as JS null here (0 / "null").
+
+  public double to_number(Object v) {
+    return Evaluator.toNumber(v);
+  }
+
+  public String to_string(Object v) {
+    return Evaluator.toStr(v);
+  }
+
+  public boolean lt(Object a, Object b) {
+    return Evaluator.relational("<", a, b);
+  }
+
+  public boolean le(Object a, Object b) {
+    return Evaluator.relational("<=", a, b);
+  }
+
+  public boolean gt(Object a, Object b) {
+    return Evaluator.relational(">", a, b);
+  }
+
+  public boolean ge(Object a, Object b) {
+    return Evaluator.relational(">=", a, b);
+  }
+
+  public Object plus(Object a, Object b) {
+    return Evaluator.binary("+", a, b);
+  }
+
   /**
    * JS `??`. Stock Pebble has NO `??`/coalescing operator at all, confirmed
    * empirically (a real {@code io.pebbletemplates.pebble.error.ParserException}

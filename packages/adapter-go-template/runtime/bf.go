@@ -53,6 +53,13 @@ func FuncMap() template.FuncMap {
 		"bf_gt": Gt,
 		"bf_ge": Ge,
 
+		// JS primitive helpers (spec/js-primitive-semantics.md, #3824):
+		// ToNumber, ToString and binary `+`, each over the evaluator's
+		// primitive of the same operation.
+		"bf_to_number": ToNumber,
+		"bf_to_string": ToString,
+		"bf_plus":      Plus,
+
 		// String
 		"bf_lower":       Lower,
 		"bf_upper":       Upper,
@@ -4495,6 +4502,16 @@ func Lt(a, b any) bool { c, ok := compareJS(a, b); return ok && c < 0 }
 func Le(a, b any) bool { c, ok := compareJS(a, b); return ok && c <= 0 }
 func Gt(a, b any) bool { c, ok := compareJS(a, b); return ok && c > 0 }
 func Ge(a, b any) bool { c, ok := compareJS(a, b); return ok && c >= 0 }
+
+// ToNumber, ToString and Plus are JS ToNumber, ToString and binary `+`
+// (spec/js-primitive-semantics.md, "Operation table"). Each delegates to the
+// callback evaluator's primitive of the same operation, so a template helper
+// call and a callback body share one implementation. Unlike Number and
+// String, which keep their display divergences (nil → NaN / ""), nil reads
+// as JS null here: ToNumber(nil) is 0 and ToString(nil) is "null".
+func ToNumber(v any) float64 { return evalToNumber(v) }
+func ToString(v any) string  { return evalToString(v) }
+func Plus(a, b any) any      { return evalBinary("+", a, b) }
 
 // ToFloat64 is ToInt's float64 counterpart — see ToInt.
 func ToFloat64(v any) float64 { return toFloat64(v) }

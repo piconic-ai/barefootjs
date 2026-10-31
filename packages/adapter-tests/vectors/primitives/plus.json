@@ -1,0 +1,258 @@
+{
+  "version": 1,
+  "generator": "packages/adapter-tests/vectors/primitives/generate.ts",
+  "spec": "spec/js-primitive-semantics.md",
+  "fn": "plus",
+  "step": 4,
+  "cases": [
+    {
+      "fn": "plus",
+      "args": [
+        1,
+        2
+      ],
+      "expect": 3,
+      "domain": "number-pair",
+      "note": "two integers add"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        0.1,
+        0.2
+      ],
+      "expect": 0.30000000000000004,
+      "domain": "number-pair",
+      "note": "two doubles add"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        9007199254740992,
+        1
+      ],
+      "expect": 9007199254740992,
+      "domain": "number-pair",
+      "note": "past 2**53 the sum rounds as a double"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        {
+          "$num": "-0"
+        },
+        {
+          "$num": "-0"
+        }
+      ],
+      "expect": {
+        "$num": "-0"
+      },
+      "domain": "number-pair",
+      "note": "-0 plus -0 is -0"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        {
+          "$num": "-0"
+        },
+        0
+      ],
+      "expect": 0,
+      "domain": "number-pair",
+      "note": "-0 plus 0 is 0"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        {
+          "$num": "NaN"
+        },
+        1
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "domain": "number-pair",
+      "note": "NaN propagates"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        "a",
+        "b"
+      ],
+      "expect": "ab",
+      "domain": "string-pair",
+      "note": "two strings concatenate"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        "1",
+        "2"
+      ],
+      "expect": "12",
+      "domain": "string-pair",
+      "note": "two numeric strings concatenate"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        "1",
+        2
+      ],
+      "expect": "12",
+      "domain": "string-mixed",
+      "note": "a string on the left concatenates"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        1,
+        "2"
+      ],
+      "expect": "12",
+      "domain": "string-mixed",
+      "note": "a string on the right concatenates"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        "x",
+        1.5
+      ],
+      "expect": "x1.5",
+      "domain": "string-mixed",
+      "note": "a fraction prints with Number::toString"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        "x",
+        1e+21
+      ],
+      "expect": "x1e+21",
+      "domain": "string-mixed",
+      "note": "a large number prints in exponent notation"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        "",
+        {
+          "$num": "-0"
+        }
+      ],
+      "expect": "0",
+      "domain": "string-mixed",
+      "note": "-0 prints as \"0\""
+    },
+    {
+      "fn": "plus",
+      "args": [
+        "x",
+        {
+          "$num": "NaN"
+        }
+      ],
+      "expect": "xNaN",
+      "domain": "string-mixed",
+      "note": "NaN prints as \"NaN\""
+    },
+    {
+      "fn": "plus",
+      "args": [
+        "x",
+        true
+      ],
+      "expect": "xtrue",
+      "domain": "string-mixed",
+      "note": "a boolean prints as \"true\""
+    },
+    {
+      "fn": "plus",
+      "args": [
+        true,
+        1
+      ],
+      "expect": 2,
+      "domain": "mixed",
+      "note": "true adds as 1"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        true,
+        false
+      ],
+      "expect": 1,
+      "domain": "boolean-pair",
+      "note": "two booleans add as numbers"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        null,
+        1
+      ],
+      "expect": 1,
+      "domain": "nil",
+      "note": "a nil operand against a number adds as 0"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        null,
+        "x"
+      ],
+      "expect": "nullx",
+      "domain": "nil",
+      "note": "a nil operand against a string prints as \"null\""
+    },
+    {
+      "fn": "plus",
+      "args": [
+        "x",
+        null
+      ],
+      "expect": "xnull",
+      "domain": "nil",
+      "note": "a string against a nil operand"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        null,
+        null
+      ],
+      "expect": 0,
+      "domain": "nil",
+      "note": "two nil operands add as 0"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        [
+          1,
+          2
+        ],
+        ""
+      ],
+      "expect": "1,2",
+      "domain": "object",
+      "note": "an array against a string joins with a comma"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        "x",
+        []
+      ],
+      "expect": "x",
+      "domain": "object",
+      "note": "an empty array prints as the empty string"
+    }
+  ]
+}

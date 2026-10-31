@@ -151,7 +151,7 @@ public final class Evaluator {
   // template helper agree on one coercion implementation.
   // ---------------------------------------------------------------------
 
-  private static double toNumber(Object v) {
+  public static double toNumber(Object v) {
     if (v instanceof Number) {
       return ((Number) v).doubleValue();
     }
@@ -171,7 +171,7 @@ public final class Evaluator {
     throw new EvalUnsupported("cannot coerce " + typeName(v) + " to number");
   }
 
-  private static String toStr(Object v) {
+  public static String toStr(Object v) {
     if (v instanceof String) {
       return (String) v;
     }
@@ -191,7 +191,7 @@ public final class Evaluator {
   // Operators
   // ---------------------------------------------------------------------
 
-  private static Object binary(String op, Object l, Object r) {
+  public static Object binary(String op, Object l, Object r) {
     switch (op) {
       case "+":
         if (l instanceof String || r instanceof String) {
@@ -220,7 +220,7 @@ public final class Evaluator {
     }
   }
 
-  private static boolean relational(String op, Object l, Object r) {
+  public static boolean relational(String op, Object l, Object r) {
     int c;
     if (l instanceof String && r instanceof String) {
       c = ((String) l).compareTo((String) r);
@@ -257,7 +257,7 @@ public final class Evaluator {
     return JsValue.strictEquals(l, r);
   }
 
-  private static Object unary(String op, Object v) {
+  public static Object unary(String op, Object v) {
     switch (op) {
       case "!":
         return !JsValue.truthy(v);

@@ -1,0 +1,239 @@
+{
+  "version": 1,
+  "generator": "packages/adapter-tests/vectors/primitives/generate.ts",
+  "spec": "spec/js-primitive-semantics.md",
+  "fn": "to_string",
+  "step": 4,
+  "cases": [
+    {
+      "fn": "to_string",
+      "args": [
+        "abc"
+      ],
+      "expect": "abc",
+      "domain": "string",
+      "note": "a string is itself"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        ""
+      ],
+      "expect": "",
+      "domain": "string",
+      "note": "the empty string is itself"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        42
+      ],
+      "expect": "42",
+      "domain": "number",
+      "note": "an integer"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        1.5
+      ],
+      "expect": "1.5",
+      "domain": "number",
+      "note": "a fraction"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        0.30000000000000004
+      ],
+      "expect": "0.30000000000000004",
+      "domain": "number",
+      "note": "the shortest round-trip digits"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        {
+          "$num": "-0"
+        }
+      ],
+      "expect": "0",
+      "domain": "number",
+      "note": "-0 prints as \"0\""
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        {
+          "$num": "NaN"
+        }
+      ],
+      "expect": "NaN",
+      "domain": "number",
+      "note": "NaN"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        {
+          "$num": "Infinity"
+        }
+      ],
+      "expect": "Infinity",
+      "domain": "number",
+      "note": "Infinity"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        {
+          "$num": "-Infinity"
+        }
+      ],
+      "expect": "-Infinity",
+      "domain": "number",
+      "note": "-Infinity"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        100000000000000000000
+      ],
+      "expect": "100000000000000000000",
+      "domain": "number",
+      "note": "1e20 prints in decimal"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        1e+21
+      ],
+      "expect": "1e+21",
+      "domain": "number",
+      "note": "1e21 switches to exponent notation"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        -1e+21
+      ],
+      "expect": "-1e+21",
+      "domain": "number",
+      "note": "-1e21 switches to exponent notation"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        1.5e+300
+      ],
+      "expect": "1.5e+300",
+      "domain": "number",
+      "note": "a large exponent"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        0.000001
+      ],
+      "expect": "0.000001",
+      "domain": "number",
+      "note": "1e-6 prints in decimal"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        1e-7
+      ],
+      "expect": "1e-7",
+      "domain": "number",
+      "note": "1e-7 switches to exponent notation"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        9007199254740992
+      ],
+      "expect": "9007199254740992",
+      "domain": "number",
+      "note": "2**53 prints exactly"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        true
+      ],
+      "expect": "true",
+      "domain": "boolean",
+      "note": "true"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        false
+      ],
+      "expect": "false",
+      "domain": "boolean",
+      "note": "false"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        null
+      ],
+      "expect": "null",
+      "domain": "nil",
+      "note": "nil reads as null"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        []
+      ],
+      "expect": "",
+      "domain": "object",
+      "note": "an empty array is the empty string"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        [
+          1,
+          2
+        ]
+      ],
+      "expect": "1,2",
+      "domain": "object",
+      "note": "an array joins with a comma"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        [
+          "a",
+          null,
+          true
+        ]
+      ],
+      "expect": "a,,true",
+      "domain": "object",
+      "note": "a nil element prints as the empty string"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        [
+          [
+            1,
+            2
+          ],
+          [
+            3
+          ]
+        ]
+      ],
+      "expect": "1,2,3",
+      "domain": "object",
+      "note": "nested arrays flatten through the join"
+    }
+  ]
+}

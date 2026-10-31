@@ -1,0 +1,312 @@
+{
+  "version": 1,
+  "generator": "packages/adapter-tests/vectors/primitives/generate.ts",
+  "spec": "spec/js-primitive-semantics.md",
+  "fn": "to_number",
+  "step": 3,
+  "cases": [
+    {
+      "fn": "to_number",
+      "args": [
+        42
+      ],
+      "expect": 42,
+      "domain": "number",
+      "note": "a number is itself"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        -1.5
+      ],
+      "expect": -1.5,
+      "domain": "number",
+      "note": "a negative fraction is itself"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        {
+          "$num": "-0"
+        }
+      ],
+      "expect": {
+        "$num": "-0"
+      },
+      "domain": "number",
+      "note": "-0 keeps its sign"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        true
+      ],
+      "expect": 1,
+      "domain": "boolean",
+      "note": "true is 1"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        false
+      ],
+      "expect": 0,
+      "domain": "boolean",
+      "note": "false is 0"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        null
+      ],
+      "expect": 0,
+      "domain": "nil",
+      "note": "nil reads as null and is 0"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        ""
+      ],
+      "expect": 0,
+      "domain": "string",
+      "note": "the empty string is 0"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "   "
+      ],
+      "expect": 0,
+      "domain": "string",
+      "note": "a whitespace-only string is 0"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        " 8 "
+      ],
+      "expect": 8,
+      "domain": "string",
+      "note": "surrounding whitespace is trimmed"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "\n8\t"
+      ],
+      "expect": 8,
+      "domain": "string",
+      "note": "newline and tab are trimmed"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "42"
+      ],
+      "expect": 42,
+      "domain": "string",
+      "note": "a decimal integer string"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "1.5"
+      ],
+      "expect": 1.5,
+      "domain": "string",
+      "note": "a decimal fraction string"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        ".5"
+      ],
+      "expect": 0.5,
+      "domain": "string",
+      "note": "a fraction string without an integer part"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "5."
+      ],
+      "expect": 5,
+      "domain": "string",
+      "note": "a string with a trailing decimal point"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "+5"
+      ],
+      "expect": 5,
+      "domain": "string",
+      "note": "a leading plus sign"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "-2.0"
+      ],
+      "expect": -2,
+      "domain": "string",
+      "note": "a negative decimal string"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "-0"
+      ],
+      "expect": {
+        "$num": "-0"
+      },
+      "domain": "string",
+      "note": "the string \"-0\" is -0"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "1e5"
+      ],
+      "expect": 100000,
+      "domain": "string",
+      "note": "an exponent string"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "1E-3"
+      ],
+      "expect": 0.001,
+      "domain": "string",
+      "note": "an upper-case negative exponent"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "1e1000"
+      ],
+      "expect": {
+        "$num": "Infinity"
+      },
+      "domain": "string",
+      "note": "an overflowing exponent is Infinity"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "Infinity"
+      ],
+      "expect": {
+        "$num": "Infinity"
+      },
+      "domain": "string",
+      "note": "the string \"Infinity\""
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "-Infinity"
+      ],
+      "expect": {
+        "$num": "-Infinity"
+      },
+      "domain": "string",
+      "note": "the string \"-Infinity\""
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "infinity"
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "domain": "string",
+      "note": "a lower-case \"infinity\" is NaN"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "0x10"
+      ],
+      "expect": 16,
+      "domain": "string",
+      "note": "a hex string is its value"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "0b11"
+      ],
+      "expect": 3,
+      "domain": "string",
+      "note": "a binary string is its value"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "0o17"
+      ],
+      "expect": 15,
+      "domain": "string",
+      "note": "an octal string is its value"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "-0x10"
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "domain": "string",
+      "note": "a signed hex string is NaN"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "1_000"
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "domain": "string",
+      "note": "a digit separator is NaN"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "abc"
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "domain": "string",
+      "note": "a non-numeric string is NaN"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "12px"
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "domain": "string",
+      "note": "a numeric prefix with a suffix is NaN"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "NaN"
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "domain": "string",
+      "note": "the string \"NaN\" is NaN"
+    }
+  ]
+}

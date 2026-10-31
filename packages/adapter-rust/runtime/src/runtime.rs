@@ -142,6 +142,42 @@ pub fn js_number(v: &JsValue) -> f64 {
     }
 }
 
+/// JS primitive helpers (`spec/js-primitive-semantics.md`, "Operation
+/// table"): ToNumber, ToString, an index read, `===`, the relational
+/// operators, binary `+` and unary `-`. Each delegates to the callback
+/// evaluator's primitive of the same operation, so a template helper call
+/// and a callback body share one implementation. Unlike `js_number` and
+/// `js_string` (display helpers: null -> NaN / ""), null reads as JS null
+/// here (0 / "null").
+pub fn js_to_number(v: &JsValue) -> f64 {
+    evaluator::to_number(v)
+}
+
+pub fn js_to_string(v: &JsValue) -> String {
+    evaluator::to_string(v)
+}
+
+pub fn js_get(recv: &JsValue, key: &JsValue) -> JsValue {
+    evaluator::read_index(recv, key)
+}
+
+pub fn js_strict_eq(l: &JsValue, r: &JsValue) -> bool {
+    num::strict_eq(l, r)
+}
+
+/// `op` is one of `<`, `<=`, `>`, `>=`.
+pub fn js_relational(op: &str, l: &JsValue, r: &JsValue) -> bool {
+    evaluator::relational(op, l, r)
+}
+
+pub fn js_plus(l: &JsValue, r: &JsValue) -> JsValue {
+    evaluator::binary("+", l, r)
+}
+
+pub fn js_neg(v: &JsValue) -> JsValue {
+    evaluator::unary("-", v)
+}
+
 /// JS truthiness: `[]` / `{}` are truthy; only `null`/`undefined`, `false`,
 /// `0`, `''`, and `NaN` are falsy.
 pub fn js_truthy(v: &JsValue) -> bool {
@@ -1623,7 +1659,16 @@ impl Object for BfInstance {
                 JsValue::Object(m) => Ok(js_to_mj(m.get("length").unwrap_or(&JsValue::Null))),
                 other => Ok(MjValue::from(length(other))),
             },
-            "get" => Ok(js_to_mj(&evaluator::read_index(a(0), a(1)))),
+            "get" => Ok(js_to_mj(&js_get(a(0), a(1)))),
+            "to_number" => Ok(MjValue::from(js_to_number(a(0)))),
+            "to_string" => Ok(MjValue::from(js_to_string(a(0)))),
+            "strict_eq" => Ok(MjValue::from(js_strict_eq(a(0), a(1)))),
+            "lt" => Ok(MjValue::from(js_relational("<", a(0), a(1)))),
+            "le" => Ok(MjValue::from(js_relational("<=", a(0), a(1)))),
+            "gt" => Ok(MjValue::from(js_relational(">", a(0), a(1)))),
+            "ge" => Ok(MjValue::from(js_relational(">=", a(0), a(1)))),
+            "plus" => Ok(js_to_mj(&js_plus(a(0), a(1)))),
+            "neg" => Ok(js_to_mj(&js_neg(a(0)))),
             "is_element" => Ok(MjValue::from(is_element(a(0)))),
             "style_object" => Ok(safe(style_object(&js_args))),
             "index_of" => Ok(MjValue::from(index_of(a(0), a(1), false))),

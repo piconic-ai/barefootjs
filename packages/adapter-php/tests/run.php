@@ -24,6 +24,7 @@ bf_require_runtime();
 $testFiles = [
     'test_helper_vectors.php',
     'test_eval_vectors.php',
+    'test_primitive_vectors.php',
     'test_evaluator.php',
     'test_template_primitives.php',
     'test_query.php',

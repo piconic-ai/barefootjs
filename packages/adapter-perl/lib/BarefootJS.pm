@@ -1119,6 +1119,30 @@ sub strict_eq ($self, $l, $r) {
     return BarefootJS::Evaluator::_strict_eq($l, $r) ? !!1 : !!0;
 }
 
+# JS primitive helpers (spec/js-primitive-semantics.md, "Operation table"):
+# ToBoolean, ToNumber, ToString, the relational operators, binary `+` and
+# unary `-`. Each delegates to the callback evaluator's primitive of the same
+# operation, so a template helper call and a callback body share one
+# implementation. A boolean result is a Perl boolean, as `strict_eq`'s is.
+# Unlike `number` and `string` (display helpers: `undef` -> NaN / ''), an
+# `undef` operand reads as JS null here (0 / 'null').
+sub truthy ($self, $v) {
+    return BarefootJS::Evaluator::_truthy($v) ? !!1 : !!0;
+}
+
+sub to_number ($self, $v) { return BarefootJS::Evaluator::_to_number($v) }
+
+sub to_string ($self, $v) { return BarefootJS::Evaluator::_to_string($v) }
+
+sub plus ($self, $l, $r) { return BarefootJS::Evaluator::_binary('+', $l, $r) }
+
+sub neg ($self, $v) { return BarefootJS::Evaluator::_unary('-', $v) }
+
+sub lt ($self, $l, $r) { return BarefootJS::Evaluator::_relational('<', $l, $r) ? !!1 : !!0 }
+sub le ($self, $l, $r) { return BarefootJS::Evaluator::_relational('<=', $l, $r) ? !!1 : !!0 }
+sub gt ($self, $l, $r) { return BarefootJS::Evaluator::_relational('>', $l, $r) ? !!1 : !!0 }
+sub ge ($self, $l, $r) { return BarefootJS::Evaluator::_relational('>=', $l, $r) ? !!1 : !!0 }
+
 sub includes ($self, $recv, $elem) {
     if (ref($recv) eq 'ARRAY') {
         for my $item (@$recv) {
