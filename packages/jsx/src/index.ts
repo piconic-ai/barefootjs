@@ -134,7 +134,7 @@ export { emitParsedExpr, primitivePlanFor, arithmeticHelper, groupBinaryOperand,
 export type { StringNameTest } from './adapters/parsed-expr-emitter.ts'
 export { concatType, declaredValueTypes, loopRowType, type DeclaredValueTypes } from './adapters/loop-row-type.ts'
 export { collectNumberValueNames, isNumberValuedExpr, numberValuedSeedNames } from './adapters/number-value.ts'
-export { operandFacts, planPrimitive, primitivesAt } from './adapters/primitive-plan.ts'
+export { operandFacts, planPrimitive, planTest, spellTest, primitivesAt } from './adapters/primitive-plan.ts'
 export type { PrimitiveOp, Proof, NativeSafeTable, PrimitiveHelper, PrimitivePlan, PrimitiveInputs } from './adapters/primitive-plan.ts'
 export {
   collectOperandTyping,
@@ -164,7 +164,7 @@ export {
 export {
   collectBooleanValueNames,
   isAriaBooleanAttr,
-  isBooleanResultExpr,
+  isBooleanResultExpr, planTestOfSource,
   isBooleanResultParsed,
   isExplicitStringCall,
   stringifyBooleanBranches,

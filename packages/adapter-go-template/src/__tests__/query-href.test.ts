@@ -62,8 +62,9 @@ export function P(props: { base: string; sort: string; tag: string }) {
   // A `&&` / `||` guard is NOT a comparison, so `lowerUrlGuard` can't emit it as
   // a bare Go bool — `and`/`or` return one of their operands (a string), which
   // `bf_query` type-asserts against. It must take the truthiness-wrap path,
-  // `ne (and …) ""`, yielding a real bool.
-  test('a `&&` guard is wrapped to a bool — `ne (and …) ""`, not a bare `and`', () => {
+  // `ne <value> ""`, yielding a real bool. The value is JS `&&`'s operand,
+  // picked by the left operand's JS truthiness (#3824).
+  test('a `&&` guard is wrapped to a bool — `ne <value> ""`, not a bare `and`', () => {
     const src = `
 'use client'
 import { queryHref } from '@barefootjs/client'
@@ -72,7 +73,7 @@ export function P(props: { base: string; a: string; b: string }) {
 }
 `
     const { template } = generate(src)
-    expect(template).toContain('bf_query .Base (ne (and .A .B) "") "both" .A')
+    expect(template).toContain('bf_query .Base (ne (index (or (bf_keep_falsy .A) (bf_arr .B)) 0) "") "both" .A')
   })
 
   test('null / empty-string alternates are both treated as the omit branch', () => {
@@ -250,7 +251,7 @@ export function P(props: { ok: boolean; base: string; tag: string }) {
 `
     const { template } = generate(src)
     expect(template).toContain(
-      '{{bf_attr "href" (bf_ternary (bf_truthy .Ok) (bf_query .Base (true) "tag" .Tag) "/fallback")}}',
+      '{{bf_attr "href" (bf_ternary .Ok (bf_query .Base (true) "tag" .Tag) "/fallback")}}',
     )
     expect(template).not.toContain('href="{{')
   })
@@ -270,7 +271,7 @@ export function P(props: { ok: boolean; base: string; tag: string }) {
 }
 `
     const { template } = generate(src)
-    expect(template).toContain('{{if (bf_truthy .Ok)}}{{bf_attr "href" (bf_query .Base (true) "tag" .Tag)}}{{end}}')
+    expect(template).toContain('{{if .Ok}}{{bf_attr "href" (bf_query .Base (true) "tag" .Tag)}}{{end}}')
     expect(template).not.toContain('.QueryHref')
     expect(template).not.toContain('bf_map')
     expect(template).not.toContain('href="{{')
@@ -306,7 +307,7 @@ export function P(props: { a: boolean; b: boolean; base: string; tag: string }) 
 `
     const { template } = generate(src)
     expect(template).toContain(
-      '{{if (bf_truthy .A)}}{{bf_attr "href" (bf_ternary (bf_truthy .B) (bf_query .Base (true) "tag" .Tag) "/x")}}{{end}}',
+      '{{if .A}}{{bf_attr "href" (bf_ternary .B (bf_query .Base (true) "tag" .Tag) "/x")}}{{end}}',
     )
   })
 })

@@ -40,8 +40,8 @@
 
 import { parseExpression, type ParsedExpr } from '../expression-parser.ts'
 import type { IRMetadata, TypeInfo } from '../types.ts'
-import { operandFacts } from './primitive-plan.ts'
-import { isExactly, typingFromNameTest } from './operand-typing.ts'
+import { operandFacts, planTest, type NativeSafeTable, type PrimitivePlan } from './primitive-plan.ts'
+import { isExactly, typingFromNameTest, type ScopedOperandTyping } from './operand-typing.ts'
 
 /**
  * Whether `node` evaluates to a JS boolean: structurally, or, when the
@@ -200,9 +200,26 @@ export function collectBooleanValueNames(
  * unparseable expression is not boolean-result.
  */
 export function isBooleanResultExpr(expr: string): boolean {
-  const parsed = parseExpression(expr.trim())
+  const parsed = testTree(expr)
   if (!parsed) return false
   return isBooleanResultParsed(parsed)
+}
+
+/**
+ * The ToBoolean plan (`planTest`, #3824) of a test whose `ParsedExpr` the IR
+ * does not carry: a template literal's ternary part, which holds only its
+ * condition text. It reads the same tree {@link isBooleanResultExpr} always
+ * parsed for such a test. A test the IR carries a tree for is planned with
+ * `planTest` on that tree.
+ */
+export function planTestOfSource(expr: string, typing: ScopedOperandTyping, target: NativeSafeTable): PrimitivePlan | null {
+  const parsed = testTree(expr)
+  return parsed ? planTest(parsed, typing, target) : null
+}
+
+/** The tree of a test held only as source text; null when unparseable. */
+function testTree(expr: string): ParsedExpr | null {
+  return parseExpression(expr.trim()) ?? null
 }
 
 /**

@@ -22,23 +22,23 @@
  * explicitly rather than assuming a shared numbering.
  *
  *   1. **Symbolic ternary, not word-based `if`/`else`.** Confirmed: Pebble's
- *      ternary is `cond ? a : b`, not Jinja's `a if cond else b`. `logical`'s
- *      `&&`/`||` lowering and `conditional`'s ternary lowering both emit
- *      `(T ? A : B)` — same choice Twig makes, for the same reason (Twig has
- *      no word-ternary either).
+ *      ternary is `cond ? a : b`, not Jinja's `a if cond else b`.
+ *      `conditional`'s ternary lowering emits `(T ? A : B)` — same choice
+ *      Twig makes, for the same reason (Twig has no word-ternary either).
  *   2. **JS-truthy condition wrapping** (`truthyTest`) — unchanged in
  *      SHAPE from the Jinja/Twig ports: every condition-TEST position (`!x`,
- *      the left operand of `&&`/`||`, a ternary's test) routes through the
+ *      a ternary's test) routes through the
  *      shared `bf.truthy(...)` runtime helper unless the operand is
- *      structurally already boolean-shaped (`isBooleanResultParsed`) — see
+ *      structurally already boolean-shaped (the primitive plan's `boolean` proof, #3824) — see
  *      `@barefootjs/jsx`'s `adapters/boolean-result.ts`'s file header for why Pebble needs this (its
  *      `{% if %}` truthiness follows the same empty-container-is-falsy
- *      convention as Jinja/Twig, diverging from JS). `&&`/`||` still return
- *      the ORIGINAL operand VALUE (not a coerced bool) on the taken branch —
- *      matching JS `a || b` returning `a` itself — only the BRANCH TEST uses
- *      `bf.truthy`. The left operand's rendered text is emitted TWICE (once
- *      as the test, once as the value) — safe because every operand reaching
- *      this pipeline is a pure, side-effect-free read.
+ *      convention as Jinja/Twig, diverging from JS). `&&`/`||` return
+ *      the ORIGINAL operand VALUE (not a coerced bool) — matching JS
+ *      `a || b` returning `a` itself: they are the runtime's
+ *      `JsLogicalExtension` operators, which test the left operand by JS
+ *      truthiness and return it or the right one, each rendered once
+ *      (#3824); a left operand the plan proves boolean takes a ternary over
+ *      itself instead (`spellLogical`).
  *   3. **`??` is NOT Pebble-native — REFUTED during Phase 3 research** (was
  *      previously assumed confirmed; see `pebble-adapter.ts`'s file header).
  *      Pebble has no `??` operator at all: `{{ a ?? b }}` is a template
@@ -113,6 +113,7 @@ import {
   type NativeSafeTable,
   type OperandTyping,
   primitivesAt,
+  spellTest,
   EMPTY_OPERAND_TYPING,
   BindingScope,
   type LoweringEmitter,
@@ -127,7 +128,6 @@ import {
   matchSearchParamsMethodCall,
   queryHrefArgs,
   isValidHelperId,
-  isBooleanResultParsed,
   lowerCallbackMethod,
   emitCallbackEval,
   nestedCallbackRefusal,
@@ -175,13 +175,29 @@ export const NATIVE_SAFE: NativeSafeTable = {
 }
 
 /**
- * Route a condition-TEST position through `bf.truthy(...)` unless the node
- * is structurally already boolean-shaped. See the file header (divergence
- * 2). Shared by both emitters below and reused by the adapter's top-level
- * `convertConditionToPebble` for IR-level `if` / loop-filter conditions.
+ * Spell the ToBoolean plan of a condition-TEST position (#3824 step 1): the
+ * rendered test as is when the plan is native (the operand is a proven
+ * `boolean` and this adapter's `NATIVE_SAFE['to-boolean']` claims it),
+ * through `bf.truthy(...)` otherwise. See the file header (divergence 2). The
+ * `!`, `&&`, `||` and `?:` emitters below receive the plan from
+ * `emitParsedExpr`; the adapter's IR-level `if` / loop-filter conditions
+ * compute it with `planTest`.
  */
-export function truthyTest(node: ParsedExpr, rendered: string): string {
-  return isBooleanResultParsed(node) ? rendered : `bf.truthy(${rendered})`
+export function truthyTest(plan: PrimitivePlan | null, rendered: string): string {
+  return spellTest(plan, rendered, (r) => `bf.truthy(${r})`)
+}
+
+/**
+ * JS `l && r` / `l || r` in a value position, which yield one of their
+ * operands (#3824). When the plan proves `l` a boolean, a ternary over `l`
+ * itself (`l ? r : false`, `l ? true : r`; Pebble's `and` / `or` yield a
+ * boolean, not `r`). Otherwise the runtime's JsLogicalExtension operators,
+ * which test `l` by JS truthiness, return it when it decides the result and
+ * evaluate `r` only otherwise, each operand rendered once.
+ */
+function spellLogical(op: '&&' | '||', plan: PrimitivePlan | null, l: string, r: string): string {
+  if (truthyTest(plan, l) === l) return op === '&&' ? `(${l} ? ${r} : false)` : `(${l} ? true : ${r})`
+  return `(${l} ${op} ${r})`
 }
 
 /**
@@ -326,8 +342,8 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
-    if (op === '!') return `not ${truthyTest(argument, emit(argument))}`
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
+    if (op === '!') return `not ${truthyTest(plan, emit(argument))}`
     if (op === '-') return `-${groupUnaryOperand(argument, emit(argument))}`
     return emit(argument)
   }
@@ -363,15 +379,10 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
-    // See the file header, divergences 1 & 2: the branch TEST goes through
-    // `bf.truthy`, the RETURNED value stays the original operand text (`l`
-    // appears twice for `&&`/`||`), and the ternary is Pebble's symbolic
-    // `(test ? a : b)` form, not Jinja's word-based `(a if test else b)`.
-    if (op === '&&') return `(${truthyTest(left, l)} ? ${r} : ${l})`
-    if (op === '||') return `(${truthyTest(left, l)} ? ${l} : ${r})`
+    if (op === '&&' || op === '||') return spellLogical(op, plan, l, r)
     // See the file header, divergence 3 (REFUTED during Phase 3 research —
     // Pebble has NO `??` operator at all; it's a parse error, not a subtly
     // wrong runtime value). Routed through the `bf.coalesce(l, r)` runtime
@@ -415,7 +426,7 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
     return renderFlatMethod(emit(object), depth, emit)
   }
 
-  conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr, _emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr, _emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     return this.refuseShape('a conditional (`?:`)')
   }
 
@@ -646,8 +657,8 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
-    if (op === '!') return `not ${truthyTest(argument, emit(argument))}`
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
+    if (op === '!') return `not ${truthyTest(plan, emit(argument))}`
     if (op === '-') {
       // Unary minus applies JS `ToNumber` like binary `-` (#3533).
       const arg = groupUnaryOperand(argument, emit(argument))
@@ -695,12 +706,10 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
-    // See the file header, divergences 1 & 2.
-    if (op === '&&') return `(${truthyTest(left, l)} ? ${r} : ${l})`
-    if (op === '||') return `(${truthyTest(left, l)} ? ${l} : ${r})`
+    if (op === '&&' || op === '||') return spellLogical(op, plan, l, r)
     // See the file header, divergence 3 (REFUTED — see the other
     // `logical()` implementation above for the full explanation).
     return `bf.coalesce(${l}, ${r})`
@@ -758,10 +767,10 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     consequent: ParsedExpr,
     alternate: ParsedExpr,
     emit: (e: ParsedExpr) => string,
-    _plan: PrimitivePlan | null,
+    plan: PrimitivePlan | null,
   ): string {
     // See the file header, divergence 1: Pebble's symbolic ternary.
-    return `(${truthyTest(test, emit(test))} ? ${emit(consequent)} : ${emit(alternate)})`
+    return `(${truthyTest(plan, emit(test))} ? ${emit(consequent)} : ${emit(alternate)})`
   }
 
   templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string {

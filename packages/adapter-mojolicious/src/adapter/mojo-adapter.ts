@@ -33,6 +33,8 @@ import {
   type EmitIRNode,
   type AttrValueEmitter,
   parseExpression,
+  planTest,
+  planTestOfSource,
   stringifyParsedExpr,
   planStyleObject,
   type ExpressionAttr,
@@ -77,7 +79,7 @@ import {
   inlineComputedConstAttr,
   inlineComputedConsts,
 } from '@barefootjs/jsx'
-import type { BindingScope, ParsedExpr } from '@barefootjs/jsx'
+import type { BindingScope, ParsedExpr, PrimitivePlan } from '@barefootjs/jsx'
 import {
   escapeLineStatementSigil,
   isBooleanResultParsed,
@@ -97,7 +99,7 @@ import { MOJO_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
 import { perlHashKey, perlIdentifierFromMarkerId, perlStringLiteral } from './lib/perl-naming.ts'
 import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToPerl } from './lib/static-value.ts'
-import { MojoFilterEmitter, MojoTopLevelEmitter, CALLBACK_LOWERING } from './expr/emitters.ts'
+import { MojoFilterEmitter, MojoTopLevelEmitter, CALLBACK_LOWERING, NATIVE_SAFE, truthyTest } from './expr/emitters.ts'
 import type { MojoEmitContext, MojoSpreadContext, MojoMemoContext } from './emit-context.ts'
 import {
   conditionalSpreadToPerl,
@@ -574,7 +576,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     // (`$fetchPosts->{error}`, a hard "Global symbol requires explicit
     // package name" error under `use strict` — `$fetchPosts` is never
     // declared server-side).
-    const condition = this.convertExpressionToPerl(cond.condition, cond.parsedCondition)
+    const condition = this.perlTest(cond.condition, this.convertExpressionToPerl(cond.condition, cond.parsedCondition), cond.parsedCondition)
     const whenTrue = this.renderNode(cond.whenTrue)
     const whenFalse = this.renderNodeOrNull(cond.whenFalse)
 
@@ -778,7 +780,10 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       // `$todo`), decided by the binding rather than renamed in the text.
       condition: (filter) =>
         this.renderInScope(row.enterAliases(filter.aliases), () =>
-          this.renderPerlFilterExpr(filter.captured, filter.param, new Map(), `$${param}`),
+          truthyTest(
+            this.testPlan(filter.captured, this.scope.enterCallback([filter.param])),
+            this.renderPerlFilterExpr(filter.captured, filter.param, new Map(), `$${param}`),
+          ),
         ),
       refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
       refused: '1',
@@ -945,7 +950,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
   // ===========================================================================
 
   protected renderIfStatement(ifStmt: IRIfStatement): string {
-    const condition = this.convertExpressionToPerl(ifStmt.condition)
+    const condition = this.perlTest(ifStmt.condition, this.convertExpressionToPerl(ifStmt.condition), ifStmt.parsedCondition)
     const consequent = ifStmt.consequent.type === 'if-statement'
       ? this.renderIfStatement(ifStmt.consequent as IRIfStatement)
       : this.renderNode(ifStmt.consequent)
@@ -1044,11 +1049,11 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
           return `<% if (defined ${v}) { %>${attr(v, plan.boolStr, valueParsed)}<% } %>`
         }
         case 'boolean-attr':
-          return `<%= ${this.convertExpressionToPerl(value.expr, value.parsed)} ? '${name}' : '' %>`
+          return `<%= ${this.perlTest(value.expr, this.convertExpressionToPerl(value.expr, value.parsed), value.parsed)} ? '${name}' : '' %>`
         case 'presence': {
           const v = this.convertExpressionToPerl(value.expr)
           const tmp = `$bf_pu${this.presenceVarCounter++}`
-          return `<% my ${tmp} = ${v}; if (${tmp}) { %>${attr(tmp, plan.boolStr, valueParsed)}<% } %>`
+          return `<% my ${tmp} = ${v}; if (${truthyTest(this.testPlan(valueParsed), tmp)}) { %>${attr(tmp, plan.boolStr, valueParsed)}<% } %>`
         }
         case 'undefined-alternate': {
           // A mixed boolean / string branch renders its boolean as JS does.
@@ -1058,7 +1063,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
           const shown = isBooleanResultParsed(m.consequentParsed)
             ? `bf->bool_str(${val})`
             : this.jsStringOutput(m.consequentParsed, val)
-          return `<% if (${cond}) { %>${name}="<%= ${shown} %>"<% } %>`
+          return `<% if (${truthyTest(this.testPlan(m.testParsed), cond)}) { %>${name}="<%= ${shown} %>"<% } %>`
         }
         case 'omit-nil':
         case 'plain': {
@@ -1234,7 +1239,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       } else if (part.type === 'expression') {
         parts.push(this.convertExpressionToPerl(part.expr, part.parsed))
       } else if (part.type === 'ternary') {
-        const cond = this.convertExpressionToPerl(part.condition)
+        const cond = this.perlTest(part.condition, this.convertExpressionToPerl(part.condition))
         parts.push(`(${cond} ? ${perlStringLiteral(part.whenTrue)} : ${perlStringLiteral(part.whenFalse)})`)
       } else if (part.type === 'lookup') {
         // `${MAP[KEY]}` against a Record<T, string> literal — emit a
@@ -1283,7 +1288,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.scope.isBound(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
-      _renderPerlFilterExprPublic: (e, p) => this._renderPerlFilterExprPublic(e, p),
+      _renderPerlFilterTestPublic: (e, p) => this._renderPerlFilterTestPublic(e, p),
     }
   }
 
@@ -1300,6 +1305,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       localConstants: this.localConstants,
       propsParams: this.propsParams,
       convertExpressionToPerl: (e, preParsed) => this.convertExpressionToPerl(e, preParsed),
+      convertTestToPerl: (test) => this.perlTest('', this.convertExpressionToPerl('', test), test),
     }
   }
 
@@ -1440,9 +1446,20 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     })
   }
 
-  /** Internal hook for higher-order: predicate body re-uses the filter emitter. */
-  private _renderPerlFilterExprPublic(expr: ParsedExpr, param: string): string {
-    return this.renderPerlFilterExpr(expr, param)
+  /** Internal hook for higher-order: predicate body re-uses the filter emitter, as a test (#3824). */
+  private _renderPerlFilterTestPublic(expr: ParsedExpr, param: string): string {
+    return truthyTest(this.testPlan(expr, this.scope.enterCallback([param])), this.renderPerlFilterExpr(expr, param))
+  }
+
+  /** The ToBoolean plan of a test position the dispatcher does not plan, typed at `scope` (#3824). */
+  private testPlan(expr: ParsedExpr | null | undefined, scope: BindingScope = this.scope): PrimitivePlan | null {
+    return expr ? planTest(expr, this.operandTypingAt(scope), NATIVE_SAFE) : null
+  }
+
+  /** A condition's rendered Perl test, spelled from its ToBoolean plan (#3824, #3823). */
+  private perlTest(source: string, rendered: string, parsed?: ParsedExpr | null): string {
+    const plan = parsed ? this.testPlan(parsed) : planTestOfSource(source, this.operandTypingAt(), NATIVE_SAFE)
+    return truthyTest(plan, rendered)
   }
 }
 

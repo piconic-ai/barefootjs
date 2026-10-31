@@ -67,6 +67,9 @@ Vite's own `build.outDir`. A PHP
 host renders a component by constructing a `Twig\Environment` (with
 `autoescape: 'html'`, `strict_variables: false`) over a `FilesystemLoader`
 pointed at the emitted templates, wiring in the PHP `TwigBackend` as the
-render backend. Twig's default escaper emits `&quot;`/`&#039;` for `"`/`'`
+render backend. The templates also call two Twig filters, `bf_js_or` /
+`bf_js_and` (value-position JS `||` / `&&`), from `Barefoot\BarefootExtension`;
+`TwigBackend` adds that extension to the Environment it builds, or to one
+passed as `env` (which must not have rendered yet). Twig's default escaper emits `&quot;`/`&#039;` for `"`/`'`
 where Perl/Go/markupsafe emit the numeric `&#34;`/`&#39;` forms — see the
 adapter header comment for how that byte-form difference is handled.

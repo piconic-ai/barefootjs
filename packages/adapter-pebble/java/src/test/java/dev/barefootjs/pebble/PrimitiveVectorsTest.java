@@ -5,10 +5,15 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
+import io.pebbletemplates.pebble.PebbleEngine;
+import io.pebbletemplates.pebble.loader.StringLoader;
+import io.pebbletemplates.pebble.template.PebbleTemplate;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.io.StringWriter;
+import java.io.UncheckedIOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -42,11 +47,6 @@ class PrimitiveVectorsTest {
   /**
    * One binding per op, to the helper compiled templates call ({@code eq}
    * for {@code strict_eq}). An op with no binding fails.
-   *
-   * <p>TODO(#3824 step 0b/1): also bind each op to the native Pebble operator
-   * and run only the cases whose {@code domain} the Pebble adapter's
-   * NativeSafeTable claims (spec/js-primitive-semantics.md, "Conformance"
-   * item 3). That needs the table step 0b adds.
    */
   private static final Map<String, Function<List<Object>, Object>> BINDINGS = Map.ofEntries(
       Map.entry("truthy", a -> BF.truthy(a.get(0))),
@@ -60,6 +60,71 @@ class PrimitiveVectorsTest {
       Map.entry("ge", a -> BF.ge(a.get(0), a.get(1))),
       Map.entry("plus", a -> BF.plus(a.get(0), a.get(1))),
       Map.entry("neg", a -> BF.neg(a.get(0))));
+
+  /** A real Pebble {@code if}: the native test the adapter spells for a proven boolean. */
+  private static final PebbleTemplate PEBBLE_IF = new PebbleEngine.Builder()
+      .loader(new StringLoader())
+      .strictVariables(false)
+      .build()
+      .getTemplate("{% if v %}1{% else %}0{% endif %}");
+
+  /**
+   * One binding per op the Pebble adapter can spell natively, to the native
+   * Pebble operator: a test is Pebble's own {@code if} / {@code not}. It runs
+   * over the cases whose domain the adapter's NATIVE_SAFE table claims
+   * ({@code primitives-native-safe.json}; spec/js-primitive-semantics.md,
+   * "Conformance" item 3).
+   */
+  private static final Map<String, Function<List<Object>, Object>> NATIVE_BINDINGS = Map.ofEntries(
+      Map.entry("truthy", a -> pebbleIf(a.get(0))));
+
+  private static Object pebbleIf(Object v) {
+    Map<String, Object> context = new LinkedHashMap<>();
+    context.put("v", v);
+    StringWriter writer = new StringWriter();
+    try {
+      PEBBLE_IF.evaluate(writer, context);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    return writer.toString().equals("1");
+  }
+
+  /** Every native claim gives the JS answer on every case it covers; no ledger applies. */
+  @Test
+  void nativeClaims() throws IOException {
+    Path claimsPath = VECTORS_DIR.resolve("primitives-native-safe.json");
+    Assumptions.assumeTrue(Files.isRegularFile(claimsPath), "native claims not available outside the monorepo checkout");
+    JsonObject claims = JsonParser.parseString(Files.readString(claimsPath)).getAsJsonObject()
+        .getAsJsonObject("runtimes").getAsJsonObject("java");
+    List<String> problems = new ArrayList<>();
+    int ran = 0;
+    for (String fn : claims.keySet()) {
+      Function<List<Object>, Object> bind = NATIVE_BINDINGS.get(fn);
+      if (bind == null) {
+        problems.add("no native Pebble binding for '" + fn + "' -- add it to NATIVE_BINDINGS");
+        continue;
+      }
+      Set<String> domains = new HashSet<>();
+      claims.getAsJsonArray(fn).forEach(d -> domains.add(d.getAsString()));
+      JsonArray cases = JsonParser.parseString(Files.readString(VECTORS_DIR.resolve("primitives").resolve(fn + ".json")))
+          .getAsJsonObject().getAsJsonArray("cases");
+      for (JsonElement el : cases) {
+        JsonObject c = el.getAsJsonObject();
+        if (!domains.contains(c.get("domain").getAsString())) {
+          continue;
+        }
+        ran++;
+        String failure = run(c, bind);
+        if (failure != null) {
+          problems.add("NATIVE-FAIL " + fn + "/" + c.get("note").getAsString() + " (domain "
+              + c.get("domain").getAsString() + "): " + failure);
+        }
+      }
+    }
+    System.out.println("primitives (native): " + ran + " claimed cases");
+    assertTrue(problems.isEmpty(), "\n" + String.join("\n", problems));
+  }
 
   @Test
   void primitiveVectors() throws IOException {
@@ -112,7 +177,11 @@ class PrimitiveVectorsTest {
 
   /** Runs one case; returns null when it matches, else what went wrong. */
   private static String run(JsonObject c) {
-    Function<List<Object>, Object> bind = BINDINGS.get(c.get("fn").getAsString());
+    return run(c, BINDINGS.get(c.get("fn").getAsString()));
+  }
+
+  /** Runs one case through {@code bind}; returns null when it matches, else what went wrong. */
+  private static String run(JsonObject c, Function<List<Object>, Object> bind) {
     if (bind == null) {
       return "no Java binding for '" + c.get("fn").getAsString() + "' -- add it to BINDINGS";
     }

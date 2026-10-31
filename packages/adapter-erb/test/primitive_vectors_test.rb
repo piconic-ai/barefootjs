@@ -20,11 +20,6 @@ class PrimitiveVectorsTest < Minitest::Test
 
   # One binding per op, to the helper compiled templates call. An op with no
   # binding fails.
-  #
-  # TODO(#3824 step 0b/1): also bind each op to the native Ruby operator and
-  # run only the cases whose `domain` the ERB adapter's NativeSafeTable
-  # claims (spec/js-primitive-semantics.md, "Conformance" item 3). That needs
-  # the table step 0b adds.
   BINDINGS = {
     'truthy' => ->(v) { BF.truthy?(v) },
     'to_number' => ->(v) { BF.to_number(v) },
@@ -37,6 +32,15 @@ class PrimitiveVectorsTest < Minitest::Test
     'ge' => ->(a, b) { BF.ge(a, b) },
     'plus' => ->(a, b) { BF.plus(a, b) },
     'neg' => ->(v) { BF.neg(v) }
+  }.freeze
+
+  # One binding per op the ERB adapter can spell natively, to the native Ruby
+  # operator: a test is Ruby's own truthiness (`if`, `!`, `?:`). It runs over
+  # the cases whose domain the adapter's NATIVE_SAFE table claims
+  # (primitives-native-safe.json; spec/js-primitive-semantics.md,
+  # "Conformance" item 3). The table claims nothing today, so no case runs.
+  NATIVE_BINDINGS = {
+    'truthy' => ->(v) { v ? true : false }
   }.freeze
 
   SENTINELS = {
@@ -79,8 +83,7 @@ class PrimitiveVectorsTest < Minitest::Test
     g == e
   end
 
-  def self.run_case(c)
-    bind = BINDINGS[c[:fn]]
+  def self.run_case(c, bind = BINDINGS[c[:fn]])
     return [false, "no Ruby binding for '#{c[:fn]}' -- add it to BINDINGS"] unless bind
 
     begin
@@ -116,6 +119,32 @@ class PrimitiveVectorsTest < Minitest::Test
     end
     expected.each_key { |k| problems << "ledger entry '#{k}' matches no primitives case -- renamed note?" unless seen[k] }
     puts "primitives: #{total} cases, #{passed} pass, #{expected.size} in the expected-failure ledger"
+    assert_empty problems, "\n#{problems.join("\n")}"
+  end
+
+  # Every native claim gives the JS answer on every case it covers; no ledger
+  # applies.
+  def test_native_claims
+    skip 'primitive vectors not available outside the monorepo checkout' if PRIMITIVE_FILES.empty?
+
+    claims_path = File.join(PRIMITIVES_VECTORS_DIR, 'primitives-native-safe.json')
+    claims = JSON.parse(File.read(claims_path, encoding: Encoding::UTF_8))['runtimes'].fetch('ruby')
+    problems = []
+    ran = 0
+    claims.each do |fn, domains|
+      bind = NATIVE_BINDINGS[fn]
+      next problems << "no native Ruby binding for '#{fn}' -- add it to NATIVE_BINDINGS" unless bind
+
+      path = File.join(PRIMITIVES_VECTORS_DIR, 'primitives', "#{fn}.json")
+      JSON.parse(File.read(path, encoding: Encoding::UTF_8), symbolize_names: true)[:cases].each do |c|
+        next unless domains.include?(c[:domain])
+
+        ran += 1
+        ok, detail = self.class.run_case(c, bind)
+        problems << "NATIVE-FAIL #{c[:fn]}/#{c[:note]} (domain #{c[:domain]}): #{detail}" unless ok
+      end
+    end
+    puts "primitives (native): #{ran} claimed cases"
     assert_empty problems, "\n#{problems.join("\n")}"
   end
 end

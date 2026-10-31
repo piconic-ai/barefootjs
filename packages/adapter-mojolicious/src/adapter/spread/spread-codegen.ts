@@ -48,7 +48,7 @@ export function conditionalSpreadToPerl(
   // Thread the condition's carried `ParsedExpr` tree straight through as
   // `preParsed` (#2018) — no stringify→re-parse round-trip; `convertExpressionToPerl`
   // uses the tree directly and derives any diagnostic text from it.
-  const condPerl = ctx.convertExpressionToPerl('', expr.test)
+  const condPerl = ctx.convertTestToPerl(expr.test)
   const truePerl = objectLiteralToPerlHashref(ctx, whenTrue)
   const falsePerl = objectLiteralToPerlHashref(ctx, whenFalse)
   if (truePerl === null || falsePerl === null) return null

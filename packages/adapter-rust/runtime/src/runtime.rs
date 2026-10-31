@@ -1540,6 +1540,21 @@ impl Object for BfInstance {
             return Ok(MjValue::from(js_string(arg(&js_args, 0))));
         }
 
+        // Boxes for a value-position JS `l || r` / `l && r` (#3824): the
+        // adapter spells `l || r` as `(bf.keep_truthy(l) or [r])[0]` and
+        // `l && r` as `(bf.keep_falsy(l) or [r])[0]`. `keep_truthy` is the
+        // one-element list `[l]` when `l` is JS-truthy and `[]` otherwise
+        // (`keep_falsy` the reverse), so minijinja's `or` stops at the box
+        // exactly when JS returns `l` itself and evaluates `[r]` only
+        // otherwise (the short circuit); `[0]` unboxes the operand. The box
+        // holds the ORIGINAL value (a safe string stays safe), so it is
+        // dispatched before the `mj_to_js` conversion below.
+        if method == "keep_truthy" || method == "keep_falsy" {
+            let value = args.first().cloned().unwrap_or_else(|| MjValue::from(()));
+            let keep = js_truthy(&mj_to_js(&value)) == (method == "keep_truthy");
+            return Ok(MjValue::from(if keep { vec![value] } else { Vec::new() }));
+        }
+
         let js_args: Vec<JsValue> = args.iter().map(mj_to_js).collect();
         let a = |i: usize| arg(&js_args, i);
 

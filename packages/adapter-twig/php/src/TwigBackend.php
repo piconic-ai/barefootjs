@@ -65,7 +65,8 @@ final class TwigBackend
      *   environment_options?: array<string, mixed>,
      * } $options `paths`: template directories (FilesystemLoader);
      *   `env`: pre-built Environment (when given, `paths` and
-     *   `environment_options` are ignored); `json_encoder`: overrides the
+     *   `environment_options` are ignored; it gains `BarefootExtension`, so
+     *   it must not have rendered yet); `json_encoder`: overrides the
      *   default canonical (sorted-key) encoder; `environment_options`:
      *   extra Twig\Environment options, merged under the defaults below.
      */
@@ -74,16 +75,21 @@ final class TwigBackend
         $paths = $options['paths'] ?? [];
         $env = $options['env'] ?? null;
         $this->jsonEncoder = $options['json_encoder'] ?? [self::class, 'defaultJsonEncoder'];
-        if ($env !== null) {
-            $this->env = $env;
-            return;
+        if ($env === null) {
+            $options = ($options['environment_options'] ?? []) + [
+                'autoescape' => 'html',
+                'strict_variables' => false,
+                'cache' => false,
+            ];
+            $env = new Environment(new FilesystemLoader($paths), $options);
         }
-        $options = ($options['environment_options'] ?? []) + [
-            'autoescape' => 'html',
-            'strict_variables' => false,
-            'cache' => false,
-        ];
-        $this->env = new Environment(new FilesystemLoader($paths), $options);
+        // The emitted templates call `BarefootExtension`'s filters. A
+        // pre-built Environment must not have rendered yet: Twig refuses an
+        // extension once its extensions are initialized.
+        if (!$env->hasExtension(BarefootExtension::class)) {
+            $env->addExtension(new BarefootExtension());
+        }
+        $this->env = $env;
     }
 
     public function env(): Environment

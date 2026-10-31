@@ -47,6 +47,8 @@ import {
   type EmitIRNode,
   type AttrValueEmitter,
   parseExpression,
+  planTest,
+  planTestOfSource,
   stringifyParsedExpr,
   parseProviderObjectLiteral,
   planStyleObject,
@@ -92,7 +94,7 @@ import {
   inlineComputedConsts,
 } from '@barefootjs/jsx'
 import ts from 'typescript'
-import type { ParsedExpr } from '@barefootjs/jsx'
+import type { BindingScope, ParsedExpr, PrimitivePlan } from '@barefootjs/jsx'
 import {
   escapeLineStatementSigil,
   isBooleanResultParsed,
@@ -112,7 +114,7 @@ import { XSLATE_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
 import { kolonHashKey, kolonStringLiteral } from './lib/kolon-naming.ts'
 import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToKolon } from './lib/static-value.ts'
-import { XslateFilterEmitter, XslateTopLevelEmitter, CALLBACK_LOWERING } from './expr/emitters.ts'
+import { XslateFilterEmitter, XslateTopLevelEmitter, CALLBACK_LOWERING, NATIVE_SAFE, truthyTest } from './expr/emitters.ts'
 import type { XslateEmitContext, XslateSpreadContext, XslateMemoContext } from './emit-context.ts'
 import {
   conditionalSpreadToKolon,
@@ -524,7 +526,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     // with its seed literal there; re-parsing `cond.condition` fresh here
     // would lose that and fall into the generic member-access lowering
     // (undefined at render time).
-    const condition = this.convertExpressionToKolon(cond.condition, cond.parsedCondition)
+    const condition = this.kolonTest(cond.condition, this.convertExpressionToKolon(cond.condition, cond.parsedCondition), cond.parsedCondition)
     const whenTrue = this.renderNode(cond.whenTrue)
     const whenFalse = this.renderNodeOrNull(cond.whenFalse)
 
@@ -714,7 +716,11 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     lines.push(...spellFilteredRow(loopPlan.filter, [...preambleLines, bodyChildren], {
       // The filter's param reads as the loop's row local (`$t` →
       // `$todo`), under the row's renamed local when it has one (#3392).
-      condition: (filter) => this.renderKolonFilterExpr(filter.predicate, filter.param, new Map(), rowNames.get(param) ?? param),
+      condition: (filter) =>
+        truthyTest(
+          this.testPlan(filter.predicate, this.scope.enterCallback([filter.param])),
+          this.renderKolonFilterExpr(filter.predicate, filter.param, new Map(), rowNames.get(param) ?? param),
+        ),
       refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
       refused: '1',
       open: (condition) => `: if (${condition}) {`,
@@ -949,7 +955,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
   // ===========================================================================
 
   protected renderIfStatement(ifStmt: IRIfStatement): string {
-    const condition = this.convertExpressionToKolon(ifStmt.condition)
+    const condition = this.kolonTest(ifStmt.condition, this.convertExpressionToKolon(ifStmt.condition), ifStmt.parsedCondition)
     const consequent = ifStmt.consequent.type === 'if-statement'
       ? this.renderIfStatement(ifStmt.consequent as IRIfStatement)
       : this.renderNode(ifStmt.consequent)
@@ -1046,11 +1052,11 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
           return `\n: if (defined ${v}) {\n${attr(v, plan.boolStr, valueParsed)}\n: }\n`
         }
         case 'boolean-attr':
-          return `<: ${this.convertExpressionToKolon(value.expr, value.parsed)} ? '${name}' : '' :>`
+          return `<: ${this.kolonTest(value.expr, this.convertExpressionToKolon(value.expr, value.parsed), value.parsed)} ? '${name}' : '' :>`
         case 'presence': {
           const v = this.convertExpressionToKolon(value.expr)
           const tmp = `$bf_pu${this.presenceVarCounter++}`
-          return `\n: my ${tmp} = ${v};\n: if (${tmp}) {\n${attr(tmp, plan.boolStr, valueParsed)}\n: }\n`
+          return `\n: my ${tmp} = ${v};\n: if (${truthyTest(this.testPlan(valueParsed), tmp)}) {\n${attr(tmp, plan.boolStr, valueParsed)}\n: }\n`
         }
         case 'undefined-alternate': {
           // A mixed boolean / string branch renders its boolean as JS does.
@@ -1060,7 +1066,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
           const shown = isBooleanResultParsed(m.consequentParsed)
             ? `$bf.bool_str(${val})`
             : this.jsStringOutput(m.consequentParsed, val)
-          return `\n: if (${cond}) {\n${name}="<: ${shown} :>"\n: }\n`
+          return `\n: if (${truthyTest(this.testPlan(m.testParsed), cond)}) {\n${name}="<: ${shown} :>"\n: }\n`
         }
         case 'omit-nil':
         case 'plain': {
@@ -1221,7 +1227,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
       } else if (part.type === 'expression') {
         parts.push(this.convertExpressionToKolon(part.expr, part.parsed))
       } else if (part.type === 'ternary') {
-        const cond = this.convertExpressionToKolon(part.condition)
+        const cond = this.kolonTest(part.condition, this.convertExpressionToKolon(part.condition))
         parts.push(`(${cond} ? ${kolonStringLiteral(part.whenTrue)} : ${kolonStringLiteral(part.whenFalse)})`)
       } else if (part.type === 'lookup') {
         // `${MAP[KEY]}` against a Record<T, string> literal — emit a Kolon
@@ -1268,7 +1274,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
       _memoKolonName: (name) => this.memoKolonNames.get(name) ?? name,
       _rowLocalName: (name) => this.rowLocalName(name),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
-      _renderKolonFilterExprPublic: (e, p, onRead) => this._renderKolonFilterExprPublic(e, p, onRead),
+      _renderKolonFilterTestPublic: (e, p, onRead) => this._renderKolonFilterTestPublic(e, p, onRead),
     }
   }
 
@@ -1285,6 +1291,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
       localConstants: this.localConstants,
       propsParams: this.propsParams,
       convertExpressionToKolon: (e, preParsed) => this.convertExpressionToKolon(e, preParsed),
+      convertTestToKolon: (test) => this.kolonTest('', this.convertExpressionToKolon('', test), test),
     }
   }
 
@@ -1542,8 +1549,19 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
   }
 
   /** Internal hook for higher-order: predicate body re-uses the filter emitter. */
-  private _renderKolonFilterExprPublic(expr: ParsedExpr, param: string, onRead?: (name: string) => void): string {
-    return this.renderKolonFilterExpr(expr, param, new Map(), param, onRead)
+  private _renderKolonFilterTestPublic(expr: ParsedExpr, param: string, onRead?: (name: string) => void): string {
+    return truthyTest(this.testPlan(expr, this.scope.enterCallback([param])), this.renderKolonFilterExpr(expr, param, new Map(), param, onRead))
+  }
+
+  /** The ToBoolean plan of a test position the dispatcher does not plan, typed at `scope` (#3824). */
+  private testPlan(expr: ParsedExpr | null | undefined, scope: BindingScope = this.scope): PrimitivePlan | null {
+    return expr ? planTest(expr, this.operandTypingAt(scope), NATIVE_SAFE) : null
+  }
+
+  /** A condition's rendered Kolon test, spelled from its ToBoolean plan (#3824, #3823). */
+  private kolonTest(source: string, rendered: string, parsed?: ParsedExpr | null): string {
+    const plan = parsed ? this.testPlan(parsed) : planTestOfSource(source, this.operandTypingAt(), NATIVE_SAFE)
+    return truthyTest(plan, rendered)
   }
 }
 

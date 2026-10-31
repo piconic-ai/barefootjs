@@ -148,6 +148,8 @@ import {
   attrValueMayBeNullish,
   isAriaBooleanAttr,
   isBooleanResultExpr,
+  planTest,
+  planTestOfSource,
   isExplicitStringCall,
   hasClientInteractivity,
   renderElementShell,
@@ -158,7 +160,7 @@ import {
   inlineComputedConsts,
   escapeBraceDelimiters,
 } from '@barefootjs/jsx'
-import type { ParsedExpr } from '@barefootjs/jsx'
+import type { ParsedExpr, PrimitivePlan } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, escapeHtml } from '@barefootjs/shared'
 
@@ -172,7 +174,7 @@ import {
 } from './lib/jinja-naming.ts'
 import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToJinja } from './lib/static-value.ts'
-import { JinjaFilterEmitter, JinjaTopLevelEmitter, truthyTest, CALLBACK_LOWERING } from './expr/emitters.ts'
+import { JinjaFilterEmitter, JinjaTopLevelEmitter, truthyTest, CALLBACK_LOWERING, NATIVE_SAFE } from './expr/emitters.ts'
 import type { JinjaEmitContext, JinjaSpreadContext, JinjaMemoContext } from './emit-context.ts'
 import {
   conditionalSpreadToJinja,
@@ -716,7 +718,7 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
       // condition position too.
       condition: (filter) =>
         truthyTest(
-          filter.predicate,
+          this.filterTestPlan(filter),
           this.renderInScope(this.scope.enterAliases(filter.aliases), () => this.renderJinjaFilterExpr(filter.onRow, param)),
         ),
       refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
@@ -874,7 +876,7 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
   // ===========================================================================
 
   protected renderIfStatement(ifStmt: IRIfStatement): string {
-    const condition = this.convertConditionToJinja(ifStmt.condition)
+    const condition = this.convertConditionToJinja(ifStmt.condition, ifStmt.parsedCondition)
     const consequent = ifStmt.consequent.type === 'if-statement'
       ? this.renderIfStatement(ifStmt.consequent as IRIfStatement)
       : this.renderNode(ifStmt.consequent)
@@ -971,12 +973,12 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
         }
         case 'boolean-attr': {
           const v = this.convertExpressionToJinja(value.expr, value.parsed)
-          return `{{ ('${name}' if ${this.wrapConditionExpr(value.expr, v)} else '') }}`
+          return `{{ ('${name}' if ${this.wrapConditionExpr(value.expr, v, value.parsed)} else '') }}`
         }
         case 'presence': {
           const v = this.convertExpressionToJinja(value.expr)
           const tmp = `bf_pu${this.presenceVarCounter++}`
-          return `\n{% set ${tmp} = ${v} %}\n{% if ${this.wrapConditionExpr(value.expr, tmp)} %}\n${attr(tmp, plan.boolStr)}\n{% endif %}\n`
+          return `\n{% set ${tmp} = ${v} %}\n{% if ${this.wrapConditionExpr(value.expr, tmp, value.parsed)} %}\n${attr(tmp, plan.boolStr)}\n{% endif %}\n`
         }
         case 'undefined-alternate': {
           // Pass the parsed sub-trees through (#2843 review): the string forms
@@ -1290,10 +1292,12 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
    * doesn't lower it twice.
    */
   private wrapConditionExpr(expr: string, jinja: string, preParsed?: ParsedExpr): string {
-    const isBoolean = preParsed
-      ? isBooleanResultExpr(stringifyParsedExpr(preParsed))
-      : isBooleanResultExpr(expr)
-    return isBoolean ? jinja : `bf.truthy(${jinja})`
+    return truthyTest(preParsed ? planTest(preParsed, this.operandTypingAt(), NATIVE_SAFE) : planTestOfSource(expr, this.operandTypingAt(), NATIVE_SAFE), jinja)
+  }
+
+  /** The ToBoolean plan of a loop filter's predicate, typed in the predicate's own scope (#3824). */
+  private filterTestPlan(filter: { readonly predicate: ParsedExpr; readonly param: string }): PrimitivePlan {
+    return planTest(filter.predicate, this.operandTypingAt(this.scope.enterCallback([filter.param])), NATIVE_SAFE)
   }
 
   /**

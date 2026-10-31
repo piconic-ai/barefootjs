@@ -29,7 +29,7 @@ import type {
   TypeDefinition,
   TypeInfo,
 } from '@barefootjs/jsx'
-import { EMPTY_OPERAND_TYPING, type OperandTyping } from '@barefootjs/jsx'
+import { EMPTY_OPERAND_TYPING, type OperandTyping, type PrimitiveInputs } from '@barefootjs/jsx'
 import type { RowsFieldAllocation } from './nested-rows-field.ts'
 
 export class CompileState {
@@ -388,6 +388,15 @@ export class CompileState {
    * does not carry it.
    */
   operandTyping: OperandTyping = EMPTY_OPERAND_TYPING
+
+  /**
+   * The adapter's `ParsedExprEmitter.primitives` (#3824): `operandTyping` at
+   * the adapter's current scope, and Go's native-safe table. Set once by the
+   * adapter, so a free lowering that plans a node `emitParsedExpr` does not
+   * hand it (a ternary nested as a value operand, `lowerTernary`) reads the
+   * same plan the emitter would, without `GoEmitContext` carrying the scope.
+   */
+  primitives: PrimitiveInputs | null = null
 
   /** Array-memo name → the handler-filled loop slice field its `.map()` feeds
    *  (e.g. `visible` → `PostListItems`). Lets `<memo>().length` lower to the

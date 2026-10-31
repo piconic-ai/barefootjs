@@ -20,21 +20,19 @@ import math
 import os
 import unittest
 
+from jinja2 import Environment
+
 from barefootjs import BarefootJS
 
 VECTORS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "adapter-tests", "vectors")
 PRIMITIVE_FILES = sorted(glob.glob(os.path.join(VECTORS_DIR, "primitives", "*.json")))
 LEDGER_PATH = os.path.join(VECTORS_DIR, "primitives-expected-failures.json")
+NATIVE_SAFE_PATH = os.path.join(VECTORS_DIR, "primitives-native-safe.json")
 
 bf = BarefootJS(None, {})
 
 # One binding per op, to the helper compiled templates call. An op with no
 # binding fails.
-#
-# TODO(#3824 step 0b/1): also bind each op to the native Jinja operator and
-# run only the cases whose `domain` the Jinja adapter's NativeSafeTable claims
-# (spec/js-primitive-semantics.md, "Conformance" item 3). That needs the
-# table step 0b adds.
 BINDINGS = {
     "truthy": bf.truthy,
     "to_number": bf.to_number,
@@ -47,6 +45,17 @@ BINDINGS = {
     "ge": bf.ge,
     "plus": bf.plus,
     "neg": bf.neg,
+}
+
+_JINJA_IF = Environment().from_string("{% if v %}1{% else %}0{% endif %}")
+
+# One binding per op the Jinja adapter can spell natively, to the native Jinja
+# operator: a test is Jinja's own `{% if %}` (`not`, `if … else`). It runs
+# over the cases whose domain the adapter's NATIVE_SAFE table claims
+# (primitives-native-safe.json; spec/js-primitive-semantics.md,
+# "Conformance" item 3).
+NATIVE_BINDINGS = {
+    "truthy": lambda v: _JINJA_IF.render(v=v) == "1",
 }
 
 SENTINELS = {"NaN": math.nan, "Infinity": math.inf, "-Infinity": -math.inf, "-0": -0.0}
@@ -95,8 +104,8 @@ def _match(got, expect):
     return isinstance(got, str) and got == expect
 
 
-def _run(case):
-    bind = BINDINGS.get(case["fn"])
+def _run(case, bind=None):
+    bind = bind or BINDINGS.get(case["fn"])
     if bind is None:
         return False, f"no Python binding for '{case['fn']}' -- add it to BINDINGS"
     try:
@@ -132,6 +141,28 @@ class PrimitiveVectorsTest(unittest.TestCase):
                     problems.append(f"UNEXPECTED-FAIL {key}: {detail}")
         problems += [f"ledger entry '{k}' matches no primitives case -- renamed note?" for k in expected if k not in seen]
         print(f"primitives: {total} cases, {passed} pass, {len(expected)} in the expected-failure ledger")
+        self.assertEqual(problems, [], "\n" + "\n".join(problems))
+
+    def test_native_claims(self):
+        """Every native claim gives the JS answer on every case it covers; no ledger applies."""
+        with open(NATIVE_SAFE_PATH, encoding="utf-8") as fh:
+            claims = json.load(fh)["runtimes"]["python"]
+        problems, ran = [], 0
+        for fn, domains in claims.items():
+            bind = NATIVE_BINDINGS.get(fn)
+            if bind is None:
+                problems.append(f"no native Jinja binding for '{fn}' -- add it to NATIVE_BINDINGS")
+                continue
+            with open(os.path.join(VECTORS_DIR, "primitives", f"{fn}.json"), encoding="utf-8") as fh:
+                cases = json.load(fh)["cases"]
+            for case in cases:
+                if case["domain"] not in domains:
+                    continue
+                ran += 1
+                ok, detail = _run(case, bind)
+                if not ok:
+                    problems.append(f"NATIVE-FAIL {case['fn']}/{case['note']} (domain {case['domain']}): {detail}")
+        print(f"primitives (native): {ran} claimed cases")
         self.assertEqual(problems, [], "\n" + "\n".join(problems))
 
 

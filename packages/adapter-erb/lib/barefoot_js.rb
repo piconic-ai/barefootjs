@@ -586,6 +586,22 @@ module BarefootJS
       Evaluator.truthy?(value)
     end
 
+    # Boxes for a value-position JS `l || r` / `l && r` (#3824): the adapter
+    # spells `l || r` as `(bf.keep_truthy(l) || [r])[0]` and `l && r` as
+    # `(bf.keep_falsy(l) || [r])[0]`. `keep_truthy` is the one-element array
+    # `[value]` when `value` is JS-truthy and nil otherwise (`keep_falsy` the
+    # reverse), so Ruby's `||` stops at the box exactly when JS returns
+    # `value` itself and builds `[r]` only otherwise (the short circuit);
+    # `[0]` unboxes the operand. Each operand appears once, so a chain grows
+    # linearly.
+    def keep_truthy(value)
+      Evaluator.truthy?(value) ? [value] : nil
+    end
+
+    def keep_falsy(value)
+      Evaluator.truthy?(value) ? nil : [value]
+    end
+
     # JS primitive helpers (spec/js-primitive-semantics.md, "Operation
     # table"): ToNumber, ToString, `===`, the relational operators, binary
     # `+` and unary `-`. Each delegates to the shared evaluator's primitive

@@ -251,6 +251,8 @@ import {
   attrValueMayBeNullish,
   isAriaBooleanAttr,
   isBooleanResultExpr,
+  planTest,
+  planTestOfSource,
   isExplicitStringCall,
   hasClientInteractivity,
   renderElementShell,
@@ -261,7 +263,7 @@ import {
   inlineComputedConsts,
   escapeBraceDelimiters,
 } from '@barefootjs/jsx'
-import type { ParsedExpr } from '@barefootjs/jsx'
+import type { ParsedExpr, PrimitivePlan } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, escapeHtml } from '@barefootjs/shared'
 
@@ -275,7 +277,7 @@ import {
 } from './lib/pebble-naming.ts'
 import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToPebble } from './lib/static-value.ts'
-import { PebbleFilterEmitter, PebbleTopLevelEmitter, truthyTest, CALLBACK_LOWERING } from './expr/emitters.ts'
+import { PebbleFilterEmitter, PebbleTopLevelEmitter, truthyTest, CALLBACK_LOWERING, NATIVE_SAFE } from './expr/emitters.ts'
 import type { PebbleEmitContext, PebbleSpreadContext, PebbleMemoContext } from './emit-context.ts'
 import {
   conditionalSpreadToPebble,
@@ -857,7 +859,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
       // condition position too.
       condition: (filter) =>
         truthyTest(
-          filter.predicate,
+          this.filterTestPlan(filter),
           this.renderInScope(this.scope.enterAliases(filter.aliases), () => this.renderPebbleFilterExpr(filter.onRow, param)),
         ),
       refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
@@ -1015,7 +1017,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
   // ===========================================================================
 
   protected renderIfStatement(ifStmt: IRIfStatement): string {
-    const condition = this.convertConditionToPebble(ifStmt.condition)
+    const condition = this.convertConditionToPebble(ifStmt.condition, ifStmt.parsedCondition)
     const consequent = ifStmt.consequent.type === 'if-statement'
       ? this.renderIfStatement(ifStmt.consequent as IRIfStatement)
       : this.renderNode(ifStmt.consequent)
@@ -1113,12 +1115,12 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
         }
         case 'boolean-attr': {
           const v = this.convertExpressionToPebble(value.expr, value.parsed)
-          return `{{ (${this.wrapConditionExpr(value.expr, v)} ? '${name}' : '') }}`
+          return `{{ (${this.wrapConditionExpr(value.expr, v, value.parsed)} ? '${name}' : '') }}`
         }
         case 'presence': {
           const v = this.convertExpressionToPebble(value.expr)
           const tmp = `bf_pu${this.presenceVarCounter++}`
-          return `\n{% set ${tmp} = ${v} %}\n{% if ${this.wrapConditionExpr(value.expr, tmp)} %}\n${attr(tmp, plan.boolStr)}\n{% endif %}\n`
+          return `\n{% set ${tmp} = ${v} %}\n{% if ${this.wrapConditionExpr(value.expr, tmp, value.parsed)} %}\n${attr(tmp, plan.boolStr)}\n{% endif %}\n`
         }
         case 'undefined-alternate': {
           // Pass the parsed sub-trees through (#2843 review): the string forms
@@ -1456,10 +1458,12 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
    * bind) doesn't lower it twice.
    */
   private wrapConditionExpr(expr: string, pebble: string, preParsed?: ParsedExpr): string {
-    const isBoolean = preParsed
-      ? isBooleanResultExpr(stringifyParsedExpr(preParsed))
-      : isBooleanResultExpr(expr)
-    return isBoolean ? pebble : `bf.truthy(${pebble})`
+    return truthyTest(preParsed ? planTest(preParsed, this.operandTypingAt(), NATIVE_SAFE) : planTestOfSource(expr, this.operandTypingAt(), NATIVE_SAFE), pebble)
+  }
+
+  /** The ToBoolean plan of a loop filter's predicate, typed in the predicate's own scope (#3824). */
+  private filterTestPlan(filter: { readonly predicate: ParsedExpr; readonly param: string }): PrimitivePlan {
+    return planTest(filter.predicate, this.operandTypingAt(this.scope.enterCallback([filter.param])), NATIVE_SAFE)
   }
 
   /**

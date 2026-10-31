@@ -23,6 +23,7 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   type NativeSafeTable,
   type OperandTyping,
   primitivesAt,
+  spellTest,
   EMPTY_OPERAND_TYPING,
   BindingScope,
   type LoweringEmitter,
@@ -74,7 +75,9 @@ export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Xslate
  * own listed there.
  */
 export const NATIVE_SAFE: NativeSafeTable = {
-  'to-boolean': ['boolean', 'unproven'],
+  // Perl's own truthiness reads the string "0" as false and NaN as true
+  // (#3823), so a test is native only on a proven boolean (#3824 step 1).
+  'to-boolean': ['boolean'],
   'to-number': [],
   plus: ['string'],
   'strict-eq': ['number-pair', 'string-pair', 'boolean-pair', 'unproven'],
@@ -83,6 +86,32 @@ export const NATIVE_SAFE: NativeSafeTable = {
   'number-literal': ['safe-integer', 'unproven'],
   nullish: ['non-nil', 'unproven'],
   get: [],
+}
+
+/**
+ * Spell the ToBoolean plan of a test position (#3824 step 1, #3823): the
+ * rendered test as is when the plan is native (a proven `boolean`), through
+ * the runtime's JS `Boolean()` (`$bf.truthy`) otherwise. The `!`, `&&`, `||`
+ * and `?:` emitters receive the plan from `emitParsedExpr`; a predicate body
+ * and the adapter's IR-level conditions compute it with `planTest`.
+ */
+export function truthyTest(plan: PrimitivePlan | null, rendered: string): string {
+  return spellTest(plan, rendered, (r) => `$bf.truthy(${r})`)
+}
+
+/**
+ * JS `l && r` / `l || r`, which yield one of their operands: Kolon's own
+ * `&&` / `||` when the plan proves `l` a boolean. Otherwise `l` is boxed by
+ * its JS test (#3824): `keep_truthy(l)` is the one-element array `[l]` when
+ * `l` is JS-truthy and undef otherwise, `keep_falsy(l)` the reverse, so
+ * Kolon's `||` stops at `l`'s box exactly when JS returns `l` and builds
+ * `[r]` only otherwise (the short circuit); `[0]` unboxes the operand.
+ * Each operand is rendered once, so a chain `a || b || c …` grows linearly.
+ */
+function spellLogical(op: '&&' | '||', plan: PrimitivePlan | null, l: string, r: string): string {
+  if (truthyTest(plan, l) === l) return `(${l} ${op} ${r})`
+  const keep = op === '&&' ? 'keep_falsy' : 'keep_truthy'
+  return `($bf.${keep}(${l}) || [${r}])[0]`
 }
 
 /** Runtime helpers for JS arithmetic over numbers (#3454). */
@@ -268,11 +297,12 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const arg = emit(argument)
     if (op === '!') {
-      const needsParens = argument.kind === 'binary' || argument.kind === 'logical'
-      return needsParens ? `!(${arg})` : `!${arg}`
+      const test = truthyTest(plan, arg)
+      const needsParens = test === arg && (argument.kind === 'binary' || argument.kind === 'logical')
+      return needsParens ? `!(${test})` : `!${test}`
     }
     if (op === '-') return `-${groupUnaryOperand(argument, arg)}`
     return arg
@@ -309,12 +339,11 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
-    if (op === '&&') return `(${l} && ${r})`
-    if (op === '||') return `(${l} || ${r})`
-    return `(${l} // ${r})`
+    if (op === '??') return `(${l} // ${r})`
+    return spellLogical(op, plan, l, r)
   }
 
   callbackMethod(
@@ -578,9 +607,9 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const arg = emit(argument)
-    if (op === '!') return `!${arg}`
+    if (op === '!') return `!${truthyTest(plan, arg)}`
     if (op === '-') {
       // Unary minus applies JS `ToNumber` like binary `-` (#3533).
       const grouped = groupUnaryOperand(argument, arg)
@@ -638,12 +667,11 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
-    if (op === '&&') return `(${l} && ${r})`
-    if (op === '||') return `(${l} || ${r})`
-    return `(${l} // ${r})`
+    if (op === '??') return `(${l} // ${r})`
+    return spellLogical(op, plan, l, r)
   }
 
   callbackMethod(
@@ -690,7 +718,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
       findLast: 'find_last',
       findLastIndex: 'find_last_index',
     }
-    const predBody = this.ctx._renderKolonFilterExprPublic(predicate, param, this.onRead)
+    const predBody = this.ctx._renderKolonFilterTestPublic(predicate, param, this.onRead)
     return `$bf.${helper[method]}(${arrayExpr}, -> ${kolonVar(param, this.onRead)} { ${predBody} })`
   }
 
@@ -733,9 +761,9 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     consequent: ParsedExpr,
     alternate: ParsedExpr,
     emit: (e: ParsedExpr) => string,
-    _plan: PrimitivePlan | null,
+    plan: PrimitivePlan | null,
   ): string {
-    return `(${emit(test)} ? ${emit(consequent)} : ${emit(alternate)})`
+    return `(${truthyTest(plan, emit(test))} ? ${emit(consequent)} : ${emit(alternate)})`
   }
 
   templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string {
