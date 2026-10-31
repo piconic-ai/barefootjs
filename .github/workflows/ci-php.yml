@@ -90,15 +90,26 @@ jobs:
 
       # The adapter emits Twig syntax that must parse on the lowest twig/twig
       # composer.json allows, not only the locked one (#3824: an arrow is a
-      # method argument only since Twig 3.15).
+      # method argument only since Twig 3.15). `--prefer-lowest` does not get
+      # there: Composer's default advisory blocking skips the old releases.
+      # So this isolated copy pins the declared minimum, turns advisory
+      # blocking off for itself only, and asserts the installed version.
       - name: Run live Twig render test (lowest allowed Twig)
         run: |
-          cp -r packages/adapter-twig/php "$RUNNER_TEMP/twig-lowest"
-          rm -rf "$RUNNER_TEMP/twig-lowest/vendor"
-          sed -i 's#"url": "../../adapter-php"#"url": "'"$GITHUB_WORKSPACE"'/packages/adapter-php"#' "$RUNNER_TEMP/twig-lowest/composer.json"
-          composer update --no-interaction --prefer-lowest --prefer-stable --working-dir="$RUNNER_TEMP/twig-lowest"
-          composer show --working-dir="$RUNNER_TEMP/twig-lowest" twig/twig | grep versions
-          BF_TWIG_AUTOLOAD="$RUNNER_TEMP/twig-lowest/vendor/autoload.php" php packages/adapter-twig/php/tests/test_render.php
+          T="$RUNNER_TEMP/twig-lowest"
+          cp -r packages/adapter-twig/php "$T"
+          rm -rf "$T/vendor" "$T/composer.lock"
+          MIN=$(php -r '$j = json_decode(file_get_contents($argv[1]), true); preg_match("/^\^(\d+\.\d+)$/", $j["require"]["twig/twig"], $m) or exit(1); echo $m[1], ".0";' "$T/composer.json")
+          php -r '$f = $argv[1]; $j = json_decode(file_get_contents($f), true);
+            $j["repositories"][0]["url"] = $argv[2] . "/packages/adapter-php";
+            $j["require"]["twig/twig"] = $argv[3];
+            $j["config"]["audit"]["block-insecure"] = false;
+            file_put_contents($f, json_encode($j, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));' "$T/composer.json" "$GITHUB_WORKSPACE" "$MIN"
+          composer update --no-interaction --working-dir="$T"
+          GOT=$(composer show --working-dir="$T" twig/twig | sed -n 's/^versions *: *\* *v\{0,1\}//p')
+          echo "twig/twig minimum $MIN, installed $GOT"
+          test "$GOT" = "$MIN"
+          BF_TWIG_AUTOLOAD="$T/vendor/autoload.php" php packages/adapter-twig/php/tests/test_render.php
 
       - name: Setup Bun
         uses: ./.github/actions/setup-bun
