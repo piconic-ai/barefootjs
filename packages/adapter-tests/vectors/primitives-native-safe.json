@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "generator": "packages/adapter-tests/vectors/primitives/native-safe.ts",
+  "spec": "spec/js-primitive-semantics.md",
+  "about": "Per runtime, the vector domains each op's NATIVE operator binding runs over: the union of the NATIVE_SAFE tables of the adapters on that runtime. Generated; never hand-edited.",
+  "runtimes": {
+    "go": {
+      "truthy": [
+        "boolean"
+      ]
+    },
+    "java": {
+      "truthy": [
+        "boolean"
+      ]
+    },
+    "perl": {
+      "truthy": [
+        "boolean"
+      ]
+    },
+    "php": {
+      "truthy": [
+        "boolean"
+      ]
+    },
+    "python": {
+      "truthy": [
+        "boolean"
+      ]
+    },
+    "ruby": {
+      "truthy": []
+    },
+    "rust": {
+      "truthy": [
+        "boolean"
+      ]
+    }
+  }
+}

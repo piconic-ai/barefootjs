@@ -41,11 +41,6 @@ my $bf = bless { c => undef, config => {}, backend => undef }, 'BarefootJS';
 
 # One binding per op, to the BarefootJS helper compiled templates call. An
 # op with no binding fails.
-#
-# TODO(#3824 step 0b/1): also bind each op to the native Perl operator and
-# run only the cases whose `domain` the Perl adapters' shared NativeSafeTable
-# claims (spec/js-primitive-semantics.md, "Conformance" item 3). That needs
-# the table step 0b adds.
 my %bindings = (
     truthy    => sub { $bf->truthy($_[0]) },
     to_number => sub { $bf->to_number($_[0]) },
@@ -58,6 +53,15 @@ my %bindings = (
     ge        => sub { $bf->ge($_[0], $_[1]) },
     plus      => sub { $bf->plus($_[0], $_[1]) },
     neg       => sub { $bf->neg($_[0]) },
+);
+
+# One binding per op the Perl adapters can spell natively, to the native
+# Perl operator: a test is Perl's own truthiness (`if`, `!`, `&&`, `||`,
+# `?:`). It runs over the cases whose domain the two adapters' NATIVE_SAFE
+# tables claim (primitives-native-safe.json, "perl": their union, since they
+# share this operator; spec/js-primitive-semantics.md, "Conformance" item 3).
+my %native_bindings = (
+    truthy => sub { $_[0] ? !!1 : !!0 },
 );
 
 my $INF = 9**9**9;
@@ -100,13 +104,33 @@ for my $file (@files) {
 for my $key (sort keys %expected) {
     fail("ledger entry '$key' matches no primitives case — renamed note?") unless $seen{$key};
 }
-diag(sprintf('primitives: %d cases, %d pass, %d in the expected-failure ledger',
-    $total, $passed, scalar keys %expected));
+
+# Every native claim must give the JS answer on every case it covers; no
+# ledger applies.
+my $claims = _read_json(File::Spec->catfile($vectors_dir, 'primitives-native-safe.json'))->{runtimes}{perl}
+    // die 'primitives-native-safe.json has no "perl" runtime';
+my $native_ran = 0;
+for my $fn (sort keys %$claims) {
+    my $bind = $native_bindings{$fn};
+    unless ($bind) {
+        fail("no native Perl binding for '$fn' — add it to %native_bindings");
+        next;
+    }
+    my %claimed = map { $_ => 1 } @{ $claims->{$fn} };
+    for my $case (@{ _read_json(File::Spec->catfile($vectors_dir, 'primitives', "$fn.json"))->{cases} }) {
+        next unless $claimed{ $case->{domain} };
+        $native_ran++;
+        my ($ok, $detail) = run_case($case, $bind);
+        ok($ok, "native $case->{fn}/$case->{note} (domain $case->{domain})") or diag("NATIVE-FAIL: $detail");
+    }
+}
+diag(sprintf('primitives: %d cases, %d pass, %d in the expected-failure ledger; %d native claimed cases',
+    $total, $passed, scalar keys %expected, $native_ran));
 done_testing;
 
 sub run_case {
-    my ($case) = @_;
-    my $bind = $bindings{ $case->{fn} }
+    my ($case, $bind) = @_;
+    $bind //= $bindings{ $case->{fn} }
         or return (0, "no Perl binding for '$case->{fn}' — add it to %bindings");
     my @args = map { decode_arg($_) } @{ $case->{args} };
     my $got = eval { $bind->(@args) };

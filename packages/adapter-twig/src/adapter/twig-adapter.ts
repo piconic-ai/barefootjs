@@ -205,6 +205,8 @@ import {
   attrValueMayBeNullish,
   isAriaBooleanAttr,
   isBooleanResultExpr,
+  planTest,
+  planTestOfSource,
   isExplicitStringCall,
   hasClientInteractivity,
   renderElementShell,
@@ -215,7 +217,7 @@ import {
   inlineComputedConsts,
   escapeBraceDelimiters,
 } from '@barefootjs/jsx'
-import type { ParsedExpr } from '@barefootjs/jsx'
+import type { ParsedExpr, PrimitivePlan } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, escapeHtml } from '@barefootjs/shared'
 
@@ -224,7 +226,7 @@ import { TWIG_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
 import { twigHashKey, twigIdent, escapeTwigSingleQuoted, twigLoopBindingAccessor } from './lib/twig-naming.ts'
 import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToTwig } from './lib/static-value.ts'
-import { TwigFilterEmitter, TwigTopLevelEmitter, truthyTest, CALLBACK_LOWERING } from './expr/emitters.ts'
+import { TwigFilterEmitter, TwigTopLevelEmitter, truthyTest, CALLBACK_LOWERING, NATIVE_SAFE } from './expr/emitters.ts'
 import type { TwigEmitContext, TwigSpreadContext, TwigMemoContext } from './emit-context.ts'
 import {
   conditionalSpreadToTwig,
@@ -793,7 +795,7 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
       // condition position too.
       condition: (filter) =>
         truthyTest(
-          filter.predicate,
+          this.filterTestPlan(filter),
           this.renderInScope(this.scope.enterAliases(filter.aliases), () => this.renderTwigFilterExpr(filter.onRow, param)),
         ),
       refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
@@ -935,7 +937,7 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
   // ===========================================================================
 
   protected renderIfStatement(ifStmt: IRIfStatement): string {
-    const condition = this.convertConditionToTwig(ifStmt.condition)
+    const condition = this.convertConditionToTwig(ifStmt.condition, ifStmt.parsedCondition)
     const consequent = ifStmt.consequent.type === 'if-statement'
       ? this.renderIfStatement(ifStmt.consequent as IRIfStatement)
       : this.renderNode(ifStmt.consequent)
@@ -1030,12 +1032,12 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
         }
         case 'boolean-attr': {
           const v = this.convertExpressionToTwig(value.expr, value.parsed)
-          return `{{ (${this.wrapConditionExpr(value.expr, v)} ? '${name}' : '') }}`
+          return `{{ (${this.wrapConditionExpr(value.expr, v, value.parsed)} ? '${name}' : '') }}`
         }
         case 'presence': {
           const v = this.convertExpressionToTwig(value.expr)
           const tmp = `bf_pu${this.presenceVarCounter++}`
-          return `\n{% set ${tmp} = ${v} %}\n{% if ${this.wrapConditionExpr(value.expr, tmp)} %}\n${attr(tmp, plan.boolStr)}\n{% endif %}\n`
+          return `\n{% set ${tmp} = ${v} %}\n{% if ${this.wrapConditionExpr(value.expr, tmp, value.parsed)} %}\n${attr(tmp, plan.boolStr)}\n{% endif %}\n`
         }
         case 'undefined-alternate': {
           // Pass the parsed sub-trees through (#2843 review): the string forms
@@ -1351,10 +1353,12 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
    * doesn't lower it twice.
    */
   private wrapConditionExpr(expr: string, twig: string, preParsed?: ParsedExpr): string {
-    const isBoolean = preParsed
-      ? isBooleanResultExpr(stringifyParsedExpr(preParsed))
-      : isBooleanResultExpr(expr)
-    return isBoolean ? twig : `bf.truthy(${twig})`
+    return truthyTest(preParsed ? planTest(preParsed, this.operandTypingAt(), NATIVE_SAFE) : planTestOfSource(expr, this.operandTypingAt(), NATIVE_SAFE), twig)
+  }
+
+  /** The ToBoolean plan of a loop filter's predicate, typed in the predicate's own scope (#3824). */
+  private filterTestPlan(filter: { readonly predicate: ParsedExpr; readonly param: string }): PrimitivePlan {
+    return planTest(filter.predicate, this.operandTypingAt(this.scope.enterCallback([filter.param])), NATIVE_SAFE)
   }
 
   /**

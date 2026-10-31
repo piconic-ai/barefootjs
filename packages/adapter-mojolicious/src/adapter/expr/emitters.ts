@@ -23,6 +23,8 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   type NativeSafeTable,
   type OperandTyping,
   primitivesAt,
+  planTest,
+  spellTest,
   EMPTY_OPERAND_TYPING,
   BindingScope,
   type ArrayMethod,
@@ -76,7 +78,9 @@ export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Mojo',
  * own listed there.
  */
 export const NATIVE_SAFE: NativeSafeTable = {
-  'to-boolean': ['boolean', 'unproven'],
+  // Perl's own truthiness reads the string "0" as false and NaN as true
+  // (#3823), so a test is native only on a proven boolean (#3824 step 1).
+  'to-boolean': ['boolean'],
   'to-number': [],
   plus: ['string'],
   'strict-eq': ['number-pair', 'string-pair', 'boolean-pair'],
@@ -85,6 +89,29 @@ export const NATIVE_SAFE: NativeSafeTable = {
   'number-literal': ['safe-integer', 'unproven'],
   nullish: ['non-nil', 'unproven'],
   get: [],
+}
+
+/**
+ * Spell the ToBoolean plan of a test position (#3824 step 1, #3823): the
+ * rendered test as is when the plan is native (a proven `boolean`), through
+ * the runtime's JS `Boolean()` (`bf->truthy`) otherwise. The `!`, `&&`, `||`
+ * and `?:` emitters receive the plan from `emitParsedExpr`; a predicate body
+ * and the adapter's IR-level conditions compute it with `planTest`.
+ */
+export function truthyTest(plan: PrimitivePlan | null, rendered: string): string {
+  return spellTest(plan, rendered, (r) => `bf->truthy(${r})`)
+}
+
+/**
+ * JS `l && r` / `l || r`, which yield one of their operands: Perl's own
+ * `&&` / `||` when the plan proves `l` a boolean, otherwise a ternary over
+ * `l`'s JS truthiness that still returns `l` itself. `l` is rendered twice;
+ * every operand here is a pure read.
+ */
+function spellLogical(op: '&&' | '||', plan: PrimitivePlan | null, l: string, r: string): string {
+  const test = truthyTest(plan, l)
+  if (test === l) return `(${l} ${op} ${r})`
+  return op === '&&' ? `(${test} ? ${r} : ${l})` : `(${test} ? ${l} : ${r})`
 }
 
 /** Runtime helpers for JS arithmetic over numbers (#3454). */
@@ -341,12 +368,13 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const arg = emit(argument)
     if (op === '!') {
+      const test = truthyTest(plan, arg)
       // Wrap binary/logical operands in parens to dodge Perl precedence surprises.
-      const needsParens = argument.kind === 'binary' || argument.kind === 'logical'
-      return needsParens ? `!(${arg})` : `!${arg}`
+      const needsParens = test === arg && (argument.kind === 'binary' || argument.kind === 'logical')
+      return needsParens ? `!(${test})` : `!${test}`
     }
     if (op === '-') return `-${groupUnaryOperand(argument, arg)}`
     return arg
@@ -385,12 +413,11 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
-    if (op === '&&') return `(${l} && ${r})`
-    if (op === '||') return `(${l} || ${r})`
-    return `(${l} // ${r})`
+    if (op === '??') return `(${l} // ${r})`
+    return spellLogical(op, plan, l, r)
   }
 
   callbackMethod(
@@ -420,10 +447,14 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     // param stays reachable inside the nested `grep` (`$_` would shadow it).
     const enclosing = new Map(this.enclosingParams).set(this.param, this.paramVar)
     const paramVar = grepLexical(param, enclosing)
-    const predBody = emitParsedExpr(
-      predicate,
-      new MojoFilterEmitter(param, this.localVarMap, this.isStringName, this.onUnsupported, enclosing, paramVar, this.isOuterBound, this.isNumberName, this.propsObject)
-        .typedBy(this.operandTyping, this.operandScope.enterCallback([param])),
+    const predicateScope = this.operandScope.enterCallback([param])
+    const predBody = truthyTest(
+      planTest(predicate, this.operandTyping.at(predicateScope), NATIVE_SAFE),
+      emitParsedExpr(
+        predicate,
+        new MojoFilterEmitter(param, this.localVarMap, this.isStringName, this.onUnsupported, enclosing, paramVar, this.isOuterBound, this.isNumberName, this.propsObject)
+          .typedBy(this.operandTyping, predicateScope),
+      ),
     )
     const grep = grepPredicate(method, paramVar, predBody, arrayExpr)
     if (grep !== null) return grep
@@ -695,9 +726,9 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const arg = emit(argument)
-    if (op === '!') return `!${arg}`
+    if (op === '!') return `!${truthyTest(plan, arg)}`
     if (op === '-') {
       // Unary minus applies JS `ToNumber` like binary `-` (#3533).
       const grouped = groupUnaryOperand(argument, arg)
@@ -759,12 +790,11 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
-    if (op === '&&') return `(${l} && ${r})`
-    if (op === '||') return `(${l} || ${r})`
-    return `(${l} // ${r})`
+    if (op === '??') return `(${l} // ${r})`
+    return spellLogical(op, plan, l, r)
   }
 
   callbackMethod(
@@ -802,7 +832,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
    * composes through the array-method chain.
    */
   private _nativePredicate(method: PredicateMethod, param: string, predicate: ParsedExpr, arrayExpr: string): string {
-    const predBody = this.ctx._renderPerlFilterExprPublic(predicate, param)
+    const predBody = this.ctx._renderPerlFilterTestPublic(predicate, param)
     const grep = grepPredicate(method, `$${param}`, predBody, arrayExpr)
     if (grep !== null) return grep
     const findHelper: Record<string, string> = { find: 'find', findIndex: 'find_index', findLast: 'find_last', findLastIndex: 'find_last_index' }
@@ -853,9 +883,9 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     consequent: ParsedExpr,
     alternate: ParsedExpr,
     emit: (e: ParsedExpr) => string,
-    _plan: PrimitivePlan | null,
+    plan: PrimitivePlan | null,
   ): string {
-    return `(${emit(test)} ? ${emit(consequent)} : ${emit(alternate)})`
+    return `(${truthyTest(plan, emit(test))} ? ${emit(consequent)} : ${emit(alternate)})`
   }
 
   templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string {

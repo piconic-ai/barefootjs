@@ -298,6 +298,8 @@ import {
   attrValueMayBeNullish,
   isAriaBooleanAttr,
   isBooleanResultExpr,
+  planTest,
+  planTestOfSource,
   isExplicitStringCall,
   hasClientInteractivity,
   renderElementShell,
@@ -307,7 +309,7 @@ import {
   inlineComputedConstAttr,
   inlineComputedConsts,
 } from '@barefootjs/jsx'
-import type { ParsedExpr } from '@barefootjs/jsx'
+import type { ParsedExpr, PrimitivePlan } from '@barefootjs/jsx'
 import { isOpaqueLocalAccessorName } from '@barefootjs/jsx'
 import { BF_SLOT, BF_COND, escapeHtml } from '@barefootjs/shared'
 
@@ -323,7 +325,7 @@ import {
 } from './lib/blade-naming.ts'
 import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToBlade } from './lib/static-value.ts'
-import { BladeFilterEmitter, BladeTopLevelEmitter, truthyTest, CALLBACK_LOWERING } from './expr/emitters.ts'
+import { BladeFilterEmitter, BladeTopLevelEmitter, truthyTest, CALLBACK_LOWERING, NATIVE_SAFE } from './expr/emitters.ts'
 import type { BladeEmitContext, BladeSpreadContext, BladeMemoContext } from './emit-context.ts'
 import {
   conditionalSpreadToBlade,
@@ -901,7 +903,7 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
       // divergence 4: the loop-hoist filter test is a condition position too.
       condition: (filter) =>
         truthyTest(
-          filter.predicate,
+          this.filterTestPlan(filter),
           this.renderInScope(this.scope.enterAliases(filter.aliases), () => this.renderBladeFilterExpr(filter.onRow, param)),
         ),
       refuse: (message, suggestion) => this._recordExprBF101(message, suggestion),
@@ -1055,7 +1057,7 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
   // ===========================================================================
 
   protected renderIfStatement(ifStmt: IRIfStatement): string {
-    const condition = this.convertConditionToBlade(ifStmt.condition)
+    const condition = this.convertConditionToBlade(ifStmt.condition, ifStmt.parsedCondition)
     const consequent = ifStmt.consequent.type === 'if-statement'
       ? this.renderIfStatement(ifStmt.consequent as IRIfStatement)
       : this.renderNode(ifStmt.consequent)
@@ -1159,12 +1161,12 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
         }
         case 'boolean-attr': {
           const v = this.convertExpressionToBlade(value.expr, value.parsed)
-          return `{!! e((${this.wrapConditionExpr(value.expr, v)} ? '${name}' : '')) !!}`
+          return `{!! e((${this.wrapConditionExpr(value.expr, v, value.parsed)} ? '${name}' : '')) !!}`
         }
         case 'presence': {
           const v = this.convertExpressionToBlade(value.expr)
           const tmp = bladeVar(`bf_pu${this.presenceVarCounter++}`)
-          return `\n@php(${tmp} = ${v})\n@if(${this.wrapConditionExpr(value.expr, tmp)})\n${attr(tmp, plan.boolStr)}\n@endif\n`
+          return `\n@php(${tmp} = ${v})\n@if(${this.wrapConditionExpr(value.expr, tmp, value.parsed)})\n${attr(tmp, plan.boolStr)}\n@endif\n`
         }
         case 'undefined-alternate': {
           const m = plan.ternary
@@ -1475,10 +1477,12 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
    * doesn't lower it twice.
    */
   private wrapConditionExpr(expr: string, blade: string, preParsed?: ParsedExpr): string {
-    const isBoolean = preParsed
-      ? isBooleanResultExpr(stringifyParsedExpr(preParsed))
-      : isBooleanResultExpr(expr)
-    return isBoolean ? blade : `$bf->truthy(${blade})`
+    return truthyTest(preParsed ? planTest(preParsed, this.operandTypingAt(), NATIVE_SAFE) : planTestOfSource(expr, this.operandTypingAt(), NATIVE_SAFE), blade)
+  }
+
+  /** The ToBoolean plan of a loop filter's predicate, typed in the predicate's own scope (#3824). */
+  private filterTestPlan(filter: { readonly predicate: ParsedExpr; readonly param: string }): PrimitivePlan {
+    return planTest(filter.predicate, this.operandTypingAt(this.scope.enterCallback([filter.param])), NATIVE_SAFE)
   }
 
   /**

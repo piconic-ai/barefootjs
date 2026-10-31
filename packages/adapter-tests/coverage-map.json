@@ -16040,6 +16040,36 @@
         "text"
       ]
     },
+    "truthiness-positions": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:/",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "logical:||",
+        "unary:!",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "unary-minus-compound-operand": {
       "kinds": [
         "binary",

@@ -70,8 +70,8 @@
       "planSpreadAttr": 1
     },
     "packages/jsx/src/adapters/boolean-result.ts": {
-      "isBooleanResultExpr": 1,
-      "isExplicitStringCall": 1
+      "isExplicitStringCall": 1,
+      "testTree": 1
     },
     "packages/jsx/src/adapters/computed-const.ts": {
       "inlineComputedConstAttr": 1

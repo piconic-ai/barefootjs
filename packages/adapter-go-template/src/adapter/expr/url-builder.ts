@@ -12,6 +12,7 @@ import {
   type ParsedExpr,
   type TemplatePart,
   parseExpression,
+  planTest,
   stringifyParsedExpr,
   isValidHelperId,
 } from '@barefootjs/jsx'
@@ -160,14 +161,18 @@ export function lowerValueOperand(ctx: GoEmitContext, n: ParsedExpr): string {
  * Lower a ternary TEST to a Go bool. `Ternary`'s first parameter is typed
  * `bool` and is NOT truthiness-coerced the way `{{if}}` is, so a non-bool test
  * (`x` where x is a string/number, `a && b`, …) fed in raw would fail the
- * runtime type assertion. A comparison / `!x` / bool literal already renders
- * to a bool via the generic emitter and passes through; every other shape is
- * wrapped `bf_truthy <value>`, which mirrors JS `Boolean(x)` (the runtime's
+ * runtime type assertion. A test the primitive plan proves a `boolean` (a
+ * comparison, `!x`, a bool literal, a `boolean`-typed name) already renders
+ * to a Go bool and passes through; every other test is wrapped
+ * `bf_truthy <value>`, which mirrors JS `Boolean(x)` (the runtime's
  * `isTruthy`) across string / number / bool / nil uniformly — the general
- * counterpart of `lowerUrlGuard`'s string-only `ne <value> ""`.
+ * counterpart of `lowerUrlGuard`'s string-only `ne <value> ""`. The plan is
+ * the one the emitter's `conditional` receives (`CompileState.primitives`).
  */
 function lowerTernaryTest(ctx: GoEmitContext, test: ParsedExpr): string {
-  return lowerJsTruthyTest(test, lowerValueOperand(ctx, test))
+  const primitives = ctx.state.primitives
+  const plan = primitives ? planTest(test, primitives.typing(), primitives.nativeSafe) : null
+  return lowerJsTruthyTest(plan, lowerValueOperand(ctx, test))
 }
 
 /**

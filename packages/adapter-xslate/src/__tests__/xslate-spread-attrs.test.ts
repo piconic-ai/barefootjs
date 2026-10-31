@@ -43,7 +43,7 @@ function Box({ describedBy }: { describedBy?: string }) {
 }
 `)
     expect(template).toContain(
-      "$bf.spread_attrs($describedBy ? { 'aria-describedby' => $describedBy } : {})",
+      "$bf.spread_attrs($bf.truthy($describedBy) ? { 'aria-describedby' => $describedBy } : {})",
     )
   })
 
@@ -54,7 +54,7 @@ function Box({ label }: { label: string }) {
 }
 `)
     expect(template).toContain(
-      "$bf.spread_attrs($label ? { 'data-label' => $label } : {})",
+      "$bf.spread_attrs($bf.truthy($label) ? { 'data-label' => $label } : {})",
     )
   })
 
@@ -84,7 +84,7 @@ function Box({ flag }: { flag?: boolean }) {
 }
 `)
     expect(template).toContain(
-      "$bf.spread_attrs($flag ? { 'data-on' => 'yes' } : {})",
+      "$bf.spread_attrs($bf.truthy($flag) ? { 'data-on' => 'yes' } : {})",
     )
   })
 

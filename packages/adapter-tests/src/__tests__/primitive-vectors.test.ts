@@ -7,7 +7,9 @@
  * committed JSON; this test fails when a file drifts from its case
  * definitions, when a JSON file has no case definition, and when a ledger
  * entry names no case, an unknown runtime, or a step other than the one
- * that owns its operation.
+ * that owns its operation. It also holds the native-operator claims the
+ * harnesses run (vectors/primitives-native-safe.json) to the adapters'
+ * `NATIVE_SAFE` tables.
  */
 import { describe, expect, test } from 'bun:test'
 import { readdirSync, readFileSync } from 'node:fs'
@@ -19,6 +21,7 @@ import {
   primitiveFilePath,
   serializePrimitiveFile,
 } from '../../vectors/primitives/generate'
+import { NATIVE_SAFE_PATH, RUNTIME_TABLES, serializeNativeSafeMirror } from '../../vectors/primitives/native-safe'
 
 const LEDGER_PATH = join(dirname(PRIMITIVES_DIR), 'primitives-expected-failures.json')
 const RUNTIMES = ['go', 'java', 'perl', 'php', 'python', 'ruby', 'rust']
@@ -65,5 +68,15 @@ describe('primitives expected-failure ledger', () => {
       }
     }
     expect(problems).toEqual([])
+  })
+})
+
+describe('primitives native-operator claims', () => {
+  test('primitives-native-safe.json is up to date with the NATIVE_SAFE tables (run `bun run generate:primitive-vectors`)', () => {
+    expect(readFileSync(NATIVE_SAFE_PATH, 'utf8')).toBe(serializeNativeSafeMirror())
+  })
+
+  test('names exactly the runtimes that run the corpus', () => {
+    expect(Object.keys(RUNTIME_TABLES).sort()).toEqual(RUNTIMES)
   })
 })

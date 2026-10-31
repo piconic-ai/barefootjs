@@ -71,7 +71,8 @@ export function C(props: { flag: boolean; a?: number[]; b: number[] }) {
   return <p>{(props.flag ? props.a : props.b)?.length}</p>
 }
 `)
-    expect(template).toContain('((bf.truthy(flag) ? a : b) is null ? null : bf.length((bf.truthy(flag) ? a : b)))')
+    // A required `boolean` prop is a proven boolean, tested natively (#3824).
+    expect(template).toContain('((flag ? a : b) is null ? null : bf.length((flag ? a : b)))')
     expect(template).not.toContain('b) ?? null')
   })
 })

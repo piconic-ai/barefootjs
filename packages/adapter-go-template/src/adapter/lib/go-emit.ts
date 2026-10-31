@@ -5,7 +5,7 @@
  */
 
 import type { SortComparator, SupportResult, ParsedExpr } from '@barefootjs/jsx'
-import { arithmeticHelper, BindingScope, EMPTY_OPERAND_TYPING, escapeBraceDelimiters, evalBody, isExactly, operandFacts, type CallbackCapture, type NativeSafeTable } from '@barefootjs/jsx'
+import { arithmeticHelper, BindingScope, EMPTY_OPERAND_TYPING, escapeBraceDelimiters, evalBody, isExactly, operandFacts, spellTest, type CallbackCapture, type NativeSafeTable, type PrimitivePlan } from '@barefootjs/jsx'
 
 import { capitalize } from "./go-naming.ts"
 
@@ -58,8 +58,10 @@ export function wrapIfMultiToken(rendered: string): string {
  * (`spec/js-primitive-semantics.md`; the plan's `NativeSafeTable`). Step 0 of
  * #3824: filled so the plans describe today's output. Every arithmetic,
  * comparison, `===`, unary minus and index read is a runtime call (`bf_add`,
- * `bf_lt`, `bf_eq`, `bf_neg`, `bf_get`, …); a test is native only for a Go
- * bool (`isGoBoolShaped`); `??` is `or` unless `bf_nullish` is needed.
+ * `bf_lt`, `bf_eq`, `bf_neg`, `bf_get`, …); a test is native only on a
+ * proven `boolean` (a Go bool), since Go's own truthiness reads an empty
+ * slice or map as false and NaN as true (#3824 step 1); `??` is `or` unless
+ * `bf_nullish` is needed.
  * `primitive-plan-cross-adapter.test.ts` holds the emission to it.
  */
 export const GO_NATIVE_SAFE: NativeSafeTable = {
@@ -82,7 +84,9 @@ export const GO_NATIVE_SAFE: NativeSafeTable = {
  * `and` / `or` return one of their operands, not a bool. A thin wrapper over
  * the primitive plan's classifier (`operandFacts`, #3824 step 0), narrowed to
  * the three node kinds whose own Go form is a bool and read with no name
- * typing.
+ * typing. Only `bf_query`'s `include` guard reads it (`lowerUrlGuard`), which
+ * needs a Go bool, not a JS truthiness test; every ToBoolean position spells
+ * its plan instead (`lowerJsTruthyTest`).
  */
 export function isGoBoolShaped(expr: ParsedExpr): boolean {
   if (expr.kind !== 'binary' && expr.kind !== 'unary' && expr.kind !== 'literal') return false
@@ -90,42 +94,56 @@ export function isGoBoolShaped(expr: ParsedExpr): boolean {
 }
 
 /**
- * Lower JS `!x`, given the operand's ParsedExpr and its already-rendered Go
- * form. The one decision every `!` emitter (value, condition, and filter-
- * predicate positions) shares.
- *
- * Go's built-in `not` (like `{{if}}`) reads an EMPTY slice or map as false,
- * where JS reads `[]` / `{}` as true — so `!tags()` on `[]` would take the
- * wrong branch. A non-bool operand therefore goes through `bf_truthy` (the
- * runtime's JS `Boolean(x)`, which keeps an absent/nil value falsy while a
- * non-nil empty slice/map is truthy) before `not` flips it. An operand that
- * is already a Go bool keeps the bare `not`.
+ * Spell the ToBoolean plan of a test, given its already-rendered Go form —
+ * the one decision every position that tests a value shares (a `{{if}}`
+ * condition, a `bf_ternary` test, a filter predicate, the left operand of a
+ * value-position `&&` / `||`). Go's built-in truthiness reads an EMPTY slice
+ * or map as false and NaN as true, where JS reads `[]` / `{}` as true and
+ * NaN as false, so a test whose plan is not native goes through `bf_truthy`
+ * (the runtime's JS `Boolean(x)`); a proven boolean is returned unchanged.
  */
-/**
- * Whether `expr` is a bare value read — an identifier, a member read, or a
- * zero-argument accessor call (`tags()`) — as opposed to an operator
- * expression or a helper call whose result is already a test.
- */
-export function isBareValueRead(expr: ParsedExpr): boolean {
-  if (expr.kind === 'identifier' || expr.kind === 'member') return true
-  return expr.kind === 'call' && expr.callee.kind === 'identifier' && expr.args.length === 0
+export function lowerJsTruthyTest(plan: PrimitivePlan | null, rendered: string): string {
+  return spellTest(plan, rendered, r => `(bf_truthy ${wrapIfMultiToken(r)})`)
 }
 
 /**
- * Lower a JS truthiness test of `test`, given its already-rendered Go form —
- * the un-negated twin of `lowerJsNot`, shared by every position that tests a
- * value (a `{{if}}` condition, a `bf_ternary` test). Go's built-in
- * truthiness reads an EMPTY slice or map as false, where JS reads `[]` /
- * `{}` as true, so a non-bool operand goes through `bf_truthy`; an operand
- * that is already a Go bool is returned unchanged.
+ * Lower JS `!x`, given the plan of its operand's test and the operand's
+ * rendered Go form: `not` over the test (`lowerJsTruthyTest`), parenthesised
+ * when multi-token (#2758: `not or a b` parses as `not` applied to 3 args).
  */
-export function lowerJsTruthyTest(test: ParsedExpr, rendered: string): string {
-  return isGoBoolShaped(test) ? rendered : `(bf_truthy ${wrapIfMultiToken(rendered)})`
+export function lowerJsNot(plan: PrimitivePlan | null, rendered: string): string {
+  return `not ${wrapIfMultiToken(lowerJsTruthyTest(plan, rendered))}`
 }
 
-export function lowerJsNot(argument: ParsedExpr, rendered: string): string {
-  if (isGoBoolShaped(argument)) return `not ${wrapIfMultiToken(rendered)}`
-  return `not (bf_truthy ${wrapIfMultiToken(rendered)})`
+/**
+ * JS `l && r` / `l || r` in a VALUE position, which yields one of its
+ * operands. When the plan proves `l` a boolean, Go's own `and` / `or` already
+ * do that. Otherwise Go's `and` / `or` would test `l` by Go truthiness (an
+ * empty slice is false, NaN true), so the operand is picked by `l`'s JS test
+ * instead, keeping the short circuit: `bf_arr` boxes the chosen operand in a
+ * one-element slice, which Go always reads as true, so `or` stops at the
+ * first box built and `index … 0` unboxes it. `&&` builds `r`'s box only
+ * after `l` tested true, `||` builds `r`'s only after it tested false; `l` is
+ * rendered twice (a pure read).
+ */
+export function lowerJsLogicalValue(op: '&&' | '||', plan: PrimitivePlan | null, l: string, r: string): string {
+  const wl = wrapIfMultiToken(l)
+  const wr = wrapIfMultiToken(r)
+  const test = lowerJsTruthyTest(plan, l)
+  if (test === l) return `${op === '&&' ? 'and' : 'or'} ${wl} ${wr}`
+  const [taken, other] = op === '&&' ? [wr, wl] : [wl, wr]
+  return `index (or (and ${test} (bf_arr ${taken})) (bf_arr ${other})) 0`
+}
+
+/**
+ * JS `l && r` / `l || r` in a TEST position (an `{{if}}` condition, a filter
+ * predicate, the operand of `!`), given each operand's test
+ * (`lowerJsTruthyTest`): only the truthiness of the result is read, and it is
+ * `ToBoolean(l) && ToBoolean(r)` (`||` likewise), so Go's short-circuiting
+ * `and` / `or` over the two tests is exact and yields a Go bool.
+ */
+export function lowerJsLogicalTest(op: '&&' | '||', lTest: string, rTest: string): string {
+  return `${op === '&&' ? 'and' : 'or'} ${wrapIfMultiToken(lTest)} ${wrapIfMultiToken(rTest)}`
 }
 
 /**

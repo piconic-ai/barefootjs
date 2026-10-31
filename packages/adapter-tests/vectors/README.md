@@ -29,6 +29,7 @@ when a committed file drifts from its case definitions.
 | `eval-cases.ts` + `eval-reference.ts` | `eval-generate.ts` | `eval-vectors.json` |
 | `primitives/<op>.ts` (listed in `primitives/index.ts`) | `primitives/generate.ts` | `primitives/<op>.json` |
 | — (hand-maintained) | — | `primitives-expected-failures.json` (see "Primitive vectors" below) |
+| the adapters' `NATIVE_SAFE` tables | `primitives/native-safe.ts` | `primitives-native-safe.json` (see "Primitive vectors" below) |
 | — (hand-maintained) | — | `<backend package>/vector-divergences.json` (see "Divergence declarations" below) |
 
 Regenerate:
@@ -185,9 +186,19 @@ every case. An unbound `fn` fails. Where a runtime had no helper for an
 operation, it gained a thin one that delegates to its callback
 evaluator's primitive of the same operation (as PHP's `index` delegates
 to `Evaluator::index`), so the template helper and the evaluator share
-one implementation. Binding each op to the **native** operator, gated on
-the adapter's `NativeSafeTable`, is not wired yet; each harness carries a
-`TODO(#3824 step 0b/1)` where it goes.
+one implementation.
+
+Each harness also binds an op to its runtime's **native** operator (for
+`truthy`, the host's own `if`: Go's `template.IsTrue`, Perl's and PHP's
+truthiness, a real Jinja, Pebble or MiniJinja `{% if %}`, Ruby's
+truthiness) and runs it over exactly the cases whose `domain` the runtime
+claims in `primitives-native-safe.json`. That file is generated from the
+adapters' `NATIVE_SAFE` tables by `primitives/native-safe.ts` (a runtime
+claims the union of its adapters' tables: Mojolicious and Xslate share
+Perl, Twig and Blade share PHP), and generation refuses a claimed proof no
+vector domain covers. A native claim the vectors refute fails the harness;
+no ledger applies to it. Only the ops a rollout step has wired are listed
+(`truthy`, step 1).
 
 ### The expected-failure ledger
 
@@ -248,7 +259,10 @@ corpus is plain JSON. The runner must:
    helper (delegating to its evaluator primitive), and add the
    backend's key to `primitives-expected-failures.json` (see "Primitive
    vectors"). A new backend starts with its failures listed under the
-   step that owns each op.
+   step that owns each op. Bind each op of `primitives-native-safe.json`
+   to the backend's native operator too, add the adapter to
+   `RUNTIME_TABLES` in `primitives/native-safe.ts`, and run the native
+   binding over the domains its `NATIVE_SAFE` table claims.
 4. Add a `vector-divergences.json` file to **your own package** (next
    to, or near, your runner) per the schema above — no edit to
    `packages/adapter-tests` needed; the central validator discovers it

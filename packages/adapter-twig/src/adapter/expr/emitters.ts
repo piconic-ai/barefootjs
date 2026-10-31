@@ -25,7 +25,7 @@
  *      `{}`). Every condition-TEST position (`!x`, the left operand of
  *      `&&`/`||`, a ternary's test) routes through the shared
  *      `bf.truthy(...)` runtime helper unless the operand is structurally
- *      already boolean-shaped (`isBooleanResultParsed`). `&&`/`||` still
+ *      already boolean-shaped (the primitive plan's `boolean` proof, #3824). `&&`/`||` still
  *      return the ORIGINAL operand VALUE (not a coerced bool) on the taken
  *      branch — matching JS `a || b` returning `a` itself — only the BRANCH
  *      TEST uses `bf.truthy`. The left operand's rendered text is emitted
@@ -73,6 +73,7 @@ import {
   type NativeSafeTable,
   type OperandTyping,
   primitivesAt,
+  spellTest,
   EMPTY_OPERAND_TYPING,
   BindingScope,
   type ArrayMethod,
@@ -87,7 +88,6 @@ import {
   type LoweringNode,
   queryHrefArgs,
   isValidHelperId,
-  isBooleanResultParsed,
   lowerCallbackMethod,
   emitCallbackEval,
   nestedCallbackRefusal,
@@ -135,13 +135,16 @@ export const NATIVE_SAFE: NativeSafeTable = {
 }
 
 /**
- * Route a condition-TEST position through `bf.truthy(...)` unless the node
- * is structurally already boolean-shaped. See the file header (divergence
- * 2). Shared by both emitters below and reused by the adapter's top-level
- * `convertConditionToTwig` for IR-level `if` / loop-filter conditions.
+ * Spell the ToBoolean plan of a condition-TEST position (#3824 step 1): the
+ * rendered test as is when the plan is native (the operand is a proven
+ * `boolean` and this adapter's `NATIVE_SAFE['to-boolean']` claims it),
+ * through `bf.truthy(...)` otherwise. See the file header (divergence 2). The
+ * `!`, `&&`, `||` and `?:` emitters below receive the plan from
+ * `emitParsedExpr`; the adapter's IR-level `if` / loop-filter conditions
+ * compute it with `planTest`.
  */
-export function truthyTest(node: ParsedExpr, rendered: string): string {
-  return isBooleanResultParsed(node) ? rendered : `bf.truthy(${rendered})`
+export function truthyTest(plan: PrimitivePlan | null, rendered: string): string {
+  return spellTest(plan, rendered, (r) => `bf.truthy(${r})`)
 }
 
 /**
@@ -348,8 +351,8 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
-    if (op === '!') return `not ${truthyTest(argument, emit(argument))}`
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
+    if (op === '!') return `not ${truthyTest(plan, emit(argument))}`
     if (op === '-') return `-${groupUnaryOperand(argument, emit(argument))}`
     return emit(argument)
   }
@@ -382,15 +385,15 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
     // See the file header, divergences 1 & 2: the branch TEST goes through
     // `bf.truthy`, the RETURNED value stays the original operand text (`l`
     // appears twice for `&&`/`||`), and the ternary is Twig's symbolic
     // `(test ? a : b)` form, not Jinja's word-based `(a if test else b)`.
-    if (op === '&&') return `(${truthyTest(left, l)} ? ${r} : ${l})`
-    if (op === '||') return `(${truthyTest(left, l)} ? ${l} : ${r})`
+    if (op === '&&') return `(${truthyTest(plan, l)} ? ${r} : ${l})`
+    if (op === '||') return `(${truthyTest(plan, l)} ? ${l} : ${r})`
     // See the file header, divergence 3: Twig's `??` is native and covers
     // both undefined and null in one operator.
     return nullishCoalesce(left, l, r)
@@ -432,7 +435,7 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
     return renderFlatMethod(emit(object), depth, emit)
   }
 
-  conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr, _emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr, _emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     return this.refuseShape('a conditional (`?:`)')
   }
 
@@ -655,8 +658,8 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
-    if (op === '!') return `not ${truthyTest(argument, emit(argument))}`
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
+    if (op === '!') return `not ${truthyTest(plan, emit(argument))}`
     if (op === '-') {
       // Unary minus applies JS `ToNumber` like binary `-` (#3533).
       const arg = groupUnaryOperand(argument, emit(argument))
@@ -704,12 +707,12 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
     // See the file header, divergences 1 & 2.
-    if (op === '&&') return `(${truthyTest(left, l)} ? ${r} : ${l})`
-    if (op === '||') return `(${truthyTest(left, l)} ? ${l} : ${r})`
+    if (op === '&&') return `(${truthyTest(plan, l)} ? ${r} : ${l})`
+    if (op === '||') return `(${truthyTest(plan, l)} ? ${l} : ${r})`
     // See the file header, divergence 3: Twig's `??` is native.
     return nullishCoalesce(left, l, r)
   }
@@ -766,10 +769,10 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     consequent: ParsedExpr,
     alternate: ParsedExpr,
     emit: (e: ParsedExpr) => string,
-    _plan: PrimitivePlan | null,
+    plan: PrimitivePlan | null,
   ): string {
     // See the file header, divergence 1: Twig's symbolic ternary.
-    const testStr = truthyTest(test, emit(test))
+    const testStr = truthyTest(plan, emit(test))
     return `(${testStr} ? ${emit(consequent)} : ${emit(alternate)})`
   }
 

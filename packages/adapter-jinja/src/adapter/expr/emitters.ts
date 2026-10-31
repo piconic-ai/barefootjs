@@ -20,7 +20,7 @@
  *      condition-TEST position (`!x`, the left operand of `&&`/`||`, a
  *      ternary's test) routes through the shared `bf.truthy(...)` runtime
  *      helper unless the operand is structurally already boolean-shaped
- *      (`isBooleanResultParsed`). `&&`/`||` still return the ORIGINAL
+ *      (the primitive plan's `boolean` proof, #3824). `&&`/`||` still return the ORIGINAL
  *      operand VALUE (not a coerced bool) on the taken branch — matching JS
  *      `a || b` returning `a` itself, not `true` — only the BRANCH TEST uses
  *      `bf.truthy`. Because Jinja's `if/else` ternary has no way to reuse an
@@ -62,6 +62,7 @@ import {
   type NativeSafeTable,
   type OperandTyping,
   primitivesAt,
+  spellTest,
   EMPTY_OPERAND_TYPING,
   BindingScope,
   type LoweringEmitter,
@@ -76,7 +77,6 @@ import {
   matchSearchParamsMethodCall,
   queryHrefArgs,
   isValidHelperId,
-  isBooleanResultParsed,
   lowerCallbackMethod,
   emitCallbackEval,
   nestedCallbackRefusal,
@@ -141,13 +141,16 @@ function concatOperand(
 }
 
 /**
- * Route a condition-TEST position through `bf.truthy(...)` unless the node
- * is structurally already boolean-shaped. See the file header (divergence
- * 1). Shared by both emitters below and reused by the adapter's top-level
- * `convertConditionToJinja` for IR-level `if` / loop-filter conditions.
+ * Spell the ToBoolean plan of a condition-TEST position (#3824 step 1): the
+ * rendered test as is when the plan is native (the operand is a proven
+ * `boolean` and this adapter's `NATIVE_SAFE['to-boolean']` claims it),
+ * through `bf.truthy(...)` otherwise. See the file header (divergence 1). The
+ * `!`, `&&`, `||` and `?:` emitters below receive the plan from
+ * `emitParsedExpr`; the adapter's IR-level `if` / loop-filter conditions
+ * compute it with `planTest`.
  */
-export function truthyTest(node: ParsedExpr, rendered: string): string {
-  return isBooleanResultParsed(node) ? rendered : `bf.truthy(${rendered})`
+export function truthyTest(plan: PrimitivePlan | null, rendered: string): string {
+  return spellTest(plan, rendered, (r) => `bf.truthy(${r})`)
 }
 
 function emitComputedMember(object: ParsedExpr, property: string, emit: (e: ParsedExpr) => string): string {
@@ -307,8 +310,8 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
-    if (op === '!') return `not ${truthyTest(argument, emit(argument))}`
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
+    if (op === '!') return `not ${truthyTest(plan, emit(argument))}`
     if (op === '-') return `-${groupUnaryOperand(argument, emit(argument))}`
     return emit(argument)
   }
@@ -338,15 +341,15 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
     // See the file header, divergence 1: the branch TEST goes through
     // `bf.truthy`, but the RETURNED value stays the original operand text —
     // `l` appears twice for `&&`/`||` (test + fallback value), safe because
     // every operand here is a pure lookup/call.
-    if (op === '&&') return `(${r} if ${truthyTest(left, l)} else ${l})`
-    if (op === '||') return `(${l} if ${truthyTest(left, l)} else ${r})`
+    if (op === '&&') return `(${r} if ${truthyTest(plan, l)} else ${l})`
+    if (op === '||') return `(${l} if ${truthyTest(plan, l)} else ${r})`
     // `l is not none` alone is NOT equivalent to JS `??`'s null-or-undefined
     // check: a context var that was never seeded at all (not merely set to
     // `None`) resolves to Jinja's `ChainableUndefined` sentinel under
@@ -397,7 +400,7 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
     return renderFlatMethod(emit(object), depth, emit)
   }
 
-  conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr, _emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr, _emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     return this.refuseShape('a conditional (`?:`)')
   }
 
@@ -626,8 +629,8 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
-    if (op === '!') return `not ${truthyTest(argument, emit(argument))}`
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
+    if (op === '!') return `not ${truthyTest(plan, emit(argument))}`
     if (op === '-') {
       // Unary minus applies JS `ToNumber` like binary `-` (#3533).
       const arg = groupUnaryOperand(argument, emit(argument))
@@ -671,12 +674,12 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
     // See the file header, divergence 1.
-    if (op === '&&') return `(${r} if ${truthyTest(left, l)} else ${l})`
-    if (op === '||') return `(${l} if ${truthyTest(left, l)} else ${r})`
+    if (op === '&&') return `(${r} if ${truthyTest(plan, l)} else ${l})`
+    if (op === '||') return `(${l} if ${truthyTest(plan, l)} else ${r})`
     // See `JinjaFilterEmitter.logical`'s comment above (same file, same
     // fix): guard with `is defined` too, so a context var that was never
     // seeded (Jinja's `ChainableUndefined`, not Python `None`) still
@@ -737,10 +740,10 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     consequent: ParsedExpr,
     alternate: ParsedExpr,
     emit: (e: ParsedExpr) => string,
-    _plan: PrimitivePlan | null,
+    plan: PrimitivePlan | null,
   ): string {
     const consequentStr = emit(consequent)
-    const testStr = truthyTest(test, emit(test))
+    const testStr = truthyTest(plan, emit(test))
     return `(${consequentStr} if ${testStr} else ${emit(alternate)})`
   }
 

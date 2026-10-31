@@ -134,8 +134,8 @@ function at(positions: Record<string, Position>, operands: Record<string, string
   )
 }
 
-// A test operand T at the four test positions: `!T`, `T ? a : b`, `T && y`
-// and an `{T ? <b/> : <i/>}` condition.
+// A test operand T at the five test positions: `!T`, `T ? a : b`, `T && y`,
+// `T || n` and an `{T ? <b/> : <i/>}` condition.
 const TESTS = { boolean: 'props.on', comparison: 'props.n < props.m', string: 'props.s', optional: 'props.maybe' }
 const testPositions = (positions: Record<string, (t: string) => { jsx: string; node: string }>) =>
   Object.fromEntries(
@@ -153,6 +153,7 @@ const CASES: readonly Case[] = [
         not: (t) => ({ jsx: `<p>@{!${t}}</p>`, node: `!${t}` }),
         ternary: (t) => ({ jsx: `<p>@<i data-v={${t} ? 'a' : 'b'} /></p>`, node: `${t} ? 'a' : 'b'` }),
         and: (t) => ({ jsx: `<p>@<i data-v={${t} && 'y'} /></p>`, node: `${t} && 'y'` }),
+        or: (t) => ({ jsx: `<p>@{${t} || 'n'}</p>`, node: `${t} || 'n'` }),
         if: (t) => ({ jsx: `<p>@{${t} ? <b>y</b> : <i>n</i>}</p>`, node: `${t} ? 1 : 2` }),
       }),
       filter: [filter('!props.on', '!props.on', 'boolean'), filter('!props.s', '!props.s', 'string'), filter('!x', '!x', 'row')],
@@ -253,40 +254,6 @@ const CASES: readonly Case[] = [
  * Shrink-only.
  */
 const DISAGREEMENTS: Readonly<Record<string, string>> = {
-  // ToBoolean. The DSL adapters' `truthyTest` and Go's `isGoBoolShaped` prove a
-  // boolean only structurally: a `boolean`-typed name (`props.on`) still goes
-  // through `truthy`. Go's `and` / `or` test natively whatever the operand.
-  'go to-boolean not boolean': 'step 1 (ToBoolean)',
-  'blade to-boolean not boolean': 'step 1 (ToBoolean)',
-  'jinja to-boolean not boolean': 'step 1 (ToBoolean)',
-  'pebble to-boolean not boolean': 'step 1 (ToBoolean)',
-  'rust to-boolean not boolean': 'step 1 (ToBoolean)',
-  'twig to-boolean not boolean': 'step 1 (ToBoolean)',
-  'go to-boolean ternary boolean': 'step 1 (ToBoolean)',
-  'blade to-boolean ternary boolean': 'step 1 (ToBoolean)',
-  'jinja to-boolean ternary boolean': 'step 1 (ToBoolean)',
-  'pebble to-boolean ternary boolean': 'step 1 (ToBoolean)',
-  'rust to-boolean ternary boolean': 'step 1 (ToBoolean)',
-  'twig to-boolean ternary boolean': 'step 1 (ToBoolean)',
-  'go to-boolean and string': 'step 1 (ToBoolean)',
-  'go to-boolean and optional': 'step 1 (ToBoolean)',
-  'blade to-boolean and boolean': 'step 1 (ToBoolean)',
-  'jinja to-boolean and boolean': 'step 1 (ToBoolean)',
-  'pebble to-boolean and boolean': 'step 1 (ToBoolean)',
-  'rust to-boolean and boolean': 'step 1 (ToBoolean)',
-  'twig to-boolean and boolean': 'step 1 (ToBoolean)',
-  'go to-boolean if boolean': 'step 1 (ToBoolean)',
-  'blade to-boolean if boolean': 'step 1 (ToBoolean)',
-  'jinja to-boolean if boolean': 'step 1 (ToBoolean)',
-  'pebble to-boolean if boolean': 'step 1 (ToBoolean)',
-  'rust to-boolean if boolean': 'step 1 (ToBoolean)',
-  'twig to-boolean if boolean': 'step 1 (ToBoolean)',
-  'go to-boolean filter boolean': 'step 1 (ToBoolean)',
-  'blade to-boolean filter boolean': 'step 1 (ToBoolean)',
-  'jinja to-boolean filter boolean': 'step 1 (ToBoolean)',
-  'pebble to-boolean filter boolean': 'step 1 (ToBoolean)',
-  'rust to-boolean filter boolean': 'step 1 (ToBoolean)',
-  'twig to-boolean filter boolean': 'step 1 (ToBoolean)',
   // Index read. Jinja and MiniJinja spell `rows[i]` natively but a literal key
   // (a computed member, `rows[0]`) through `bf.get`.
   'jinja get text literal-key': 'step 2 (index read)',

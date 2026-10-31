@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sort"
 	"testing"
+	"text/template"
 )
 
 // primitivesDir holds the JS primitive-operation corpus
@@ -21,13 +22,14 @@ const primitivesDir = "../../adapter-tests/vectors/primitives"
 // It may only shrink (see TestPrimitiveVectors).
 const primitivesLedgerPath = "../../adapter-tests/vectors/primitives-expected-failures.json"
 
+// primitivesNativeSafePath lists, per runtime, the vector domains each op's
+// NATIVE operator binding runs over: the go-template adapter's NATIVE_SAFE
+// claims (spec/js-primitive-semantics.md, "Conformance" item 3), generated
+// from the TS table.
+const primitivesNativeSafePath = "../../adapter-tests/vectors/primitives-native-safe.json"
+
 // primitiveBindings binds each canonical op id to the Go helper compiled
 // templates call. A case whose fn has no binding fails.
-//
-// TODO(#3824 step 0b/1): also bind each op to the native Go-template
-// operator and run only the cases whose `domain` the go-template adapter's
-// NativeSafeTable claims (spec/js-primitive-semantics.md, "Conformance"
-// item 3). That needs the table step 0b adds.
 var primitiveBindings = map[string]func(args []any) any{
 	"truthy":    func(a []any) any { return Truthy(a[0]) },
 	"to_number": func(a []any) any { return ToNumber(a[0]) },
@@ -40,6 +42,17 @@ var primitiveBindings = map[string]func(args []any) any{
 	"ge":        func(a []any) any { return Ge(a[0], a[1]) },
 	"plus":      func(a []any) any { return Plus(a[0], a[1]) },
 	"neg":       func(a []any) any { return Neg(a[0]) },
+}
+
+// nativeBindings binds each op the adapter can spell natively to the native
+// Go-template operator: a test is `{{if}}` / `not` / `and` / `or`, whose
+// truthiness is text/template's own IsTrue. TestPrimitiveNativeVectors runs
+// it over the cases whose domain the adapter claims.
+var nativeBindings = map[string]func(args []any) any{
+	"truthy": func(a []any) any {
+		truth, _ := template.IsTrue(a[0])
+		return truth
+	},
 }
 
 type primitiveCase struct {
@@ -124,6 +137,11 @@ func runPrimitiveCase(c primitiveCase) (ok bool, detail string) {
 	if !found {
 		return false, fmt.Sprintf("no Go binding for %q — add it to primitiveBindings", c.Fn)
 	}
+	return runPrimitiveCaseWith(c, bind)
+}
+
+// runPrimitiveCaseWith reports whether `bind` returns the case's expect.
+func runPrimitiveCaseWith(c primitiveCase, bind func(args []any) any) (ok bool, detail string) {
 	defer func() {
 		if r := recover(); r != nil {
 			ok, detail = false, fmt.Sprintf("panicked: %v", r)
@@ -186,4 +204,57 @@ func primitiveEqual(got, expect any) bool {
 		}
 	}
 	return vectorEqual(got, expect)
+}
+
+// TestPrimitiveNativeVectors holds each native claim of the go-template
+// adapter's NATIVE_SAFE table to the vectors: every case whose domain the
+// claim covers must give the JS answer through the native operator. No
+// ledger applies: a native claim the vectors refute is a bug in the table.
+func TestPrimitiveNativeVectors(t *testing.T) {
+	raw, err := os.ReadFile(primitivesNativeSafePath)
+	if err != nil {
+		t.Skipf("native claims not available outside the monorepo checkout (%s)", primitivesNativeSafePath)
+	}
+	var mirror struct {
+		Runtimes map[string]map[string][]string `json:"runtimes"`
+	}
+	if err := json.Unmarshal(raw, &mirror); err != nil {
+		t.Fatalf("parse %s: %v", primitivesNativeSafePath, err)
+	}
+	claims, ok := mirror.Runtimes["go"]
+	if !ok {
+		t.Fatalf("%s has no \"go\" runtime", primitivesNativeSafePath)
+	}
+	ran := 0
+	for fn, domains := range claims {
+		bind, found := nativeBindings[fn]
+		if !found {
+			t.Errorf("no native Go binding for %q — add it to nativeBindings", fn)
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(primitivesDir, fn+".json"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var file struct {
+			Cases []primitiveCase `json:"cases"`
+		}
+		if err := json.Unmarshal(data, &file); err != nil {
+			t.Fatalf("parse %s.json: %v", fn, err)
+		}
+		claimed := map[string]bool{}
+		for _, d := range domains {
+			claimed[d] = true
+		}
+		for _, c := range file.Cases {
+			if !claimed[c.Domain] {
+				continue
+			}
+			ran++
+			if ok, detail := runPrimitiveCaseWith(c, bind); !ok {
+				t.Errorf("NATIVE-FAIL %s/%s (domain %s): %s", c.Fn, c.Note, c.Domain, detail)
+			}
+		}
+	}
+	t.Logf("primitives (native): %d claimed cases", ran)
 }

@@ -99,8 +99,8 @@ export interface ErbEmitContext {
   /** Record a BF101 unsupported-expression diagnostic. */
   _recordExprBF101(message: string, reason?: string): void
 
-  /** Lower a filter/predicate body to its Ruby form, bound to `param`. */
-  _renderRubyFilterExprPublic(expr: ParsedExpr, param: string): string
+  /** A predicate body as a test: rendered in the predicate's scope and spelled from its ToBoolean plan (#3824). */
+  _renderRubyFilterTestPublic(expr: ParsedExpr, param: string): string
 }
 
 /**
