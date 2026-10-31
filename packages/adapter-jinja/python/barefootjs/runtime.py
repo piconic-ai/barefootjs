@@ -1058,6 +1058,40 @@ class BarefootJS:
     def truthy(self, value: Any) -> bool:
         return js_truthy(value)
 
+    # JS primitive helpers (spec/js-primitive-semantics.md, "Operation
+    # table"): ToNumber, ToString, `===`, the relational operators, binary
+    # `+` and unary `-`. Each delegates to the callback evaluator's primitive
+    # of the same operation, so a template helper call and a callback body
+    # share one implementation. Unlike `number` and `string` (display
+    # helpers: None -> NaN / ""), None reads as JS null here (0 / "null").
+
+    def to_number(self, value: Any) -> float:
+        return _evaluator._to_number(value)
+
+    def to_string(self, value: Any) -> str:
+        return _evaluator._to_string(value)
+
+    def strict_eq(self, a: Any, b: Any) -> bool:
+        return _evaluator._strict_eq(a, b)
+
+    def lt(self, a: Any, b: Any) -> bool:
+        return _evaluator._relational("<", a, b)
+
+    def le(self, a: Any, b: Any) -> bool:
+        return _evaluator._relational("<=", a, b)
+
+    def gt(self, a: Any, b: Any) -> bool:
+        return _evaluator._relational(">", a, b)
+
+    def ge(self, a: Any, b: Any) -> bool:
+        return _evaluator._relational(">=", a, b)
+
+    def plus(self, a: Any, b: Any) -> Any:
+        return _evaluator._binary("+", a, b)
+
+    def neg(self, value: Any) -> Any:
+        return _evaluator._unary("-", value)
+
     def div(self, a: Any, b: Any) -> float:
         """JS `/` (#3474): IEEE division. The quotient keeps its fraction,
         and a zero divisor gives NaN or an infinity signed by both operands,

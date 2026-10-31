@@ -325,7 +325,6 @@ module BarefootJS
         raise EvalUnsupported, "binary operator '#{op}' is not in the evaluator subset"
       end
     end
-    private_class_method :binary
 
     def relational(op, l, r)
       # JS Abstract Relational Comparison: both strings -> compare by code
@@ -348,7 +347,6 @@ module BarefootJS
       else false
       end
     end
-    private_class_method :relational
 
     def strict_eq(l, r)
       if non_primitive?(l) || non_primitive?(r)
@@ -362,7 +360,6 @@ module BarefootJS
 
       false
     end
-    private_class_method :strict_eq
 
     def non_primitive?(v)
       v.is_a?(Array) || v.is_a?(Hash)
@@ -433,7 +430,6 @@ module BarefootJS
       else raise EvalUnsupported, "unary operator '#{op}' is not in the evaluator subset"
       end
     end
-    private_class_method :unary
 
     # ---------------------------------------------------------------------
     # Nested `.map`/`.filter` callback calls (#2094) -- the evaluator

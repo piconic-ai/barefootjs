@@ -586,6 +586,48 @@ module BarefootJS
       Evaluator.truthy?(value)
     end
 
+    # JS primitive helpers (spec/js-primitive-semantics.md, "Operation
+    # table"): ToNumber, ToString, `===`, the relational operators, binary
+    # `+` and unary `-`. Each delegates to the shared evaluator's primitive
+    # of the same operation, so a template helper call and a callback body
+    # share one implementation. Unlike `number` and `string` (display
+    # helpers: nil -> NaN / ""), nil reads as JS null here (0 / "null").
+    def to_number(value)
+      Evaluator.to_number(value)
+    end
+
+    def to_string(value)
+      Evaluator.to_string(value)
+    end
+
+    def strict_eq(left, right)
+      Evaluator.strict_eq(left, right)
+    end
+
+    def lt(left, right)
+      Evaluator.relational('<', left, right)
+    end
+
+    def le(left, right)
+      Evaluator.relational('<=', left, right)
+    end
+
+    def gt(left, right)
+      Evaluator.relational('>', left, right)
+    end
+
+    def ge(left, right)
+      Evaluator.relational('>=', left, right)
+    end
+
+    def plus(left, right)
+      Evaluator.binary('+', left, right)
+    end
+
+    def neg(value)
+      Evaluator.unary('-', value)
+    end
+
     # JS `Number(v)` mirror: numeric / boolean inputs convert as expected;
     # non-numeric / nil yield real numeric NaN so downstream arithmetic
     # propagates correctly (`Math.floor(NaN) === NaN`).

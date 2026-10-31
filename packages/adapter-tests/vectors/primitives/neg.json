@@ -1,0 +1,146 @@
+{
+  "version": 1,
+  "generator": "packages/adapter-tests/vectors/primitives/generate.ts",
+  "spec": "spec/js-primitive-semantics.md",
+  "fn": "neg",
+  "step": 6,
+  "cases": [
+    {
+      "fn": "neg",
+      "args": [
+        5
+      ],
+      "expect": -5,
+      "domain": "non-zero-number",
+      "note": "a positive integer"
+    },
+    {
+      "fn": "neg",
+      "args": [
+        -3
+      ],
+      "expect": 3,
+      "domain": "non-zero-number",
+      "note": "a negative integer"
+    },
+    {
+      "fn": "neg",
+      "args": [
+        1.5
+      ],
+      "expect": -1.5,
+      "domain": "non-zero-number",
+      "note": "a fraction"
+    },
+    {
+      "fn": "neg",
+      "args": [
+        0
+      ],
+      "expect": {
+        "$num": "-0"
+      },
+      "domain": "number",
+      "note": "0 negates to -0"
+    },
+    {
+      "fn": "neg",
+      "args": [
+        {
+          "$num": "-0"
+        }
+      ],
+      "expect": 0,
+      "domain": "number",
+      "note": "-0 negates to 0"
+    },
+    {
+      "fn": "neg",
+      "args": [
+        {
+          "$num": "NaN"
+        }
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "domain": "number",
+      "note": "NaN stays NaN"
+    },
+    {
+      "fn": "neg",
+      "args": [
+        {
+          "$num": "Infinity"
+        }
+      ],
+      "expect": {
+        "$num": "-Infinity"
+      },
+      "domain": "non-zero-number",
+      "note": "Infinity negates to -Infinity"
+    },
+    {
+      "fn": "neg",
+      "args": [
+        "5"
+      ],
+      "expect": -5,
+      "domain": "string",
+      "note": "a numeric string coerces"
+    },
+    {
+      "fn": "neg",
+      "args": [
+        ""
+      ],
+      "expect": {
+        "$num": "-0"
+      },
+      "domain": "string",
+      "note": "the empty string coerces to 0 and negates to -0"
+    },
+    {
+      "fn": "neg",
+      "args": [
+        "abc"
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "domain": "string",
+      "note": "a non-numeric string is NaN"
+    },
+    {
+      "fn": "neg",
+      "args": [
+        true
+      ],
+      "expect": -1,
+      "domain": "boolean",
+      "note": "true negates to -1"
+    },
+    {
+      "fn": "neg",
+      "args": [
+        false
+      ],
+      "expect": {
+        "$num": "-0"
+      },
+      "domain": "boolean",
+      "note": "false negates to -0"
+    },
+    {
+      "fn": "neg",
+      "args": [
+        null
+      ],
+      "expect": {
+        "$num": "-0"
+      },
+      "domain": "nil",
+      "note": "nil reads as null and negates to -0"
+    }
+  ]
+}

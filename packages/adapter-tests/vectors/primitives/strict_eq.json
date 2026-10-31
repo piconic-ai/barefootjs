@@ -1,0 +1,227 @@
+{
+  "version": 1,
+  "generator": "packages/adapter-tests/vectors/primitives/generate.ts",
+  "spec": "spec/js-primitive-semantics.md",
+  "fn": "strict_eq",
+  "step": 8,
+  "cases": [
+    {
+      "fn": "strict_eq",
+      "args": [
+        1,
+        1
+      ],
+      "expect": true,
+      "domain": "number-pair",
+      "note": "equal integers"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        1,
+        2
+      ],
+      "expect": false,
+      "domain": "number-pair",
+      "note": "different integers"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        0.30000000000000004,
+        0.3
+      ],
+      "expect": false,
+      "domain": "number-pair",
+      "note": "doubles compare exactly"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        0,
+        {
+          "$num": "-0"
+        }
+      ],
+      "expect": true,
+      "domain": "number-pair",
+      "note": "0 equals -0"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        {
+          "$num": "NaN"
+        },
+        {
+          "$num": "NaN"
+        }
+      ],
+      "expect": false,
+      "domain": "number-pair",
+      "note": "NaN does not equal NaN"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        {
+          "$num": "NaN"
+        },
+        1
+      ],
+      "expect": false,
+      "domain": "number-pair",
+      "note": "NaN does not equal a number"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        "a",
+        "a"
+      ],
+      "expect": true,
+      "domain": "string-pair",
+      "note": "equal strings"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        "a",
+        "b"
+      ],
+      "expect": false,
+      "domain": "string-pair",
+      "note": "different strings"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        "1e0",
+        "1"
+      ],
+      "expect": false,
+      "domain": "string-pair",
+      "note": "numeric strings compare as strings"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        "",
+        ""
+      ],
+      "expect": true,
+      "domain": "string-pair",
+      "note": "two empty strings"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        true,
+        true
+      ],
+      "expect": true,
+      "domain": "boolean-pair",
+      "note": "equal booleans"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        true,
+        false
+      ],
+      "expect": false,
+      "domain": "boolean-pair",
+      "note": "different booleans"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        1,
+        "1"
+      ],
+      "expect": false,
+      "domain": "string-mixed",
+      "note": "a number never equals a string"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        0,
+        ""
+      ],
+      "expect": false,
+      "domain": "string-mixed",
+      "note": "zero never equals the empty string"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        true,
+        1
+      ],
+      "expect": false,
+      "domain": "mixed",
+      "note": "true never equals 1"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        false,
+        0
+      ],
+      "expect": false,
+      "domain": "mixed",
+      "note": "false never equals 0"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        "true",
+        true
+      ],
+      "expect": false,
+      "domain": "string-mixed",
+      "note": "the string \"true\" never equals true"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        null,
+        null
+      ],
+      "expect": true,
+      "domain": "nil",
+      "note": "nil equals nil"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        null,
+        0
+      ],
+      "expect": false,
+      "domain": "nil",
+      "note": "nil never equals 0"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        null,
+        ""
+      ],
+      "expect": false,
+      "domain": "nil",
+      "note": "nil never equals the empty string"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        false,
+        null
+      ],
+      "expect": false,
+      "domain": "nil",
+      "note": "false never equals nil"
+    }
+  ]
+}

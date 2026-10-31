@@ -2479,6 +2479,54 @@ final class BarefootJS
         return !Evaluator::strictEq($a, $b);
     }
 
+    // JS primitive helpers (spec/js-primitive-semantics.md, "Operation
+    // table"): ToNumber, ToString, the relational operators, binary `+` and
+    // unary `-`. Each delegates to the evaluator's primitive of the same
+    // operation, as `index` and `eq` already do, so a template helper call
+    // and a callback body share one implementation. Unlike `number` and
+    // `string` (display helpers: null -> NAN / ''), null reads as JS null
+    // here (0 / 'null').
+
+    public function to_number($v): float
+    {
+        return Evaluator::toNumber($v);
+    }
+
+    public function to_string($v): string
+    {
+        return Evaluator::toStringJs($v);
+    }
+
+    public function lt($a, $b): bool
+    {
+        return Evaluator::relational('<', $a, $b);
+    }
+
+    public function le($a, $b): bool
+    {
+        return Evaluator::relational('<=', $a, $b);
+    }
+
+    public function gt($a, $b): bool
+    {
+        return Evaluator::relational('>', $a, $b);
+    }
+
+    public function ge($a, $b): bool
+    {
+        return Evaluator::relational('>=', $a, $b);
+    }
+
+    public function plus($a, $b)
+    {
+        return Evaluator::binary('+', $a, $b);
+    }
+
+    public function neg($v)
+    {
+        return Evaluator::unary('-', $v);
+    }
+
     // -----------------------------------------------------------------
     // Evaluator-driven sort / reduce / higher-order predicates (#2018): the
     // comparator/reducer/predicate body rides as a serialized-ParsedExpr

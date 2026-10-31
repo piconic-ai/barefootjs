@@ -1,0 +1,287 @@
+{
+  "version": 1,
+  "generator": "packages/adapter-tests/vectors/primitives/generate.ts",
+  "spec": "spec/js-primitive-semantics.md",
+  "fn": "lt",
+  "step": 3,
+  "cases": [
+    {
+      "fn": "lt",
+      "args": [
+        1,
+        2
+      ],
+      "expect": true,
+      "domain": "number-pair",
+      "note": "numbers, smaller first"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        2,
+        1
+      ],
+      "expect": false,
+      "domain": "number-pair",
+      "note": "numbers, larger first"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        1,
+        1
+      ],
+      "expect": false,
+      "domain": "number-pair",
+      "note": "equal numbers"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        {
+          "$num": "-0"
+        },
+        0
+      ],
+      "expect": false,
+      "domain": "number-pair",
+      "note": "-0 and 0 are equal"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        1.5,
+        2
+      ],
+      "expect": true,
+      "domain": "number-pair",
+      "note": "a fraction and an integer"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        {
+          "$num": "NaN"
+        },
+        1
+      ],
+      "expect": false,
+      "domain": "number-pair",
+      "note": "NaN on the left"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        1,
+        {
+          "$num": "NaN"
+        }
+      ],
+      "expect": false,
+      "domain": "number-pair",
+      "note": "NaN on the right"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        {
+          "$num": "-Infinity"
+        },
+        -1e+308
+      ],
+      "expect": true,
+      "domain": "number-pair",
+      "note": "-Infinity and the lowest finite magnitude"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        "a",
+        "b"
+      ],
+      "expect": true,
+      "domain": "string-pair",
+      "note": "strings by code unit"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        "abc",
+        "abd"
+      ],
+      "expect": true,
+      "domain": "string-pair",
+      "note": "strings differing in the last unit"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        "ab",
+        "abc"
+      ],
+      "expect": true,
+      "domain": "string-pair",
+      "note": "a prefix is smaller"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        "B",
+        "a"
+      ],
+      "expect": true,
+      "domain": "string-pair",
+      "note": "upper case sorts before lower case"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        "10",
+        "9"
+      ],
+      "expect": true,
+      "domain": "string-pair",
+      "note": "numeric strings compare as strings"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        "",
+        "a"
+      ],
+      "expect": true,
+      "domain": "string-pair",
+      "note": "the empty string is smallest"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        "😀",
+        "｡"
+      ],
+      "expect": true,
+      "domain": "string-pair",
+      "note": "an astral character against U+FF61 (UTF-16 units)"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        "é",
+        "z"
+      ],
+      "expect": false,
+      "domain": "string-pair",
+      "note": "a non-ASCII BMP character"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        "-2.0",
+        0
+      ],
+      "expect": true,
+      "domain": "string-mixed",
+      "note": "a numeric string against a number"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        "10",
+        9
+      ],
+      "expect": false,
+      "domain": "string-mixed",
+      "note": "a numeric string coerces against a number"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        " 3 ",
+        4
+      ],
+      "expect": true,
+      "domain": "string-mixed",
+      "note": "a padded numeric string coerces"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        "a",
+        0
+      ],
+      "expect": false,
+      "domain": "string-mixed",
+      "note": "a non-numeric string against a number is NaN"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        "",
+        1
+      ],
+      "expect": true,
+      "domain": "string-mixed",
+      "note": "the empty string against a number is 0"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        true,
+        2
+      ],
+      "expect": true,
+      "domain": "mixed",
+      "note": "true coerces to 1"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        false,
+        true
+      ],
+      "expect": true,
+      "domain": "boolean-pair",
+      "note": "two booleans coerce to numbers"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        null,
+        1
+      ],
+      "expect": true,
+      "domain": "nil",
+      "note": "nil reads as null, which is 0"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        1,
+        null
+      ],
+      "expect": false,
+      "domain": "nil",
+      "note": "a number against nil"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        null,
+        null
+      ],
+      "expect": false,
+      "domain": "nil",
+      "note": "nil against nil"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        null,
+        -1
+      ],
+      "expect": false,
+      "domain": "nil",
+      "note": "nil against a negative number"
+    }
+  ]
+}

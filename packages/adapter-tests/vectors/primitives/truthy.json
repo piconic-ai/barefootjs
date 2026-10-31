@@ -1,0 +1,179 @@
+{
+  "version": 1,
+  "generator": "packages/adapter-tests/vectors/primitives/generate.ts",
+  "spec": "spec/js-primitive-semantics.md",
+  "fn": "truthy",
+  "step": 1,
+  "cases": [
+    {
+      "fn": "truthy",
+      "args": [
+        true
+      ],
+      "expect": true,
+      "domain": "boolean",
+      "note": "true is truthy"
+    },
+    {
+      "fn": "truthy",
+      "args": [
+        false
+      ],
+      "expect": false,
+      "domain": "boolean",
+      "note": "false is falsy"
+    },
+    {
+      "fn": "truthy",
+      "args": [
+        1
+      ],
+      "expect": true,
+      "domain": "number",
+      "note": "a non-zero number is truthy"
+    },
+    {
+      "fn": "truthy",
+      "args": [
+        -2.5
+      ],
+      "expect": true,
+      "domain": "number",
+      "note": "a negative fraction is truthy"
+    },
+    {
+      "fn": "truthy",
+      "args": [
+        0
+      ],
+      "expect": false,
+      "domain": "number",
+      "note": "0 is falsy"
+    },
+    {
+      "fn": "truthy",
+      "args": [
+        {
+          "$num": "-0"
+        }
+      ],
+      "expect": false,
+      "domain": "number",
+      "note": "-0 is falsy"
+    },
+    {
+      "fn": "truthy",
+      "args": [
+        {
+          "$num": "NaN"
+        }
+      ],
+      "expect": false,
+      "domain": "number",
+      "note": "NaN is falsy"
+    },
+    {
+      "fn": "truthy",
+      "args": [
+        {
+          "$num": "Infinity"
+        }
+      ],
+      "expect": true,
+      "domain": "number",
+      "note": "Infinity is truthy"
+    },
+    {
+      "fn": "truthy",
+      "args": [
+        "a"
+      ],
+      "expect": true,
+      "domain": "string",
+      "note": "a non-empty string is truthy"
+    },
+    {
+      "fn": "truthy",
+      "args": [
+        "0"
+      ],
+      "expect": true,
+      "domain": "string",
+      "note": "the string \"0\" is truthy"
+    },
+    {
+      "fn": "truthy",
+      "args": [
+        "00"
+      ],
+      "expect": true,
+      "domain": "string",
+      "note": "the string \"00\" is truthy"
+    },
+    {
+      "fn": "truthy",
+      "args": [
+        "false"
+      ],
+      "expect": true,
+      "domain": "string",
+      "note": "the string \"false\" is truthy"
+    },
+    {
+      "fn": "truthy",
+      "args": [
+        " "
+      ],
+      "expect": true,
+      "domain": "string",
+      "note": "a single space is truthy"
+    },
+    {
+      "fn": "truthy",
+      "args": [
+        ""
+      ],
+      "expect": false,
+      "domain": "string",
+      "note": "the empty string is falsy"
+    },
+    {
+      "fn": "truthy",
+      "args": [
+        null
+      ],
+      "expect": false,
+      "domain": "nil",
+      "note": "nil is falsy"
+    },
+    {
+      "fn": "truthy",
+      "args": [
+        []
+      ],
+      "expect": true,
+      "domain": "object",
+      "note": "an empty array is truthy"
+    },
+    {
+      "fn": "truthy",
+      "args": [
+        [
+          0
+        ]
+      ],
+      "expect": true,
+      "domain": "object",
+      "note": "an array holding 0 is truthy"
+    },
+    {
+      "fn": "truthy",
+      "args": [
+        {}
+      ],
+      "expect": true,
+      "domain": "object",
+      "note": "an empty object is truthy"
+    }
+  ]
+}
