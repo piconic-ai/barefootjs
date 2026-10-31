@@ -164,11 +164,27 @@ export function collectNullishConsumedPropNames(ctx: GoEmitContext, ir: Componen
   // value both land on the same output — so it earns no flip. Only a
   // fallback the zero value must NOT collapse into makes the distinction
   // observable. `?? null` is not one: an attribute bound to it is omitted
-  // for an absent prop and kept for a present `''` (#3824 step 7).
-  const isZeroEquivalentLiteral = (right: ParsedExpr): boolean =>
-    right.kind === 'literal' &&
-    (right.value === '' || right.value === false ||
-      (right.literalType === 'number' && Number(right.value) === 0))
+  // for an absent prop and kept for a present `''` (#3824 step 7). Nor is a
+  // zero of another type than the prop's (`s ?? 0` over a string, `n ?? ''`
+  // over a number): the prop's zero value differs from the fallback, so an
+  // absent prop must stay distinguishable from a present `''` / `0`.
+  const zeroLiteralType = (right: ParsedExpr): 'string' | 'number' | 'boolean' | null => {
+    if (right.kind !== 'literal') return null
+    if (right.value === '') return 'string'
+    if (right.value === false) return 'boolean'
+    return right.literalType === 'number' && Number(right.value) === 0 ? 'number' : null
+  }
+  const declaredPrimitive = new Map(
+    ir.metadata.propsParams.map(p => [p.name, p.type?.kind === 'primitive' ? p.type.primitive : undefined]),
+  )
+  /** Whether `propName`, read by `?? right`, takes the nillable flip. */
+  const flipsUnder = (propName: string | null, right: ParsedExpr): propName is string => {
+    if (!propName || !optionalParams.has(propName)) return false
+    const zero = zeroLiteralType(right)
+    if (zero === null) return true
+    const declared = declaredPrimitive.get(propName)
+    return declared !== undefined && declared !== zero
+  }
 
   const walk = (node: unknown): void => {
     if (!node || typeof node !== 'object') return
@@ -177,10 +193,10 @@ export function collectNullishConsumedPropNames(ctx: GoEmitContext, ir: Componen
       return
     }
     const rec = node as Record<string, unknown>
-    if (rec.kind === 'logical' && rec.op === '??' && rec.left && rec.right && !isZeroEquivalentLiteral(rec.right as ParsedExpr)) {
+    if (rec.kind === 'logical' && rec.op === '??' && rec.left && rec.right) {
       for (const read of nullishTestedReads(rec.left as ParsedExpr)) {
         const propName = propNameOfLeft(read)
-        if (propName && optionalParams.has(propName)) names.add(propName)
+        if (flipsUnder(propName, rec.right as ParsedExpr)) names.add(propName)
       }
     }
     for (const value of Object.values(rec)) walk(value)
@@ -204,11 +220,11 @@ export function collectNullishConsumedPropNames(ctx: GoEmitContext, ir: Componen
       walkMemoBody(rec.body, scope.enterCallback(rec.params as string[]))
       return
     }
-    if (rec.kind === 'logical' && rec.op === '??' && rec.left && rec.right && !isZeroEquivalentLiteral(rec.right as ParsedExpr)) {
+    if (rec.kind === 'logical' && rec.op === '??' && rec.left && rec.right) {
       for (const read of nullishTestedReads(rec.left as ParsedExpr)) {
         const root = read.kind === 'member' ? read.object : read
         const propName = root.kind === 'identifier' && scope.isBound(root.name) ? null : propNameOfLeft(read)
-        if (propName && optionalParams.has(propName)) names.add(propName)
+        if (flipsUnder(propName, rec.right as ParsedExpr)) names.add(propName)
       }
     }
     for (const value of Object.values(rec)) walkMemoBody(value, scope)

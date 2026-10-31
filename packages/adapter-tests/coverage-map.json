@@ -10500,6 +10500,31 @@
         "attribute"
       ]
     },
+    "nullish-mixed-type-zero-fallback": {
+      "kinds": [
+        "binary",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "nullish-operand-arithmetic-matrix": {
       "kinds": [
         "binary",
