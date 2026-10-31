@@ -22,7 +22,7 @@ import {
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
-import { goBinaryHelperCall, GO_REMEDIATION_OPTIONS, isLiteralKeyRead, lowerJsLogicalTest, lowerJsLogicalValue, lowerJsTruthyTest, wrapIfMultiToken } from '../lib/go-emit.ts'
+import { goBinaryHelperCall, GO_REMEDIATION_OPTIONS, isLiteralKeyRead, lowerJsLogicalTest, lowerJsLogicalValue, lowerJsNullishValue, lowerAbsentAsNil, lowerJsTruthyTest, wrapIfMultiToken, type NullishSpelling } from '../lib/go-emit.ts'
 import { isPropsObjectName } from '../lib/compile-state.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import type { HigherOrderShape } from '../lib/types.ts'
@@ -89,8 +89,6 @@ export interface ConditionExprHost {
   conditionLengthFn(expr: Extract<ParsedExpr, { kind: 'member' }>): 'len' | 'bf_length'
   /** Whether `node` reads a member chain of a source-keyed signal seed map. */
   isMapSeededSignalChain(node: ParsedExpr): boolean
-  /** Whether a `??` left operand is a nillable prop or signal field. */
-  isNillableNullishLeft(expr: ParsedExpr): boolean
   /** Whether `path` names a registered template primitive. */
   isTemplatePrimitive(path: string): boolean
   /**
@@ -106,6 +104,8 @@ export interface ConditionExprHost {
    * with `params`, at a predicate's scope with its own bindings entered.
    */
   testPlan(test: ParsedExpr, params?: readonly string[]): PrimitivePlan
+  /** How a value-position `l ?? r` is spelled (#3824 step 7), typed like {@link testPlan}. */
+  nullishSpelling(expr: Extract<ParsedExpr, { kind: 'logical' }>, params?: readonly string[]): NullishSpelling
 }
 
 /**
@@ -244,15 +244,8 @@ function renderFilterExprNode(
     case 'index-access':
       return renderFilterIndexAccess(host, expr, param, localVarMap, datumField, fieldlessParam)
 
-    case 'logical': {
-      const left = renderFilterExprNode(host, expr.left, param, localVarMap, datumField, fieldlessParam)
-      if (left === null) return null
-      const right = renderFilterExprNode(host, expr.right, param, localVarMap, datumField, fieldlessParam)
-      if (right === null) return null
-      // A VALUE position (a comparison operand): the operand JS yields.
-      if (expr.op === '??') return `or (${left}) (${right})`
-      return lowerJsLogicalValue(expr.op, host.testPlan(expr.left, [param]), `(${left})`, `(${right})`)
-    }
+    case 'logical':
+      return renderFilterLogical(host, expr, param, localVarMap, datumField, fieldlessParam)
 
     default:
       // The filter predicate body contains a node kind we can't lower to a
@@ -437,6 +430,32 @@ function renderFilterIndexAccess(
   const idx = renderFilterExprNode(host, expr.index, param, localVarMap, datumField, fieldlessParam)
   if (idx === null) return null
   return `(bf_get ${wrapIfMultiToken(obj)} ${wrapIfMultiToken(idx)})`
+}
+
+/** The `logical` arm of {@link renderFilterExprNode}: a VALUE position (a comparison operand), so the operand JS yields. */
+function renderFilterLogical(
+  host: ConditionExprHost,
+  expr: Extract<ParsedExpr, { kind: 'logical' }>,
+  param: string,
+  localVarMap: Map<string, string>,
+  datumField: string | undefined,
+  fieldlessParam: boolean,
+): string | null {
+  const node = (e: ParsedExpr): string | null => renderFilterExprNode(host, e, param, localVarMap, datumField, fieldlessParam)
+  const spelling = expr.op === '??' ? host.nullishSpelling(expr, [param]) : null
+  const left = spelling?.absentLeaves
+    ? lowerAbsentAsNil({
+      operand: node,
+      // A ternary has no filter-predicate form (`renderFilterExprNode`).
+      ternary: e => refuseFilterExprNode(host, e),
+      logicalPlan: e => (e.op === '??' ? host.nullishSpelling(e, [param]).plan : host.testPlan(e.left, [param])),
+    }, spelling.absentLeaves, expr.left)
+    : node(expr.left)
+  if (left === null) return null
+  const right = node(expr.right)
+  if (right === null) return null
+  if (spelling) return lowerJsNullishValue(spelling, `(${left})`, `(${right})`)
+  return lowerJsLogicalValue(expr.op as '&&' | '||', host.testPlan(expr.left, [param]), `(${left})`, `(${right})`)
 }
 
 /** The `binary` arm of {@link renderFilterExprNode}. */
@@ -786,7 +805,7 @@ function renderConditionBinary(
   // member.length/arithmetic-binary/unary-negation) — matches the
   // `logical`/`unary` arms just below. AST-kind gating missed a `??`
   // operand here: `(x ?? []).length > 0` renders `expr.left` through
-  // the `logical` arm to `or .X bf_arr` (or `bf_nullish …`), which
+  // the `logical` arm to a prefix call (`or .X bf_arr` then), which
   // `needsParensInGoTemplate` never flagged, so it spliced
   // unparenthesised into `gt` as extra sibling args — `html/template`
   // then fails at render time ("wrong number of args"), not at compile
@@ -821,33 +840,33 @@ function renderConditionLogical(
   host: ConditionExprHost,
   expr: Extract<ParsedExpr, { kind: 'logical' }>,
 ): ConditionParts {
-  const leftResult = renderConditionExpr(host, expr.left)
-  const rightResult = renderConditionExpr(host, expr.right)
-  const preamble = leftResult.preamble + rightResult.preamble
-  // `wrapIfMultiToken` (whitespace-based, on the RENDERED string) — not
-  // `needsParens` (AST-kind-based, only `logical`/`unary`/`conditional`)
-  // — matches the main `logical()` emitter's own wrapping. `needsParens`
-  // misses any other multi-token rendering (`len .X`, `bf_add a b`,
-  // `.SearchParams.Get "k"`), which `and`/`or`/`bf_nullish` (all prefix
-  // builtins) would otherwise parse as extra sibling args instead of one
-  // operand.
-  const wrapLeft = wrapIfMultiToken(leftResult.expr)
-  const wrapRight = wrapIfMultiToken(rightResult.expr)
-  // `??` on a nillable prop needs true JS nullish semantics (#2254,
-  // sibling of #2248/#2252's fix for text-expression/signal-seed
-  // positions): Go's `or` is truthiness-based, so a present-but-empty
-  // `""`/`0`/`false` operand wrongly falls back. `bf_nullish` tests
-  // nil-ness only. Mirrors the `logical()` emitter's own gate (used
-  // for non-condition expression positions) — same
-  // `nullishConsumed ∩ nillable` check via `nillablePropNameOf`.
   // A VALUE position (a comparison operand, a helper argument): JS `&&` /
-  // `||` yield an operand, picked by the left operand's test (#3824). A test
-  // position goes through `renderConditionTest` instead.
-  if (expr.op !== '??') return { preamble, expr: lowerJsLogicalValue(expr.op, host.testPlan(expr.left), leftResult.expr, rightResult.expr) }
-  const result = host.isNillableNullishLeft(expr.left)
-    ? `bf_nullish ${wrapLeft} ${wrapRight}`
-    : `or ${wrapLeft} ${wrapRight}`
-  return { preamble, expr: result }
+  // `||` yield an operand, picked by the left operand's test (#3824), and
+  // `??` the left operand unless it is nil (#3824 step 7). A test position
+  // goes through `renderConditionTest` instead.
+  if (expr.op !== '??') {
+    const leftResult = renderConditionExpr(host, expr.left)
+    const rightResult = renderConditionExpr(host, expr.right)
+    const preamble = leftResult.preamble + rightResult.preamble
+    return { preamble, expr: lowerJsLogicalValue(expr.op, host.testPlan(expr.left), leftResult.expr, rightResult.expr) }
+  }
+  const spelling = host.nullishSpelling(expr)
+  // A compound left operand reads its absent concrete-zero leaves as nil.
+  let preamble = ''
+  const operand = (e: ParsedExpr): string => {
+    const result = renderConditionExpr(host, e)
+    preamble += result.preamble
+    return result.expr
+  }
+  const left = spelling.absentLeaves
+    ? lowerAbsentAsNil({
+      operand,
+      ternary: (e, consequent, alternate) => lowerTernary(host.ctx, e.test, e.consequent, e.alternate, { consequent, alternate }),
+      logicalPlan: e => (e.op === '??' ? host.nullishSpelling(e).plan : host.testPlan(e.left)),
+    }, spelling.absentLeaves, expr.left) ?? ''
+    : operand(expr.left)
+  const right = operand(expr.right)
+  return { preamble, expr: lowerJsNullishValue(spelling, left, right) }
 }
 
 /**

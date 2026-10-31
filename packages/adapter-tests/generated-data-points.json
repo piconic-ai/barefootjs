@@ -9855,6 +9855,413 @@
       }
     }
   ],
+  "nullish-mixed-type-zero-fallback": [
+    {
+      "name": "gen:s:empty",
+      "props": {
+        "e": "",
+        "off": false,
+        "on": true,
+        "warm": "warm",
+        "cool": "cool",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:s:markup",
+      "props": {
+        "e": "",
+        "off": false,
+        "on": true,
+        "warm": "warm",
+        "cool": "cool",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "s": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:s:multibyte",
+      "props": {
+        "e": "",
+        "off": false,
+        "on": true,
+        "warm": "warm",
+        "cool": "cool",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "s": "日本語"
+      }
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "e": "",
+        "off": false,
+        "on": true,
+        "warm": "warm",
+        "cool": "cool",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "e": "",
+        "off": false,
+        "on": true,
+        "warm": "warm",
+        "cool": "cool",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "e": "",
+        "off": false,
+        "on": true,
+        "warm": "warm",
+        "cool": "cool",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "n": 1234567890
+      }
+    },
+    {
+      "name": "gen:b:true",
+      "props": {
+        "e": "",
+        "off": false,
+        "on": true,
+        "warm": "warm",
+        "cool": "cool",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "b": true
+      }
+    },
+    {
+      "name": "gen:b:false",
+      "props": {
+        "e": "",
+        "off": false,
+        "on": true,
+        "warm": "warm",
+        "cool": "cool",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "b": false
+      }
+    },
+    {
+      "name": "gen:c:empty",
+      "props": {
+        "e": "",
+        "off": false,
+        "on": true,
+        "warm": "warm",
+        "cool": "cool",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "c": ""
+      }
+    },
+    {
+      "name": "gen:c:markup",
+      "props": {
+        "e": "",
+        "off": false,
+        "on": true,
+        "warm": "warm",
+        "cool": "cool",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "c": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:c:multibyte",
+      "props": {
+        "e": "",
+        "off": false,
+        "on": true,
+        "warm": "warm",
+        "cool": "cool",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "c": "日本語"
+      }
+    },
+    {
+      "name": "gen:e:absent",
+      "props": {
+        "off": false,
+        "on": true,
+        "warm": "warm",
+        "cool": "cool",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:e:markup",
+      "props": {
+        "e": "<b>&\"'</b>",
+        "off": false,
+        "on": true,
+        "warm": "warm",
+        "cool": "cool",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:e:multibyte",
+      "props": {
+        "e": "日本語",
+        "off": false,
+        "on": true,
+        "warm": "warm",
+        "cool": "cool",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:off:absent",
+      "props": {
+        "e": "",
+        "on": true,
+        "warm": "warm",
+        "cool": "cool",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:off:true",
+      "props": {
+        "e": "",
+        "off": true,
+        "on": true,
+        "warm": "warm",
+        "cool": "cool",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:on:absent",
+      "props": {
+        "e": "",
+        "off": false,
+        "warm": "warm",
+        "cool": "cool",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "e": "",
+        "off": false,
+        "on": false,
+        "warm": "warm",
+        "cool": "cool",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:warm:absent",
+      "props": {
+        "e": "",
+        "off": false,
+        "on": true,
+        "cool": "cool",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:cool:absent",
+      "props": {
+        "e": "",
+        "off": false,
+        "on": true,
+        "warm": "warm",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "e": "",
+        "off": false,
+        "on": true,
+        "warm": "warm",
+        "cool": "cool",
+        "rows": []
+      }
+    }
+  ],
+  "nullish-optional-row-field": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "number-addition-text-formatting": [
     {
       "name": "gen:value:zero",

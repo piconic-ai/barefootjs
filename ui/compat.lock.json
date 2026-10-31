@@ -4816,22 +4816,6 @@
           ]
         }
       },
-      "logical-mixed-left-nullish": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "nullish-over-false-yielding-operand"
-          ]
-        }
-      },
-      "logical-mixed-left-nullish-destructured": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "nullish-over-false-yielding-operand"
-          ]
-        }
-      },
       "loop-key-to-string-number-component-row": {
         "go-template": {
           "kind": "refusal",
@@ -6174,6 +6158,14 @@
           ],
           "limitations": [
             "namespace-import-primitive-without-program"
+          ]
+        }
+      },
+      "nullish-optional-row-field": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "nullish-optional-scalar-row-field"
           ]
         }
       },
@@ -8775,14 +8767,6 @@
         "description": "A literal non-identifier key reads the own key (obj['a.b'], obj['*'])",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/literal-index-own-key.ts"
       },
-      "logical-mixed-left-nullish": {
-        "description": "A false yielded by a mixed ?? left operand is kept and prints false",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/logical-mixed-left-nullish.ts"
-      },
-      "logical-mixed-left-nullish-destructured": {
-        "description": "A false yielded by a mixed ?? left operand is kept and prints false",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/logical-mixed-left-nullish-destructured.ts"
-      },
       "loop-key-to-string-number-component-row": {
         "description": "A component loop row over a number array keyed by n.toString() renders data-key",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-key-to-string-number-component-row.ts"
@@ -8870,6 +8854,10 @@
       "namespace-import-primitive": {
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
+      },
+      "nullish-optional-row-field": {
+        "description": "An omitted optional row field takes the ?? fallback and a present \"\" or 0 is kept",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-optional-row-field.ts"
       },
       "omitted-optional-nullable-number-arithmetic": {
         "description": "Arithmetic over an omitted optional prop typed number | null (undefined → NaN)",
@@ -9874,15 +9862,14 @@
         "go-template"
       ]
     },
-    "nullish-over-false-yielding-operand": {
-      "title": "`??` over an operand that can yield `false`",
+    "nullish-optional-scalar-row-field": {
+      "title": "`??` over an optional scalar field of a typed loop row",
       "kind": "silent",
-      "given": "`??` whose left operand is a logical expression or a ternary that can evaluate to `false` (`(n > 0 && 'y') ?? 'z'`, `(n ? 'y' : false) ?? 'z'`)",
-      "expected": "`false` is not nullish, so `??` yields it and it prints `false`",
-      "actual": "renders the fallback: the lowering tests the left operand for truthiness",
+      "given": "`??` whose left operand is a loop row's optional field declared as one scalar type (`s?: string`, `m?: number`), read as `t.s` or destructured, over rows that hold `''` / `0` and rows that omit the field",
+      "expected": "a present `''` / `0` is not nullish and is kept; an omitted field takes the fallback",
+      "actual": "renders the fallback for a present `''` / `0`: the row stores an omitted field as its type's zero value, so `??` cannot tell the two apart",
       "fixtures": [
-        "logical-mixed-left-nullish",
-        "logical-mixed-left-nullish-destructured"
+        "nullish-optional-row-field"
       ],
       "adapters": [
         "go-template"

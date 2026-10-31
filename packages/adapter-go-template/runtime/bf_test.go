@@ -1172,7 +1172,7 @@ func TestFuncMap(t *testing.T) {
 		"bf_lower", "bf_upper", "bf_trim", "bf_contains", "bf_join",
 		"bf_len", "bf_at", "bf_includes", "bf_first", "bf_last",
 		"bf_arr", "bf_map", "bf_merge", "bf_filter_truthy", "bf_ternary", "bf_truthy",
-		"bf_keep_truthy", "bf_keep_falsy",
+		"bf_keep_truthy", "bf_keep_falsy", "bf_keep_nonnil",
 		"bf_every", "bf_some", "bf_filter", "bf_find", "bf_find_index", "bf_sort",
 		"bf_sort_eval", "bf_reduce_eval", "bf_env",
 		"bf_filter_eval", "bf_every_eval", "bf_some_eval",
@@ -3622,5 +3622,96 @@ func TestKeepTruthyFalsyLogicalValue(t *testing.T) {
 	}
 	if got := KeepFalsy(0); len(got) != 1 || got[0] != 0 {
 		t.Errorf("KeepFalsy(0) = %v, want [0]", got)
+	}
+}
+
+// A value-position JS `l ?? r` lowers to
+// `index (or (bf_keep_nonnil l) (bf_arr r)) 0` (#3824 step 7): only a nil
+// `l` falls through, a present `false` / `0` / `""` / NaN / `[]` is kept,
+// and `r` is not evaluated when `l` is not nil.
+func TestKeepNonNilNullishValue(t *testing.T) {
+	fm := FuncMap()
+	fm["boom"] = func() (any, error) { panic("r evaluated after the short circuit") }
+	render := func(src string, data map[string]any) string {
+		t.Helper()
+		var buf bytes.Buffer
+		tmpl := template.Must(template.New("t").Funcs(fm).Parse(src))
+		if err := tmpl.Execute(&buf, data); err != nil {
+			t.Fatalf("%s: %v", src, err)
+		}
+		return buf.String()
+	}
+	nullish := func(l, r string) string { return "(index (or (bf_keep_nonnil " + l + ") (bf_arr " + r + ")) 0)" }
+	var nilSlice []any
+	data := map[string]any{
+		"False": false, "Zero": 0, "Empty": "", "NaN": math.NaN(), "Arr": []any{},
+		"Nil": nil, "NilSlice": nilSlice, "S": "s",
+	}
+	cases := []struct{ src, want string }{
+		{"{{bf_text " + nullish(".False", "boom") + "}}", "false"},
+		{"{{bf_text " + nullish(".Zero", "boom") + "}}", "0"},
+		{"{{bf_text " + nullish(".Empty", "boom") + "}}|", "|"},
+		{"{{bf_text " + nullish(".NaN", "boom") + "}}", "NaN"},
+		{"{{bf_text (bf_len " + nullish(".Arr", "boom") + ")}}", "0"},
+		{"{{bf_text " + nullish(".Nil", ".S") + "}}", "s"},
+		{"{{bf_text " + nullish(".NilSlice", ".S") + "}}", "s"},
+		{"{{bf_text " + nullish(".Missing", ".S") + "}}", "s"},
+		// A nil right operand is the result: `null ?? null` is null.
+		{"{{bf_text " + nullish(".Nil", ".Nil") + "}}|", "|"},
+		// Chains: `null ?? undefined ?? 0 ?? boom` stops at `0`.
+		{"{{bf_text " + nullish(nullish(nullish(".Nil", ".Missing"), ".Zero"), "boom") + "}}", "0"},
+	}
+	for _, c := range cases {
+		if got := render(c.src, data); got != c.want {
+			t.Errorf("%s = %q, want %q", c.src, got, c.want)
+		}
+	}
+}
+
+// A compound `??` left operand reads a leaf Go stores as a concrete zero
+// (an omitted alias-typed prop) as nil with `or x nil`, and the whole left
+// operand is nil-tested once (#3824 step 7). This is the exact template the
+// adapter emits for `(props.flag ? 'ok' : props.tone) ?? JSON.stringify(props.config)`
+// and `(props.flag && props.tone) ?? 'fb'` (pinned in go-template-adapter.test.ts):
+// the fallback is evaluated once when the selected value is nil and never
+// when it is present, and a present `false` from `&&` is kept.
+func TestAbsentAsNilCompoundNullishLeft(t *testing.T) {
+	const ternary = `{{bf_text (index (or (bf_keep_nonnil (bf_ternary (bf_truthy .Flag) "ok" (or .Tone nil))) (bf_arr (bf_json .Config))) 0)}}`
+	const and = `{{bf_text (index (or (bf_keep_nonnil (index (or (bf_keep_falsy .Flag) (bf_arr (or .Tone nil))) 0)) (bf_arr "fb")) 0)}}`
+	calls := 0
+	fm := FuncMap()
+	fm["bf_json"] = func(v any) (string, error) {
+		calls++
+		return JSON(v)
+	}
+	render := func(src string, data map[string]any) string {
+		t.Helper()
+		var buf bytes.Buffer
+		tmpl := template.Must(template.New("t").Funcs(fm).Parse(src))
+		if err := tmpl.Execute(&buf, data); err != nil {
+			t.Fatalf("%s: %v", src, err)
+		}
+		return buf.String()
+	}
+	config := map[string]any{"a": 1}
+	cases := []struct {
+		name, src string
+		data      map[string]any
+		want      string
+		calls     int
+	}{
+		{"ternary picks a present literal", ternary, map[string]any{"Flag": true, "Tone": "", "Config": config}, "ok", 0},
+		{"ternary picks a present alias prop", ternary, map[string]any{"Flag": false, "Tone": "warm", "Config": config}, "warm", 0},
+		{"ternary picks an omitted alias prop", ternary, map[string]any{"Flag": false, "Tone": "", "Config": config}, `{&#34;a&#34;:1}`, 1},
+		{"&& yields a present false", and, map[string]any{"Flag": false, "Tone": "warm"}, "false", 0},
+		{"&& yields its right side", and, map[string]any{"Flag": true, "Tone": "cool"}, "cool", 0},
+		{"&& yields an omitted alias prop", and, map[string]any{"Flag": true, "Tone": ""}, "fb", 0},
+		{"&& yields an omitted flag", and, map[string]any{"Flag": nil, "Tone": "warm"}, "fb", 0},
+	}
+	for _, c := range cases {
+		calls = 0
+		if got := render(c.src, c.data); got != c.want || calls != c.calls {
+			t.Errorf("%s: got %q with %d fallback calls, want %q with %d", c.name, got, calls, c.want, c.calls)
+		}
 	}
 }
