@@ -29,6 +29,7 @@ The runtime is not published to Maven Central. Vendor the `java/` sources from t
 
 ```java
 import dev.barefootjs.pebble.Bf;
+import dev.barefootjs.pebble.ext.JsLogicalExtension;
 import dev.barefootjs.pebble.ext.SetBlockExtension;
 import io.pebbletemplates.pebble.PebbleEngine;
 import io.pebbletemplates.pebble.loader.FileLoader;
@@ -43,6 +44,7 @@ PebbleEngine engine = new PebbleEngine.Builder()
     .loader(loader)
     .strictVariables(false)
     .extension(new SetBlockExtension())
+    .extension(new JsLogicalExtension())
     .build();
 
 Bf bf = new Bf("Counter_0", engine, Map.of()); // scope id, engine (for render_child), child manifest
@@ -52,7 +54,7 @@ template.evaluate(writer, Map.of("initial", 0, "bf", bf));
 String html = "<!doctype html><body>" + writer + bf.scripts() + "</body>";
 ```
 
-Three settings are required. `strictVariables(false)` lets a missing prop render empty instead of throwing. `SetBlockExtension` adds the `{% set name %}…{% endset %}` block-capture form that stock Pebble lacks; children and slots do not render without it. The `bf` context entry is `Bf(scopeId, engine, manifest)`: the engine resolves child templates for `render_child`, and the manifest maps child template names to their prop defaults — `Map.of()` for a component without children, otherwise `ManifestLoader.loadFromBuildManifest(templatesDir.resolve("manifest.json"))` over the `manifest.json` that `vite build` writes next to the templates (`ManifestLoader.load` reads the `_bf_manifest.json` sidecar the conformance harness writes instead).
+Four settings are required. `strictVariables(false)` lets a missing prop render empty instead of throwing. `SetBlockExtension` adds the `{% set name %}…{% endset %}` block-capture form that stock Pebble lacks; children and slots do not render without it. `JsLogicalExtension` adds the `||` / `&&` operators the templates use for a JS `a || b` / `a && b` in a value position, which yield an operand by JS truthiness (Pebble's own `or` / `and` yield a boolean); a template that uses one fails to parse without it. The `bf` context entry is `Bf(scopeId, engine, manifest)`: the engine resolves child templates for `render_child`, and the manifest maps child template names to their prop defaults — `Map.of()` for a component without children, otherwise `ManifestLoader.loadFromBuildManifest(templatesDir.resolve("manifest.json"))` over the `manifest.json` that `vite build` writes next to the templates (`ManifestLoader.load` reads the `_bf_manifest.json` sidecar the conformance harness writes instead).
 
 ## Notes
 
