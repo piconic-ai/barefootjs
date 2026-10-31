@@ -776,6 +776,14 @@ sub boolean ($self, $value) {
     return $value ? JSON::PP::true() : JSON::PP::false();
 }
 
+# A JSX text child's value: JSX renders nothing for a boolean (#3824 step 5).
+# Perl holds a comparison as `1` / `''`, so only a JSON boolean is one here:
+# the compiler materializes every boolean a displayed value can be with
+# `boolean` first. Any other value passes through to the text sink.
+sub display ($self, $value) {
+    return _is_json_bool($value) ? '' : $value;
+}
+
 # A decoded JSON boolean (`Mojo::JSON::true` / `false`, a `JSON::PP::Boolean`).
 sub _is_json_bool ($value) {
     my $ref = ref($value);

@@ -227,7 +227,7 @@ function emitInnerLoopNested(lines: string[], plan: InnerLoopNestedInitPlan): vo
     const writer = claimWriterVarName(slots, varSlotId)
     lines.push(`        const ${writer} = lazySlots(__innerEl, ${claimPlanLiteral(slots)})`)
     for (const text of texts) {
-      lines.push(`        createEffect(() => { ${writer}('${text.slotId}', ${rowTextSlotValue(text, text.expression, 'String')}) })`)
+      lines.push(`        createEffect(() => { ${writer}('${text.slotId}', ${rowTextSlotValue(text, text.expression)}) })`)
     }
   }
   // Ref callbacks fire on every forEach iteration — initial mount and any

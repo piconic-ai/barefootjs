@@ -34,11 +34,14 @@ describe('escapeText', () => {
     expect(escapeText('count: 0')).toBe('count: 0')
   })
 
-  test('coerces non-nullish non-string values via String()', () => {
+  test('coerces non-nullish non-boolean values via String()', () => {
     expect(escapeText(0)).toBe('0')
-    // `false` keeps its String() form, matching the reactive text path
-    // (`dynamic-text.ts` is nullish-only via `?? ''`).
-    expect(escapeText(false)).toBe('false')
+  })
+
+  test('renders a boolean as empty text, as JSX renders no boolean child (#3824 step 5)', () => {
+    // Matches the reactive text path (`dynamic-text.ts`, `writeText`).
+    expect(escapeText(false)).toBe('')
+    expect(escapeText(true)).toBe('')
   })
 
   test('renders nullish as empty text (#2137)', () => {

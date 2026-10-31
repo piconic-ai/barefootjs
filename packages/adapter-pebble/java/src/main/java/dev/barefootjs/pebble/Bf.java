@@ -333,6 +333,14 @@ public final class Bf {
     return JsValue.jsString(v);
   }
 
+  /**
+   * A JSX text child's value: JSX renders nothing for a boolean (#3824 step
+   * 5). Any other value passes through to the text sink.
+   */
+  public Object display(Object v) {
+    return v instanceof Boolean ? "" : v;
+  }
+
   /** `String(boolean)` for a props/signal value the analyzer proved is boolean-typed (#1897). */
   public String bool_str(Object v) {
     return JsValue.jsString(v);

@@ -347,7 +347,7 @@ describe('reactive attributes inside a nested .map() body (#135)', () => {
     // The innermost loop's per-item renderItem must emit BOTH a
     // reactive-text effect for `panel.text` and a reactive-attr effect
     // for `panel.cls` — the bug dropped only the former.
-    expect(content).toMatch(/createEffect\(\(\) => \{[\s\S]*?__bfw_\w+\('s\d+', String\(panel\(\)\.text\)\)/)
+    expect(content).toMatch(/createEffect\(\(\) => \{[\s\S]*?__bfw_\w+\('s\d+', textOrNode\(panel\(\)\.text\)\)/)
     expect(content).toContain("setAttribute('class'")
   })
 
@@ -405,7 +405,7 @@ describe('reactive attributes inside a nested .map() body (#135)', () => {
     // effect missing (the exact regression here). `pi` reads the row's
     // live index accessor (#2859), so `labelAt(pi())` also stays correct
     // if this innermost loop's rows ever survive a same-key reorder.
-    expect(content).toMatch(/createEffect\(\(\) => \{[\s\S]*?__bfw_\w+\('s\d+', String\(labelAt\(pi\(\)\)\)\)/)
+    expect(content).toMatch(/createEffect\(\(\) => \{[\s\S]*?__bfw_\w+\('s\d+', textOrNode\(labelAt\(pi\(\)\)\)\)/)
     expect(content).toContain("setAttribute('class'")
   })
 })

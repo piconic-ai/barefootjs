@@ -78,6 +78,7 @@ func FuncMap() template.FuncMap {
 		"bf_pad_end":     PadEnd,
 		"bf_string":      String,
 		"bf_text":        Text,
+		"bf_display":     Display,
 		"bf_raw_html":    RawHTML,
 		"bf_ternary":     Ternary,
 		"bf_truthy":      Truthy,
@@ -1646,6 +1647,15 @@ func Text(v any) any {
 		return numberString(n)
 	case float32:
 		return numberString(float64(n))
+	}
+	return v
+}
+
+// Display is a JSX text child's value: JSX renders nothing for a boolean
+// (#3824 step 5). Any other value is returned unchanged for the text sink.
+func Display(v any) any {
+	if _, ok := v.(bool); ok {
+		return ""
 	}
 	return v
 }

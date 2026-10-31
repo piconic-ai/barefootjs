@@ -91,6 +91,7 @@ export type PrimitiveHelper =
   | 'number'
   | 'coalesce'
   | 'get'
+  | 'boolean'
 
 export type PrimitivePlan =
   | { readonly mode: 'native'; readonly op: PrimitiveOp; readonly proof: Proof }
@@ -350,6 +351,87 @@ export function planPrimitive(node: ParsedExpr, typing: ScopedOperandTyping, tar
     default:
       return null
   }
+}
+
+// ---------------------------------------------------------------------------
+// Boolean values (#3824 step 5)
+// ---------------------------------------------------------------------------
+
+/**
+ * Whether `node` itself produces a boolean (a comparison, `!`, a boolean
+ * literal): the nodes whose host value is not a boolean on a target without
+ * a boolean type (Perl holds `1` / `''` / `0`). A read of a name never is: a
+ * stored value was materialized where it was stored.
+ */
+function producesBoolean(node: ParsedExpr): boolean {
+  if (node.kind === 'literal') return node.literalType === 'boolean'
+  if (node.kind === 'unary') return node.op === '!'
+  return node.kind === 'binary' && COMPARISON_OPS.has(node.op)
+}
+
+function collectBooleanValueSites(node: ParsedExpr, target: NativeSafeTable, sites: Map<ParsedExpr, PrimitivePlan>): void {
+  if (producesBoolean(node)) {
+    sites.set(node, decide('boolean-value', 'boolean', target, 'boolean'))
+    return
+  }
+  switch (node.kind) {
+    case 'logical':
+      // `l && r` / `l || r` / `l ?? r` yield either operand.
+      collectBooleanValueSites(node.left, target, sites)
+      collectBooleanValueSites(node.right, target, sites)
+      return
+    case 'conditional':
+      // The test is a test position; only the branches are values.
+      collectBooleanValueSites(node.consequent, target, sites)
+      collectBooleanValueSites(node.alternate, target, sites)
+      return
+    case 'array-literal':
+      for (const element of node.elements) collectBooleanValueSites(element, target, sites)
+      return
+    case 'object-literal':
+      for (const property of node.properties) if (property.kind === 'prop') collectBooleanValueSites(property.value, target, sites)
+      return
+    default:
+      return
+  }
+}
+
+/**
+ * The boolean-value plan of every node of `expr` whose value leaves the
+ * expression when `expr` itself does (`spec/js-primitive-semantics.md`,
+ * "Boolean values"): `expr` read as a value — a child prop, a stored signal
+ * seed / memo / local, a `JSON.stringify` argument, a rendered value — and,
+ * through it, an operand `&&` / `||` / `??` returns, a ternary branch and an
+ * array or object literal element. A test (a ternary's test, the operand of
+ * `!`, an `if` condition) is not a value: it keeps the target's native
+ * truthiness. A target with a boolean type claims `boolean-value` natively
+ * and spells nothing; Perl materializes each site with its runtime's
+ * `boolean`.
+ */
+export function booleanValueSites(expr: ParsedExpr, target: NativeSafeTable): ReadonlyMap<ParsedExpr, PrimitivePlan> {
+  const sites = new Map<ParsedExpr, PrimitivePlan>()
+  collectBooleanValueSites(expr, target, sites)
+  return sites
+}
+
+/**
+ * How a JSX text child displays its value (`spec/js-primitive-semantics.md`,
+ * "ToString and boolean values"): JSX renders nothing for `true`, `false`,
+ * `null` and `undefined`.
+ *
+ * - `empty`: Phase 1 proves the value is a boolean or nil, so the child
+ *   renders nothing (its markers stay).
+ * - `display`: the value may be a boolean among other types, so the runtime's
+ *   `display` helper blanks a boolean at render time.
+ * - `plain`: the value is never a boolean (or Phase 1 proves nothing), so the
+ *   target's text sink prints it as before.
+ */
+export type TextDisplay = 'empty' | 'display' | 'plain'
+
+export function planTextDisplay(expr: ParsedExpr, typing: ScopedOperandTyping): TextDisplay {
+  const { types } = operandFacts(expr, typing)
+  if (types.has('unknown') || !types.has('boolean')) return 'plain'
+  return [...types].every(t => t === 'boolean' || t === 'nil') ? 'empty' : 'display'
 }
 
 /** The inputs an emitter supplies for the plans it receives (`ParsedExprEmitter.primitives`). */

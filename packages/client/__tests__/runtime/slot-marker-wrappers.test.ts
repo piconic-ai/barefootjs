@@ -64,6 +64,15 @@ describe('reactive wrappers pass the marker through', () => {
     slots.write('s0', textOrNode(__slot(() => html)))
     expect(host.querySelector('p')!.textContent).toBe('kept')
   })
+
+  test('a boolean written to a text slot renders no text, as JSX renders no boolean child (#3824 step 5)', () => {
+    expect(textOrNode(false)).toBe('')
+    expect(textOrNode(true)).toBe('')
+    const host = mount('<p><!--bf:s0-->old<!--/--></p>')
+    const slots = claimSlots(host, [{ id: 's0', kind: 'text', path: [] }])
+    slots.write('s0', true)
+    expect(host.querySelector('p')!.textContent).toBe('')
+  })
 })
 
 describe('template splices take the marker markup raw', () => {

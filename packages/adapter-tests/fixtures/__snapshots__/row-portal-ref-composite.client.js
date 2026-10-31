@@ -1,4 +1,4 @@
-import { createComponent, createEffect, createPortal, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, $, adoptRowPortal, claimRowPortals, escapeAttr, escapeText, mapArray, mountRowRoot, qsaItem, renderChild, upsertChildItem } from '@barefootjs/client/runtime'
+import { createComponent, createEffect, createPortal, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, $, adoptRowPortal, claimRowPortals, escapeAttr, escapeText, mapArray, mountRowRoot, qsaItem, renderChild, textOrNode, upsertChildItem } from '@barefootjs/client/runtime'
 
 export function initRowLabel(__scope, _p = {}) {
   if (!__scope) return
@@ -44,7 +44,7 @@ export function initRowPortalRefComposite(__scope, _p = {}) {
     upsertChildItem(__el, 'RowLabel__f13d1715', 's2', { get text() { return r() } }, undefined, __scope)
     { const __e = qsaItem(__el, '[bf="s4"]'); if (__e) __e.addEventListener('click', () => setLast(r())) }
     const __bfw_s3 = lazySlots(__el, [{ id: 's3', kind: 'text', path: [] }])
-    createEffect(() => { __bfw_s3('s3', String(r())) })
+    createEffect(() => { __bfw_s3('s3', textOrNode(r())) })
     { const __rf_s4 = qsaItem(__el, '[bf="s4"]')
     if (__rf_s4) { { (mountContent)(__rf_s4); if (__scopeId) __rf_s4.setAttribute('bf-po', __scopeId) }; adoptRowPortal(__el, __rf_s4, _s5) } }
     return __el

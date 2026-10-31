@@ -122,7 +122,7 @@ describe('nested loop binding ids (#1795 Phase 3)', () => {
     // a live Node passes through untouched.
     expect(on).toMatch(/__bfw_\w+\('s\d+', escapeTextOrNode\(r\(\)\.label\)\) }, "Nested#binding:s\d+"\)/)
     // The inner loop's child text (`{t}`).
-    expect(on).toMatch(/String\(t\(\)\)\) }, "Nested#binding:s\d+"\)/)
+    expect(on).toMatch(/textOrNode\(t\(\)\)\) }, "Nested#binding:s\d+"\)/)
   })
 
   test('branch-scoped loop (loop inside a conditional) attributes its mapArray', () => {
@@ -137,7 +137,7 @@ describe('nested loop binding ids (#1795 Phase 3)', () => {
     const emitted = assertNoCoverageGap(staticLoopSource, 'StaticLoop')
     expect(emitted.length).toBeGreaterThanOrEqual(1)
     const on = clientJs(staticLoopSource, 'StaticLoop', true)
-    expect(on).toMatch(/__bfw_\w+\('s\d+', String\(n\(\)\)\) }, "StaticLoop#binding:s\d+"\)/)
+    expect(on).toMatch(/__bfw_\w+\('s\d+', textOrNode\(n\(\)\)\) }, "StaticLoop#binding:s\d+"\)/)
   })
 
   test('component loop attributes its mapArray', () => {

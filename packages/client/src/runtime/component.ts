@@ -983,12 +983,14 @@ export function escapeAttr(value: unknown): string {
  * `writeText`/`writeMarkup` and `dynamic-text.ts` all `String(value ?? '')`).
  * Only this initial-render escape site used to stringify `undefined` /
  * `null` into literal "undefined" / "null" text, so a bare `{props.x}` on
- * an absent prop diverged from SSR at first paint (#2137). Non-nullish
- * values (including `0` and `false`) keep their `String()` form, matching
- * the reactive path.
+ * an absent prop diverged from SSR at first paint (#2137). A boolean renders
+ * as empty text too (`{false}` / `{true}` produce no text, #3824 step 5).
+ * Any other value (including `0`) keeps its `String()` form, matching the
+ * reactive path.
  */
 export function escapeText(value: unknown): string {
-  if (value == null) return ''
+  // JSX renders no text for a boolean child either (#3824 step 5).
+  if (value == null || typeof value === 'boolean') return ''
   return escapeAttr(value)
 }
 

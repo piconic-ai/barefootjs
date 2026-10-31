@@ -1221,6 +1221,114 @@
       }
     }
   ],
+  "boolean-value-positions": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0,
+        "on": true,
+        "items": [
+          1,
+          3
+        ]
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7,
+        "on": true,
+        "items": [
+          1,
+          3
+        ]
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890,
+        "on": true,
+        "items": [
+          1,
+          3
+        ]
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "n": 2,
+        "on": false,
+        "items": [
+          1,
+          3
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "n": 2,
+        "on": true,
+        "items": []
+      }
+    }
+  ],
+  "boolean-value-positions-destructured": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0,
+        "on": true,
+        "items": [
+          1,
+          3
+        ]
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7,
+        "on": true,
+        "items": [
+          1,
+          3
+        ]
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890,
+        "on": true,
+        "items": [
+          1,
+          3
+        ]
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "n": 2,
+        "on": false,
+        "items": [
+          1,
+          3
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "n": 2,
+        "on": true,
+        "items": []
+      }
+    }
+  ],
   "branch-local-filter-join": [
     {
       "name": "gen:on:true",

@@ -725,6 +725,11 @@ class BarefootJS:
     def bool_str(self, value: Any) -> str:
         return js_bool_str(value)
 
+    def display(self, value: Any) -> Any:
+        """A JSX text child's value: JSX renders nothing for a boolean
+        (#3824 step 5). Any other value passes through to the text sink."""
+        return "" if isinstance(value, bool) else value
+
     def text_start(self, slot_id: str) -> str:
         return f"<!--bf:{slot_id}-->"
 

@@ -30,7 +30,7 @@ export function N(props: { groups: { name: string; tags: string[] }[] }) {
     expect(js).not.toContain('const __bfItem().name')
     expect(js).toContain("const name = t() + '!'")
     expect(js).toContain('String(name)')
-    expect(js).toContain('String(__bfItem().name)')
+    expect(js).toContain('textOrNode(__bfItem().name)')
   })
 
   test('a row two loops deep still reads the outermost item through its accessor', () => {
@@ -51,7 +51,7 @@ export function Feed() {
   </article>)}</main>
 }
 `)
-    expect(js).toContain('String(post().text + reply().text)')
+    expect(js).toContain('textOrNode(post().text + reply().text)')
     expect(js).not.toContain('String(post.text + reply().text)')
   })
 })

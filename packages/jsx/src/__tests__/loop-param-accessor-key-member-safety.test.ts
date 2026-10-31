@@ -235,7 +235,7 @@ describe('.map() row: object-literal key / shorthand / member positions vs. the 
     // The genuine index references (passed to the child, and read directly
     // in the row's own text) are still wrapped as accessor calls.
     expect(js).toContain('return i()')
-    expect(js).toContain('String(i())')
+    expect(js).toContain('textOrNode(i())')
   })
 })
 

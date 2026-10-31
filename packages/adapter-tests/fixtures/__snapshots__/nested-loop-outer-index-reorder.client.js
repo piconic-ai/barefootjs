@@ -1,4 +1,4 @@
-import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, lazySlots, mapArray, mountRowRoot, qsa } from '@barefootjs/client/runtime'
+import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, lazySlots, mapArray, mountRowRoot, qsa, textOrNode } from '@barefootjs/client/runtime'
 
 
 export function initNestedLoopOuterIndexReorder(__scope, _p = {}) {
@@ -32,8 +32,8 @@ export function initNestedLoopOuterIndexReorder(__scope, _p = {}) {
       let __innerEl1_0 = __existing ?? (() => { const __t = document.createElement('template'); __t.innerHTML = `<li data-key-1="${escapeAttr(item().id)}" class="item"><span class="group-index"><!--bf:s1-->${escapeText(gi())}<!--/--></span><span class="label"><!--bf:s2-->${escapeText(item().label)}<!--/--></span></li>`; return __t.content.firstElementChild.cloneNode(true) })()
       __innerEl1_0.setAttribute('data-key-1', String(item().id))
       const __bfw_s1 = lazySlots(__innerEl1_0, [{ id: 's1', kind: 'text', path: [] }, { id: 's2', kind: 'text', path: [] }])
-      createEffect(() => { __bfw_s1('s1', String(gi())) })
-      createEffect(() => { __bfw_s1('s2', String(item().label)) })
+      createEffect(() => { __bfw_s1('s1', textOrNode(gi())) })
+      createEffect(() => { __bfw_s1('s2', textOrNode(item().label)) })
       return __innerEl1_0
     }, 'l0', undefined, "data-key-1") }
     return __el

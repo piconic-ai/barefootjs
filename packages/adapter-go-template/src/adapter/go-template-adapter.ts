@@ -104,6 +104,7 @@ import {
   nullableSignalAttrGetter,
   propsObjectIdentifier,
   planTest,
+  planTextDisplay,
 } from '@barefootjs/jsx'
 import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
 
@@ -4523,6 +4524,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `bf build` hot path.
     const classify: { parsed?: ParsedExpr } = {}
     const goExpr = this.convertExpressionToGo(expr.expr, classify, expr.parsed)
+    // A boolean text child renders nothing (#3824 step 5, `planTextDisplay`).
+    const displayParsed = expr.parsed ?? classify.parsed
+    const display = displayParsed ? planTextDisplay(displayParsed, this.primitives.typing()) : 'plain'
+    if (display === 'empty') return expr.slotId ? `{{bfTextStart "${expr.slotId}"}}{{bfTextEnd}}` : ''
 
     // If the lowered expression is already template text, don't wrap it again
     // in {{...}} (double-wrapping). Two distinct shapes reach here:
@@ -4556,12 +4561,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // present values retain the existing default printing behavior.
     // A bare `nil` (a `const x = null` read as text) is not a valid action on
     // its own (`nil is not a command`); JS renders a null child as nothing.
-    const finalExpr =
+    const sinkExpr =
       goExpr === 'nil'
         ? '""'
         : this.textNillablePropNameOf(classify.parsed) !== null
           ? `bf_string ${wrapIfMultiToken(goExpr)}`
           : this.numericTextExpression(goExpr, classify.parsed)
+    // One that may be a boolean is blanked at render time by `bf_display`.
+    const finalExpr = display === 'display' ? `bf_display ${wrapIfMultiToken(sinkExpr)}` : sinkExpr
 
     // Mark expressions with slotId using comment nodes for client JS to find.
     // This includes reactive expressions AND loop-param-dependent expressions.

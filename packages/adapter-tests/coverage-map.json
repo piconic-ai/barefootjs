@@ -1222,6 +1222,72 @@
         "text"
       ]
     },
+    "boolean-value-positions": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:<",
+        "binary:===",
+        "binary:>",
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "logical:||",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "boolean-value-positions-destructured": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:<",
+        "binary:===",
+        "binary:>",
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "logical:||",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "branch-local-filter-join": {
       "kinds": [
         "array-literal",

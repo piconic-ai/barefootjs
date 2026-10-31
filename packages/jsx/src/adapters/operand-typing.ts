@@ -129,10 +129,18 @@ function factsOfPrimitive(primitive: string | undefined): OperandFacts {
   return UNKNOWN_FACTS
 }
 
-/** The facts of a literal initializer (`createSignal(0)`, `const x = 'a'`); null when it is not one. */
+const COMPARISON_OPS: ReadonlySet<string> = new Set(['<', '>', '<=', '>=', '==', '===', '!=', '!=='])
+
+/**
+ * The facts of a literal initializer (`createSignal(0)`, `const x = 'a'`),
+ * or of one that always yields a boolean (`createSignal(n > 1)`,
+ * `const off = !on`, #3824 step 5); null when it is neither.
+ */
 function factsOfLiteral(parsed: ParsedExpr | undefined): OperandFacts | null {
   if (!parsed) return null
   if (parsed.kind === 'identifier' && parsed.name === 'undefined') return nilFacts('undefined')
+  if (parsed.kind === 'binary' && COMPARISON_OPS.has(parsed.op)) return factsOf('boolean')
+  if (parsed.kind === 'unary' && parsed.op === '!') return factsOf('boolean')
   if (parsed.kind !== 'literal') return null
   return parsed.literalType === 'null' ? nilFacts('null') : factsOf(parsed.literalType)
 }

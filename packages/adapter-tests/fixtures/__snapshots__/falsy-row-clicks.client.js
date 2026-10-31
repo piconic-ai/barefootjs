@@ -108,7 +108,7 @@ export function initFalsyRowClicks(__scope, _p = {}) {
       let __iterEl = _s10.children[__idx]
       if (__iterEl) {
         const __bfw_s8 = lazySlots(__iterEl, [{ id: 's8', kind: 'text', path: [] }])
-        createEffect(() => { __bfw_s8('s8', String(l)) })
+        createEffect(() => { __bfw_s8('s8', textOrNode(l)) })
       }
     })
   }
@@ -186,7 +186,7 @@ export function initFalsyRowClicks(__scope, _p = {}) {
       __innerEl1_0.setAttribute('data-key-1', String(v()))
       { const __e = qsa(__innerEl1_0, '[bf="s15"]'); if (__e) __e.addEventListener('click', () => setLast(`cell:${gi()}:${v()}`)) }
       const __bfw_s14 = lazySlots(__innerEl1_0, [{ id: 's14', kind: 'text', path: [] }])
-      createEffect(() => { __bfw_s14('s14', String(v())) })
+      createEffect(() => { __bfw_s14('s14', textOrNode(v())) })
       return __innerEl1_0
     }, 'l4', undefined, "data-key-1") }
     return __el

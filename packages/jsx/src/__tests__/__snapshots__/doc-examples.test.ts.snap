@@ -519,7 +519,7 @@ export function Example(_p, __bfKey) { return createComponent('Example', _p, __b
 `;
 
 exports[`docs/core/rendering/jsx-compatibility.md doc-examples L85 — ❌ BF101 on Go/Mojo; works on Hono 1`] = `
-"import { $, createComponent, createEffect, escapeAttr, escapeText, hydrate, lazySlots, withParentScope } from '@barefootjs/client/runtime'
+"import { $, createComponent, createEffect, escapeAttr, escapeText, hydrate, lazySlots, textOrNode, withParentScope } from '@barefootjs/client/runtime'
 
 
 export function initReactionBar(__scope, _p = {}) {
@@ -546,8 +546,8 @@ export function initReactionBar(__scope, _p = {}) {
       }
       if (__iterEl) {
         const __bfw_s0 = lazySlots(__iterEl, [{ id: 's0', kind: 'text', path: [] }, { id: 's1', kind: 'text', path: [] }])
-        createEffect(() => { __bfw_s0('s0', String(emoji)) })
-        createEffect(() => { __bfw_s0('s1', String(String(users.length))) })
+        createEffect(() => { __bfw_s0('s0', textOrNode(emoji)) })
+        createEffect(() => { __bfw_s0('s1', textOrNode(String(users.length))) })
       }
     })
   }

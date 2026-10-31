@@ -294,7 +294,7 @@ function emitConsolidatedRowEffect(
   //    preamble region) uses the multi-line block.
   if (attrSlots.length === 0 && preambleRegions.length === 0 && outerTexts.length === 1) {
     const text = outerTexts[0]
-    lines.push(`${indent}createEffect(() => { ${writer}('${text.slotId}', ${rowTextSlotValue(text, text.wrappedExpression, 'String')}) })`)
+    lines.push(`${indent}createEffect(() => { ${writer}('${text.slotId}', ${rowTextSlotValue(text, text.wrappedExpression)}) })`)
     return
   }
   lines.push(`${indent}createEffect(() => {`)
@@ -319,7 +319,7 @@ function emitConsolidatedRowEffect(
     lines.push(`${indent}  }`)
   }
   for (const text of outerTexts) {
-    lines.push(`${indent}  ${writer}('${text.slotId}', ${rowTextSlotValue(text, text.wrappedExpression, 'String')})`)
+    lines.push(`${indent}  ${writer}('${text.slotId}', ${rowTextSlotValue(text, text.wrappedExpression)})`)
   }
   for (const region of preambleRegions) {
     lines.push(`${indent}  ${writer}('${region.slotId}', ${region.valueExpr})`)
@@ -345,7 +345,7 @@ function emitOuterTexts(
   const writer = claimWriterVarName(slots, varSlotId)
   lines.push(`${indent}const ${writer} = lazySlots(${elVar}, ${claimPlanLiteral(slots)})`)
   for (const text of texts) {
-    lines.push(`${indent}createEffect(() => { ${writer}('${text.slotId}', ${rowTextSlotValue(text, text.wrappedExpression, 'String')}) }${bindingBfId(text.slotId)})`)
+    lines.push(`${indent}createEffect(() => { ${writer}('${text.slotId}', ${rowTextSlotValue(text, text.wrappedExpression)}) }${bindingBfId(text.slotId)})`)
   }
 }
 

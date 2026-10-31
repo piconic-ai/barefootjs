@@ -137,7 +137,7 @@ describe('nested loop: referencing an OUTER loop\'s own index (#2861)', () => {
     // outer accessor must be read directly by name, exactly as `item()`
     // reads the outer ITEM in the sibling case #2865 already covers.
     expect(content).toMatch(
-      /mapArray\(\(\) => g\(\)\.items \|\| \[\], .*?, \(it, __innerIdx\d+_\d+, __existing\) => \{[\s\S]*?createEffect\(\(\) => \{ __bfw_s0\('s0', String\(gi\(\)\)\) \}\)/
+      /mapArray\(\(\) => g\(\)\.items \|\| \[\], .*?, \(it, __innerIdx\d+_\d+, __existing\) => \{[\s\S]*?createEffect\(\(\) => \{ __bfw_s0\('s0', textOrNode\(gi\(\)\)\) \}\)/
     )
   })
 
@@ -202,7 +202,7 @@ describe('nested loop: referencing an OUTER loop\'s own index (#2861)', () => {
     // ONE LEVEL UP (the one whose conditional this branch belongs to) was
     // classified 'none' and baked once into the branch's initial template.
     expect(content).toMatch(
-      /mapArray\(\(\) => o\(\)\.items \|\| \[\], .*?, \(item, __bidxbr_\d+, __existing\) => \{[\s\S]*?createEffect\(\(\) => \{ __bfw_s1\('s1', String\(oi\(\)\)\) \}\)/
+      /mapArray\(\(\) => o\(\)\.items \|\| \[\], .*?, \(item, __bidxbr_\d+, __existing\) => \{[\s\S]*?createEffect\(\(\) => \{ __bfw_s1\('s1', textOrNode\(oi\(\)\)\) \}\)/
     )
   })
 })

@@ -366,12 +366,17 @@ describe('GoTemplateAdapter - bf_ternary value-position lowering (#2335)', () =>
   // `[]` stays truthy, an absent/nil value falsy); an operand that already
   // lowers to a Go bool keeps the bare `not`.
   test('`!x` coerces a non-bool operand through bf_truthy; a bool-shaped operand keeps bare not', () => {
-    expect(render('!tags')).toBe('{{not (bf_truthy .Tags)}}')
-    expect(render('!!tags')).toBe('{{not (not (bf_truthy .Tags))}}')
-    expect(render('!(n === 1)')).toBe('{{not (bf_eq .N 1)}}')
+    // A `!x` text child renders nothing (a boolean, #3824 step 5), so the
+    // lowering is read from the expression converter itself.
+    const lower = (expr: string): string =>
+      (adapter as unknown as { convertExpressionToGo(e: string): string }).convertExpressionToGo(expr)
+    expect(render('!tags')).toBe('')
+    expect(lower('!tags')).toBe('not (bf_truthy .Tags)')
+    expect(lower('!!tags')).toBe('not (not (bf_truthy .Tags))')
+    expect(lower('!(n === 1)')).toBe('not (bf_eq .N 1)')
     // An untyped `a && b` yields an operand (`bf_keep_falsy`, #3824), which
     // `!` then tests.
-    expect(render('!(a && b)')).toBe('{{not (bf_truthy (index (or (bf_keep_falsy .A) (bf_arr .B)) 0))}}')
+    expect(lower('!(a && b)')).toBe('not (bf_truthy (index (or (bf_keep_falsy .A) (bf_arr .B)) 0))')
   })
 
   test('a right-folded chain nests as (bf_ternary … (bf_ternary …))', () => {

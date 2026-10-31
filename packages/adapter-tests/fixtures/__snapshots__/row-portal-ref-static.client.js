@@ -1,4 +1,4 @@
-import { $, adoptRowPortal, claimRowPortals, createComponent, createEffect, createPortal, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, isRowPortalOf, lazySlots, qsaItem, relayRowPortalEvents } from '@barefootjs/client/runtime'
+import { $, adoptRowPortal, claimRowPortals, createComponent, createEffect, createPortal, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, isRowPortalOf, lazySlots, qsaItem, relayRowPortalEvents, textOrNode } from '@barefootjs/client/runtime'
 
 
 export function initRowPortalRefStatic(__scope, _p = {}) {
@@ -29,7 +29,7 @@ export function initRowPortalRefStatic(__scope, _p = {}) {
       if (__iterEl) {
         claimRowPortals(__iterEl, __scopeId, ["s3"], _s4)
         const __bfw_s2 = lazySlots(__iterEl, [{ id: 's2', kind: 'text', path: [] }])
-        createEffect(() => { __bfw_s2('s2', String(r)) })
+        createEffect(() => { __bfw_s2('s2', textOrNode(r)) })
         { const __rf_s3 = qsaItem(__iterEl, '[bf="s3"]')
         if (__rf_s3) { { (mountContent)(__rf_s3); if (__scopeId) __rf_s3.setAttribute('bf-po', __scopeId) }; adoptRowPortal(__iterEl, __rf_s3, _s4) } }
       }

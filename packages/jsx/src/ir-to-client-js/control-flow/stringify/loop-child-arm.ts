@@ -198,14 +198,14 @@ export function stringifyBranchInnerLoops(
       // insert() may swap the branch's DOM between runs, and a 'text' write
       // is a plain, idempotent `nodeValue` assignment with no dedup state to
       // go stale — replaces the old re-query-$t-on-every-run discipline.
-      lines.push(`${indent}  createEffect(() => { claimSlots(__bel${uid}, [{ id: '${text.slotId}', kind: '${rowTextSlotKind(text)}', path: [] }]).write('${text.slotId}', ${rowTextSlotValue(text, text.wrappedExpression, 'String')}) }${bf})`)
+      lines.push(`${indent}  createEffect(() => { claimSlots(__bel${uid}, [{ id: '${text.slotId}', kind: '${rowTextSlotKind(text)}', path: [] }]).write('${text.slotId}', ${rowTextSlotValue(text, text.wrappedExpression)}) }${bf})`)
     }
     if (plainTexts.length > 0) {
       const slots: ClaimSlotSpec[] = plainTexts.map(t => ({ id: t.slotId, kind: rowTextSlotKind(t), path: [] }))
       const writer = claimWriterVarName(slots, varSlotId)
       lines.push(`${indent}  const ${writer} = lazySlots(__bel${uid}, ${claimPlanLiteral(slots)})`)
       for (const text of plainTexts) {
-        lines.push(`${indent}  createEffect(() => { ${writer}('${text.slotId}', ${rowTextSlotValue(text, text.wrappedExpression, 'String')}) }${profileBindingId(pc, text.slotId)})`)
+        lines.push(`${indent}  createEffect(() => { ${writer}('${text.slotId}', ${rowTextSlotValue(text, text.wrappedExpression)}) }${profileBindingId(pc, text.slotId)})`)
       }
     }
     if (inner.nestedConditionals.length > 0) {

@@ -24,7 +24,8 @@ export function contextDefaultPerl(c: ContextConsumer): string {
   const d = c.defaultValue
   if (d === null || d === undefined) return 'undef'
   if (typeof d === 'string') return perlStringLiteral(d)
-  if (typeof d === 'boolean') return d ? '1' : '0'
+  // A JS boolean value, held as a JSON boolean (#3824 step 5).
+  if (typeof d === 'boolean') return d ? 'bf->boolean(1)' : 'bf->boolean(0)'
   return String(d)
 }
 

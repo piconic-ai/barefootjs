@@ -1,4 +1,4 @@
-import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, lazySlots, mapArray } from '@barefootjs/client/runtime'
+import { $, createComponent, createEffect, createSignal, escapeAttr, escapeText, hydrate, lazySlots, mapArray, textOrNode } from '@barefootjs/client/runtime'
 
 
 export function initPreambleCells(__scope, _p = {}) {
@@ -20,7 +20,7 @@ export function initPreambleCells(__scope, _p = {}) {
     const __bfw_s0 = lazySlots(__el, [{ id: 's0', kind: 'text', path: [] }, { id: 's2', kind: 'markup', path: [] }])
     createEffect(() => {
       const stateLabel = t().done ? 'done & dusted' : 'open'; const cells = []; cells.push(`<td class="state">${escapeText(stateLabel)}</td>`);
-      __bfw_s0('s0', String(t().name))
+      __bfw_s0('s0', textOrNode(t().name))
       __bfw_s0('s2', Array.isArray(cells) ? cells.join('') : (cells ?? ''))
     })
     return __el

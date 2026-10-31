@@ -409,7 +409,8 @@ const escapeAttr = (value) =>
 // the same set as attributes (Hono escapes text identically). A nullish
 // value renders as empty text (JSX/Solid semantics; #2137) — otherwise a
 // bare \`{props.x}\` on an absent prop would surface literal "undefined".
-const escapeText = (value) => value == null ? '' : escapeAttr(value)
+// A boolean child renders no text either (#3824 step 5).
+const escapeText = (value) => value == null || typeof value === 'boolean' ? '' : escapeAttr(value)
 // Mirror @barefootjs/client/runtime escapeCommentText (#2795 follow-up): the
 // whole-item-conditional loop's \`bf-loop-i:<key>\` anchor comment neutralizes
 // \`-\` (the only character that matters inside an HTML comment — the literal

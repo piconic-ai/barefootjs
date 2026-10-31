@@ -1,4 +1,4 @@
-import { $, __bfSlot, adoptRowPortal, claimRowPortals, createComponent, createDisposableEffect, createEffect, createPortal, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, insert, isRowPortalOf, lazySlots, mapArray, qsaItem, relayRowPortalEvents } from '@barefootjs/client/runtime'
+import { $, __bfSlot, adoptRowPortal, claimRowPortals, createComponent, createDisposableEffect, createEffect, createPortal, createSignal, escapeAttr, escapeText, escapeTextOrMarkup, escapeTextOrNode, hydrate, insert, isRowPortalOf, lazySlots, mapArray, qsaItem, relayRowPortalEvents, textOrNode } from '@barefootjs/client/runtime'
 
 
 export function initRowPortalRefBranch(__scope, _p = {}) {
@@ -32,7 +32,7 @@ export function initRowPortalRefBranch(__scope, _p = {}) {
           const __el = __existing ?? (() => { const __tpl = document.createElement('template'); __tpl.innerHTML = `<li data-key="${escapeAttr(r())}"><button type="button" class="row" data-key="${escapeAttr(r())}" bf="s5"><!--bf:s4-->${escapeText(r())}<!--/--></button></li>`; return __tpl.content.firstElementChild.cloneNode(true) })()
           if (__existing) claimRowPortals(__existing, __scopeId, ["s5"], __loop_s6)
           const __bfw_s4 = lazySlots(__el, [{ id: 's4', kind: 'text', path: [] }])
-          createEffect(() => { __bfw_s4('s4', String(r())) })
+          createEffect(() => { __bfw_s4('s4', textOrNode(r())) })
           { const __rf_s5 = qsaItem(__el, '[bf="s5"]')
           if (__rf_s5) { { (mountContent)(__rf_s5); if (__scopeId) __rf_s5.setAttribute('bf-po', __scopeId) }; adoptRowPortal(__el, __rf_s5, __loop_s6) } }
           return __el

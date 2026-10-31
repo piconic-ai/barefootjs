@@ -125,7 +125,7 @@ export function initConstAliasLoopShadowHydrate(__scope, _p = {}) {
         __l[1] = __x }
       }
       __bfw_s2('s2', escapeTextOrNode(b))
-      __bfw_s2('s4', String(a().name))
+      __bfw_s2('s4', textOrNode(a().name))
     })
     insert(__el, 's6', () => b, {
       template: () => { const __slots = []; return { html: `<!--bf-cond-start:s6-->${__bfSlot('on', __slots)}<!--bf-cond-end:s6-->`, slots: __slots } },

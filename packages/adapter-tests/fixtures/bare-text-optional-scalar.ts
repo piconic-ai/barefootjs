@@ -10,7 +10,7 @@ import { createFixture } from '../src/types'
  * A boolean twin (`{active}`) isn't this case: JSX renders no boolean
  * child (`{true}` / `{false}` are both invisible in the oracle), so its
  * absent and `false` values render the same. A present boolean text child
- * is `boolean-text-child`.
+ * is the `boolean-text-child` fixture (renders nothing, #3824 step 5).
  */
 export const fixture = createFixture({
   id: 'bare-text-optional-scalar',

@@ -1,4 +1,4 @@
-import { createComponent, hydrate, markupOrEmpty, $, childScopesBySlot, createEffect, createSignal, escapeText, escapeTextOrMarkup, escapeTextOrNode, initChild, lazySlots, mapArray, qsa, renderChild } from '@barefootjs/client/runtime'
+import { createComponent, hydrate, markupOrEmpty, $, childScopesBySlot, createEffect, createSignal, escapeText, escapeTextOrMarkup, escapeTextOrNode, initChild, lazySlots, mapArray, qsa, renderChild, textOrNode } from '@barefootjs/client/runtime'
 
 function initChip() {}
 
@@ -32,13 +32,13 @@ export function initLoopRowChildChildrenHandler(__scope, _p = {}) {
       initChild('Chip__81af11ff', __existing, { get children() { return `<button type="button" class="pick" bf="^s4"><!--bf:^s3-->${escapeText(o().label)}<!--/--></button>` } })
       { const __e = qsa(__existing, '[bf="^s4"]'); if (__e) __e.addEventListener('click', () => setPicked(o().id)) }
       const __bfw_s3 = lazySlots(__existing, [{ id: '^s3', kind: 'text', path: [] }])
-      createEffect(() => { __bfw_s3('^s3', String(o().label)) })
+      createEffect(() => { __bfw_s3('^s3', textOrNode(o().label)) })
       return __existing
     }
     const __csrEl = createComponent('Chip__81af11ff', { get children() { return `<button type="button" class="pick" bf="^s4"><!--bf:^s3-->${escapeText(o().label)}<!--/--></button>` } }, o().id)
     { const __e = qsa(__csrEl, '[bf="^s4"]'); if (__e) __e.addEventListener('click', () => setPicked(o().id)) }
     const __bfw_s3 = lazySlots(__csrEl, [{ id: '^s3', kind: 'text', path: [] }])
-    createEffect(() => { __bfw_s3('^s3', String(o().label)) })
+    createEffect(() => { __bfw_s3('^s3', textOrNode(o().label)) })
     return __csrEl
   }, 'l0')
 
@@ -47,13 +47,13 @@ export function initLoopRowChildChildrenHandler(__scope, _p = {}) {
       initChild('Chip__81af11ff', __existing, { get children() { return `<button type="button" class="pick" bf="^s8"><!--bf:^s7-->${escapeText(o().label)}<!--/--></button>` } })
       { const __e = qsa(__existing, '[bf="^s8"]'); if (__e) __e.addEventListener('click', () => setPicked(`${o().id}@${i()}`)) }
       const __bfw_s7 = lazySlots(__existing, [{ id: '^s7', kind: 'text', path: [] }])
-      createEffect(() => { __bfw_s7('^s7', String(o().label)) })
+      createEffect(() => { __bfw_s7('^s7', textOrNode(o().label)) })
       return __existing
     }
     const __csrEl = createComponent('Chip__81af11ff', { get children() { return `<button type="button" class="pick" bf="^s8"><!--bf:^s7-->${escapeText(o().label)}<!--/--></button>` } }, o().id)
     { const __e = qsa(__csrEl, '[bf="^s8"]'); if (__e) __e.addEventListener('click', () => setPicked(`${o().id}@${i()}`)) }
     const __bfw_s7 = lazySlots(__csrEl, [{ id: '^s7', kind: 'text', path: [] }])
-    createEffect(() => { __bfw_s7('^s7', String(o().label)) })
+    createEffect(() => { __bfw_s7('^s7', textOrNode(o().label)) })
     return __csrEl
   }, 'l1')
 
@@ -62,13 +62,13 @@ export function initLoopRowChildChildrenHandler(__scope, _p = {}) {
       initChild('Chip__81af11ff', __existing, { get children() { return `<button type="button" class="pick" bf="^s12"><!--bf:^s11-->${escapeText(__bfItem().label)}<!--/--></button>` } })
       { const __e = qsa(__existing, '[bf="^s12"]'); if (__e) __e.addEventListener('click', () => setPicked(`${__bfItem().id}#${i()}`)) }
       const __bfw_s11 = lazySlots(__existing, [{ id: '^s11', kind: 'text', path: [] }])
-      createEffect(() => { __bfw_s11('^s11', String(__bfItem().label)) })
+      createEffect(() => { __bfw_s11('^s11', textOrNode(__bfItem().label)) })
       return __existing
     }
     const __csrEl = createComponent('Chip__81af11ff', { get children() { return `<button type="button" class="pick" bf="^s12"><!--bf:^s11-->${escapeText(__bfItem().label)}<!--/--></button>` } }, __bfItem().id)
     { const __e = qsa(__csrEl, '[bf="^s12"]'); if (__e) __e.addEventListener('click', () => setPicked(`${__bfItem().id}#${i()}`)) }
     const __bfw_s11 = lazySlots(__csrEl, [{ id: '^s11', kind: 'text', path: [] }])
-    createEffect(() => { __bfw_s11('^s11', String(__bfItem().label)) })
+    createEffect(() => { __bfw_s11('^s11', textOrNode(__bfItem().label)) })
     return __csrEl
   }, 'l2')
 
@@ -78,7 +78,7 @@ export function initLoopRowChildChildrenHandler(__scope, _p = {}) {
       let __iterEl = _s18.children[i]
       if (__iterEl) {
         const __bfw_s15 = lazySlots(__iterEl, [{ id: '^s15', kind: 'text', path: [] }])
-        createEffect(() => { __bfw_s15('^s15', String(o.label)) })
+        createEffect(() => { __bfw_s15('^s15', textOrNode(o.label)) })
       }
     })
   }

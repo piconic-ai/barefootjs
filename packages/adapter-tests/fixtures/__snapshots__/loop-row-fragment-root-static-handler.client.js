@@ -1,4 +1,4 @@
-import { createComponent, hydrate, markupOrEmpty, $, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, lazySlots, ownScopeId, childScopesBySlot, escapeText, initChild, qsa, renderChild } from '@barefootjs/client/runtime'
+import { createComponent, hydrate, markupOrEmpty, $, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, lazySlots, ownScopeId, childScopesBySlot, escapeText, initChild, qsa, renderChild, textOrNode } from '@barefootjs/client/runtime'
 
 function initPill() {}
 
@@ -59,7 +59,7 @@ export function initLoopRowFragmentRootStaticHandler(__scope, _p = {}) {
       let __iterEl = _s5.children[__idx]
       if (__iterEl) {
         const __bfw_s2 = lazySlots(__iterEl, [{ id: '^s2', kind: 'text', path: [] }])
-        createEffect(() => { __bfw_s2('^s2', String(o.id)) })
+        createEffect(() => { __bfw_s2('^s2', textOrNode(o.id)) })
       }
     })
   }

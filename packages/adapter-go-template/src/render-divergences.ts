@@ -122,8 +122,6 @@ export const renderDivergences: RenderDivergences = {
   // does not concatenate (or the boolean `p.on` prints as `1`).
   'props-object-non-props-name-operand-typing': { limitation: 'props-object-non-props-name-operand-typing' },
   // A boolean text child prints `true` / `false`; JSX renders nothing.
-  'boolean-text-child': { limitation: 'boolean-text-child' },
-  'boolean-text-child-destructured': { limitation: 'boolean-text-child' },
   // `??` over a logical or ternary left operand that yields `false` takes
   // the fallback: `or` tests truthiness.
   'logical-mixed-left-nullish': { limitation: 'nullish-over-false-yielding-operand' },

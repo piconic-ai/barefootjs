@@ -115,7 +115,7 @@ describe('nested .map() index param referenced in key/text/attr (#2218)', () => 
     // `loop-index` source fixes this: the index is wired through the same
     // accessor `mapArray` already hands every row (#2859/#2860), and the
     // slot now gets a real update effect.
-    expect(content).toContain(`createEffect(() => { __bfw_s0('s0', String(i())) })`)
+    expect(content).toContain(`createEffect(() => { __bfw_s0('s0', textOrNode(i())) })`)
   })
 
   test('index referenced in a reactive attribute expression is bound', () => {

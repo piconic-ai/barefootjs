@@ -519,7 +519,7 @@ export function stringifyStaticLoop(lines: string[], plan: StaticLoopPlan): void
     const writer = claimWriterVarName(slots, varSlotId)
     lines.push(`        const ${writer} = lazySlots(__iterEl, ${claimPlanLiteral(slots)})`)
     for (const text of texts) {
-      lines.push(`        createEffect(() => { ${writer}('${text.slotId}', ${rowTextSlotValue(text, text.expression, 'String')}) }${profileBindingId(pc, text.slotId)})`)
+      lines.push(`        createEffect(() => { ${writer}('${text.slotId}', ${rowTextSlotValue(text, text.expression)}) }${profileBindingId(pc, text.slotId)})`)
     }
   }
   // Ref callbacks fire on every forEach iteration — initial mount and any

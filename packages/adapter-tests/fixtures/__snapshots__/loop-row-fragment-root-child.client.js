@@ -1,4 +1,4 @@
-import { createComponent, hydrate, markupOrEmpty, $, childScopesBySlot, createEffect, createSignal, escapeText, escapeTextOrMarkup, escapeTextOrNode, initChild, lazySlots, renderChild } from '@barefootjs/client/runtime'
+import { createComponent, hydrate, markupOrEmpty, $, childScopesBySlot, createEffect, createSignal, escapeText, escapeTextOrMarkup, escapeTextOrNode, initChild, lazySlots, renderChild, textOrNode } from '@barefootjs/client/runtime'
 
 function initTag() {}
 
@@ -26,7 +26,7 @@ export function initLoopRowFragmentRootChild(__scope, _p = {}) {
       let __iterEl = _s4.children[__idx]
       if (__iterEl) {
         const __bfw_s0 = lazySlots(__iterEl, [{ id: '^s0', kind: 'text', path: [] }])
-        createEffect(() => { __bfw_s0('^s0', String(opt)) })
+        createEffect(() => { __bfw_s0('^s0', textOrNode(opt)) })
       }
     })
   }

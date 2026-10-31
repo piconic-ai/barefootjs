@@ -1,4 +1,4 @@
-import { createComponent, hydrate, markupOrEmpty, $, childScopesBySlot, createEffect, createSignal, escapeAttr, escapeText, initChild, lazySlots, qsa, renderChild } from '@barefootjs/client/runtime'
+import { createComponent, hydrate, markupOrEmpty, $, childScopesBySlot, createEffect, createSignal, escapeAttr, escapeText, initChild, lazySlots, qsa, renderChild, textOrNode } from '@barefootjs/client/runtime'
 
 function initChip() {}
 
@@ -38,7 +38,7 @@ export function initLoopRowChildChildrenAttrs(__scope, _p = {}) {
           })
         }
         const __bfw_s0 = lazySlots(__iterEl, [{ id: '^s0', kind: 'text', path: [] }])
-        createEffect(() => { __bfw_s0('^s0', String(opt)) })
+        createEffect(() => { __bfw_s0('^s0', textOrNode(opt)) })
       }
     })
   }

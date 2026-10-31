@@ -232,7 +232,7 @@ describe('reactive attributes inside .map() callbacks', () => {
     // claimed 'text' slot writer now (slot unification A3), not a bare
     // `.textContent =` assignment.
     expect(js).toContain("setAttribute('class'")
-    expect(js).toMatch(/__bfw_\w+\('s\d+', String\(item\.name\)\)/)
+    expect(js).toMatch(/__bfw_\w+\('s\d+', textOrNode\(item\.name\)\)/)
     // But there must be exactly one `items.forEach` call (not two).
     const forEachMatches = js.match(/items\.forEach\(/g) ?? []
     expect(forEachMatches.length).toBe(1)

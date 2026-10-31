@@ -535,7 +535,7 @@ function emitTextBinding(
       ? `${doorExpr}.write('${t.slotId}', ${valueExpr})`
       : `${doorExpr}('${t.slotId}', ${valueExpr})`
 
-  const value = rowTextSlotValue(t, '__x', 'textOrNode')
+  const value = rowTextSlotValue(t, '__x')
   if (mode === 'outer') {
     lines.push(`${ind}if (__seed) {`)
     lines.push(`${ind}  const __s = ${value}`)
