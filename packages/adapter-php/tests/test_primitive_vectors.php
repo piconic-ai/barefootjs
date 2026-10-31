@@ -156,7 +156,9 @@ foreach ($FILES as $path) {
         }
         $listed = array_key_exists($key, $expected);
         bf_test($key, function () use ($ok, $listed, $key, $detail, $expected) {
-            bf_assert(!($ok && $listed), "ledger entry '{$key}' now passes; remove it from the ledger (step {$expected[$key]['step']})");
+            if ($ok && $listed) {
+                bf_assert(false, "ledger entry '{$key}' now passes; remove it from the ledger (step {$expected[$key]['step']})");
+            }
             bf_assert($ok || $listed, "UNEXPECTED-FAIL {$key}: {$detail}");
         });
     }
