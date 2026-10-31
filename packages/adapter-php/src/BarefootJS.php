@@ -911,25 +911,6 @@ final class BarefootJS
         return Evaluator::truthy($value) ? [] : [$value];
     }
 
-    /**
-     * Value-position JS `l || r` / `l && r` for Twig (#3824). Twig compiles
-     * its own `?:` and `??` to PHP that repeats the left operand
-     * (`((test(l)) ? (l) : (r))`), so a chain nested through them grows
-     * exponentially however the template spells it. Twig spells `r` as an
-     * arrow function (`(__bf_lazy) => r`; Twig has no zero-parameter arrow),
-     * which these call only when JS evaluates `r` (the short circuit); `l`
-     * arrives evaluated once.
-     */
-    public function js_or($left, callable $right): mixed
-    {
-        return Evaluator::truthy($left) ? $left : $right(null);
-    }
-
-    public function js_and($left, callable $right): mixed
-    {
-        return Evaluator::truthy($left) ? $right(null) : $left;
-    }
-
     /** JS `/` (#3474): IEEE division. The quotient keeps its fraction, and
      * a zero divisor gives `NaN` or an infinity signed by both operands
      * (`1 / -0` is `-Infinity`), where PHP's `/` throws `DivisionByZeroError`.

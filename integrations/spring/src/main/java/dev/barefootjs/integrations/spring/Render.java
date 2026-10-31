@@ -4,6 +4,7 @@ import dev.barefootjs.pebble.Bf;
 import dev.barefootjs.pebble.ChildMeta;
 import dev.barefootjs.pebble.DeriveStashFromDefaults;
 import dev.barefootjs.pebble.ManifestLoader;
+import dev.barefootjs.pebble.ext.JsLogicalExtension;
 import dev.barefootjs.pebble.ext.SetBlockExtension;
 import io.pebbletemplates.pebble.PebbleEngine;
 import io.pebbletemplates.pebble.extension.escaper.SafeString;
@@ -66,7 +67,8 @@ public final class Render {
   /**
    * Build a `PebbleEngine` reading `.peb` templates from `templatesDir` on
    * disk — same construction as `Main.render` (strict variables off, the
-   * `{% set %}...{% endset %}` block-capture extension registered).
+   * `{% set %}...{% endset %}` block-capture extension and the JS `||` /
+   * `&&` operators the adapter emits for value-position logicals registered).
    */
   public static PebbleEngine buildEngine(Path templatesDir) {
     // Pebble's `FileLoader.setPrefix` REJECTS a relative path outright
@@ -81,6 +83,7 @@ public final class Render {
         .loader(loader)
         .strictVariables(false)
         .extension(new SetBlockExtension())
+        .extension(new JsLogicalExtension())
         .build();
   }
 

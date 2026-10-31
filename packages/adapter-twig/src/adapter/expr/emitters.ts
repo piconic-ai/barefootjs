@@ -28,9 +28,9 @@
  *      already boolean-shaped (the primitive plan's `boolean` proof, #3824). `&&`/`||` still
  *      return the ORIGINAL operand VALUE (not a coerced bool) on the taken
  *      branch — matching JS `a || b` returning `a` itself — only the BRANCH
- *      TEST uses `bf.truthy`. The runtime's `bf.js_or` / `bf.js_and` take
- *      the right operand as an arrow function (see `spellLogical`), so each
- *      operand is rendered and evaluated once (#3824).
+ *      TEST uses `bf.truthy`. The runtime's `bf_js_or` / `bf_js_and` filters
+ *      take the right operand as an arrow function (see `spellLogical`), so
+ *      each operand is rendered and evaluated once (#3824).
  *   3. **`??` is Twig-native**, covering undefined (`strict_variables:
  *      false`) AND null in ONE operator — no `is defined and is not null`
  *      dance needed here (unlike Jinja's `ChainableUndefined` workaround).
@@ -151,16 +151,19 @@ export function truthyTest(plan: PrimitivePlan | null, rendered: string): string
  * JS `l && r` / `l || r` in a value position, which yield one of their
  * operands (#3824). When the plan proves `l` a boolean, a ternary over `l`
  * itself (`l ? r : false`, `l ? true : r`; Twig's `and` / `or` yield a
- * boolean, not `r`). Otherwise the runtime's `js_or` / `js_and`, which test
- * `l` by JS truthiness and call the arrow function holding `r` only when JS
- * evaluates it. Twig compiles its own `?:` / `??` to PHP that repeats the
- * left operand, so a chain spelled through them would grow exponentially;
- * here each operand is rendered and evaluated once. Twig has no
- * zero-parameter arrow, hence the unused `__bf_lazy`.
+ * boolean, not `r`). Otherwise the runtime's `bf_js_or` / `bf_js_and` filters
+ * (`Barefoot\BarefootExtension`), which test `l` by JS truthiness and call the
+ * arrow function holding `r` only when JS evaluates it. Twig compiles its own
+ * `?:` / `??` to PHP that repeats the left operand, so a chain spelled through
+ * them would grow exponentially; here each operand is rendered and evaluated
+ * once. Filters rather than `bf` methods: Twig takes an arrow as a method
+ * argument only since 3.15. A filter binds tighter than any operator, hence
+ * the parentheses around `l`; Twig has no zero-parameter arrow, hence the
+ * unused `__bf_lazy`.
  */
 function spellLogical(op: '&&' | '||', plan: PrimitivePlan | null, l: string, r: string): string {
   if (truthyTest(plan, l) === l) return op === '&&' ? `(${l} ? ${r} : false)` : `(${l} ? true : ${r})`
-  return `bf.${op === '&&' ? 'js_and' : 'js_or'}(${l}, (__bf_lazy) => ${r})`
+  return `((${l})|bf_js_${op === '&&' ? 'and' : 'or'}((__bf_lazy) => ${r}))`
 }
 
 /**
