@@ -127,7 +127,8 @@ import {
   lowerJsNullishValue,
   isGoZeroLiteralOf,
   goZeroKindOfGoType,
-  regroupNullish,
+  lowerAbsentAsNil,
+  type AbsentAsNilWalker,
   type GoZeroKind,
   isConcreteScalarGoType,
   type NullishSpelling,
@@ -5379,24 +5380,33 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // required scalar prop) is `x`, even when it is `false` / `''` / `0`;
     // `y` is never rendered.
     if (op === '??' && isNativePlan(plan, 'nullish')) return this.emitOperand(left, emit)
-    // A compound left operand that can yield a read Go stores as a concrete
-    // zero is regrouped, so each of its operands gets its own `??` test.
-    const regrouped = op === '??' ? this.nullishRegrouped(left, right) : null
-    if (regrouped) return emit(regrouped)
     // Go's `and`/`or` are prefix builtins, so every operand that renders to more
     // than one token (a call like `.SearchParams.Get "sort"`, an arithmetic
     // `bf_add a b`, a comparison `eq a b`, a nested `not …` / `or …`) must be
     // parenthesised or it degrades into extra sibling args of the enclosing
     // `and`/`or`; the lowerings below wrap each operand.
-    const leftRendered = this.emitOperand(left, emit)
     const rightRendered = this.emitOperand(right, emit)
     // JS `&&` / `||` yield an operand, picked by the left operand's ToBoolean
     // plan (#3824): Go's `and` / `or` on a proven boolean, a JS-truthiness
     // pick that keeps the short circuit otherwise (`lowerJsLogicalValue`).
-    if (op !== '??') return lowerJsLogicalValue(op, plan, leftRendered, rightRendered)
+    if (op !== '??') return lowerJsLogicalValue(op, plan, this.emitOperand(left, emit), rightRendered)
     // Any other `??` keeps every non-nil left operand, `false` / `0` / `''`
     // included (#3824 step 7), by a nil-test pick that keeps the short circuit.
-    return lowerJsNullishValue({ plan, absentIsZero: this.nullishAbsentIsZero(left, right) }, leftRendered, rightRendered)
+    // A compound left operand reads its absent concrete-zero leaves as nil.
+    const spelling = this.nullishSpellingOf(left, right, plan)
+    const leftRendered = spelling.absentLeaves
+      ? lowerAbsentAsNil(this.valueAbsentAsNilWalker(emit), spelling.absentLeaves, left) ?? ''
+      : this.emitOperand(left, emit)
+    return lowerJsNullishValue(spelling, leftRendered, rightRendered)
+  }
+
+  /** How {@link lowerAbsentAsNil} renders a value-position `??` left operand's parts: as {@link logical} and {@link conditional} do. */
+  private valueAbsentAsNilWalker(emit: (e: ParsedExpr) => string): AbsentAsNilWalker {
+    return {
+      operand: e => this.emitOperand(e, emit),
+      ternary: (e, consequent, alternate) => lowerTernary(this.emitCtx, e.test, e.consequent, e.alternate, { consequent, alternate }),
+      logicalPlan: e => planPrimitive(e, this.primitives.typing(), this.primitives.nativeSafe),
+    }
   }
 
   /**
@@ -5408,16 +5418,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * with a zero fallback, or a named alias type such as
    * `placement?: TooltipPlacement`), an optional scalar field of a loop row
    * (a struct field), and `searchParams().get(k)` (`""` for an absent key).
-   * A `??` / `&&` / `||` or a ternary reads as one when an operand that can
-   * be its value does. `params` are a predicate's own bindings, entered over
-   * the current scope.
+   * Only such a leaf read is classified: a compound (`??`, `&&`, `||`, a
+   * ternary) never is, so its result is never taken for an absent zero
+   * ({@link nullishAbsentLeaves} handles its leaves). `params` are a
+   * predicate's own bindings, entered over the current scope.
    */
   private absentGoZero(expr: ParsedExpr, params?: readonly string[]): GoZeroKind | null {
-    if (expr.kind === 'logical' || expr.kind === 'conditional') {
-      const operands = expr.kind === 'logical' ? [expr.left, expr.right] : [expr.consequent, expr.alternate]
-      const kinds = new Set(operands.map(o => this.absentGoZero(o, params)).filter(k => k !== null))
-      return kinds.size === 0 ? null : kinds.size === 1 ? [...kinds][0] : 'unknown'
-    }
     const scope = params ? this.predicateScope(params) : this.scope
     if (expr.kind === 'call') {
       return matchSearchParamsMethodCall(expr.callee, expr.args, this.state.searchParamsLocals)?.method === 'get' ? 'string' : null
@@ -5510,23 +5516,45 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * `l ?? r` regrouped by {@link regroupNullish} when `l` is a `??`, a `||`
-   * or a ternary that can yield a read Go stores as a concrete zero (#3824
-   * step 7): tested through the compound's result, such a read's absent
-   * zero would be kept, while regrouped it gets its own spelling and a
-   * present `''` in another operand still stops the chain. Null otherwise:
-   * a `&&` left operand keeps `or` ({@link nullishAbsentIsZero}).
+   * The leaves of a compound `l` in `l ?? r` (a `??`, `&&`, `||` or ternary)
+   * that read an absent value as a Go zero ({@link absentGoZero}), when one
+   * of them changes the result (#3824 step 7); null for a leaf `l`, or when
+   * every such leaf's zero is `r` itself. The leaves are those `l` can yield
+   * as its value: every operand of a `??` / `&&` / `||` and each branch of a
+   * ternary, never its test. `lowerAbsentAsNil` reads each as nil when Go
+   * holds its zero, and the whole `l` is then nil-tested once, so a present
+   * `false` that `&&` yields is kept and the fallback is evaluated only when
+   * the value is nil.
    */
-  private nullishRegrouped(left: ParsedExpr, right: ParsedExpr, params?: readonly string[]): ParsedExpr | null {
+  private nullishAbsentLeaves(left: ParsedExpr, right: ParsedExpr, params?: readonly string[]): ReadonlySet<ParsedExpr> | null {
     if (left.kind !== 'logical' && left.kind !== 'conditional') return null
-    return this.absentGoZero(left, params) === null ? null : regroupNullish(left, right)
+    const leaves = new Set<ParsedExpr>()
+    let changesResult = false
+    const visit = (e: ParsedExpr): void => {
+      if (e.kind === 'logical') return void (visit(e.left), visit(e.right))
+      if (e.kind === 'conditional') return void (visit(e.consequent), visit(e.alternate))
+      const kind = this.absentGoZero(e, params)
+      if (kind === null) return
+      leaves.add(e)
+      changesResult ||= !isGoZeroLiteralOf(right, kind)
+    }
+    visit(left)
+    return changesResult ? leaves : null
+  }
+
+  /** The spelling of `left ?? right` under `plan` (#3824 step 7). */
+  private nullishSpellingOf(left: ParsedExpr, right: ParsedExpr, plan: PrimitivePlan | null, params?: readonly string[]): NullishSpelling {
+    return {
+      plan,
+      absentIsZero: this.nullishAbsentIsZero(left, right, params),
+      absentLeaves: this.nullishAbsentLeaves(left, right, params),
+    }
   }
 
   /** The spelling of a value-position `l ?? r` the condition and filter walkers lower (#3824 step 7). */
   private nullishSpelling(expr: Extract<ParsedExpr, { kind: 'logical' }>, params?: readonly string[]): NullishSpelling {
     const scope = params ? this.scope.enterCallback(params) : this.scope
-    const plan = planPrimitive(expr, this.state.operandTyping.at(scope), GO_NATIVE_SAFE)
-    return { plan, absentIsZero: this.nullishAbsentIsZero(expr.left, expr.right, params) }
+    return this.nullishSpellingOf(expr.left, expr.right, planPrimitive(expr, this.state.operandTyping.at(scope), GO_NATIVE_SAFE), params)
   }
 
   // JSX-level ternaries (`{expr ? a : b}`) in TEXT position are handled at the
@@ -7106,7 +7134,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     testPlan: (test, params) =>
       planTest(test, this.state.operandTyping.at(params ? this.scope.enterCallback(params) : this.scope), GO_NATIVE_SAFE),
     nullishSpelling: (expr, params) => this.nullishSpelling(expr, params),
-    nullishRegrouped: (left, right, params) => this.nullishRegrouped(left, right, params),
     renderParsedExpr: (expr) => this.renderParsedExpr(expr),
     makeLoc: () => this.makeLoc(),
     hasScopeBinding: (name) => Boolean(this.scope.lookup(name)),

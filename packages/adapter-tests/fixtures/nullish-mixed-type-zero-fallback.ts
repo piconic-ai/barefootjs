@@ -18,6 +18,11 @@ import { createFixture } from '../src/types'
  * chain is a comparison operand, in a template and in a `.filter()`
  * predicate over an omitted row field. A `.filter()` predicate's `t.s ?? 'fb'`
  * over an omitted row field takes the fallback too.
+ *
+ * A `&&` left operand keeps the value it yields: `(off && warm) ?? 'fb'` with
+ * `off = false` renders `false` (a present `false` is not nullish), with a
+ * truthy left side it renders the right side (`cool`), and with an omitted
+ * alias prop on the right it renders the fallback.
  */
 export const fixture = createFixture({
   id: 'nullish-mixed-type-zero-fallback',
@@ -32,6 +37,10 @@ export function NullishMixedTypeZeroFallback(props: {
   c?: string
   e?: string
   tone?: Tone
+  off?: boolean
+  on?: boolean
+  warm?: Tone
+  cool?: Tone
   rows: { k: string; s?: string }[]
 }) {
   return (
@@ -46,6 +55,9 @@ export function NullishMixedTypeZeroFallback(props: {
       data-cond-omitted={(props.e === '' ? props.tone : props.e) ?? 'fb'}
       data-cond-empty={(props.e === '' ? props.e : props.tone) ?? 'fb'}
       data-or-omitted={(props.c || props.tone) ?? 'fb'}
+      data-and-false={\`\${(props.off && props.warm) ?? 'fb'}\`}
+      data-and-present={\`\${(props.on && props.cool) ?? 'fb'}\`}
+      data-and-omitted={\`\${(props.on && props.tone) ?? 'fb'}\`}
     >
       <span>[{props.s ?? 0}][{props.n ?? ''}][{props.b ?? 0}][{props.c ?? props.tone ?? 'fb'}][{props.e ?? props.tone ?? 'fb'}]</span>
       <span>{(props.c ?? props.tone ?? 'fb') === 'fb' ? 'y' : 'n'}|{(props.e ?? props.tone ?? 'fb') === '' ? 'y' : 'n'}</span>
@@ -58,10 +70,14 @@ export function NullishMixedTypeZeroFallback(props: {
 `,
   props: {
     e: '',
+    off: false,
+    on: true,
+    warm: 'warm',
+    cool: 'cool',
     rows: [{ k: 'omitted' }, { k: 'set', s: 's' }],
   },
   expectedHtml: `
-    <div bf-s="test" bf="s18" data-b="0" data-chain-empty="" data-chain-omitted="fb" data-cond-empty="" data-cond-omitted="fb" data-n-same="0" data-n="" data-or-omitted="fb" data-s-same="" data-s="0">
+    <div bf-s="test" bf="s18" data-and-false="false" data-and-omitted="fb" data-and-present="cool" data-b="0" data-chain-empty="" data-chain-omitted="fb" data-cond-empty="" data-cond-omitted="fb" data-n-same="0" data-n="" data-or-omitted="fb" data-s-same="" data-s="0">
       <span bf="s5">[<!--bf:s0-->0<!--/-->][<!--bf:s1--><!--/-->][<!--bf:s2-->0<!--/-->][<!--bf:s3-->fb<!--/-->][<!--bf:s4--><!--/-->]</span>
       <span bf="s10"><!--bf-cond-start:s6-->y<!--bf-cond-end:s6-->|<!--bf-cond-start:s8-->y<!--bf-cond-end:s8--></span>
       <ul bf="s13">

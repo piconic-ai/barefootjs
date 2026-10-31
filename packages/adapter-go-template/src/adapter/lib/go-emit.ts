@@ -138,10 +138,17 @@ export function lowerJsLogicalValue(op: '&&' | '||', plan: PrimitivePlan | null,
   return `index (or (${keep} ${wl}) (bf_arr ${wr})) 0`
 }
 
-/** How a value-position `l ?? r` is spelled (#3824 step 7): its nullish plan, and whether `l` reads an absent value as a Go zero where that changes the result. */
+/**
+ * How a value-position `l ?? r` is spelled (#3824 step 7): its nullish plan,
+ * whether a leaf `l` reads an absent value as a Go zero where that changes
+ * the result (`absentIsZero`), and, for a compound `l`, the leaves of it Go
+ * stores that way, which `lowerAbsentAsNil` reads as nil (`absentLeaves`;
+ * null when there are none or none changes the result).
+ */
 export interface NullishSpelling {
   readonly plan: PrimitivePlan | null
   readonly absentIsZero: boolean
+  readonly absentLeaves?: ReadonlySet<ParsedExpr> | null
 }
 
 /**
@@ -198,19 +205,61 @@ const GO_NUMBER_TYPES: ReadonlySet<string> = new Set([
 ])
 
 /**
- * `l ?? r` with a compound `l`, regrouped so the `??` test reaches each
- * operand that can be `l`'s value (#3824 step 7): `(a ?? b) ?? r` is
- * `a ?? (b ?? r)`, `(a || b) ?? r` is `a || (b ?? r)` (a truthy `a` is never
- * nil), and `(c ? x : y) ?? r` is `c ? (x ?? r) : (y ?? r)`. Each is the
- * same value with the same short circuit, so an operand Go stores as a
- * concrete zero gets its own spelling instead of being tested through the
- * compound's result. Null for any other `l`.
+ * How {@link lowerAbsentAsNil} renders the operands of a compound `??` left
+ * operand in one walker (a value emitter, a condition walker, a filter
+ * predicate); null from any of them is that walker's refusal, passed up.
  */
-export function regroupNullish(left: ParsedExpr, right: ParsedExpr): ParsedExpr | null {
-  const nullish = (l: ParsedExpr): ParsedExpr => ({ kind: 'logical', op: '??', left: l, right })
-  if (left.kind === 'logical' && left.op !== '&&') return { kind: 'logical', op: left.op, left: left.left, right: nullish(left.right) }
-  if (left.kind === 'conditional') return { kind: 'conditional', test: left.test, consequent: nullish(left.consequent), alternate: nullish(left.alternate) }
-  return null
+export interface AbsentAsNilWalker {
+  /** An operand rendered as the walker always renders it. */
+  operand(e: ParsedExpr): string | null
+  /** A ternary whose branch renders, where given, replace the walker's own. */
+  ternary(e: Extract<ParsedExpr, { kind: 'conditional' }>, consequent: string | undefined, alternate: string | undefined): string | null
+  /** The plan the walker spells a `&&` / `||` / `??` node with. */
+  logicalPlan(e: Extract<ParsedExpr, { kind: 'logical' }>): PrimitivePlan | null
+}
+
+/**
+ * A compound left operand of `l ?? r` (a `??`, `&&`, `||` or ternary) with
+ * each of its `absent` leaves read as nil when Go holds its zero value
+ * (#3824 step 7). Those leaves are reads Go stores as a concrete scalar
+ * although JS may see them omitted (an alias-typed prop, an optional row
+ * field, `searchParams().get`), so an absent one holds `''` / `0` / `false`
+ * where JS holds `undefined`. Each becomes `or x nil` (nil exactly when Go
+ * reads `x` as false), and the operators around it are spelled as usual
+ * over the converted operands, so the value the compound yields is nil
+ * exactly where JS yields `undefined` from such a leaf. The caller tests that
+ * value with the one nil box of `lowerJsNullishValue`, so `r` is rendered
+ * once and evaluated only when the box is empty. A leaf in a `&&` / `||`
+ * operand or a ternary branch is converted in place: the conversion adds no
+ * fallback, so nothing is evaluated eagerly that was lazy before. Operands
+ * that hold no such leaf render as the walker renders them.
+ */
+export function lowerAbsentAsNil(walker: AbsentAsNilWalker, absent: ReadonlySet<ParsedExpr>, e: ParsedExpr): string | null {
+  if (!holdsAbsentLeaf(e, absent)) return walker.operand(e)
+  const sub = (x: ParsedExpr): string | null => lowerAbsentAsNil(walker, absent, x)
+  if (e.kind === 'conditional') {
+    const consequent = holdsAbsentLeaf(e.consequent, absent) ? sub(e.consequent) : undefined
+    const alternate = holdsAbsentLeaf(e.alternate, absent) ? sub(e.alternate) : undefined
+    return consequent === null || alternate === null ? null : walker.ternary(e, consequent, alternate)
+  }
+  if (e.kind === 'logical') {
+    const l = sub(e.left)
+    const r = l === null ? null : sub(e.right)
+    if (l === null || r === null) return null
+    const plan = walker.logicalPlan(e)
+    if (e.op !== '??') return lowerJsLogicalValue(e.op, plan, l, r)
+    return lowerJsNullishValue({ plan, absentIsZero: false }, l, r)
+  }
+  const leaf = walker.operand(e)
+  return leaf === null ? null : `or ${wrapIfMultiToken(leaf)} nil`
+}
+
+/** Whether `e` is, or can yield as its value, one of the `absent` leaves of {@link lowerAbsentAsNil}. */
+function holdsAbsentLeaf(e: ParsedExpr, absent: ReadonlySet<ParsedExpr>): boolean {
+  if (absent.has(e)) return true
+  if (e.kind === 'logical') return holdsAbsentLeaf(e.left, absent) || holdsAbsentLeaf(e.right, absent)
+  if (e.kind === 'conditional') return holdsAbsentLeaf(e.consequent, absent) || holdsAbsentLeaf(e.alternate, absent)
+  return false
 }
 
 /** Whether a Go field type is a concrete scalar, which cannot hold nil (not `interface{}`, a slice, a map or a pointer). */

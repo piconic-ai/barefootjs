@@ -10507,12 +10507,14 @@
         "identifier",
         "literal",
         "logical",
-        "member"
+        "member",
+        "template-literal"
       ],
       "axes": [
         "binary:===",
         "literal:number",
         "literal:string",
+        "logical:&&",
         "logical:??",
         "logical:||"
       ],

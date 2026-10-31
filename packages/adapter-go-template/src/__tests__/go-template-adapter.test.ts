@@ -7460,6 +7460,39 @@ export function List() {
 // e.g. plain interpolation) already routed nillable operands through
 // `bf_nullish` since #2248/#2252; this brings the condition-position
 // emitter in line with it.
+describe('GoTemplateAdapter - compound `??` left operand over an alias prop (#3824 step 7)', () => {
+  // The runtime test `TestAbsentAsNilCompoundNullishLeft` renders these
+  // exact templates and counts the fallback's evaluations.
+  const compile = (expr: string): string => {
+    const result = compileJSX(`
+type Tone = 'warm' | 'cool'
+export function C(props: { flag?: boolean; tone?: Tone; config?: { a: number } }) {
+  return <div data-v={${expr}}></div>
+}
+`.trimStart(), 'test.tsx', { adapter: new GoTemplateAdapter() })
+    expect(result.errors ?? []).toEqual([])
+    return result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
+  }
+
+  test('a ternary reads the omitted alias prop as nil and nil-tests the whole value once, so the fallback stays lazy', () => {
+    const template = compile("(props.flag ? 'ok' : props.tone) ?? JSON.stringify(props.config)")
+    expect(template).toContain(
+      'data-v="{{bf_text (index (or (bf_keep_nonnil (bf_ternary (bf_truthy .Flag) "ok" (or .Tone nil))) (bf_arr (bf_json .Config))) 0)}}"',
+    )
+  })
+
+  test('a `&&` keeps the value it yields: only the alias prop on its right is read as nil', () => {
+    const template = compile("`${(props.flag && props.tone) ?? 'fb'}`")
+    expect(template).toContain(
+      'data-v="{{bf_text (index (or (bf_keep_nonnil (index (or (bf_keep_falsy .Flag) (bf_arr (or .Tone nil))) 0)) (bf_arr "fb")) 0)}}"',
+    )
+  })
+
+  test('a leaf alias prop keeps `or`: only a compound left operand is converted leaf by leaf', () => {
+    expect(compile("props.tone ?? 'fb'")).toContain('data-v="{{bf_text (or .Tone "fb")}}"')
+  })
+})
+
 describe('GoTemplateAdapter - #2254 `??` in condition position on a nillable prop', () => {
   test('ternary test comparing `props.label ?? "Default"` tests nil-ness, not truthiness', () => {
     const adapter = new GoTemplateAdapter()

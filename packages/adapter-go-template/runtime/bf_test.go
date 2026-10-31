@@ -3667,3 +3667,51 @@ func TestKeepNonNilNullishValue(t *testing.T) {
 		}
 	}
 }
+
+// A compound `??` left operand reads a leaf Go stores as a concrete zero
+// (an omitted alias-typed prop) as nil with `or x nil`, and the whole left
+// operand is nil-tested once (#3824 step 7). This is the exact template the
+// adapter emits for `(props.flag ? 'ok' : props.tone) ?? JSON.stringify(props.config)`
+// and `(props.flag && props.tone) ?? 'fb'` (pinned in go-template-adapter.test.ts):
+// the fallback is evaluated once when the selected value is nil and never
+// when it is present, and a present `false` from `&&` is kept.
+func TestAbsentAsNilCompoundNullishLeft(t *testing.T) {
+	const ternary = `{{bf_text (index (or (bf_keep_nonnil (bf_ternary (bf_truthy .Flag) "ok" (or .Tone nil))) (bf_arr (bf_json .Config))) 0)}}`
+	const and = `{{bf_text (index (or (bf_keep_nonnil (index (or (bf_keep_falsy .Flag) (bf_arr (or .Tone nil))) 0)) (bf_arr "fb")) 0)}}`
+	calls := 0
+	fm := FuncMap()
+	fm["bf_json"] = func(v any) (string, error) {
+		calls++
+		return JSON(v)
+	}
+	render := func(src string, data map[string]any) string {
+		t.Helper()
+		var buf bytes.Buffer
+		tmpl := template.Must(template.New("t").Funcs(fm).Parse(src))
+		if err := tmpl.Execute(&buf, data); err != nil {
+			t.Fatalf("%s: %v", src, err)
+		}
+		return buf.String()
+	}
+	config := map[string]any{"a": 1}
+	cases := []struct {
+		name, src string
+		data      map[string]any
+		want      string
+		calls     int
+	}{
+		{"ternary picks a present literal", ternary, map[string]any{"Flag": true, "Tone": "", "Config": config}, "ok", 0},
+		{"ternary picks a present alias prop", ternary, map[string]any{"Flag": false, "Tone": "warm", "Config": config}, "warm", 0},
+		{"ternary picks an omitted alias prop", ternary, map[string]any{"Flag": false, "Tone": "", "Config": config}, `{&#34;a&#34;:1}`, 1},
+		{"&& yields a present false", and, map[string]any{"Flag": false, "Tone": "warm"}, "false", 0},
+		{"&& yields its right side", and, map[string]any{"Flag": true, "Tone": "cool"}, "cool", 0},
+		{"&& yields an omitted alias prop", and, map[string]any{"Flag": true, "Tone": ""}, "fb", 0},
+		{"&& yields an omitted flag", and, map[string]any{"Flag": nil, "Tone": "warm"}, "fb", 0},
+	}
+	for _, c := range cases {
+		calls = 0
+		if got := render(c.src, c.data); got != c.want || calls != c.calls {
+			t.Errorf("%s: got %q with %d fallback calls, want %q with %d", c.name, got, calls, c.want, c.calls)
+		}
+	}
+}

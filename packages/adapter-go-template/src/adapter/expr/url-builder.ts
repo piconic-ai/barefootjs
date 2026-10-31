@@ -74,6 +74,8 @@ function lowerUrlGuard(ctx: GoEmitContext, g: ParsedExpr): string {
  *   - branches are quoted VALUES, recursing so a right-folded chain
  *     (`a ? x : b ? y : z`) nests as `(bf_ternary … (bf_ternary …))`.
  *   - the test is coerced to a real Go `bool` (see `lowerTernaryTest`).
+ *   - `rendered` replaces a branch's lowering with a Go form the caller
+ *     already rendered (`lowerAbsentAsNil`, #3824 step 7).
  *
  * NOT for the text-position `IRConditional` (`renderConditional`), whose
  * branches are arbitrary markup, not values.
@@ -83,9 +85,12 @@ export function lowerTernary(
   test: ParsedExpr,
   consequent: ParsedExpr,
   alternate: ParsedExpr,
+  rendered: { readonly consequent?: string; readonly alternate?: string } = {},
 ): string {
   const t = lowerTernaryTest(ctx, test)
-  return `(bf_ternary ${t} ${lowerTernaryBranch(ctx, consequent)} ${lowerTernaryBranch(ctx, alternate)})`
+  const c = rendered.consequent === undefined ? lowerTernaryBranch(ctx, consequent) : wrapIfMultiToken(rendered.consequent)
+  const a = rendered.alternate === undefined ? lowerTernaryBranch(ctx, alternate) : wrapIfMultiToken(rendered.alternate)
+  return `(bf_ternary ${t} ${c} ${a})`
 }
 
 /**

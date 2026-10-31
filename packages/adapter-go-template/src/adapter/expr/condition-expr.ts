@@ -22,7 +22,7 @@ import {
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
-import { goBinaryHelperCall, GO_REMEDIATION_OPTIONS, isLiteralKeyRead, lowerJsLogicalTest, lowerJsLogicalValue, lowerJsNullishValue, lowerJsTruthyTest, wrapIfMultiToken, type NullishSpelling } from '../lib/go-emit.ts'
+import { goBinaryHelperCall, GO_REMEDIATION_OPTIONS, isLiteralKeyRead, lowerJsLogicalTest, lowerJsLogicalValue, lowerJsNullishValue, lowerAbsentAsNil, lowerJsTruthyTest, wrapIfMultiToken, type NullishSpelling } from '../lib/go-emit.ts'
 import { isPropsObjectName } from '../lib/compile-state.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import type { HigherOrderShape } from '../lib/types.ts'
@@ -106,12 +106,6 @@ export interface ConditionExprHost {
   testPlan(test: ParsedExpr, params?: readonly string[]): PrimitivePlan
   /** How a value-position `l ?? r` is spelled (#3824 step 7), typed like {@link testPlan}. */
   nullishSpelling(expr: Extract<ParsedExpr, { kind: 'logical' }>, params?: readonly string[]): NullishSpelling
-  /**
-   * A value-position `l ?? r` regrouped so each operand of a compound `l`
-   * that can be its value gets its own `??` test (#3824 step 7), or null
-   * when it is spelled as written. Typed like {@link testPlan}.
-   */
-  nullishRegrouped(left: ParsedExpr, right: ParsedExpr, params?: readonly string[]): ParsedExpr | null
 }
 
 /**
@@ -447,14 +441,21 @@ function renderFilterLogical(
   datumField: string | undefined,
   fieldlessParam: boolean,
 ): string | null {
-  const regrouped = expr.op === '??' ? host.nullishRegrouped(expr.left, expr.right, [param]) : null
-  if (regrouped) return renderFilterExprNode(host, regrouped, param, localVarMap, datumField, fieldlessParam)
-  const left = renderFilterExprNode(host, expr.left, param, localVarMap, datumField, fieldlessParam)
+  const node = (e: ParsedExpr): string | null => renderFilterExprNode(host, e, param, localVarMap, datumField, fieldlessParam)
+  const spelling = expr.op === '??' ? host.nullishSpelling(expr, [param]) : null
+  const left = spelling?.absentLeaves
+    ? lowerAbsentAsNil({
+      operand: node,
+      // A ternary has no filter-predicate form (`renderFilterExprNode`).
+      ternary: e => refuseFilterExprNode(host, e),
+      logicalPlan: e => (e.op === '??' ? host.nullishSpelling(e, [param]).plan : host.testPlan(e.left, [param])),
+    }, spelling.absentLeaves, expr.left)
+    : node(expr.left)
   if (left === null) return null
-  const right = renderFilterExprNode(host, expr.right, param, localVarMap, datumField, fieldlessParam)
+  const right = node(expr.right)
   if (right === null) return null
-  if (expr.op === '??') return lowerJsNullishValue(host.nullishSpelling(expr, [param]), `(${left})`, `(${right})`)
-  return lowerJsLogicalValue(expr.op, host.testPlan(expr.left, [param]), `(${left})`, `(${right})`)
+  if (spelling) return lowerJsNullishValue(spelling, `(${left})`, `(${right})`)
+  return lowerJsLogicalValue(expr.op as '&&' | '||', host.testPlan(expr.left, [param]), `(${left})`, `(${right})`)
 }
 
 /** The `binary` arm of {@link renderFilterExprNode}. */
@@ -839,17 +840,33 @@ function renderConditionLogical(
   host: ConditionExprHost,
   expr: Extract<ParsedExpr, { kind: 'logical' }>,
 ): ConditionParts {
-  const regrouped = expr.op === '??' ? host.nullishRegrouped(expr.left, expr.right) : null
-  if (regrouped) return renderConditionExpr(host, regrouped)
-  const leftResult = renderConditionExpr(host, expr.left)
-  const rightResult = renderConditionExpr(host, expr.right)
-  const preamble = leftResult.preamble + rightResult.preamble
   // A VALUE position (a comparison operand, a helper argument): JS `&&` /
   // `||` yield an operand, picked by the left operand's test (#3824), and
   // `??` the left operand unless it is nil (#3824 step 7). A test position
   // goes through `renderConditionTest` instead.
-  if (expr.op !== '??') return { preamble, expr: lowerJsLogicalValue(expr.op, host.testPlan(expr.left), leftResult.expr, rightResult.expr) }
-  return { preamble, expr: lowerJsNullishValue(host.nullishSpelling(expr), leftResult.expr, rightResult.expr) }
+  if (expr.op !== '??') {
+    const leftResult = renderConditionExpr(host, expr.left)
+    const rightResult = renderConditionExpr(host, expr.right)
+    const preamble = leftResult.preamble + rightResult.preamble
+    return { preamble, expr: lowerJsLogicalValue(expr.op, host.testPlan(expr.left), leftResult.expr, rightResult.expr) }
+  }
+  const spelling = host.nullishSpelling(expr)
+  // A compound left operand reads its absent concrete-zero leaves as nil.
+  let preamble = ''
+  const operand = (e: ParsedExpr): string => {
+    const result = renderConditionExpr(host, e)
+    preamble += result.preamble
+    return result.expr
+  }
+  const left = spelling.absentLeaves
+    ? lowerAbsentAsNil({
+      operand,
+      ternary: (e, consequent, alternate) => lowerTernary(host.ctx, e.test, e.consequent, e.alternate, { consequent, alternate }),
+      logicalPlan: e => (e.op === '??' ? host.nullishSpelling(e).plan : host.testPlan(e.left)),
+    }, spelling.absentLeaves, expr.left) ?? ''
+    : operand(expr.left)
+  const right = operand(expr.right)
+  return { preamble, expr: lowerJsNullishValue(spelling, left, right) }
 }
 
 /**
