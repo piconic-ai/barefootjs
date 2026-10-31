@@ -10,8 +10,8 @@ import { createFixture } from '../src/types'
  *
  * The chains run through falsy payloads (`0`, `''`, `null`): `||` must skip
  * each by its JS truthiness and `&&` must return the first one itself
- * (`0 && x` is `0`). `nil && nil.k` and `zero && nil.k` read `.k` off null on
- * the side the short circuit skips.
+ * (`0 && x` is `0`). `nil && nil.k` reads `.k` off null on the side the short
+ * circuit skips; every guard stays safe for the generated data points.
  */
 export const fixture = createFixture({
   id: 'logical-value-chains',
@@ -35,9 +35,9 @@ export function LogicalValueChains({ zero, empty, nil, s, t }: {
       data-mixed={zero && s || empty && s || nil || s && t}
       data-mixed-falsy={(s || zero) && (nil || empty)}
       data-mixed-nested={((zero || s) && (empty || t)) || (s && zero) || empty}
-      data-and-zero={zero && nil.k}
+      data-and-zero={zero && nil && nil.k}
       data-nil-guard={nil && nil.k}
-      data-or-guard={s || nil.k}
+      data-or-guard={s || (nil && nil.k) || t}
     >
       <span>[{zero || empty || nil || zero || empty || nil || zero || empty || nil || zero || empty || nil || zero || empty || nil || s}]</span>
       <span>[{empty || nil || zero}]</span>
