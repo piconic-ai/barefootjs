@@ -369,7 +369,9 @@ describe('GoTemplateAdapter - bf_ternary value-position lowering (#2335)', () =>
     expect(render('!tags')).toBe('{{not (bf_truthy .Tags)}}')
     expect(render('!!tags')).toBe('{{not (not (bf_truthy .Tags))}}')
     expect(render('!(n === 1)')).toBe('{{not (bf_eq .N 1)}}')
-    expect(render('!(a && b)')).toBe('{{not (bf_truthy (and .A .B))}}')
+    // An untyped `a && b` yields an operand (`bf_keep_falsy`, #3824), which
+    // `!` then tests.
+    expect(render('!(a && b)')).toBe('{{not (bf_truthy (index (or (bf_keep_falsy .A) (bf_arr .B)) 0))}}')
   })
 
   test('a right-folded chain nests as (bf_ternary … (bf_ternary …))', () => {
@@ -583,7 +585,8 @@ export function P() {
   return <button data-step={active() ? 2 : 1}>x</button>
 }
 `)
-    expect(template).toContain('data-step="{{(bf_ternary (bf_truthy .Active) 2 1)}}"')
+    // `active` is a proven boolean signal, so its test is native (#3824 step 1).
+    expect(template).toContain('data-step="{{(bf_ternary .Active 2 1)}}"')
   })
 })
 
@@ -3366,12 +3369,13 @@ export function TodoApp() {
 `)
       // The range form is unchanged — still `{{range $_, $todo := .Todos}}`.
       expect(result.template).toContain('{{range $_, $todo := .Todos}}')
-      // Boolean attribute condition: `.Done`, NOT `.Todo.Done`.
-      expect(result.template).toContain('{{if (bf_truthy .Done)}}checked{{end}}')
+      // Boolean attribute condition: `.Done`, NOT `.Todo.Done` (a proven
+      // boolean row field, tested natively, #3824 step 1).
+      expect(result.template).toContain('{{if .Done}}checked{{end}}')
       expect(result.template).not.toContain('.Todo.Done')
       // Ternary inside `style="..."` uses the same condition path —
       // also `.Done`.
-      expect(result.template).toContain('{{if (bf_truthy .Done)}}text-decoration: line-through')
+      expect(result.template).toContain('{{if .Done}}text-decoration: line-through')
     })
   })
 
@@ -4255,7 +4259,7 @@ export function C() {
   const [target] = createSignal('x')
   return <div>{items().includes(target()) ? 'yes' : 'no'}</div>
 }`)
-      expect(result.template).toContain('{{if bf_includes .Items .Target}}')
+      expect(result.template).toContain('{{if (bf_truthy (bf_includes .Items .Target))}}')
     })
 
     test('value.includes(needle) emits the same bf_includes form (runtime dispatches on receiver)', () => {
@@ -4269,7 +4273,7 @@ export function C() {
   const [needle] = createSignal('world')
   return <div>{value().includes(needle()) ? 'yes' : 'no'}</div>
 }`)
-      expect(result.template).toContain('{{if bf_includes .Value .Needle}}')
+      expect(result.template).toContain('{{if (bf_truthy (bf_includes .Value .Needle))}}')
     })
   })
 
@@ -4559,8 +4563,8 @@ describe('GoTemplateAdapter - #1448 Tier A/B fixture-driven lowering pins', () =
   const cases = [
     // The `.includes` fixtures sit at condition position
     // (`{cond ? 'yes' : 'no'}`), so the emit lands inside `{{if ...}}`.
-    { fixture: arrayIncludesFixture,    expect: '{{if bf_includes .Items .Target}}' },
-    { fixture: stringIncludesFixture,   expect: '{{if bf_includes .Value .Needle}}' },
+    { fixture: arrayIncludesFixture,    expect: '{{if (bf_truthy (bf_includes .Items .Target))}}' },
+    { fixture: stringIncludesFixture,   expect: '{{if (bf_truthy (bf_includes .Value .Needle))}}' },
     { fixture: arrayIndexOfFixture,     expect: 'bf_index_of .Items .Target' },
     { fixture: arrayLastIndexOfFixture, expect: 'bf_last_index_of .Items .Target' },
     // The literal `-1` lowers through `bf_neg 1` — Go template
@@ -4590,10 +4594,10 @@ describe('GoTemplateAdapter - #1448 Tier A/B fixture-driven lowering pins', () =
     { fixture: stringSplitLimitFixture, expect: 'bf_split .Value "," 2' },
     // #1448 Tier B — string → boolean at condition position, so the
     // emit lands inside `{{if ...}}`.
-    { fixture: stringStartsWithFixture, expect: '{{if bf_starts_with .Value .Prefix}}' },
-    { fixture: stringStartsWithPositionFixture, expect: '{{if bf_starts_with .Value "world" 6}}' },
-    { fixture: stringEndsWithFixture,   expect: '{{if bf_ends_with .Value .Suffix}}' },
-    { fixture: stringEndsWithPositionFixture,   expect: '{{if bf_ends_with .Value "hello" 5}}' },
+    { fixture: stringStartsWithFixture, expect: '{{if (bf_truthy (bf_starts_with .Value .Prefix))}}' },
+    { fixture: stringStartsWithPositionFixture, expect: '{{if (bf_truthy (bf_starts_with .Value "world" 6))}}' },
+    { fixture: stringEndsWithFixture,   expect: '{{if (bf_truthy (bf_ends_with .Value .Suffix))}}' },
+    { fixture: stringEndsWithPositionFixture,   expect: '{{if (bf_truthy (bf_ends_with .Value "hello" 5))}}' },
     // #1448 Tier B — string → string, first-occurrence replace.
     { fixture: stringReplaceFixture,    expect: 'bf_replace .Value "o" "0"' },
     // #1448 Tier B — string → string, repeat n times.
@@ -5841,7 +5845,8 @@ export function CompositeRowChildComponent(props: { items: Item[] }) {
     expect(result.errors ?? []).toEqual([])
     const template = result.files.find(f => f.type === 'markedTemplate')!.content
     expect(template).toContain(
-      '{{template "Badge" (bf_with_props $.BadgeSlot0 "Text" (bf_ternary (bf_truthy .On) "yes" "no"))}}',
+      // `row.on` is a proven boolean row field, tested natively (#3824 step 1).
+      '{{template "Badge" (bf_with_props $.BadgeSlot0 "Text" (bf_ternary .On "yes" "no"))}}',
     )
   })
 
@@ -6797,7 +6802,7 @@ export function TodoItem(props: Props) {
     // — the SAME derivation `generatePropsStruct` uses for every other
     // prop-to-field mapping), not hardcoded.
     expect(template).toContain('not (bf_truthy .Todo.Done)')
-    expect(template).toContain('(.Todo.Done)')
+    expect(template).toContain('(bf_truthy .Todo.Done)')
     // The bare (unqualified) form must not survive the fix — this is the
     // literal string `html/template` failed to resolve pre-fix
     // (`can't evaluate field Done in type TodoItemProps`).
@@ -7544,7 +7549,9 @@ export function C({ items, enabled }: { items: Item[]; enabled: boolean }) {
     const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
     // `and (len .Items) .Enabled` — NOT the broken 3-sibling-arg
     // `and len .Items .Enabled` a bare `needsParens` miss would produce.
-    expect(template).toContain('and (len .Items) .Enabled')
+    // `.length` is not a proven boolean, so it tests through `bf_truthy`
+    // (#3824 step 1); `enabled` is a required boolean prop, tested natively.
+    expect(template).toContain('and (bf_truthy (len .Items)) .Enabled')
   })
 
   test('end-to-end via real `go run`: the multi-token `&&` ternary-test operand compiles and renders correctly', async () => {

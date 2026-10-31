@@ -137,7 +137,7 @@ function Box({ describedBy }: { describedBy?: string }) {
 }
 `)
     expect(template).toContain(
-      "bf->spread_attrs($describedBy ? { 'aria-describedby' => $describedBy } : {})",
+      "bf->spread_attrs(bf->truthy($describedBy) ? { 'aria-describedby' => $describedBy } : {})",
     )
   })
 
@@ -148,7 +148,7 @@ function Box({ label }: { label: string }) {
 }
 `)
     expect(template).toContain(
-      "bf->spread_attrs($label ? { 'data-label' => $label } : {})",
+      "bf->spread_attrs(bf->truthy($label) ? { 'data-label' => $label } : {})",
     )
   })
 
@@ -209,7 +209,7 @@ function Box({ flag }: { flag?: boolean }) {
 }
 `)
     expect(template).toContain(
-      "bf->spread_attrs($flag ? { 'data-on' => 'yes' } : {})",
+      "bf->spread_attrs(bf->truthy($flag) ? { 'data-on' => 'yes' } : {})",
     )
   })
 
@@ -945,7 +945,7 @@ export function C() {
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
     // The inner `t` is its own lexical; the outer filter param already reads
     // as the row variable `$t`, so the inner one is renamed (#3542).
-    expect(template).toContain('bf->length([grep { my $_bf_t = $_; $_bf_t->{active} } @{$t->{tags}}])')
+    expect(template).toContain('bf->length([grep { my $_bf_t = $_; bf->truthy($_bf_t->{active}) } @{$t->{tags}}])')
   })
 
   test('lowers nested .some(...) in filter predicate to an inline grep — no BF101 (#2038)', () => {
@@ -1024,7 +1024,7 @@ export { Slot }
     )
     expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
-    expect(template).toContain(`bf->join([grep { $_ } @{[$className]}], ' ')`)
+    expect(template).toContain(`bf->join([grep { bf->truthy($_) } @{[$className]}], ' ')`)
   })
 
   test('lowers .includes(x) on an array prop via bf->includes(...) (#1448 Tier A)', () => {

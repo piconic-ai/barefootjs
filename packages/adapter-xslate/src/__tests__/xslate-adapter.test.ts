@@ -240,7 +240,7 @@ export function C(props: { items: string[]; x?: string }) {
   return <span>{x()}</span>
 }
 `)
-    expect(template).toContain(": my $__bf_seed_x = $bf.length($bf.filter($items, -> $i { $bf.starts_with($i, ($x // '')) }));")
+    expect(template).toContain(": my $__bf_seed_x = $bf.length($bf.filter($items, -> $i { $bf.truthy($bf.starts_with($i, ($x // ''))) }));")
     expect(template).toContain(': my $x = $__bf_seed_x;')
   })
 
