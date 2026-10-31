@@ -348,19 +348,56 @@ public final class Evaluator {
     throw new EvalUnsupported("cannot read property '" + key + "' of " + (obj == null ? "null" : typeName(obj)));
   }
 
+  /** JS `obj[index]` in a callback body: {@link #indexValue} over a receiver that can be indexed. */
   private static Object readIndex(Object obj, Object index) {
-    if (obj instanceof List) {
-      double i = toNumber(index);
-      List<?> list = (List<?>) obj;
-      if (i != Math.floor(i) || i < 0 || i >= list.size()) {
-        return null;
-      }
-      return list.get((int) i);
+    if (!(obj instanceof List || obj instanceof Map || obj instanceof String)) {
+      throw new EvalUnsupported("cannot index " + (obj == null ? "null" : typeName(obj)));
+    }
+    return indexValue(obj, index);
+  }
+
+  /**
+   * JS `obj[index]`, shared with the template helper `Bf.get` (which
+   * delegates here, so a template read and a callback read cannot disagree
+   * on a key). The key goes through ToPropertyKey ({@link #toStr}: null is
+   * "null", {@code -0} is "0", {@code 1.0} is "1"). A map reads its own
+   * key. A list, and a string (by UTF-16 code unit), are read only through
+   * a canonical array index: "1" reads element 1, while "01", "1e0", "-0",
+   * "1.1" and "-1" are ordinary property names
+   * (spec/js-primitive-semantics.md, "ToPropertyKey and index read"). Any
+   * other receiver reads null.
+   */
+  @SuppressWarnings("unchecked")
+  public static Object indexValue(Object obj, Object index) {
+    if (!(obj instanceof List || obj instanceof Map || obj instanceof String)) {
+      return null;
+    }
+    String key;
+    try {
+      key = toStr(index);
+    } catch (EvalUnsupported e) {
+      return null;
     }
     if (obj instanceof Map) {
-      return readProperty(obj, toStr(index));
+      Map<String, Object> m = (Map<String, Object>) obj;
+      return m.containsKey(key) ? m.get(key) : null;
     }
-    throw new EvalUnsupported("cannot index " + (obj == null ? "null" : typeName(obj)));
+    if (!key.matches("0|[1-9][0-9]{0,9}")) {
+      return null;
+    }
+    long i = Long.parseLong(key);
+    if (obj instanceof List) {
+      List<?> list = (List<?>) obj;
+      return i < list.size() ? list.get((int) i) : null;
+    }
+    String s = (String) obj;
+    if (i >= s.length()) {
+      return null;
+    }
+    // One half of a surrogate pair reads as U+FFFD: a lone surrogate cannot
+    // be written out as UTF-8 (spec/js-primitive-semantics.md, "Out of scope").
+    char unit = s.charAt((int) i);
+    return Character.isSurrogate(unit) ? "\uFFFD" : String.valueOf(unit);
   }
 
   // ---------------------------------------------------------------------

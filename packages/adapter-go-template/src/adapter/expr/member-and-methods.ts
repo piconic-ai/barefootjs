@@ -31,7 +31,7 @@ import {
   emitReduceEval,
   emitSortEval,
   GO_REMEDIATION_OPTIONS,
-  isElementIndex,
+  isLiteralKeyRead,
   wrapIfMultiToken,
 } from '../lib/go-emit.ts'
 import { isPropsObjectName } from '../lib/compile-state.ts'
@@ -244,13 +244,12 @@ function renderFieldMemberRead(
   optional: boolean,
   emit: (e: ParsedExpr) => string,
 ): string {
-  // A numeric index (`row[0]`, `pair[1]`, #3497) reads an element, not a
-  // struct field: `.Field0` is no field of a `[]string`, and html/template
-  // fails the render. It takes the `bf_get` arm below (the row itself
-  // rendering as `.`), which indexes a slice and still finds a map key or
-  // a generated struct's JSON-tagged field spelled the same, as JS
-  // `obj[0]` reads `obj["0"]`.
-  const elementIndex = isElementIndex(computed, property)
+  // A literal key (`row[0]`, `pair[1]` #3497, `obj['a.b']` #3795) is read
+  // by JS ToPropertyKey, not as a struct field: it takes the `bf_get` arm
+  // below (the row itself rendering as `.`), which indexes a slice by a
+  // canonical index and finds a map key or a generated struct's JSON-tagged
+  // field spelled the same, as JS `obj[0]` reads `obj["0"]`.
+  const keyRead = isLiteralKeyRead(computed)
   // Inside a loop, the loop param variable refers to the current item
   // (dot). e.g. `msg.role` inside `{{range $_, $msg := .Messages}}` → `.Role`
   //
@@ -261,7 +260,7 @@ function renderFieldMemberRead(
   // template syntax, let alone a reachable field (PR #2089 review). For
   // identifier keys (snake_case included) the two functions agree, so
   // nothing previously reachable changes shape.
-  if (object.kind === 'identifier' && host.isCurrentLoopRecord(object.name) && !elementIndex) {
+  if (object.kind === 'identifier' && host.isCurrentLoopRecord(object.name) && !keyRead) {
     return `.${goFieldNameForKey(property)}`
   }
 
@@ -299,9 +298,9 @@ function renderFieldMemberRead(
   // is baked with source-cased keys), not the exact-case `.Cfg.ID` dot path
   // below that would `MapIndex("ID")` a `"id"` map and render empty. Placed
   // after the `length` special case so it only intercepts the otherwise-
-  // untyped dot access. A numeric index takes the same getter (see
-  // `elementIndex` above).
-  if (optional || elementIndex || host.isMapRootedPropChain(object) || host.isMapSeededSignalChain(object)) {
+  // untyped dot access. A literal key takes the same getter (see
+  // `keyRead` above).
+  if (optional || keyRead || host.isMapRootedPropChain(object) || host.isMapSeededSignalChain(object)) {
     return host.renderOptionalMember(obj, property)
   }
   return `${obj}.${goFieldNameForKey(property)}`

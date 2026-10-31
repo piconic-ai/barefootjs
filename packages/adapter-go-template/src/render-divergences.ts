@@ -149,9 +149,10 @@ export const renderDivergences: RenderDivergences = {
   // that binds the getter's name (`rows.map(count => …{b}…)`): the template
   // reads `b` as a variable that is never set.
   'const-getter-read-loop-shadowed': { limitation: 'loop-shadowed-const-alias-hop' },
-  // A literal key that is not an identifier (`obj['a.b']`, `obj['*']`) is
-  // spelled as a struct field (`.Obj.AB`), which reads nothing, or as a
-  // template field path the template parser rejects (`*`).
+  // Rows seeded with object literals whose keys are not identifiers
+  // (`{ 'a.b': 1, '*': 3 }`) are not baked, so the loops render no rows, and
+  // a destructured `{ 'a.b': ab }` row param reads a derived field (`.AB`).
+  // A literal-key read outside the loops reads through `bf_get` and passes.
   'literal-index-own-key': { limitation: 'non-identifier-literal-key' },
   // A destructure default that calls a callback and reads no earlier prop
   // (`{ b = ['y', ''].filter((x) => x !== '') }`): the props constructor

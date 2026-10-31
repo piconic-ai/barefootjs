@@ -969,54 +969,14 @@ module BarefootJS
     end
 
     # Runtime-polymorphic element/key access for `arr[index]` /
-    # `hash[key]` (`emitIndexAccessRuby`, expr/operand.ts). Row hashes
-    # deserialize with `symbolize_names: true`, so a dynamic key whose
-    # runtime value is a String (e.g. a destructured `.map()` param used
-    # as a key, `tone[k]`) misses a Symbol-keyed Hash outright -- and the
-    # shared analyzer can't tell at compile time whether an index will
-    # turn out to be a string key or a numeric index (it types a
-    # destructured param `{kind:'unknown'}`), so no compile-time branch
-    # can pick the right access form (#2491). Mirrors `getFieldValue`'s
-    # (Go adapter, bf.go) case-tolerant lookup and Twig's `attribute()`:
-    # for a Hash, try the key as-is, then as a Symbol, then as a String;
-    # for an Array, index numerically; anything else has no lookup to
-    # perform.
+    # `hash[key]` (`emitIndexAccessRuby`, expr/operand.ts). A dynamic key's
+    # shape is only known at run time (#2491), so this dispatches on the
+    # receiver's runtime class. It is the shared evaluator's `index_value`,
+    # so a template read and a callback read share one JS ToPropertyKey
+    # implementation (spec/js-primitive-semantics.md, "ToPropertyKey and
+    # index read").
     def get(collection, key)
-      return nil if key.nil?
-
-      case collection
-      when Hash
-        return collection[key] if collection.key?(key)
-
-        sym = key.to_s.to_sym
-        return collection[sym] if sym && collection.key?(sym)
-
-        str = key.to_s
-        return collection[str] if collection.key?(str)
-
-        nil
-      when Array
-        # Only an INTEGRAL index reads an element. `key.to_i` would be
-        # wrong on both ends: it coerces a non-numeric String to 0
-        # (`arr["nope"]` must be nil, not the first element) and it
-        # truncates a fractional number (JS `arr[1.2]` is a property
-        # lookup, i.e. undefined -- not index 1).
-        idx =
-          case key
-          when Integer then key
-          when Numeric then (key % 1).zero? ? key.to_i : nil
-          when String then (key =~ /\A(?:0|[1-9]\d*)\z/ ? key.to_i : nil)
-          end
-        return nil if idx.nil?
-
-        # JS-semantics negative index is "not found" (`arr[-1] ===
-        # undefined`), NOT Ruby's native from-the-end wraparound -- guard
-        # it explicitly so this stays a superset of bracket access rather
-        # than a divergent one.
-        return nil if idx.negative?
-
-        collection[idx]
-      end
+      Evaluator.index_value(collection, key)
     end
 
     # `isValidElement(x)` -- the framework "is this a renderable element (not

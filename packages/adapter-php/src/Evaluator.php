@@ -796,14 +796,18 @@ final class Evaluator
      * truncates a float key, so `xs[1.1]` read `xs[1]`. The key is first
      * turned into the property name JS reads (`propertyKey`), and a list
      * holds only its canonical index names: `1` and `"1"` name element 1,
-     * while `"01"`, `"-0"` and `"1e0"` are other names no list holds. A
-     * missing key, a nil target or a nil key gives `null`. */
+     * while `"01"`, `"-0"` and `"1e0"` are other names no list holds. A nil
+     * key is the name `"null"`. A string target reads one UTF-16 code unit
+     * by a canonical index. A missing key or a nil target gives `null`. */
     public static function index($target, $key)
     {
-        if ($target === null || $key === null) {
+        if ($target === null) {
             return null;
         }
         $k = self::propertyKey($key);
+        if (is_string($target)) {
+            return self::utf16UnitAt($target, $k);
+        }
         if (is_array($target)) {
             return array_key_exists($k, $target) ? $target[$k] : null;
         }
@@ -832,6 +836,26 @@ final class Evaluator
             return (int) $key;
         }
         return self::toStringJs($key);
+    }
+
+    /** JS `s[k]` on a string: the UTF-16 code unit at a canonical index, or
+     * `null` past the end or for any other key. One half of a surrogate pair
+     * reads as U+FFFD: a lone surrogate cannot be written out as UTF-8
+     * (spec/js-primitive-semantics.md, "Out of scope"). */
+    private static function utf16UnitAt(string $s, int|string $k): ?string
+    {
+        if (is_string($k)) {
+            if (preg_match('/\A(?:0|[1-9][0-9]*)\z/', $k) !== 1) {
+                return null;
+            }
+            $k = (int) $k;
+        }
+        $units = mb_convert_encoding($s, 'UTF-16LE', 'UTF-8');
+        if ($k < 0 || 2 * $k >= strlen($units)) {
+            return null;
+        }
+        $unit = unpack('v', $units, 2 * $k)[1];
+        return $unit >= 0xD800 && $unit <= 0xDFFF ? "\u{FFFD}" : mb_chr($unit, 'UTF-8');
     }
 
     // -----------------------------------------------------------------

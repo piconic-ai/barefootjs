@@ -284,6 +284,15 @@ function planGet(object: ParsedExpr, key: OperandFacts, typing: ScopedOperandTyp
   return decide('get', proof, target, 'get')
 }
 
+/**
+ * Whether `plan` names the native operator of `op`. A null plan (an emitter
+ * method reached outside `emitParsedExpr`) is never native: the helper is
+ * never wrong.
+ */
+export function isNativePlan(plan: PrimitivePlan | null, op: PrimitiveOp): boolean {
+  return plan?.mode === 'native' && plan.op === op
+}
+
 function planNumberLiteral(value: number, target: NativeSafeTable): PrimitivePlan {
   const safe = Number.isSafeInteger(value) && !Object.is(value, -0)
   return decide('number-literal', safe ? 'safe-integer' : 'unproven', target, 'number')

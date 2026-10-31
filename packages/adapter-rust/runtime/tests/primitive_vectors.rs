@@ -20,11 +20,6 @@ fn vectors_dir() -> PathBuf {
 
 /// One binding per op, to the helper compiled templates call. `None` for an
 /// op with no binding, which fails.
-///
-/// TODO(#3824 step 0b/1): also bind each op to the native MiniJinja operator
-/// and run only the cases whose `domain` the MiniJinja adapter's
-/// NativeSafeTable claims (spec/js-primitive-semantics.md, "Conformance"
-/// item 3). That needs the table step 0b adds.
 fn call_binding(fn_name: &str, a: &[JsValue]) -> Option<JsValue> {
     Some(match fn_name {
         "truthy" => JsValue::Bool(runtime::js_truthy(&a[0])),
@@ -38,6 +33,25 @@ fn call_binding(fn_name: &str, a: &[JsValue]) -> Option<JsValue> {
         "ge" => JsValue::Bool(runtime::js_relational(">=", &a[0], &a[1])),
         "plus" => runtime::js_plus(&a[0], &a[1]),
         "neg" => runtime::js_neg(&a[0]),
+        _ => return None,
+    })
+}
+
+/// One binding per op the MiniJinja adapter can spell natively, to the
+/// native MiniJinja operator: an index read is MiniJinja's own `[]`, over the
+/// values a template receives (`js_to_mj`; an undefined result reads as
+/// null). It runs over the cases whose domain the adapter's NATIVE_SAFE
+/// table claims (`primitives-native-safe.json`;
+/// spec/js-primitive-semantics.md, "Conformance" item 3). `None` for an op
+/// with no native binding, which fails.
+fn call_native_binding(fn_name: &str, a: &[JsValue]) -> Option<JsValue> {
+    Some(match fn_name {
+        "get" => {
+            let env = minijinja::Environment::new();
+            let expr = env.compile_expression("recv[key]").expect("compile the native index read");
+            let ctx = minijinja::context! { recv => runtime::js_to_mj(&a[0]), key => runtime::js_to_mj(&a[1]) };
+            runtime::mj_to_js(&expr.eval(ctx).expect("evaluate the native index read"))
+        }
         _ => return None,
     })
 }
@@ -140,5 +154,41 @@ fn primitive_vectors_match_js_reference_or_ledger() {
         }
     }
     println!("primitives: {total} cases, {passed} pass, {} in the expected-failure ledger", expected.len());
+    assert!(problems.is_empty(), "\n{}", problems.join("\n"));
+}
+
+/// Every native claim gives the JS answer on every case it covers; no ledger
+/// applies.
+#[test]
+fn native_claims_match_js_reference() {
+    let claims_path = vectors_dir().join("primitives-native-safe.json");
+    let Ok(raw) = std::fs::read_to_string(&claims_path) else {
+        eprintln!("skipping: native claims not available outside the monorepo checkout ({claims_path:?})");
+        return;
+    };
+    let doc: JsonValue = serde_json::from_str(&raw).unwrap();
+    let claims = doc["runtimes"]["rust"].as_object().expect("primitives-native-safe.json has no \"rust\" runtime");
+    let mut problems = Vec::new();
+    let mut ran = 0;
+    for (fn_name, domains) in claims {
+        let domains: HashSet<&str> = domains.as_array().unwrap().iter().filter_map(|d| d.as_str()).collect();
+        let path = vectors_dir().join("primitives").join(format!("{fn_name}.json"));
+        let file: JsonValue = serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        for case in file["cases"].as_array().unwrap() {
+            if !domains.contains(case["domain"].as_str().unwrap()) {
+                continue;
+            }
+            ran += 1;
+            let args: Vec<JsValue> = case["args"].as_array().unwrap().iter().map(decode).collect();
+            let expect = decode(&case["expect"]);
+            let note = case["note"].as_str().unwrap();
+            match call_native_binding(fn_name, &args) {
+                None => problems.push(format!("no native MiniJinja binding for '{fn_name}' -- add it to call_native_binding")),
+                Some(got) if matches(&got, &expect) => {}
+                Some(got) => problems.push(format!("NATIVE-FAIL {fn_name}/{note}: got {got:?}, want {expect:?}")),
+            }
+        }
+    }
+    println!("primitives (native): {ran} claimed cases");
     assert!(problems.is_empty(), "\n{}", problems.join("\n"));
 }

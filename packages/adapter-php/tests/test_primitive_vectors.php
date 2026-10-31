@@ -37,11 +37,6 @@ $bf = new BarefootJS(null, []);
 
 // One binding per op, to the helper compiled templates call (PHP spells
 // `get` `index` and `strict_eq` `eq`). An op with no binding fails.
-//
-// TODO(#3824 step 0b/1): also bind each op to the native PHP operator and run
-// only the cases whose `domain` the PHP adapters' shared NativeSafeTable
-// claims (spec/js-primitive-semantics.md, "Conformance" item 3). That needs
-// the table step 0b adds.
 $BINDINGS = [
     'truthy' => fn ($v) => $bf->truthy($v),
     'to_number' => fn ($v) => $bf->to_number($v),
@@ -54,6 +49,16 @@ $BINDINGS = [
     'ge' => fn ($a, $b) => $bf->ge($a, $b),
     'plus' => fn ($a, $b) => $bf->plus($a, $b),
     'neg' => fn ($v) => $bf->neg($v),
+];
+
+// One binding per op the PHP adapters can spell natively, to the native PHP
+// operator: an index read is PHP's own `[]`. It runs over the cases whose
+// domain the two adapters' NATIVE_SAFE tables claim
+// (primitives-native-safe.json, "php": their union, since they share this
+// operator; spec/js-primitive-semantics.md, "Conformance" item 3). The tables
+// claim nothing today, so no case runs.
+$NATIVE_BINDINGS = [
+    'get' => fn ($recv, $key) => $recv[$key] ?? null,
 ];
 
 /** Materialize the `{"$num": ...}` sentinel, `-0` included. Values are
@@ -169,5 +174,29 @@ foreach (array_keys($expected) as $key) {
     });
 }
 echo "# primitives: {$total} cases, {$passed} pass, " . count($expected) . " in the expected-failure ledger\n";
+
+// Every native claim gives the JS answer on every case it covers; no ledger
+// applies.
+$claims = json_decode(file_get_contents($VECTORS_DIR . '/primitives-native-safe.json'), true)['runtimes']['php'];
+$nativeRan = 0;
+foreach ($claims as $fn => $domains) {
+    if (!isset($NATIVE_BINDINGS[$fn])) {
+        bf_test("native binding for {$fn}", function () use ($fn) {
+            bf_assert(false, "no native PHP binding for '{$fn}' -- add it to \$NATIVE_BINDINGS");
+        });
+        continue;
+    }
+    foreach (json_decode(file_get_contents("{$VECTORS_DIR}/primitives/{$fn}.json"), false)->cases as $case) {
+        if (!in_array($case->domain, $domains, true)) {
+            continue;
+        }
+        $nativeRan++;
+        [$ok, $detail] = bfp_run($NATIVE_BINDINGS, $case);
+        bf_test("native {$case->fn}/{$case->note}", function () use ($ok, $case, $detail) {
+            bf_assert($ok, "NATIVE-FAIL {$case->fn}/{$case->note} (domain {$case->domain}): {$detail}");
+        });
+    }
+}
+echo "# primitives (native): {$nativeRan} claimed cases\n";
 
 return bf_finish();

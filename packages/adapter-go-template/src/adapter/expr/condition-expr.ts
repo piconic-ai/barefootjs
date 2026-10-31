@@ -21,7 +21,7 @@ import {
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
-import { goBinaryHelperCall, GO_REMEDIATION_OPTIONS, isElementIndex, lowerJsNot, wrapIfMultiToken } from '../lib/go-emit.ts'
+import { goBinaryHelperCall, GO_REMEDIATION_OPTIONS, isLiteralKeyRead, lowerJsNot, wrapIfMultiToken } from '../lib/go-emit.ts'
 import { isPropsObjectName } from '../lib/compile-state.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import type { HigherOrderShape } from '../lib/types.ts'
@@ -207,6 +207,9 @@ function renderFilterExprNode(
     case 'binary':
       return renderFilterBinary(host, expr, param, localVarMap, datumField, fieldlessParam)
 
+    case 'index-access':
+      return renderFilterIndexAccess(host, expr, param, localVarMap, datumField, fieldlessParam)
+
     case 'logical': {
       const left = renderFilterExprNode(host, expr.left, param, localVarMap, datumField, fieldlessParam)
       if (left === null) return null
@@ -380,6 +383,27 @@ function renderFilterCall(
     return refuseFilterExprNode(host, expr)
   }
   return renderFilterExprNode(host, expr.callee, param, localVarMap, datumField, fieldlessParam)
+}
+
+/**
+ * The `index-access` arm of {@link renderFilterExprNode}: `rows[x]` is JS
+ * `obj[key]`, the primitive plan's `get` helper `bf_get`, as in value and
+ * condition position (#3824 step 2). Parenthesised so a parent prefix call
+ * reads it as one argument.
+ */
+function renderFilterIndexAccess(
+  host: ConditionExprHost,
+  expr: Extract<ParsedExpr, { kind: 'index-access' }>,
+  param: string,
+  localVarMap: Map<string, string>,
+  datumField: string | undefined,
+  fieldlessParam: boolean,
+): string | null {
+  const obj = renderFilterExprNode(host, expr.object, param, localVarMap, datumField, fieldlessParam)
+  if (obj === null) return null
+  const idx = renderFilterExprNode(host, expr.index, param, localVarMap, datumField, fieldlessParam)
+  if (idx === null) return null
+  return `(bf_get ${wrapIfMultiToken(obj)} ${wrapIfMultiToken(idx)})`
 }
 
 /** The `binary` arm of {@link renderFilterExprNode}. */
@@ -672,10 +696,10 @@ function renderConditionMember(
     if (staticValue !== null) return plain(staticValue)
   }
 
-  // A numeric index reads an element, not a field (#3497): it takes the
-  // `bf_get` arm below, the row itself rendering as `.`.
-  const elementIndex = isElementIndex(expr.computed, expr.property)
-  if (expr.object.kind === 'identifier' && host.isCurrentLoopRecord(expr.object.name) && !elementIndex) {
+  // A literal key reads by JS ToPropertyKey, not a field (#3497, #3795): it
+  // takes the `bf_get` arm below, the row itself rendering as `.`.
+  const keyRead = isLiteralKeyRead(expr.computed)
+  if (expr.object.kind === 'identifier' && host.isCurrentLoopRecord(expr.object.name) && !keyRead) {
     return plain(`.${capitalizeFieldName(expr.property)}`)
   }
 
@@ -701,7 +725,7 @@ function renderConditionMember(
   // when the object itself is absent.
   // A member of a source-keyed signal seed map (#3353) uses the same
   // getter, as `member()` does in value position.
-  if (expr.optional || elementIndex || host.isMapSeededSignalChain(expr.object)) {
+  if (expr.optional || keyRead || host.isMapSeededSignalChain(expr.object)) {
     return {
       preamble: obj.preamble,
       expr: host.renderOptionalMember(obj.expr, expr.property),

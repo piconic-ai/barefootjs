@@ -3019,24 +3019,23 @@ func getFieldValue(item any, field any) any {
 	}
 
 	if v.Kind() == reflect.String {
+		// JS reads one UTF-16 code unit (`'a😀b'[3]` is `'b'`). A lone
+		// surrogate cannot be carried by a Go string and reads as U+FFFD
+		// (spec/js-primitive-semantics.md, "Out of scope").
 		idx, ok := fieldAsIndex(field)
 		if !ok {
 			return nil
 		}
-		runes := []rune(v.String())
-		if idx < 0 || idx >= len(runes) {
+		units := utf16.Encode([]rune(v.String()))
+		if idx < 0 || idx >= len(units) {
 			return nil
 		}
-		return string(runes[idx])
+		return string(utf16.Decode(units[idx : idx+1]))
 	}
 
-	// From here on only a string-shaped key can match a map or struct
-	// field — a numeric `field` (e.g. a loop index applied to a
-	// non-indexable receiver) has no lookup to perform.
-	fieldStr, ok := field.(string)
-	if !ok {
-		return nil
-	}
+	// A map or struct reads its own key by JS ToPropertyKey: `o[1]` reads
+	// `o["1"]`, `o[null]` reads `o["null"]`, `o[true]` reads `o["true"]`.
+	fieldStr := propertyKey(field)
 
 	if v.Kind() == reflect.Map {
 		keyType := v.Type().Key()
@@ -3122,16 +3121,12 @@ func fieldAsIndex(field any) (int, bool) {
 	switch n := field.(type) {
 	// Only an INTEGRAL float is an index. JS `arr[1.2]` is a property
 	// lookup (undefined), not index 1, so truncating here would diverge.
+	// `-0` converts to "0" and reads element 0; a negative index reads
+	// nothing (the callers bound-check it).
 	case float32:
-		if float64(n) != math.Trunc(float64(n)) {
-			return 0, false
-		}
-		return int(n), true
+		return floatAsIndex(float64(n))
 	case float64:
-		if n != math.Trunc(n) {
-			return 0, false
-		}
-		return int(n), true
+		return floatAsIndex(n)
 	case string:
 		i, err := strconv.Atoi(n)
 		if err != nil || i < 0 || strconv.Itoa(i) != n {
@@ -3141,6 +3136,39 @@ func fieldAsIndex(field any) (int, bool) {
 	default:
 		return 0, false
 	}
+}
+
+// floatAsIndex is fieldAsIndex for a float key: an integral value in the
+// int range (a negative one is returned for the caller's bound check).
+func floatAsIndex(n float64) (int, bool) {
+	if n != math.Trunc(n) || math.Abs(n) >= 1<<53 {
+		return 0, false
+	}
+	return int(n), true
+}
+
+// propertyKey is JS ToPropertyKey for a primitive key: the string a map
+// or struct key is looked up by.
+func propertyKey(field any) string {
+	switch k := field.(type) {
+	case string:
+		return k
+	case nil:
+		return "null"
+	case bool:
+		if k {
+			return "true"
+		}
+		return "false"
+	case float32:
+		return numberString(float64(k))
+	case float64:
+		return numberString(k)
+	}
+	if isIntLike(field) {
+		return strconv.Itoa(toInt(field))
+	}
+	return toString(field)
 }
 
 // AsMap normalizes a dynamically-typed prop value into a
