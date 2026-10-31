@@ -83,6 +83,7 @@ func FuncMap() template.FuncMap {
 		"bf_ternary":     Ternary,
 		"bf_truthy":      Truthy,
 		"bf_keep_truthy": KeepTruthy,
+		"bf_keep_nonnil": KeepNonNil,
 		"bf_keep_falsy":  KeepFalsy,
 
 		// URL query builder (#1897 PostList href helpers): conditional
@@ -2680,6 +2681,35 @@ func KeepFalsy(v any) []any {
 	return []any{v}
 }
 
+// KeepNonNil boxes v for a value-position JS `l ?? r` (#3824 step 7): the
+// one-element slice [v] unless v is nil (an untyped nil, or a typed nil
+// pointer / slice / map / interface / func / chan, as Nullish reads it),
+// an empty slice otherwise. The adapter lowers `l ?? r` to
+// `index (or (bf_keep_nonnil l) (bf_arr r)) 0`, so `or` stops at l's box
+// whenever l is not nullish (a present `false` / `0` / `""` / NaN
+// included, which Go's own `or` would skip), evaluates r only otherwise
+// (the short circuit), and each operand appears once, so a `??` chain
+// grows linearly.
+func KeepNonNil(v any) []any {
+	if isNilValue(v) {
+		return []any{}
+	}
+	return []any{v}
+}
+
+// isNilValue reports whether v is a Go nil: JS `null` / `undefined`.
+func isNilValue(v any) bool {
+	if v == nil {
+		return true
+	}
+	rv := reflect.ValueOf(v)
+	switch rv.Kind() {
+	case reflect.Ptr, reflect.Map, reflect.Slice, reflect.Interface, reflect.Func, reflect.Chan:
+		return rv.IsNil()
+	}
+	return false
+}
+
 // isTruthy mirrors JavaScript's `Boolean(x)` — false / 0 / NaN / "" and
 // null/undefined are falsy, everything else (including an EMPTY array or
 // object) is truthy.
@@ -4477,15 +4507,8 @@ func setScriptsOnSingle(child interface{}, collector *ScriptCollector) {
 // interface), otherwise v — so present-but-falsy `""`/`0`/`false` are KEPT,
 // unlike the truthiness-based template `or`.
 func Nullish(v, fallback any) any {
-	if v == nil {
+	if isNilValue(v) {
 		return fallback
-	}
-	rv := reflect.ValueOf(v)
-	switch rv.Kind() {
-	case reflect.Ptr, reflect.Map, reflect.Slice, reflect.Interface, reflect.Func, reflect.Chan:
-		if rv.IsNil() {
-			return fallback
-		}
 	}
 	return v
 }

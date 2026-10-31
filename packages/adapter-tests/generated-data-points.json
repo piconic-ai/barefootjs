@@ -9855,6 +9855,243 @@
       }
     }
   ],
+  "nullish-mixed-type-zero-fallback": [
+    {
+      "name": "gen:s:empty",
+      "props": {
+        "e": "",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:s:markup",
+      "props": {
+        "e": "",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "s": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:s:multibyte",
+      "props": {
+        "e": "",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "s": "日本語"
+      }
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "e": "",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "e": "",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "e": "",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "n": 1234567890
+      }
+    },
+    {
+      "name": "gen:b:true",
+      "props": {
+        "e": "",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "b": true
+      }
+    },
+    {
+      "name": "gen:b:false",
+      "props": {
+        "e": "",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "b": false
+      }
+    },
+    {
+      "name": "gen:c:empty",
+      "props": {
+        "e": "",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "c": ""
+      }
+    },
+    {
+      "name": "gen:c:markup",
+      "props": {
+        "e": "",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "c": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:c:multibyte",
+      "props": {
+        "e": "",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ],
+        "c": "日本語"
+      }
+    },
+    {
+      "name": "gen:e:absent",
+      "props": {
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:e:markup",
+      "props": {
+        "e": "<b>&\"'</b>",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:e:multibyte",
+      "props": {
+        "e": "日本語",
+        "rows": [
+          {
+            "k": "omitted"
+          },
+          {
+            "k": "set",
+            "s": "s"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "e": "",
+        "rows": []
+      }
+    }
+  ],
+  "nullish-optional-row-field": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "number-addition-text-formatting": [
     {
       "name": "gen:value:zero",
