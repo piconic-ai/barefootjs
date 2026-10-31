@@ -61,9 +61,16 @@ function dslCall(prefix: string, names: Partial<Record<PrimitiveHelper, readonly
   }
 }
 
-const GO_NAMES: Partial<Record<PrimitiveHelper, readonly string[]>> = { strict_eq: ['eq', 'ne'], coalesce: ['nullish'] }
-const PERL_NAMES = { sub: ['subtract'], mul: ['multiply'], div: ['divide'] }
-const PHP_NAMES = { get: ['index'], strict_eq: ['eq', 'neq'] }
+// A value-position `&&` / `||` tests its left operand inside the box that
+// keeps it (`keep_truthy` / `keep_falsy`), so those count as the truthy helper.
+const TRUTHY_NAMES = ['truthy', 'keep_truthy', 'keep_falsy']
+const GO_NAMES: Partial<Record<PrimitiveHelper, readonly string[]>> = {
+  strict_eq: ['eq', 'ne'],
+  coalesce: ['nullish'],
+  truthy: TRUTHY_NAMES,
+}
+const PERL_NAMES = { sub: ['subtract'], mul: ['multiply'], div: ['divide'], truthy: TRUTHY_NAMES }
+const PHP_NAMES = { get: ['index'], strict_eq: ['eq', 'neq'], truthy: TRUTHY_NAMES }
 
 const TARGETS: readonly Target[] = [
   {
@@ -73,11 +80,19 @@ const TARGETS: readonly Target[] = [
     call: (helper) => new RegExp(`\\bbf_(?:${(GO_NAMES[helper] ?? [helper]).join('|')})\\b`),
   },
   { name: 'blade', make: () => new BladeAdapter(), table: BLADE, call: dslCall('$bf->', PHP_NAMES) },
-  { name: 'erb', make: () => new ErbAdapter(), table: ERB, call: dslCall('bf.', { truthy: ['truthy?'] }) },
-  { name: 'jinja', make: () => new JinjaAdapter(), table: JINJA, call: dslCall('bf.') },
+  { name: 'erb', make: () => new ErbAdapter(), table: ERB, call: dslCall('bf.', { truthy: ['truthy?', 'keep_truthy', 'keep_falsy'] }) },
+  { name: 'jinja', make: () => new JinjaAdapter(), table: JINJA, call: dslCall('bf.', { truthy: TRUTHY_NAMES }) },
   { name: 'mojolicious', make: () => new MojoAdapter(), table: MOJO, call: dslCall('bf->', PERL_NAMES) },
-  { name: 'pebble', make: () => new PebbleAdapter(), table: PEBBLE, call: dslCall('bf.', { strict_eq: ['eq', 'neq'] }) },
-  { name: 'rust', make: () => new MinijinjaAdapter(), table: MINIJINJA, call: dslCall('bf.') },
+  {
+    name: 'pebble',
+    make: () => new PebbleAdapter(),
+    table: PEBBLE,
+    // Pebble's own `and` / `or` yield booleans; `||` / `&&` are the runtime's
+    // JsLogicalExtension operators, which test by JS truthiness.
+    call: (helper) =>
+      helper === 'truthy' ? /(?<![\w$])bf\.truthy\(|\|\||&&/ : dslCall('bf.', { strict_eq: ['eq', 'neq'] })(helper),
+  },
+  { name: 'rust', make: () => new MinijinjaAdapter(), table: MINIJINJA, call: dslCall('bf.', { truthy: TRUTHY_NAMES }) },
   { name: 'twig', make: () => new TwigAdapter(), table: TWIG, call: dslCall('bf.', PHP_NAMES) },
   { name: 'xslate', make: () => new XslateAdapter(), table: XSLATE, call: dslCall('$bf.', PERL_NAMES) },
 ]

@@ -37,7 +37,8 @@
  *      `a || b` returning `a` itself: they are the runtime's
  *      `JsLogicalExtension` operators, which test the left operand by JS
  *      truthiness and return it or the right one, each rendered once
- *      (#3824).
+ *      (#3824); a left operand the plan proves boolean takes a ternary over
+ *      itself instead (`spellLogical`).
  *   3. **`??` is NOT Pebble-native — REFUTED during Phase 3 research** (was
  *      previously assumed confirmed; see `pebble-adapter.ts`'s file header).
  *      Pebble has no `??` operator at all: `{{ a ?? b }}` is a template
@@ -184,6 +185,19 @@ export const NATIVE_SAFE: NativeSafeTable = {
  */
 export function truthyTest(plan: PrimitivePlan | null, rendered: string): string {
   return spellTest(plan, rendered, (r) => `bf.truthy(${r})`)
+}
+
+/**
+ * JS `l && r` / `l || r` in a value position, which yield one of their
+ * operands (#3824). When the plan proves `l` a boolean, a ternary over `l`
+ * itself (`l ? r : false`, `l ? true : r`; Pebble's `and` / `or` yield a
+ * boolean, not `r`). Otherwise the runtime's JsLogicalExtension operators,
+ * which test `l` by JS truthiness, return it when it decides the result and
+ * evaluate `r` only otherwise, each operand rendered once.
+ */
+function spellLogical(op: '&&' | '||', plan: PrimitivePlan | null, l: string, r: string): string {
+  if (truthyTest(plan, l) === l) return op === '&&' ? `(${l} ? ${r} : false)` : `(${l} ? true : ${r})`
+  return `(${l} ${op} ${r})`
 }
 
 /**
@@ -365,14 +379,10 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
-    // JS `&&` / `||` yield an operand: the runtime's JsLogicalExtension
-    // operators test `l` by JS truthiness, return it when it decides the
-    // result and evaluate `r` only otherwise, each operand rendered once
-    // (#3824). The same spelling serves every plan.
-    if (op === '&&' || op === '||') return `(${l} ${op} ${r})`
+    if (op === '&&' || op === '||') return spellLogical(op, plan, l, r)
     // See the file header, divergence 3 (REFUTED during Phase 3 research —
     // Pebble has NO `??` operator at all; it's a parse error, not a subtly
     // wrong runtime value). Routed through the `bf.coalesce(l, r)` runtime
@@ -696,14 +706,10 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
-    // JS `&&` / `||` yield an operand: the runtime's JsLogicalExtension
-    // operators test `l` by JS truthiness, return it when it decides the
-    // result and evaluate `r` only otherwise, each operand rendered once
-    // (#3824). The same spelling serves every plan.
-    if (op === '&&' || op === '||') return `(${l} ${op} ${r})`
+    if (op === '&&' || op === '||') return spellLogical(op, plan, l, r)
     // See the file header, divergence 3 (REFUTED — see the other
     // `logical()` implementation above for the full explanation).
     return `bf.coalesce(${l}, ${r})`

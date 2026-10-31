@@ -6688,6 +6688,117 @@
       }
     }
   ],
+  "logical-value-chains": [
+    {
+      "name": "gen:zero:negative",
+      "props": {
+        "zero": -7,
+        "empty": "",
+        "nil": null,
+        "s": "s",
+        "t": "t"
+      }
+    },
+    {
+      "name": "gen:zero:large",
+      "props": {
+        "zero": 1234567890,
+        "empty": "",
+        "nil": null,
+        "s": "s",
+        "t": "t"
+      }
+    },
+    {
+      "name": "gen:empty:markup",
+      "props": {
+        "zero": 0,
+        "empty": "<b>&\"'</b>",
+        "nil": null,
+        "s": "s",
+        "t": "t"
+      }
+    },
+    {
+      "name": "gen:empty:multibyte",
+      "props": {
+        "zero": 0,
+        "empty": "日本語",
+        "nil": null,
+        "s": "s",
+        "t": "t"
+      }
+    },
+    {
+      "name": "gen:nil:absent",
+      "props": {
+        "zero": 0,
+        "empty": "",
+        "s": "s",
+        "t": "t"
+      }
+    },
+    {
+      "name": "gen:s:empty",
+      "props": {
+        "zero": 0,
+        "empty": "",
+        "nil": null,
+        "s": "",
+        "t": "t"
+      }
+    },
+    {
+      "name": "gen:s:markup",
+      "props": {
+        "zero": 0,
+        "empty": "",
+        "nil": null,
+        "s": "<b>&\"'</b>",
+        "t": "t"
+      }
+    },
+    {
+      "name": "gen:s:multibyte",
+      "props": {
+        "zero": 0,
+        "empty": "",
+        "nil": null,
+        "s": "日本語",
+        "t": "t"
+      }
+    },
+    {
+      "name": "gen:t:empty",
+      "props": {
+        "zero": 0,
+        "empty": "",
+        "nil": null,
+        "s": "s",
+        "t": ""
+      }
+    },
+    {
+      "name": "gen:t:markup",
+      "props": {
+        "zero": 0,
+        "empty": "",
+        "nil": null,
+        "s": "s",
+        "t": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:t:multibyte",
+      "props": {
+        "zero": 0,
+        "empty": "",
+        "nil": null,
+        "s": "s",
+        "t": "日本語"
+      }
+    }
+  ],
   "loop-destructured-param-condition": [
     {
       "name": "gen:rows:empty",
