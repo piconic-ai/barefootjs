@@ -62,9 +62,8 @@ function dslCall(prefix: string, names: Partial<Record<PrimitiveHelper, readonly
 }
 
 // A value-position `&&` / `||` tests its left operand inside the box that
-// keeps it (`keep_truthy` / `keep_falsy`) or Twig's `js_or` / `js_and`, so
-// those count as the truthy helper.
-const TRUTHY_NAMES = ['truthy', 'keep_truthy', 'keep_falsy', 'js_or', 'js_and']
+// keeps it (`keep_truthy` / `keep_falsy`), so those count as the truthy helper.
+const TRUTHY_NAMES = ['truthy', 'keep_truthy', 'keep_falsy']
 const GO_NAMES: Partial<Record<PrimitiveHelper, readonly string[]>> = {
   strict_eq: ['eq', 'ne'],
   coalesce: ['nullish'],
@@ -94,7 +93,15 @@ const TARGETS: readonly Target[] = [
       helper === 'truthy' ? /(?<![\w$])bf\.truthy\(|\|\||&&/ : dslCall('bf.', { strict_eq: ['eq', 'neq'] })(helper),
   },
   { name: 'rust', make: () => new MinijinjaAdapter(), table: MINIJINJA, call: dslCall('bf.', { truthy: TRUTHY_NAMES }) },
-  { name: 'twig', make: () => new TwigAdapter(), table: TWIG, call: dslCall('bf.', PHP_NAMES) },
+  {
+    name: 'twig',
+    make: () => new TwigAdapter(),
+    table: TWIG,
+    // Twig's value-position `&&` / `||` test through the `bf_js_or` /
+    // `bf_js_and` filters (`Barefoot\BarefootExtension`), not a `bf.` method.
+    call: (helper) =>
+      helper === 'truthy' ? /(?<![\w$])bf\.truthy\(|\|bf_js_(?:or|and)\(/ : dslCall('bf.', PHP_NAMES)(helper),
+  },
   { name: 'xslate', make: () => new XslateAdapter(), table: XSLATE, call: dslCall('$bf.', PERL_NAMES) },
 ]
 

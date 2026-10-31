@@ -88,6 +88,18 @@ jobs:
       - name: Run live Twig render test
         run: php packages/adapter-twig/php/tests/test_render.php
 
+      # The adapter emits Twig syntax that must parse on the lowest twig/twig
+      # composer.json allows, not only the locked one (#3824: an arrow is a
+      # method argument only since Twig 3.15).
+      - name: Run live Twig render test (lowest allowed Twig)
+        run: |
+          cp -r packages/adapter-twig/php "$RUNNER_TEMP/twig-lowest"
+          rm -rf "$RUNNER_TEMP/twig-lowest/vendor"
+          sed -i 's#"url": "../../adapter-php"#"url": "'"$GITHUB_WORKSPACE"'/packages/adapter-php"#' "$RUNNER_TEMP/twig-lowest/composer.json"
+          composer update --no-interaction --prefer-lowest --prefer-stable --working-dir="$RUNNER_TEMP/twig-lowest"
+          composer show --working-dir="$RUNNER_TEMP/twig-lowest" twig/twig | grep versions
+          BF_TWIG_AUTOLOAD="$RUNNER_TEMP/twig-lowest/vendor/autoload.php" php packages/adapter-twig/php/tests/test_render.php
+
       - name: Setup Bun
         uses: ./.github/actions/setup-bun
 

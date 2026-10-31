@@ -29,7 +29,9 @@ require_once __DIR__ . '/../../../adapter-php/tests/_harness.php';
 bf_require_runtime();
 bf_reset();
 
-$vendorAutoload = __DIR__ . '/../vendor/autoload.php';
+// BF_TWIG_AUTOLOAD points at another install's autoloader (CI runs this file
+// against the lowest Twig `composer.json` allows, as well as the locked one).
+$vendorAutoload = getenv('BF_TWIG_AUTOLOAD') ?: __DIR__ . '/../vendor/autoload.php';
 if (!is_file($vendorAutoload)) {
     bf_skip_file('twig/twig not installed -- run `composer install --working-dir=' . dirname(__DIR__) . '` to enable this test');
     return bf_finish();
@@ -100,6 +102,34 @@ bf_test('fragment scope: begin/end markers pair with the same scope id', functio
     $out = $backend->render_named('frag', $fragBf, ['count' => 3]);
     bf_assert(str_starts_with($out, '<!--bf-scope:FragmentDemo_test-->'), "expected leading begin marker, got: {$out}");
     bf_assert(str_ends_with($out, '<!--bf-/scope:FragmentDemo_test-->'), "expected trailing end marker, got: {$out}");
+});
+
+// Value-position JS `||` / `&&` (#3824), spelled as the adapter emits them:
+// `(l)|bf_js_or((__bf_lazy) => r)`. They must parse on the lowest Twig
+// `composer.json` allows (an arrow is a method argument only since 3.15, a
+// filter argument before that), keep the operand JS yields, and leave `r`
+// unevaluated when JS skips it.
+bf_test('bf_js_or / bf_js_and filters: operand values, short circuit, chains', function () use ($tmpDir) {
+    $or = fn(string $l, string $r): string => "(({$l})|bf_js_or((__bf_lazy) => {$r}))";
+    $and = fn(string $l, string $r): string => "(({$l})|bf_js_and((__bf_lazy) => {$r}))";
+    $chain = 'zero';
+    foreach (['empty', 'nil', 'zero', 'empty', 'nil', 'zero', 'empty', 'nil', 'zero', 'empty', 'nil', 'zero', 'empty', 'nil', 's'] as $next) {
+        $chain = $or($chain, $next);
+    }
+    $cases = [
+        'or_skips_falsy' => [$or('zero', 's'), 's'],
+        'or_keeps_truthy' => [$or('s', 'nil.k'), 's'],
+        'and_keeps_falsy' => [$and('zero', 'nil.k'), '0'],
+        'and_takes_right' => [$and('s', 't'), 't'],
+        'mixed' => [$or($and('zero', 's'), $and('t', 's')), 's'],
+        'chain16' => [$chain, 's'],
+    ];
+    $backend = new TwigBackend(['paths' => [$tmpDir], 'environment_options' => ['strict_variables' => true]]);
+    foreach ($cases as $name => [$expr, $want]) {
+        file_put_contents("{$tmpDir}/logical_{$name}.twig", "{{ {$expr} }}");
+        $got = $backend->env()->render("logical_{$name}.twig", ['zero' => 0, 'empty' => '', 'nil' => null, 's' => 's', 't' => 't']);
+        bf_assert($got === $want, "{$name}: expected '{$want}', got '{$got}'");
+    }
 });
 
 bf_test('backend unit operations', function () use ($backend) {
