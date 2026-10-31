@@ -278,7 +278,7 @@ import {
 } from './lib/pebble-naming.ts'
 import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToPebble } from './lib/static-value.ts'
-import { PebbleFilterEmitter, PebbleTopLevelEmitter, truthyTest, CALLBACK_LOWERING, NATIVE_SAFE } from './expr/emitters.ts'
+import { PebbleFilterEmitter, PebbleTopLevelEmitter, truthyTest, CALLBACK_LOWERING, NATIVE_SAFE, numberLiteral } from './expr/emitters.ts'
 import type { PebbleEmitContext, PebbleSpreadContext, PebbleMemoContext } from './emit-context.ts'
 import {
   conditionalSpreadToPebble,
@@ -1545,7 +1545,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
   private _resolveLiteralConst(name: string): string | null {
     const lit = lookupLiteralConst(name, this.localConstants, n => this.scope.isBound(n))
     if (lit === null) return null
-    if (lit.kind === 'number') return lit.text
+    if (lit.kind === 'number') return numberLiteral(lit.value, null)
     if (lit.kind === 'boolean') return lit.text === 'true' ? 'true' : 'false'
     if (lit.kind === 'null') return 'null'
     return pebbleStringLiteral(lit.text)

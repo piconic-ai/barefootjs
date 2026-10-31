@@ -122,7 +122,7 @@ import {
 } from './lib/ruby-naming.ts'
 import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToRuby } from './lib/static-value.ts'
-import { ErbFilterEmitter, ErbTopLevelEmitter, CALLBACK_LOWERING, NATIVE_SAFE, truthyTest } from './expr/emitters.ts'
+import { ErbFilterEmitter, ErbTopLevelEmitter, CALLBACK_LOWERING, NATIVE_SAFE, truthyTest, numberLiteral } from './expr/emitters.ts'
 import type { ErbEmitContext, ErbSpreadContext, ErbMemoContext } from './emit-context.ts'
 import {
   conditionalSpreadToRuby,
@@ -293,7 +293,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
   private resolveLiteralConst(name: string): string | null {
     const lit = lookupLiteralConst(name, this.localConstants, n => this.scope.isBound(n))
     if (lit === null) return null
-    if (lit.kind === 'number') return lit.text
+    if (lit.kind === 'number') return numberLiteral(lit.value, null)
     if (lit.kind === 'boolean') return lit.text === 'true' ? 'true' : 'false'
     if (lit.kind === 'null') return 'nil'
     return rubyStringLiteral(lit.text)

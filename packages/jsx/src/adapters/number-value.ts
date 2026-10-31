@@ -10,6 +10,7 @@ import type { StringNameTest } from './parsed-expr-emitter.ts'
 import type { SsrSeedPlan } from '../ssr-seed-plan.ts'
 import type { ComponentIR, TypeInfo } from '../types.ts'
 import { isNumericArithmeticResult } from './parsed-expr-emitter.ts'
+import { isRuntimeNumberLiteral } from './primitive-plan.ts'
 
 /**
  * Number-typed signals, memos, props and same-file local consts: a strict
@@ -37,16 +38,25 @@ export function collectNumberValueNames(ir: Pick<ComponentIR, 'metadata'>): { na
     if (!ir.metadata.propsObjectName) names.add(p.name)
   }
   for (const c of ir.metadata.localConstants) {
-    if (isNumber(c.type)) names.add(c.name)
+    // The analyzer types an exponent literal (`const TINY = 1e-7`) `unknown`;
+    // its parsed initializer still says it is a number.
+    if (isNumber(c.type) || isNumberLiteralInitializer(c.parsed)) names.add(c.name)
   }
   return { names, props }
+}
+
+/** A number literal, written negated or not (`1e-7`, `-0`). */
+function isNumberLiteralInitializer(expr: ParsedExpr | undefined): boolean {
+  const literal = expr?.kind === 'unary' && expr.op === '-' ? expr.argument : expr
+  return literal?.kind === 'literal' && literal.literalType === 'number'
 }
 
 /**
  * Whether an expression yields a JS NUMBER: arithmetic
  * ({@link isNumericArithmeticResult}), a read of a name `isNumberName`
  * accepts — a zero-argument getter call, a `props.<key>` member, or a bare
- * identifier — or a ternary with such a branch. Backends whose own number
+ * identifier — a number literal that is not a safe integer, or a ternary
+ * with such a branch. Backends whose own number
  * stringification differs from JS (Perl spells the infinities `Inf` and
  * prints `%.15g`) route such a value through their `Number::toString`
  * helper wherever JS stringifies it: an output position, or an operand of
@@ -60,6 +70,8 @@ export function isNumberValuedExpr(
 ): boolean {
   if (!expr) return false
   if (isNumericArithmeticResult(expr, isStringName)) return true
+  // A literal the plan spells through the runtime's `number` (#3824 step 6).
+  if (isRuntimeNumberLiteral(expr)) return true
   // Either branch may be the value printed; the helper passes a string
   // branch through unchanged.
   if (expr.kind === 'conditional') {

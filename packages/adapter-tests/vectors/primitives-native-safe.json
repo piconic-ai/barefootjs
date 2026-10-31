@@ -8,25 +8,37 @@
       "truthy": [
         "boolean"
       ],
-      "get": []
+      "get": [],
+      "number": [
+        "safe-integer"
+      ]
     },
     "java": {
       "truthy": [
         "boolean"
       ],
-      "get": []
+      "get": [],
+      "number": [
+        "safe-integer"
+      ]
     },
     "perl": {
       "truthy": [
         "boolean"
       ],
-      "get": []
+      "get": [],
+      "number": [
+        "safe-integer"
+      ]
     },
     "php": {
       "truthy": [
         "boolean"
       ],
-      "get": []
+      "get": [],
+      "number": [
+        "safe-integer"
+      ]
     },
     "python": {
       "truthy": [
@@ -34,11 +46,17 @@
       ],
       "get": [
         "array-index"
+      ],
+      "number": [
+        "safe-integer"
       ]
     },
     "ruby": {
       "truthy": [],
-      "get": []
+      "get": [],
+      "number": [
+        "safe-integer"
+      ]
     },
     "rust": {
       "truthy": [
@@ -46,6 +64,9 @@
       ],
       "get": [
         "array-index"
+      ],
+      "number": [
+        "safe-integer"
       ]
     }
   }

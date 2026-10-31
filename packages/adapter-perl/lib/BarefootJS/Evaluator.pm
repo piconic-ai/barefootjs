@@ -516,7 +516,9 @@ sub _same_value_zero ($l, $r) {
 
 sub _unary ($op, $v) {
     return _bool(!_truthy($v)) if $op eq '!';
-    return -_to_number($v) if $op eq '-';
+    # JS `-x` keeps the sign of zero: negate the double, never a Perl IV,
+    # whose zero has no sign (`-0` is 0).
+    return -(unpack('d', pack('d', _to_number($v)))) if $op eq '-';
     return _to_number($v)  if $op eq '+';
     return undef;
 }

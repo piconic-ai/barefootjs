@@ -227,7 +227,7 @@ import { TWIG_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
 import { twigHashKey, twigIdent, escapeTwigSingleQuoted, twigLoopBindingAccessor } from './lib/twig-naming.ts'
 import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToTwig } from './lib/static-value.ts'
-import { TwigFilterEmitter, TwigTopLevelEmitter, truthyTest, CALLBACK_LOWERING, NATIVE_SAFE } from './expr/emitters.ts'
+import { TwigFilterEmitter, TwigTopLevelEmitter, truthyTest, CALLBACK_LOWERING, NATIVE_SAFE, numberLiteral } from './expr/emitters.ts'
 import type { TwigEmitContext, TwigSpreadContext, TwigMemoContext } from './emit-context.ts'
 import {
   conditionalSpreadToTwig,
@@ -1426,7 +1426,7 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
   private _resolveLiteralConst(name: string): string | null {
     const lit = lookupLiteralConst(name, this.localConstants, n => this.scope.isBound(n))
     if (lit === null) return null
-    if (lit.kind === 'number') return lit.text
+    if (lit.kind === 'number') return numberLiteral(lit.value, null)
     if (lit.kind === 'boolean') return lit.text === 'true' ? 'true' : 'false'
     if (lit.kind === 'null') return 'null'
     return `'${escapeTwigSingleQuoted(lit.text)}'`

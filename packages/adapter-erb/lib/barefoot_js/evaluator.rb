@@ -425,11 +425,18 @@ module BarefootJS
     def unary(op, v)
       case op
       when '!' then !truthy?(v)
-      when '-' then -to_number(v)
+      when '-' then negate(to_number(v))
       when '+' then to_number(v)
       else raise EvalUnsupported, "unary operator '#{op}' is not in the evaluator subset"
       end
     end
+
+    # negate(n) -- JS unary `-` over a number: an Integer zero has no sign, so
+    # a zero negates as a Float (`-0.0` from `0`, `0.0` from `-0.0`).
+    def negate(n)
+      n.zero? ? -n.to_f : -n
+    end
+    private_class_method :negate
 
     # ---------------------------------------------------------------------
     # Nested `.map`/`.filter` callback calls (#2094) -- the evaluator

@@ -271,17 +271,36 @@ const CASES: readonly Case[] = [
     },
   },
   {
+    // A unary minus over anything but a non-zero number literal (#3824
+    // step 6): a zero operand, including the literal `-0`, keeps its sign
+    // only through `neg`.
     id: 'neg',
-    positions: at({ text, attr }, { prop: '-props.n', signal: '-count()' }),
+    positions: {
+      ...at({ text, attr }, { prop: '-props.n', signal: '-count()', string: '-props.s', 'zero-literal': '-0' }),
+      filter: [filter('-x < 0', '-x', 'row')],
+    },
   },
   {
+    // A literal is native only as a safe integer; a negated non-zero literal
+    // folds into the literal it denotes (#3824 step 6).
     id: 'number-literal',
     positions: {
-      text: [
-        { label: 'safe-integer', jsx: '<p>@{props.n + 1}</p>', node: '1', scope: 'component' },
-        { label: 'fraction', jsx: '<p>@{props.n + 1.5}</p>', node: '1.5', scope: 'component' },
-        { label: 'large', jsx: '<p>@{props.n * 1e21}</p>', node: '1e21', scope: 'component' },
-      ],
+      ...at(
+        {
+          text: (e, label) => ({ label, jsx: `<p>@{props.n * ${e}}</p>`, node: e, scope: 'component' }),
+          attr: (e, label) => ({ label, jsx: `<p>@<i data-v={props.n * ${e}} /></p>`, node: e, scope: 'component' }),
+        },
+        {
+          'safe-integer': '1',
+          'negative-integer': '-3',
+          fraction: '1.5',
+          'negative-fraction': '-1.5',
+          large: '1e21',
+          small: '1e-7',
+          'beyond-safe': '9007199254740993',
+        },
+      ),
+      filter: [filter('x * 1e21 > 0', '1e21', 'large'), filter('x * -2 > 0', '-2', 'negative-integer')],
     },
   },
   {

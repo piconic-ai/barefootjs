@@ -52,6 +52,8 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   type PredicateMethod,
   type ArithmeticHelper,
   type StringNameTest,
+  isNativePlan,
+  numberLiteralSpelling,
 } from '@barefootjs/jsx'
 
 import type { XslateEmitContext } from '../emit-context.ts'
@@ -83,8 +85,12 @@ export const NATIVE_SAFE: NativeSafeTable = {
   plus: ['string'],
   'strict-eq': ['number-pair', 'string-pair', 'boolean-pair', 'unproven'],
   relational: ['number-pair', 'unproven'],
-  neg: ['number', 'unproven'],
-  'number-literal': ['safe-integer', 'unproven'],
+  // A unary minus over a non-zero literal folds into the literal; any other
+  // operand takes `neg`, which keeps the sign of zero. A literal is native
+  // only as a safe integer; `number('<JS spelling>')` otherwise, and `-0` is
+  // `neg(0)` (#3824 step 6, pinned by the `primitives/number` vectors).
+  neg: [],
+  'number-literal': ['safe-integer'],
   nullish: ['non-nil', 'unproven'],
   get: [],
   // Perl has no boolean type: a boolean that leaves the expression is
@@ -266,11 +272,11 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     return kolonVar(this.rowLocalName(name), this.onRead)
   }
 
-  literal(value: string | number | boolean | null, literalType: LiteralType, _plan: PrimitivePlan | null): string {
+  literal(value: string | number | boolean | null, literalType: LiteralType, plan: PrimitivePlan | null): string {
     if (literalType === 'string') return kolonStringLiteral(String(value))
     if (literalType === 'boolean') return value ? '1' : '0'
     if (literalType === 'null') return 'nil'
-    return String(value)
+    return numberLiteral(value, plan)
   }
 
   member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
@@ -308,7 +314,7 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
       const needsParens = test === arg && (argument.kind === 'binary' || argument.kind === 'logical')
       return needsParens ? `!(${test})` : `!${test}`
     }
-    if (op === '-') return `-${groupUnaryOperand(argument, arg)}`
+    if (op === '-') return negate(plan, arg, () => `-${groupUnaryOperand(argument, arg)}`)
     return arg
   }
 
@@ -504,11 +510,11 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     return kolonVar(this.ctx._rowLocalName(name), this.onRead)
   }
 
-  literal(value: string | number | boolean | null, literalType: LiteralType, _plan: PrimitivePlan | null): string {
+  literal(value: string | number | boolean | null, literalType: LiteralType, plan: PrimitivePlan | null): string {
     if (literalType === 'string') return kolonStringLiteral(String(value))
     if (literalType === 'boolean') return value ? '1' : '0'
     if (literalType === 'null') return 'nil'
-    return String(value)
+    return numberLiteral(value, plan)
   }
 
   member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
@@ -626,9 +632,8 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     if (op === '!') return `!${truthyTest(plan, arg)}`
     if (op === '-') {
       // Unary minus applies JS `ToNumber` like binary `-` (#3533).
-      const grouped = groupUnaryOperand(argument, arg)
-      const operand = this.coerceUndefinedOperand(op, argument, undefined, grouped)
-      return operand === grouped ? `-${grouped}` : `-(${operand})`
+      const operand = this.coerceUndefinedOperand(op, argument, undefined, arg)
+      return negate(plan, operand, () => (operand === arg ? `-${groupUnaryOperand(argument, arg)}` : `-(${operand})`))
     }
     return arg
   }
@@ -865,4 +870,25 @@ function stringifyTerm(
   isBooleanName: (name: string, componentProperty?: boolean) => boolean,
 ): string {
   return isBooleanResultParsed(expr, isBooleanName) ? `$bf.bool_str(${emit(expr)})` : `$bf.string(${emit(stringifyBooleanBranches(expr))})`
+}
+
+/**
+ * Spell a number literal's plan (#3824 step 6): a safe integer as itself,
+ * any other literal through the runtime's `number` over its JS spelling
+ * (`1e+21`, `1e-7`, `0.1`), and `-0` as `neg(0)`.
+ */
+export function numberLiteral(value: string | number | boolean | null, plan: PrimitivePlan | null): string {
+  if (typeof value !== 'number') return String(value)
+  const spelled = numberLiteralSpelling(value, plan)
+  if (spelled.kind === 'native') return spelled.text
+  return spelled.kind === 'parse' ? `$bf.number('${spelled.text}')` : '$bf.neg(0)'
+}
+
+/**
+ * Spell a unary-minus plan over `operand` (#3824 step 6): the runtime's
+ * `neg`, JS `-ToNumber(x)` keeping the sign of zero, unless the plan names
+ * the native operator.
+ */
+function negate(plan: PrimitivePlan | null, operand: string, native: () => string): string {
+  return isNativePlan(plan, 'neg') ? native() : `$bf.neg(${operand})`
 }

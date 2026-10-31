@@ -59,6 +59,7 @@ import {
   type ArithmeticCoercion,
   collectNullishAttrContext,
   isNativePlan,
+  isRuntimeNumberLiteral,
   parseExpression,
   stringifyParsedExpr,
   isSupported,
@@ -138,6 +139,7 @@ import {
   applyGoFallback,
   escapeGoStaticText,
   GO_NATIVE_SAFE,
+  goNumberLiteral,
 } from "./lib/go-emit.ts"
 import type {
   GoRenderCtx,
@@ -165,7 +167,7 @@ import {
   jsLiteralToGo,
   objectLiteralToGoMap,
 } from "./value/value-lowering.ts"
-import { parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
+import { numberLiteralTemplateGo, parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
 import { propertyInfoToGo, typeInfoToGo } from "./type/type-codegen.ts"
 import { isKnownArray, isKnownNonNumber } from "./type/number-read.ts"
 import { planSynthPropStructs } from "./type/synth-prop-structs.ts"
@@ -4572,7 +4574,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         ? '""'
         : this.textNillablePropNameOf(classify.parsed) !== null
           ? `bf_string ${wrapIfMultiToken(goExpr)}`
-          : this.numericTextExpression(goExpr, classify.parsed)
+          : this.numericTextExpression(goExpr, classify.parsed ?? expr.parsed)
     // One that may be a boolean is blanked at render time by `bf_display`.
     const finalExpr = display === 'display' ? `bf_display ${wrapIfMultiToken(sinkExpr)}` : sinkExpr
 
@@ -5008,6 +5010,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // which a Go template string literal must carry escaped; JSON's escapes
     // are a subset of Go's interpreted-string escapes.
     if (lit.kind === 'null') return 'nil'
+    if (lit.kind === 'number') return this.literal(lit.value, 'number', null)
     return lit.kind === 'string' ? JSON.stringify(lit.text) : lit.text
   }
 
@@ -5062,6 +5065,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const c = this.findModuleConst(name)
     if (!c?.parsed) return null
     if (target.kind === 'template-action') {
+      const number = numberLiteralTemplateGo(c.parsed)
+      if (number !== null) return number
       return c.parsed.kind === 'literal' || c.parsed.kind === 'unary'
         ? parsedLiteralToGo(this.emitCtx, c.parsed)
         : null
@@ -5070,12 +5075,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return parsedLiteralToGo(this.emitCtx, c.parsed, bakeType)
   }
 
-  literal(value: string | number | boolean | null, literalType: LiteralType, _plan: PrimitivePlan | null): string {
+  literal(value: string | number | boolean | null, literalType: LiteralType, plan: PrimitivePlan | null): string {
     // A decoded string value: JSON escaping is a subset of Go's interpreted-
     // string escapes, so a quote or newline stays inside the literal.
     if (literalType === 'string') return JSON.stringify(String(value))
     if (literalType === 'null') return 'nil'
-    return String(value)
+    return typeof value === 'number' ? goNumberLiteral(value, plan) : String(value)
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
@@ -5494,8 +5499,22 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return `bf_text ${wrapIfMultiToken(goExpr)}`
   }
 
+  /** Whether `name` inlines as a literal const the plan spells through the runtime (`const NZ = -0`). */
+  private isRuntimeNumberConst(name: string): boolean {
+    const lit = lookupLiteralConst(
+      name,
+      this.state.localConstants,
+      n => this.isCurrentLoopItem(n) || this.loopVarRefCount.has(n) || this.isOuterLoopParam(n),
+    )
+    return lit?.kind === 'number' && isRuntimeNumberLiteral({ kind: 'literal', value: lit.value, literalType: 'number' })
+  }
+
   private isNumericTextValue(expr: ParsedExpr | undefined): boolean {
     if (!expr) return false
+    // A literal spelled `bf_number "1e+21"` / `bf_neg 0` (#3824 step 6) is a
+    // float64, and so is a literal const inlined as one.
+    if (isRuntimeNumberLiteral(expr)) return true
+    if (expr.kind === 'identifier') return this.isRuntimeNumberConst(expr.name)
     if (expr.kind === 'binary') return ARITHMETIC_OPS.has(expr.op)
     if (expr.kind === 'unary') return expr.op === '-' || expr.op === '+'
     // A ternary whose taken branch can be a boxed number (`c ? n + 0.5 : 'x'`).
@@ -6036,7 +6055,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const litConst = (this.state.localConstants ?? []).find(c => c.name === trimmed)
       if (litConst?.value !== undefined) {
         const v = litConst.value.trim()
-        if (/^-?\d+(\.\d+)?$/.test(v)) return v
+        // A number spells through the plan (#3824 step 6): `-0` and a
+        // literal past 2^53 are not Go template literals.
+        if (/^-?\d+(\.\d+)?$/.test(v)) return this.literal(Number(v), 'number', null)
         const strLit = /^'([^'\\]*)'$/.exec(v) ?? /^"([^"\\]*)"$/.exec(v)
         if (strLit) return JSON.stringify(strLit[1])
       }
@@ -6185,7 +6206,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       )
       if (hit && hit.value.kind === 'literal') {
         if (hit.value.literalType === 'string') return JSON.stringify(hit.value.value)
-        if (hit.value.literalType === 'number') return hit.value.raw ?? String(hit.value.value)
+        if (hit.value.literalType === 'number' && typeof hit.value.value === 'number') return this.literal(hit.value.value, 'number', null)
       }
     }
     return null

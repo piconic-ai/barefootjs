@@ -15,8 +15,9 @@
  * the committed JSON drifts from the tables.
  *
  * Only the ops whose native binding the harnesses wire are listed: `truthy`
- * (rollout step 1) and `get` (step 2). Each later step adds its op here and
- * to every harness.
+ * (rollout step 1), `get` (step 2) and `number`, the number-literal plan's
+ * host literal (step 6). Each later step adds its op here and to every
+ * harness.
  */
 import { dirname, join } from 'node:path'
 import type { NativeSafeTable, PrimitiveOp, Proof } from '@barefootjs/jsx'
@@ -52,6 +53,7 @@ export const RUNTIME_TABLES: Readonly<Record<string, readonly NativeSafeTable[]>
 const NATIVE_BINDINGS: Readonly<Record<string, { op: PrimitiveOp; domains: Partial<Record<Proof, readonly Domain[]>> }>> = {
   truthy: { op: 'to-boolean', domains: { boolean: ['boolean'] } },
   get: { op: 'get', domains: { 'array-index': ['array-index'] } },
+  number: { op: 'number-literal', domains: { 'safe-integer': ['safe-integer'] } },
 }
 
 export interface NativeSafeMirror {

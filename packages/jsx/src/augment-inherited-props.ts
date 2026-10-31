@@ -611,6 +611,16 @@ export function lookupStaticArrayElement(
 }
 
 /**
+ * A literal-initialized const's value. A number carries its `value` (a
+ * `const NZ = -0` is negative zero, which `text` cannot say), which each
+ * adapter spells through the primitive plan's number-literal decision
+ * (#3824 step 6), as it does a literal written in place.
+ */
+export type LiteralConst =
+  | { kind: 'number'; text: string; value: number }
+  | { kind: 'string' | 'boolean' | 'null'; text: string }
+
+/**
  * Resolve a bare identifier bound to a literal-initialized `const` — module
  * or component-function scope — to that literal, or `null` for any other
  * shape so callers fall back to their generic lowering. The one decision
@@ -630,7 +640,7 @@ export function lookupLiteralConst(
   name: string,
   constants: IRMetadata['localConstants'] | undefined,
   isShadowed: (name: string) => boolean,
-): { kind: 'string' | 'number' | 'boolean' | 'null'; text: string } | null {
+): LiteralConst | null {
   if (isShadowed(name)) return null
   const c = (constants ?? []).find(lc => lc.name === name)
   if (c?.value === undefined) return null
@@ -640,7 +650,7 @@ export function lookupLiteralConst(
     if (p.literalType === 'boolean' && typeof p.value === 'boolean') return { kind: 'boolean', text: String(p.value) }
     if (p.literalType === 'null') return { kind: 'null', text: 'null' }
     if (p.literalType === 'number' && typeof p.value === 'number' && Number.isFinite(p.value)) {
-      return { kind: 'number', text: String(p.value) }
+      return { kind: 'number', text: String(p.value), value: p.value }
     }
   }
   if (
@@ -648,11 +658,11 @@ export function lookupLiteralConst(
     p.argument.kind === 'literal' && p.argument.literalType === 'number' &&
     typeof p.argument.value === 'number' && Number.isFinite(p.argument.value)
   ) {
-    return { kind: 'number', text: String(-p.argument.value) }
+    return { kind: 'number', text: String(-p.argument.value), value: -p.argument.value }
   }
   if (p) return null
   const v = c.value.trim()
-  if (/^-?\d+(\.\d+)?$/.test(v)) return { kind: 'number', text: v }
+  if (/^-?\d+(\.\d+)?$/.test(v)) return { kind: 'number', text: v, value: Number(v) }
   if (v === 'true' || v === 'false') return { kind: 'boolean', text: v }
   if (v === 'null') return { kind: 'null', text: 'null' }
   const strLit = /^'([^'\\]*)'$/.exec(v) ?? /^"([^"\\]*)"$/.exec(v)

@@ -43,6 +43,7 @@ var primitiveBindings = map[string]func(args []any) any{
 	"ge":        func(a []any) any { return Ge(a[0], a[1]) },
 	"plus":      func(a []any) any { return Plus(a[0], a[1]) },
 	"neg":       func(a []any) any { return Neg(a[0]) },
+	"number":    func(a []any) any { return Number(a[0]) },
 }
 
 // nativeIndex is the native Go-template index read, the `index` builtin;
@@ -51,11 +52,25 @@ var nativeIndex = template.Must(template.New("index").Funcs(template.FuncMap{
 	"capture": func(box *any, v any) string { *box = v; return "" },
 }).Parse(`{{capture .Box (index .Recv .Key)}}`))
 
+// nativeLiteral parses `text` as a Go-template number constant, the native
+// spelling of a number literal; `capture` hands the constant back with its
+// type.
+func nativeLiteral(text string) any {
+	var got any
+	t := template.Must(template.New("literal").Funcs(template.FuncMap{
+		"capture": func(box *any, v any) string { *box = v; return "" },
+	}).Parse(`{{capture .Box ` + text + `}}`))
+	if err := t.Execute(io.Discard, map[string]any{"Box": &got}); err != nil {
+		panic(err)
+	}
+	return got
+}
+
 // nativeBindings binds each op the adapter can spell natively to the native
 // Go-template operator: a test is `{{if}}` / `not` / `and` / `or`, whose
 // truthiness is text/template's own IsTrue; an index read is the `index`
-// builtin. TestPrimitiveNativeVectors runs it over the cases whose domain
-// the adapter claims.
+// builtin; a number literal is a template constant. TestPrimitiveNativeVectors
+// runs it over the cases whose domain the adapter claims.
 var nativeBindings = map[string]func(args []any) any{
 	"truthy": func(a []any) any {
 		truth, _ := template.IsTrue(a[0])
@@ -68,6 +83,7 @@ var nativeBindings = map[string]func(args []any) any{
 		}
 		return got
 	},
+	"number": func(a []any) any { return nativeLiteral(a[0].(string)) },
 }
 
 type primitiveCase struct {

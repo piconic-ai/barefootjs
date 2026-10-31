@@ -605,7 +605,7 @@ export function N(props: { value: number }) {
   return <div><i>{props.value + 0.5}</i><b>{props.value / 4}</b><s>{-props.value}</s><u>{\`v=\${props.value * 2}\`}</u></div>
 }
 `)
-    expect(template).toContain('{{bf_string (bf_add .Value 0.5)}}')
+    expect(template).toContain('{{bf_string (bf_add .Value (bf_number "0.5"))}}')
     expect(template).toContain('{{bf_string (bf_div .Value 4)}}')
     expect(template).toContain('{{bf_string (bf_neg .Value)}}')
     expect(template).toContain('v={{bf_string (bf_mul .Value 2)}}')
@@ -661,7 +661,7 @@ export function F(props: { values: number[] }) {
     expect(template).toContain('bf_eq . 3')
     expect(template).toContain('bf_ne . 0')
     expect(template).toContain('bf_le . 1')
-    expect(template).toContain('bf_ge 1.5 .')
+    expect(template).toContain('bf_ge (bf_number "1.5") .')
     expect(template).not.toMatch(/\{\{if (eq|ne|gt|lt|ge|le) /)
   })
 })
@@ -1447,7 +1447,7 @@ export function List() {
       // x mixes 1 and 2.5, y holds integers: both are float64.
       expect(types).toMatch(/X float64[\s\S]*Y float64/)
       expect(types).toContain('{X: 1, Y: -2}')
-      expect(types).toContain('{X: 2.5, Y: -3}')
+      expect(types).toContain('{X: bf.Number("2.5"), Y: -3}')
     })
 
     test('keeps nil when the synthesised name collides with a user type (#1680)', () => {
@@ -4317,7 +4317,7 @@ export function C() {
   })
 
   describe('.at lowering (#1448 Tier A)', () => {
-    test('items.at(-1) emits `bf_at .Items (bf_neg 1)` (negative-index pass-through)', () => {
+    test('items.at(-1) emits `bf_at .Items -1` (negative-index pass-through; the literal folds, #3824 step 6)', () => {
       // The Go runtime's `At` already handles negative indices —
       // `bf_at .Items -1` returns the last element. Go template
       // syntax doesn't accept literal negative numbers in prefix-
@@ -4327,7 +4327,7 @@ export function C() {
   return <div>last: {items.at(-1)}</div>
 }
 export { A }`)
-      expect(result.template).toContain('bf_at .Items (bf_neg 1)')
+      expect(result.template).toContain('bf_at .Items -1')
     })
 
     test('items.at(i) with a signal index emits `bf_at .Items .I`', () => {
@@ -4575,7 +4575,7 @@ describe('GoTemplateAdapter - #1448 Tier A/B fixture-driven lowering pins', () =
     // The literal `-1` lowers through `bf_neg 1` — Go template
     // doesn't accept literal negative numbers in prefix-call
     // positions. Pre-existing unary-emit pattern.
-    { fixture: arrayAtFixture,          expect: 'bf_at .Items (bf_neg 1)' },
+    { fixture: arrayAtFixture,          expect: 'bf_at .Items -1' },
     { fixture: arrayConcatFixture,      expect: 'bf_concat .Left .Right' },
     { fixture: arraySliceFixture,       expect: 'bf_slice .Items 1 3' },
     // #1448 full-arity — zero-arg defaults. `.slice()` → start 0 (full
