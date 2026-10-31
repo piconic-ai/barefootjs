@@ -386,7 +386,7 @@ pub fn truthy(v: &JsValue) -> bool {
 // Operators
 // ---------------------------------------------------------------------------
 
-fn binary(op: &str, l: &JsValue, r: &JsValue) -> JsValue {
+pub(crate) fn binary(op: &str, l: &JsValue, r: &JsValue) -> JsValue {
     match op {
         "+" => {
             // JS `+`: string concatenation once either operand is a string,
@@ -411,7 +411,7 @@ fn binary(op: &str, l: &JsValue, r: &JsValue) -> JsValue {
     }
 }
 
-fn relational(op: &str, l: &JsValue, r: &JsValue) -> bool {
+pub(crate) fn relational(op: &str, l: &JsValue, r: &JsValue) -> bool {
     // JS Abstract Relational Comparison: both strings -> compare by code
     // unit (UTF-8 byte order agrees with UTF-16 code-unit order for all but
     // rare non-BMP edge cases -- same simplification the Python port's
@@ -435,7 +435,7 @@ fn relational(op: &str, l: &JsValue, r: &JsValue) -> bool {
     }
 }
 
-fn unary(op: &str, v: &JsValue) -> JsValue {
+pub(crate) fn unary(op: &str, v: &JsValue) -> JsValue {
     match op {
         "!" => JsValue::Bool(!truthy(v)),
         "-" => JsValue::Number(-to_number(v)),

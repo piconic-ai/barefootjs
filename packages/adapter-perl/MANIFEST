@@ -20,6 +20,7 @@ t/helper_vectors.t
 t/manifest_components.t
 t/meta_provides.t
 t/omit.t
+t/primitive_vectors.t
 t/props_attr.t
 t/query.t
 t/render_child.t

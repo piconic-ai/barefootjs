@@ -443,7 +443,7 @@ final class Evaluator
     // JS coercion primitives (ToNumber / ToString / ToBoolean).
     // -----------------------------------------------------------------
 
-    private static function toNumber($v): float
+    public static function toNumber($v): float
     {
         if ($v === null) {
             return 0.0;
@@ -464,7 +464,7 @@ final class Evaluator
         return NAN; // array / object
     }
 
-    private static function toStringJs($v): string
+    public static function toStringJs($v): string
     {
         if ($v === null) {
             return 'null';
@@ -515,7 +515,7 @@ final class Evaluator
     // Operators
     // -----------------------------------------------------------------
 
-    private static function binary(string $op, $l, $r)
+    public static function binary(string $op, $l, $r)
     {
         if ($op === '+') {
             // JS `+`: string concatenation once either operand is a string,
@@ -557,7 +557,7 @@ final class Evaluator
         return null;
     }
 
-    private static function relational(string $op, $l, $r): bool
+    public static function relational(string $op, $l, $r): bool
     {
         // JS Abstract Relational Comparison: both strings -> compare by code
         // unit; otherwise coerce both to numbers (a NaN operand -> false).
@@ -645,7 +645,7 @@ final class Evaluator
         return self::strictEq($l, $r);
     }
 
-    private static function unary(string $op, $v)
+    public static function unary(string $op, $v)
     {
         if ($op === '!') {
             return !self::truthy($v);

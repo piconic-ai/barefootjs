@@ -1,0 +1,340 @@
+{
+  "version": 1,
+  "generator": "packages/adapter-tests/vectors/primitives/generate.ts",
+  "spec": "spec/js-primitive-semantics.md",
+  "fn": "get",
+  "step": 2,
+  "cases": [
+    {
+      "fn": "get",
+      "args": [
+        [
+          10,
+          20,
+          30
+        ],
+        0
+      ],
+      "expect": 10,
+      "domain": "array-index",
+      "note": "array index 0"
+    },
+    {
+      "fn": "get",
+      "args": [
+        [
+          10,
+          20,
+          30
+        ],
+        1
+      ],
+      "expect": 20,
+      "domain": "array-index",
+      "note": "array index 1"
+    },
+    {
+      "fn": "get",
+      "args": [
+        [
+          10,
+          20,
+          30
+        ],
+        3
+      ],
+      "expect": null,
+      "domain": "array-index",
+      "note": "an index past the end reads undefined"
+    },
+    {
+      "fn": "get",
+      "args": [
+        [
+          "a",
+          "b"
+        ],
+        1
+      ],
+      "expect": "b",
+      "domain": "array-index",
+      "note": "an array of strings"
+    },
+    {
+      "fn": "get",
+      "args": [
+        [
+          10,
+          20,
+          30
+        ],
+        "1"
+      ],
+      "expect": 20,
+      "domain": "array-key",
+      "note": "the canonical string key \"1\" reads element 1"
+    },
+    {
+      "fn": "get",
+      "args": [
+        [
+          10,
+          20,
+          30
+        ],
+        "01"
+      ],
+      "expect": null,
+      "domain": "array-key",
+      "note": "a leading zero is not an array index"
+    },
+    {
+      "fn": "get",
+      "args": [
+        [
+          10,
+          20,
+          30
+        ],
+        "1e0"
+      ],
+      "expect": null,
+      "domain": "array-key",
+      "note": "an exponent spelling is not an array index"
+    },
+    {
+      "fn": "get",
+      "args": [
+        [
+          10,
+          20,
+          30
+        ],
+        "1.0"
+      ],
+      "expect": null,
+      "domain": "array-key",
+      "note": "a fraction spelling is not an array index"
+    },
+    {
+      "fn": "get",
+      "args": [
+        [
+          10,
+          20,
+          30
+        ],
+        "-0"
+      ],
+      "expect": null,
+      "domain": "array-key",
+      "note": "the string \"-0\" is not an array index"
+    },
+    {
+      "fn": "get",
+      "args": [
+        [
+          10,
+          20,
+          30
+        ],
+        " 1"
+      ],
+      "expect": null,
+      "domain": "array-key",
+      "note": "a padded key is not an array index"
+    },
+    {
+      "fn": "get",
+      "args": [
+        [
+          10,
+          20,
+          30
+        ],
+        {
+          "$num": "-0"
+        }
+      ],
+      "expect": 10,
+      "domain": "array-key",
+      "note": "the number -0 converts to \"0\" and reads element 0"
+    },
+    {
+      "fn": "get",
+      "args": [
+        [
+          10,
+          20,
+          30
+        ],
+        1.1
+      ],
+      "expect": null,
+      "domain": "array-key",
+      "note": "a fractional index reads undefined"
+    },
+    {
+      "fn": "get",
+      "args": [
+        [
+          10,
+          20,
+          30
+        ],
+        -1
+      ],
+      "expect": null,
+      "domain": "array-key",
+      "note": "a negative index reads undefined (no wrap-around)"
+    },
+    {
+      "fn": "get",
+      "args": [
+        [
+          10,
+          20,
+          30
+        ],
+        null
+      ],
+      "expect": null,
+      "domain": "array-key",
+      "note": "a nil key reads the \"null\" property"
+    },
+    {
+      "fn": "get",
+      "args": [
+        [
+          10,
+          20,
+          30
+        ],
+        true
+      ],
+      "expect": null,
+      "domain": "array-key",
+      "note": "a boolean key reads the \"true\" property"
+    },
+    {
+      "fn": "get",
+      "args": [
+        "abc",
+        1
+      ],
+      "expect": "b",
+      "domain": "string-receiver",
+      "note": "a string receiver reads one code unit"
+    },
+    {
+      "fn": "get",
+      "args": [
+        "abc",
+        "1"
+      ],
+      "expect": "b",
+      "domain": "string-receiver",
+      "note": "a string receiver with a string key"
+    },
+    {
+      "fn": "get",
+      "args": [
+        "abc",
+        3
+      ],
+      "expect": null,
+      "domain": "string-receiver",
+      "note": "a string index past the end reads undefined"
+    },
+    {
+      "fn": "get",
+      "args": [
+        "abc",
+        -1
+      ],
+      "expect": null,
+      "domain": "string-receiver",
+      "note": "a negative string index reads undefined"
+    },
+    {
+      "fn": "get",
+      "args": [
+        "a😀b",
+        3
+      ],
+      "expect": "b",
+      "domain": "string-receiver",
+      "note": "a string index counts UTF-16 code units"
+    },
+    {
+      "fn": "get",
+      "args": [
+        "héllo",
+        1
+      ],
+      "expect": "é",
+      "domain": "string-receiver",
+      "note": "a non-ASCII BMP character"
+    },
+    {
+      "fn": "get",
+      "args": [
+        {
+          "a": 1
+        },
+        "a"
+      ],
+      "expect": 1,
+      "domain": "object-key",
+      "note": "an object key"
+    },
+    {
+      "fn": "get",
+      "args": [
+        {
+          "a": 1
+        },
+        "b"
+      ],
+      "expect": null,
+      "domain": "object-key",
+      "note": "a missing object key reads undefined"
+    },
+    {
+      "fn": "get",
+      "args": [
+        {
+          "1": "x"
+        },
+        1
+      ],
+      "expect": "x",
+      "domain": "object-key",
+      "note": "a number key reads the object key \"1\""
+    },
+    {
+      "fn": "get",
+      "args": [
+        {
+          "a.b": 2
+        },
+        "a.b"
+      ],
+      "expect": 2,
+      "domain": "object-key",
+      "note": "a non-identifier object key"
+    },
+    {
+      "fn": "get",
+      "args": [
+        {
+          "null": "n"
+        },
+        null
+      ],
+      "expect": "n",
+      "domain": "object-key",
+      "note": "a nil key reads the object key \"null\""
+    }
+  ]
+}

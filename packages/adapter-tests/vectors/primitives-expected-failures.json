@@ -1,0 +1,417 @@
+{
+  "version": 1,
+  "spec": "spec/js-primitive-semantics.md",
+  "about": "Step-0 scaffold: every (runtime, case) of primitives/*.json that fails today, each naming the rollout step expected to remove it. Shrink-only: a harness fails on an unexpected failure and on a listed case that now passes. Each rollout step empties its entries; the file goes away when every runtime is empty.",
+  "runtimes": {
+    "go": {
+      "ge/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "get/a nil key reads the object key \"null\"": {
+        "step": 2
+      },
+      "get/a number key reads the object key \"1\"": {
+        "step": 2
+      },
+      "get/a string index counts UTF-16 code units": {
+        "step": 2
+      },
+      "gt/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "le/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "lt/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "neg/0 negates to -0": {
+        "step": 6
+      },
+      "neg/a non-numeric string is NaN": {
+        "step": 6
+      },
+      "neg/a numeric string coerces": {
+        "step": 6
+      },
+      "neg/true negates to -1": {
+        "step": 6
+      },
+      "plus/an array against a string joins with a comma": {
+        "step": 4
+      },
+      "plus/an empty array prints as the empty string": {
+        "step": 4
+      },
+      "to_number/a binary string is its value": {
+        "step": 3
+      },
+      "to_number/a hex string is its value": {
+        "step": 3
+      },
+      "to_number/an octal string is its value": {
+        "step": 3
+      },
+      "to_string/a nil element prints as the empty string": {
+        "step": 4
+      },
+      "to_string/an array joins with a comma": {
+        "step": 4
+      },
+      "to_string/an empty array is the empty string": {
+        "step": 4
+      },
+      "to_string/nested arrays flatten through the join": {
+        "step": 4
+      }
+    },
+    "java": {
+      "ge/-0 and 0 are equal": {
+        "step": 3
+      },
+      "get/a non-ASCII BMP character": {
+        "step": 2
+      },
+      "get/a string index counts UTF-16 code units": {
+        "step": 2
+      },
+      "get/a string receiver reads one code unit": {
+        "step": 2
+      },
+      "get/a string receiver with a string key": {
+        "step": 2
+      },
+      "lt/-0 and 0 are equal": {
+        "step": 3
+      },
+      "neg/a non-numeric string is NaN": {
+        "step": 6
+      },
+      "neg/a numeric string coerces": {
+        "step": 6
+      },
+      "neg/false negates to -0": {
+        "step": 6
+      },
+      "neg/nil reads as null and negates to -0": {
+        "step": 6
+      },
+      "neg/the empty string coerces to 0 and negates to -0": {
+        "step": 6
+      },
+      "neg/true negates to -1": {
+        "step": 6
+      },
+      "plus/an array against a string joins with a comma": {
+        "step": 4
+      },
+      "plus/an empty array prints as the empty string": {
+        "step": 4
+      },
+      "to_string/a nil element prints as the empty string": {
+        "step": 4
+      },
+      "to_string/an array joins with a comma": {
+        "step": 4
+      },
+      "to_string/an empty array is the empty string": {
+        "step": 4
+      },
+      "to_string/nested arrays flatten through the join": {
+        "step": 4
+      }
+    },
+    "perl": {
+      "ge/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "get/a boolean key reads the \"true\" property": {
+        "step": 2
+      },
+      "get/a nil key reads the object key \"null\"": {
+        "step": 2
+      },
+      "get/a non-ASCII BMP character": {
+        "step": 2
+      },
+      "get/a string index counts UTF-16 code units": {
+        "step": 2
+      },
+      "get/a string receiver reads one code unit": {
+        "step": 2
+      },
+      "get/a string receiver with a string key": {
+        "step": 2
+      },
+      "gt/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "le/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "lt/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "neg/0 negates to -0": {
+        "step": 6
+      },
+      "neg/false negates to -0": {
+        "step": 6
+      },
+      "neg/nil reads as null and negates to -0": {
+        "step": 6
+      },
+      "neg/the empty string coerces to 0 and negates to -0": {
+        "step": 6
+      },
+      "plus/-0 plus -0 is -0": {
+        "step": 4
+      },
+      "plus/an array against a string joins with a comma": {
+        "step": 4
+      },
+      "plus/an empty array prints as the empty string": {
+        "step": 4
+      },
+      "to_number/a binary string is its value": {
+        "step": 3
+      },
+      "to_number/a hex string is its value": {
+        "step": 3
+      },
+      "to_number/a lower-case \"infinity\" is NaN": {
+        "step": 3
+      },
+      "to_number/an octal string is its value": {
+        "step": 3
+      },
+      "to_number/the string \"-0\" is -0": {
+        "step": 3
+      },
+      "to_string/a nil element prints as the empty string": {
+        "step": 4
+      },
+      "to_string/an array joins with a comma": {
+        "step": 4
+      },
+      "to_string/an empty array is the empty string": {
+        "step": 4
+      },
+      "to_string/nested arrays flatten through the join": {
+        "step": 4
+      }
+    },
+    "php": {
+      "ge/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "get/a nil key reads the object key \"null\"": {
+        "step": 2
+      },
+      "get/a non-ASCII BMP character": {
+        "step": 2
+      },
+      "get/a string index counts UTF-16 code units": {
+        "step": 2
+      },
+      "get/a string receiver reads one code unit": {
+        "step": 2
+      },
+      "get/a string receiver with a string key": {
+        "step": 2
+      },
+      "gt/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "le/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "lt/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "plus/an array against a string joins with a comma": {
+        "step": 4
+      },
+      "to_number/a binary string is its value": {
+        "step": 3
+      },
+      "to_number/a hex string is its value": {
+        "step": 3
+      },
+      "to_number/a lower-case \"infinity\" is NaN": {
+        "step": 3
+      },
+      "to_number/an octal string is its value": {
+        "step": 3
+      },
+      "to_string/a nil element prints as the empty string": {
+        "step": 4
+      },
+      "to_string/an array joins with a comma": {
+        "step": 4
+      },
+      "to_string/nested arrays flatten through the join": {
+        "step": 4
+      }
+    },
+    "python": {
+      "ge/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "get/a non-ASCII BMP character": {
+        "step": 2
+      },
+      "get/a string index counts UTF-16 code units": {
+        "step": 2
+      },
+      "get/a string receiver reads one code unit": {
+        "step": 2
+      },
+      "get/a string receiver with a string key": {
+        "step": 2
+      },
+      "gt/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "le/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "lt/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "plus/an array against a string joins with a comma": {
+        "step": 4
+      },
+      "plus/an empty array prints as the empty string": {
+        "step": 4
+      },
+      "to_number/a binary string is its value": {
+        "step": 3
+      },
+      "to_number/a hex string is its value": {
+        "step": 3
+      },
+      "to_number/a lower-case \"infinity\" is NaN": {
+        "step": 3
+      },
+      "to_number/an octal string is its value": {
+        "step": 3
+      },
+      "to_string/a nil element prints as the empty string": {
+        "step": 4
+      },
+      "to_string/an array joins with a comma": {
+        "step": 4
+      },
+      "to_string/an empty array is the empty string": {
+        "step": 4
+      },
+      "to_string/nested arrays flatten through the join": {
+        "step": 4
+      }
+    },
+    "ruby": {
+      "ge/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "get/a nil key reads the object key \"null\"": {
+        "step": 2
+      },
+      "get/a non-ASCII BMP character": {
+        "step": 2
+      },
+      "get/a string index counts UTF-16 code units": {
+        "step": 2
+      },
+      "get/a string receiver reads one code unit": {
+        "step": 2
+      },
+      "get/a string receiver with a string key": {
+        "step": 2
+      },
+      "gt/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "le/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "lt/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "neg/0 negates to -0": {
+        "step": 6
+      },
+      "neg/false negates to -0": {
+        "step": 6
+      },
+      "neg/nil reads as null and negates to -0": {
+        "step": 6
+      },
+      "neg/the empty string coerces to 0 and negates to -0": {
+        "step": 6
+      },
+      "plus/an array against a string joins with a comma": {
+        "step": 4
+      },
+      "plus/an empty array prints as the empty string": {
+        "step": 4
+      },
+      "to_number/a binary string is its value": {
+        "step": 3
+      },
+      "to_number/an octal string is its value": {
+        "step": 3
+      },
+      "to_string/a nil element prints as the empty string": {
+        "step": 4
+      },
+      "to_string/an array joins with a comma": {
+        "step": 4
+      },
+      "to_string/an empty array is the empty string": {
+        "step": 4
+      },
+      "to_string/nested arrays flatten through the join": {
+        "step": 4
+      }
+    },
+    "rust": {
+      "ge/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "get/a non-ASCII BMP character": {
+        "step": 2
+      },
+      "get/a string index counts UTF-16 code units": {
+        "step": 2
+      },
+      "get/a string receiver reads one code unit": {
+        "step": 2
+      },
+      "get/a string receiver with a string key": {
+        "step": 2
+      },
+      "gt/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "le/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "lt/an astral character against U+FF61 (UTF-16 units)": {
+        "step": 3
+      },
+      "to_number/a binary string is its value": {
+        "step": 3
+      },
+      "to_number/a hex string is its value": {
+        "step": 3
+      },
+      "to_number/a lower-case \"infinity\" is NaN": {
+        "step": 3
+      },
+      "to_number/an octal string is its value": {
+        "step": 3
+      }
+    }
+  }
+}

@@ -2,7 +2,7 @@
 
 Language-neutral, JS-normative conformance data proving every
 template backend's compiled helpers and expression evaluator behave
-like the JS reference. Two corpora live here:
+like the JS reference. Three corpora live here:
 
 - **`vectors.json`** — the template helper catalogue (arithmetic,
   string, coercion, and the accepted higher-order projection
@@ -11,8 +11,13 @@ like the JS reference. Two corpora live here:
   higher-order callback bodies (`reduce` / `sort` / `map` / `filter` /
   `find`). Normative spec: `spec/compiler.md`, "ParsedExpr Evaluator
   Semantics".
+- **`primitives/<op>.json`** — one file per JS primitive operation
+  (`truthy`, `to_number`, `to_string`, `get`, `strict_eq`, `lt`, `le`,
+  `gt`, `ge`, `plus`, `neg`), the runtime half of the shared
+  primitive helpers. Normative spec: `spec/js-primitive-semantics.md`,
+  "Conformance". See "Primitive vectors" below.
 
-Both files are **generated and committed, never hand-edited**. A
+All of these are **generated and committed, never hand-edited**. A
 freshness test in `packages/adapter-tests/src/__tests__/` fails CI
 when a committed file drifts from its case definitions.
 
@@ -22,6 +27,8 @@ when a committed file drifts from its case definitions.
 |---|---|---|
 | `cases.ts` | `generate.ts` | `vectors.json` |
 | `eval-cases.ts` + `eval-reference.ts` | `eval-generate.ts` | `eval-vectors.json` |
+| `primitives/<op>.ts` (listed in `primitives/index.ts`) | `primitives/generate.ts` | `primitives/<op>.json` |
+| — (hand-maintained) | — | `primitives-expected-failures.json` (see "Primitive vectors" below) |
 | — (hand-maintained) | — | `<backend package>/vector-divergences.json` (see "Divergence declarations" below) |
 
 Regenerate:
@@ -30,6 +37,7 @@ Regenerate:
 cd packages/adapter-tests
 bun run generate:helper-vectors
 bun run generate:eval-vectors
+bun run generate:primitive-vectors
 ```
 
 ## Encoding rules
@@ -38,6 +46,13 @@ bun run generate:eval-vectors
   arrays/objects thereof.
 - A non-finite number in an `expect` value uses the reserved sentinel
   `{"$num": "NaN" | "Infinity" | "-Infinity"}`.
+- The `primitives/` files add `{"$num": "-0"}` for negative zero, which
+  JSON cannot carry, and use the `$num` sentinel in `args` as well as in
+  `expect` (`truthy(NaN)`, `neg(0)`). Every harness materializes it as its
+  host's negative-zero double and compares a zero **by sign** (`copysign`
+  / `signbit`), so `neg(0)` must return `-0` and `-0 + 0` must return `0`.
+  `vectors.json` and `eval-vectors.json` keep the older rule: `-0` is
+  value-equal to `0`.
 - A native-date `args` value uses the reserved sentinel `{"$date":
   "<ISO-8601>"}` (the `date` helper's cases only, #2288). Each
   harness materializes it into its own native date/time type (Go
@@ -73,6 +88,13 @@ The two corpora hold backends to different strictness:
   "ParsedExpr Evaluator Semantics", for the exact rules. Evaluator
   vectors allow **no divergence declarations** — every backend must
   match JS exactly here.
+- **Primitive vectors (`primitives/`)** are as strict as the evaluator
+  vectors (a number is not a numeric string, a string is not a number)
+  and compare a zero by sign. A boolean expect needs the host's boolean
+  type, except on Perl, which has none: there any non-reference scalar
+  or JSON boolean compares by truthiness. They allow no
+  `vector-divergences.json` declarations; the only allowance is the
+  step-0 ledger described below.
 
 ## Divergence declarations
 
@@ -146,16 +168,63 @@ discovered `backend` values are unique and include the expected set
 set automatically; an existing backend silently disappearing still
 fails.
 
+## Primitive vectors
+
+`primitives/<op>.ts` holds one operation: its canonical helper id, the
+rollout step that owns it (`spec/js-primitive-semantics.md`, "Rollout
+plan"), the literal JS expression it lowers (the reference) and its
+cases. Each case carries a `domain` naming the proof it belongs to
+(`number-pair`, `string-pair`, `array-index`, …; the full list is
+`Domain` in `primitives/types.ts`), so a harness can run a native
+operator over exactly the domains its adapter's `NativeSafeTable`
+claims. A case key is `fn + "/" + note`, unique across the corpus.
+
+Every runtime harness (table below) loads every `primitives/*.json`,
+binds each `fn` to the runtime helper compiled templates call, and runs
+every case. An unbound `fn` fails. Where a runtime had no helper for an
+operation, it gained a thin one that delegates to its callback
+evaluator's primitive of the same operation (as PHP's `index` delegates
+to `Evaluator::index`), so the template helper and the evaluator share
+one implementation. Binding each op to the **native** operator, gated on
+the adapter's `NativeSafeTable`, is not wired yet; each harness carries a
+`TODO(#3824 step 0b/1)` where it goes.
+
+### The expected-failure ledger
+
+`primitives-expected-failures.json` is a step-0 scaffold: for each
+runtime, the cases that fail today, each naming the rollout step that
+removes it:
+
+```json
+{ "runtimes": { "go": { "neg/0 negates to -0": { "step": 6 } } } }
+```
+
+It may only shrink. Each harness fails on
+
+1. a failing case the ledger does not list (`UNEXPECTED-FAIL <key>`),
+2. a listed case that now passes (delete the entry), and
+3. a listed key that names no case.
+
+`src/__tests__/primitive-vectors.test.ts` checks that the ledger names
+exactly the seven runtimes, that every key is a real case, and that
+every entry names the step that owns its operation (`step` in the op
+file). A rollout step corrects the evaluator primitive (and with it the
+helper), deletes its entries, and the file goes away once every runtime
+is empty. It is not a divergence declaration: nothing pins the wrong
+value, and nothing may be added to it except by a new case that a later
+step owns.
+
 ## Current runners
 
-| Backend | Runner | Declarations |
-|---|---|---|
-| Go | `packages/adapter-go-template/runtime/vectors_test.go` | `packages/adapter-go-template/runtime/testdata/vector-divergences.json` |
-| Perl | `packages/adapter-perl/t/helper_vectors.t` | `packages/adapter-perl/t/vector-divergences.json` |
-| Python | `packages/adapter-jinja/python/tests/test_helper_vectors.py` | `packages/adapter-jinja/python/tests/vector-divergences.json` |
-| Ruby | `packages/adapter-erb/test/helper_vectors_test.rb` | `packages/adapter-erb/test/vector-divergences.json` |
-| PHP | `packages/adapter-php/tests/test_helper_vectors.php` | `packages/adapter-php/tests/vector-divergences.json` |
-| Java | `packages/adapter-pebble/java/src/test/java/dev/barefootjs/pebble/HelperVectorsTest.java` | `packages/adapter-pebble/java/src/test/resources/vector-divergences.json` |
+| Backend | Helper runner | Declarations | Primitive runner (ledger key) |
+|---|---|---|---|
+| Go | `packages/adapter-go-template/runtime/vectors_test.go` | `packages/adapter-go-template/runtime/testdata/vector-divergences.json` | `packages/adapter-go-template/runtime/primitive_vectors_test.go` (`go`) |
+| Perl (Mojolicious, Xslate) | `packages/adapter-perl/t/helper_vectors.t` | `packages/adapter-perl/t/vector-divergences.json` | `packages/adapter-perl/t/primitive_vectors.t` (`perl`) |
+| Python (Jinja) | `packages/adapter-jinja/python/tests/test_helper_vectors.py` | `packages/adapter-jinja/python/tests/vector-divergences.json` | `packages/adapter-jinja/python/tests/test_primitive_vectors.py` (`python`) |
+| Ruby (ERB) | `packages/adapter-erb/test/helper_vectors_test.rb` | `packages/adapter-erb/test/vector-divergences.json` | `packages/adapter-erb/test/primitive_vectors_test.rb` (`ruby`) |
+| PHP (Twig, Blade) | `packages/adapter-php/tests/test_helper_vectors.php` | `packages/adapter-php/tests/vector-divergences.json` | `packages/adapter-php/tests/test_primitive_vectors.php` (`php`) |
+| Java (Pebble) | `packages/adapter-pebble/java/src/test/java/dev/barefootjs/pebble/HelperVectorsTest.java` | `packages/adapter-pebble/java/src/test/resources/vector-divergences.json` | `packages/adapter-pebble/java/src/test/java/dev/barefootjs/pebble/PrimitiveVectorsTest.java` (`java`) |
+| Rust (MiniJinja) | `packages/adapter-rust/runtime/tests/helper_vectors.rs` | `packages/adapter-rust/runtime/tests/vector-divergences.json` | `packages/adapter-rust/runtime/tests/primitive_vectors.rs` (`rust`) |
 
 The JS reference is the generator itself (`cases.ts` / `generate.ts`,
 `eval-cases.ts` / `eval-reference.ts` / `eval-generate.ts`) — there is
@@ -175,13 +244,18 @@ corpus is plain JSON. The runner must:
 2. Read `eval-vectors.json` and run each case's `ParsedExpr` tree
    through the backend's evaluator, matching the reference exactly
    (no divergence allowance).
-3. Add a `vector-divergences.json` file to **your own package** (next
+3. Read every `primitives/*.json`, bind each op to the backend's
+   helper (delegating to its evaluator primitive), and add the
+   backend's key to `primitives-expected-failures.json` (see "Primitive
+   vectors"). A new backend starts with its failures listed under the
+   step that owns each op.
+4. Add a `vector-divergences.json` file to **your own package** (next
    to, or near, your runner) per the schema above — no edit to
    `packages/adapter-tests` needed; the central validator discovers it
    by basename. A bootstrapping backend may start with most of the
    catalogue in `unsupported` and burn the list down over time —
    that's expected, not a failure.
 
-Point at any of the four existing runners (table above) as a
-reference implementation; they all consume the same two JSON files
+Point at any of the existing runners (table above) as a
+reference implementation; they all consume the same JSON corpora
 and the same divergence-declaration shape.
