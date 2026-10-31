@@ -90,6 +90,13 @@ import {
   isStringConcatBinary,
   isStringTypedOperand,
   type ParsedExprEmitter,
+  type PrimitivePlan,
+  type PrimitiveInputs,
+  type NativeSafeTable,
+  type OperandTyping,
+  primitivesAt,
+  EMPTY_OPERAND_TYPING,
+  BindingScope,
   type ArrayMethod,
   type LiteralType,
   type ParsedExpr,
@@ -128,6 +135,26 @@ import {
 
 // The display name BF101 uses; a native predicate form does not exist here.
 export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Blade' }
+
+/**
+ * The (op, proof) pairs this adapter spells with its native operator
+ * (`spec/js-primitive-semantics.md`; the plan's `NativeSafeTable`). Step 0
+ * of #3824: filled so the plans describe today's output, not yet narrowed to
+ * what the `primitives/` vectors pin. `primitive-plan-cross-adapter.test.ts`
+ * holds every emission to it, with the positions that still decide on their
+ * own listed there.
+ */
+export const NATIVE_SAFE: NativeSafeTable = {
+  'to-boolean': ['boolean'],
+  'to-number': ['number-pair', 'number', 'unproven'],
+  plus: ['number-pair', 'string', 'unproven'],
+  'strict-eq': [],
+  relational: ['number-pair', 'unproven'],
+  neg: ['number', 'unproven'],
+  'number-literal': ['safe-integer', 'unproven'],
+  nullish: ['non-nil', 'unproven'],
+  get: [],
+}
 
 /**
  * Route a condition-TEST position through `$bf->truthy(...)` unless the node
@@ -203,6 +230,22 @@ function optionalLength(receiver: string, optional: boolean): string {
 }
 
 export class BladeFilterEmitter implements ParsedExprEmitter {
+  // The component's operand typing and the predicate's scope, which the
+  // primitive plans read (#3824); untyped until the adapter calls `typedBy`.
+  private operandTyping: OperandTyping = EMPTY_OPERAND_TYPING
+  private operandScope: BindingScope = BindingScope.EMPTY
+
+  get primitives(): PrimitiveInputs {
+    return primitivesAt(this.operandTyping, this.operandScope, NATIVE_SAFE)
+  }
+
+  /** Type this predicate's operands with the component's `typing` at the predicate's `scope`. */
+  typedBy(typing: OperandTyping, scope: BindingScope): this {
+    this.operandTyping = typing
+    this.operandScope = scope
+    return this
+  }
+
   // Plain field declarations + assignment, NOT TS constructor-parameter-
   // property shorthand: Vite's `bundleConfigFile` externalizes any bare
   // (non-relative) import when loading `vite.config.ts` (see
@@ -246,14 +289,14 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
     return bladeVar(name)
   }
 
-  literal(value: string | number | boolean | null, literalType: LiteralType): string {
+  literal(value: string | number | boolean | null, literalType: LiteralType, _plan: PrimitivePlan | null): string {
     if (literalType === 'string') return bladeStringLiteral(String(value))
     if (literalType === 'boolean') return value ? 'true' : 'false'
     if (literalType === 'null') return 'null'
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, _computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // A callback param spelled `props` (a `.map((props) => …)` row the
     // filter param was renamed to, #3404) or an enclosing binding of that
     // name (#3693) is that binding, not the component props.
@@ -268,7 +311,7 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
     return bladeMemberAccess(emit(object), property)
   }
 
-  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // `$bf->index` reads a list index or an own key, as JS does — no
     // list/hash split is needed. #1897 (data-table's `selected()[index]`).
     return bladeIndexAccess(emit(object), emit(index))
@@ -282,13 +325,13 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     if (op === '!') return `!${truthyTest(argument, emit(argument))}`
     if (op === '-') return `-${groupUnaryOperand(argument, emit(argument))}`
     return emit(argument)
   }
 
-  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
@@ -316,7 +359,7 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
     // See the file header, divergences 3 & 4: the branch TEST goes through
@@ -366,7 +409,7 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
     return renderFlatMethod(emit(object), depth, emit)
   }
 
-  conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr): string {
+  conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr, _emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     return this.refuseShape('a conditional (`?:`)')
   }
 
@@ -410,12 +453,14 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
  *   - no lambda fallback exists (see the file header, divergence 9).
  */
 export class BladeTopLevelEmitter implements ParsedExprEmitter {
+  readonly primitives: PrimitiveInputs
   // Plain field + assignment, not a parameter property — see
   // `BladeFilterEmitter`'s constructor comment above for why.
   private readonly ctx: BladeEmitContext
 
   constructor(ctx: BladeEmitContext) {
     this.ctx = ctx
+    this.primitives = { typing: () => ctx._operandTyping(), nativeSafe: NATIVE_SAFE }
   }
 
   /**
@@ -463,14 +508,14 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     return bladeVar(name)
   }
 
-  literal(value: string | number | boolean | null, literalType: LiteralType): string {
+  literal(value: string | number | boolean | null, literalType: LiteralType, _plan: PrimitivePlan | null): string {
     if (literalType === 'string') return bladeStringLiteral(String(value))
     if (literalType === 'boolean') return value ? 'true' : 'false'
     if (literalType === 'null') return 'null'
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, _computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // `props.X` reads the root prop even where a loop binding shadows `X`
     // (#3314) — through the alias the loop header assigned — unless a
     // binding shadows `props` itself (#3693).
@@ -493,7 +538,7 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     return bladeMemberAccess(obj, property)
   }
 
-  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // `$bf->index` reads a list index or an own key, as JS does.
     // #1897 (data-table's `selected()[index]`).
     return bladeIndexAccess(emit(object), emit(index))
@@ -577,7 +622,7 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     if (op === '!') return `!${truthyTest(argument, emit(argument))}`
     if (op === '-') {
       // Unary minus applies JS `ToNumber` like binary `-` (#3533).
@@ -596,7 +641,7 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     return this.ctx._arithmeticCoercion(op, expr, other) === 'undefined' ? `$bf->number(${operand})` : operand
   }
 
-  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
@@ -626,7 +671,7 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
     // See the file header, divergences 3 & 4.
@@ -688,6 +733,7 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     consequent: ParsedExpr,
     alternate: ParsedExpr,
     emit: (e: ParsedExpr) => string,
+    _plan: PrimitivePlan | null,
   ): string {
     // See the file header, divergence 3: symbolic ternary.
     const testStr = truthyTest(test, emit(test))

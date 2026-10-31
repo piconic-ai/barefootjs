@@ -19,7 +19,7 @@
  * rather than re-exposing the whole adapter.
  */
 
-import type { ParsedExpr, CompilerError, IRMetadata, LoweringMatcher, ArithmeticCoercion } from '@barefootjs/jsx'
+import type { ParsedExpr, CompilerError, IRMetadata, LoweringMatcher, ArithmeticCoercion, ScopedOperandTyping } from '@barefootjs/jsx'
 
 export interface PebbleEmitContext {
   /**
@@ -103,6 +103,8 @@ export interface PebbleEmitContext {
    * divergence here, unlike Jinja, which never needed this gate).
    */
   _isStringValueName(name: string, componentProperty?: boolean, path?: readonly string[]): boolean
+  /** The component's operand typing at the current emission site, for the primitive plans (#3824). */
+  _operandTyping(): ScopedOperandTyping
 }
 
 /**

@@ -27,6 +27,9 @@ import {
   isSupported,
   isSupportedValue,
   emitParsedExpr,
+  primitivesAt,
+  EMPTY_OPERAND_TYPING,
+  BindingScope,
   type LoweringPlugin,
   type LoweringEmitter,
   type ParsedExprEmitter,
@@ -174,6 +177,7 @@ describe('emitParsedExpr dispatch with an emitter.lowering seam (#2843)', () => 
       throw new Error(`unexpected emitter.${name} call in this test`)
     }
     return {
+      primitives: primitivesAt(EMPTY_OPERAND_TYPING, BindingScope.EMPTY, {}),
       identifier: (name: string) => `ID(${name})`,
       literal: (v) => `LIT(${JSON.stringify(v)})`,
       call: (callee, args, emit) => `CALL(${emit(callee)}, ${args.map(emit).join(', ')})`,

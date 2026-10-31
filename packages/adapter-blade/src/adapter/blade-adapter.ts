@@ -1301,7 +1301,7 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
         (message, reason) => this._recordExprBF101(message, reason),
         n => this.scope.isBound(n),
         this.scope.propsObject,
-      ),
+      ).typedBy(this.operandTyping, predicateScope),
     )
   }
 
@@ -1366,6 +1366,7 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _staticArrayElement: (o, k) => lookupStaticArrayElement(o, k, this.localConstants, n => this.scope.isBound(n)),
       _isStringValueName: (name, property, path) => this._isStringValueName(name, property, path),
+      _operandTyping: () => this.operandTypingAt(),
       _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),

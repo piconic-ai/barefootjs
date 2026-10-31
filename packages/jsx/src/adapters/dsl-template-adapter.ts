@@ -17,6 +17,7 @@ import {
 } from '../nullable-signal-attr.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
 import { declaredValueTypes, loopRowType, type DeclaredValueTypes } from './loop-row-type.ts'
+import { collectOperandTyping, EMPTY_OPERAND_TYPING, type OperandTyping, type ScopedOperandTyping } from './operand-typing.ts'
 import { rootPropAliasesForLoop, rootPropAliasNames } from '../scope/root-prop-alias.ts'
 import type {
   CompilerError,
@@ -132,6 +133,12 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
   /** The declared types a loop row's type is read from (`loopRowType`, #3762). */
   protected declaredTypes: DeclaredValueTypes | null = null
   /**
+   * The component's operand typing (`collectOperandTyping`), which the
+   * emitters' primitive plans read through the scope at the emission site
+   * (`operandTypingAt`, #3824).
+   */
+  protected operandTyping: OperandTyping = EMPTY_OPERAND_TYPING
+  /**
    * Module-scope pure-string consts (`const x = 'literal'`), keyed by name →
    * unescaped value. A className template literal that references such a
    * const (`className={`${x} ${className}`}`) must inline the literal: the
@@ -239,6 +246,11 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     scope: BindingScope = this.scope,
   ): boolean {
     return scope.isStringValueName(name, n => this.stringValueNames.has(n), componentProperty, path, this.declaredTypes?.namedFields)
+  }
+
+  /** The component's operand typing at `scope` (the emission site's, by default). */
+  protected operandTypingAt(scope: BindingScope = this.scope): ScopedOperandTyping {
+    return this.operandTyping.at(scope)
   }
 
   /** `render()` under `scope`, the current scope restored afterwards. */
@@ -431,6 +443,7 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     this.nullishAttrCtx = collectNullishAttrContext(ir)
     this.stringValueNames = this.stringValueNamesFor(ir)
     this.declaredTypes = declaredValueTypes(ir)
+    this.operandTyping = collectOperandTyping(ir.metadata, { namedFields: this.declaredTypes.namedFields })
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
     this._loweringMatchers = prepareLoweringMatchers(ir.metadata)

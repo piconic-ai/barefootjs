@@ -36,6 +36,7 @@
 import type { ParsedExpr, FlatDepth, TemplatePart, ObjectLiteralProperty } from '../expression-parser.ts'
 import { asCallbackMethodCall } from '../expression-parser.ts'
 import type { LoweringMatcher, LoweringNode } from '../lowering-registry.ts'
+import { planPrimitive, type PrimitiveInputs, type PrimitivePlan } from './primitive-plan.ts'
 
 export type HigherOrderMethod = 'filter' | 'every' | 'some' | 'find' | 'findIndex' | 'findLast' | 'findLastIndex'
 
@@ -121,10 +122,26 @@ export interface LoweringEmitter {
  * the emitter can inspect their kinds before deciding how to lower
  * them, plus an `emit` callback to recurse on any child it wants the
  * default rendering for.
+ *
+ * The primitive operations (`binary`, `unary`, `logical`, a `conditional`'s
+ * test, `indexAccess`, a computed `member`, a number `literal`) also receive
+ * their {@link PrimitivePlan} as the last parameter (#3824,
+ * `spec/js-primitive-semantics.md` "How it reaches emitters"): native or
+ * helper, decided once by `planPrimitive` from the emitter's
+ * {@link ParsedExprEmitter.primitives}. `null` for a node that is not a
+ * primitive operation (a non-number literal, a non-computed member, loose
+ * `==`, …). Step 0: every emitter accepts the plan and keeps its own
+ * spelling; the rollout makes each one spell the plan.
  */
 export interface ParsedExprEmitter {
+  /**
+   * The inputs `planPrimitive` reads for this emitter: the operand typing at
+   * the emission site (the component's `collectOperandTyping` through the
+   * current `BindingScope`) and the target's `NativeSafeTable`.
+   */
+  readonly primitives: PrimitiveInputs
   identifier(name: string): string
-  literal(value: string | number | boolean | null, literalType: LiteralType): string
+  literal(value: string | number | boolean | null, literalType: LiteralType, plan: PrimitivePlan | null): string
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string
   // Optional (#2843): when present, `emitParsedExpr`'s `call` case tries
   // every matcher FIRST — before `call()` itself, and before the
@@ -148,6 +165,7 @@ export interface ParsedExprEmitter {
     computed: boolean,
     optional: boolean,
     emit: (e: ParsedExpr) => string,
+    plan: PrimitivePlan | null,
   ): string
   // Element access with a non-literal index (`arr[index]`). The index
   // is a full `ParsedExpr` (loop variable, arithmetic, etc.); the
@@ -156,20 +174,23 @@ export interface ParsedExprEmitter {
     object: ParsedExpr,
     index: ParsedExpr,
     emit: (e: ParsedExpr) => string,
+    plan: PrimitivePlan | null,
   ): string
-  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string
   logical(
     op: '&&' | '||' | '??',
     left: ParsedExpr,
     right: ParsedExpr,
     emit: (e: ParsedExpr) => string,
+    plan: PrimitivePlan | null,
   ): string
   conditional(
     test: ParsedExpr,
     consequent: ParsedExpr,
     alternate: ParsedExpr,
     emit: (e: ParsedExpr) => string,
+    plan: PrimitivePlan | null,
   ): string
   templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string
   // A higher-order callback method call (`<object>.<method>(<arrow>, …rest)`,
@@ -455,6 +476,17 @@ export function asToStringCall(expr: ParsedExpr): ParsedExpr | null {
 }
 
 /**
+ * The plan `emitParsedExpr` hands an emitter method for `expr`: decided by
+ * `planPrimitive` from the emitter's own typing and native-safe table.
+ */
+export function primitivePlanFor(expr: ParsedExpr, emitter: Pick<ParsedExprEmitter, 'primitives'>): PrimitivePlan | null {
+  // The two kinds that are mostly not primitive operations skip the typing.
+  if (expr.kind === 'literal' && expr.literalType !== 'number') return null
+  if (expr.kind === 'member' && !expr.computed) return null
+  return planPrimitive(expr, emitter.primitives.typing(), emitter.primitives.nativeSafe)
+}
+
+/**
  * Single point of dispatch from `ParsedExpr.kind` to the adapter's
  * method. Adapters call this once at their entry point; the recursion
  * threads the `emit` callback for child nodes.
@@ -469,7 +501,7 @@ export function emitParsedExpr(expr: ParsedExpr, emitter: ParsedExprEmitter): st
     case 'identifier':
       return emitter.identifier(expr.name)
     case 'literal':
-      return emitter.literal(expr.value, expr.literalType)
+      return emitter.literal(expr.value, expr.literalType, primitivePlanFor(expr, emitter))
     case 'call': {
       // #2843: a registered lowering plugin's call wins in EVERY value
       // position this dispatcher reaches, not only an adapter's own
@@ -501,17 +533,17 @@ export function emitParsedExpr(expr: ParsedExpr, emitter: ParsedExprEmitter): st
       return emitter.call(expr.callee, expr.args, emit)
     }
     case 'member':
-      return emitter.member(expr.object, expr.property, expr.computed, expr.optional, emit)
+      return emitter.member(expr.object, expr.property, expr.computed, expr.optional, emit, primitivePlanFor(expr, emitter))
     case 'index-access':
-      return emitter.indexAccess(expr.object, expr.index, emit)
+      return emitter.indexAccess(expr.object, expr.index, emit, primitivePlanFor(expr, emitter))
     case 'binary':
-      return emitter.binary(expr.op, expr.left, expr.right, emit)
+      return emitter.binary(expr.op, expr.left, expr.right, emit, primitivePlanFor(expr, emitter))
     case 'unary':
-      return emitter.unary(expr.op, expr.argument, emit)
+      return emitter.unary(expr.op, expr.argument, emit, primitivePlanFor(expr, emitter))
     case 'logical':
-      return emitter.logical(expr.op, expr.left, expr.right, emit)
+      return emitter.logical(expr.op, expr.left, expr.right, emit, primitivePlanFor(expr, emitter))
     case 'conditional':
-      return emitter.conditional(expr.test, expr.consequent, expr.alternate, emit)
+      return emitter.conditional(expr.test, expr.consequent, expr.alternate, emit, primitivePlanFor(expr, emitter))
     case 'template-literal':
       return emitter.templateLiteral(expr.parts, emit)
     case 'arrow':

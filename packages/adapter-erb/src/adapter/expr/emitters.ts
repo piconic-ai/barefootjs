@@ -38,6 +38,13 @@ import {
   isStringTypedOperand,
   literalMemberIndex,
   type ParsedExprEmitter,
+  type PrimitivePlan,
+  type PrimitiveInputs,
+  type NativeSafeTable,
+  type OperandTyping,
+  primitivesAt,
+  EMPTY_OPERAND_TYPING,
+  BindingScope,
   type ArrayMethod,
   type LiteralType,
   type ParsedExpr,
@@ -62,7 +69,6 @@ import {
   unloweredCallRefusal,
   type CallbackLoweringOptions,
   type PredicateMethod,
-  BindingScope,
   type StringNameTest,
   type NamedTypeFields,
 } from '@barefootjs/jsx'
@@ -80,6 +86,26 @@ import {
 
 // The display name BF101 uses; a native predicate form exists here.
 export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'ERB', nativePredicate: true }
+
+/**
+ * The (op, proof) pairs this adapter spells with its native operator
+ * (`spec/js-primitive-semantics.md`; the plan's `NativeSafeTable`). Step 0
+ * of #3824: filled so the plans describe today's output, not yet narrowed to
+ * what the `primitives/` vectors pin. `primitive-plan-cross-adapter.test.ts`
+ * holds every emission to it, with the positions that still decide on their
+ * own listed there.
+ */
+export const NATIVE_SAFE: NativeSafeTable = {
+  'to-boolean': [],
+  'to-number': ['number-pair', 'number', 'unproven'],
+  plus: ['number-pair', 'string', 'unproven'],
+  'strict-eq': ['number-pair', 'string-pair', 'boolean-pair', 'unproven'],
+  relational: ['number-pair', 'unproven'],
+  neg: ['number', 'unproven'],
+  'number-literal': ['safe-integer', 'unproven'],
+  nullish: ['non-nil', 'unproven'],
+  get: [],
+}
 
 // Predicate-shaped higher-order methods (filter/every/some land here through
 // nested `.filter(...)` chains). Module-level so `callbackMethod`, which runs
@@ -166,6 +192,22 @@ function blockLocal(param: string, outerLocals: ReadonlyMap<string, string>): st
 }
 
 export class ErbFilterEmitter implements ParsedExprEmitter {
+  // The component's operand typing and the predicate's scope, which the
+  // primitive plans read (#3824); untyped until the adapter calls `typedBy`.
+  private operandTyping: OperandTyping = EMPTY_OPERAND_TYPING
+  private operandScope: BindingScope = BindingScope.EMPTY
+
+  get primitives(): PrimitiveInputs {
+    return primitivesAt(this.operandTyping, this.operandScope, NATIVE_SAFE)
+  }
+
+  /** Type this predicate's operands with the component's `typing` at the predicate's `scope`. */
+  typedBy(typing: OperandTyping, scope: BindingScope): this {
+    this.operandTyping = typing
+    this.operandScope = scope
+    return this
+  }
+
   // Plain field declarations + assignment, NOT TS constructor-parameter-
   // property shorthand: Vite's `bundleConfigFile` externalizes any bare
   // (non-relative) import when loading `vite.config.ts` (see
@@ -242,14 +284,14 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     return `v[${rubySymbolLiteral(name)}]`
   }
 
-  literal(value: string | number | boolean | null, literalType: LiteralType): string {
+  literal(value: string | number | boolean | null, literalType: LiteralType, _plan: PrimitivePlan | null): string {
     if (literalType === 'string') return rubyStringLiteral(String(value))
     if (literalType === 'boolean') return value ? 'true' : 'false'
     if (literalType === 'null') return 'nil'
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // This predicate's own param, an enclosing callback's or an enclosing
     // loop row's binding spelled `props` is that binding (#3693).
     const flat = flattenPropsMember(
@@ -274,12 +316,12 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     // dotted method call. Only guards the single written `?.` hop, not a
     // JS-style whole-chain short-circuit — see the `ParsedExpr` `member`
     // variant's docstring for the multi-hop caveat.
-    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
+    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit, _plan)
     if (optional) return `${emit(object)}&.[](${rubySymbolLiteral(property)})`
     return `${emit(object)}[${rubySymbolLiteral(property)}]`
   }
 
-  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     return emitIndexAccessRuby(object, index, emit, this.isStringName)
   }
 
@@ -291,7 +333,7 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const arg = emit(argument)
     // JS `!x` tests JS truthiness, not Ruby's — wrap. See file docstring.
     if (op === '!') return `!bf.truthy?(${arg})`
@@ -299,7 +341,7 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     return arg
   }
 
-  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
     // Unlike Perl's numeric `==` (which coerces a non-numeric string
@@ -325,7 +367,7 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     return `(${l} ${opMap[op] ?? op} ${r})`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
     // JS `&&`/`||` are operand-returning under JS truthiness, which
@@ -372,7 +414,7 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
       this.onUnsupported,
       blockParam,
       outerLocals,
-    )
+    ).typedBy(this.operandTyping, this.operandScope.enterCallback([param]))
     const predBody = emitParsedExpr(predicate, nested)
     if (method === 'filter') return `${arrayExpr}.select { |${blockParam}| bf.truthy?(${predBody}) }`
     if (method === 'every') return `${arrayExpr}.all? { |${blockParam}| bf.truthy?(${predBody}) }`
@@ -407,7 +449,7 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     return renderFlatMethod(emit(object), depth, emit)
   }
 
-  conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr): string {
+  conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr, _emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     return this.refuseShape('a conditional (`?:`)')
   }
 
@@ -452,12 +494,14 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
  *   - the `unsupported` fallback returns the safe empty-string Ruby literal.
  */
 export class ErbTopLevelEmitter implements ParsedExprEmitter {
+  readonly primitives: PrimitiveInputs
   // Plain field + assignment, not a parameter property — see
   // `ErbFilterEmitter`'s constructor comment above for why.
   private readonly ctx: ErbEmitContext
 
   constructor(ctx: ErbEmitContext) {
     this.ctx = ctx
+    this.primitives = { typing: () => ctx._operandTyping(), nativeSafe: NATIVE_SAFE }
   }
 
   /**
@@ -513,14 +557,14 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     return `v[${rubySymbolLiteral(name)}]`
   }
 
-  literal(value: string | number | boolean | null, literalType: LiteralType): string {
+  literal(value: string | number | boolean | null, literalType: LiteralType, _plan: PrimitivePlan | null): string {
     if (literalType === 'string') return rubyStringLiteral(String(value))
     if (literalType === 'boolean') return value ? 'true' : 'false'
     if (literalType === 'null') return 'nil'
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const flat = flattenPropsMember(object, property, n => this.ctx.isLoopBoundName(n), propsObjectIdentifier(this.ctx._propsObjectName))
     if (flat !== null) return flat
     // Static property access on a module object-literal const
@@ -542,12 +586,12 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     // see `ErbFilterEmitter.member()`'s comment above for why `&.[](...)`
     // (not a dotted `&.name`) is the right safe-nav form for a Hash-keyed
     // prop, and for the single-hop caveat.
-    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
+    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit, _plan)
     if (optional) return `${obj}&.[](${rubySymbolLiteral(property)})`
     return `${obj}[${rubySymbolLiteral(property)}]`
   }
 
-  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     return emitIndexAccessRuby(object, index, emit, n => this.ctx._isStringValueName(n))
   }
 
@@ -643,7 +687,7 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const arg = emit(argument)
     if (op === '!') return `!bf.truthy?(${arg})`
     // Unary minus applies JS `ToNumber` like binary `-` (#3533).
@@ -660,7 +704,7 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     return coercion === 'null' ? `(${operand} || 0)` : operand
   }
 
-  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const l = this.coerceNullishOperand(op, left, right, emit(left))
     const r = this.coerceNullishOperand(op, right, left, emit(right))
     // `/` and `%` go through the runtime's JS division and remainder
@@ -682,7 +726,7 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     return `(${l} ${opMap[op] ?? op} ${r})`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
     if (op === '&&') return `(bf.truthy?(${l}) ? ${r} : ${l})`
@@ -763,6 +807,7 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     consequent: ParsedExpr,
     alternate: ParsedExpr,
     emit: (e: ParsedExpr) => string,
+    _plan: PrimitivePlan | null,
   ): string {
     // JS ternary tests JS truthiness — wrap (see file docstring).
     return `(bf.truthy?(${emit(test)}) ? ${emit(consequent)} : ${emit(alternate)})`

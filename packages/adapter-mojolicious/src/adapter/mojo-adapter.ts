@@ -1218,7 +1218,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
         n => this.scope.isBound(n),
         (n, property) => this._isNumberValueName(n, property, predicateScope),
         this.scope.propsObject,
-      ),
+      ).typedBy(this.operandTyping, predicateScope),
     )
   }
 
@@ -1276,6 +1276,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       resolveStaticRecordLiteral: (o, k) => this.resolveStaticRecordLiteral(o, k),
       staticArrayElement: (o, k) => lookupStaticArrayElement(o, k, this.localConstants, n => this.scope.isBound(n)),
       _isStringValueName: (name, property, path) => this._isStringValueName(name, property, path),
+      _operandTyping: () => this.operandTypingAt(),
       _isBooleanValueName: (name, property) => property ? !this.scope.shadowsPropsObject() && this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
       _isNumberValueName: (name, property) => this._isNumberValueName(name, property),
       _jsStringOutput: (parsed, perl) => this.jsStringOutput(parsed, perl),

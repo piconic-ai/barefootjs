@@ -1114,7 +1114,7 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
         (message, reason) => this._recordExprBF101(message, reason),
         n => this.scope.isBound(n),
         this.scope.propsObject,
-      ),
+      ).typedBy(this.operandTyping, predicateScope),
     )
   }
 
@@ -1177,6 +1177,7 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),
       _isStringValueName: (name, property, path) => this._isStringValueName(name, property, path),
+      _operandTyping: () => this.operandTypingAt(),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderJinjaFilterExprPublic: (e, p) => this._renderJinjaFilterExprPublic(e, p),
     }

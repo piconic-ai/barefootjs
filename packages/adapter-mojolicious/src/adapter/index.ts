@@ -4,3 +4,4 @@
 
 export { MojoAdapter, mojoAdapter } from './mojo-adapter.ts'
 export type { MojoAdapterOptions } from './mojo-adapter.ts'
+export { NATIVE_SAFE } from './expr/emitters.ts'

@@ -18,7 +18,7 @@
  * rather than re-exposing the whole adapter.
  */
 
-import type { ParsedExpr, CompilerError, IRMetadata, LoweringMatcher, ArithmeticCoercion } from '@barefootjs/jsx'
+import type { ParsedExpr, CompilerError, IRMetadata, LoweringMatcher, ArithmeticCoercion, ScopedOperandTyping } from '@barefootjs/jsx'
 
 export interface MojoEmitContext {
   /**
@@ -76,6 +76,8 @@ export interface MojoEmitContext {
 
   /** Whether a getter/prop name resolves to a string-typed SSR value. */
   _isStringValueName(name: string, componentProperty?: boolean, path?: readonly string[]): boolean
+  /** The component's operand typing at the current emission site, for the primitive plans (#3824). */
+  _operandTyping(): ScopedOperandTyping
   /** Whether a name is declared `boolean` at this position (#3443). */
   _isBooleanValueName(name: string, componentProperty?: boolean): boolean
   /** Whether a name is declared `number` at this position (`emitPerlEquality`). */

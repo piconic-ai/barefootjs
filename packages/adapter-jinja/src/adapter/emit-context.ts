@@ -19,7 +19,7 @@
  * rather than re-exposing the whole adapter.
  */
 
-import type { ParsedExpr, CompilerError, IRMetadata, LoweringMatcher, ArithmeticCoercion } from '@barefootjs/jsx'
+import type { ParsedExpr, CompilerError, IRMetadata, LoweringMatcher, ArithmeticCoercion, ScopedOperandTyping } from '@barefootjs/jsx'
 
 export interface JinjaEmitContext {
   /**
@@ -92,6 +92,8 @@ export interface JinjaEmitContext {
   /** Whether a getter/prop name resolves to a string-typed SSR value at the
    *  current binding scope. `componentProperty`: read as `props.<name>`. */
   _isStringValueName(name: string, componentProperty?: boolean, path?: readonly string[]): boolean
+  /** The component's operand typing at the current emission site, for the primitive plans (#3824). */
+  _operandTyping(): ScopedOperandTyping
 
   _recordExprBF101(message: string, reason?: string): void
 
