@@ -1268,7 +1268,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
         (message, reason) => this._recordExprBF101(message, reason),
         n => this.scope.isBound(n),
         this.scope.propsObject,
-      ),
+      ).typedBy(this.operandTyping, predicateScope),
     )
   }
 
@@ -1348,6 +1348,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),
       _renderPebbleFilterExprPublic: (e, p) => this._renderPebbleFilterExprPublic(e, p),
       _isStringValueName: (name, property, path) => this._isStringValueName(name, property, path),
+      _operandTyping: () => this.operandTypingAt(),
     }
   }
 

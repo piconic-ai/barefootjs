@@ -18,6 +18,13 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   groupObjectLiteralSegments,
   isStringConcatBinary,
   type ParsedExprEmitter,
+  type PrimitivePlan,
+  type PrimitiveInputs,
+  type NativeSafeTable,
+  type OperandTyping,
+  primitivesAt,
+  EMPTY_OPERAND_TYPING,
+  BindingScope,
   type LoweringEmitter,
   type LoweringNode,
   type ArrayMethod,
@@ -57,6 +64,26 @@ import {
 
 // The display name BF101 uses; a native predicate form exists here.
 export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Xslate', nativePredicate: true }
+
+/**
+ * The (op, proof) pairs this adapter spells with its native operator
+ * (`spec/js-primitive-semantics.md`; the plan's `NativeSafeTable`). Step 0
+ * of #3824: filled so the plans describe today's output, not yet narrowed to
+ * what the `primitives/` vectors pin. `primitive-plan-cross-adapter.test.ts`
+ * holds every emission to it, with the positions that still decide on their
+ * own listed there.
+ */
+export const NATIVE_SAFE: NativeSafeTable = {
+  'to-boolean': ['boolean', 'unproven'],
+  'to-number': [],
+  plus: ['string'],
+  'strict-eq': ['number-pair', 'string-pair', 'boolean-pair', 'unproven'],
+  relational: ['number-pair', 'unproven'],
+  neg: ['number', 'unproven'],
+  'number-literal': ['safe-integer', 'unproven'],
+  nullish: ['non-nil', 'unproven'],
+  get: [],
+}
 
 /** Runtime helpers for JS arithmetic over numbers (#3454). */
 const ARITHMETIC_HELPERS: Readonly<Record<string, string>> = {
@@ -128,6 +155,22 @@ function optionalLength(receiver: string, optional: boolean): string {
 }
 
 export class XslateFilterEmitter implements ParsedExprEmitter {
+  // The component's operand typing and the predicate's scope, which the
+  // primitive plans read (#3824); untyped until the adapter calls `typedBy`.
+  private operandTyping: OperandTyping = EMPTY_OPERAND_TYPING
+  private operandScope: BindingScope = BindingScope.EMPTY
+
+  get primitives(): PrimitiveInputs {
+    return primitivesAt(this.operandTyping, this.operandScope, NATIVE_SAFE)
+  }
+
+  /** Type this predicate's operands with the component's `typing` at the predicate's `scope`. */
+  typedBy(typing: OperandTyping, scope: BindingScope): this {
+    this.operandTyping = typing
+    this.operandScope = scope
+    return this
+  }
+
   // Plain field declarations + assignment, NOT TS constructor-parameter-
   // property shorthand: Vite's `bundleConfigFile` externalizes any bare
   // (non-relative) import when loading `vite.config.ts` (see
@@ -190,14 +233,14 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     return kolonVar(this.rowLocalName(name), this.onRead)
   }
 
-  literal(value: string | number | boolean | null, literalType: LiteralType): string {
+  literal(value: string | number | boolean | null, literalType: LiteralType, _plan: PrimitivePlan | null): string {
     if (literalType === 'string') return kolonStringLiteral(String(value))
     if (literalType === 'boolean') return value ? '1' : '0'
     if (literalType === 'null') return 'nil'
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // This predicate's own param or an enclosing loop row's binding spelled
     // `props` is that binding (#3693).
     const flat = flattenPropsMember(object, property, n => n === this.param || this.isOuterBound(n), this.propsObject)
@@ -207,11 +250,11 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     // is array-only and faults on a string.
     if (property === 'length') return optionalLength(emit(object), optional)
     // Hash field access — Kolon dot works on hash refs.
-    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
+    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit, _plan)
     return `${emit(object)}.${property}`
   }
 
-  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // The runtime getter distinguishes canonical array indices from
     // string keys such as '01', which Kolon's subscript coerces to 1.
     return `$bf.get(${emit(object)}, ${emit(index)})`
@@ -225,7 +268,7 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const arg = emit(argument)
     if (op === '!') {
       const needsParens = argument.kind === 'binary' || argument.kind === 'logical'
@@ -235,7 +278,7 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     return arg
   }
 
-  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
@@ -266,7 +309,7 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
     if (op === '&&') return `(${l} && ${r})`
@@ -312,7 +355,7 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     return renderFlatMethod(emit(object), depth, emit)
   }
 
-  conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr): string {
+  conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr, _emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     return this.refuseShape('a conditional (`?:`)')
   }
 
@@ -356,6 +399,7 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
  *   - higher-order methods route through `$bf` array helpers.
  */
 export class XslateTopLevelEmitter implements ParsedExprEmitter {
+  readonly primitives: PrimitiveInputs
   // Plain field + assignment, not a parameter property — see
   // `XslateFilterEmitter`'s constructor comment above for why.
   private readonly ctx: XslateEmitContext
@@ -365,6 +409,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
 
   constructor(ctx: XslateEmitContext, onRead?: (name: string) => void) {
     this.ctx = ctx
+    this.primitives = { typing: () => ctx._operandTyping(), nativeSafe: NATIVE_SAFE }
     this.onRead = onRead
   }
 
@@ -416,14 +461,14 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     return kolonVar(this.ctx._rowLocalName(name), this.onRead)
   }
 
-  literal(value: string | number | boolean | null, literalType: LiteralType): string {
+  literal(value: string | number | boolean | null, literalType: LiteralType, _plan: PrimitivePlan | null): string {
     if (literalType === 'string') return kolonStringLiteral(String(value))
     if (literalType === 'boolean') return value ? '1' : '0'
     if (literalType === 'null') return 'nil'
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // `props.X` reads the root prop even where a loop binding shadows `X`
     // (#3314) — through the alias the loop header assigned — unless a
     // binding shadows `props` itself (#3693).
@@ -443,11 +488,11 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     // Kolon's builtin `.size()` is array-only and faults on a string.
     if (property === 'length') return optionalLength(obj, optional)
     // Kolon dot access works for hash refs.
-    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
+    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit, _plan)
     return `${obj}.${property}`
   }
 
-  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // Same receiver-aware, canonical-index lookup as the filter emitter.
     return `$bf.get(${emit(object)}, ${emit(index)})`
   }
@@ -533,7 +578,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const arg = emit(argument)
     if (op === '!') return `!${arg}`
     if (op === '-') {
@@ -553,7 +598,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     return this.ctx._arithmeticCoercion(op, expr, other) === 'undefined' ? `$bf.number(${operand})` : operand
   }
 
-  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
@@ -593,7 +638,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
     if (op === '&&') return `(${l} && ${r})`
@@ -688,6 +733,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     consequent: ParsedExpr,
     alternate: ParsedExpr,
     emit: (e: ParsedExpr) => string,
+    _plan: PrimitivePlan | null,
   ): string {
     return `(${emit(test)} ? ${emit(consequent)} : ${emit(alternate)})`
   }

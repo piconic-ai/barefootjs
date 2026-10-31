@@ -18,7 +18,7 @@
  * rather than re-exposing the whole adapter.
  */
 
-import type { ParsedExpr, CompilerError, IRMetadata, LoweringMatcher, ArithmeticCoercion } from '@barefootjs/jsx'
+import type { ParsedExpr, CompilerError, IRMetadata, LoweringMatcher, ArithmeticCoercion, ScopedOperandTyping } from '@barefootjs/jsx'
 
 export interface BladeEmitContext {
   /**
@@ -76,6 +76,8 @@ export interface BladeEmitContext {
 
   /** Whether a getter/prop name resolves to a string-typed SSR value. */
   _isStringValueName(name: string, componentProperty?: boolean, path?: readonly string[]): boolean
+  /** The component's operand typing at the current emission site, for the primitive plans (#3824). */
+  _operandTyping(): ScopedOperandTyping
   /** How the emitter coerces an arithmetic operand over a nullish value
    * (`arithmeticOperandCoercion`, #3474): `'null'` reads nil as `0`,
    * `'undefined'` as the runtime's JS `Number()` gives it, `NaN`. `other` is

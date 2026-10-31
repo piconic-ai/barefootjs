@@ -40,17 +40,8 @@
 
 import { parseExpression, type ParsedExpr } from '../expression-parser.ts'
 import type { IRMetadata, TypeInfo } from '../types.ts'
-
-const COMPARISON_OPS = new Set([
-  '<',
-  '>',
-  '<=',
-  '>=',
-  '==',
-  '===',
-  '!=',
-  '!==',
-])
+import { operandFacts } from './primitive-plan.ts'
+import { isExactly, typingFromNameTest } from './operand-typing.ts'
 
 /**
  * Whether `node` evaluates to a JS boolean: structurally, or, when the
@@ -64,35 +55,10 @@ export function isBooleanResultParsed(
   node: ParsedExpr,
   isBooleanName?: (name: string, componentProperty?: boolean) => boolean,
 ): boolean {
-  switch (node.kind) {
-    case 'literal':
-      return node.literalType === 'boolean'
-    case 'binary':
-      return COMPARISON_OPS.has(node.op)
-    case 'unary':
-      return node.op === '!'
-    case 'logical':
-      // `x > 0 && y < 10` is boolean; `x() || 'fallback'` is not.
-      // Only both-sides-boolean qualifies.
-      return (
-        isBooleanResultParsed(node.left, isBooleanName) && isBooleanResultParsed(node.right, isBooleanName)
-      )
-    case 'conditional':
-      // `cond ? bool : bool` is boolean; `cond ? 'a' : 'b'` is not.
-      return (
-        isBooleanResultParsed(node.consequent, isBooleanName) &&
-        isBooleanResultParsed(node.alternate, isBooleanName)
-      )
-    case 'call':
-      return !!isBooleanName && node.callee.kind === 'identifier' && node.args.length === 0 && isBooleanName(node.callee.name)
-    case 'member':
-      return !!isBooleanName && !node.computed && node.object.kind === 'identifier' && node.object.name === 'props' &&
-        isBooleanName(node.property, true)
-    case 'identifier':
-      return !!isBooleanName && isBooleanName(node.name)
-    default:
-      return false
-  }
+  // A thin wrapper over the primitive plan's single classifier (#3824 step 0):
+  // structurally boolean, or a leaf `isBooleanName` proves boolean, combined
+  // through `&&` / `||` / `??` / `?:` only when every value operand is.
+  return isExactly(operandFacts(node, typingFromNameTest('boolean', isBooleanName)), 'boolean')
 }
 
 /**

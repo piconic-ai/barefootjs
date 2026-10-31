@@ -6,13 +6,14 @@
  */
 
 import { describe, test, expect } from 'bun:test'
-import { emitParsedExpr, parseExpression, type ParsedExpr, type ParsedExprEmitter } from '../index'
+import { BindingScope, EMPTY_OPERAND_TYPING, emitParsedExpr, parseExpression, primitivesAt, type ParsedExpr, type ParsedExprEmitter } from '../index'
 
 // Spells every node as a JS-like string so the dispatched shape is visible.
 function makeEmitter(): ParsedExprEmitter {
   const callName = (callee: ParsedExpr, emit: (e: ParsedExpr) => string) =>
     callee.kind === 'identifier' ? callee.name : emit(callee)
   return {
+    primitives: primitivesAt(EMPTY_OPERAND_TYPING, BindingScope.EMPTY, {}),
     identifier: name => name,
     literal: value => JSON.stringify(value),
     call: (callee, args, emit) => `${callName(callee, emit)}(${args.map(emit).join(', ')})`,

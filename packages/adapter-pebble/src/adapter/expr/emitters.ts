@@ -108,6 +108,13 @@ import {
   groupObjectLiteralSegments,
   isStringConcatBinary,
   type ParsedExprEmitter,
+  type PrimitivePlan,
+  type PrimitiveInputs,
+  type NativeSafeTable,
+  type OperandTyping,
+  primitivesAt,
+  EMPTY_OPERAND_TYPING,
+  BindingScope,
   type LoweringEmitter,
   type LoweringNode,
   type ArrayMethod,
@@ -146,6 +153,26 @@ import {
 
 // The display name BF101 uses; a native predicate form does not exist here.
 export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Pebble' }
+
+/**
+ * The (op, proof) pairs this adapter spells with its native operator
+ * (`spec/js-primitive-semantics.md`; the plan's `NativeSafeTable`). Step 0
+ * of #3824: filled so the plans describe today's output, not yet narrowed to
+ * what the `primitives/` vectors pin. `primitive-plan-cross-adapter.test.ts`
+ * holds every emission to it, with the positions that still decide on their
+ * own listed there.
+ */
+export const NATIVE_SAFE: NativeSafeTable = {
+  'to-boolean': ['boolean'],
+  'to-number': ['number-pair', 'number', 'unproven'],
+  plus: ['number-pair', 'string', 'unproven'],
+  'strict-eq': [],
+  relational: ['number-pair', 'unproven'],
+  neg: ['number', 'unproven'],
+  'number-literal': ['safe-integer', 'unproven'],
+  nullish: [],
+  get: [],
+}
 
 /**
  * Route a condition-TEST position through `bf.truthy(...)` unless the node
@@ -202,6 +229,22 @@ function optionalLength(receiver: string, optional: boolean): string {
 }
 
 export class PebbleFilterEmitter implements ParsedExprEmitter {
+  // The component's operand typing and the predicate's scope, which the
+  // primitive plans read (#3824); untyped until the adapter calls `typedBy`.
+  private operandTyping: OperandTyping = EMPTY_OPERAND_TYPING
+  private operandScope: BindingScope = BindingScope.EMPTY
+
+  get primitives(): PrimitiveInputs {
+    return primitivesAt(this.operandTyping, this.operandScope, NATIVE_SAFE)
+  }
+
+  /** Type this predicate's operands with the component's `typing` at the predicate's `scope`. */
+  typedBy(typing: OperandTyping, scope: BindingScope): this {
+    this.operandTyping = typing
+    this.operandScope = scope
+    return this
+  }
+
   // Plain field declarations + assignment, NOT TS constructor-parameter-
   // property shorthand: Vite's `bundleConfigFile` externalizes any bare
   // (non-relative) import when loading `vite.config.ts`, so this file can be
@@ -244,14 +287,14 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
     return pebbleIdent(name)
   }
 
-  literal(value: string | number | boolean | null, literalType: LiteralType): string {
+  literal(value: string | number | boolean | null, literalType: LiteralType, _plan: PrimitivePlan | null): string {
     if (literalType === 'string') return pebbleStringLiteral(String(value))
     if (literalType === 'boolean') return value ? 'true' : 'false'
     if (literalType === 'null') return 'null'
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // A callback param spelled `props` (a `.map((props) => …)` row the
     // filter param was renamed to, #3404) or an enclosing binding of that
     // name (#3693) is that binding, not the component props.
@@ -264,11 +307,11 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
     if (property === 'length') return optionalLength(emit(object), optional)
     // Computed keys use the runtime getter; only plain property names
     // can be appended safely to Pebble's dot accessor.
-    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
+    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit, _plan)
     return `${emit(object)}.${property}`
   }
 
-  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // See the file header, divergence 6: a DYNAMIC/computed index has no
     // confirmed Pebble builtin that resolves both List-index and Map-key
     // access uniformly, so route through the adapter's own `bf.get` helper.
@@ -283,13 +326,13 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     if (op === '!') return `not ${truthyTest(argument, emit(argument))}`
     if (op === '-') return `-${groupUnaryOperand(argument, emit(argument))}`
     return emit(argument)
   }
 
-  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
@@ -320,7 +363,7 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
     // See the file header, divergences 1 & 2: the branch TEST goes through
@@ -372,7 +415,7 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
     return renderFlatMethod(emit(object), depth, emit)
   }
 
-  conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr): string {
+  conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr, _emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     return this.refuseShape('a conditional (`?:`)')
   }
 
@@ -417,12 +460,14 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
  *   - no lambda fallback exists (see the file header, divergence 5).
  */
 export class PebbleTopLevelEmitter implements ParsedExprEmitter {
+  readonly primitives: PrimitiveInputs
   // Plain field + assignment, not a parameter property — see
   // `PebbleFilterEmitter`'s constructor comment above for why.
   private readonly ctx: PebbleEmitContext
 
   constructor(ctx: PebbleEmitContext) {
     this.ctx = ctx
+    this.primitives = { typing: () => ctx._operandTyping(), nativeSafe: NATIVE_SAFE }
   }
 
   /**
@@ -482,14 +527,14 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     return pebbleIdent(name)
   }
 
-  literal(value: string | number | boolean | null, literalType: LiteralType): string {
+  literal(value: string | number | boolean | null, literalType: LiteralType, _plan: PrimitivePlan | null): string {
     if (literalType === 'string') return pebbleStringLiteral(String(value))
     if (literalType === 'boolean') return value ? 'true' : 'false'
     if (literalType === 'null') return 'null'
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // `props.X` reads the root prop even where a loop binding shadows `X`
     // (#3314) — through the alias the loop header assigned — unless a
     // binding shadows `props` itself (#3693).
@@ -508,11 +553,11 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     // `.length` → `bf.length` (array count or string char count, JS-compat).
     if (property === 'length') return optionalLength(obj, optional)
     // Dot access — see the file header, divergence 6.
-    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
+    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit, _plan)
     return `${obj}.${property}`
   }
 
-  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // See the file header, divergence 6.
     return `bf.get(${emit(object)}, ${emit(index)})`
   }
@@ -601,7 +646,7 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     if (op === '!') return `not ${truthyTest(argument, emit(argument))}`
     if (op === '-') {
       // Unary minus applies JS `ToNumber` like binary `-` (#3533).
@@ -622,7 +667,7 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     return coercion === 'null' ? `(${operand} is null ? 0 : ${operand})` : operand
   }
 
-  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
@@ -650,7 +695,7 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
     // See the file header, divergences 1 & 2.
@@ -713,6 +758,7 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     consequent: ParsedExpr,
     alternate: ParsedExpr,
     emit: (e: ParsedExpr) => string,
+    _plan: PrimitivePlan | null,
   ): string {
     // See the file header, divergence 1: Pebble's symbolic ternary.
     return `(${truthyTest(test, emit(test))} ? ${emit(consequent)} : ${emit(alternate)})`

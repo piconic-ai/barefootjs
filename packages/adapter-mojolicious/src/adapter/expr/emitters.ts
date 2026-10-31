@@ -18,6 +18,13 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   isStringTypedOperand,
   isStringConcatBinary,
   type ParsedExprEmitter,
+  type PrimitivePlan,
+  type PrimitiveInputs,
+  type NativeSafeTable,
+  type OperandTyping,
+  primitivesAt,
+  EMPTY_OPERAND_TYPING,
+  BindingScope,
   type ArrayMethod,
   type LiteralType,
   type ParsedExpr,
@@ -59,6 +66,26 @@ import {
 
 // The display name BF101 uses; a native predicate form exists here.
 export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Mojo', nativePredicate: true }
+
+/**
+ * The (op, proof) pairs this adapter spells with its native operator
+ * (`spec/js-primitive-semantics.md`; the plan's `NativeSafeTable`). Step 0
+ * of #3824: filled so the plans describe today's output, not yet narrowed to
+ * what the `primitives/` vectors pin. `primitive-plan-cross-adapter.test.ts`
+ * holds every emission to it, with the positions that still decide on their
+ * own listed there.
+ */
+export const NATIVE_SAFE: NativeSafeTable = {
+  'to-boolean': ['boolean', 'unproven'],
+  'to-number': [],
+  plus: ['string'],
+  'strict-eq': ['number-pair', 'string-pair', 'boolean-pair'],
+  relational: ['number-pair', 'unproven'],
+  neg: ['number', 'unproven'],
+  'number-literal': ['safe-integer', 'unproven'],
+  nullish: ['non-nil', 'unproven'],
+  get: [],
+}
 
 /** Runtime helpers for JS arithmetic over numbers (#3454). */
 const ARITHMETIC_HELPERS: Readonly<Record<string, string>> = {
@@ -196,6 +223,22 @@ function optionalLength(receiver: string, optional: boolean, read: (receiver: st
 }
 
 export class MojoFilterEmitter implements ParsedExprEmitter {
+  // The component's operand typing and the predicate's scope, which the
+  // primitive plans read (#3824); untyped until the adapter calls `typedBy`.
+  private operandTyping: OperandTyping = EMPTY_OPERAND_TYPING
+  private operandScope: BindingScope = BindingScope.EMPTY
+
+  get primitives(): PrimitiveInputs {
+    return primitivesAt(this.operandTyping, this.operandScope, NATIVE_SAFE)
+  }
+
+  /** Type this predicate's operands with the component's `typing` at the predicate's `scope`. */
+  typedBy(typing: OperandTyping, scope: BindingScope): this {
+    this.operandTyping = typing
+    this.operandScope = scope
+    return this
+  }
+
   // Plain field declarations + assignment, NOT TS constructor-parameter-
   // property shorthand: Vite's `bundleConfigFile` externalizes any bare
   // (non-relative) import when loading `vite.config.ts` (see
@@ -261,14 +304,14 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     return `$${name}`
   }
 
-  literal(value: string | number | boolean | null, literalType: LiteralType): string {
+  literal(value: string | number | boolean | null, literalType: LiteralType, _plan: PrimitivePlan | null): string {
     if (literalType === 'string') return perlStringLiteral(String(value))
     if (literalType === 'boolean') return value ? '1' : '0'
     if (literalType === 'null') return 'undef'
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // This predicate's own param, an enclosing callback's or an enclosing
     // loop row's binding spelled `props` is that binding (#3693).
     const flat = flattenPropsMember(object, property, n => n === this.param || this.enclosingParams.has(n) || this.isOuterBound(n), this.propsObject)
@@ -282,11 +325,11 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     if (property === 'length') {
       return optionalLength(emit(object), optional, obj => `bf->length(${obj})`)
     }
-    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
+    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit, _plan)
     return `${emit(object)}->{${property}}`
   }
 
-  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     return emitIndexAccessPerl(object, index, emit, this.isStringName)
   }
 
@@ -298,7 +341,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const arg = emit(argument)
     if (op === '!') {
       // Wrap binary/logical operands in parens to dodge Perl precedence surprises.
@@ -309,7 +352,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     return arg
   }
 
-  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const lookupEquality = emitLookupLiteralEquality(op, left, right, emit, this.isStringName)
     if (lookupEquality !== null) return lookupEquality
     const nullishEquality = emitNullishEquality(op, left, right, emit)
@@ -342,7 +385,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
     if (op === '&&') return `(${l} && ${r})`
@@ -379,7 +422,8 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     const paramVar = grepLexical(param, enclosing)
     const predBody = emitParsedExpr(
       predicate,
-      new MojoFilterEmitter(param, this.localVarMap, this.isStringName, this.onUnsupported, enclosing, paramVar, this.isOuterBound, this.isNumberName, this.propsObject),
+      new MojoFilterEmitter(param, this.localVarMap, this.isStringName, this.onUnsupported, enclosing, paramVar, this.isOuterBound, this.isNumberName, this.propsObject)
+        .typedBy(this.operandTyping, this.operandScope.enterCallback([param])),
     )
     const grep = grepPredicate(method, paramVar, predBody, arrayExpr)
     if (grep !== null) return grep
@@ -422,7 +466,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     return renderFlatMethod(emit(object), depth, emit)
   }
 
-  conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr): string {
+  conditional(_test: ParsedExpr, _consequent: ParsedExpr, _alternate: ParsedExpr, _emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     return this.refuseShape('a conditional (`?:`)')
   }
 
@@ -467,12 +511,14 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
  *     shapes the AST can't classify still emit something coherent.
  */
 export class MojoTopLevelEmitter implements ParsedExprEmitter {
+  readonly primitives: PrimitiveInputs
   // Plain field + assignment, not a parameter property — see
   // `MojoFilterEmitter`'s constructor comment above for why.
   private readonly ctx: MojoEmitContext
 
   constructor(ctx: MojoEmitContext) {
     this.ctx = ctx
+    this.primitives = { typing: () => ctx._operandTyping(), nativeSafe: NATIVE_SAFE }
   }
 
   /** Declared-`boolean` lookup for stringifying a logical expression (#3443). */
@@ -525,14 +571,14 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     return `$${name}`
   }
 
-  literal(value: string | number | boolean | null, literalType: LiteralType): string {
+  literal(value: string | number | boolean | null, literalType: LiteralType, _plan: PrimitivePlan | null): string {
     if (literalType === 'string') return perlStringLiteral(String(value))
     if (literalType === 'boolean') return value ? '1' : '0'
     if (literalType === 'null') return 'undef'
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // `props.X` reads the root prop even where a loop binding shadows `X`
     // (#3314) — through the alias the loop header assigned — unless a
     // binding shadows `props` itself (#3693).
@@ -558,11 +604,11 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
       // array-only `scalar(@{...})` dies on a string under `strict refs`.
       return optionalLength(obj, optional, o => `bf->length(${o})`)
     }
-    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit)
+    if (computed) return this.indexAccess(object, literalMemberIndex(property), emit, _plan)
     return `${obj}->{${property}}`
   }
 
-  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     return emitIndexAccessPerl(object, index, emit, (n: string, property?: boolean, path?: readonly string[]) => this.ctx._isStringValueName(n, property, path))
   }
 
@@ -649,7 +695,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     return emit(callee)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const arg = emit(argument)
     if (op === '!') return `!${arg}`
     if (op === '-') {
@@ -669,7 +715,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     return this.ctx._arithmeticCoercion(op, expr, other) === 'undefined' ? `bf->number(${operand})` : operand
   }
 
-  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const lookupEquality = emitLookupLiteralEquality(op, left, right, emit, (n: string, property?: boolean, path?: readonly string[]) => this.ctx._isStringValueName(n, property, path))
     if (lookupEquality !== null) return lookupEquality
     const nullishEquality = emitNullishEquality(op, left, right, emit)
@@ -713,7 +759,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     return `${l} ${opMap[op] ?? op} ${r}`
   }
 
-  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
     if (op === '&&') return `(${l} && ${r})`
@@ -807,6 +853,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     consequent: ParsedExpr,
     alternate: ParsedExpr,
     emit: (e: ParsedExpr) => string,
+    _plan: PrimitivePlan | null,
   ): string {
     return `(${emit(test)} ? ${emit(consequent)} : ${emit(alternate)})`
   }

@@ -5,7 +5,7 @@
  */
 
 import type { SortComparator, SupportResult, ParsedExpr } from '@barefootjs/jsx'
-import { arithmeticHelper, escapeBraceDelimiters, evalBody, type CallbackCapture } from '@barefootjs/jsx'
+import { arithmeticHelper, BindingScope, EMPTY_OPERAND_TYPING, escapeBraceDelimiters, evalBody, isExactly, operandFacts, type CallbackCapture, type NativeSafeTable } from '@barefootjs/jsx'
 
 import { capitalize } from "./go-naming.ts"
 
@@ -53,23 +53,40 @@ export function wrapIfMultiToken(rendered: string): string {
   return rendered
 }
 
-/** JS comparison operators — each lowers to a Go builtin (`eq`, `lt`, …) that
- *  already returns a real bool. */
-const BOOL_COMPARISON_OPS: ReadonlySet<string> = new Set([
-  '==', '===', '!=', '!==', '<', '>', '<=', '>=',
-])
+/**
+ * The (op, proof) pairs the Go adapter spells with a native template form
+ * (`spec/js-primitive-semantics.md`; the plan's `NativeSafeTable`). Step 0 of
+ * #3824: filled so the plans describe today's output. Every arithmetic,
+ * comparison, `===`, unary minus and index read is a runtime call (`bf_add`,
+ * `bf_lt`, `bf_eq`, `bf_neg`, `bf_get`, …); a test is native only for a Go
+ * bool (`isGoBoolShaped`); `??` is `or` unless `bf_nullish` is needed.
+ * `primitive-plan-cross-adapter.test.ts` holds the emission to it.
+ */
+export const GO_NATIVE_SAFE: NativeSafeTable = {
+  'to-boolean': ['boolean'],
+  'to-number': [],
+  // A string `+` is `bf_concat_str`: html/template has no infix operator, so
+  // that call is Go's spelling of native concatenation.
+  plus: ['string'],
+  'strict-eq': [],
+  relational: [],
+  neg: [],
+  'number-literal': ['safe-integer', 'unproven'],
+  nullish: ['non-nil', 'unproven'],
+  get: [],
+}
 
 /**
  * Whether `expr` lowers to a real Go bool on its own: a comparison, a `!x`
  * (see `lowerJsNot`), or a bool literal. `&&` / `||` do NOT qualify: Go's
- * `and` / `or` return one of their operands, not a bool.
+ * `and` / `or` return one of their operands, not a bool. A thin wrapper over
+ * the primitive plan's classifier (`operandFacts`, #3824 step 0), narrowed to
+ * the three node kinds whose own Go form is a bool and read with no name
+ * typing.
  */
 export function isGoBoolShaped(expr: ParsedExpr): boolean {
-  return (
-    (expr.kind === 'binary' && BOOL_COMPARISON_OPS.has(expr.op)) ||
-    (expr.kind === 'unary' && expr.op === '!') ||
-    (expr.kind === 'literal' && expr.literalType === 'boolean')
-  )
+  if (expr.kind !== 'binary' && expr.kind !== 'unary' && expr.kind !== 'literal') return false
+  return isExactly(operandFacts(expr, EMPTY_OPERAND_TYPING.at(BindingScope.EMPTY)), 'boolean')
 }
 
 /**

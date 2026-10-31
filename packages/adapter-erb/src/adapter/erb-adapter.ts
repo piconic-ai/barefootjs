@@ -1373,7 +1373,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
         },
         (message, reason) => this._recordExprBF101(message, reason),
         renderParamAs,
-      ),
+      ).typedBy(this.operandTyping, this.scope.enterCallback([param])),
     )
   }
 
@@ -1430,6 +1430,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       staticArrayElement: (o, k) => lookupStaticArrayElement(o, k, this.localConstants, n => this.scope.isBound(n)),
       isLoopBoundName: (name) => this.isLoopBoundName(name),
       _isStringValueName: (name, property, path) => this._isStringValueName(name, property, path),
+      _operandTyping: () => this.operandTypingAt(),
       _isOpaqueLocalAccessorCall: (name) => isOpaqueLocalAccessorName(name, this.localConstants),
       _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),
       _recordExprBF101: (message, reason) => this._recordExprBF101(message, reason),

@@ -1205,7 +1205,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
         onRead,
         n => this.scope.isBound(n),
         this.scope.propsObject,
-      ),
+      ).typedBy(this.operandTyping, predicateScope),
     )
   }
 
@@ -1260,6 +1260,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
       _staticArrayElement: (o, k) => lookupStaticArrayElement(o, k, this.localConstants, n => this.scope.isBound(n)),
       _isStringValueName: (name, property, path) => this._isStringValueName(name, property, path),
+      _operandTyping: () => this.operandTypingAt(),
       _jsStringOutput: (parsed, kolon) => this.jsStringOutput(parsed, kolon),
       _isBooleanValueName: (name, property) => property ? !this.scope.shadowsPropsObject() && this.booleanValueNames.props.has(name) : !this.scope.isBound(name) && this.booleanValueNames.names.has(name),
       _arithmeticCoercion: (op, operand, other) => this.arithmeticCoercion(op, operand, other, n => this.isLoopBoundName(n)),

@@ -18,7 +18,7 @@
  * rather than re-exposing the whole adapter.
  */
 
-import type { ParsedExpr, CompilerError, IRMetadata, LoweringMatcher, ArithmeticCoercion } from '@barefootjs/jsx'
+import type { ParsedExpr, CompilerError, IRMetadata, LoweringMatcher, ArithmeticCoercion, ScopedOperandTyping } from '@barefootjs/jsx'
 
 export interface XslateEmitContext {
   /**
@@ -76,6 +76,8 @@ export interface XslateEmitContext {
 
   /** Whether a getter/prop name resolves to a string-typed SSR value. */
   _isStringValueName(name: string, componentProperty?: boolean, path?: readonly string[]): boolean
+  /** The component's operand typing at the current emission site, for the primitive plans (#3824). */
+  _operandTyping(): ScopedOperandTyping
   /** `kolon` wrapped in `$bf.string` when `parsed` yields a number, which JS
    *  stringifies with `Number::toString` (#3711), or may yield a decoded
    *  JSON boolean, which Perl prints as `0` / `1` (#3783). */

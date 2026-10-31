@@ -42,6 +42,9 @@ import {
   type AdapterGenerateOptions,
   type TemplateSections,
   type ParsedExprEmitter,
+  type PrimitivePlan,
+  type PrimitiveInputs,
+  collectOperandTyping,
   type HigherOrderMethod,
   type ArrayMethod,
   type LiteralType,
@@ -127,6 +130,7 @@ import {
   goPropDefault,
   applyGoFallback,
   escapeGoStaticText,
+  GO_NATIVE_SAFE,
 } from "./lib/go-emit.ts"
 import type {
   GoRenderCtx,
@@ -339,6 +343,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /** Per-compile mutable state, reset at `generate()` / `generateTypes()` entry. See `CompileState` for the field-by-field docs. */
   private readonly state = new CompileState()
+
+  /** The primitive plans' inputs (#3824): the component's operand typing at the current scope, and Go's native-safe table. */
+  readonly primitives: PrimitiveInputs = {
+    typing: () => this.state.operandTyping.at(this.scope),
+    nativeSafe: GO_NATIVE_SAFE,
+  }
 
   /**
    * The `GoEmitContext` handed to extracted emit modules — the seam that keeps
@@ -847,6 +857,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // reach the operand coercion; refuse their ambiguous-nil arithmetic once.
     refuseAmbiguousNilMemoArithmetic(ir.metadata.memos ?? [], this.state.nullishAttrCtx, this.state)
     this.state.stringValueNames = collectStringValueNames(ir)
+    this.state.operandTyping = collectOperandTyping(ir.metadata, {
+      namedFields: typeName => this.state.currentTypeDefinitions.find(td => td.name === typeName)?.properties,
+    })
     // A SAME-FILE child's shape (`childComponentShapes`, which `routesToRestBag`
     // reads to pick `bf_with_props` vs `bf_with_bag` delivery, and
     // `childDerivedFieldDeps` for `loopRowChildPropOverrides`) is registered
@@ -5044,7 +5057,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return parsedLiteralToGo(this.emitCtx, c.parsed, bakeType)
   }
 
-  literal(value: string | number | boolean | null, literalType: LiteralType): string {
+  literal(value: string | number | boolean | null, literalType: LiteralType, _plan: PrimitivePlan | null): string {
     // A decoded string value: JSON escaping is a subset of Go's interpreted-
     // string escapes, so a quote or newline stays inside the literal.
     if (literalType === 'string') return JSON.stringify(String(value))
@@ -5170,6 +5183,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     computed: boolean,
     optional: boolean,
     emit: (e: ParsedExpr) => string,
+    _plan: PrimitivePlan | null,
   ): string {
     return renderMember(this.memberAndMethodsHost, object, property, computed, optional, emit)
   }
@@ -5180,7 +5194,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return `bf_get ${wrapIfMultiToken(object)} ${JSON.stringify(property)}`
   }
 
-  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // Go's builtin `index` is exact-case only, and the shared analyzer
     // types a dynamic index (e.g. a destructured .map() param used as a
     // key, `tone[k]`) as `{kind:'unknown'}` — there is no compile-time
@@ -5222,7 +5236,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return emit(n)
   }
 
-  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const l = this.emitOperand(left, emit)
     const r = this.emitOperand(right, emit)
     // Every Go form below is a prefix function call (`bf_mul a b`, `gt a b`,
@@ -5313,7 +5327,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return arithmeticCoercionOrRefuse(op, operand, other, this.state.nullishAttrCtx, n => this.scope.isBound(n), this.state)
   }
 
-  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+  unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     const arg = this.emitOperand(argument, emit)
     // `lowerJsNot` parenthesises a multi-token argument (#2758: `not or a b`
     // parses as `not` applied to 3 args, not 1) and routes a non-bool operand
@@ -5334,6 +5348,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     left: ParsedExpr,
     right: ParsedExpr,
     emit: (e: ParsedExpr) => string,
+    _plan: PrimitivePlan | null,
   ): string {
     // `x ?? y` over a value that is never nullish (a comparison, a required
     // scalar prop) is `x`, even when it is `false` / `''` / `0`, which `or`
@@ -5479,6 +5494,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     consequent: ParsedExpr,
     alternate: ParsedExpr,
     _emit: (e: ParsedExpr) => string,
+    _plan: PrimitivePlan | null,
   ): string {
     return lowerTernary(this.emitCtx, test, consequent, alternate)
   }

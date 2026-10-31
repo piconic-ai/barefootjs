@@ -29,6 +29,7 @@ import type {
   TypeDefinition,
   TypeInfo,
 } from '@barefootjs/jsx'
+import { EMPTY_OPERAND_TYPING, type OperandTyping } from '@barefootjs/jsx'
 import type { RowsFieldAllocation } from './nested-rows-field.ts'
 
 export class CompileState {
@@ -379,6 +380,14 @@ export class CompileState {
    * addition — see `collectStringValueNames` (`props/prop-classes.ts`).
    */
   stringValueNames: Set<string> = new Set()
+
+  /**
+   * The component's operand typing (`collectOperandTyping`), which the
+   * primitive plans read through the emission site's scope (#3824). The
+   * adapter supplies it as `ParsedExprEmitter.primitives`; `GoEmitContext`
+   * does not carry it.
+   */
+  operandTyping: OperandTyping = EMPTY_OPERAND_TYPING
 
   /** Array-memo name → the handler-filled loop slice field its `.map()` feeds
    *  (e.g. `visible` → `PostListItems`). Lets `<memo>().length` lower to the
