@@ -577,22 +577,78 @@ module BarefootJS
     end
     private_class_method :read_property
 
+    # JS `obj[index]` in a callback body: `index_value` over a receiver that
+    # can be indexed. Reading through null / undefined throws in JS, so it
+    # is outside the subset here.
     def read_index(obj, index)
-      if obj.is_a?(Array)
-        f = to_number(index).to_f
-        return nil unless f.finite? && f == f.to_i
-
-        i = f.to_i
-        return nil if i.negative? || i >= obj.length
-
-        obj[i]
-      elsif obj.is_a?(Hash)
-        read_property(obj, to_string(index))
-      else
+      unless obj.is_a?(Array) || obj.is_a?(Hash) || obj.is_a?(String)
         raise EvalUnsupported, "cannot index #{obj.nil? ? 'null' : obj.class}"
       end
+
+      index_value(obj, index)
     end
     private_class_method :read_index
+
+    # index_value(obj, index) -> JS `obj[index]`, shared with the template
+    # helper `bf.get` (which delegates here, so a template read and a
+    # callback read cannot disagree on a key). The key goes through
+    # ToPropertyKey (`to_string`: nil is "null", `-0` is "0", `1.0` is
+    # "1"). A Hash reads its own key (Symbol first: rows deserialize with
+    # `symbolize_names: true`). An Array, and a String (by UTF-16 code
+    # unit), are read only through a canonical array index: "1" reads
+    # element 1, while "01", "1e0", "-0", "1.1" and "-1" are ordinary
+    # property names (spec/js-primitive-semantics.md, "ToPropertyKey and
+    # index read"). Any other receiver reads nil.
+    def index_value(obj, index)
+      key = property_key(index)
+      return nil if key.nil?
+
+      case obj
+      when Hash
+        sym = key.to_sym
+        return obj[sym] if obj.key?(sym)
+
+        obj.key?(key) ? obj[key] : nil
+      when Array, String
+        return nil unless key.match?(/\A(?:0|[1-9][0-9]*)\z/)
+
+        i = key.to_i
+        return utf16_unit_at(obj, i) if obj.is_a?(String)
+
+        # An index past the end reads nil. Checking before `Array#[]` also
+        # keeps an oversized key ("9223372036854775808", 1e20) from raising
+        # RangeError: a Bignum cannot be converted to a C long.
+        i < obj.length ? obj[i] : nil
+      end
+    end
+
+    # JS ToPropertyKey of a primitive key (a Symbol a Ruby caller passes is
+    # its name); nil for a key outside the subset (an array or object key),
+    # which reads nothing.
+    def property_key(index)
+      return index.to_s if index.is_a?(Symbol)
+
+      to_string(index)
+    rescue EvalUnsupported
+      nil
+    end
+    private_class_method :property_key
+
+    # The UTF-16 code unit of `str` at index `i` (JS `str[i]`), or nil past
+    # the end. One half of a surrogate pair reads as U+FFFD: a lone
+    # surrogate cannot be written out as UTF-8
+    # (spec/js-primitive-semantics.md, "Out of scope").
+    def utf16_unit_at(str, i)
+      pos = 0
+      str.each_char do |c|
+        width = c.ord > 0xFFFF ? 2 : 1
+        return width == 1 ? c : "\uFFFD" if i < pos + width
+
+        pos += width
+      end
+      nil
+    end
+    private_class_method :utf16_unit_at
 
     # ---------------------------------------------------------------------
     # Evaluator-driven higher-order folds -- the runtime half `bf.rb` calls

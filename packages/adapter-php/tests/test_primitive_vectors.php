@@ -53,12 +53,13 @@ $BINDINGS = [
 
 // One binding per op the PHP adapters can spell natively, to the native PHP
 // operator: a test is PHP's own truthiness (Twig's `{% if %}` / `not` and
-// Blade's `@if` / `!` both compile to it). It runs over the cases whose
-// domain the two adapters' NATIVE_SAFE tables claim
-// (primitives-native-safe.json, "php": their union, since they share this
-// operator; spec/js-primitive-semantics.md, "Conformance" item 3).
+// Blade's `@if` / `!` both compile to it); an index read is PHP's own `[]`.
+// It runs over the cases whose domain the two adapters' NATIVE_SAFE tables
+// claim (primitives-native-safe.json, "php": their union, since they share
+// these operators; spec/js-primitive-semantics.md, "Conformance" item 3).
 $NATIVE_BINDINGS = [
     'truthy' => fn ($v) => (bool) $v,
+    'get' => fn ($recv, $key) => $recv[$key] ?? null,
 ];
 
 /** Materialize the `{"$num": ...}` sentinel, `-0` included. Values are

@@ -540,17 +540,45 @@ fn read_property(obj: &JsValue, key: &str) -> JsValue {
     }
 }
 
+/// JS `obj[index]`, shared with the template helper `bf.get` (`js_get`
+/// delegates here, so a template read and a callback read cannot disagree
+/// on a key). An object reads its own key by ToPropertyKey; an array, and a
+/// string (by UTF-16 code unit), only through a canonical array index: "1"
+/// and `1.0` read element 1, while "01", "1e0", "-0", "1.1" and "-1" are
+/// ordinary property names (spec/js-primitive-semantics.md, "ToPropertyKey
+/// and index read").
 pub(crate) fn read_index(obj: &JsValue, index: &JsValue) -> JsValue {
     match obj {
-        JsValue::Array(a) => {
-            let key = to_string(index);
-            match key.parse::<usize>() {
-                Ok(i) if i.to_string() == key && i < a.len() => a[i].clone(),
-                _ => JsValue::Null,
-            }
-        }
+        JsValue::Array(a) => match canonical_index(index) {
+            Some(i) if i < a.len() => a[i].clone(),
+            _ => JsValue::Null,
+        },
+        JsValue::String(s) => match canonical_index(index) {
+            Some(i) => utf16_unit_at(s, i),
+            None => JsValue::Null,
+        },
         JsValue::Object(map) => map.get(&to_string(index)).cloned().unwrap_or(JsValue::Null),
         _ => JsValue::Null,
+    }
+}
+
+/// The array index `index`'s property key names, or None when the key is
+/// not a canonical array index.
+fn canonical_index(index: &JsValue) -> Option<usize> {
+    let key = to_string(index);
+    match key.parse::<usize>() {
+        Ok(i) if i.to_string() == key => Some(i),
+        _ => None,
+    }
+}
+
+/// The UTF-16 code unit of `s` at index `i`, or null past the end. One half
+/// of a surrogate pair reads as U+FFFD: a lone surrogate cannot be written
+/// out as UTF-8 (spec/js-primitive-semantics.md, "Out of scope").
+fn utf16_unit_at(s: &str, i: usize) -> JsValue {
+    match s.encode_utf16().nth(i) {
+        Some(unit) => JsValue::String(char::from_u32(u32::from(unit)).unwrap_or('\u{FFFD}').to_string()),
+        None => JsValue::Null,
     }
 }
 

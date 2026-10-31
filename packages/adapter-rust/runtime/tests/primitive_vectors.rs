@@ -37,35 +37,27 @@ fn call_binding(fn_name: &str, a: &[JsValue]) -> Option<JsValue> {
     })
 }
 
-/// A runtime value as a MiniJinja value, for the native bindings.
-fn to_minijinja(v: &JsValue) -> minijinja::Value {
-    match v {
-        JsValue::Null => minijinja::Value::from(()),
-        JsValue::Bool(b) => minijinja::Value::from(*b),
-        JsValue::Number(n) => minijinja::Value::from(*n),
-        JsValue::String(s) => minijinja::Value::from(s.as_str()),
-        JsValue::Array(items) => minijinja::Value::from(items.iter().map(to_minijinja).collect::<Vec<_>>()),
-        JsValue::Object(map) => minijinja::Value::from(
-            map.iter().map(|(k, x)| (k.clone(), to_minijinja(x))).collect::<std::collections::BTreeMap<_, _>>(),
-        ),
-        // No vector argument is a native date (JSON cannot spell one).
-        JsValue::Date(ms) => minijinja::Value::from(*ms),
-    }
-}
-
 /// One binding per op the MiniJinja adapter can spell natively, to the
-/// native MiniJinja operator: a test is MiniJinja's own `{% if %}` / `not`.
-/// It runs over the cases whose domain the adapter's NATIVE_SAFE table
-/// claims (`primitives-native-safe.json`; spec/js-primitive-semantics.md,
+/// native MiniJinja operator, over the values a template receives
+/// (`js_to_mj`): a test is MiniJinja's own `{% if %}` / `not`; an index read
+/// is MiniJinja's own `[]` (an undefined result reads as null). It runs over
+/// the cases whose domain the adapter's NATIVE_SAFE table claims
+/// (`primitives-native-safe.json`; spec/js-primitive-semantics.md,
 /// "Conformance" item 3). `None` for an op with no native binding, which
 /// fails.
 fn call_native_binding(fn_name: &str, a: &[JsValue]) -> Option<JsValue> {
     Some(match fn_name {
         "truthy" => {
             let env = minijinja::Environment::new();
-            let ctx = minijinja::context! { v => to_minijinja(&a[0]) };
+            let ctx = minijinja::context! { v => runtime::js_to_mj(&a[0]) };
             let out = env.render_str("{% if v %}1{% else %}0{% endif %}", ctx).expect("render the native test");
             JsValue::Bool(out == "1")
+        }
+        "get" => {
+            let env = minijinja::Environment::new();
+            let expr = env.compile_expression("recv[key]").expect("compile the native index read");
+            let ctx = minijinja::context! { recv => runtime::js_to_mj(&a[0]), key => runtime::js_to_mj(&a[1]) };
+            runtime::mj_to_js(&expr.eval(ctx).expect("evaluate the native index read"))
         }
         _ => return None,
     })

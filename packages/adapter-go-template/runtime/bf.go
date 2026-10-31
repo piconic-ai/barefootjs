@@ -278,7 +278,7 @@ func FuncMap() template.FuncMap {
 		// project/sort helpers already use for a dynamic field-name lookup;
 		// safe on a nil map/interface (returns nil) so a missing Provider or
 		// an absent key falls through to `??`'s fallback.
-		"bf_get": getFieldValue,
+		"bf_get": indexValue,
 	}
 }
 
@@ -3020,6 +3020,39 @@ func projectSortKey(item any, keyKind, keyName string) any {
 // forced through a string conversion — this is a strict superset of the
 // `index` builtin, not a replacement that narrows numeric-index support.
 func getFieldValue(item any, field any) any {
+	return readValue(item, field, retryAllCases)
+}
+
+// mapKeyRetry selects which spellings of a key a map lookup tries after
+// the exact key.
+type mapKeyRetry int
+
+const (
+	// retryGoField also tries the Go field spelling of a JS key
+	// (`a` → `A`): a row without a named Go struct is a map keyed by Go
+	// field names (goFieldNameForKey), so the JS key `a` has to reach the
+	// map key `A`, as `{{.A}}` does.
+	retryGoField mapKeyRetry = iota
+	// retryAllCases also tries the decapitalised and all-lowercase key, for
+	// the projections that pass an already-capitalised field name
+	// (`bf_sort` / `fieldValue`) against a JS-keyed map.
+	retryAllCases
+)
+
+// indexValue is JS `obj[key]`, the template helper `bf_get` and the
+// callback evaluator's index read (spec/js-primitive-semantics.md,
+// "ToPropertyKey and index read"). It is getFieldValue except that a map
+// never lowers the key: `{"id": 1}["ID"]` is undefined in JS, so only the
+// exact key and its Go field spelling are tried. A generated struct keeps
+// its exported-field match, since a JS `id` has to reach the Go field
+// `Id` / `ID`.
+func indexValue(item any, field any) any {
+	return readValue(item, field, retryGoField)
+}
+
+// readValue is getFieldValue / indexValue; retry selects the key
+// spellings a map lookup tries.
+func readValue(item any, field any, retry mapKeyRetry) any {
 	v := reflect.ValueOf(item)
 	// Defensive IsNil guards mirror `SpreadAttrs` — keeps the helper
 	// safe against typed-nil pointer / nil-interface items inside a
@@ -3046,63 +3079,26 @@ func getFieldValue(item any, field any) any {
 	}
 
 	if v.Kind() == reflect.String {
+		// JS reads one UTF-16 code unit (`'a😀b'[3]` is `'b'`). A lone
+		// surrogate cannot be carried by a Go string and reads as U+FFFD
+		// (spec/js-primitive-semantics.md, "Out of scope").
 		idx, ok := fieldAsIndex(field)
 		if !ok {
 			return nil
 		}
-		runes := []rune(v.String())
-		if idx < 0 || idx >= len(runes) {
+		units := utf16.Encode([]rune(v.String()))
+		if idx < 0 || idx >= len(units) {
 			return nil
 		}
-		return string(runes[idx])
+		return string(utf16.Decode(units[idx : idx+1]))
 	}
 
-	// From here on only a string-shaped key can match a map or struct
-	// field — a numeric `field` (e.g. a loop index applied to a
-	// non-indexable receiver) has no lookup to perform.
-	fieldStr, ok := field.(string)
-	if !ok {
-		return nil
-	}
+	// A map or struct reads its own key by JS ToPropertyKey: `o[1]` reads
+	// `o["1"]`, `o[null]` reads `o["null"]`, `o[true]` reads `o["true"]`.
+	fieldStr := propertyKey(field)
 
 	if v.Kind() == reflect.Map {
-		keyType := v.Type().Key()
-		if keyType.Kind() != reflect.String {
-			return nil
-		}
-		// Convert the lookup string to the map's actual key type so
-		// maps keyed by a named string type (`type Key string`) don't
-		// panic with `value of type string is not assignable to type X`.
-		lookup := func(s string) (any, bool) {
-			k := reflect.ValueOf(s).Convert(keyType)
-			if mv := v.MapIndex(k); mv.IsValid() {
-				return mv.Interface(), true
-			}
-			return nil, false
-		}
-		if r, ok := lookup(fieldStr); ok {
-			return r
-		}
-		if cap := capitalize(fieldStr); cap != fieldStr {
-			if r, ok := lookup(cap); ok {
-				return r
-			}
-		}
-		if low := decapitalize(fieldStr); low != fieldStr {
-			if r, ok := lookup(low); ok {
-				return r
-			}
-		}
-		// All-lowercase fallback: a Go-initialism field projects as an
-		// all-caps key (`id` → `ID`), and `decapitalize("ID")` only
-		// lowers the first char (`iD`), so the JS-keyed map ("id") still
-		// misses. Try the fully-lowered key last to resolve it.
-		if lower := strings.ToLower(fieldStr); lower != fieldStr && lower != decapitalize(fieldStr) {
-			if r, ok := lookup(lower); ok {
-				return r
-			}
-		}
-		return nil
+		return mapValue(v, fieldStr, retry)
 	}
 
 	if v.Kind() != reflect.Struct {
@@ -3136,6 +3132,55 @@ func getFieldValue(item any, field any) any {
 	return fieldVal.Interface()
 }
 
+// mapValue reads the key fieldStr from the map v; a map not keyed by a
+// string reads nil. After the exact key it tries the capitalised key and,
+// with retryAllCases, the decapitalised and all-lowercase key, so
+// JSON-decoded user data (`map[string]any{"price": 30}`) and
+// PascalCase-emitted test data both resolve under a single key name
+// (#1487).
+func mapValue(v reflect.Value, fieldStr string, retry mapKeyRetry) any {
+	keyType := v.Type().Key()
+	if keyType.Kind() != reflect.String {
+		return nil
+	}
+	// Convert the lookup string to the map's actual key type so maps
+	// keyed by a named string type (`type Key string`) don't panic with
+	// `value of type string is not assignable to type X`.
+	lookup := func(s string) (any, bool) {
+		k := reflect.ValueOf(s).Convert(keyType)
+		if mv := v.MapIndex(k); mv.IsValid() {
+			return mv.Interface(), true
+		}
+		return nil, false
+	}
+	if r, ok := lookup(fieldStr); ok {
+		return r
+	}
+	if cap := capitalize(fieldStr); cap != fieldStr {
+		if r, ok := lookup(cap); ok {
+			return r
+		}
+	}
+	if retry != retryAllCases {
+		return nil
+	}
+	if low := decapitalize(fieldStr); low != fieldStr {
+		if r, ok := lookup(low); ok {
+			return r
+		}
+	}
+	// All-lowercase fallback: a Go-initialism field projects as an
+	// all-caps key (`id` → `ID`), and `decapitalize("ID")` only lowers
+	// the first char (`iD`), so the JS-keyed map ("id") still misses.
+	// Try the fully-lowered key last to resolve it.
+	if lower := strings.ToLower(fieldStr); lower != fieldStr && lower != decapitalize(fieldStr) {
+		if r, ok := lookup(lower); ok {
+			return r
+		}
+	}
+	return nil
+}
+
 // fieldAsIndex converts a `getFieldValue` key argument to a slice/array/
 // string element index. Accepts genuine numeric kinds (the loop-index
 // case, `bf_get $arr $i`) directly, and a numeric-looking string (a
@@ -3149,16 +3194,12 @@ func fieldAsIndex(field any) (int, bool) {
 	switch n := field.(type) {
 	// Only an INTEGRAL float is an index. JS `arr[1.2]` is a property
 	// lookup (undefined), not index 1, so truncating here would diverge.
+	// `-0` converts to "0" and reads element 0; a negative index reads
+	// nothing (the callers bound-check it).
 	case float32:
-		if float64(n) != math.Trunc(float64(n)) {
-			return 0, false
-		}
-		return int(n), true
+		return floatAsIndex(float64(n))
 	case float64:
-		if n != math.Trunc(n) {
-			return 0, false
-		}
-		return int(n), true
+		return floatAsIndex(n)
 	case string:
 		i, err := strconv.Atoi(n)
 		if err != nil || i < 0 || strconv.Itoa(i) != n {
@@ -3168,6 +3209,39 @@ func fieldAsIndex(field any) (int, bool) {
 	default:
 		return 0, false
 	}
+}
+
+// floatAsIndex is fieldAsIndex for a float key: an integral value in the
+// int range (a negative one is returned for the caller's bound check).
+func floatAsIndex(n float64) (int, bool) {
+	if n != math.Trunc(n) || math.Abs(n) >= 1<<53 {
+		return 0, false
+	}
+	return int(n), true
+}
+
+// propertyKey is JS ToPropertyKey for a primitive key: the string a map
+// or struct key is looked up by.
+func propertyKey(field any) string {
+	switch k := field.(type) {
+	case string:
+		return k
+	case nil:
+		return "null"
+	case bool:
+		if k {
+			return "true"
+		}
+		return "false"
+	case float32:
+		return numberString(float64(k))
+	case float64:
+		return numberString(k)
+	}
+	if isIntLike(field) {
+		return strconv.Itoa(toInt(field))
+	}
+	return toString(field)
 }
 
 // AsMap normalizes a dynamically-typed prop value into a

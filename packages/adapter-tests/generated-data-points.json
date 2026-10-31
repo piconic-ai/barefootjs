@@ -6060,6 +6060,114 @@
       }
     }
   ],
+  "index-read-capitalised-key-only": [
+    {
+      "name": "gen:k:empty",
+      "props": {
+        "obj": {
+          "Name": "upper"
+        },
+        "k": "",
+        "keys": [
+          "name",
+          "Name"
+        ]
+      }
+    },
+    {
+      "name": "gen:k:markup",
+      "props": {
+        "obj": {
+          "Name": "upper"
+        },
+        "k": "<b>&\"'</b>",
+        "keys": [
+          "name",
+          "Name"
+        ]
+      }
+    },
+    {
+      "name": "gen:k:multibyte",
+      "props": {
+        "obj": {
+          "Name": "upper"
+        },
+        "k": "日本語",
+        "keys": [
+          "name",
+          "Name"
+        ]
+      }
+    },
+    {
+      "name": "gen:keys:empty",
+      "props": {
+        "obj": {
+          "Name": "upper"
+        },
+        "k": "name",
+        "keys": []
+      }
+    }
+  ],
+  "index-read-exact-key": [
+    {
+      "name": "gen:k:empty",
+      "props": {
+        "obj": {
+          "id": "present"
+        },
+        "k": "",
+        "keys": [
+          "ID",
+          "Id",
+          "iD",
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "gen:k:markup",
+      "props": {
+        "obj": {
+          "id": "present"
+        },
+        "k": "<b>&\"'</b>",
+        "keys": [
+          "ID",
+          "Id",
+          "iD",
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "gen:k:multibyte",
+      "props": {
+        "obj": {
+          "id": "present"
+        },
+        "k": "日本語",
+        "keys": [
+          "ID",
+          "Id",
+          "iD",
+          "id"
+        ]
+      }
+    },
+    {
+      "name": "gen:keys:empty",
+      "props": {
+        "obj": {
+          "id": "present"
+        },
+        "k": "ID",
+        "keys": []
+      }
+    }
+  ],
   "input": [
     {
       "name": "gen:className:absent",

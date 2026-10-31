@@ -7,34 +7,45 @@
     "go": {
       "truthy": [
         "boolean"
-      ]
+      ],
+      "get": []
     },
     "java": {
       "truthy": [
         "boolean"
-      ]
+      ],
+      "get": []
     },
     "perl": {
       "truthy": [
         "boolean"
-      ]
+      ],
+      "get": []
     },
     "php": {
       "truthy": [
         "boolean"
-      ]
+      ],
+      "get": []
     },
     "python": {
       "truthy": [
         "boolean"
+      ],
+      "get": [
+        "array-index"
       ]
     },
     "ruby": {
-      "truthy": []
+      "truthy": [],
+      "get": []
     },
     "rust": {
       "truthy": [
         "boolean"
+      ],
+      "get": [
+        "array-index"
       ]
     }
   }

@@ -434,32 +434,13 @@ public final class Bf {
   }
 
   /**
-   * Dynamic member/index access (`obj[expr]`) — divergence in the file
-   * header's "Member/index access" section. Arrays index numerically
-   * (JS `Number()` coercion of the key, out-of-range -> null); maps index
-   * by the key's string form (JS object-property semantics: every key is
-   * ultimately a string).
+   * Dynamic member/index access (`obj[expr]`): the callback evaluator's
+   * {@link Evaluator#indexValue}, so a template read and a callback read
+   * share one JS ToPropertyKey implementation (spec/js-primitive-semantics.md,
+   * "ToPropertyKey and index read").
    */
-  @SuppressWarnings("unchecked")
   public Object get(Object receiver, Object key) {
-    if (receiver instanceof List) {
-      String property = JsValue.jsString(key);
-      if (!property.matches("0|[1-9][0-9]*")) {
-        return null;
-      }
-      double idx = JsNumber.jsNumber(key);
-      List<?> list = (List<?>) receiver;
-      if (idx != Math.floor(idx) || idx < 0 || idx >= list.size()) {
-        return null;
-      }
-      return list.get((int) idx);
-    }
-    if (receiver instanceof Map) {
-      Map<String, Object> m = (Map<String, Object>) receiver;
-      String k = JsValue.jsString(key);
-      return m.containsKey(k) ? m.get(k) : null;
-    }
-    return null;
+    return Evaluator.indexValue(receiver, key);
   }
 
   /**

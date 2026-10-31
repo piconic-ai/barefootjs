@@ -37,10 +37,6 @@ export const renderDivergences: RenderDivergences = {
   // A boolean text child prints `true` / `false`; JSX renders nothing.
   'boolean-text-child': { limitation: 'boolean-text-child' },
   'boolean-text-child-destructured': { limitation: 'boolean-text-child' },
-  // A list index read inside a callback the evaluator runs
-  // (`rows.map(r => r[k])`) converts the key with ToNumber, so `'01'`,
-  // `'-0'` and `'1e0'` read an element where JS reads nothing.
-  'index-key-canonical-form-callback': { limitation: 'callback-noncanonical-index-key' },
   // `.at(i)` on half of a surrogate pair: the runtime string can't hold a
   // lone surrogate, so it returns U+FFFD (halves compare equal, and
   // rejoining them renders `��` instead of the emoji).

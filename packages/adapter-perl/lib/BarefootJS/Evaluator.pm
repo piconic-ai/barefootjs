@@ -599,15 +599,47 @@ sub _read_property ($obj, $key) {
     return undef;
 }
 
+# _read_index: JS `obj[index]`, and the template helper `BarefootJS::get`
+# (which delegates here, so a template read and a callback read cannot
+# disagree on a key). The key goes through ToPropertyKey (`_to_string`:
+# `undef` is "null", a JSON boolean "true" / "false", `-0` is "0", `1.0` is
+# "1"). An array, and a string, are read only through a canonical array
+# index: "1" reads element 1, while "01", "1e0", "-0", "1.1" and "-1" are
+# ordinary property names and read `undef`. A string reads one UTF-16 code
+# unit. A hash reads its own key (spec/js-primitive-semantics.md,
+# "ToPropertyKey and index read").
 sub _read_index ($obj, $index) {
-    if (ref $obj eq 'ARRAY') {
-        my $f = _to_number($index);
-        my $i = int($f);
-        return undef if $i != $f || $i < 0 || $i >= @$obj;
-        return $obj->[$i];
-    }
+    return undef unless defined $obj;
+    my $key = _to_string($index);
     if (ref $obj eq 'HASH') {
-        return $obj->{ _to_string($index) };
+        return exists $obj->{$key} ? $obj->{$key} : undef;
+    }
+    return undef unless $key =~ /\A(?:0|[1-9][0-9]*)\z/;
+    if (ref $obj eq 'ARRAY') {
+        return $key < @$obj ? $obj->[$key] : undef;
+    }
+    return undef if ref $obj || !_is_string($obj);
+    return _utf16_unit_at($obj, $key);
+}
+
+# _utf16_unit_at: the UTF-16 code unit of string $s at index $i, as a
+# one-character string, or `undef` past the end. A unit that is one half of
+# a surrogate pair reads as U+FFFD: a lone surrogate cannot be written out
+# as UTF-8 (spec/js-primitive-semantics.md, "Out of scope"). A string
+# without Perl's UTF8 flag holds UTF-8 bytes, so a decoded copy is iterated
+# (as `_codepoint_length` does): otherwise `"\xc3\xa9x"` would read one byte
+# per index instead of `é`, `x`.
+sub _utf16_unit_at ($s, $i) {
+    unless (utf8::is_utf8($s)) {
+        utf8::decode($s); # no-op on invalid-UTF-8 input
+    }
+    my $pos = 0;
+    for my $ch (split //, $s) {
+        my $width = ord($ch) > 0xFFFF ? 2 : 1;
+        if ($i < $pos + $width) {
+            return $width == 1 ? $ch : "\x{FFFD}";
+        }
+        $pos += $width;
     }
     return undef;
 }

@@ -5988,6 +5988,76 @@
         "text"
       ]
     },
+    "index-read-capitalised-key-only": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "index-read-exact-key": {
+      "kinds": [
+        "arrow",
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "index-read-positions": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "logical",
+        "member",
+        "template-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:computed",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "inline-array-map": {
       "kinds": [
         "array-literal",

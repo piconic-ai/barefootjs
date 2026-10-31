@@ -149,10 +149,16 @@ export const renderDivergences: RenderDivergences = {
   // that binds the getter's name (`rows.map(count => …{b}…)`): the template
   // reads `b` as a variable that is never set.
   'const-getter-read-loop-shadowed': { limitation: 'loop-shadowed-const-alias-hop' },
-  // A literal key that is not an identifier (`obj['a.b']`, `obj['*']`) is
-  // spelled as a struct field (`.Obj.AB`), which reads nothing, or as a
-  // template field path the template parser rejects (`*`).
+  // Rows seeded with object literals whose keys are not identifiers
+  // (`{ 'a.b': 1, '*': 3 }`) are not baked, so the loops render no rows, and
+  // a destructured `{ 'a.b': ab }` row param reads a derived field (`.AB`).
+  // A literal-key read outside the loops reads through `bf_get` and passes.
   'literal-index-own-key': { limitation: 'non-identifier-literal-key' },
+  // An index read on a map retries the Go field spelling of the key
+  // (`name` → `Name`), because rows without a named Go struct are maps keyed
+  // by Go field names. A JS-keyed map holding only `Name` then answers a read
+  // of `name`; the two map shapes cannot be told apart at runtime.
+  'index-read-capitalised-key-only': { limitation: 'index-read-capitalised-key-only' },
   // A destructure default that calls a callback and reads no earlier prop
   // (`{ b = ['y', ''].filter((x) => x !== '') }`): the props constructor
   // has no conversion from the evaluated array to the field's slice type,

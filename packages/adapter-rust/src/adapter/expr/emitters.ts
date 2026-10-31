@@ -59,6 +59,7 @@ import {
   type NativeSafeTable,
   type OperandTyping,
   primitivesAt,
+  isNativePlan,
   spellTest,
   EMPTY_OPERAND_TYPING,
   BindingScope,
@@ -117,7 +118,11 @@ export const NATIVE_SAFE: NativeSafeTable = {
   neg: ['number', 'unproven'],
   'number-literal': ['safe-integer', 'unproven'],
   nullish: ['non-nil', 'unproven'],
-  get: ['array-index', 'unproven'],
+  // Native `[]` only for a proven array read by a proven non-negative
+  // integer (a loop index): MiniJinja's `[]` reads a string key as a mapping key
+  // and wraps a negative index, so every other read takes `bf.get` (#3824
+  // step 2, pinned by the `primitives/get` vectors).
+  get: ['array-index'],
 }
 
 /**
@@ -165,8 +170,18 @@ function spellLogical(op: '&&' | '||', plan: PrimitivePlan | null, l: string, r:
   return `(bf.${keep}(${l}) or [${r}])[0]`
 }
 
+/**
+ * An index read as its primitive plan names it (#3824 step 2): MiniJinja's
+ * native `[]` only for a proven array read by a proven non-negative integer,
+ * the runtime's JS `obj[key]` (`bf.get`) otherwise.
+ */
+function spellGet(plan: PrimitivePlan | null, receiver: string, key: string): string {
+  return isNativePlan(plan, 'get') ? `${receiver}[${key}]` : `bf.get(${receiver}, ${key})`
+}
+
+/** A literal key (`obj['a.b']`, `rows[0]`): never a proven index, so always `bf.get`. */
 function emitComputedMember(object: ParsedExpr, property: string, emit: (e: ParsedExpr) => string): string {
-  return `bf.get(${emit(object)}, ${emit(literalMemberIndex(property))})`
+  return spellGet(null, emit(object), emit(literalMemberIndex(property)))
 }
 
 /**
@@ -300,11 +315,8 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
     return `${emit(object)}.${property}`
   }
 
-  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
-    // Jinja's `[]` postfix is polymorphic (list index or dict key),
-    // mirroring JS — no list/dict split is needed. #1897 (data-table's
-    // `selected()[index]`).
-    return `${emit(object)}[${emit(index)}]`
+  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
+    return spellGet(plan, emit(object), emit(index))
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {
@@ -530,10 +542,8 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     return `${obj}.${property}`
   }
 
-  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
-    // Jinja's `[]` postfix is polymorphic (list index or dict key),
-    // mirroring JS. #1897 (data-table's `selected()[index]`).
-    return `${emit(object)}[${emit(index)}]`
+  indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
+    return spellGet(plan, emit(object), emit(index))
   }
 
   call(callee: ParsedExpr, args: ParsedExpr[], emit: (e: ParsedExpr) => string): string {

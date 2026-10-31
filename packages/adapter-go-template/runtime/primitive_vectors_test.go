@@ -3,6 +3,7 @@ package bf
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"os"
 	"path/filepath"
@@ -34,7 +35,7 @@ var primitiveBindings = map[string]func(args []any) any{
 	"truthy":    func(a []any) any { return Truthy(a[0]) },
 	"to_number": func(a []any) any { return ToNumber(a[0]) },
 	"to_string": func(a []any) any { return ToString(a[0]) },
-	"get":       func(a []any) any { return getFieldValue(a[0], a[1]) },
+	"get":       func(a []any) any { return indexValue(a[0], a[1]) },
 	"strict_eq": func(a []any) any { return Eq(a[0], a[1]) },
 	"lt":        func(a []any) any { return Lt(a[0], a[1]) },
 	"le":        func(a []any) any { return Le(a[0], a[1]) },
@@ -44,14 +45,28 @@ var primitiveBindings = map[string]func(args []any) any{
 	"neg":       func(a []any) any { return Neg(a[0]) },
 }
 
+// nativeIndex is the native Go-template index read, the `index` builtin;
+// `capture` hands the read value back with its type.
+var nativeIndex = template.Must(template.New("index").Funcs(template.FuncMap{
+	"capture": func(box *any, v any) string { *box = v; return "" },
+}).Parse(`{{capture .Box (index .Recv .Key)}}`))
+
 // nativeBindings binds each op the adapter can spell natively to the native
 // Go-template operator: a test is `{{if}}` / `not` / `and` / `or`, whose
-// truthiness is text/template's own IsTrue. TestPrimitiveNativeVectors runs
-// it over the cases whose domain the adapter claims.
+// truthiness is text/template's own IsTrue; an index read is the `index`
+// builtin. TestPrimitiveNativeVectors runs it over the cases whose domain
+// the adapter claims.
 var nativeBindings = map[string]func(args []any) any{
 	"truthy": func(a []any) any {
 		truth, _ := template.IsTrue(a[0])
 		return truth
+	},
+	"get": func(a []any) any {
+		var got any
+		if err := nativeIndex.Execute(io.Discard, map[string]any{"Box": &got, "Recv": a[0], "Key": a[1]}); err != nil {
+			panic(err)
+		}
+		return got
 	},
 }
 

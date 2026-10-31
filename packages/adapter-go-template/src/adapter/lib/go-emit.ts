@@ -542,9 +542,14 @@ export function goLiteral(value: string): string {
 }
 
 /**
- * Whether a member access is a numeric index (`row[0]`): an element read on
- * an array, which Go reaches through `bf_get`, never a `.Field0` field.
+ * Whether a member access is a literal-key read (`row[0]`, `obj['a.b']`,
+ * `rows[1.1]`): JS ToPropertyKey over the key, which Go reaches through
+ * `bf_get` (the primitive plan's `get` helper,
+ * spec/js-primitive-semantics.md "ToPropertyKey and index read"), never a
+ * field path. A field derived from the key (`.Field0`, `.AB` for `'a.b'`)
+ * is no field of a `[]string`, reads nothing for a non-identifier key, and
+ * a key such as `'*'` or `1.1` is not even valid template syntax (#3795).
  */
-export function isElementIndex(computed: boolean, property: string): boolean {
-  return computed && /^(0|[1-9]\d*)$/.test(property)
+export function isLiteralKeyRead(computed: boolean): boolean {
+  return computed
 }

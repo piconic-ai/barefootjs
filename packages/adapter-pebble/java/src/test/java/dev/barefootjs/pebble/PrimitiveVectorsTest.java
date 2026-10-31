@@ -61,22 +61,43 @@ class PrimitiveVectorsTest {
       Map.entry("plus", a -> BF.plus(a.get(0), a.get(1))),
       Map.entry("neg", a -> BF.neg(a.get(0))));
 
-  /** A real Pebble {@code if}: the native test the adapter spells for a proven boolean. */
-  private static final PebbleTemplate PEBBLE_IF = new PebbleEngine.Builder()
+  /** The engine the native bindings compile their real Pebble templates with. */
+  private static final PebbleEngine PEBBLE = new PebbleEngine.Builder()
       .loader(new StringLoader())
       .strictVariables(false)
-      .build()
-      .getTemplate("{% if v %}1{% else %}0{% endif %}");
+      .build();
+
+  /** A real Pebble {@code if}: the native test the adapter spells for a proven boolean. */
+  private static final PebbleTemplate PEBBLE_IF = PEBBLE.getTemplate("{% if v %}1{% else %}0{% endif %}");
+
+  /**
+   * A real Pebble subscript, {@code recv[key]}: the native index read. The
+   * read value is handed back through {@code capture} rather than printed, so
+   * it keeps its type.
+   */
+  private static final PebbleTemplate PEBBLE_INDEX = PEBBLE.getTemplate("{{ capture.accept(recv[key]) }}");
 
   /**
    * One binding per op the Pebble adapter can spell natively, to the native
-   * Pebble operator: a test is Pebble's own {@code if} / {@code not}. It runs
-   * over the cases whose domain the adapter's NATIVE_SAFE table claims
+   * Pebble operator: a test is Pebble's own {@code if} / {@code not}; an
+   * index read is Pebble's own {@code []}. It runs over the cases whose
+   * domain the adapter's NATIVE_SAFE table claims
    * ({@code primitives-native-safe.json}; spec/js-primitive-semantics.md,
    * "Conformance" item 3).
    */
   private static final Map<String, Function<List<Object>, Object>> NATIVE_BINDINGS = Map.ofEntries(
-      Map.entry("truthy", a -> pebbleIf(a.get(0))));
+      Map.entry("truthy", a -> pebbleIf(a.get(0))),
+      Map.entry("get", a -> pebbleIndex(a.get(0), a.get(1))));
+
+  /** Hands a Pebble expression's value back to Java. */
+  public static final class Capture {
+    private Object value;
+
+    public String accept(Object v) {
+      value = v;
+      return "";
+    }
+  }
 
   private static Object pebbleIf(Object v) {
     Map<String, Object> context = new LinkedHashMap<>();
@@ -88,6 +109,23 @@ class PrimitiveVectorsTest {
       throw new UncheckedIOException(e);
     }
     return writer.toString().equals("1");
+  }
+
+  private static Object pebbleIndex(Object recv, Object key) {
+    Capture capture = new Capture();
+    Map<String, Object> context = new LinkedHashMap<>();
+    context.put("recv", recv);
+    // A template's native index is a loop index, a Pebble integer (`Long`);
+    // the vectors decode every number as a double.
+    boolean integral = key instanceof Double && ((Double) key) == Math.rint((Double) key);
+    context.put("key", integral ? (Object) ((Double) key).longValue() : key);
+    context.put("capture", capture);
+    try {
+      PEBBLE_INDEX.evaluate(new StringWriter(), context);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    return capture.value;
   }
 
   /** Every native claim gives the JS answer on every case it covers; no ledger applies. */

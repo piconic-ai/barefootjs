@@ -257,7 +257,22 @@ const CASES: readonly Case[] = [
   {
     id: 'get',
     positions: {
-      ...at({ text, attr }, { 'index-access': 'props.rows[props.n]', 'literal-key': 'props.rows[0]' }),
+      ...at(
+        { text, attr, if: ifTest },
+        {
+          'index-access': 'props.rows[props.n]',
+          'string-key': 'props.rows[props.s]',
+          'negative-key': 'props.rows[-1]',
+          'literal-key': 'props.rows[0]',
+          'fraction-key': 'props.rows[1.1]',
+          'non-identifier-key': "props.obj['a.b']",
+          'identifier-key': "props.obj['id']",
+        },
+      ),
+      filter: [
+        filter('props.rows[x] > 0', 'props.rows[x]', 'row-key'),
+        filter("props.obj['a.b'] === x", "props.obj['a.b']", 'literal-key'),
+      ],
       loop: [
         {
           label: 'loop-index',
@@ -277,12 +292,6 @@ const CASES: readonly Case[] = [
  * Shrink-only.
  */
 const DISAGREEMENTS: Readonly<Record<string, string>> = {
-  // Index read. Jinja and MiniJinja spell `rows[i]` natively but a literal key
-  // (a computed member, `rows[0]`) through `bf.get`.
-  'jinja get text literal-key': 'step 2 (index read)',
-  'rust get text literal-key': 'step 2 (index read)',
-  'jinja get attr literal-key': 'step 2 (index read)',
-  'rust get attr literal-key': 'step 2 (index read)',
   // ToNumber. Go and Perl drop a unary `+` instead of converting.
   'go to-number text unary-plus': 'step 3 (ToNumber)',
   'mojolicious to-number text unary-plus': 'step 3 (ToNumber)',
@@ -342,7 +351,7 @@ const DISAGREEMENTS: Readonly<Record<string, string>> = {
 }
 
 const PROPS =
-  '{ n: number; m: number; s: string; t: string; on: boolean; maybe?: number; ms?: string; items: string[]; rows: number[] }'
+  '{ n: number; m: number; s: string; t: string; on: boolean; maybe?: number; ms?: string; items: string[]; rows: number[]; obj: Record<string, number> }'
 
 function source(variants: readonly Variant[]): string {
   const body = variants.map((v, i) => v.jsx.replace('@', `QV${i}Q`)).join('')

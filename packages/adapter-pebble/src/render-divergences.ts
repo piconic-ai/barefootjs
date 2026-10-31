@@ -40,10 +40,6 @@ export const renderDivergences: RenderDivergences = {
   // A string prop compared with a number (`s < 0`) is not converted to a
   // number first.
   'json-stringify-compared-string-prop': { limitation: 'string-number-relational-comparison' },
-  // A list index read inside a callback the evaluator runs
-  // (`rows.map(r => r[k])`) converts the key with ToNumber, so `'01'`,
-  // `'-0'` and `'1e0'` read an element where JS reads nothing.
-  'index-key-canonical-form-callback': { limitation: 'callback-noncanonical-index-key' },
   // A const reading a signal getter (`const b = count()`) read in a loop row
   // that binds the getter's name (`rows.map(count => …{b}…)`): the template
   // reads `b` as a variable that is never set.

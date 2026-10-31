@@ -35,12 +35,14 @@ class PrimitiveVectorsTest < Minitest::Test
   }.freeze
 
   # One binding per op the ERB adapter can spell natively, to the native Ruby
-  # operator: a test is Ruby's own truthiness (`if`, `!`, `?:`). It runs over
-  # the cases whose domain the adapter's NATIVE_SAFE table claims
-  # (primitives-native-safe.json; spec/js-primitive-semantics.md,
-  # "Conformance" item 3). The table claims nothing today, so no case runs.
+  # operator: a test is Ruby's own truthiness (`if`, `!`, `?:`); an index read
+  # is Ruby's own `[]`. It runs over the cases whose domain the adapter's
+  # NATIVE_SAFE table claims (primitives-native-safe.json;
+  # spec/js-primitive-semantics.md, "Conformance" item 3). The table claims
+  # nothing today, so no case runs.
   NATIVE_BINDINGS = {
-    'truthy' => ->(v) { v ? true : false }
+    'truthy' => ->(v) { v ? true : false },
+    'get' => ->(recv, key) { recv[key] }
   }.freeze
 
   SENTINELS = {

@@ -1581,12 +1581,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -1933,12 +1927,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -2012,12 +2000,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -2164,12 +2146,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -2395,12 +2371,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -2582,6 +2552,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "index-read-capitalised-key-only",
+              "limitations": [
+                "index-read-capitalised-key-only"
               ]
             },
             {
@@ -2921,12 +2897,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -3042,12 +3012,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -3278,12 +3242,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -5100,12 +5058,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
-            {
               "fixture": "json-stringify-compared-string-prop",
               "limitations": [
                 "string-number-relational-comparison"
@@ -5467,6 +5419,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "index-read-capitalised-key-only",
+              "limitations": [
+                "index-read-capitalised-key-only"
               ]
             },
             {
@@ -6358,12 +6316,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -6635,12 +6587,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -7189,12 +7135,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -8234,12 +8174,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
-            {
               "fixture": "json-stringify-compared-string-prop",
               "limitations": [
                 "string-number-relational-comparison"
@@ -8721,6 +8655,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "index-read-capitalised-key-only",
+              "limitations": [
+                "index-read-capitalised-key-only"
               ]
             },
             {
@@ -9196,12 +9136,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
-              ]
-            },
-            {
               "fixture": "json-stringify-compared-string-prop",
               "limitations": [
                 "string-number-relational-comparison"
@@ -9572,12 +9506,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
-              ]
-            },
-            {
               "fixture": "json-stringify-compared-string-prop",
               "limitations": [
                 "string-number-relational-comparison"
@@ -9927,12 +9855,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -10291,12 +10213,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -11013,12 +10929,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -11268,12 +11178,6 @@
         "erb": {
           "gaps": [
             {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -11283,6 +11187,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "index-read-capitalised-key-only",
+              "limitations": [
+                "index-read-capitalised-key-only"
+              ]
+            },
             {
               "fixture": "unlowered-global-call",
               "limitations": [
@@ -11294,12 +11204,6 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -11309,12 +11213,6 @@
         },
         "minijinja": {
           "gaps": [
-            {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
-              ]
-            },
             {
               "fixture": "unlowered-global-call",
               "limitations": [
@@ -11326,12 +11224,6 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -11341,12 +11233,6 @@
         },
         "pebble": {
           "gaps": [
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
             {
               "fixture": "unlowered-global-call",
               "limitations": [
@@ -11367,12 +11253,6 @@
         },
         "xslate": {
           "gaps": [
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
             {
               "fixture": "unlowered-global-call",
               "limitations": [
@@ -11791,12 +11671,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
-            {
               "fixture": "json-stringify-compared-string-prop",
               "limitations": [
                 "string-number-relational-comparison"
@@ -12197,6 +12071,12 @@
               ]
             },
             {
+              "fixture": "index-read-capitalised-key-only",
+              "limitations": [
+                "index-read-capitalised-key-only"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -12543,12 +12423,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
-              ]
-            },
-            {
               "fixture": "json-stringify-compared-string-prop",
               "limitations": [
                 "string-number-relational-comparison"
@@ -12823,12 +12697,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
-              ]
-            },
-            {
               "fixture": "json-stringify-compared-string-prop",
               "limitations": [
                 "string-number-relational-comparison"
@@ -13094,12 +12962,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -13374,12 +13236,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -13904,12 +13760,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -14165,12 +14015,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
-            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -14331,6 +14175,12 @@
               ]
             },
             {
+              "fixture": "index-read-capitalised-key-only",
+              "limitations": [
+                "index-read-capitalised-key-only"
+              ]
+            },
+            {
               "fixture": "logical-mixed-left-nullish",
               "limitations": [
                 "nullish-over-false-yielding-operand"
@@ -14401,12 +14251,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
-              ]
-            },
-            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -14456,12 +14300,6 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
               ]
             },
             {
@@ -14517,12 +14355,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
-            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -14572,12 +14404,6 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -14682,12 +14508,6 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -15137,12 +14957,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
-            {
               "fixture": "json-stringify-compared-string-prop",
               "limitations": [
                 "string-number-relational-comparison"
@@ -15516,6 +15330,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "index-read-capitalised-key-only",
+              "limitations": [
+                "index-read-capitalised-key-only"
               ]
             },
             {
@@ -16395,12 +16215,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -16666,12 +16480,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -17208,12 +17016,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -19434,12 +19236,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -19672,12 +19468,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -19733,12 +19523,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -19849,12 +19633,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -25236,12 +25014,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
-            {
               "fixture": "json-stringify-compared-string-prop",
               "limitations": [
                 "string-number-relational-comparison"
@@ -25534,6 +25306,12 @@
               ]
             },
             {
+              "fixture": "index-read-capitalised-key-only",
+              "limitations": [
+                "index-read-capitalised-key-only"
+              ]
+            },
+            {
               "fixture": "literal-index-own-key",
               "limitations": [
                 "non-identifier-literal-key"
@@ -25772,12 +25550,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
-              ]
-            },
-            {
               "fixture": "json-stringify-compared-string-prop",
               "limitations": [
                 "string-number-relational-comparison"
@@ -25962,12 +25734,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
-              ]
-            },
-            {
               "fixture": "json-stringify-compared-string-prop",
               "limitations": [
                 "string-number-relational-comparison"
@@ -26143,12 +25909,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -26333,12 +26093,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -26683,12 +26437,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -26966,12 +26714,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
-            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -27120,6 +26862,12 @@
               ]
             },
             {
+              "fixture": "index-read-capitalised-key-only",
+              "limitations": [
+                "index-read-capitalised-key-only"
+              ]
+            },
+            {
               "fixture": "logical-mixed-left-nullish",
               "limitations": [
                 "nullish-over-false-yielding-operand"
@@ -27178,12 +26926,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
-              ]
-            },
-            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -27221,12 +26963,6 @@
               "fixture": "boolean-text-child-destructured",
               "limitations": [
                 "boolean-text-child"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form",
-              "limitations": [
-                "string-key-list-index"
               ]
             },
             {
@@ -27270,12 +27006,6 @@
               ]
             },
             {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
-              ]
-            },
-            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -27313,12 +27043,6 @@
               "fixture": "boolean-text-child-destructured",
               "limitations": [
                 "boolean-text-child"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -27399,12 +27123,6 @@
               "fixture": "boolean-text-child-destructured",
               "limitations": [
                 "boolean-text-child"
-              ]
-            },
-            {
-              "fixture": "index-key-canonical-form-callback",
-              "limitations": [
-                "callback-noncanonical-index-key"
               ]
             },
             {
@@ -27648,6 +27366,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "index-read-capitalised-key-only",
+              "limitations": [
+                "index-read-capitalised-key-only"
+              ]
+            },
             {
               "fixture": "literal-index-own-key",
               "limitations": [

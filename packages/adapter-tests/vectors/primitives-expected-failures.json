@@ -7,15 +7,6 @@
       "ge/an astral character against U+FF61 (UTF-16 units)": {
         "step": 3
       },
-      "get/a nil key reads the object key \"null\"": {
-        "step": 2
-      },
-      "get/a number key reads the object key \"1\"": {
-        "step": 2
-      },
-      "get/a string index counts UTF-16 code units": {
-        "step": 2
-      },
       "gt/an astral character against U+FF61 (UTF-16 units)": {
         "step": 3
       },
@@ -69,18 +60,6 @@
       "ge/-0 and 0 are equal": {
         "step": 3
       },
-      "get/a non-ASCII BMP character": {
-        "step": 2
-      },
-      "get/a string index counts UTF-16 code units": {
-        "step": 2
-      },
-      "get/a string receiver reads one code unit": {
-        "step": 2
-      },
-      "get/a string receiver with a string key": {
-        "step": 2
-      },
       "lt/-0 and 0 are equal": {
         "step": 3
       },
@@ -124,24 +103,6 @@
     "perl": {
       "ge/an astral character against U+FF61 (UTF-16 units)": {
         "step": 3
-      },
-      "get/a boolean key reads the \"true\" property": {
-        "step": 2
-      },
-      "get/a nil key reads the object key \"null\"": {
-        "step": 2
-      },
-      "get/a non-ASCII BMP character": {
-        "step": 2
-      },
-      "get/a string index counts UTF-16 code units": {
-        "step": 2
-      },
-      "get/a string receiver reads one code unit": {
-        "step": 2
-      },
-      "get/a string receiver with a string key": {
-        "step": 2
       },
       "gt/an astral character against U+FF61 (UTF-16 units)": {
         "step": 3
@@ -205,21 +166,6 @@
       "ge/an astral character against U+FF61 (UTF-16 units)": {
         "step": 3
       },
-      "get/a nil key reads the object key \"null\"": {
-        "step": 2
-      },
-      "get/a non-ASCII BMP character": {
-        "step": 2
-      },
-      "get/a string index counts UTF-16 code units": {
-        "step": 2
-      },
-      "get/a string receiver reads one code unit": {
-        "step": 2
-      },
-      "get/a string receiver with a string key": {
-        "step": 2
-      },
       "gt/an astral character against U+FF61 (UTF-16 units)": {
         "step": 3
       },
@@ -257,18 +203,6 @@
     "python": {
       "ge/an astral character against U+FF61 (UTF-16 units)": {
         "step": 3
-      },
-      "get/a non-ASCII BMP character": {
-        "step": 2
-      },
-      "get/a string index counts UTF-16 code units": {
-        "step": 2
-      },
-      "get/a string receiver reads one code unit": {
-        "step": 2
-      },
-      "get/a string receiver with a string key": {
-        "step": 2
       },
       "gt/an astral character against U+FF61 (UTF-16 units)": {
         "step": 3
@@ -313,21 +247,6 @@
     "ruby": {
       "ge/an astral character against U+FF61 (UTF-16 units)": {
         "step": 3
-      },
-      "get/a nil key reads the object key \"null\"": {
-        "step": 2
-      },
-      "get/a non-ASCII BMP character": {
-        "step": 2
-      },
-      "get/a string index counts UTF-16 code units": {
-        "step": 2
-      },
-      "get/a string receiver reads one code unit": {
-        "step": 2
-      },
-      "get/a string receiver with a string key": {
-        "step": 2
       },
       "gt/an astral character against U+FF61 (UTF-16 units)": {
         "step": 3
@@ -378,18 +297,6 @@
     "rust": {
       "ge/an astral character against U+FF61 (UTF-16 units)": {
         "step": 3
-      },
-      "get/a non-ASCII BMP character": {
-        "step": 2
-      },
-      "get/a string index counts UTF-16 code units": {
-        "step": 2
-      },
-      "get/a string receiver reads one code unit": {
-        "step": 2
-      },
-      "get/a string receiver with a string key": {
-        "step": 2
       },
       "gt/an astral character against U+FF61 (UTF-16 units)": {
         "step": 3

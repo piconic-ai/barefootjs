@@ -247,6 +247,15 @@ function optionalLength(receiver: string, optional: boolean): string {
   return optional ? `((${receiver} ?? null) === null ? null : ${read})` : read
 }
 
+/**
+ * A member read: a literal key (`obj['a.b']`, `rows[0]`, `obj['id']`) is the
+ * primitive plan's `get` (#3824 step 2), `$bf->index`, the runtime's JS
+ * `obj[key]`; a dot read keeps `data_get`.
+ */
+function bladeKeyedRead(objectExpr: string, property: string, computed: boolean): string {
+  return computed ? bladeIndexAccess(objectExpr, bladeStringLiteral(property)) : bladeMemberAccess(objectExpr, property)
+}
+
 export class BladeFilterEmitter implements ParsedExprEmitter {
   // The component's operand typing and the predicate's scope, which the
   // primitive plans read (#3824); untyped until the adapter calls `typedBy`.
@@ -314,7 +323,7 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // A callback param spelled `props` (a `.map((props) => …)` row the
     // filter param was renamed to, #3404) or an enclosing binding of that
     // name (#3693) is that binding, not the component props.
@@ -325,8 +334,8 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
     if (property === 'length') return optionalLength(emit(object), optional)
     // Attribute / hash-key access — `data_get` resolves array keys and
     // object properties transparently, null-safe. See the file header,
-    // divergence 2.
-    return bladeMemberAccess(emit(object), property)
+    // divergence 2. A literal key is a JS index read (`get`).
+    return bladeKeyedRead(emit(object), property, computed)
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
@@ -529,7 +538,7 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     return String(value)
   }
 
-  member(object: ParsedExpr, property: string, _computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
     // `props.X` reads the root prop even where a loop binding shadows `X`
     // (#3314) — through the alias the loop header assigned — unless a
     // binding shadows `props` itself (#3693).
@@ -548,8 +557,8 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     // `.length` → `$bf->length` (array count or string char count, JS-compat).
     if (property === 'length') return optionalLength(obj, optional)
     // See the file header, divergence 2: uniform `data_get`, null-safe over
-    // stdClass/array/null.
-    return bladeMemberAccess(obj, property)
+    // stdClass/array/null. A literal key is a JS index read (`get`).
+    return bladeKeyedRead(obj, property, computed)
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {

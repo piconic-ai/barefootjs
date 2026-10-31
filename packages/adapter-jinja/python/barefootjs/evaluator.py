@@ -596,18 +596,45 @@ def _read_property(obj: Any, key: Any) -> Any:
     return None
 
 
+def _canonical_index(index: Any) -> int | None:
+    """The array index JS reads for `index`, or None when its property key
+    (ToPropertyKey) is not a canonical array index: "1" and `1.0` read
+    element 1, while "01", "1e0", "-0", "1.1" and "-1" are ordinary
+    property names."""
+    key = _to_string(index)
+    if not key.isascii() or not key.isdecimal():
+        return None
+    i = int(key)
+    return i if str(i) == key else None
+
+
+def _utf16_unit_at(s: str, i: int) -> str | None:
+    """The UTF-16 code unit of `s` at index `i` (JS `s[i]`), or None past the
+    end. One half of a surrogate pair reads as U+FFFD: a lone surrogate
+    cannot be written out as UTF-8 (spec/js-primitive-semantics.md, "Out of
+    scope")."""
+    units = s.encode("utf-16-le", "surrogatepass")
+    if i >= len(units) // 2:
+        return None
+    unit = int.from_bytes(units[2 * i : 2 * i + 2], "little")
+    return "\ufffd" if 0xD800 <= unit <= 0xDFFF else chr(unit)
+
+
 def _read_index(obj: Any, index: Any) -> Any:
-    if isinstance(obj, list):
-        key = _to_string(index)
-        if not key.isascii() or not key.isdecimal():
-            return None
-        i = int(key)
-        if str(i) != key or i >= len(obj):
-            return None
-        return obj[i]
+    """JS `obj[index]`, shared with the template helper `bf.get` (which
+    delegates here): a dict reads its own key by ToPropertyKey; a list, and
+    a string (by UTF-16 code unit), only through a canonical array index
+    (spec/js-primitive-semantics.md, "ToPropertyKey and index read")."""
     if isinstance(obj, dict):
         return obj.get(_to_string(index))
-    return None
+    if not isinstance(obj, (list, str)):
+        return None
+    i = _canonical_index(index)
+    if i is None:
+        return None
+    if isinstance(obj, str):
+        return _utf16_unit_at(obj, i)
+    return obj[i] if i < len(obj) else None
 
 
 # ---------------------------------------------------------------------------
