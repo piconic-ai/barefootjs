@@ -137,6 +137,17 @@ function factsOfLiteral(parsed: ParsedExpr | undefined): OperandFacts | null {
   return parsed.literalType === 'null' ? nilFacts('null') : factsOf(parsed.literalType)
 }
 
+/**
+ * A local constant's facts: a declared type that proves something, else its
+ * initializer's (a body destructure `const { label: text = 'x' } = props`
+ * is the initializer `props.label ?? 'x'`).
+ */
+function constantFacts(constant: TypingMetadata['localConstants'][number], typed: TypedNames): OperandFacts {
+  const declared = factsOfType(constant.type)
+  if (!declared.types.has('unknown')) return declared
+  return initializerFacts(constant.parsed, typed) ?? UNKNOWN_FACTS
+}
+
 /** A declared type that proves something, else the literal seed's facts. */
 function declaredOrSeeded(type: TypeInfo | null | undefined, seed: ParsedExpr | undefined): OperandFacts {
   const declared = factsOfType(type)
@@ -175,10 +186,105 @@ type TypingMetadata = Pick<
   'signals' | 'memos' | 'propsParams' | 'localConstants' | 'propsObjectName' | 'typeDefinitions'
 >
 
-/** A prop's facts: its declared type, and `undefined` when it may be omitted. */
-function propFacts(param: TypingMetadata['propsParams'][number]): OperandFacts {
+/** The names and `props.<key>` reads typed so far, which an initializer can read. */
+interface TypedNames {
+  readonly names: ReadonlyMap<string, OperandFacts>
+  readonly props: ReadonlyMap<string, OperandFacts>
+  /** The identifier naming the component's props object, when it has one. */
+  readonly propsObject: string | null
+}
+
+/**
+ * What an initializer or default expression proves, read at component
+ * level: a literal, a template literal, an array or object literal, a read
+ * of a name or prop typed so far, `l ?? r` (the left side without its nil,
+ * or the right side) and `c ? a : b`. Null when the expression proves
+ * nothing, so a default whose value is not provable never proves non-nil.
+ */
+function initializerFacts(expr: ParsedExpr | undefined, typed: TypedNames): OperandFacts | null {
+  if (!expr) return null
+  const literal = factsOfLiteral(expr)
+  if (literal) return literal
+  switch (expr.kind) {
+    case 'template-literal':
+      return factsOf('string')
+    case 'array-literal':
+      return { types: new Set<OperandType>(['object']), array: true }
+    case 'object-literal':
+      return factsOf('object')
+    case 'identifier':
+      return typed.names.get(expr.name) ?? null
+    case 'member':
+      return propsMemberFacts(expr, typed)
+    case 'logical':
+      return expr.op === '??' ? nullishFacts(expr.left, expr.right, typed) : null
+    case 'conditional':
+      return bothFacts(expr.consequent, expr.alternate, typed)
+    default:
+      return null
+  }
+}
+
+/** `<propsObject>.<key>`: the prop's facts; null for any other member. */
+function propsMemberFacts(expr: Extract<ParsedExpr, { kind: 'member' }>, typed: TypedNames): OperandFacts | null {
+  const isPropsRead = !expr.computed && expr.object.kind === 'identifier' && expr.object.name === typed.propsObject
+  return isPropsRead ? (typed.props.get(expr.property) ?? null) : null
+}
+
+function nullishFacts(left: ParsedExpr, right: ParsedExpr, typed: TypedNames): OperandFacts | null {
+  const l = initializerFacts(left, typed)
+  const r = initializerFacts(right, typed)
+  if (!r) return null
+  // `l ?? r` is `r` whenever `l` is nil, and `l` (never nil) otherwise.
+  return l ? unionFacts(withoutNil(l), r) : null
+}
+
+function bothFacts(a: ParsedExpr, b: ParsedExpr, typed: TypedNames): OperandFacts | null {
+  const fa = initializerFacts(a, typed)
+  const fb = initializerFacts(b, typed)
+  return fa && fb ? unionFacts(fa, fb) : null
+}
+
+/** A prop's declared facts: its declared type, and `undefined` when it may be omitted. */
+function declaredPropFacts(param: TypingMetadata['propsParams'][number]): OperandFacts {
   const declared = factsOfType(param.declaredType ?? param.type)
-  return param.optional && param.defaultValue === undefined ? withNil(declared, 'undefined') : declared
+  return param.optional ? withNil(declared, 'undefined') : declared
+}
+
+/**
+ * A destructured prop binding's facts: its declared facts, with an omitted
+ * value replaced by its default's (`{ n = 1 }` is a number, `{ on = undefined }`
+ * may still be `undefined`). A default that proves nothing makes the binding
+ * unknown.
+ */
+function boundPropFacts(param: TypingMetadata['propsParams'][number], typed: TypedNames): OperandFacts {
+  const declared = declaredPropFacts(param)
+  if (param.defaultValue === undefined) return declared
+  const fallback = initializerFacts(param.parsed, typed)
+  return fallback ? unionFacts(withoutNil(declared), fallback) : UNKNOWN_FACTS
+}
+
+/**
+ * Type the props. With a props object (`function C(props)`), every default
+ * a `propsParams` entry carries comes from a body destructure
+ * (`const { label: text = 'x' } = props`): it types the local binding (a
+ * local constant), never `props.<key>`, which keeps its declared facts. A
+ * renamed body destructure (`sourceName`) never replaces the original
+ * property's entry. Without one, the props are destructured bindings, read
+ * bare and as `props.<key>`, and a default applies to both.
+ */
+function collectPropFacts(metadata: TypingMetadata, names: Map<string, OperandFacts>, props: Map<string, OperandFacts>): void {
+  const propsObject = metadata.propsObjectName ?? null
+  for (const param of metadata.propsParams) {
+    const key = param.sourceName ?? param.name
+    if (propsObject) {
+      if (param.sourceName === undefined || !props.has(key)) props.set(key, declaredPropFacts(param))
+      continue
+    }
+    const facts = boundPropFacts(param, { names, props, propsObject })
+    props.set(key, facts)
+    names.set(param.name, facts)
+  }
 }
 
 /**
@@ -207,15 +313,12 @@ function signalFacts(signal: TypingMetadata['signals'][number]): OperandFacts {
 export function collectOperandTyping(metadata: TypingMetadata, options: OperandTypingOptions = {}): OperandTyping {
   const names = new Map<string, OperandFacts>()
   const props = new Map<string, OperandFacts>()
-  for (const param of metadata.propsParams) {
-    const facts = propFacts(param)
-    props.set(param.sourceName ?? param.name, facts)
-    if (!metadata.propsObjectName) names.set(param.name, facts)
-  }
+  collectPropFacts(metadata, names, props)
   for (const signal of metadata.signals) names.set(signal.getter, signalFacts(signal))
   for (const memo of metadata.memos ?? []) names.set(memo.name, factsOfType(memo.type))
+  const typed: TypedNames = { names, props, propsObject: metadata.propsObjectName ?? null }
   for (const constant of metadata.localConstants ?? []) {
-    names.set(constant.name, declaredOrSeeded(constant.type, constant.parsed))
+    names.set(constant.name, constantFacts(constant, typed))
   }
   const namedFields: NamedTypeFields =
     options.namedFields ?? (typeName => metadata.typeDefinitions?.find(td => td.name === typeName)?.properties)

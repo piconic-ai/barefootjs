@@ -7,7 +7,9 @@
 
 import { describe, test, expect } from 'bun:test'
 import {
+  analyzeComponent,
   BindingScope,
+  buildMetadata,
   collectOperandTyping,
   EMPTY_OPERAND_TYPING,
   operandFacts,
@@ -71,8 +73,9 @@ describe('collectOperandTyping', () => {
     expect(factsOf('props.maybe')).toBe('nil|number (undefined)')
     expect(factsOf('props.nothing')).toBe('nil|number (null)')
     expect(factsOf('props.either')).toBe('nil|number (either)')
-    // A default covers the omitted case.
-    expect(factsOf('props.size')).toBe('string')
+    // With a props object, a default comes from a body destructure and
+    // types that local binding, not `props.size`.
+    expect(factsOf('props.size')).toBe('nil|string (undefined)')
   })
 
   test('a signal is its declared type or literal seed, nil when it has none', () => {
@@ -265,5 +268,61 @@ describe('planPrimitive', () => {
     const empty = EMPTY_OPERAND_TYPING.at(BindingScope.EMPTY)
     expect(plan('!props.on', PROVEN_ONLY, empty)).toBe('helper to-boolean truthy unproven')
     expect(plan('!(a < b)', PROVEN_ONLY, empty)).toBe('native to-boolean boolean')
+  })
+})
+
+/** The typing of the one component in `src`, at component scope, from the analyzer's metadata. */
+function analyzed(src: string): ScopedOperandTyping {
+  const metadata = buildMetadata(analyzeComponent(src, 'foo.tsx'))
+  return collectOperandTyping(metadata).at(BindingScope.forComponent(metadata.propsObjectName))
+}
+
+const NON_NIL_NULLISH: NativeSafeTable = { nullish: ['non-nil'] }
+
+describe('defaults, from analyzed components', () => {
+  test('a renamed body-destructure default types the local binding, not the original property', () => {
+    const at = analyzed(
+      "export function Foo(props: { label?: string }) { const { label: text = 'none' } = props; return <div>{props.label ?? 'fallback'}{text}</div> }",
+    )
+    expect(factsOf('props.label', at)).toBe('nil|string (undefined)')
+    expect(plan("props.label ?? 'fallback'", NON_NIL_NULLISH, at)).toBe('helper nullish coalesce unproven')
+    expect(factsOf('text', at)).toBe('string')
+    expect(plan("text ?? 'fallback'", NON_NIL_NULLISH, at)).toBe('native nullish non-nil')
+  })
+
+  test('an unrenamed body-destructure default types the local binding, not the original property', () => {
+    const at = analyzed(
+      "export function Foo(props: { label?: string }) { const { label = 'none' } = props; return <div>{props.label ?? 'fallback'}{label}</div> }",
+    )
+    expect(factsOf('props.label', at)).toBe('nil|string (undefined)')
+    expect(plan("props.label ?? 'fallback'", NON_NIL_NULLISH, at)).toBe('helper nullish coalesce unproven')
+    expect(factsOf('label', at)).toBe('string')
+  })
+
+  test('a body destructure without a default keeps the optional nil', () => {
+    const at = analyzed('export function Foo(props: { label?: string }) { const { label } = props; return <div>{label}</div> }')
+    expect(factsOf('label', at)).toBe('nil|string (undefined)')
+  })
+
+  test('a literal parameter default proves its own type; an `undefined` default does not prove non-nil', () => {
+    const at = analyzed(
+      "export function Foo({ on = undefined, n = 1, size = 'md', off = false, alias = off }: { on?: boolean; n?: number; size?: string; off?: boolean; alias?: boolean }) { return <div>{on ?? true}{n}{size}{alias}</div> }",
+    )
+    expect(factsOf('on', at)).toBe('boolean|nil (undefined)')
+    expect(plan('on ?? true', NON_NIL_NULLISH, at)).toBe('helper nullish coalesce unproven')
+    expect(factsOf('n', at)).toBe('number')
+    expect(plan('n ?? 0', NON_NIL_NULLISH, at)).toBe('native nullish non-nil')
+    expect(factsOf('size', at)).toBe('string')
+    // A default reading an earlier binding takes that binding's facts.
+    expect(factsOf('alias', at)).toBe('boolean')
+  })
+
+  test('a default that may be nil, or proves nothing, does not prove non-nil', () => {
+    const at = analyzed(
+      'export function Foo({ a = null, b = make() }: { a?: number | null; b?: number }) { return <div>{a}{b}</div> }\nfunction make(): number { return 1 }',
+    )
+    expect(factsOf('a', at)).toBe('nil|number (null)')
+    expect(factsOf('b', at)).toBe('unknown')
+    expect(plan('b ?? 0', NON_NIL_NULLISH, at)).toBe('helper nullish coalesce unproven')
   })
 })
