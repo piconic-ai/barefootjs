@@ -319,7 +319,7 @@ type, and the target's operator pinned for that type:
 Operands proven of **different** primitive types fold to a constant
 (`false` for `===`). An `unknown`, union or optional operand takes the
 helper. This is the conservative answer to the #3769 design question; the
-policy question it raises is under "Open questions".
+policy question it raises is decided under "Decisions" (1).
 
 **Helper.** `strict_eq(a, b) → host boolean`: the evaluator's `_strict_eq`.
 Exists as `strict_eq` (Perl), `bf_eq` / `bf_ne` (Go), `eq` / `neq` (PHP,
@@ -430,7 +430,7 @@ comment), which is the "boolean value" row.
 - **Lone surrogates** (#3704, `string-at-lone-surrogate`). The host strings
   of seven runtimes cannot carry a lone surrogate through concatenation and
   UTF-8 output (`spec/template-helpers.md`, `at`). No IR decision fixes
-  that; see "Open questions".
+  that; see "Decisions" (6).
 - **Loose `==` / `!=`.** Out of the evaluator subset (`spec/compiler.md`);
   this note does not add them.
 - **ToPrimitive on objects** (`[1,2] + ''`). Covered by `plus` and
@@ -513,9 +513,10 @@ or a `+` whose other operand is proven `number` (numeric) or proven `string`
 | numeric (`- * / %`, unary, relational, numeric `+`) | `x ?? 0` | `x ?? NaN` |
 | string (`+` concat, template-literal part) | `x ?? 'null'` | `x ?? 'undefined'` |
 
-`either` (`n?: number | null`, `c?: string | null`) is refused with BF101,
-the precedent `arithmeticCoercionOrRefuse` set for numbers (#3700); see
-"Open questions" for the cost of extending that to strings. `NaN` is spelled
+A numeric `either` operand (`n?: number | null`) is refused with BF101,
+the precedent `arithmeticCoercionOrRefuse` set for numbers (#3700). A string
+`either` operand (`c?: string | null`) reads its nil as `undefined`, with a
+registered limitation for an explicit `null`; see "Decisions" (2). `NaN` is spelled
 `number('NaN')`, which the `number` vectors already pin. After the rewrite
 the operand is non-nil, so `to_number` and `to_string` need no nil argument
 and stay identical to the evaluator's `_to_number` / `_to_string` (nil reads
@@ -683,36 +684,17 @@ the other is chosen.
 The plan supports either: (a) is `strict_eq` with an identity branch, (b) is
 `mode: 'refuse'`.
 
-## Open questions
+## Decisions
 
-1. **Trust declared types at the runtime boundary?** Native-safe rests on
-   TypeScript types. A Mojolicious controller may pass `'1'` for a
-   `number` prop (#3769); with a native `==` it equals `1`, with
-   `strict_eq` it does not. Proposed: trust the declared type, and document
-   that the host must pass JSON-typed values. The alternative is normalizing
-   numeric strings when props enter the runtime.
-2. **`either` nil reading for strings.** Refusing `c?: string | null` in
-   concatenation, as arithmetic does, breaks common code such as
-   `'btn ' + props.className` (#3740 comment). Options: refuse; pick one
-   reading (`undefined`) and register a `silent` limitation; or add a
-   runtime undefined sentinel to each prop model.
-3. **Nils from data, not types.** An optional row field, an index read, or
-   an explicit `null` against a missing JSON key all arrive as one nil. The
-   rewrite only covers reads whose type gives the reading. Accept the
-   evaluator's rule (nil reads as `null`) for these, or refuse?
-4. **#3774:** option (a) or (b) above.
-5. **Native `+` past 2^53** on Ruby, Python and PHP: keep the pinned
-   `add` divergence and the native operator, or route every number `+`
-   through `add` as Perl and Go do?
-6. **Lone surrogates (#3704):** reclassify `string-at-lone-surrogate` as a
-   permanent documented limitation, or refuse `.at()` results that are then
-   compared or concatenated?
-7. **Helper naming.** This note uses the catalogue's snake_case ids and lets
-   runtimes keep their spellings through `helperNames` (`index` for `get` on
-   PHP, `bf_eq` for `strict_eq` on Go, as Perl spells `div` `divide`).
-   Rename the runtime methods instead?
-8. **Dynamic `+` with an `undefined`-reading operand.** Refuse it (the
-   step 4 default above), or add a `plus` variant that receives the
-   operand's static nil reading so it can produce `'undefinedx'` and `NaN`
-   on the right runtime branch? The variant costs one more helper per
-   runtime and a vector set of its own.
+The eight questions this note left open were decided on 2026-11-01. Each entry names the question, the decision and the rollout step it unblocks.
+
+1. **Trust declared types at the runtime boundary: yes.** Native-safe rests on TypeScript types, and the host must pass JSON-typed values (a `number` prop receives a number, not `'1'`, #3769). The runtime does not normalise numeric strings. The adapter docs state the host's obligation. *Unblocks step 3 (relational, ToNumber) and step 8.*
+2. **`either` nil reading for strings: read as `undefined`, and register a `silent` limitation.** A `c?: string | null` operand of `+` or a template-literal part reads its nil as `undefined` (`'btn undefined'`). That is the JS answer for an omitted prop, the common case. An explicit `null` then renders `'undefined'` instead of `'null'`, which is registered as a limitation with its fixture and pins. Refusing (as arithmetic does, #3700) would break `'btn ' + props.className` (#3740). *Step 4.*
+3. **Nils from data: accept the evaluator's rule (nil reads as `null`).** An optional row field, an index read, or a missing JSON key arrives as one nil, and the plan reads it as `null`, as `_to_number` / `_to_string` already do. Refusing would reject most code over row data. *Step 4.*
+4. **`===` on objects (#3774): option (b), refuse.** `===` / `!==` with an operand not proven primitive is BF101 on template adapters, matching the evaluator contract (`spec/compiler.md`). `x === null` style tests are unaffected, because they lower as nullish checks. *Unblocks step 8.*
+5. **Native `+` past 2^53 on Ruby, Python and PHP: keep the native operator.** The `add/beyond the safe-integer edge` entries in their `vector-divergences.json` stay as declared divergences. Perl and Go keep `add` / `bf_add`. *Step 4.*
+6. **Lone surrogates (#3704): a permanent, documented limitation.** `string-at-lone-surrogate` is reclassified as a limitation that will not be fixed. A surrogate half reads as U+FFFD, as step 2 does for index reads. *No step blocked.*
+7. **Helper naming: keep the runtime spellings.** `helperNames` keeps mapping the catalogue's ids to each runtime's methods (`index` for `get` on PHP, `bf_eq` for `strict_eq` on Go, `divide` for `div` on Perl). Renaming would change public runtime APIs and gain nothing. *No step blocked.*
+8. **Dynamic `+` with an `undefined`-reading operand: refuse (BF101).** This is the step 4 default described under "Nil reading is a tree rewrite". No `plus` variant carrying the static nil reading is added; revisit only if real code needs the shape. *Step 4.*
+
+**Revisit condition for 2, 3 and 8.** These three decisions follow from one constraint: each runtime has a single nil, so `undefined` and `null` cannot be told apart once a value is evaluated. If the runtimes can carry a distinct `undefined` sentinel through prop decoding, template evaluation and truthiness at an acceptable cost, the decisions change: 2 can render `'null'` for an explicit `null`, 3 can give each nil its JS reading, and 8 can produce `'undefinedx'` / `NaN` instead of refusing. That feasibility is being checked per runtime before step 4 starts; step 4 waits on the result.
