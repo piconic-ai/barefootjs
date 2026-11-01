@@ -3441,6 +3441,26 @@
       }
     }
   ],
+  "const-object-spread-last-wins": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
   "controlled-signal": [
     {
       "name": "gen:value:zero",
@@ -13120,26 +13140,43 @@
       }
     }
   ],
-  "record-const-index-text": [
+  "record-const-index-inherited-key": [
     {
-      "name": "gen:other:empty",
+      "name": "gen:kind:empty",
       "props": {
-        "kind": "err",
-        "other": ""
+        "kind": ""
       }
     },
     {
-      "name": "gen:other:markup",
+      "name": "gen:kind:markup",
       "props": {
-        "kind": "err",
-        "other": "<b>&\"'</b>"
+        "kind": "<b>&\"'</b>"
       }
     },
     {
-      "name": "gen:other:multibyte",
+      "name": "gen:kind:multibyte",
       "props": {
-        "kind": "err",
-        "other": "日本語"
+        "kind": "日本語"
+      }
+    }
+  ],
+  "record-const-index-inherited-key-client": [
+    {
+      "name": "gen:kind:empty",
+      "props": {
+        "kind": ""
+      }
+    },
+    {
+      "name": "gen:kind:markup",
+      "props": {
+        "kind": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:kind:multibyte",
+      "props": {
+        "kind": "日本語"
       }
     }
   ],

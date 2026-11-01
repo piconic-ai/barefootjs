@@ -112,6 +112,16 @@ export interface ParamInfo {
    * `type` for the `props.n` form.
    */
   declaredType?: TypeInfo
+  /**
+   * The values the prop's declared type admits when it is only string
+   * literals, `null` and `undefined` (`'ok' | 'err'`, a same-file alias of
+   * such a union, through a props type that is an intersection or an
+   * interface): the string keys, and which of `null` / `undefined` it also
+   * admits (the `?` modifier not included). Absent for any other type. A
+   * read of a const record indexed by the prop is projected from it
+   * (`computed-const.ts`).
+   */
+  literalKeys?: { keys: string[]; nullish: Array<'null' | 'undefined'> }
   optional: boolean
   defaultValue?: JsSourceText
   /**

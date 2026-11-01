@@ -7858,6 +7858,12 @@
               ]
             },
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -8201,6 +8207,12 @@
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
                 "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
               ]
             },
             {
@@ -8742,6 +8754,12 @@
               ]
             },
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -9136,6 +9154,12 @@
               ]
             },
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -9500,6 +9524,12 @@
               ]
             },
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -9843,6 +9873,12 @@
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
                 "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
               ]
             },
             {
@@ -10204,6 +10240,12 @@
               ]
             },
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -10553,6 +10595,12 @@
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
                 "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
               ]
             },
             {
@@ -10911,6 +10959,12 @@
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
                 "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
               ]
             },
             {
@@ -11018,6 +11072,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -11027,6 +11087,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
             {
               "fixture": "unlowered-global-call",
               "limitations": [
@@ -11044,6 +11110,12 @@
               ]
             },
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -11053,6 +11125,12 @@
         },
         "jinja": {
           "gaps": [
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
             {
               "fixture": "unlowered-global-call",
               "limitations": [
@@ -11064,6 +11142,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -11073,6 +11157,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
             {
               "fixture": "unlowered-global-call",
               "limitations": [
@@ -11084,6 +11174,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -11094,6 +11190,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -11103,6 +11205,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
             {
               "fixture": "unlowered-global-call",
               "limitations": [
@@ -11355,6 +11463,12 @@
               ]
             },
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -11614,6 +11728,12 @@
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
                 "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
               ]
             },
             {
@@ -12035,6 +12155,12 @@
               ]
             },
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -12339,6 +12465,12 @@
               ]
             },
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -12607,6 +12739,12 @@
               ]
             },
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -12866,6 +13004,12 @@
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
                 "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
               ]
             },
             {
@@ -13143,6 +13287,12 @@
               ]
             },
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -13396,6 +13546,12 @@
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
                 "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
               ]
             },
             {
@@ -13658,6 +13814,12 @@
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
                 "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
               ]
             },
             {
@@ -16877,6 +17039,12 @@
               ]
             },
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -16914,6 +17082,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
               ]
             },
             {
@@ -16966,6 +17140,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
               ]
             },
             {
@@ -17027,6 +17207,12 @@
               ]
             },
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -17067,6 +17253,12 @@
               ]
             },
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -17104,6 +17296,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
               ]
             },
             {
@@ -17153,6 +17351,12 @@
               ]
             },
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -17184,6 +17388,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
               ]
             },
             {
@@ -17224,6 +17434,12 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
               ]
             },
             {
@@ -24324,6 +24540,12 @@
               ]
             },
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -24493,6 +24715,12 @@
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
                 "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
               ]
             },
             {
@@ -24800,6 +25028,12 @@
               ]
             },
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "relational-omitted-number-memo",
               "limitations": [
                 "evaluated-memo-omitted-number-operand"
@@ -25002,6 +25236,12 @@
               ]
             },
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -25180,6 +25420,12 @@
               ]
             },
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -25349,6 +25595,12 @@
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
                 "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
               ]
             },
             {
@@ -25536,6 +25788,12 @@
               ]
             },
             {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -25699,6 +25957,12 @@
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
                 "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
               ]
             },
             {
@@ -25871,6 +26135,12 @@
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
                 "props-object-non-props-name-operand-typing"
+              ]
+            },
+            {
+              "fixture": "record-const-index-inherited-key",
+              "limitations": [
+                "record-const-index-unknown-keys"
               ]
             },
             {

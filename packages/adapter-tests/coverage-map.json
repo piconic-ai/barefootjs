@@ -3503,6 +3503,21 @@
         "text"
       ]
     },
+    "const-object-spread-last-wins": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "const-string-conditional-test": {
       "kinds": [
         "literal"
@@ -12727,9 +12742,38 @@
         "text"
       ]
     },
+    "record-const-index-inherited-key": {
+      "kinds": [
+        "identifier",
+        "index-access",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "record-const-index-inherited-key-client": {
+      "kinds": [
+        "identifier",
+        "index-access",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "record-const-index-text": {
       "kinds": [
-        "array-literal",
         "binary",
         "identifier",
         "index-access",
@@ -12743,9 +12787,7 @@
         "logical:??"
       ],
       "contexts": [
-        "attribute",
         "condition",
-        "loop",
         "text"
       ]
     },

@@ -190,7 +190,7 @@ describe('a read of an object const reads what the object holds (#3844)', () => 
     'use client'
     import { createSignal } from '@barefootjs/client'
     const MODULE = { label: 'mod', inner: { mode: 'dark' } }
-    export function C(props: { n: number; kind: string }) {
+    export function C(props: { n: number; kind: 'ok' | 'err'; other?: 'ok' | 'nope'; free: string; proto: 'ok' | 'toString' }) {
       const [sel] = createSignal('ok')
       const flags = { big: props.n > 1, label: 'L' + props.n }
       const labels = { ok: 'Fine', err: 'Broken' }
@@ -215,18 +215,27 @@ describe('a read of an object const reads what the object holds (#3844)', () => 
     expect(inlined.kind === 'member' && inlined.property === 'length' && inlined.object.kind).toBe('binary')
   })
 
-  test('an index read is the conditional over the keys, through a getter index too', () => {
+  test('an index typed as a union of string literals is the conditional over the keys it can hold', () => {
     const inline = inliner(source)
     expect(inline('labels[props.kind]')).toBe('props.kind === "ok" ? "Fine" : props.kind === "err" ? "Broken" : undefined')
-    expect(inline('labels[sel()]')).toBe('sel() === "ok" ? "Fine" : sel() === "err" ? "Broken" : undefined')
+    expect(inline('labels[props.other]')).toBe('props.other === "ok" ? "Fine" : undefined')
+    expect(inline('numbered[props.kind]')).toBe('undefined')
   })
 
-  test('a whole read, an inherited key, an opaque index or a numeric key leaves the expression as written', () => {
+  test('an index whose keys are not all known reads the literal, for the adapter to refuse', () => {
+    const inline = inliner(source)
+    const literal = "({ ok: 'Fine', err: 'Broken' })"
+    expect(inline('labels[props.free]')).toBe(`${literal}[props.free]`)
+    expect(inline('labels[props.proto]')).toBe(`${literal}[props.proto]`)
+    expect(inline('labels[sel()]')).toBe(`${literal}[sel()]`)
+    expect(inline('labels[pick(props.kind)]')).toBe(`${literal}[pick(props.kind)]`)
+    expect(inline('rows.map(kind => labels[kind])')).toBe(`rows.map(kind => ${literal}[kind])`)
+  })
+
+  test('a whole read or an inherited key leaves the expression as written', () => {
     const inline = inliner(source)
     expect(inline('f(flags)')).toBe('f(flags)')
     expect(inline('flags.label + flags.toString')).toBe('flags.label + flags.toString')
-    expect(inline('labels[pick(props.kind)]')).toBe('labels[pick(props.kind)]')
-    expect(inline('numbered[props.kind]')).toBe('numbered[props.kind]')
     expect(inline('MODULE.inner')).toBe('MODULE.inner')
   })
 

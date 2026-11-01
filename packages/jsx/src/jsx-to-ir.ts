@@ -7312,6 +7312,7 @@ interface ProcessedAttributes {
 function expandSpreadAttribute(
   attr: ts.JsxSpreadAttribute,
   ctx: TransformContext,
+  constEntries?: ReadonlyArray<{ key: string; text: string }>,
 ): Array<{
   name: string
   value: AttrValue
@@ -7348,7 +7349,6 @@ function expandSpreadAttribute(
     }))
   }
 
-  const constEntries = expandStaticConstSpread(attr, ctx)
   if (constEntries) return constEntries.map(({ key, text }) => ({ name: key, value: AttrValueOf.expression(text), loc }))
 
   // Allocate a component-scoped slot ID so adapters that need a
@@ -7369,21 +7369,56 @@ function expandSpreadAttribute(
 }
 
 /**
+ * How an element's or component call's static const spreads resolve
+ * against everything else it is given (#3844): `entries` maps each spread
+ * of a const holding a static object literal to the `key: value-source`
+ * pairs it passes, and `properties` is the attribute list without the
+ * explicit attributes such a spread overrides.
+ *
+ * JSX applies attributes and spreads in order and the last write of a key
+ * wins, so the plan walks them from the last: a key an explicit attribute
+ * or an expanded spread writes is dropped from every earlier explicit
+ * attribute and expanded spread. A spread that is not expanded (`{...rest}`,
+ * a computed object) overrides nothing statically; what it holds is merged
+ * at render time after what comes before it, as before. Each key is
+ * therefore written once, with the value JS gives it.
+ */
+function staticSpreadPlan(attributes: ts.JsxAttributes, ctx: TransformContext): {
+  properties: ts.JsxAttributeLike[]
+  entries: Map<ts.JsxSpreadAttribute, Array<{ key: string; text: string }>>
+} {
+  const entries = new Map<ts.JsxSpreadAttribute, Array<{ key: string; text: string }>>()
+  const overridden = new Set<ts.JsxAttributeLike>()
+  const written = new Set<string>()
+  for (const attr of [...attributes.properties].reverse()) {
+    if (ts.isJsxAttribute(attr)) {
+      const name = attr.name.getText(ctx.sourceFile)
+      if (written.has(name)) overridden.add(attr)
+      written.add(name)
+      continue
+    }
+    const spread = expandStaticConstSpread(attr, ctx)
+    if (!spread) continue
+    entries.set(attr, spread.filter(e => !written.has(e.key)))
+    for (const e of spread) written.add(e.key)
+  }
+  return { properties: attributes.properties.filter(attr => !overridden.has(attr)), entries }
+}
+
+/**
  * The entries of a spread of a const holding a static object literal
  * (`const base = { label: 'x', tone: 'info' }`, `<Chip {...base} />`), as
- * the `key: value-source` pairs the spread passes (#3844). JSX spreads the
- * object's own keys in order, so the spread is the same as writing each key
- * as an attribute in its place; carried that way, every backend reads each
- * value as a literal instead of a bag no template binds.
+ * the `key: value-source` pairs the spread passes, one per key with the
+ * value of its last occurrence in the literal (#3844). Carried that way,
+ * every backend reads each value as a literal instead of a bag no template
+ * binds; {@link staticSpreadPlan} resolves them against the element's other
+ * attributes.
  *
  * Only when the read reaches the const (`resolveStaticConstBinding`; a
  * module const also not shadowed by a component binding) and every entry
  * is a plain `key: value` whose value reads no name (a literal, or an array
- * or object of literals) and is not `key` / `ref`. An attribute written
- * after the spread overrides its key, so that entry is left out; one
- * written before it is overridden by the spread, which the per-key form
- * cannot say, so the spread is kept. `null` otherwise, and the spread stays
- * a spread.
+ * or object of literals), and whose key is not `key`, `ref` or an event
+ * handler name. `null` otherwise, and the spread stays a spread.
  */
 function expandStaticConstSpread(attr: ts.JsxSpreadAttribute, ctx: TransformContext): Array<{ key: string; text: string }> | null {
   let expr: ts.Expression = attr.expression
@@ -7395,33 +7430,23 @@ function expandStaticConstSpread(attr: ts.JsxSpreadAttribute, ctx: TransformCont
   if (constant.isModule && componentScopeNames(ctx.analyzer).has(name)) return null
   const init = parseConstInitializer(constant)
   if (!init || !ts.isObjectLiteralExpression(init)) return null
-  return staticObjectSpreadEntries(init, attr, ctx)
+  return staticObjectSpreadEntries(init)
 }
 
 /**
- * {@link expandStaticConstSpread}'s entries of the object literal `init`
- * spread by `attr`, or `null` when one of them has no per-key form.
+ * {@link expandStaticConstSpread}'s entries of the object literal `init`,
+ * or `null` when one of them has no per-key form.
  */
-function staticObjectSpreadEntries(
-  init: ts.ObjectLiteralExpression,
-  attr: ts.JsxSpreadAttribute,
-  ctx: TransformContext,
-): Array<{ key: string; text: string }> | null {
-  const before = new Set<string>()
-  const after = new Set<string>()
-  for (const other of attr.parent.properties) {
-    if (ts.isJsxAttribute(other)) (other.pos < attr.pos ? before : after).add(other.name.getText(ctx.sourceFile))
-  }
-  const entries: Array<{ key: string; text: string }> = []
+function staticObjectSpreadEntries(init: ts.ObjectLiteralExpression): Array<{ key: string; text: string }> | null {
+  const entries = new Map<string, string>()
   for (const prop of init.properties) {
     if (!ts.isPropertyAssignment(prop)) return null
     const key = ts.isIdentifier(prop.name) || ts.isStringLiteral(prop.name) ? prop.name.text : null
-    if (key === null || key === 'key' || key === 'ref' || before.has(key)) return null
-    const value = tsNodeToParsedExpr(prop.initializer)
-    if (freeIdentifiers(value)?.size !== 0) return null
-    if (!after.has(key)) entries.push({ key, text: astText(prop.initializer) })
+    if (key === null || key === 'key' || key === 'ref' || isEventHandlerName(key)) return null
+    if (freeIdentifiers(tsNodeToParsedExpr(prop.initializer))?.size !== 0) return null
+    entries.set(key, astText(prop.initializer))
   }
-  return entries
+  return [...entries].map(([key, text]) => ({ key, text }))
 }
 
 /**
@@ -7529,11 +7554,12 @@ function processAttributes(
   let ref: string | null = null
   let refExpr: ts.Expression | null = null
   let hasSpread = false
+  const spreadPlan = staticSpreadPlan(attributes, ctx)
 
-  for (const attr of attributes.properties) {
+  for (const attr of spreadPlan.properties) {
     if (ts.isJsxSpreadAttribute(attr)) {
       hasSpread = true
-      attrs.push(...expandSpreadAttribute(attr, ctx))
+      attrs.push(...expandSpreadAttribute(attr, ctx, spreadPlan.entries.get(attr)))
       continue
     }
 
@@ -9185,8 +9211,9 @@ function processComponentProps(
   ctx: TransformContext
 ): IRProp[] {
   const props: IRProp[] = []
+  const spreadPlan = staticSpreadPlan(attributes, ctx)
 
-  for (const attr of attributes.properties) {
+  for (const attr of spreadPlan.properties) {
     if (ts.isJsxSpreadAttribute(attr)) {
       // `restExpandedKey` (#3057) is consumed only by the element-attribute
       // path (`collect-elements.ts`'s `attr.restExpandedKey` branch) — a
@@ -9195,7 +9222,7 @@ function processComponentProps(
       // rewrite, so `IRProp` declares no such field. Strip it here rather
       // than letting the shared helper's per-key marking leak into IRProp
       // as an inert flag nothing reads.
-      props.push(...expandSpreadAttribute(attr, ctx).map(({ restExpandedKey: _restExpandedKey, ...prop }) => markPropsObjectSpread(prop)))
+      props.push(...expandSpreadAttribute(attr, ctx, spreadPlan.entries.get(attr)).map(({ restExpandedKey: _restExpandedKey, ...prop }) => markPropsObjectSpread(prop)))
       continue
     }
 

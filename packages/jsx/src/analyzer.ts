@@ -4537,6 +4537,7 @@ function extractProps(param: ts.ParameterDeclaration, ctx: AnalyzerContext): voi
           name: localName,
           type: resolvedType,
           ...unresolvedDeclaredType(member),
+          ...propLiteralKeys(param.type, sourcePropName, ctx),
           // The type's `?` and a destructure default (`{ x = 1 }`) both mean
           // the caller may omit the prop.
           optional: !!member?.optional || !!element.initializer,
@@ -4811,6 +4812,80 @@ function unresolvedDeclaredType(member: DestructuredMemberType | undefined): Pic
   return member && !member.type && member.declared ? { declaredType: member.declared } : {}
 }
 
+/** Upper bound on alias / intersection hops a type walk follows, a guard against a cycle. */
+const MAX_TYPE_HOPS = 8
+
+/**
+ * `ParamInfo.literalKeys` for the member `name` of a props type node: the
+ * member's declared type node, found through a type literal, a same-file
+ * interface or type alias, or an intersection of those (`{ name: N } &
+ * IconProps`), read by {@link literalKeyDomain}. Empty when the member is
+ * not found or its type is not such a union.
+ */
+function propLiteralKeys(typeNode: ts.TypeNode | undefined, name: string, ctx: AnalyzerContext): Pick<ParamInfo, 'literalKeys'> {
+  const memberType = typeNode ? memberTypeNode(typeNode, name, ctx, 0) : null
+  const literalKeys = memberType ? literalKeyDomain(memberType, ctx) : null
+  return literalKeys ? { literalKeys } : {}
+}
+
+function memberTypeNode(typeNode: ts.TypeNode, name: string, ctx: AnalyzerContext, hops: number): ts.TypeNode | null {
+  if (hops > MAX_TYPE_HOPS) return null
+  if (ts.isParenthesizedTypeNode(typeNode)) return memberTypeNode(typeNode.type, name, ctx, hops + 1)
+  if (ts.isIntersectionTypeNode(typeNode)) {
+    for (const part of typeNode.types) {
+      const found = memberTypeNode(part, name, ctx, hops + 1)
+      if (found) return found
+    }
+    return null
+  }
+  const members = ts.isTypeLiteralNode(typeNode) ? typeNode.members : null
+  if (members) return memberSignatureType(members, name, ctx)
+  if (!ts.isTypeReferenceNode(typeNode)) return null
+  const decl = findTypeDeclaration(typeNode.typeName.getText(ctx.sourceFile), ctx.sourceFile)
+  if (!decl) return null
+  if (ts.isInterfaceDeclaration(decl)) return memberSignatureType(decl.members, name, ctx)
+  return memberTypeNode(decl.type, name, ctx, hops + 1)
+}
+
+function memberSignatureType(members: ts.NodeArray<ts.TypeElement>, name: string, ctx: AnalyzerContext): ts.TypeNode | null {
+  for (const member of members) {
+    if (ts.isPropertySignature(member) && member.name.getText(ctx.sourceFile) === name) return member.type ?? null
+  }
+  return null
+}
+
+/**
+ * The string literals, `null` and `undefined` a type node admits when it
+ * admits nothing else (`'ok' | 'err' | undefined`, or a same-file alias of
+ * such a union), or null.
+ */
+function literalKeyDomain(typeNode: ts.TypeNode, ctx: AnalyzerContext, hops = 0): ParamInfo['literalKeys'] | null {
+  if (hops > MAX_TYPE_HOPS) return null
+  if (ts.isParenthesizedTypeNode(typeNode)) return literalKeyDomain(typeNode.type, ctx, hops + 1)
+  if (ts.isTypeReferenceNode(typeNode)) {
+    const decl = findTypeDeclaration(typeNode.typeName.getText(ctx.sourceFile), ctx.sourceFile)
+    return decl && ts.isTypeAliasDeclaration(decl) ? literalKeyDomain(decl.type, ctx, hops + 1) : null
+  }
+  if (!ts.isUnionTypeNode(typeNode)) return literalTypeKey(typeNode)
+  const keys: string[] = []
+  const nullish = new Set<'null' | 'undefined'>()
+  for (const part of typeNode.types) {
+    const inner = literalKeyDomain(part, ctx, hops + 1)
+    if (!inner) return null
+    keys.push(...inner.keys)
+    for (const n of inner.nullish) nullish.add(n)
+  }
+  return { keys, nullish: [...nullish] }
+}
+
+/** {@link literalKeyDomain} for one non-union, non-reference type node: a string literal, `null` or `undefined`. */
+function literalTypeKey(typeNode: ts.TypeNode): ParamInfo['literalKeys'] | null {
+  if (typeNode.kind === ts.SyntaxKind.UndefinedKeyword) return { keys: [], nullish: ['undefined'] }
+  if (!ts.isLiteralTypeNode(typeNode)) return null
+  if (typeNode.literal.kind === ts.SyntaxKind.NullKeyword) return { keys: [], nullish: ['null'] }
+  return ts.isStringLiteral(typeNode.literal) ? { keys: [typeNode.literal.text], nullish: [] } : null
+}
+
 function collectMemberTypes(
   typeNode: ts.TypeNode,
   ctx: AnalyzerContext
@@ -4894,9 +4969,11 @@ function extractPropsFromTypeMembers(
         ? typeNodeToTypeInfo(member.type, ctx.sourceFile)
         : { kind: 'unknown' as const, raw: 'unknown' }
 
+      const literalKeys = member.type ? literalKeyDomain(member.type, ctx) : null
       ctx.propsParams.push({
         name: propName,
         type: propType ?? { kind: 'unknown', raw: 'unknown' },
+        ...(literalKeys && { literalKeys }),
         optional: isOptional,
         defaultValue: undefined,
       })
