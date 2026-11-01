@@ -55,7 +55,9 @@ $BINDINGS = [
 // One binding per op the PHP adapters can spell natively, to the native PHP
 // operator: a test is PHP's own truthiness (Twig's `{% if %}` / `not` and
 // Blade's `@if` / `!` both compile to it); an index read is PHP's own `[]`;
-// a number literal is a PHP literal, which both compile it to. It runs over
+// a number literal is a PHP literal, which both compile it to; a relational
+// operator is PHP's own `<` / `<=` / `>` / `>=` (Twig's and Blade's compile
+// to it); a unary `+` over a number is the operand itself. It runs over
 // the cases whose domain the two adapters' NATIVE_SAFE tables claim
 // (primitives-native-safe.json, "php": their union, since they share these
 // operators; spec/js-primitive-semantics.md, "Conformance" item 3).
@@ -65,6 +67,11 @@ $NATIVE_BINDINGS = [
     // The argument is a vector's JS spelling of a safe integer (`-3`), which
     // is PHP literal syntax too.
     'number' => fn ($text) => eval("return {$text};"),
+    'to_number' => fn ($v) => $v,
+    'lt' => fn ($a, $b) => $a < $b,
+    'le' => fn ($a, $b) => $a <= $b,
+    'gt' => fn ($a, $b) => $a > $b,
+    'ge' => fn ($a, $b) => $a >= $b,
 ];
 
 /** Materialize the `{"$num": ...}` sentinel, `-0` included. Values are

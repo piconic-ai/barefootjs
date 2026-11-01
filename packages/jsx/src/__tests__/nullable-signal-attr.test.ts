@@ -1,4 +1,5 @@
 import { describe, test, expect } from 'bun:test'
+import { arithmeticCoercionOrRefuse, refuseAmbiguousNilArithmetic } from '../adapters/ambiguous-nil-arithmetic'
 import { analyzeComponent } from '../analyzer'
 import { exprToString, parseExpression } from '../expression-parser'
 import {
@@ -230,6 +231,30 @@ describe('arithmeticOperandCoercion (#3474)', () => {
     expect(unary('props.c')).toBeNull()
   })
 
+  test('unary plus passes no other operand and coerces like unary minus (#3824 step 3)', () => {
+    const ctx = ctxOf('props: { a: number | null; b?: number; c: number }')
+    const unary = (operand: string) => arithmeticOperandCoercion('+', parseExpression(operand), undefined, ctx)
+    expect(unary('props.a')).toBe('null')
+    expect(unary('props.b')).toBe('undefined')
+    expect(unary('props.c')).toBeNull()
+  })
+
+  test('a string or boolean relational operand that may only be absent reads NaN and keeps a present value (#3824 step 3)', () => {
+    const ctx = ctxOf('props: { s?: string; b?: boolean; t: string | null; c: string; u: string | undefined }')
+    for (const op of ['<', '<=', '>', '>=']) {
+      expect(coercion(ctx, op, 'props.s', '1')).toBe('undefined-keep')
+      expect(coercion(ctx, op, 'props.s', "'a'")).toBe('undefined-keep')
+      expect(coercion(ctx, op, 'props.b', '1')).toBe('undefined-keep')
+      expect(coercion(ctx, op, 'props.u', '1')).toBe('undefined-keep')
+      // A `null` reading is the helper's own; a required prop has no nil.
+      expect(coercion(ctx, op, 'props.t', '1')).toBeNull()
+      expect(coercion(ctx, op, 'props.c', '1')).toBeNull()
+    }
+    // Arithmetic over a string prop is not a relational: left as it is.
+    expect(coercion(ctx, '*', 'props.s', '2')).toBeNull()
+    expect(arithmeticOperandCoercion('<', parseExpression('props.s'), parseExpression('1'), ctx, n => n === 'props')).toBeNull()
+  })
+
   test('an absent-only prop is not certainly undefined: arithmeticOperandIsUndefined stays false', () => {
     const ctx = ctxOf('props: { b?: number }')
     expect(arithmeticOperandIsUndefined(parseExpression('props.b'), ctx)).toBe(false)
@@ -275,12 +300,41 @@ describe('arithmeticOperandNilIsAmbiguous (#3700)', () => {
       for (const op of ['-', '*', '/', '%', '**']) expect(ambiguous(ctx, op, 'props.n', 'x')).toBe(true)
       expect(ambiguous(ctx, '+', 'props.n', '1')).toBe(true)
       expect(ambiguous(ctx, '-', 'props.n')).toBe(true)
+      expect(ambiguous(ctx, '+', 'props.n')).toBe(true)
       // `+` against a non-number may concatenate: no `ToNumber`, no ambiguity.
       expect(ambiguous(ctx, '+', 'props.n', "'px'")).toBe(false)
     }
     const destructured = ctxOf('{ n, m: alias }: { n?: number | null; m?: null | number }')
     expect(ambiguous(destructured, '*', 'n', '2')).toBe(true)
     expect(ambiguous(destructured, '*', 'alias', '2')).toBe(true)
+  })
+
+  test('a relational operand is a numeric consumer too (#3824 step 3)', () => {
+    const ctx = ctxOf('props: { n?: number | null; a: number | null; b?: number }')
+    for (const op of ['<', '<=', '>', '>=']) {
+      expect(ambiguous(ctx, op, 'props.n', '1')).toBe(true)
+      expect(ambiguous(ctx, op, 'props.n', "'x'")).toBe(true)
+      expect(ambiguous(ctx, op, 'props.a', '1')).toBe(false)
+      expect(ambiguous(ctx, op, 'props.b', '1')).toBe(false)
+    }
+    // The spelling keeps the helper's null reading for the refused operand.
+    expect(arithmeticOperandCoercion('<', parseExpression('props.n'), parseExpression('1'), ctx)).toBeNull()
+    expect(arithmeticOperandCoercion('<', parseExpression('props.b'), parseExpression('1'), ctx)).toBe('undefined')
+    expect(arithmeticOperandCoercion('<', parseExpression('props.a'), parseExpression('1'), ctx)).toBeNull()
+  })
+
+  test('a string or boolean prop admitting both nils is ambiguous under a comparison only (#3824 step 3)', () => {
+    const ctx = ctxOf('props: { s?: string | null; b?: boolean | null; t?: string; m: string | null }', 'const id = createMemo(() => props.s)')
+    for (const op of ['<', '<=', '>', '>=']) {
+      expect(ambiguous(ctx, op, 'props.s', '1')).toBe(true)
+      expect(ambiguous(ctx, op, 'props.s', "'a'")).toBe(true)
+      expect(ambiguous(ctx, op, 'props.b', '1')).toBe(true)
+      expect(ambiguous(ctx, op, 'id()', '1')).toBe(true)
+      expect(ambiguous(ctx, op, 'props.t', '1')).toBe(false)
+      expect(ambiguous(ctx, op, 'props.m', '1')).toBe(false)
+    }
+    expect(ambiguous(ctx, '*', 'props.s', '2')).toBe(false)
+    expect(ambiguous(ctx, '+', 'props.s')).toBe(false)
   })
 
   test('a prop with one nil reading, a defaulted one and a shadowed one are not ambiguous', () => {
@@ -318,6 +372,17 @@ describe('ambiguousNilArithmeticOperands (#3700)', () => {
   test('finds the operands in nested positions', () => {
     expect(found("items.filter(i => i > n * 2).length")).toEqual(['n'])
     expect(found("(-n > 1 ? `a${n + 1}` : 'b')")).toEqual(['n', 'n'])
+  })
+
+  test('finds a unary plus operand (#3824 step 3)', () => {
+    expect(found('+n')).toEqual(['n'])
+    expect(found('+n > 1 ? 1 : 0')).toEqual(['n'])
+  })
+
+  test('finds a relational operand, in a predicate and at the top level', () => {
+    expect(found('items.filter(i => i < n).length')).toEqual(['n'])
+    expect(found('n >= 1')).toEqual(['n'])
+    expect(found('items.filter(n => n < 1).length')).toEqual([])
   })
 
   test('an arrow param or an enclosing binding of the same name shadows the prop', () => {
@@ -372,5 +437,26 @@ describe('a prop that can be absent, and an operand that is never nullish', () =
     expect(isNeverNullishOperand(parseExpression('flag')!, destructured, () => false)).toBe(true)
     expect(isNeverNullishOperand(parseExpression('flag')!, destructured, n => n === 'flag')).toBe(false)
     expect(isNeverNullishOperand(parseExpression('opt')!, destructured, () => false)).toBe(false)
+  })
+})
+
+describe('the BF101 of an ambiguous nil names the prop family (#3824 step 3)', () => {
+  const ctx = collectNullishAttrContext({
+    metadata: analyzeComponent(
+      `export function C(props: { n?: number | null; s?: string | null; b?: boolean | null }) { return <p>x</p> }`,
+      'C.tsx',
+    ),
+  } as unknown as ComponentIR)
+
+  test('a numeric operand keeps the arithmetic message; a string or boolean one names its type', () => {
+    const sink = { errors: [] as import('../types').CompilerError[], componentName: 'C' }
+    arithmeticCoercionOrRefuse('*', parseExpression('props.n'), parseExpression('2'), ctx, () => false, sink)
+    arithmeticCoercionOrRefuse('<', parseExpression('props.s'), parseExpression('1'), ctx, () => false, sink)
+    refuseAmbiguousNilArithmetic(parseExpression('props.b >= 1'), ctx, BindingScope.EMPTY, sink)
+    expect(sink.errors.map(e => e.code)).toEqual(['BF101', 'BF101', 'BF101'])
+    expect(sink.errors[0]!.message).toStartWith('Arithmetic over `props.n` reads a number prop declared both optional and nullable (`?: number | null`).')
+    expect(sink.errors[1]!.message).toStartWith('A comparison over `props.s` reads a string prop declared both optional and nullable (`?: string | null`).')
+    expect(sink.errors[2]!.message).toStartWith('A comparison over `props.b` reads a boolean prop')
+    expect(sink.errors[1]!.suggestion?.message).toContain('`?: string`')
   })
 })

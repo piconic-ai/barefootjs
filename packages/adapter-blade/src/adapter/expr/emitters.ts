@@ -122,6 +122,8 @@ import {
   type CallbackLoweringOptions,
   type StringNameTest,
   isNativePlan,
+  relationalHelper,
+  isNativeToNumber,
   numberLiteralSpelling,
 } from '@barefootjs/jsx'
 
@@ -148,10 +150,16 @@ export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Blade'
  */
 export const NATIVE_SAFE: NativeSafeTable = {
   'to-boolean': ['boolean'],
+  // A unary `+` is native only over a proven number, `to_number` otherwise
+  // (#3824 step 3). `unproven` describes binary `-` / `*` over operands Phase 1
+  // cannot type, which keep the native operator until step 4.
   'to-number': ['number-pair', 'number', 'unproven'],
   plus: ['number-pair', 'string', 'unproven'],
   'strict-eq': [],
-  relational: ['number-pair', 'unproven'],
+  // Native only over two proven numbers; any other pair takes the runtime's
+  // JS Abstract Relational Comparison (`lt` / `le` / `gt` / `ge`; #3824
+  // step 3, pinned by the `primitives/lt` … `ge` vectors).
+  relational: ['number-pair'],
   // A unary minus over a non-zero literal folds into the literal; any other
   // operand takes `neg`, which keeps the sign of zero. A literal is native
   // only as a safe integer; `number('<JS spelling>')` otherwise, and `-0` is
@@ -366,10 +374,10 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
       const arg = emit(argument)
       return negate(plan, arg, () => `-${groupUnaryOperand(argument, arg)}`)
     }
-    return emit(argument)
+    return toNumber(plan, emit(argument))
   }
 
-  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
@@ -390,6 +398,10 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
     // (#3474, #3574).
     const helper = arithmeticHelper(op)
     if (helper) return `$bf->${helper}(${l}, ${r})`
+    // `<` `<=` `>` `>=`: native only over two proven numbers, the runtime's
+    // JS Abstract Relational Comparison otherwise (#3824 step 3).
+    const relational = relationalHelper(op, plan)
+    if (relational) return `$bf->${relational}(${l}, ${r})`
     const opMap: Record<string, string> = {
       '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*',
@@ -664,18 +676,25 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
       const operand = this.coerceUndefinedOperand(op, argument, undefined, arg)
       return negate(plan, operand, () => (operand === arg ? `-${groupUnaryOperand(argument, arg)}` : `-(${operand})`))
     }
-    return emit(argument)
+    // Unary plus applies JS `ToNumber` too (#3824 step 3).
+    return toNumber(plan, this.coerceUndefinedOperand(op, argument, undefined, emit(argument)))
   }
 
   /** Spell `arithmeticOperandCoercion` (#3474): an `undefined` operand goes
    * through the runtime's JS `Number()`, which maps nil to `NaN` as
    * `ToNumber(undefined)` does (#3390). The native operator already reads a
-   * `null` operand as `0`, so that coercion needs no spelling. */
+   * `null` operand as `0`, so that coercion needs no spelling.
+   * A string or boolean relational operand that may only be absent
+   * (`'undefined-keep'`, #3824 step 3) reads a nil as `NaN` and keeps a
+   * present value, which the relational helper converts itself.
+   */
   private coerceUndefinedOperand(op: string, expr: ParsedExpr, other: ParsedExpr | undefined, operand: string): string {
-    return this.ctx._arithmeticCoercion(op, expr, other) === 'undefined' ? `$bf->number(${operand})` : operand
+    const coercion = this.ctx._arithmeticCoercion(op, expr, other)
+    if (coercion === 'undefined-keep') return `(${operand} ?? $bf->number('NaN'))`
+    return coercion === 'undefined' ? `$bf->number(${operand})` : operand
   }
 
-  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
@@ -698,6 +717,10 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     // (#3474, #3574).
     const helper = arithmeticHelper(op)
     if (helper) return `$bf->${helper}(${l}, ${r})`
+    // `<` `<=` `>` `>=`: native only over two proven numbers, the runtime's
+    // JS Abstract Relational Comparison otherwise (#3824 step 3).
+    const relational = relationalHelper(op, plan)
+    if (relational) return `$bf->${relational}(${l}, ${r})`
     const opMap: Record<string, string> = {
       '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*',
@@ -865,4 +888,13 @@ export function numberLiteral(value: string | number | boolean | null, plan: Pri
  */
 function negate(plan: PrimitivePlan | null, operand: string, native: () => string): string {
   return isNativePlan(plan, 'neg') ? native() : `$bf->neg(${operand})`
+}
+
+/**
+ * Spell a unary-`+` plan over `operand` (#3824 step 3): the operand itself
+ * when the plan proves it a number, the runtime's JS ToNumber (`to_number`)
+ * otherwise.
+ */
+function toNumber(plan: PrimitivePlan | null, operand: string): string {
+  return isNativeToNumber(plan) ? operand : `$bf->to_number(${operand})`
 }

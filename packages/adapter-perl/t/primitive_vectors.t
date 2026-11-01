@@ -72,7 +72,9 @@ my %bindings = (
 # One binding per op the Perl adapters can spell natively, to the native
 # Perl operator: a test is Perl's own truthiness (`if`, `!`, `&&`, `||`,
 # `?:`); an array index read is Perl's own `->[]`; a number literal is a
-# Perl numeric literal, which both template languages compile to. It runs
+# Perl numeric literal, which both template languages compile to; a
+# relational operator is Perl's numeric `<` / `<=` / `>` / `>=`; a unary `+`
+# over a number is the operand itself. It runs
 # over the cases whose domain the two adapters' NATIVE_SAFE tables claim
 # (primitives-native-safe.json, "perl": their union, since they share these
 # operators; spec/js-primitive-semantics.md, "Conformance" item 3).
@@ -80,6 +82,11 @@ my %native_bindings = (
     truthy => sub { $_[0] ? !!1 : !!0 },
     get    => sub { $_[0]->[ $_[1] ] },
     number => sub { my $v = eval $_[0]; die $@ if $@; $v },
+    to_number => sub { $_[0] },
+    lt     => sub { $_[0] < $_[1] },
+    le     => sub { $_[0] <= $_[1] },
+    gt     => sub { $_[0] > $_[1] },
+    ge     => sub { $_[0] >= $_[1] },
 );
 
 my $INF = 9**9**9;

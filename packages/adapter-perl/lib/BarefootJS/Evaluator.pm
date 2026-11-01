@@ -319,15 +319,74 @@ sub _to_number ($v) {
     return 0 if !defined $v;
     if (ref $v eq 'JSON::PP::Boolean') { return $v ? 1 : 0 }
     return _nan() if ref $v;
-    if (_is_string($v)) {
-        my $t = $v;
-        $t =~ s/\A\s+//;
-        $t =~ s/\s+\z//;
-        return 0 if $t eq '';
-        return looks_like_number($t) ? _double($t + 0) : _nan();
-    }
+    return _string_to_number($v) if _is_string($v);
     # Already a number: no `+ 0`, which would turn a -0 into +0.
     return _double($v);
+}
+
+# _string_to_number: JS StringToNumber (ECMA-262 StringNumericLiteral),
+# ASCII digits only. The string is trimmed and `''` is 0; a signed decimal
+# literal with an optional exponent, the exact spelling `Infinity`, and an
+# unsigned `0x` / `0o` / `0b` integer are their values; anything else
+# (`infinity`, `nan`, `1_000`, `-0x10`) is NaN. Perl's own numification
+# (`looks_like_number`) accepts `inf` / `nan`, reads `"0x10"` as 0 and
+# `"-0"` as +0, so it is not used here.
+my %RADIX = (x => 16, o => 8, b => 2);
+
+# _radix_to_number: the digits of a JS `0x` / `0o` / `0b` integer as the
+# double nearest its value, ties to even; NaN for a digit outside the base.
+# JS rounds the mathematical value once (#3824 step 3), so the digits are
+# read as bits: the first 53 significant bits, the next one (the round bit)
+# and whether any later bit is set (the sticky bit). Accumulating them in a
+# Perl number rounds every prefix past 64 bits instead. A value past the
+# largest double is Infinity.
+my %RADIX_BITS = (16 => 4, 8 => 3, 2 => 1);
+
+sub _radix_to_number ($digits, $base) {
+    my $kept = 0;    # the first 54 significant bits (53 + the round bit)
+    my $significant = 0;
+    my $sticky = 0;
+    for my $digit (split //, $digits) {
+        my $d = hex $digit;
+        return _nan() if $d >= $base;
+        for (my $shift = $RADIX_BITS{$base} - 1; $shift >= 0; $shift--) {
+            my $bit = ($d >> $shift) & 1;
+            next if $significant == 0 && $bit == 0;
+            if ($significant < 54) {
+                $kept = $kept * 2 + $bit;
+            }
+            elsif ($bit) {
+                $sticky = 1;
+            }
+            $significant++;
+        }
+    }
+    return _double($kept) if $significant <= 53;
+    my $round = $kept % 2;
+    my $mantissa = ($kept - $round) / 2;
+    $mantissa++ if $round && ($sticky || $mantissa % 2);
+    # mantissa <= 2^53 is exact, and a power of two scales it exactly or
+    # overflows to Infinity.
+    my $exponent = $significant - 53;
+    return 9**9**9 if $exponent > 1100;
+    return _double($mantissa * (2**$exponent));
+}
+
+sub _string_to_number ($s) {
+    my $t = $s;
+    $t =~ s/\A\s+//;
+    $t =~ s/\s+\z//;
+    return 0 if $t eq '';
+    if ($t =~ /\A0([xXoObB])([0-9a-fA-F]+)\z/) {
+        return _radix_to_number($2, $RADIX{lc $1});
+    }
+    if ($t =~ /\A([+-]?)Infinity\z/) {
+        return $1 eq '-' ? -(9**9**9) : 9**9**9;
+    }
+    return _nan() unless $t =~ /\A([+-]?)(?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?\z/;
+    my $n = _double($t + 0);
+    # `"-0"` (and `"-0.0"`, `"-0e5"`) is negative zero; Perl numifies it to +0.
+    return ($1 eq '-' && $n == 0) ? -(unpack('d', pack('d', 0))) : $n;
 }
 
 sub _to_string ($v) {
@@ -457,7 +516,7 @@ sub _relational ($op, $l, $r) {
     # otherwise coerce both to numbers (a NaN operand makes it false).
     my $c;
     if (_is_string($l) && _is_string($r)) {
-        $c = $l lt $r ? -1 : $l gt $r ? 1 : 0;
+        $c = _compare_utf16($l, $r);
     }
     else {
         my $ln = _to_number($l);
@@ -470,6 +529,28 @@ sub _relational ($op, $l, $r) {
     return _bool($c > 0)  if $op eq '>';
     return _bool($c >= 0) if $op eq '>=';
     return _bool(0);
+}
+
+# _compare_utf16: JS string order, by UTF-16 code unit. Perl's `cmp` orders
+# characters by code point, which differs where an astral character (whose
+# leading surrogate is 0xD800-0xDBFF) meets a BMP character above the
+# surrogates (`"😀" lt "｡"` is true in JS); and a string without Perl's
+# UTF8 flag holds UTF-8 bytes, which `cmp` would read as Latin-1 against a
+# flagged one. Both are decoded and re-packed as big-endian UTF-16, whose
+# bytes compare in code-unit order.
+sub _compare_utf16 ($l, $r) {
+    return $l cmp $r unless $l =~ /[^\x00-\x7f]/ || $r =~ /[^\x00-\x7f]/;
+    return _utf16_be($l) cmp _utf16_be($r);
+}
+
+sub _utf16_be ($s) {
+    utf8::decode($s) unless utf8::is_utf8($s); # no-op on invalid UTF-8
+    return join '', map {
+        my $o = ord;
+        $o > 0xFFFF
+            ? pack('n2', 0xD800 + (($o - 0x10000) >> 10), 0xDC00 + (($o - 0x10000) & 0x3FF))
+            : pack('n', $o)
+    } split //, $s;
 }
 
 sub _strict_eq ($l, $r) {

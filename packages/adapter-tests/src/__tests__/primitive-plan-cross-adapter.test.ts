@@ -221,9 +221,19 @@ const CASES: readonly Case[] = [
     positions: {
       ...at(
         { text: boolText, attr, if: ifTest },
-        { 'number-pair': 'props.n < props.m', signal: 'count() >= props.n', strings: 'props.s > props.t', optional: 'props.n <= props.maybe' },
+        {
+          'number-pair': 'props.n < props.m',
+          signal: 'count() >= props.n',
+          strings: 'props.s > props.t',
+          mixed: 'props.s < props.n',
+          optional: 'props.n <= props.maybe',
+        },
       ),
-      filter: [filter('x < props.n', 'x < props.n', 'row'), filter('props.n < props.m', 'props.n < props.m', 'number-pair')],
+      filter: [
+        filter('x < props.n', 'x < props.n', 'row'),
+        filter('props.n < props.m', 'props.n < props.m', 'number-pair'),
+        filter('props.s >= props.t', 'props.s >= props.t', 'strings'),
+      ],
     },
   },
   {
@@ -265,9 +275,14 @@ const CASES: readonly Case[] = [
           div: 'props.n / props.m',
           mod: 'props.n % props.m',
           'unary-plus': '+props.s',
+          'unary-plus-number': '+props.n',
         },
       ),
-      filter: [filter('x - props.n > 0', 'x - props.n', 'row'), filter('props.n * props.m > 0', 'props.n * props.m', 'number-pair')],
+      filter: [
+        filter('x - props.n > 0', 'x - props.n', 'row'),
+        filter('props.n * props.m > 0', 'props.n * props.m', 'number-pair'),
+        filter('+x > 0', '+x', 'unary-plus-row'),
+      ],
     },
   },
   {
@@ -358,13 +373,6 @@ const CASES: readonly Case[] = [
  * Shrink-only.
  */
 const DISAGREEMENTS: Readonly<Record<string, string>> = {
-  // ToNumber. Go and Perl drop a unary `+` instead of converting.
-  'go to-number text unary-plus': 'step 3 (ToNumber)',
-  'mojolicious to-number text unary-plus': 'step 3 (ToNumber)',
-  'xslate to-number text unary-plus': 'step 3 (ToNumber)',
-  'go to-number attr unary-plus': 'step 3 (ToNumber)',
-  'mojolicious to-number attr unary-plus': 'step 3 (ToNumber)',
-  'xslate to-number attr unary-plus': 'step 3 (ToNumber)',
   // `+` over an operand Phase 1 cannot type: numeric addition (`add`), not `plus`.
   'go plus text optional': 'step 4 (`+`)',
   'mojolicious plus text optional': 'step 4 (`+`)',

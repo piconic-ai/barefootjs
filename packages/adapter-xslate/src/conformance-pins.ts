@@ -23,6 +23,9 @@ export const conformancePins: ConformancePins = {
   // omitted one (`NaN` in arithmetic) from a `null` one (`0`).
   'omitted-optional-nullable-number-arithmetic': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
   'omitted-optional-nullable-number-arithmetic-destructured': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
+  'omitted-optional-nullable-number-relational': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
+  'omitted-optional-nullable-number-unary-plus': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
+  'omitted-optional-nullable-string-relational': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-scalar-relational' }],
   'callback-index-param': [{ code: 'BF101', severity: 'error', limitation: 'callback-index-param' }],
   'filter-index-param-loop': [{ code: 'BF021', severity: 'error', limitation: 'callback-index-param' }],
   'sort-opaque-comparator': [{ code: 'BF101', severity: 'error', limitation: 'callback-outside-evaluator' }],

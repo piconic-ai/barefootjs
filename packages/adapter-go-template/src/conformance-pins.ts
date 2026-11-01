@@ -22,6 +22,9 @@ export const conformancePins: ConformancePins = {
   // omitted one (`NaN` in arithmetic) from a `null` one (`0`).
   'omitted-optional-nullable-number-arithmetic': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
   'omitted-optional-nullable-number-arithmetic-destructured': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
+  'omitted-optional-nullable-number-relational': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
+  'omitted-optional-nullable-number-unary-plus': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
+  'omitted-optional-nullable-string-relational': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-scalar-relational' }],
   // The props constructor applies the default before any read, so a
   // `/* @client */` read site doesn't avoid the refusal: no escape twin.
   'destructure-default-body-renamed-computed-array': [

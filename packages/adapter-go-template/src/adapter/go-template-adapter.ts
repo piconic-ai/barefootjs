@@ -54,6 +54,7 @@ import {
   type SupportResult,
   collectNullableSignalGetters,
   arithmeticCoercionOrRefuse,
+  arithmeticOperandCoercion,
   refuseAmbiguousNilArithmetic,
   refuseAmbiguousNilMemoArithmetic,
   type ArithmeticCoercion,
@@ -134,6 +135,8 @@ import {
   isConcreteScalarGoType,
   type NullishSpelling,
   lowerJsNot,
+  lowerJsToNumber,
+  lowerUndefinedOperand,
   wrapGoArg,
   emitPredicateEval,
   goBinaryHelperCall,
@@ -5281,9 +5284,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `ToNumber(undefined)` does. The arithmetic helpers already read a
     // `null` operand as `0`, so that coercion needs no spelling.
     const undefinedOperand = (e: ParsedExpr, other: ParsedExpr, w: string): string =>
-      this.arithmeticCoercion(op, e, other) === 'undefined'
-        ? `(bf_number ${w})`
-        : w
+      lowerUndefinedOperand(this.arithmeticCoercion(op, e, other), w)
     const wl = undefinedOperand(left, right, wrapIfMultiToken(l))
     const wr = undefinedOperand(right, left, wrapIfMultiToken(r))
     const call = goBinaryHelperCall(op, wl, wr, [left, right])
@@ -5371,7 +5372,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         ? `bf_neg (bf_number ${wrapIfMultiToken(arg)})`
         : `bf_neg ${wrapIfMultiToken(arg)}`
     }
-    return arg
+    // Unary plus applies JS `ToNumber` too (#3824 step 3).
+    return lowerJsToNumber(plan, lowerUndefinedOperand(this.arithmeticCoercion(op, argument, undefined), arg))
   }
 
   logical(
@@ -7154,12 +7156,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     ctx: this.emitCtx,
     testPlan: (test, params) =>
       planTest(test, this.state.operandTyping.at(params ? this.scope.enterCallback(params) : this.scope), GO_NATIVE_SAFE),
+    primitivePlan: (node, params) =>
+      planPrimitive(node, this.state.operandTyping.at(params ? this.scope.enterCallback(params) : this.scope), GO_NATIVE_SAFE),
     nullishSpelling: (expr, params) => this.nullishSpelling(expr, params),
     renderParsedExpr: (expr) => this.renderParsedExpr(expr),
     makeLoc: () => this.makeLoc(),
     hasScopeBinding: (name) => Boolean(this.scope.lookup(name)),
     refuseAmbiguousNilArithmetic: (expr, params) =>
       refuseAmbiguousNilArithmetic(expr, this.state.nullishAttrCtx, this.scope.enterCallback(params), this.state),
+    operandCoercion: (op, operand, other, params) => {
+      const scope = params ? this.scope.enterCallback(params) : this.scope
+      return arithmeticOperandCoercion(op, operand, other, this.state.nullishAttrCtx, n => scope.isBound(n))
+    },
     filterCaptureAlias: (name) => this.filterCaptureAliases.get(name),
     lookupDestructureBinding: (name) => this.lookupDestructureBinding(name),
     noteWrapperRowRead: (name, rendered) => this.noteWrapperRowRead(name, rendered),

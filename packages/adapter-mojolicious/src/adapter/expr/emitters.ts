@@ -55,6 +55,8 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   type ArithmeticHelper,
   type StringNameTest,
   isNativePlan,
+  relationalHelper,
+  isNativeToNumber,
   numberLiteralSpelling,
 } from '@barefootjs/jsx'
 
@@ -84,10 +86,16 @@ export const NATIVE_SAFE: NativeSafeTable = {
   // Perl's own truthiness reads the string "0" as false and NaN as true
   // (#3823), so a test is native only on a proven boolean (#3824 step 1).
   'to-boolean': ['boolean'],
-  'to-number': [],
+  // A unary `+` over a proven number is the operand itself; anything else
+  // takes `to_number` (#3824 step 3). Binary `-` / `*` take `subtract` /
+  // `multiply` whatever the operands.
+  'to-number': ['number'],
   plus: ['string'],
   'strict-eq': ['number-pair', 'string-pair', 'boolean-pair'],
-  relational: ['number-pair', 'unproven'],
+  // Native only over two proven numbers; any other pair takes the runtime's
+  // JS Abstract Relational Comparison (`lt` / `le` / `gt` / `ge`; #3824
+  // step 3, pinned by the `primitives/lt` … `ge` vectors).
+  relational: ['number-pair'],
   // A unary minus over a non-zero literal folds into the literal; any other
   // operand takes `neg`, which keeps the sign of zero. A literal is native
   // only as a safe integer; `number('<JS spelling>')` otherwise, and `-0` is
@@ -390,10 +398,10 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
       return needsParens ? `!(${test})` : `!${test}`
     }
     if (op === '-') return negate(plan, arg, () => `-${groupUnaryOperand(argument, arg)}`)
-    return arg
+    return toNumber(plan, arg)
   }
 
-  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const lookupEquality = emitLookupLiteralEquality(op, left, right, emit, this.isStringName)
     if (lookupEquality !== null) return lookupEquality
     const nullishEquality = emitNullishEquality(op, left, right, emit)
@@ -420,6 +428,10 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     // yields Infinity / NaN for a zero divisor (#3454).
     const arithmetic = ARITHMETIC_HELPERS[op]
     if (arithmetic) return `bf->${arithmetic}(${l}, ${r})`
+    // `<` `<=` `>` `>=`: native only over two proven numbers, the runtime's
+    // JS Abstract Relational Comparison otherwise (#3824 step 3).
+    const relational = relationalHelper(op, plan)
+    if (relational) return `bf->${relational}(${l}, ${r})`
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
     }
@@ -757,18 +769,25 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
       const operand = this.coerceUndefinedOperand(op, argument, undefined, arg)
       return negate(plan, operand, () => (operand === arg ? `-${groupUnaryOperand(argument, arg)}` : `-(${operand})`))
     }
-    return arg
+    // Unary plus applies JS `ToNumber` too (#3824 step 3).
+    return toNumber(plan, this.coerceUndefinedOperand(op, argument, undefined, arg))
   }
 
   /** Spell `arithmeticOperandCoercion` (#3474): an `undefined` operand goes
    * through the runtime's JS `Number()`, which maps nil to `NaN` as
    * `ToNumber(undefined)` does (#3390). The native operator already reads a
-   * `null` operand as `0`, so that coercion needs no spelling. */
+   * `null` operand as `0`, so that coercion needs no spelling.
+   * A string or boolean relational operand that may only be absent
+   * (`'undefined-keep'`, #3824 step 3) reads a nil as `NaN` and keeps a
+   * present value, which the relational helper converts itself.
+   */
   private coerceUndefinedOperand(op: string, expr: ParsedExpr, other: ParsedExpr | undefined, operand: string): string {
-    return this.ctx._arithmeticCoercion(op, expr, other) === 'undefined' ? `bf->number(${operand})` : operand
+    const coercion = this.ctx._arithmeticCoercion(op, expr, other)
+    if (coercion === 'undefined-keep') return `(${operand} // bf->number('NaN'))`
+    return coercion === 'undefined' ? `bf->number(${operand})` : operand
   }
 
-  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const lookupEquality = emitLookupLiteralEquality(op, left, right, emit, (n: string, property?: boolean, path?: readonly string[]) => this.ctx._isStringValueName(n, property, path))
     if (lookupEquality !== null) return lookupEquality
     const nullishEquality = emitNullishEquality(op, left, right, emit)
@@ -806,6 +825,10 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     // yields Infinity / NaN for a zero divisor (#3454).
     const arithmetic = ARITHMETIC_HELPERS[op]
     if (arithmetic) return `bf->${arithmetic}(${l}, ${r})`
+    // `<` `<=` `>` `>=`: native only over two proven numbers, the runtime's
+    // JS Abstract Relational Comparison otherwise (#3824 step 3).
+    const relational = relationalHelper(op, plan)
+    if (relational) return `bf->${relational}(${l}, ${r})`
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
     }
@@ -1034,4 +1057,13 @@ export function numberLiteral(value: string | number | boolean | null, plan: Pri
  */
 function negate(plan: PrimitivePlan | null, operand: string, native: () => string): string {
   return isNativePlan(plan, 'neg') ? native() : `bf->neg(${operand})`
+}
+
+/**
+ * Spell a unary-`+` plan over `operand` (#3824 step 3): the operand itself
+ * when the plan proves it a number, the runtime's JS ToNumber (`to_number`)
+ * otherwise.
+ */
+function toNumber(plan: PrimitivePlan | null, operand: string): string {
+  return isNativeToNumber(plan) ? operand : `bf->to_number(${operand})`
 }

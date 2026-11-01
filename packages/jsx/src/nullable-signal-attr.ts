@@ -237,6 +237,18 @@ export interface NullishAttrContext {
    * `<propsObjectName>.<key>` for a member read (#3474), mapped to what the
    * engine's nil stands for there (`NullableNumberPropNil`, #3533). */
   readonly nullableNumberProps?: ReadonlyMap<string, NullableNumberPropNil>
+  /** Props declared as a string or a boolean that may be `null` or absent
+   * (`s?: string`, `b: boolean | null`), keyed like {@link nullableNumberProps}.
+   * Read only for a relational operand (#3824 step 3): JS converts it with
+   * ToNumber unless both sides are strings, so its nil's reading decides the
+   * comparison (`undefined < 1` is false, `null < 1` is true). */
+  readonly nullableScalarProps?: ReadonlyMap<string, NullableScalarProp>
+}
+
+/** A string or boolean prop's nil reading ({@link NullishAttrContext.nullableScalarProps}). */
+export interface NullableScalarProp {
+  readonly family: 'string' | 'boolean'
+  readonly nil: NullableNumberPropNil
 }
 
 /**
@@ -266,6 +278,7 @@ export function collectNullishAttrContext(ir: ComponentIR): NullishAttrContext {
     memos: new Map((ir.metadata.memos ?? []).map(m => [m.name, m])),
     nullableProps: collectNullablePropReads(ir),
     nullableNumberProps: collectNullableNumberProps(ir),
+    nullableScalarProps: collectNullableScalarProps(ir),
   }
 }
 
@@ -273,7 +286,10 @@ export function collectNullishAttrContext(ir: ComponentIR): NullishAttrContext {
  * What the nil of a number prop that admits `null` / `undefined` and no other
  * family stands for (`NullableNumberPropNil`); `null` for any other type.
  */
-function nullableNumberPropNil(type: TypeInfo | undefined, optional: boolean): NullableNumberPropNil | null {
+function nullablePrimitivePropNil(
+  type: TypeInfo | undefined,
+  optional: boolean,
+): { family: string; nil: NullableNumberPropNil } | null {
   if (!type) return null
   const members = type.kind === 'union' ? (type.unionTypes ?? []) : [type]
   const families = new Set(members.map(m => (m.kind === 'primitive' ? m.primitive : m.kind)))
@@ -281,20 +297,36 @@ function nullableNumberPropNil(type: TypeInfo | undefined, optional: boolean): N
   const admitsAbsent = optional || families.has('undefined')
   families.delete('null')
   families.delete('undefined')
-  if (!(admitsNull || admitsAbsent) || families.size !== 1 || !families.has('number')) return null
-  if (admitsNull && admitsAbsent) return 'either'
-  return admitsNull ? 'null' : 'undefined'
+  if (!(admitsNull || admitsAbsent) || families.size !== 1) return null
+  const [family] = [...families] as [string]
+  if (admitsNull && admitsAbsent) return { family, nil: 'either' }
+  return { family, nil: admitsNull ? 'null' : 'undefined' }
 }
 
-function collectNullableNumberProps(ir: ComponentIR): ReadonlyMap<string, NullableNumberPropNil> {
-  const names = new Map<string, NullableNumberPropNil>()
+/** Each no-default prop whose declared type `pick` accepts, keyed by the name a read uses. */
+function collectNullablePrimitiveProps<T>(
+  ir: ComponentIR,
+  pick: (read: { family: string; nil: NullableNumberPropNil }) => T | null,
+): ReadonlyMap<string, T> {
+  const names = new Map<string, T>()
   const objectName = ir.metadata.propsObjectName
   for (const p of ir.metadata.propsParams) {
     if (p.isRest || p.defaultValue !== undefined) continue
-    const nil = nullableNumberPropNil(p.declaredType ?? p.type, p.optional)
-    if (nil !== null) names.set(objectName ? `${objectName}.${p.sourceName ?? p.name}` : p.name, nil)
+    const read = nullablePrimitivePropNil(p.declaredType ?? p.type, p.optional)
+    const picked = read === null ? null : pick(read)
+    if (picked !== null) names.set(objectName ? `${objectName}.${p.sourceName ?? p.name}` : p.name, picked)
   }
   return names
+}
+
+function collectNullableNumberProps(ir: ComponentIR): ReadonlyMap<string, NullableNumberPropNil> {
+  return collectNullablePrimitiveProps(ir, read => (read.family === 'number' ? read.nil : null))
+}
+
+function collectNullableScalarProps(ir: ComponentIR): ReadonlyMap<string, NullableScalarProp> {
+  return collectNullablePrimitiveProps(ir, ({ family, nil }) =>
+    family === 'string' || family === 'boolean' ? { family, nil } : null,
+  )
 }
 
 /**
@@ -479,12 +511,48 @@ function nullableNumberPropRead(
   ctx: NullishAttrContext,
   shadowed: (name: string) => boolean,
 ): NullableNumberPropNil | null {
-  if (!ctx.nullableNumberProps?.size) return null
-  if (expr.kind === 'identifier') return shadowed(expr.name) ? null : (ctx.nullableNumberProps.get(expr.name) ?? null)
+  return propReadIn(ctx.nullableNumberProps, expr, shadowed)
+}
+
+/** The entry of `props` (keyed as {@link NullishAttrContext.nullableNumberProps}) that `expr` reads, or `null`. */
+function propReadIn<T>(
+  props: ReadonlyMap<string, T> | undefined,
+  expr: ParsedExpr,
+  shadowed: (name: string) => boolean,
+): T | null {
+  if (!props?.size) return null
+  if (expr.kind === 'identifier') return shadowed(expr.name) ? null : (props.get(expr.name) ?? null)
   if (expr.kind === 'member' && !expr.computed && expr.object.kind === 'identifier' && !shadowed(expr.object.name)) {
-    return ctx.nullableNumberProps.get(`${expr.object.name}.${expr.property}`) ?? null
+    return props.get(`${expr.object.name}.${expr.property}`) ?? null
   }
   return null
+}
+
+/**
+ * The string or boolean prop (`NullishAttrContext.nullableScalarProps`) a
+ * relational operand reads, directly or through a memo whose body is such a
+ * read, or `null`.
+ */
+function scalarPropRead(
+  parsed: ParsedExpr | undefined,
+  ctx: NullishAttrContext,
+  isShadowed: (name: string) => boolean,
+): NullableScalarProp | null {
+  if (!ctx.nullableScalarProps?.size || parsed === undefined) return null
+  const visiting = new Set<string>()
+  const walk = (expr: ParsedExpr, shadowed: (name: string) => boolean): NullableScalarProp | null => {
+    const prop = propReadIn(ctx.nullableScalarProps, expr, shadowed)
+    if (prop !== null) return prop
+    const getter = expr.kind === 'identifier' ? expr.name : bareGetterCallName(expr)
+    if (getter === null || shadowed(getter)) return null
+    const memo = ctx.memos.get(getter)
+    if (!memo?.parsed || visiting.has(getter)) return null
+    visiting.add(getter)
+    const result = walk(memo.parsed, () => false)
+    visiting.delete(getter)
+    return result
+  }
+  return walk(parsed, isShadowed)
 }
 
 /**
@@ -499,8 +567,15 @@ export const NULL_COERCING_ARITHMETIC_OPS: ReadonlySet<string> = new Set(['-', '
 /** How a DSL adapter coerces an arithmetic operand (#3474): `'null'` reads a
  * nil as `0` (JS `ToNumber(null)`), `'undefined'` reads it as `NaN`
  * (`ToNumber(undefined)`), `null` leaves the operand as is. Either coercion
- * leaves a non-nil operand's value as it is. */
-export type ArithmeticCoercion = 'null' | 'undefined' | null
+ * leaves a non-nil operand's value as it is: the operand is a number, so the
+ * runtime's JS `Number()` may spell `'undefined'`.
+ *
+ * `'undefined-keep'` (#3824 step 3) also reads a nil as `NaN`, but the
+ * operand is a string or boolean relational operand, which must reach the
+ * relational helper unconverted (`'a' < 'b'` compares strings), so the
+ * adapter spells it as a nil test: `NaN` when nil, the operand otherwise.
+ * `NaN` makes the comparison false, as `undefined < x` is in JS for any `x`. */
+export type ArithmeticCoercion = 'null' | 'undefined' | 'undefined-keep' | null
 
 /**
  * The one decision behind every DSL adapter's arithmetic over a nullish
@@ -510,9 +585,10 @@ export type ArithmeticCoercion = 'null' | 'undefined' | null
  * (`NullableNumberPropNil`, #3533), is coerced under the operators JS
  * applies `ToNumber` to ({@link NULL_COERCING_ARITHMETIC_OPS}), and under
  * `+` when the other operand is a number literal, where `+` cannot
- * concatenate. Unary minus applies `ToNumber` too: it passes `'-'` with no
- * `other`. Each adapter only spells the coercion; one whose engine already
- * reads nil as `0` spells `'null'` as the operand itself.
+ * concatenate. Unary minus and unary plus apply `ToNumber` too: each passes
+ * its operator (`'-'` / `'+'`) with no `other`. Each adapter only spells the
+ * coercion; one whose engine already reads nil as `0` spells `'null'` as the
+ * operand itself.
  */
 export function arithmeticOperandCoercion(
   op: string,
@@ -521,12 +597,38 @@ export function arithmeticOperandCoercion(
   ctx: NullishAttrContext,
   isShadowed: (name: string) => boolean = () => false,
 ): ArithmeticCoercion {
+  if (RELATIONAL_OPS.has(op)) return relationalOperandCoercion(operand, ctx, isShadowed)
   if (!isNumericArithmetic(op, other)) return null
   const seed = arithmeticOperandSeed(operand, ctx, isShadowed)
   if (seed === 'absent') return 'undefined'
   // `'either'` is refused (`arithmeticOperandNilIsAmbiguous`); the spelling
   // keeps the `null` reading so the refused template stays well-formed.
   return seed === 'either' ? 'null' : seed
+}
+
+/** The relational operators, whose operands JS converts with ToNumber unless both are strings. */
+const RELATIONAL_OPS: ReadonlySet<string> = new Set(['<', '<=', '>', '>='])
+
+/**
+ * The coercion of a relational operand (#3824 step 3). The runtime's
+ * relational helpers read a nil operand as JS `null` (`0`), so only an operand
+ * whose nil reads as `undefined` needs spelling: it goes through `NaN`, which
+ * makes the comparison false, as `undefined < 1` is in JS. A nil whose
+ * reading the type leaves open (`n?: number | null`) is refused as it is in
+ * arithmetic (`arithmeticOperandNilIsAmbiguous`, #3700); the spelling keeps
+ * the helper's `null` reading so the refused template stays well-formed.
+ */
+function relationalOperandCoercion(
+  operand: ParsedExpr | undefined,
+  ctx: NullishAttrContext,
+  isShadowed: (name: string) => boolean,
+): ArithmeticCoercion {
+  const seed = arithmeticOperandSeed(operand, ctx, isShadowed)
+  if (seed === 'absent' || seed === 'undefined') return 'undefined'
+  if (seed !== null) return null
+  // A string or boolean prop that may only be absent (`s?: string`): its nil
+  // is `undefined` too, but a present value must reach the helper as it is.
+  return scalarPropRead(operand, ctx, isShadowed)?.nil === 'undefined' ? 'undefined-keep' : null
 }
 
 /**
@@ -537,7 +639,11 @@ export function arithmeticOperandCoercion(
  * type cannot say which, so no spelling of {@link arithmeticOperandCoercion}
  * renders both. Template adapters refuse such an operand instead of
  * rendering one reading silently. Same operators and scope as
- * {@link arithmeticOperandCoercion}.
+ * {@link arithmeticOperandCoercion}, relational operators included: they
+ * apply ToNumber too (`undefined < 1` is false, `null < 1` is true). Under a
+ * relational operator a string or boolean prop admitting both
+ * (`s?: string | null`) is ambiguous for the same reason
+ * ({@link ambiguousNilFamily}).
  */
 export function arithmeticOperandNilIsAmbiguous(
   op: string,
@@ -546,7 +652,32 @@ export function arithmeticOperandNilIsAmbiguous(
   ctx: NullishAttrContext,
   isShadowed: (name: string) => boolean = () => false,
 ): boolean {
-  return isNumericArithmetic(op, other) && arithmeticOperandSeed(operand, ctx, isShadowed) === 'either'
+  return ambiguousNilFamily(op, operand, other, ctx, isShadowed) !== null
+}
+
+/** The declared family of a prop whose nil an operator cannot read ({@link ambiguousNilFamily}). */
+export type AmbiguousNilFamily = 'number' | 'string' | 'boolean'
+
+/**
+ * The declared family of the prop behind an operand that
+ * {@link arithmeticOperandNilIsAmbiguous} matches, or `null` when it does
+ * not match: `'number'` for a numeric `either` operand of arithmetic or a
+ * comparison, `'string'` / `'boolean'` for a string or boolean `either`
+ * operand of a comparison (#3824 step 3).
+ */
+export function ambiguousNilFamily(
+  op: string,
+  operand: ParsedExpr | undefined,
+  other: ParsedExpr | undefined,
+  ctx: NullishAttrContext,
+  isShadowed: (name: string) => boolean = () => false,
+): AmbiguousNilFamily | null {
+  const relational = RELATIONAL_OPS.has(op)
+  if (!relational && !isNumericArithmetic(op, other)) return null
+  if (arithmeticOperandSeed(operand, ctx, isShadowed) === 'either') return 'number'
+  if (!relational) return null
+  const scalar = scalarPropRead(operand, ctx, isShadowed)
+  return scalar?.nil === 'either' ? scalar.family : null
 }
 
 /**
@@ -554,7 +685,7 @@ export function arithmeticOperandNilIsAmbiguous(
  * matches, for a whole expression a template adapter lowers without visiting
  * each operator through its emitter (a memo body, a `.filter()` predicate, an
  * expression the runtime evaluator runs). Operands of binary operators and of
- * unary minus count. `scope` is where the expression is read; each arrow in
+ * unary minus and plus count. `scope` is where the expression is read; each arrow in
  * it enters its params as a callback frame (`BindingScope.enterCallback`),
  * so they shadow within its body only.
  */
@@ -563,26 +694,37 @@ export function ambiguousNilArithmeticOperands(
   ctx: NullishAttrContext,
   scope: BindingScope = BindingScope.EMPTY,
 ): ParsedExpr[] {
-  const found: ParsedExpr[] = []
+  return ambiguousNilOperands(expr, ctx, scope).map(found => found.operand)
+}
+
+/** {@link ambiguousNilArithmeticOperands}, each operand with its prop's family ({@link ambiguousNilFamily}). */
+export function ambiguousNilOperands(
+  expr: ParsedExpr,
+  ctx: NullishAttrContext,
+  scope: BindingScope = BindingScope.EMPTY,
+): Array<{ operand: ParsedExpr; family: AmbiguousNilFamily }> {
+  const found: Array<{ operand: ParsedExpr; family: AmbiguousNilFamily }> = []
   const visit = (e: ParsedExpr, at: BindingScope): void => {
     if (e.kind === 'arrow') {
       visit(e.body, at.enterCallback(e.params))
       return
     }
     for (const [op, operand, other] of arithmeticOperandsOf(e)) {
-      if (arithmeticOperandNilIsAmbiguous(op, operand, other, ctx, at.asShadowPredicate())) found.push(operand)
+      const family = ambiguousNilFamily(op, operand, other, ctx, at.asShadowPredicate())
+      if (family !== null) found.push({ operand, family })
     }
     for (const child of parsedExprChildren(e)) visit(child, at)
   }
-  if (!ctx.nullableNumberProps?.size) return found
+  if (!ctx.nullableNumberProps?.size && !ctx.nullableScalarProps?.size) return found
   visit(expr, scope)
   return found
 }
 
-/** The `[op, operand, other]` triples of an arithmetic node's operands. */
+/** The `[op, operand, other]` triples of an arithmetic node's operands. A
+ * unary minus or plus applies ToNumber to its operand and has no `other`. */
 function arithmeticOperandsOf(e: ParsedExpr): Array<[string, ParsedExpr, ParsedExpr | undefined]> {
   if (e.kind === 'binary') return [[e.op, e.left, e.right], [e.op, e.right, e.left]]
-  if (e.kind === 'unary' && e.op === '-') return [['-', e.argument, undefined]]
+  if (e.kind === 'unary' && (e.op === '-' || e.op === '+')) return [[e.op, e.argument, undefined]]
   return []
 }
 
@@ -615,9 +757,10 @@ function parsedExprChildren(e: ParsedExpr): ParsedExpr[] {
   }
 }
 
-/** The operators {@link arithmeticOperandCoercion} applies `ToNumber` under. */
+/** The operators {@link arithmeticOperandCoercion} applies `ToNumber` under:
+ * a `+` with no `other` is unary plus, which always does. */
 function isNumericArithmetic(op: string, other: ParsedExpr | undefined): boolean {
-  return NULL_COERCING_ARITHMETIC_OPS.has(op) || (op === '+' && isNumberLiteral(other))
+  return NULL_COERCING_ARITHMETIC_OPS.has(op) || (op === '+' && (other === undefined || isNumberLiteral(other)))
 }
 
 function isNumberLiteral(expr: ParsedExpr | undefined): boolean {

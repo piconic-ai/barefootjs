@@ -50,17 +50,25 @@ BINDINGS = {
 
 _JINJA_IF = Environment().from_string("{% if v %}1{% else %}0{% endif %}")
 _JINJA_INDEX = Environment().compile_expression("recv[key]")
+_JINJA_RELATIONAL = {op: Environment().compile_expression(f"a {op} b") for op in ("<", "<=", ">", ">=")}
 
 # One binding per op the Jinja adapter can spell natively, to the native Jinja
 # operator: a test is Jinja's own `{% if %}` (`not`, `if … else`); an index
 # read is Jinja's own `[]` (an undefined result reads as None, as a template's
-# nil); a number literal is a Jinja literal. It runs over the cases whose domain the adapter's NATIVE_SAFE table
+# nil); a number literal is a Jinja literal; a relational operator is Jinja's
+# own `<` / `<=` / `>` / `>=`; a unary `+` over a number is the operand
+# itself. It runs over the cases whose domain the adapter's NATIVE_SAFE table
 # claims (primitives-native-safe.json; spec/js-primitive-semantics.md,
 # "Conformance" item 3).
 NATIVE_BINDINGS = {
     "truthy": lambda v: _JINJA_IF.render(v=v) == "1",
     "get": lambda recv, key: _JINJA_INDEX(recv=recv, key=key),
     "number": lambda text: Environment().compile_expression(text)(),
+    "to_number": lambda v: v,
+    "lt": lambda a, b: _JINJA_RELATIONAL["<"](a=a, b=b),
+    "le": lambda a, b: _JINJA_RELATIONAL["<="](a=a, b=b),
+    "gt": lambda a, b: _JINJA_RELATIONAL[">"](a=a, b=b),
+    "ge": lambda a, b: _JINJA_RELATIONAL[">="](a=a, b=b),
 }
 
 SENTINELS = {"NaN": math.nan, "Infinity": math.inf, "-Infinity": -math.inf, "-0": -0.0}
