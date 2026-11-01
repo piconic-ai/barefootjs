@@ -994,6 +994,48 @@
         "text"
       ]
     },
+    "body-destructure-const-object": {
+      "kinds": [
+        "binary",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "binary:>",
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "body-destructure-rest-props": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:null",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "body-destructured-prop-default-arrow": {
       "kinds": [
         "arrow",
@@ -3442,6 +3484,22 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "const-object-spread": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
         "text"
       ]
     },
@@ -11261,6 +11319,30 @@
         "text"
       ]
     },
+    "object-const-member-read": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:>",
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "object-entries-map": {
       "kinds": [
         "identifier"
@@ -12290,6 +12372,20 @@
         "text"
       ]
     },
+    "props-object-body-rest-spread": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "props-object-non-props-name": {
       "kinds": [
         "arrow",
@@ -12613,6 +12709,43 @@
         "literal:number"
       ],
       "contexts": [
+        "text"
+      ]
+    },
+    "record-const-index-early-return": {
+      "kinds": [
+        "identifier",
+        "index-access",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "record-const-index-text": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "identifier",
+        "index-access",
+        "literal",
+        "logical",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
         "text"
       ]
     },

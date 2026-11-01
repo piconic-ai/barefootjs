@@ -184,3 +184,97 @@ describe('only names the component scope binds shadow a module const (#3696)', (
     expect(inliner(source)('m')).toBe('props.n * 2')
   })
 })
+
+describe('a read of an object const reads what the object holds (#3844)', () => {
+  const source = `
+    'use client'
+    import { createSignal } from '@barefootjs/client'
+    const MODULE = { label: 'mod', inner: { mode: 'dark' } }
+    export function C(props: { n: number; kind: string }) {
+      const [sel] = createSignal('ok')
+      const flags = { big: props.n > 1, label: 'L' + props.n }
+      const labels = { ok: 'Fine', err: 'Broken' }
+      const numbered = { 1: 'one', two: 'two' }
+      const mutated = { a: 1 }
+      mutated.a = 2
+      return <p>{flags.label}</p>
+    }
+  `
+
+  test('a member read is the value the literal gives the key, a missing key undefined', () => {
+    const inline = inliner(source)
+    expect(inline('flags.big ? "big" : "small"')).toBe('props.n > 1 ? "big" : "small"')
+    expect(inline("flags['label']")).toBe('"L" + props.n')
+    expect(inline('flags.missing')).toBe('undefined')
+    expect(inline('MODULE.inner.mode')).toBe('"dark"')
+  })
+
+  test('a read off a projected value keeps it as its object', () => {
+    const metadata = buildMetadata(analyzeComponent(source, 'test.tsx'))
+    const inlined = inlineComputedConsts(parseExpression('flags.label.length'), computedConstContext(metadata, () => false))
+    expect(inlined.kind === 'member' && inlined.property === 'length' && inlined.object.kind).toBe('binary')
+  })
+
+  test('an index read is the conditional over the keys, through a getter index too', () => {
+    const inline = inliner(source)
+    expect(inline('labels[props.kind]')).toBe('props.kind === "ok" ? "Fine" : props.kind === "err" ? "Broken" : undefined')
+    expect(inline('labels[sel()]')).toBe('sel() === "ok" ? "Fine" : sel() === "err" ? "Broken" : undefined')
+  })
+
+  test('a whole read, an inherited key, an opaque index or a numeric key leaves the expression as written', () => {
+    const inline = inliner(source)
+    expect(inline('f(flags)')).toBe('f(flags)')
+    expect(inline('flags.label + flags.toString')).toBe('flags.label + flags.toString')
+    expect(inline('labels[pick(props.kind)]')).toBe('labels[pick(props.kind)]')
+    expect(inline('numbered[props.kind]')).toBe('numbered[props.kind]')
+    expect(inline('MODULE.inner')).toBe('MODULE.inner')
+  })
+
+  test('a mutated object, a shadowed name and a capturing callback param are left alone', () => {
+    expect(inliner(source)('mutated.a')).toBe('mutated.a')
+    expect(inliner(source, ['flags'])('flags.label')).toBe('flags.label')
+    expect(inliner(source)('rows.map(props => flags.label)')).toBe('rows.map(props => flags.label)')
+    expect(inliner(source)('rows.map(flags => flags.label)')).toBe('rows.map(flags => flags.label)')
+  })
+})
+
+describe('a body destructure of a const object is one const per binding (#3844)', () => {
+  const consts = (source: string) =>
+    Object.fromEntries(buildMetadata(analyzeComponent(source, 'test.tsx')).localConstants.filter(c => !c.isModule).map(c => [c.name, c.value]))
+
+  test('a local, a module and a rest source; renamed, nested and defaulted bindings', () => {
+    expect(consts(`
+      const MOD = { a: { b: 1 } }
+      export function C({ t, ...rest }: { t: string; tone: string }) {
+        const conf = { tone: 'info' }
+        const { tone: tn, missing = 'x' } = conf
+        const { a: { b } } = MOD
+        const { tone } = rest
+        return <p>{tn}{missing}{b}{tone}</p>
+      }
+    `)).toMatchObject({ tn: 'conf.tone', missing: 'conf.missing === undefined ? "x" : conf.missing', b: 'MOD.a.b', tone: 'rest.tone' })
+  })
+
+  test('a rest of a props-object body destructure reads the props object, a taken key its default', () => {
+    const metadata = buildMetadata(analyzeComponent(`
+      export function C(props: { label: string; id?: string }) {
+        const { label, ...rest } = props
+        const { id, label: gone = 'g' } = rest
+        return <p {...rest}>{label}{id}{gone}</p>
+      }
+    `, 'test.tsx'))
+    expect(metadata.restPropsName).toBe('rest')
+    expect(metadata.restPropsOmittedKeys).toEqual(['label'])
+    expect(metadata.restPropsExpandedKeys).toEqual(['id'])
+    const values = Object.fromEntries(metadata.localConstants.map(c => [c.name, c.value]))
+    expect(values).toMatchObject({ id: 'props.id', gone: '"g"' })
+  })
+
+  test('a source declared later, a let source, a rest element or a computed default is not collected', () => {
+    const names = (source: string) => buildMetadata(analyzeComponent(source, 'test.tsx')).localConstants.map(c => c.name)
+    expect(names(`export function C() { const { a } = later; const later = { a: 1 }; return <p>{a}</p> }`)).not.toContain('a')
+    expect(names(`export function C() { let conf = { a: 1 }; const { a } = conf; return <p>{a}</p> }`)).not.toContain('a')
+    expect(names(`export function C() { const conf = { a: 1, b: 2 }; const { a, ...more } = conf; return <p>{a}</p> }`)).not.toContain('a')
+    expect(names(`export function C({ d }: { d: number }) { const conf = { a: 1 }; const { a = d } = conf; return <p>{a}</p> }`)).not.toContain('a')
+  })
+})

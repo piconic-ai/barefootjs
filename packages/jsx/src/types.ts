@@ -2450,6 +2450,15 @@ export interface IRMetadata {
   restPropsName: string | null
   /** Keys statically expanded from rest props via type analysis (closed type only) */
   restPropsExpandedKeys: string[]
+  /**
+   * Set when `restPropsName` is bound by a component-body destructure of the
+   * props object (`function C(props) { const { label, ...rest } = props }`)
+   * rather than by the signature: the caller keys that destructure takes
+   * before its rest element. A backend that runs the component body as JS
+   * declares the binding from the props object without them. Absent (or
+   * null) for a signature rest and on hand-built metadata.
+   */
+  restPropsOmittedKeys?: string[] | null
   signals: SignalInfo[]
   memos: MemoInfo[]
   effects: EffectInfo[]

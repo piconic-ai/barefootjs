@@ -98,6 +98,22 @@ const HYDRATION_PROP_DECLS = [
 const HYDRATION_PROPS_TYPE = `{ ${HYDRATION_PROP_DECLS.join('; ')} }`
 
 /** `__hydrateProps[key] = value` unless `value` is a rendered JSX element (it can't be JSON serialized). */
+/**
+ * The declaration of a rest binding a component-body destructure of the
+ * props object binds (`const { label, ...rest } = props`,
+ * `IRMetadata.restPropsOmittedKeys`). The analyzer records the destructure's
+ * other bindings as consts and the rest element as the component's rest
+ * props, so the body this adapter rebuilds declares the rest binding itself,
+ * from the props object without the keys the destructure takes, as a line
+ * to append to the props extraction. Empty when the rest binding is the
+ * signature's.
+ */
+function bodyRestDeclaration(restName: string | null, omittedKeys: readonly string[] | null | undefined, propsObjectName: string): string {
+  if (!restName || !omittedKeys) return ''
+  const omitted = omittedKeys.map((key, i) => `${JSON.stringify(key)}: _bfOmit${i}, `).join('')
+  return `\n  const { ${omitted}...${restName} } = ${propsObjectName}`
+}
+
 function hydratePropAssignment(key: string, value: string): string {
   return `    if (!(typeof ${value} === 'object' && ${value} !== null && 'isEscaped' in ${value})) __hydrateProps[${key}] = ${value}`
 }
@@ -642,6 +658,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
 
     if (propsObjectName) {
       propsExtraction = `  const { __instanceId, ${bfScopeAlias}, ${bfChildAlias}, ${bfNoSerializeAlias}, ${bfParentPropsAlias}, ${bfParentAlias}, ${bfMountAlias}, ${dataKeyAlias}, ...${propsObjectName} } = __allProps`
+        + bodyRestDeclaration(ir.metadata.restPropsName, ir.metadata.restPropsOmittedKeys, propsObjectName)
     } else {
       const hydrationProps = `__instanceId, ${bfScopeAlias}, ${bfChildAlias}, ${bfNoSerializeAlias}, ${bfParentPropsAlias}, ${bfParentAlias}, ${bfMountAlias}, ${dataKeyAlias}`
       const parts: string[] = []

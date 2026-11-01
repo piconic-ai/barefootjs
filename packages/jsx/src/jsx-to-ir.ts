@@ -43,9 +43,11 @@ import {
   AttrValueOf,
 } from './types.ts'
 import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation, collectReactiveGetterNames, tsTypeToTypeInfo } from './analyzer-context.ts'
-import { parseExpression, isSupported, parseBlockBody, foldBlockToExpr, predicateTernaryToLogical, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, CALLBACK_METHODS, unboundCallbackParamRead, unboundCallbackParamReason, type ParsedExpr } from './expression-parser.ts'
+import { parseExpression, freeIdentifiers, isSupported, parseBlockBody, foldBlockToExpr, predicateTernaryToLogical, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, CALLBACK_METHODS, unboundCallbackParamRead, unboundCallbackParamReason, type ParsedExpr } from './expression-parser.ts'
 import { fallbackChainParts, nullishChainParts } from './children-nullish.ts'
 import type { IRLoopSort, FunctionInfo, ConstantInfo, ParamInfo, FreeReference, SpreadAttr } from './types.ts'
+import { resolveStaticConstBinding } from './augment-inherited-props.ts'
+import { componentScopeNames } from './adapters/computed-const.ts'
 import { formatParamWithType } from './module-exports.ts'
 import { createError, ErrorCodes, internalInvariant } from './errors.ts'
 import { CLIENT_BUILTIN_SOURCE, isClientBuiltinName, type ClientBuiltinTag } from './builtins.ts'
@@ -7330,15 +7332,24 @@ function expandSpreadAttribute(
     // Phase 2 (`collectElements`) can bind them reactively off a live
     // `_p.<key>` read instead of the one-time `${restName}.${key}` snapshot
     // — see `IRAttribute.restExpandedKey`'s docstring.
-    const perKeyFreeIds: ReadonlySet<string> = new Set([restName])
+    // A rest a body destructure of the props object binds (`const { label,
+    // ...rest } = props`) holds the props object's keys minus the ones the
+    // destructure takes, so each expanded key reads the props object
+    // (#3844): a template binds every declared prop as its own variable,
+    // while its rest bag holds only undeclared keys.
+    const source = ctx.analyzer.restPropsOmittedKeys && ctx.analyzer.propsObjectName ? ctx.analyzer.propsObjectName : restName
+    const perKeyFreeIds: ReadonlySet<string> = new Set([source])
     return expandedKeys.map(key => ({
       name: key,
-      value: AttrValueOf.expression(`${restName}.${key}`),
+      value: AttrValueOf.expression(`${source}.${key}`),
       loc,
       freeIdentifiers: perKeyFreeIds,
       restExpandedKey: true,
     }))
   }
+
+  const constEntries = expandStaticConstSpread(attr, ctx)
+  if (constEntries) return constEntries.map(({ key, text }) => ({ name: key, value: AttrValueOf.expression(text), loc }))
 
   // Allocate a component-scoped slot ID so adapters that need a
   // structured plumbing path (Go's `.Spread_N` struct field) can
@@ -7355,6 +7366,62 @@ function expandSpreadAttribute(
     loc,
     freeIdentifiers: spreadFreeIdentifiers,
   }]
+}
+
+/**
+ * The entries of a spread of a const holding a static object literal
+ * (`const base = { label: 'x', tone: 'info' }`, `<Chip {...base} />`), as
+ * the `key: value-source` pairs the spread passes (#3844). JSX spreads the
+ * object's own keys in order, so the spread is the same as writing each key
+ * as an attribute in its place; carried that way, every backend reads each
+ * value as a literal instead of a bag no template binds.
+ *
+ * Only when the read reaches the const (`resolveStaticConstBinding`; a
+ * module const also not shadowed by a component binding) and every entry
+ * is a plain `key: value` whose value reads no name (a literal, or an array
+ * or object of literals) and is not `key` / `ref`. An attribute written
+ * after the spread overrides its key, so that entry is left out; one
+ * written before it is overridden by the spread, which the per-key form
+ * cannot say, so the spread is kept. `null` otherwise, and the spread stays
+ * a spread.
+ */
+function expandStaticConstSpread(attr: ts.JsxSpreadAttribute, ctx: TransformContext): Array<{ key: string; text: string }> | null {
+  let expr: ts.Expression = attr.expression
+  while (ts.isParenthesizedExpression(expr)) expr = expr.expression
+  if (!ts.isIdentifier(expr)) return null
+  const name = expr.text
+  const constant = resolveStaticConstBinding(name, ctx.analyzer.localConstants, n => ctx.scope.isBound(n))
+  if (!constant || constant.parsed?.kind !== 'object-literal') return null
+  if (constant.isModule && componentScopeNames(ctx.analyzer).has(name)) return null
+  const init = parseConstInitializer(constant)
+  if (!init || !ts.isObjectLiteralExpression(init)) return null
+  return staticObjectSpreadEntries(init, attr, ctx)
+}
+
+/**
+ * {@link expandStaticConstSpread}'s entries of the object literal `init`
+ * spread by `attr`, or `null` when one of them has no per-key form.
+ */
+function staticObjectSpreadEntries(
+  init: ts.ObjectLiteralExpression,
+  attr: ts.JsxSpreadAttribute,
+  ctx: TransformContext,
+): Array<{ key: string; text: string }> | null {
+  const before = new Set<string>()
+  const after = new Set<string>()
+  for (const other of attr.parent.properties) {
+    if (ts.isJsxAttribute(other)) (other.pos < attr.pos ? before : after).add(other.name.getText(ctx.sourceFile))
+  }
+  const entries: Array<{ key: string; text: string }> = []
+  for (const prop of init.properties) {
+    if (!ts.isPropertyAssignment(prop)) return null
+    const key = ts.isIdentifier(prop.name) || ts.isStringLiteral(prop.name) ? prop.name.text : null
+    if (key === null || key === 'key' || key === 'ref' || before.has(key)) return null
+    const value = tsNodeToParsedExpr(prop.initializer)
+    if (freeIdentifiers(value)?.size !== 0) return null
+    if (!after.has(key)) entries.push({ key, text: astText(prop.initializer) })
+  }
+  return entries
 }
 
 /**

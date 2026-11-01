@@ -21936,10 +21936,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "top-level-ternary",
-        "description": "Top-level ternary return preserves conditional (#968)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/top-level-ternary.ts",
-        "code": "count() > 0"
+        "fixture": "body-destructure-rest-props",
+        "description": "a body destructure of the rest props binds the props the caller passed",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-destructure-rest-props.ts",
+        "code": "n > 1"
       }
     },
     "binary:>=": {

@@ -15,8 +15,8 @@
  * shadow the name are respected.
  */
 
-import { collectContextConsumers, lookupLiteralConst } from '../augment-inherited-props.ts'
-import { freeIdentifiers, inlineBinding, parseExpression, stringifyParsedExpr, type ParsedExpr } from '../expression-parser.ts'
+import { collectContextConsumers, lookupLiteralConst, resolveStaticConstBinding } from '../augment-inherited-props.ts'
+import { freeIdentifiers, inlineBinding, mapParsedExpr, parseExpression, stringifyParsedExpr, type ParsedExpr } from '../expression-parser.ts'
 import type { ConstantInfo, ExpressionAttr, IRMetadata } from '../types.ts'
 import { componentBindings } from '../relocate.ts'
 import { PROPS_OBJECT_IDENTIFIER } from '../scope/binding-scope.ts'
@@ -108,7 +108,9 @@ function propsBindingNames(metadata: IRMetadata): Set<string> {
  * {@link ComputedConstContext.componentNames}. Not `componentBindings`, which
  * also lists every typed prop of a props object as a `prop` binding.
  */
-export function componentScopeNames(metadata: IRMetadata): Set<string> {
+export function componentScopeNames(
+  metadata: Pick<IRMetadata, 'propsObjectName' | 'propsParams' | 'restPropsName' | 'localConstants' | 'localFunctions' | 'signals' | 'memos'>,
+): Set<string> {
   const names = new Set<string>()
   if (metadata.propsObjectName !== null) names.add(metadata.propsObjectName)
   // With no props object the signature destructures, so every param is bound.
@@ -175,6 +177,11 @@ function inlineOnce(expr: ParsedExpr, ctx: ComputedConstContext): ParsedExpr {
   if (!free) return expr
   let result = expr
   for (const name of free) {
+    const object = objectConstInitializer(name, ctx)
+    if (object) {
+      result = projectObjectReads(result, name, object, ctx.getters) ?? result
+      continue
+    }
     const init = inlinableInitializer(name, ctx)
     if (!init) continue
     result = inlineBinding(result, name, init) ?? inlineUnderCallbacks(result, name, init, ctx) ?? result
@@ -380,5 +387,169 @@ function callsOnlyGetters(init: ParsedExpr, getters: ReadonlySet<string>): boole
     for (const value of Object.values(e)) visit(value)
   }
   visit(init)
+  return ok
+}
+
+/**
+ * The initializer of a `const` holding an object literal (`const flags = { a:
+ * n > 1, label: 'L' + n }`, `const labels = { ok: 'Fine', err: 'Broken' }`)
+ * that a read of `name` stands for, resolved in the scope the const is
+ * declared in, or `null` when the read stays as it is. The same visibility
+ * rules as {@link inlinableInitializer}, with the const a read reaches decided
+ * by `resolveStaticConstBinding`; the literal must list plain
+ * `key: value` entries only (no spread), so each key's value is known.
+ */
+function objectConstInitializer(name: string, ctx: ComputedConstContext): ObjectLiteral | null {
+  if (ctx.componentNames.has(name) && !componentConst(name, ctx)) return null
+  const constant = resolveStaticConstBinding(name, ctx.constants, n => ctx.isShadowed(n))
+  const init = constant?.parsed
+  if (!constant || init?.kind !== 'object-literal' || constant.systemConstructKind) return null
+  if (literalValues(init) === null) return null
+  if (ctx.isShadowed(name) || ctx.getters.has(name) || ctx.contextConsumers.has(name) || ctx.propsBindings.has(name)) return null
+  if (ctx.isAdapterBound(name)) return null
+  if (!callsOnlyGetters(init, constant.isModule ? new Set() : ctx.getters)) return null
+  const resolved = resolveInitializer(init, ctx, n => ctx.isShadowed(n), constant.isModule ? 'module' : 'component')
+  return resolved?.kind === 'object-literal' ? resolved : null
+}
+
+/**
+ * `expr` with each read of a property of the object const `name` replaced by
+ * what JS reads there (#3844): `flags.label` by the value the literal gives
+ * `label`, and `labels[kind]` by the conditional that picks the value of the
+ * key `kind` equals, `undefined` when it equals none. A const that holds an
+ * object has no binding in a template, the same as a computed const.
+ *
+ * A key the literal does not list reads `undefined`.
+ *
+ * `null` (the read stays as written) when `expr` reads `name` whole, reads a
+ * key `Object.prototype` holds, or indexes it where the conditional would
+ * not be what JS reads: the index calls something other than a signal or
+ * memo getter (the conditional repeats it), or a key is one a non-string
+ * index converts to (`'1'`, `'true'`, `'undefined'`, …), which strict
+ * equality with the index would miss. A key inherited from
+ * `Object.prototype` (`labels['toString']`) is not modelled, as in the
+ * `lookup` template part.
+ */
+function projectObjectReads(
+  expr: ParsedExpr,
+  name: string,
+  object: ObjectLiteral,
+  getters: ReadonlySet<string>,
+): ParsedExpr | null {
+  const objectFree = freeIdentifiers(object) ?? new Set<string>()
+  let ok = true
+  // What a read chain rooted at `name` (`flags`, `conf.inner`, `labels[k]`)
+  // holds, or null for a chain rooted elsewhere.
+  const resolve = (e: ParsedExpr, enclosing: ReadonlySet<string>): ParsedExpr | null => {
+    if (e.kind === 'identifier') return e.name === name && !enclosing.has(name) ? object : null
+    if (e.kind !== 'member' && e.kind !== 'index-access') return null
+    const base = resolve(e.object, enclosing)
+    if (base === null) return null
+    // A read off a value that is not an object (`flags.label.length`) is
+    // left to the walk, which projects the inner read.
+    if (base.kind !== 'object-literal') return null
+    const values = literalValues(base)
+    const value = values === null ? undefined : e.kind === 'member' ? memberValue(values, e.property) : keyedValue(values, e.index, getters)
+    if (value === undefined) ok = false
+    return value ?? null
+  }
+  const result = mapParsedExpr(expr, (e, enclosing) => {
+    const value = resolve(e, enclosing)
+    if (value === null) return null
+    // A value read where a callback param rebinds one of its names, or an
+    // object read whole, has no projection.
+    if (value.kind === 'object-literal' || [...enclosing].some(p => objectFree.has(p))) ok = false
+    return value
+  })
+  return ok ? foldUndefinedTests(result) : null
+}
+
+/**
+ * `expr` with each conditional whose test compares two operands known at
+ * compile time against `undefined` (`'x' === undefined`, `undefined ===
+ * undefined`) replaced by the branch it takes. A projected read of a key
+ * the literal does or does not list leaves exactly this behind in a
+ * destructure default (`conf.tone === undefined ? 'x' : conf.tone`), and a
+ * backend need not spell `undefined` the same in every position.
+ */
+function foldUndefinedTests(expr: ParsedExpr): ParsedExpr {
+  return mapParsedExpr(expr, e => {
+    if (e.kind !== 'conditional' || e.test.kind !== 'binary' || (e.test.op !== '===' && e.test.op !== '!==')) return null
+    const equal = undefinedEquality(e.test.left, e.test.right)
+    if (equal === null) return null
+    return foldUndefinedTests((equal === (e.test.op === '===')) ? e.consequent : e.alternate)
+  })
+}
+
+/** Whether `a === b` holds, when one side is `undefined` and the other a literal or `undefined`; null otherwise. */
+function undefinedEquality(a: ParsedExpr, b: ParsedExpr): boolean | null {
+  const isUndefined = (e: ParsedExpr) => e.kind === 'identifier' && e.name === 'undefined'
+  const known = (e: ParsedExpr) => isUndefined(e) || e.kind === 'literal'
+  if (!known(a) || !known(b) || (!isUndefined(a) && !isUndefined(b))) return null
+  return isUndefined(a) && isUndefined(b)
+}
+
+type ObjectLiteral = Extract<ParsedExpr, { kind: 'object-literal' }>
+
+/** The value of each key `object` lists (the last one for a repeated key), or null when it spreads another object. */
+function literalValues(object: ObjectLiteral): Map<string, ParsedExpr> | null {
+  const values = new Map<string, ParsedExpr>()
+  for (const p of object.properties) {
+    if (p.kind === 'spread') return null
+    values.set(p.key, p.value)
+  }
+  return values
+}
+
+/**
+ * What `object.<key>` reads: the value the literal gives `key`, and
+ * `undefined` for a key it does not list. `undefined` (no projection) for a
+ * key `Object.prototype` holds, which JS reads from there.
+ */
+function memberValue(values: ReadonlyMap<string, ParsedExpr>, key: string): ParsedExpr | undefined {
+  const value = values.get(key)
+  if (value) return value
+  return key in Object.prototype ? undefined : { kind: 'identifier', name: 'undefined' }
+}
+
+/** Keys a non-string property key converts to, which strict equality with the index would not match. */
+const NON_STRING_KEY_TEXT = new Set(['true', 'false', 'null', 'undefined', 'NaN', 'Infinity', '-Infinity'])
+
+/**
+ * `values[index]` as a conditional over the literal's keys (see
+ * {@link projectObjectReads}), or `undefined` when it has none.
+ */
+function keyedValue(values: ReadonlyMap<string, ParsedExpr>, index: ParsedExpr, getters: ReadonlySet<string>): ParsedExpr | undefined {
+  if (!readsOnly(index, getters)) return undefined
+  for (const key of values.keys()) {
+    if (NON_STRING_KEY_TEXT.has(key) || String(Number(key)) === key) return undefined
+  }
+  let result: ParsedExpr = { kind: 'identifier', name: 'undefined' }
+  for (const [key, value] of [...values].reverse()) {
+    result = {
+      kind: 'conditional',
+      test: { kind: 'binary', op: '===', left: index, right: { kind: 'literal', value: key, literalType: 'string' } },
+      consequent: value,
+      alternate: result,
+    }
+  }
+  return result
+}
+
+/** Whether evaluating `expr` twice reads the same value: it calls nothing but signal and memo getters, and holds no function. */
+function readsOnly(expr: ParsedExpr, getters: ReadonlySet<string>): boolean {
+  let ok = true
+  const visit = (node: unknown): void => {
+    if (!ok || node === null || typeof node !== 'object') return
+    if (Array.isArray(node)) {
+      node.forEach(visit)
+      return
+    }
+    const e = node as ParsedExpr
+    if (e.kind === 'arrow' || e.kind === 'unsupported') ok = false
+    else if (e.kind === 'call' && !(e.callee.kind === 'identifier' && e.args.length === 0 && getters.has(e.callee.name))) ok = false
+    else for (const value of Object.values(e)) visit(value)
+  }
+  visit(expr)
   return ok
 }

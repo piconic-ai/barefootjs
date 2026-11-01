@@ -236,6 +236,13 @@ import { fixture as filterPredicateModulo } from './filter-predicate-modulo'
 import { fixture as fillUnsupported } from './fill-unsupported'
 import { fixture as fillUnsupportedClient } from './fill-unsupported-client'
 import { fixture as componentSpreadRest } from './component-spread-rest'
+import { fixture as bodyDestructureConstObject } from './body-destructure-const-object'
+import { fixture as bodyDestructureRestProps } from './body-destructure-rest-props'
+import { fixture as objectConstMemberRead } from './object-const-member-read'
+import { fixture as recordConstIndexText } from './record-const-index-text'
+import { fixture as recordConstIndexEarlyReturn } from './record-const-index-early-return'
+import { fixture as constObjectSpread } from './const-object-spread'
+import { fixture as propsObjectBodyRestSpread } from './props-object-body-rest-spread'
 import { fixture as componentSpreadPropsThenExplicit } from './component-spread-props-then-explicit'
 import { fixture as componentSpreadExplicitThenProps } from './component-spread-explicit-then-props'
 import { fixture as componentSpreadPropsInLoopRow } from './component-spread-props-in-loop-row'
@@ -1472,6 +1479,13 @@ export const jsxFixtures: JSXFixture[] = [
   fillUnsupported,
   fillUnsupportedClient,
   componentSpreadRest,
+  bodyDestructureConstObject,
+  bodyDestructureRestProps,
+  objectConstMemberRead,
+  recordConstIndexText,
+  recordConstIndexEarlyReturn,
+  constObjectSpread,
+  propsObjectBodyRestSpread,
   componentSpreadPropsThenExplicit,
   componentSpreadExplicitThenProps,
   componentSpreadPropsInLoopRow,
