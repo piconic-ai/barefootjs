@@ -744,15 +744,21 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
       const operand = this.coerceNullishOperand(op, argument, undefined, arg)
       return negate(plan, operand, () => `-(${operand})`)
     }
-    return toNumber(plan, arg)
+    // Unary plus applies JS `ToNumber` too (#3824 step 3).
+    return toNumber(plan, this.coerceNullishOperand(op, argument, undefined, arg))
   }
 
   /** Spell `arithmeticOperandCoercion` (#3474): a `null` operand reads as
    * `0`, as JS `ToNumber(null)` does (#3350); an `undefined` one as `NaN`, as
-   * `ToNumber(undefined)` does (#3390). */
+   * `ToNumber(undefined)` does (#3390).
+   * A string or boolean relational operand that may only be absent
+   * (`'undefined-keep'`, #3824 step 3) reads a nil as `NaN` and keeps a
+   * present value, which the relational helper converts itself.
+   */
   private coerceNullishOperand(op: string, expr: ParsedExpr, other: ParsedExpr | undefined, operand: string): string {
     const coercion = this.ctx._arithmeticCoercion(op, expr, other)
     if (coercion === 'undefined') return `bf.number(${operand})`
+    if (coercion === 'undefined-keep') return `((${operand}).nil? ? Float::NAN : ${operand})`
     return coercion === 'null' ? `(${operand} || 0)` : operand
   }
 

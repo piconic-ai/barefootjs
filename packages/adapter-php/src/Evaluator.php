@@ -478,16 +478,7 @@ final class Evaluator
             return 0.0;
         }
         if (preg_match(self::JS_RADIX_RE, $t, $m)) {
-            $base = ['x' => 16, 'o' => 8, 'b' => 2][strtolower($m[1])];
-            $n = 0.0;
-            foreach (str_split($m[2]) as $digit) {
-                $d = hexdec($digit);
-                if ($d >= $base) {
-                    return NAN;
-                }
-                $n = $n * $base + $d;
-            }
-            return $n;
+            return self::radixToNumber($m[2], ['x' => 16, 'o' => 8, 'b' => 2][strtolower($m[1])]);
         }
         if (!preg_match(self::JS_DECIMAL_RE, $t, $m)) {
             return NAN;
@@ -497,6 +488,53 @@ final class Evaluator
             return $m[1] === '-' ? -INF : INF;
         }
         return (float) $t;
+    }
+
+    /**
+     * The digits of a JS `0x` / `0o` / `0b` integer as the double nearest its
+     * value, ties to even; NAN for a digit outside the base. JS rounds the
+     * mathematical value once (#3824 step 3), so the digits are read as bits:
+     * the first 53 significant bits, the next one (the round bit) and whether
+     * any later bit is set (the sticky bit). Accumulating them in a float
+     * would round every prefix past 2^53 instead (`0x2000000000000101`). A
+     * value past the largest double is INF.
+     */
+    private static function radixToNumber(string $digits, int $base): float
+    {
+        $bitsPerDigit = ['16' => 4, '8' => 3, '2' => 1][(string) $base];
+        $kept = 0; // the first 54 significant bits (53 + the round bit)
+        $significant = 0;
+        $sticky = false;
+        foreach (str_split($digits) as $digit) {
+            $d = hexdec($digit);
+            if ($d >= $base) {
+                return NAN;
+            }
+            for ($shift = $bitsPerDigit - 1; $shift >= 0; $shift--) {
+                $bit = ($d >> $shift) & 1;
+                if ($significant === 0 && $bit === 0) {
+                    continue;
+                }
+                if ($significant < 54) {
+                    $kept = ($kept << 1) | $bit;
+                } elseif ($bit === 1) {
+                    $sticky = true;
+                }
+                $significant++;
+            }
+        }
+        if ($significant <= 53) {
+            return (float) $kept;
+        }
+        $round = ($kept & 1) === 1;
+        $mantissa = $kept >> 1;
+        if ($round && ($sticky || ($mantissa & 1) === 1)) {
+            $mantissa++;
+        }
+        // mantissa <= 2^53 is exact, and a power of two scales it exactly or
+        // overflows to INF.
+        $exponent = $significant - 53;
+        return $exponent > 1100 ? INF : (float) $mantissa * (2.0 ** $exponent);
     }
 
     public static function toStringJs($v): string

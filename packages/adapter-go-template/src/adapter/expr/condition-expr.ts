@@ -14,6 +14,7 @@
 
 import {
   asCallbackMethodCall,
+  type ArithmeticCoercion,
   exprToString,
   foldNegatedNumberLiteral,
   identifierPath,
@@ -23,7 +24,7 @@ import {
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
-import { goBinaryHelperCall, goNumberLiteral, GO_REMEDIATION_OPTIONS, isLiteralKeyRead, lowerJsLogicalTest, lowerJsLogicalValue, lowerJsNullishValue, lowerAbsentAsNil, lowerJsToNumber, lowerJsTruthyTest, wrapIfMultiToken, type NullishSpelling } from '../lib/go-emit.ts'
+import { goBinaryHelperCall, goNumberLiteral, GO_REMEDIATION_OPTIONS, isLiteralKeyRead, lowerJsLogicalTest, lowerJsLogicalValue, lowerJsNullishValue, lowerAbsentAsNil, lowerJsToNumber, lowerJsTruthyTest, lowerUndefinedOperand, wrapIfMultiToken, type NullishSpelling } from '../lib/go-emit.ts'
 import { isPropsObjectName } from '../lib/compile-state.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import type { HigherOrderShape } from '../lib/types.ts'
@@ -102,13 +103,15 @@ export interface ConditionExprHost {
    */
   refuseAmbiguousNilArithmetic(expr: ParsedExpr, params: readonly string[]): void
   /**
-   * Whether a relational operand's nil reads as `undefined`
-   * (`arithmeticOperandCoercion`, #3824 step 3): an omitted `n?: number`.
-   * Such an operand goes through `bf_number`, which maps nil to `NaN`, so the
-   * comparison is false as `undefined < 1` is in JS; the `bf_lt` helpers
-   * read any other nil as `null`. Read in the current scope.
+   * The nil reading of an operand JS applies ToNumber to
+   * (`arithmeticOperandCoercion`, #3824 step 3), spelled by
+   * `lowerUndefinedOperand`: a relational operand or a unary `+` operand
+   * reading an omitted `n?: number` (or `s?: string`) reads its nil as `NaN`,
+   * so the comparison is false as `undefined < 1` is in JS; the helpers read
+   * any other nil as `null`. Read in the current scope, or, with `params`,
+   * at a predicate's scope with its own bindings entered.
    */
-  relationalOperandReadsUndefined(op: string, operand: ParsedExpr, other: ParsedExpr): boolean
+  operandCoercion(op: string, operand: ParsedExpr, other: ParsedExpr | undefined, params?: readonly string[]): ArithmeticCoercion
   /**
    * The ToBoolean plan of `test` (#3824): typed at the current scope, or,
    * with `params`, at a predicate's scope with its own bindings entered.
@@ -222,7 +225,10 @@ function renderFilterUnary(
   const arg = renderFilterExprNode(host, expr.argument, param, localVarMap, datumField, fieldlessParam)
   if (arg === null) return null
   if (expr.op === '-') return `bf_neg ${wrapIfMultiToken(arg)}`
-  return expr.op === '+' ? lowerJsToNumber(host.primitivePlan(expr, [param]), arg) : arg
+  if (expr.op !== '+') return arg
+  // Unary plus applies JS `ToNumber`: an omitted optional number reads as `NaN`.
+  const operand = lowerUndefinedOperand(host.operandCoercion('+', expr.argument, undefined, [param]), arg)
+  return lowerJsToNumber(host.primitivePlan(expr, [param]), operand)
 }
 
 /** One node of {@link renderFilterExpr}; children recurse through it. */
@@ -601,7 +607,11 @@ export function renderConditionExpr(host: ConditionExprHost, expr: ParsedExpr): 
       // multi-token argument (`or .N 0`, from `-(n() ?? 0)`) must be
       // parenthesised or Go reads it as extra sibling args (#3249).
       if (expr.op === '-') return { preamble: arg.preamble, expr: `bf_neg ${wrapIfMultiToken(arg.expr)}` }
-      if (expr.op === '+') return { preamble: arg.preamble, expr: lowerJsToNumber(host.primitivePlan(expr), arg.expr) }
+      if (expr.op === '+') {
+        // Unary plus applies JS `ToNumber`: an omitted optional number reads as `NaN`.
+        const operand = lowerUndefinedOperand(host.operandCoercion('+', expr.argument, undefined), arg.expr)
+        return { preamble: arg.preamble, expr: lowerJsToNumber(host.primitivePlan(expr), operand) }
+      }
       return arg
     }
 
@@ -836,9 +846,9 @@ function renderConditionMember(
 const RELATIONAL_OPS: ReadonlySet<string> = new Set(['<', '<=', '>', '>='])
 
 /**
- * A relational operand as the comparison reads it: through `bf_number` when
- * its nil reads as `undefined` (`ConditionExprHost.relationalOperandReadsUndefined`),
- * as rendered otherwise. `rendered` is already `wrapIfMultiToken`-wrapped.
+ * A relational operand as the comparison reads it: `NaN` for a nil that
+ * reads as `undefined` (`ConditionExprHost.operandCoercion`), as rendered
+ * otherwise. `rendered` is already `wrapIfMultiToken`-wrapped.
  */
 function relationalOperand(
   host: ConditionExprHost,
@@ -848,7 +858,7 @@ function relationalOperand(
 ): string {
   if (!RELATIONAL_OPS.has(expr.op)) return rendered
   const [operand, other] = side === 'left' ? [expr.left, expr.right] : [expr.right, expr.left]
-  return host.relationalOperandReadsUndefined(expr.op, operand, other) ? `(bf_number ${rendered})` : rendered
+  return lowerUndefinedOperand(host.operandCoercion(expr.op, operand, other), rendered)
 }
 
 /** The `binary` arm of {@link renderConditionExpr}. */

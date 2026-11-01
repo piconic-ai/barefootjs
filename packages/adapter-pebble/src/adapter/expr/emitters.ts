@@ -688,16 +688,22 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
       const operand = this.coerceNullishOperand(op, argument, undefined, arg)
       return negate(plan, operand, () => (operand === arg ? `-${groupUnaryOperand(argument, arg)}` : `-(${operand})`))
     }
-    return toNumber(plan, emit(argument))
+    // Unary plus applies JS `ToNumber` too (#3824 step 3).
+    return toNumber(plan, this.coerceNullishOperand(op, argument, undefined, emit(argument)))
   }
 
   /** Spell `arithmeticOperandCoercion` (#3474): a `null` operand reads as
    * `0`, as JS `ToNumber(null)` does (#3350); an `undefined` one as `NaN`, as
-   * `ToNumber(undefined)` does (#3390). */
+   * `ToNumber(undefined)` does (#3390).
+   * A string or boolean relational operand that may only be absent
+   * (`'undefined-keep'`, #3824 step 3) reads a nil as `NaN` and keeps a
+   * present value, which the relational helper converts itself.
+   */
   private coerceNullishOperand(op: string, expr: ParsedExpr, other: ParsedExpr | undefined, operand: string): string {
     const coercion = this.ctx._arithmeticCoercion(op, expr, other)
     // Pebble's `bf.number(null)` is JS `Number(null)`, `0`; spell the NaN out.
-    if (coercion === 'undefined') return `(${operand} is null ? bf.number('NaN') : ${operand})`
+    // `'undefined-keep'` spells the same nil test: a present value stays as it is.
+    if (coercion === 'undefined' || coercion === 'undefined-keep') return `(${operand} is null ? bf.number('NaN') : ${operand})`
     return coercion === 'null' ? `(${operand} is null ? 0 : ${operand})` : operand
   }
 

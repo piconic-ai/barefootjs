@@ -4,7 +4,7 @@
  * Pure free functions — none read adapter instance state.
  */
 
-import type { SortComparator, SupportResult, ParsedExpr } from '@barefootjs/jsx'
+import type { ArithmeticCoercion, SortComparator, SupportResult, ParsedExpr } from '@barefootjs/jsx'
 import { arithmeticHelper, BindingScope, EMPTY_OPERAND_TYPING, escapeBraceDelimiters, evalBody, isExactly, isNativeToNumber, numberLiteralSpelling, operandFacts, spellTest, type CallbackCapture, type NativeSafeTable, type PrimitivePlan } from '@barefootjs/jsx'
 
 import { capitalize } from "./go-naming.ts"
@@ -95,6 +95,21 @@ export const GO_NATIVE_SAFE: NativeSafeTable = {
  */
 export function lowerJsToNumber(plan: PrimitivePlan | null, rendered: string): string {
   return isNativeToNumber(plan) ? rendered : `bf_to_number ${wrapIfMultiToken(rendered)}`
+}
+
+/**
+ * Spell an operand's nil reading (`arithmeticOperandCoercion`, #3474) where
+ * it reads as `undefined`: through `bf_number`, which maps nil to `NaN`, for
+ * a number operand (`'undefined'`); as `NaN` when nil and the operand itself
+ * otherwise for a string or boolean relational operand (`'undefined-keep'`,
+ * #3824 step 3), which the `bf_lt` helpers must receive unconverted. Any
+ * other reading needs no spelling: the helpers read nil as `null`.
+ */
+export function lowerUndefinedOperand(coercion: ArithmeticCoercion, rendered: string): string {
+  const w = wrapIfMultiToken(rendered)
+  if (coercion === 'undefined') return `(bf_number ${w})`
+  if (coercion === 'undefined-keep') return `(index (or (bf_keep_nonnil ${w}) (bf_arr (bf_number "NaN"))) 0)`
+  return rendered
 }
 
 /**

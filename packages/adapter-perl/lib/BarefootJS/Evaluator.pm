@@ -333,20 +333,52 @@ sub _to_number ($v) {
 # `"-0"` as +0, so it is not used here.
 my %RADIX = (x => 16, o => 8, b => 2);
 
+# _radix_to_number: the digits of a JS `0x` / `0o` / `0b` integer as the
+# double nearest its value, ties to even; NaN for a digit outside the base.
+# JS rounds the mathematical value once (#3824 step 3), so the digits are
+# read as bits: the first 53 significant bits, the next one (the round bit)
+# and whether any later bit is set (the sticky bit). Accumulating them in a
+# Perl number rounds every prefix past 64 bits instead. A value past the
+# largest double is Infinity.
+my %RADIX_BITS = (16 => 4, 8 => 3, 2 => 1);
+
+sub _radix_to_number ($digits, $base) {
+    my $kept = 0;    # the first 54 significant bits (53 + the round bit)
+    my $significant = 0;
+    my $sticky = 0;
+    for my $digit (split //, $digits) {
+        my $d = hex $digit;
+        return _nan() if $d >= $base;
+        for (my $shift = $RADIX_BITS{$base} - 1; $shift >= 0; $shift--) {
+            my $bit = ($d >> $shift) & 1;
+            next if $significant == 0 && $bit == 0;
+            if ($significant < 54) {
+                $kept = $kept * 2 + $bit;
+            }
+            elsif ($bit) {
+                $sticky = 1;
+            }
+            $significant++;
+        }
+    }
+    return _double($kept) if $significant <= 53;
+    my $round = $kept % 2;
+    my $mantissa = ($kept - $round) / 2;
+    $mantissa++ if $round && ($sticky || $mantissa % 2);
+    # mantissa <= 2^53 is exact, and a power of two scales it exactly or
+    # overflows to Infinity.
+    my $exponent = $significant - 53;
+    return 9**9**9 if $exponent > 1100;
+    return _double($mantissa * (2**$exponent));
+}
+
 sub _string_to_number ($s) {
     my $t = $s;
     $t =~ s/\A\s+//;
     $t =~ s/\s+\z//;
     return 0 if $t eq '';
     if ($t =~ /\A0([xXoObB])([0-9a-fA-F]+)\z/) {
-        my $base = $RADIX{lc $1};
-        my $n = 0;
-        for my $digit (split //, $2) {
-            my $d = hex $digit;
-            return _nan() if $d >= $base;
-            $n = $n * $base + $d;
-        }
-        return _double($n);
+        return _radix_to_number($2, $RADIX{lc $1});
     }
     if ($t =~ /\A([+-]?)Infinity\z/) {
         return $1 eq '-' ? -(9**9**9) : 9**9**9;

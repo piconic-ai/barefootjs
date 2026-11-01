@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"math"
+	"math/big"
 	"reflect"
 	"regexp"
 	"sort"
@@ -385,12 +386,16 @@ func evalToNumber(v any) float64 {
 
 // parseJSRadixInteger parses JS's NonDecimalIntegerLiteral ("0x1F",
 // "0o17", "0b101", prefix in either case, no sign, no separators) into the
-// double nearest its value. ok is false for any other string.
+// double nearest its value, ties to even, as JS's StringToNumber rounds the
+// mathematical value once (#3824 step 3): the digits convert to an exact
+// big integer first, since accumulating them in a float64 rounds every
+// prefix past 2^53 ("0x2000000000000101" would lose its low bits). A value
+// past the largest double is +Inf. ok is false for any other string.
 func parseJSRadixInteger(t string) (float64, bool) {
 	if len(t) < 3 || t[0] != '0' {
 		return 0, false
 	}
-	var base float64
+	var base int
 	switch t[1] {
 	case 'x', 'X':
 		base = 16
@@ -401,25 +406,32 @@ func parseJSRadixInteger(t string) (float64, bool) {
 	default:
 		return 0, false
 	}
-	n := 0.0
-	for _, ch := range t[2:] {
-		var d float64
+	digits := t[2:]
+	// Validate by hand: big.Int.SetString would also accept a sign.
+	for _, ch := range digits {
+		var d int
 		switch {
 		case ch >= '0' && ch <= '9':
-			d = float64(ch - '0')
+			d = int(ch - '0')
 		case ch >= 'a' && ch <= 'f':
-			d = float64(ch-'a') + 10
+			d = int(ch-'a') + 10
 		case ch >= 'A' && ch <= 'F':
-			d = float64(ch-'A') + 10
+			d = int(ch-'A') + 10
 		default:
 			return 0, false
 		}
 		if d >= base {
 			return 0, false
 		}
-		n = n*base + d
 	}
-	return n, true
+	n, ok := new(big.Int).SetString(digits, base)
+	if !ok {
+		return 0, false
+	}
+	// SetInt sizes the precision to hold n exactly; Float64 then rounds to
+	// nearest even and overflows to +Inf.
+	f, _ := new(big.Float).SetInt(n).Float64()
+	return f, true
 }
 
 // evalIsNumeric reports whether v is one of the Go numeric types (all of

@@ -1984,6 +1984,7 @@
               "nested-callback-in-filter-predicate",
               "off-subset-callback-body",
               "omitted-optional-nullable-number-arithmetic",
+              "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
@@ -2006,6 +2007,7 @@
               "nested-callback-in-filter-predicate",
               "off-subset-callback-body",
               "omitted-optional-nullable-number-arithmetic",
+              "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
@@ -2031,6 +2033,7 @@
               "nested-callback-in-filter-predicate",
               "off-subset-callback-body",
               "omitted-optional-nullable-number-arithmetic",
+              "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
@@ -2053,6 +2056,7 @@
               "nested-callback-in-filter-predicate",
               "off-subset-callback-body",
               "omitted-optional-nullable-number-arithmetic",
+              "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
@@ -2076,6 +2080,7 @@
               "nested-callback-in-filter-predicate",
               "off-subset-callback-body",
               "omitted-optional-nullable-number-arithmetic",
+              "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
@@ -2098,6 +2103,7 @@
               "nested-callback-in-filter-predicate",
               "off-subset-callback-body",
               "omitted-optional-nullable-number-arithmetic",
+              "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
@@ -2120,6 +2126,7 @@
               "nested-callback-in-filter-predicate",
               "off-subset-callback-body",
               "omitted-optional-nullable-number-arithmetic",
+              "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
@@ -2143,6 +2150,7 @@
               "nested-callback-in-filter-predicate",
               "off-subset-callback-body",
               "omitted-optional-nullable-number-arithmetic",
+              "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
@@ -6388,6 +6396,244 @@
           }
         }
       },
+      "omitted-optional-nullable-number-unary-plus": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-unary-plus"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-unary-plus"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-unary-plus"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-unary-plus"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-unary-plus"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-unary-plus"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-unary-plus"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-unary-plus"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-unary-plus"
+          }
+        }
+      },
+      "omitted-optional-nullable-string-relational": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-scalar-relational"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-string-relational"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-scalar-relational"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-string-relational"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-scalar-relational"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-string-relational"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-scalar-relational"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-string-relational"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-scalar-relational"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-string-relational"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-scalar-relational"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-string-relational"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-scalar-relational"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-string-relational"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-scalar-relational"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-string-relational"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-scalar-relational"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-string-relational"
+          }
+        }
+      },
       "omitted-optional-row-field-plus": {
         "blade": {
           "kind": "render",
@@ -8836,6 +9082,14 @@
         "description": "A comparison over an omitted optional prop typed number | null (undefined → NaN → false)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-nullable-number-relational.ts"
       },
+      "omitted-optional-nullable-number-unary-plus": {
+        "description": "Unary plus over an omitted optional prop typed number | null (+undefined → NaN)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-nullable-number-unary-plus.ts"
+      },
+      "omitted-optional-nullable-string-relational": {
+        "description": "A comparison over an omitted optional prop typed string | null (undefined → NaN → false)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-nullable-string-relational.ts"
+      },
       "omitted-optional-row-field-plus": {
         "description": "A + over an optional string row field renders undefined / NaN when the row omits it and…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-row-field-plus.ts"
@@ -9075,6 +9329,14 @@
       "omitted-optional-number-relational": {
         "description": "A comparison over an omitted optional number prop is false (undefined → NaN)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-number-relational.ts"
+      },
+      "omitted-optional-number-unary-plus": {
+        "description": "Unary plus over an omitted optional number prop (+undefined → NaN)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-number-unary-plus.ts"
+      },
+      "omitted-optional-string-relational": {
+        "description": "A comparison over an omitted optional string or boolean prop is false (undefined → NaN)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-string-relational.ts"
       },
       "opaque-local-accessor-call-client": {
         "description": "Local accessor bound to an opaque helper call, read deferred to the client via /* @client */",
@@ -9890,15 +10152,40 @@
       ]
     },
     "omitted-optional-nullable-number-arithmetic": {
-      "title": "Arithmetic or a comparison over an optional prop typed as a nullable number",
+      "title": "Arithmetic, unary plus or a comparison over an optional prop typed as a nullable number",
       "kind": "refusal",
-      "given": "arithmetic, or a `<` / `<=` / `>` / `>=` comparison, over a prop whose type admits both `null` and absence (`n?: number | null`)",
+      "given": "arithmetic, a unary `+`, or a `<` / `<=` / `>` / `>=` comparison, over a prop whose type admits both `null` and absence (`n?: number | null`)",
       "expected": "an omitted prop reads as `undefined` (`NaN`, so a comparison is false) and a `null` one as `0`",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
         "omitted-optional-nullable-number-arithmetic",
         "omitted-optional-nullable-number-arithmetic-destructured",
-        "omitted-optional-nullable-number-relational"
+        "omitted-optional-nullable-number-relational",
+        "omitted-optional-nullable-number-unary-plus"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "omitted-optional-nullable-scalar-relational": {
+      "title": "A comparison over an optional prop typed as a nullable string or boolean",
+      "kind": "refusal",
+      "given": "a `<` / `<=` / `>` / `>=` comparison over a string or boolean prop whose type admits both `null` and absence (`s?: string | null`)",
+      "expected": "an omitted prop reads as `undefined` (`NaN`, so the comparison is false) and a `null` one as `0`",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "omitted-optional-nullable-string-relational"
       ],
       "adapters": [
         "blade",

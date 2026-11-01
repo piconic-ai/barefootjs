@@ -676,15 +676,22 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
       const operand = this.coerceUndefinedOperand(op, argument, undefined, arg)
       return negate(plan, operand, () => (operand === arg ? `-${groupUnaryOperand(argument, arg)}` : `-(${operand})`))
     }
-    return toNumber(plan, emit(argument))
+    // Unary plus applies JS `ToNumber` too (#3824 step 3).
+    return toNumber(plan, this.coerceUndefinedOperand(op, argument, undefined, emit(argument)))
   }
 
   /** Spell `arithmeticOperandCoercion` (#3474): an `undefined` operand goes
    * through the runtime's JS `Number()`, which maps nil to `NaN` as
    * `ToNumber(undefined)` does (#3390). The native operator already reads a
-   * `null` operand as `0`, so that coercion needs no spelling. */
+   * `null` operand as `0`, so that coercion needs no spelling.
+   * A string or boolean relational operand that may only be absent
+   * (`'undefined-keep'`, #3824 step 3) reads a nil as `NaN` and keeps a
+   * present value, which the relational helper converts itself.
+   */
   private coerceUndefinedOperand(op: string, expr: ParsedExpr, other: ParsedExpr | undefined, operand: string): string {
-    return this.ctx._arithmeticCoercion(op, expr, other) === 'undefined' ? `$bf->number(${operand})` : operand
+    const coercion = this.ctx._arithmeticCoercion(op, expr, other)
+    if (coercion === 'undefined-keep') return `(${operand} ?? $bf->number('NaN'))`
+    return coercion === 'undefined' ? `$bf->number(${operand})` : operand
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {

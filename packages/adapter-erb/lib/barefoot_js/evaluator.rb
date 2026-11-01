@@ -206,7 +206,10 @@ module BarefootJS
     def parse_numeric_string(t)
       return Float::INFINITY if t == 'Infinity' || t == '+Infinity'
       return -Float::INFINITY if t == '-Infinity'
-      RADIX_STRING_RES.each { |base, re| return Integer(t, base) if t =~ re }
+      # JS rounds the mathematical value once to the nearest double, ties to
+      # even (#3824 step 3); Ruby's exact Integer#to_f does the same, and a
+      # value past the largest double is Infinity.
+      RADIX_STRING_RES.each { |base, re| return Integer(t, base).to_f if t =~ re }
 
       if t =~ NUMERIC_STRING_RE
         # Ruby's Float() rejects a trailing decimal point ("5.", "5.e3"),

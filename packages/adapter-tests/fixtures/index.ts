@@ -326,6 +326,10 @@ import { fixture as omittedOptionalNumberNegation } from './omitted-optional-num
 import { fixture as omittedOptionalNullableNumberArithmetic } from './omitted-optional-nullable-number-arithmetic'
 import { fixture as omittedOptionalNullableNumberRelational } from './omitted-optional-nullable-number-relational'
 import { fixture as omittedOptionalNumberRelational } from './omitted-optional-number-relational'
+import { fixture as omittedOptionalNumberUnaryPlus } from './omitted-optional-number-unary-plus'
+import { fixture as omittedOptionalNullableNumberUnaryPlus } from './omitted-optional-nullable-number-unary-plus'
+import { fixture as omittedOptionalStringRelational } from './omitted-optional-string-relational'
+import { fixture as omittedOptionalNullableStringRelational } from './omitted-optional-nullable-string-relational'
 import { fixture as omittedOptionalNullableNumberArithmeticDestructured } from './omitted-optional-nullable-number-arithmetic-destructured'
 import { fixture as nullableNumberArithmeticDestructured } from './nullable-number-arithmetic-destructured'
 import { fixture as callbackIndexParam } from './callback-index-param'
@@ -1552,6 +1556,10 @@ export const jsxFixtures: JSXFixture[] = [
   omittedOptionalNullableNumberArithmetic,
   omittedOptionalNullableNumberRelational,
   omittedOptionalNumberRelational,
+  omittedOptionalNumberUnaryPlus,
+  omittedOptionalNullableNumberUnaryPlus,
+  omittedOptionalStringRelational,
+  omittedOptionalNullableStringRelational,
   omittedOptionalNullableNumberArithmeticDestructured,
   nullableNumberArithmeticDestructured,
   callbackIndexParam,

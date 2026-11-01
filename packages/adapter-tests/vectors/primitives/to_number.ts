@@ -41,6 +41,17 @@ export const to_number: PrimitiveOp = {
     c('0x10', 'a hex string is its value'),
     c('0b11', 'a binary string is its value'),
     c('0o17', 'an octal string is its value'),
+    // A `0x` / `0o` / `0b` string is its mathematical value rounded once to
+    // the nearest double, ties to even (#3824 step 3).
+    c('0x20000000000001', 'a hex string at 2^53 + 1 rounds to even, down'),
+    c('0o400000000000000001', 'an octal string at 2^53 + 1 rounds to even, down'),
+    c('0x2000000000000101', 'a hex string just above a halfway point rounds up'),
+    c('0x2000000000000100', 'a hex string at a halfway point rounds to even, down'),
+    c('0x2000000000000300', 'a hex string at a halfway point rounds to even, up'),
+    c(`0b${'1'.repeat(54)}`, 'a binary string of 54 ones rounds up to 2^54'),
+    c(`0x${'0'.repeat(30)}1`, 'leading zeros of a hex string carry no bits'),
+    c(`0x${'f'.repeat(13)}b${'0'.repeat(242)}`, 'a hex string below the overflow halfway point is the largest double'),
+    c(`0x${'f'.repeat(13)}c${'0'.repeat(242)}`, 'a hex string at the overflow halfway point is Infinity'),
     c('-0x10', 'a signed hex string is NaN'),
     c('1_000', 'a digit separator is NaN'),
     c('abc', 'a non-numeric string is NaN'),

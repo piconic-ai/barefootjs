@@ -334,24 +334,58 @@ fn string_to_number(s: &str) -> f64 {
 }
 
 /// `0x1F` / `0o17` / `0b101` (prefix in either case, no sign) as the double
-/// nearest its value; `None` for any other string.
+/// nearest its value, ties to even; `None` for any other string. JS rounds
+/// the mathematical value once (#3824 step 3), so the digits are read as
+/// bits: the first 53 significant bits, the next one (the round bit) and
+/// whether any later bit is set (the sticky bit). Accumulating the digits in
+/// an `f64` would round every prefix past 2^53 instead
+/// (`0x2000000000000101`). A value past the largest double is infinity.
 fn parse_radix_integer(t: &str) -> Option<f64> {
     let bytes = t.as_bytes();
     if bytes.len() < 3 || bytes[0] != b'0' {
         return None;
     }
-    let base = match bytes[1] {
-        b'x' | b'X' => 16,
-        b'o' | b'O' => 8,
-        b'b' | b'B' => 2,
+    let (base, bits_per_digit) = match bytes[1] {
+        b'x' | b'X' => (16, 4),
+        b'o' | b'O' => (8, 3),
+        b'b' | b'B' => (2, 1),
         _ => return None,
     };
-    let mut n = 0.0_f64;
+    // `kept`: the first 54 significant bits (53 + the round bit).
+    let mut kept: u64 = 0;
+    let mut significant: usize = 0;
+    let mut sticky = false;
     for ch in t[2..].chars() {
         let d = ch.to_digit(base)?;
-        n = n * f64::from(base) + f64::from(d);
+        for shift in (0..bits_per_digit).rev() {
+            let bit = (d >> shift) & 1;
+            if significant == 0 && bit == 0 {
+                continue;
+            }
+            if significant < 54 {
+                kept = (kept << 1) | u64::from(bit);
+            } else if bit == 1 {
+                sticky = true;
+            }
+            significant += 1;
+        }
     }
-    Some(n)
+    if significant <= 53 {
+        // At most 53 bits: exact (`kept` holds every bit).
+        return Some(kept as f64);
+    }
+    let round = kept & 1 == 1;
+    let mut mantissa = kept >> 1;
+    if round && (sticky || mantissa & 1 == 1) {
+        mantissa += 1;
+    }
+    // value = mantissa * 2^(significant - 53); mantissa <= 2^53 is exact,
+    // and a power of two scales it exactly or overflows to infinity.
+    let exponent = significant - 53;
+    if exponent > 1100 {
+        return Some(f64::INFINITY);
+    }
+    Some(mantissa as f64 * 2f64.powi(exponent as i32))
 }
 
 /// An unsigned StrUnsignedDecimalLiteral without `Infinity`: digits with an

@@ -28,6 +28,8 @@ const pairs: Array<[unknown, unknown, string]> = [
   ['-2.0', 0, 'a numeric string against a number'],
   ['10', 9, 'a numeric string coerces against a number'],
   [' 3 ', 4, 'a padded numeric string coerces'],
+  ['0x20000000000001', 9007199254740992, 'a hex string at 2^53 + 1 rounds to 2^53'],
+  ['0x2000000000000101', 2305843009213693952, 'a hex string above 2^61 rounds up, past 2^61'],
   ['a', 0, 'a non-numeric string against a number is NaN'],
   ['', 1, 'the empty string against a number is 0'],
   [true, 2, 'true coerces to 1'],

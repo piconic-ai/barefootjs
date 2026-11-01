@@ -87,6 +87,9 @@ class PrimitiveVectorsTest < Minitest::Test
 
   def self.number_match?(got, expect)
     return false unless got.is_a?(Numeric)
+    # A JS number is a double: an Integer past 2^53 is a value no double
+    # holds, so `to_f` below would round it and hide the difference.
+    return false if got.is_a?(Integer) && got.abs > 2**53
 
     g = got.to_f
     e = expect.to_f

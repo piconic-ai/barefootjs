@@ -1,8 +1,9 @@
 import { exprToString, type ParsedExpr } from '../expression-parser.ts'
 import {
-  ambiguousNilArithmeticOperands,
+  ambiguousNilFamily,
+  ambiguousNilOperands,
   arithmeticOperandCoercion,
-  arithmeticOperandNilIsAmbiguous,
+  type AmbiguousNilFamily,
   type ArithmeticCoercion,
   type NullishAttrContext,
 } from '../nullable-signal-attr.ts'
@@ -25,9 +26,10 @@ export interface AmbiguousNilArithmeticSink {
  * optional and nullable (`n?: number | null`, `arithmeticOperandNilIsAmbiguous`).
  * JS reads that prop as `undefined` when omitted (`NaN` in arithmetic) and
  * as `0` when `null`; the engine holds both as one nil, so any spelling
- * renders one of them wrong. Asked at the emission site so the operand is
- * classified in the scope it is read in (`isShadowed`). One error per
- * operand text per compile.
+ * renders one of them wrong. Under a comparison the same holds for a string
+ * or boolean prop declared `?: string | null` / `?: boolean | null` (#3824
+ * step 3). Asked at the emission site so the operand is classified in the
+ * scope it is read in (`isShadowed`). One error per operand text per compile.
  */
 export function arithmeticCoercionOrRefuse(
   op: string,
@@ -37,9 +39,8 @@ export function arithmeticCoercionOrRefuse(
   isShadowed: (name: string) => boolean,
   sink: AmbiguousNilArithmeticSink,
 ): ArithmeticCoercion {
-  if (arithmeticOperandNilIsAmbiguous(op, operand, other, ctx, isShadowed)) {
-    recordAmbiguousNilArithmetic(exprToString(operand), sink)
-  }
+  const family = ambiguousNilFamily(op, operand, other, ctx, isShadowed)
+  if (family !== null) recordAmbiguousNilArithmetic(exprToString(operand), family, sink)
   return arithmeticOperandCoercion(op, operand, other, ctx, isShadowed)
 }
 
@@ -56,8 +57,8 @@ export function refuseAmbiguousNilArithmetic(
   scope: BindingScope,
   sink: AmbiguousNilArithmeticSink,
 ): void {
-  for (const operand of ambiguousNilArithmeticOperands(expr, ctx, scope)) {
-    recordAmbiguousNilArithmetic(exprToString(operand), sink)
+  for (const { operand, family } of ambiguousNilOperands(expr, ctx, scope)) {
+    recordAmbiguousNilArithmetic(exprToString(operand), family, sink)
   }
 }
 
@@ -78,8 +79,8 @@ export function refuseAmbiguousNilMemoArithmetic(
   }
 }
 
-function recordAmbiguousNilArithmetic(operandText: string, sink: AmbiguousNilArithmeticSink): void {
-  const message = `Arithmetic over \`${operandText}\` reads a number prop declared both optional and nullable (\`?: number | null\`). JS reads it as \`undefined\` when the caller omits it (\`NaN\` in arithmetic) and as \`0\` when it is \`null\`, but a template engine holds both as the same nil, so the server render cannot tell which one it is.`
+function recordAmbiguousNilArithmetic(operandText: string, family: AmbiguousNilFamily, sink: AmbiguousNilArithmeticSink): void {
+  const message = ambiguousNilMessage(operandText, family)
   if (sink.errors.some(e => e.code === 'BF101' && e.message === message)) return
   sink.errors.push({
     code: 'BF101',
@@ -87,8 +88,16 @@ function recordAmbiguousNilArithmetic(operandText: string, sink: AmbiguousNilAri
     message,
     loc: { file: `${sink.componentName}.tsx`, start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
     suggestion: {
-      message: 'Declare the prop as only optional (`?: number`) or only nullable (`: number | null`), or give it a default value.',
+      message: `Declare the prop as only optional (\`?: ${family}\`) or only nullable (\`: ${family} | null\`), or give it a default value.`,
       escape: [{ kind: 'rewrite' }],
     },
   })
+}
+
+/** The BF101 text for an operand {@link ambiguousNilFamily} matched; the numeric one predates #3824 step 3. */
+function ambiguousNilMessage(operandText: string, family: AmbiguousNilFamily): string {
+  if (family === 'number') {
+    return `Arithmetic over \`${operandText}\` reads a number prop declared both optional and nullable (\`?: number | null\`). JS reads it as \`undefined\` when the caller omits it (\`NaN\` in arithmetic) and as \`0\` when it is \`null\`, but a template engine holds both as the same nil, so the server render cannot tell which one it is.`
+  }
+  return `A comparison over \`${operandText}\` reads a ${family} prop declared both optional and nullable (\`?: ${family} | null\`). JS reads it as \`undefined\` when the caller omits it (\`NaN\`, so the comparison is false) and as \`null\` when it is \`null\` (\`0\`), but a template engine holds both as the same nil, so the server render cannot tell which one it is.`
 }

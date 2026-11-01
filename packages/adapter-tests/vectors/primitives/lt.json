@@ -206,6 +206,26 @@
     {
       "fn": "lt",
       "args": [
+        "0x20000000000001",
+        9007199254740992
+      ],
+      "expect": false,
+      "domain": "string-mixed",
+      "note": "a hex string at 2^53 + 1 rounds to 2^53"
+    },
+    {
+      "fn": "lt",
+      "args": [
+        "0x2000000000000101",
+        2305843009213694000
+      ],
+      "expect": false,
+      "domain": "string-mixed",
+      "note": "a hex string above 2^61 rounds up, past 2^61"
+    },
+    {
+      "fn": "lt",
+      "args": [
         "a",
         0
       ],
