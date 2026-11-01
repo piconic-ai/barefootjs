@@ -42,5 +42,8 @@ export function StrictEqualityDistinctReference({ obj, other, arr, otherArr }: {
       <p bf="s7"><!--bf-cond-start:s6-->distinct<!--bf-cond-end:s6--></p>
     </div>
   `,
-  escapes: [{ kind: 'rewrite', fixture: 'strict-equality-reference-rewrite' }],
+  escapes: [
+    { kind: 'rewrite', fixture: 'strict-equality-reference-rewrite' },
+    { kind: 'client-directive', fixture: 'strict-equality-reference-client' },
+  ],
 })

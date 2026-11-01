@@ -33,5 +33,8 @@ export function StrictEqualitySameReference({ obj, arr }: { obj: { id: number };
       <p bf="s7"><!--bf-cond-start:s6-->eq<!--bf-cond-end:s6--></p>
     </div>
   `,
-  escapes: [{ kind: 'rewrite', fixture: 'strict-equality-reference-rewrite' }],
+  escapes: [
+    { kind: 'rewrite', fixture: 'strict-equality-reference-rewrite' },
+    { kind: 'client-directive', fixture: 'strict-equality-reference-client' },
+  ],
 })
