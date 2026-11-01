@@ -6,8 +6,8 @@ and `null` as two distinct values, from the host boundary through template
 evaluation, the callback evaluator and JSON output, so that one TSX renders
 the same HTML as Hono on every backend?
 
-> Status: **design draft, not implemented; the open questions in §7 await
-> the owner's decision.** Claims about current behaviour cite the code on
+> Status: **design accepted, not implemented.** The owner decided the
+> questions in §7 on 2026-11-01. Tracked by #3848. Claims about current behaviour cite the code on
 > `main` (`9615fb9a1`) or a throwaway probe (listed in the appendix; not
 > committed). "Prior probe" means the earlier per-runtime sentinel probes
 > (Python/jinja2, Perl, PHP 8.3, Ruby, Pebble 4.1.2). Anything not verified
@@ -718,9 +718,9 @@ caller meant `null`, and the client then re-renders `'chip ' + _p.c` as
 | --- | --- |
 | Terms, "Nil reading" (`:29-32`) | The nil reading is about *proof*, not representation. A target that carries `undefined` needs no reading to be correct. The reading lets the plan pick a native operator or skip a presence-aware read |
 | "Nil reading is a tree rewrite" (`:505-553`) | Kept for `null` and `undefined` readings. It turns a typed nil-capable operand into a non-nil one so the native operator stays usable (`n?: number` under `*` → `(n ?? NaN) * 2` stays native). The nil split for `o.id + 1` stays: it needs no runtime support. For a target that carries `undefined`, an `either` operand and a dynamic `+` take the helper (`to_string`, `to_number`, `plus`), which read `UNDEF` exactly. No refusal |
-| Decision 2 (`either` string reads `undefined` + `silent` limitation) | Applies only while a target does not carry `undefined`. Once all do, it is deleted |
+| Decision 2 (`either` string reads `undefined` + `silent` limitation) | Not built as new behaviour (§7 (4)): today's output is pinned by U0 fixtures until a target carries `undefined`. Deleted in U9 |
 | Decision 3 (untyped nil reads as `null`) | Replaced by the JS rule: a missing key or out-of-range read is `undefined`, data `null` is `null` |
-| Decision 8 (refuse a dynamic `+` with an `undefined` reading) | Same scope as decision 2: it applies only while a target does not carry `undefined`. The `plus` variant of open question 8 is not needed: the value carries the reading |
+| Decision 8 (refuse a dynamic `+` with an `undefined` reading) | Not built (§7 (4)): today's output is pinned by U0 fixtures until a target carries `undefined`. The `plus` variant of open question 8 is not needed: the value carries the reading. Deleted in U9 |
 | Decision 4 ("`x === null` style tests are unaffected because they lower as nullish checks") | Wrong once two nils exist: `null === undefined` is `false`. Decision 7 here makes them strict |
 | `numeric either` → BF101 (`:520`, #3700) | Applies only while a target does not carry `undefined`. `omitted-optional-nullable-number-arithmetic` (pinned BF101 on all nine) graduates per target |
 | "Nullish" (`:404-422`): "the distinction … matters only to ToNumber and ToString" | It also matters to `===`, JSON, defaults, presence, `includes` / `indexOf` and sort (§1) |
@@ -751,7 +751,7 @@ the same rules for the life of this rollout, and the file is deleted in U9.
 | --- | --- | --- | --- |
 | **4a** (folded from #3824 step 4) | Builds the parts of step 4 that need no runtime support: `to_string` / `plus` helpers delegating to the evaluator; the evaluator array-ToString fix (Python known); the nil-reading rewrite for typed `null` / `undefined` readings in every position (closes #3750); the nil split. **Not** decision 2's limitation or decision 8's refusal (see U1) | `primitives/` `to_string` / `plus` ledger entries for step 4 emptied; `omitted-optional-row-field-plus` graduates on nine | High, as the spec rates step 4: every concatenation and template literal |
 | **U0** | Infrastructure, output-preserving. Adds the `$undef` encoding in the three generators and seven harness decoders; adds the §2 cases, with every runtime's failures listed in the ledgers; adds a `carriesUndefined: false` entry to every target's `NativeSafeTable` (and the JSON mirror `primitives-native-safe.json`); adds fixtures for each §1 row in each position (with explicit `null` props, omitted props and forwarded `undefined`), pinned as render divergences per adapter | byte-identical emitted output; ledgers list exactly the new cases | Low |
-| **U1** | Shared compiler. `planPrimitive` reads `carriesUndefined`: true → the helper for `either` / unknown / dynamic `+`; false → today's plan (decisions 2 and 8, numeric-`either` BF101). Adds strict `=== null` / `=== undefined` versus loose `== null` in the plan. Changes the manifest's `ssrDefaults` to omit `value` when there is no default (every runtime reads a missing `value` as nil today: Python `d.get("value")`, Rust `unwrap_or(Null)`, PHP `?? null`, Perl `$d->{value}`. So this is output-preserving) | plan test over every adapter; output unchanged while every flag is false | Medium: the plan gains one input |
+| **U1** | Shared compiler. `planPrimitive` reads `carriesUndefined`: true → the helper for `either` / unknown / dynamic `+`; false → today's plan (today's output, plus the existing numeric-`either` BF101; §7 (4)). Adds strict `=== null` / `=== undefined` versus loose `== null` in the plan. Changes the manifest's `ssrDefaults` to omit `value` when there is no default (every runtime reads a missing `value` as nil today: Python `d.get("value")`, Rust `unwrap_or(Null)`, PHP `?? null`, Perl `$d->{value}`. So this is output-preserving) | plan test over every adapter; output unchanged while every flag is false | Medium: the plan gains one input |
 | **U2** Python (Jinja) | `UNDEF` and the predicates; evaluator; helpers (`to_string`, `plus`, `get`, `at`, `find`, `json`, sort); `?.` result; seed (decision 6); harness stops the null-fill; flag → true | ledger entries for `python` emptied; Jinja pins graduate: `omitted-optional-nullable-number-arithmetic`, `defaulted-array-prop-explicit-null`, U0 fixtures | Medium: cheapest engine (native Undefined), most runtime helpers touched |
 | **U3** Rust (MiniJinja) | `JsValue::Undefined` (95 `JsValue::Null` sites); `mj_to_js` / `js_to_mj`; `search_params` → `null`; `barefootjs::Opt<T>`; the rest as U2 | same, `rust` | Medium: the enum change is checked by the compiler, so a missed `match` arm fails to build |
 | **U4** Ruby (ERB) | singleton (`nil?` override); `get_opt` for `&.`; optional member reads through `bf.get`; the rest as U2 | same, `ruby` | Medium: `UNDEF` is truthy natively; relies on ERB's H truthiness |
@@ -785,51 +785,40 @@ Which #3824 step 4 work to fold in, and which to wait on:
   - decision 8's refusal;
   - the "untyped nil reads as `null`" registration of decision 3.
 
-  U1 gives them a home as the `carriesUndefined: false` branch of the
-  plan. U9 deletes them. If 4a ships well before U1, shapes that need them
-  keep today's output and are pinned by the U0 fixtures (see open
-  question 4).
+  Per §7 (4), none of them is built: the shapes keep today's output,
+  pinned by the U0 fixtures, until each target carries `undefined`. Only
+  the existing numeric `either` refusal (#3700) stays, as the
+  `carriesUndefined: false` branch of the plan, and U9 deletes it.
 
-## 7. Open questions
+## 7. Decisions on the open questions
 
-1. **Go host API.** The options:
-   - (a) `bf.Opt[T]` for every optional or nullable prop, as above;
-   - (b) keep `interface{}` and add a `bf.Null` sentinel. Omission stays
-     `nil` = `undefined`, and the host writes `C: bf.Null` for `null`.
+Decided by the owner on 2026-11-01. Each entry records the question, the
+choice and what it fixes for the rollout.
 
-   (b) keeps source compatibility for most hosts. But it makes Go's nil mean
-   `undefined` while every other runtime's nil means `null`. JSON-decoded
-   rows (`map[string]any`) would then need a deep rewrite of `nil` to
-   `bf.Null`, and the eleven flip collectors would stay.
-   **Recommend (a)**, as a semver-major change of the Go runtime, with a
-   migration note: wrap optional fields in `bf.Some(...)`.
-2. **Three or four `Opt` states.** The fourth (present `undefined`) only
-   matters for `'k' in props` and spread override, but
-   `component-spread-explicit-undefined-prop` pins it.
-   **Recommend four.** The zero value stays "absent", so hosts never see
-   the fourth state unless they ask for it.
-3. **Host nil meaning.** The options:
-   - (a) strict JS: host nil is `null`, and only omission is `undefined`;
-   - (b) a per-render compatibility flag that reads host nil as "unset".
-
-   (b) would make the same props render differently by flag.
-   **Recommend (a)**, with a changelog entry per runtime. Each runtime
-   exports its `UNDEF` for hosts that must pass a present `undefined`.
-4. **Interim behaviour between 4a and the U steps** for an `either` string
-   operand or a dynamic `+` over an `undefined` reading. The options:
-   - (a) implement decisions 2 and 8 as specified (a `silent` limitation
-     and a BF101 refusal), gated by `carriesUndefined: false`;
-   - (b) leave today's output and pin it with the U0 fixtures.
-
-   (a) is a refusal users meet and then lose target by target. (b) keeps a
-   known divergence a little longer.
-   **Recommend (a) for the numeric refusal**, which already exists
-   (#3700). **Recommend (b) for decision 8.** It is new and would only
-   exist during the rollout.
-5. **Vector sentinel spelling.** The options are `{"$undef": true}` or a
-   single `{"$js": "undefined"}` namespace that could also absorb `$num`.
-   **Recommend `{"$undef": true}`**: it is additive and matches the
-   one-key style of `$num`.
+1. **Go host API: `bf.Opt[T]`.** Every optional or nullable prop and row
+   field becomes `bf.Opt[T]`, so host nil means JS `null` on Go exactly as on
+   every other runtime. The alternative (`interface{}` plus a `bf.Null`
+   sentinel) was rejected: it inverts the meaning of nil on Go alone and
+   keeps the flip collectors and a deep rewrite of decoded rows. U8 ships it
+   as a semver-major change of the Go runtime with a migration note (wrap
+   optional fields in `bf.Some(...)`).
+2. **`Opt` has four states**: absent, present `undefined`, `null`, a value.
+   The zero value is "absent", so hosts meet the fourth state only when they
+   ask for it, and `component-spread-explicit-undefined-prop` passes on Go
+   without a Go-only limitation.
+3. **Host nil is strict JS `null`.** Only a missing key (or an absent `Opt`)
+   reads as `undefined`. No compatibility flag. Each runtime exports its
+   `UNDEF` for a host that must pass a present `undefined`, and each U step
+   adds a changelog entry for hosts that passed nil meaning "unset".
+4. **Interim behaviour between 4a and the U steps**: the existing numeric
+   `either` refusal (#3700) stays, gated by `carriesUndefined: false`, and
+   graduates per target. Decision 8's new refusal of a dynamic `+` over an
+   `undefined` reading is **not built**; today's output for that shape is
+   pinned by the U0 fixtures until each target carries `undefined`. Decision
+   2's `silent` limitation is likewise not added as new behaviour; the U0
+   fixtures pin today's output.
+5. **Vector sentinel: `{"$undef": true}`**, additive and one-key like
+   `{"$num": "-0"}`.
 
 ## Appendix: probes
 
