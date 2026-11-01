@@ -132,8 +132,9 @@ function memberChain(expr: Extract<ParsedExpr, { kind: 'member' }>): { root: str
 }
 
 function memberFacts(expr: Extract<ParsedExpr, { kind: 'member' }>, typing: ScopedOperandTyping): OperandFacts {
-  if (expr.computed) return UNKNOWN_FACTS
+  // `props['n']` reads the prop `n` as `props.n` does (#3750).
   if (expr.object.kind === 'identifier' && expr.object.name === PROPS_OBJECT_IDENTIFIER) return typing.prop(expr.property)
+  if (expr.computed) return UNKNOWN_FACTS
   const chain = memberChain(expr)
   return chain ? typing.path(chain.root, chain.path) : UNKNOWN_FACTS
 }
