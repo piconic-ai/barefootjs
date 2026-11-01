@@ -46,25 +46,25 @@ export function RelationalPositions(props: {
   items: string[]
   nums: number[]
 }) {
-  const strLt = createMemo(() => props.s10 < props.s9)
-  const mixedGt = createMemo(() => props.s10 > props.nine)
+  const strLt = createMemo(() => (props.s10 < props.s9))
+  const mixedGt = createMemo(() => (props.s10 > props.nine))
   return (
-    <div data-ss={props.s10 < props.s9} data-sn={props.s10 < props.nine} data-astral={props.astral < props.bmp ? 'utf16' : 'codepoint'} data-num={props.n <= props.m ? 'le' : 'gt'}>
-      <span>{JSON.stringify([props.n < props.m, props.s10 < props.s9, props.a < props.b, props.astral < props.bmp, props.bmp > props.astral])}</span>
-      <span>{JSON.stringify([props.s10 < props.nine, props.s10 >= props.nine, props.padded < props.four, props.yes < props.m, props.yes >= props.n])}</span>
-      <span>{JSON.stringify([props.nul < props.n, props.nul >= props.n, props.maybe < props.n, props.maybe >= props.n, Number(props.a) < props.n, Number(props.a) >= props.n])}</span>
-      <span>{props.s10 < props.s9 ? 'T' : 'F'}|{props.astral <= props.bmp ? 'T' : 'F'}|{props.s10 > props.nine ? 'T' : 'F'}|{props.nul <= props.n ? 'T' : 'F'}|{props.maybe > props.n ? 'T' : 'F'}|{props.yes > props.n ? 'T' : 'F'}</span>
-      {props.s10 < props.s9 ? <b>if-strings</b> : <i>if-not-strings</i>}
-      {props.s10 < props.nine ? <b>if-mixed</b> : <i>if-not-mixed</i>}
-      {props.astral < props.bmp ? <b>if-utf16</b> : <i>if-codepoint</i>}
+    <div data-ss={(props.s10 < props.s9)} data-sn={(props.s10 < props.nine)} data-astral={(props.astral < props.bmp) ? 'utf16' : 'codepoint'} data-num={(props.n <= props.m) ? 'le' : 'gt'}>
+      <span>{JSON.stringify([(props.n < props.m), (props.s10 < props.s9), (props.a < props.b), (props.astral < props.bmp), (props.bmp > props.astral)])}</span>
+      <span>{JSON.stringify([(props.s10 < props.nine), (props.s10 >= props.nine), (props.padded < props.four), (props.yes < props.m), (props.yes >= props.n)])}</span>
+      <span>{JSON.stringify([(props.nul < props.n), (props.nul >= props.n), (props.maybe < props.n), (props.maybe >= props.n), (Number(props.a) < props.n), (Number(props.a) >= props.n)])}</span>
+      <span>{(props.s10 < props.s9) ? 'T' : 'F'}|{(props.astral <= props.bmp) ? 'T' : 'F'}|{(props.s10 > props.nine) ? 'T' : 'F'}|{(props.nul <= props.n) ? 'T' : 'F'}|{(props.maybe > props.n) ? 'T' : 'F'}|{(props.yes > props.n) ? 'T' : 'F'}</span>
+      {(props.s10 < props.s9) ? <b>if-strings</b> : <i>if-not-strings</i>}
+      {(props.s10 < props.nine) ? <b>if-mixed</b> : <i>if-not-mixed</i>}
+      {(props.astral < props.bmp) ? <b>if-utf16</b> : <i>if-codepoint</i>}
       <span>{strLt() ? 'T' : 'F'}|{mixedGt() ? 'T' : 'F'}</span>
-      <ul>{props.items.map(it => <li key={it} data-lt={it < props.s9 ? 'y' : 'n'}>{it}:{it < props.b ? 'lt' : 'ge'}:{it > props.nine ? 'gt' : 'le'}</li>)}</ul>
-      <ol>{props.items.filter(it => it < props.s9).map(it => <li key={it}>{it}</li>)}</ol>
-      <ol>{props.nums.filter(x => x < props.s10).map(x => <li key={x}>{x}</li>)}</ol>
-      <ol>{props.items.slice().sort((x, y) => (x < y ? -1 : 1)).map(it => <li key={it}>{it}</li>)}</ol>
-      <Flag label="strings" on={props.s10 < props.s9} />
-      <Flag label="mixed" on={props.s10 < props.nine} />
-      <Flag label="utf16" on={props.astral < props.bmp} />
+      <ul>{props.items.map(it => <li key={it} data-lt={(it < props.s9) ? 'y' : 'n'}>{it}:{(it < props.b) ? 'lt' : 'ge'}:{(it > props.nine) ? 'gt' : 'le'}</li>)}</ul>
+      <ol>{props.items.filter(it => (it < props.s9)).map(it => <li key={it}>{it}</li>)}</ol>
+      <ol>{props.nums.filter(x => (x < props.s10)).map(x => <li key={x}>{x}</li>)}</ol>
+      <ol>{props.items.slice().sort((x, y) => ((x < y) ? -1 : 1)).map(it => <li key={it}>{it}</li>)}</ol>
+      <Flag label="strings" on={(props.s10 < props.s9)} />
+      <Flag label="mixed" on={(props.s10 < props.nine)} />
+      <Flag label="utf16" on={(props.astral < props.bmp)} />
     </div>
   )
 }
