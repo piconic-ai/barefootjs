@@ -319,7 +319,7 @@ type, and the target's operator pinned for that type:
 Operands proven of **different** primitive types fold to a constant
 (`false` for `===`). An `unknown`, union or optional operand takes the
 helper. This is the conservative answer to the #3769 design question; the
-policy question it raises is under "Open questions".
+policy question it raises is decided under "Decisions" (1).
 
 **Helper.** `strict_eq(a, b) → host boolean`: the evaluator's `_strict_eq`.
 Exists as `strict_eq` (Perl), `bf_eq` / `bf_ne` (Go), `eq` / `neq` (PHP,
@@ -358,12 +358,15 @@ include `'10' < '9'`.
 **JS.** If either operand is a string (after ToPrimitive), ToString both and
 concatenate; otherwise ToNumber both and add as doubles.
 
-**Native-safe.** Two proven non-nil `number`s: native `+`, except where the
-target's `+` is not IEEE double past 2^53 (Ruby, Python and PHP integers;
-declared as `add/beyond the safe-integer edge rounds as a double` in their
-`vector-divergences.json`; Perl and Go already use `add` / `bf_add`). One
-proven non-nil `string`: native concatenation over `to_string` of the other
-operand. Anything else: `plus`.
+**Native-safe.** Two proven non-nil `number`s: native `+` (Perl and Go
+already use `add` / `bf_add`). On Ruby, Python and PHP, integer `+` is not
+IEEE double once a result passes 2^53; that gap is kept as an accepted,
+registered limitation (see "Decisions" (5)), and the `primitives/plus`
+cases past 2^53 carry the `beyond-safe-integer` domain, which no
+`NativeSafeTable` claims, so the native binding never runs them and the
+claim still passes its vectors with no allowance. One proven non-nil
+`string`: native concatenation over `to_string` of the other operand.
+Anything else: `plus`.
 
 **Helper.** `plus(a, b) → value`: the evaluator's `+` (`_binary('+', …)`).
 `add` stays the numbers-only helper.
@@ -430,7 +433,7 @@ comment), which is the "boolean value" row.
 - **Lone surrogates** (#3704, `string-at-lone-surrogate`). The host strings
   of seven runtimes cannot carry a lone surrogate through concatenation and
   UTF-8 output (`spec/template-helpers.md`, `at`). No IR decision fixes
-  that; see "Open questions".
+  that; see "Decisions" (6).
 - **Loose `==` / `!=`.** Out of the evaluator subset (`spec/compiler.md`);
   this note does not add them.
 - **ToPrimitive on objects** (`[1,2] + ''`). Covered by `plus` and
@@ -505,23 +508,34 @@ Before planning, Phase 1 rewrites a nil-capable operand of a ToNumber or
 ToString consumer by its nil reading, the same way `stringifyBooleanBranches`
 rewrites a tree today. The rewrite applies only where the consumer's
 coercion is known statically: a numeric operator, a template-literal part,
-or a `+` whose other operand is proven `number` (numeric) or proven `string`
-(concatenation):
+or a `+` whose other operand is proven `string` (concatenation) or is proven
+`number` while the nil-capable operand's own non-nil type is `number`
+(numeric):
 
 | Consumer | nil reads as `null` | nil reads as `undefined` |
 | --- | --- | --- |
 | numeric (`- * / %`, unary, relational, numeric `+`) | `x ?? 0` | `x ?? NaN` |
 | string (`+` concat, template-literal part) | `x ?? 'null'` | `x ?? 'undefined'` |
 
-`either` (`n?: number | null`, `c?: string | null`) is refused with BF101,
-the precedent `arithmeticCoercionOrRefuse` set for numbers (#3700); see
-"Open questions" for the cost of extending that to strings. `NaN` is spelled
+A numeric `either` operand (`n?: number | null`) is refused with BF101,
+the precedent `arithmeticCoercionOrRefuse` set for numbers (#3700). A string
+`either` operand (`c?: string | null`) reads its nil as `undefined`, with a
+registered limitation for an explicit `null`; see "Decisions" (2). `NaN` is spelled
 `number('NaN')`, which the `number` vectors already pin. After the rewrite
 the operand is non-nil, so `to_number` and `to_string` need no nil argument
 and stay identical to the evaluator's `_to_number` / `_to_string` (nil reads
 as `null`). This generalizes `arithmeticOperandCoercion` (#3474) from number
 props to every typed read, and closes the #3750 gaps by construction: the
 rewrite runs wherever the plan runs.
+
+A `+` whose two branches coerce differently is split on nil instead. For
+`o.id + 1` with `id?: string`, the present branch concatenates (`'o1'`) and
+the omitted branch adds (`undefined + 1` is `NaN`), so the table's numeric
+row would give `NaN` for both. Both coercions are still static, so Phase 1
+plans `o.id == nil ? number('NaN') : to_string(o.id) + 1` (string operand,
+proven `number` other operand, nil reading `undefined`); with a nil reading
+of `null` the nil branch is `1`. This is not the runtime-decided shape
+below and needs no refusal.
 
 A `+` whose other operand is a union or `unknown` picks numeric addition or
 concatenation only at runtime, so neither row of the table preserves the
@@ -611,7 +625,9 @@ test pins the compile-time half; shared fixtures pin the positions.
    which that table omits) binds each op to its helper and runs every case.
    It also binds each op to the **native operator** and runs only the cases
    whose `domain` its adapter's `NativeSafeTable` claims. A native claim
-   without passing vectors fails the harness. The two Perl adapters, and the
+   without passing vectors fails the harness. A domain no table claims
+   (today only `beyond-safe-integer`, see "Decisions" (5)) runs under the
+   helper binding only. The two Perl adapters, and the
    two PHP adapters, share one table per runtime, read by the harness from a
    JSON file the TS table is generated from (or checked against).
 4. **No divergence allowance** for `primitives/`, as for `eval-vectors.json`.
@@ -683,36 +699,17 @@ the other is chosen.
 The plan supports either: (a) is `strict_eq` with an identity branch, (b) is
 `mode: 'refuse'`.
 
-## Open questions
+## Decisions
 
-1. **Trust declared types at the runtime boundary?** Native-safe rests on
-   TypeScript types. A Mojolicious controller may pass `'1'` for a
-   `number` prop (#3769); with a native `==` it equals `1`, with
-   `strict_eq` it does not. Proposed: trust the declared type, and document
-   that the host must pass JSON-typed values. The alternative is normalizing
-   numeric strings when props enter the runtime.
-2. **`either` nil reading for strings.** Refusing `c?: string | null` in
-   concatenation, as arithmetic does, breaks common code such as
-   `'btn ' + props.className` (#3740 comment). Options: refuse; pick one
-   reading (`undefined`) and register a `silent` limitation; or add a
-   runtime undefined sentinel to each prop model.
-3. **Nils from data, not types.** An optional row field, an index read, or
-   an explicit `null` against a missing JSON key all arrive as one nil. The
-   rewrite only covers reads whose type gives the reading. Accept the
-   evaluator's rule (nil reads as `null`) for these, or refuse?
-4. **#3774:** option (a) or (b) above.
-5. **Native `+` past 2^53** on Ruby, Python and PHP: keep the pinned
-   `add` divergence and the native operator, or route every number `+`
-   through `add` as Perl and Go do?
-6. **Lone surrogates (#3704):** reclassify `string-at-lone-surrogate` as a
-   permanent documented limitation, or refuse `.at()` results that are then
-   compared or concatenated?
-7. **Helper naming.** This note uses the catalogue's snake_case ids and lets
-   runtimes keep their spellings through `helperNames` (`index` for `get` on
-   PHP, `bf_eq` for `strict_eq` on Go, as Perl spells `div` `divide`).
-   Rename the runtime methods instead?
-8. **Dynamic `+` with an `undefined`-reading operand.** Refuse it (the
-   step 4 default above), or add a `plus` variant that receives the
-   operand's static nil reading so it can produce `'undefinedx'` and `NaN`
-   on the right runtime branch? The variant costs one more helper per
-   runtime and a vector set of its own.
+The eight questions this note left open were decided on 2026-11-01. Each entry names the question, the decision and the rollout step it unblocks.
+
+1. **Trust declared types at the runtime boundary: yes.** Native-safe rests on TypeScript types, and the host must pass JSON-typed values (a `number` prop receives a number, not `'1'`, #3769). The runtime does not normalise numeric strings. The adapter docs state the host's obligation. *Unblocks step 3 (relational, ToNumber) and step 8.*
+2. **`either` nil reading for strings: read as `undefined`, and register a `silent` limitation.** A `c?: string | null` operand of `+` or a template-literal part reads its nil as `undefined` (`'btn undefined'`). That is the JS answer for an omitted prop, the common case. An explicit `null` then renders `'undefined'` instead of `'null'`, which is registered as a limitation with its fixture and pins. Refusing (as arithmetic does, #3700) would break `'btn ' + props.className` (#3740). *Step 4.*
+3. **Nils whose type gives no reading: accept the evaluator's rule (nil reads as `null`).** This covers reads the nil-reading rewrite cannot type: an index read, an `unknown` or untyped value, and an explicit `null` against a missing JSON key. It does not cover an `either` read (a prop or row field typed `x?: T | null`), which has its own policy: a string `either` reads as `undefined` (decision 2) and a numeric `either` is refused with BF101 ("Nil reading is a tree rewrite"), for props and row fields alike. The plan reads such a nil as `null`, as `_to_number` / `_to_string` already do. Refusing would reject most code over row data. A read whose type does give the reading keeps it: an optional row field typed `x?: T` (no `null`) reads as `undefined` through the rewrite (or the nil split for a string field under `+ number`), so step 4 still graduates `omitted-optional-row-field-plus` (`undefined!`, `NaN`, `o1`). *Step 4.*
+4. **`===` on objects (#3774): option (b), refuse.** `===` / `!==` with an operand not proven primitive is BF101 on template adapters, matching the evaluator contract (`spec/compiler.md`). `x === null` style tests are unaffected, because they lower as nullish checks. *Unblocks step 8.*
+5. **Native `+` past 2^53 on Ruby, Python and PHP: keep the native operator, as an accepted gap.** Their `NATIVE_SAFE.plus` claims `number × number`, although their integer `+` differs from IEEE double once a result passes 2^53; Phase 1 cannot prove an operand stays inside the safe-integer range. To keep the conformance rule that a claimed native domain passes its vectors with no allowance, the `primitives/plus` cases whose result passes 2^53 get their own domain, `beyond-safe-integer`, which no table claims: the helper binding runs them on every runtime, the native binding does not. The gap itself is registered as a `silent` limitation with a fixture and pins on these three runtimes, and the catalogue's existing `add/beyond the safe-integer edge` entries in their `vector-divergences.json` stay. Perl and Go keep `add` / `bf_add`. *Step 4.*
+6. **Lone surrogates (#3704): a permanent, documented limitation.** `string-at-lone-surrogate` is reclassified as a limitation that will not be fixed. A surrogate half reads as U+FFFD, as step 2 does for index reads. *No step blocked.*
+7. **Helper naming: keep the runtime spellings.** `helperNames` keeps mapping the catalogue's ids to each runtime's methods (`index` for `get` on PHP, `bf_eq` for `strict_eq` on Go, `divide` for `div` on Perl). Renaming would change public runtime APIs and gain nothing. *No step blocked.*
+8. **Dynamic `+` with an `undefined`-reading operand: refuse (BF101).** This is the step 4 default described under "Nil reading is a tree rewrite". No `plus` variant carrying the static nil reading is added; revisit only if real code needs the shape. *Step 4.*
+
+**Revisit condition for 2, 3 and 8.** These three decisions follow from one constraint: each runtime has a single nil, so `undefined` and `null` cannot be told apart once a value is evaluated. If the runtimes can carry a distinct `undefined` sentinel through prop decoding, template evaluation and truthiness at an acceptable cost, the decisions change: 2 can render `'null'` for an explicit `null`, 3 can give each nil its JS reading, and 8 can produce `'undefinedx'` / `NaN` instead of refusing. That feasibility is being checked per runtime before step 4 starts; step 4 waits on the result.
