@@ -36,6 +36,7 @@ import {
   emitAttrValue,
   buildLoopChainExpr,
   propsDestructureBinding,
+  isHydrationPayloadPropName,
 } from '@barefootjs/jsx'
 
 /**
@@ -95,6 +96,57 @@ const HYDRATION_PROP_DECLS = [
  * explicit Props type. See onboarding round 5 / PR #1450.
  */
 const HYDRATION_PROPS_TYPE = `{ ${HYDRATION_PROP_DECLS.join('; ')} }`
+
+/** `__hydrateProps[key] = value` unless `value` is a rendered JSX element (it can't be JSON serialized). */
+function hydratePropAssignment(key: string, value: string): string {
+  return `    if (!(typeof ${value} === 'object' && ${value} !== null && 'isEscaped' in ${value})) __hydrateProps[${key}] = ${value}`
+}
+
+/**
+ * The statements that fill `__hydrateProps`, the `bf-p` payload: every key
+ * the component's client code reads (`clientAnalysis`). Empty when the
+ * client reads none.
+ */
+function hydrationPayloadAssignments(ir: ComponentIR, clientUsedProps: ReadonlySet<string>): string[] {
+  const { propsObjectName, restPropsName } = ir.metadata
+  const analysis = ir.metadata.clientAnalysis
+  const lines: string[] = []
+  // #3845: a spread of a whole caller bag (props object or rest binding)
+  // makes the client read every key of it off `_p`. The bag goes first: the
+  // SSR destructure already took the hydration plumbing out of it, and the
+  // named props below write the same keys again.
+  const callerBag = analysis?.readsCallerBag ? (propsObjectName ?? restPropsName) : null
+  if (callerBag) {
+    lines.push(`    for (const [__k, __v] of Object.entries(${callerBag})) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v`)
+  }
+  // #3845: a closed-type rest key the client reads as `_p.<key>`.
+  for (const key of restPropsName ? (analysis?.usedRestKeys ?? []) : []) {
+    lines.push(hydratePropAssignment(JSON.stringify(key), `${restPropsName}[${JSON.stringify(key)}]`))
+  }
+  for (const p of ir.metadata.propsParams) {
+    // Skip event-handler-shaped and internal props (`isHydrationPayloadPropName`).
+    if (!isHydrationPayloadPropName(p.name) || !clientUsedProps.has(p.name)) continue
+    // A function value deliberately is NOT skipped here: dropping it
+    // silently is the bug Move C fixes — `serializeHydrationProps` decides,
+    // via `liveOnlyProps`, whether the client actually needed it.
+    // Use propsObjectName.sourceKey for SolidJS-style, direct propName
+    // for destructured. `sourceName ?? p.name` matters for props-object
+    // mode specifically (#2943): a body-destructure-with-default rename
+    // (`const { label: text = 'none' } = props`) adds a `text` entry
+    // whose real property on `props` is `label`, not `text` — `props`
+    // has no `text` key. The parameter-destructured form needs no such
+    // fallback: that mode already binds a real local under the RENAMED
+    // name at the destructure itself, so `p.name` (the local) is
+    // correct there.
+    const propAccess = propsObjectName ? `${propsObjectName}.${p.sourceName ?? p.name}` : p.name
+    // The `bf-p` blob key is always the caller-facing name (#2524 CSR
+    // half) — every non-Hono `_p` producer/consumer keys the same way,
+    // so a renaming destructure (`{ n: count }`) must serialize under
+    // `n`, not the local binding `count`.
+    lines.push(hydratePropAssignment(`'${p.sourceName ?? p.name}'`, propAccess))
+  }
+  return lines
+}
 
 export interface HonoAdapterOptions {
   /**
@@ -512,20 +564,16 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
 
     // Generate props serialization for hydration (for components with props)
     // Only serialize props that the client JS init function actually reads
-    const clientUsedProps = new Set(ir.metadata.clientAnalysis?.usedProps ?? [])
     const needsInit = ir.metadata.clientAnalysis?.needsInit ?? false
     // Live-only props (Move C): props whose declared type is a function this
     // component's client code calls. Unlike `on*`/`__*` they are NOT dropped
-    // from `propsToSerialize` — whether the value is actually unreachable is
-    // a runtime fact (`__bfChild`), so the map is threaded into
+    // from the payload (`hydrationPayloadAssignments`) — whether the value is
+    // actually unreachable is a runtime fact (`__bfChild`), so the map is threaded into
     // `serializeHydrationProps` (utils.ts), which throws only on a real root
     // mount carrying a real function value.
     const liveOnlyProps = ir.metadata.clientAnalysis?.liveOnlyProps ?? {}
-    const propsToSerialize = ir.metadata.propsParams.filter(p => {
-      // Skip event-handler-shaped and internal props
-      return !p.name.startsWith('on') && !p.name.startsWith('__') && clientUsedProps.has(p.name)
-    })
-    const hasPropsToSerialize = propsToSerialize.length > 0 && hasClientInteractivity && needsInit
+    const hydrationPayloadLines = hydrationPayloadAssignments(ir, new Set(ir.metadata.clientAnalysis?.usedProps ?? []))
+    const hasPropsToSerialize = hydrationPayloadLines.length > 0 && hasClientInteractivity && needsInit
 
     // Check if root is an if-statement (early return pattern)
     const isIfStatement = ir.root.type === 'if-statement'
@@ -691,28 +739,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
       lines.push(`  let __bfPropsJson = __bfParentProps`)
       lines.push(`  if (!__bfChild && !__bfNoSerialize) {`)
       lines.push(`    const __hydrateProps: Record<string, unknown> = {}`)
-      for (const p of propsToSerialize) {
-        // Skip JSX elements (they can't be JSON serialized). A function value
-        // deliberately is NOT skipped here: dropping it silently is the bug
-        // Move C fixes — `serializeHydrationProps` below decides, via
-        // `liveOnlyProps`, whether the client actually needed it.
-        // Use propsObjectName.sourceKey for SolidJS-style, direct propName
-        // for destructured. `sourceName ?? p.name` matters for props-object
-        // mode specifically (#2943): a body-destructure-with-default rename
-        // (`const { label: text = 'none' } = props`) adds a `text` entry
-        // whose real property on `props` is `label`, not `text` — `props`
-        // has no `text` key. The parameter-destructured form needs no such
-        // fallback: that mode already binds a real local under the RENAMED
-        // name at the destructure itself, so `p.name` (the local) is
-        // correct there.
-        const propAccess = propsObjectName ? `${propsObjectName}.${p.sourceName ?? p.name}` : p.name
-        // The `bf-p` blob key is always the caller-facing name (#2524 CSR
-        // half) — every non-Hono `_p` producer/consumer keys the same way,
-        // so a renaming destructure (`{ n: count }`) must serialize under
-        // `n`, not the local binding `count`.
-        const callerKey = p.sourceName ?? p.name
-        lines.push(`    if (!(typeof ${propAccess} === 'object' && ${propAccess} !== null && 'isEscaped' in ${propAccess})) __hydrateProps['${callerKey}'] = ${propAccess}`)
-      }
+      lines.push(...hydrationPayloadLines)
       lines.push(`    __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, '${name}', ${JSON.stringify(liveOnlyProps)})`)
       lines.push(`  }`)
     } else if (hasClientInteractivity && isRootComponent) {

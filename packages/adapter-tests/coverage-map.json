@@ -5454,6 +5454,29 @@
         "text"
       ]
     },
+    "filter-predicate-block-shadowed-prop": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "unary"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "logical:||",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "filter-predicate-modulo": {
       "kinds": [
         "array-literal",
@@ -5475,6 +5498,23 @@
         "text"
       ]
     },
+    "filter-predicate-on-prefixed-prop": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "filter-predicate-props-member": {
       "kinds": [
         "binary",
@@ -5484,6 +5524,23 @@
       ],
       "axes": [
         "binary:!=="
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "filter-predicate-renamed-destructured-prop": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:!==",
+        "literal:number"
       ],
       "contexts": [
         "attribute",
@@ -12304,6 +12361,23 @@
         "text"
       ]
     },
+    "props-object-spread-child-hydration-props": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "props-reactive": {
       "kinds": [
         "call",
@@ -13248,6 +13322,40 @@
       ],
       "contexts": [
         "attribute"
+      ]
+    },
+    "rest-spread-child-override-hydration-props": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "rest-spread-root-hydration-props": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
       ]
     },
     "return-logical-and": {

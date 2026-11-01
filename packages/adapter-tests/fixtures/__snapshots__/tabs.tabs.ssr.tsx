@@ -87,6 +87,7 @@ export function Tabs({ className = '', value, defaultValue, children, __instance
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     if (!(typeof value === 'object' && value !== null && 'isEscaped' in value)) __hydrateProps['value'] = value
     if (!(typeof defaultValue === 'object' && defaultValue !== null && 'isEscaped' in defaultValue)) __hydrateProps['defaultValue'] = defaultValue
@@ -109,6 +110,7 @@ export function TabsList({ className = '', children, __instanceId, __bfScope: _b
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TabsList', {})

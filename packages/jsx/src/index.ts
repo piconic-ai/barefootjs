@@ -19,7 +19,7 @@ export { isOpaqueLocalAccessorName } from './opaque-local-accessor.ts'
 // The one event-handler-name classification (`on[A-Z]`) — `only`/`once` are
 // data props, not handlers. Shared by the IR builder, client-JS prop wiring
 // and the SSR adapters' "a handler has no SSR value" skips.
-export { isEventHandlerName } from './event-handler-name.ts'
+export { isEventHandlerName, isHydrationPayloadPropName } from './event-handler-name.ts'
 export { fallbackChainParts, nullishChainParts } from './children-nullish.ts'
 
 // Shared props-destructure binding + alias-map helpers (#2524, #2788)
