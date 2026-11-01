@@ -17,7 +17,7 @@
  * Only the ops whose native binding the harnesses wire are listed: `truthy`
  * (rollout step 1), `get` (step 2), `to_number` and `lt` / `le` / `gt` /
  * `ge` (step 3), `number`, the number-literal plan's host literal
- * (step 6), and `to_string` and `plus` (step 4). Each later step adds its op here and to every harness.
+ * (step 6), `to_string` and `plus` (step 4), and `strict_eq` (step 8).
  */
 import { dirname, join } from 'node:path'
 import type { NativeSafeTable, PrimitiveOp, Proof } from '@barefootjs/jsx'
@@ -73,6 +73,12 @@ const NATIVE_BINDINGS: Readonly<
   // concatenation, the other operand through `to_string` (#3824 step 4). The
   // `beyond-safe-integer` cases are claimed by no proof ("Decisions" (5)).
   plus: { op: 'plus', domains: { 'number-pair': ['number-pair'], string: ['string-pair', 'string-mixed'] } },
+  // Two proven non-nil operands of one primitive type: the host's own
+  // equality operator for that type (#3824 step 8).
+  strict_eq: {
+    op: 'strict-eq',
+    domains: { 'number-pair': ['number-pair'], 'string-pair': ['string-pair'], 'boolean-pair': ['boolean-pair'] },
+  },
 }
 
 export interface NativeSafeMirror {

@@ -74,7 +74,8 @@ my %bindings = (
 # `?:`); an array index read is Perl's own `->[]`; a number literal is a
 # Perl numeric literal, which both template languages compile to; a
 # relational operator is Perl's numeric `<` / `<=` / `>` / `>=`; a unary `+`
-# over a number is the operand itself. It runs
+# over a number is the operand itself; a strict equality is `eq` over two
+# strings and `==` otherwise. It runs
 # over the cases whose domain the two adapters' NATIVE_SAFE tables claim
 # (primitives-native-safe.json, "perl": their union, since they share these
 # operators; spec/js-primitive-semantics.md, "Conformance" item 3).
@@ -94,6 +95,13 @@ my %native_bindings = (
         my ($a, $b) = @_;
         my $str = sub { BarefootJS::Evaluator::_is_string($_[0]) ? $_[0] : $bf->to_string($_[0]) };
         $str->($a) . $str->($b);
+    },
+    # Two proven strings compare with `eq` (Kolon's string `==`); two proven
+    # numbers or booleans with Perl's numeric `==` (#3824 step 8).
+    strict_eq => sub {
+        my ($a, $b) = @_;
+        my $both_strings = BarefootJS::Evaluator::_is_string($a) && BarefootJS::Evaluator::_is_string($b);
+        ($both_strings ? $a eq $b : $a == $b) ? !!1 : !!0;
     },
 );
 
