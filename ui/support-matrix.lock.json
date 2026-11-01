@@ -3283,6 +3283,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -3396,6 +3402,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -3615,6 +3627,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -3757,6 +3775,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -3887,6 +3911,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -4000,6 +4030,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -4129,6 +4165,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -4242,6 +4284,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -4372,6 +4420,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -7654,6 +7708,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -7977,6 +8037,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -8490,6 +8556,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -8878,6 +8950,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -9224,6 +9302,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -9547,6 +9631,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -9892,6 +9982,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -10221,6 +10317,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -10561,6 +10663,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -10989,6 +11097,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -11228,6 +11342,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -11627,6 +11747,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -11919,6 +12045,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -12169,6 +12301,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -12408,6 +12546,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -12669,6 +12813,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -12902,6 +13052,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -13146,6 +13302,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -13927,6 +14089,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -14160,6 +14328,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -14559,6 +14733,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -14845,6 +15025,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -15101,6 +15287,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -15334,6 +15526,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -15595,6 +15793,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -15851,6 +16055,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -16096,6 +16306,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -21165,10 +21381,34 @@
     "binary:>=": {
       "cells": {
         "hono": {},
-        "blade": {},
-        "erb": {},
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            }
+          ]
+        },
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            }
+          ]
+        },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
             {
               "fixture": "relational-omitted-number-memo",
               "limitations": [
@@ -21177,12 +21417,66 @@
             }
           ]
         },
-        "jinja": {},
-        "minijinja": {},
-        "mojolicious": {},
-        "pebble": {},
-        "twig": {},
-        "xslate": {}
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            }
+          ]
+        },
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -21190,10 +21484,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "relational-omitted-number-memo",
-        "description": "A memo comparing an omitted optional number prop is false, and one comparing a null prop reads it as 0",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/relational-omitted-number-memo.ts",
-        "code": "props.maybe >= props.n"
+        "fixture": "omitted-optional-nullable-number-relational",
+        "description": "A comparison over an omitted optional prop typed number | null (undefined → NaN → false)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-nullable-number-relational.ts",
+        "code": "props.missing >= 1"
       }
     },
     "literal:boolean": {
@@ -21839,6 +22133,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -21982,6 +22282,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -22183,6 +22489,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -22343,6 +22655,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -22491,6 +22809,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -22634,6 +22958,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -22793,6 +23123,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -22924,6 +23260,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -23072,6 +23414,12 @@
             },
             {
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
               ]
@@ -23268,6 +23616,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -23419,6 +23773,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -23702,6 +24062,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -23892,6 +24258,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -24052,6 +24424,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -24203,6 +24581,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -24372,6 +24756,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
               "fixture": "omitted-optional-row-field-plus",
               "limitations": [
                 "omitted-optional-row-field-plus"
@@ -24517,6 +24907,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {
@@ -24671,6 +25067,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-nullable-number-relational",
+              "limitations": [
+                "omitted-optional-nullable-number-arithmetic"
               ]
             },
             {

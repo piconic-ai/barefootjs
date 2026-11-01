@@ -10914,6 +10914,14 @@
       }
     }
   ],
+  "omitted-optional-nullable-number-relational": [
+    {
+      "name": "gen:missing:union:1",
+      "props": {
+        "missing": null
+      }
+    }
+  ],
   "omitted-optional-number-arithmetic": [
     {
       "name": "gen:missing:zero",
@@ -11042,6 +11050,26 @@
       "props": {
         "zero": 1234567890,
         "nothing": null
+      }
+    }
+  ],
+  "omitted-optional-number-relational": [
+    {
+      "name": "gen:missing:zero",
+      "props": {
+        "missing": 0
+      }
+    },
+    {
+      "name": "gen:missing:negative",
+      "props": {
+        "missing": -7
+      }
+    },
+    {
+      "name": "gen:missing:large",
+      "props": {
+        "missing": 1234567890
       }
     }
   ],

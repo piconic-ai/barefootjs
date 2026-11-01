@@ -54,6 +54,7 @@ import {
   type SupportResult,
   collectNullableSignalGetters,
   arithmeticCoercionOrRefuse,
+  arithmeticOperandCoercion,
   refuseAmbiguousNilArithmetic,
   refuseAmbiguousNilMemoArithmetic,
   type ArithmeticCoercion,
@@ -7163,6 +7164,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     hasScopeBinding: (name) => Boolean(this.scope.lookup(name)),
     refuseAmbiguousNilArithmetic: (expr, params) =>
       refuseAmbiguousNilArithmetic(expr, this.state.nullishAttrCtx, this.scope.enterCallback(params), this.state),
+    relationalOperandReadsUndefined: (op, operand, other) =>
+      arithmeticOperandCoercion(op, operand, other, this.state.nullishAttrCtx, n => this.scope.isBound(n)) === 'undefined',
     filterCaptureAlias: (name) => this.filterCaptureAliases.get(name),
     lookupDestructureBinding: (name) => this.lookupDestructureBinding(name),
     noteWrapperRowRead: (name, rendered) => this.noteWrapperRowRead(name, rendered),

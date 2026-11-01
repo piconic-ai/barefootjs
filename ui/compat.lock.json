@@ -6269,6 +6269,125 @@
           }
         }
       },
+      "omitted-optional-nullable-number-relational": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-relational"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-relational"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-relational"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-relational"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-relational"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-relational"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-relational"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-relational"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-relational"
+          }
+        }
+      },
       "omitted-optional-row-field-plus": {
         "blade": {
           "kind": "render",
@@ -8713,6 +8832,10 @@
         "description": "Arithmetic over an omitted destructured optional prop typed number | null",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-nullable-number-arithmetic-destructured.ts"
       },
+      "omitted-optional-nullable-number-relational": {
+        "description": "A comparison over an omitted optional prop typed number | null (undefined → NaN → false)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-nullable-number-relational.ts"
+      },
       "omitted-optional-row-field-plus": {
         "description": "A + over an optional string row field renders undefined / NaN when the row omits it and…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-row-field-plus.ts"
@@ -8948,6 +9071,10 @@
       "omitted-optional-number-arithmetic-destructured": {
         "description": "Arithmetic over an omitted destructured optional number prop (undefined → NaN)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-number-arithmetic-destructured.ts"
+      },
+      "omitted-optional-number-relational": {
+        "description": "A comparison over an omitted optional number prop is false (undefined → NaN)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-number-relational.ts"
       },
       "opaque-local-accessor-call-client": {
         "description": "Local accessor bound to an opaque helper call, read deferred to the client via /* @client */",
@@ -9763,14 +9890,15 @@
       ]
     },
     "omitted-optional-nullable-number-arithmetic": {
-      "title": "Arithmetic over an optional prop typed as a nullable number",
+      "title": "Arithmetic or a comparison over an optional prop typed as a nullable number",
       "kind": "refusal",
-      "given": "arithmetic over a prop whose type admits both `null` and absence (`n?: number | null`)",
-      "expected": "an omitted prop reads as `undefined` (`NaN`) and a `null` one as `0`",
+      "given": "arithmetic, or a `<` / `<=` / `>` / `>=` comparison, over a prop whose type admits both `null` and absence (`n?: number | null`)",
+      "expected": "an omitted prop reads as `undefined` (`NaN`, so a comparison is false) and a `null` one as `0`",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
         "omitted-optional-nullable-number-arithmetic",
-        "omitted-optional-nullable-number-arithmetic-destructured"
+        "omitted-optional-nullable-number-arithmetic-destructured",
+        "omitted-optional-nullable-number-relational"
       ],
       "adapters": [
         "blade",

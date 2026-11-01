@@ -283,6 +283,20 @@ describe('arithmeticOperandNilIsAmbiguous (#3700)', () => {
     expect(ambiguous(destructured, '*', 'alias', '2')).toBe(true)
   })
 
+  test('a relational operand is a numeric consumer too (#3824 step 3)', () => {
+    const ctx = ctxOf('props: { n?: number | null; a: number | null; b?: number }')
+    for (const op of ['<', '<=', '>', '>=']) {
+      expect(ambiguous(ctx, op, 'props.n', '1')).toBe(true)
+      expect(ambiguous(ctx, op, 'props.n', "'x'")).toBe(true)
+      expect(ambiguous(ctx, op, 'props.a', '1')).toBe(false)
+      expect(ambiguous(ctx, op, 'props.b', '1')).toBe(false)
+    }
+    // The spelling keeps the helper's null reading for the refused operand.
+    expect(arithmeticOperandCoercion('<', parseExpression('props.n'), parseExpression('1'), ctx)).toBeNull()
+    expect(arithmeticOperandCoercion('<', parseExpression('props.b'), parseExpression('1'), ctx)).toBe('undefined')
+    expect(arithmeticOperandCoercion('<', parseExpression('props.a'), parseExpression('1'), ctx)).toBeNull()
+  })
+
   test('a prop with one nil reading, a defaulted one and a shadowed one are not ambiguous', () => {
     const ctx = ctxOf('props: { a: number | null; b?: number; c: number }')
     for (const operand of ['props.a', 'props.b', 'props.c']) expect(ambiguous(ctx, '*', operand, '2')).toBe(false)
@@ -318,6 +332,12 @@ describe('ambiguousNilArithmeticOperands (#3700)', () => {
   test('finds the operands in nested positions', () => {
     expect(found("items.filter(i => i > n * 2).length")).toEqual(['n'])
     expect(found("(-n > 1 ? `a${n + 1}` : 'b')")).toEqual(['n', 'n'])
+  })
+
+  test('finds a relational operand, in a predicate and at the top level', () => {
+    expect(found('items.filter(i => i < n).length')).toEqual(['n'])
+    expect(found('n >= 1')).toEqual(['n'])
+    expect(found('items.filter(n => n < 1).length')).toEqual([])
   })
 
   test('an arrow param or an enclosing binding of the same name shadows the prop', () => {

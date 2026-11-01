@@ -102,6 +102,14 @@ export interface ConditionExprHost {
    */
   refuseAmbiguousNilArithmetic(expr: ParsedExpr, params: readonly string[]): void
   /**
+   * Whether a relational operand's nil reads as `undefined`
+   * (`arithmeticOperandCoercion`, #3824 step 3): an omitted `n?: number`.
+   * Such an operand goes through `bf_number`, which maps nil to `NaN`, so the
+   * comparison is false as `undefined < 1` is in JS; the `bf_lt` helpers
+   * read any other nil as `null`. Read in the current scope.
+   */
+  relationalOperandReadsUndefined(op: string, operand: ParsedExpr, other: ParsedExpr): boolean
+  /**
    * The ToBoolean plan of `test` (#3824): typed at the current scope, or,
    * with `params`, at a predicate's scope with its own bindings entered.
    */
@@ -825,6 +833,24 @@ function renderConditionMember(
   return { preamble: obj.preamble, expr: `${wrapIfMultiToken(obj.expr)}.${capitalizeFieldName(expr.property)}` }
 }
 
+const RELATIONAL_OPS: ReadonlySet<string> = new Set(['<', '<=', '>', '>='])
+
+/**
+ * A relational operand as the comparison reads it: through `bf_number` when
+ * its nil reads as `undefined` (`ConditionExprHost.relationalOperandReadsUndefined`),
+ * as rendered otherwise. `rendered` is already `wrapIfMultiToken`-wrapped.
+ */
+function relationalOperand(
+  host: ConditionExprHost,
+  expr: Extract<ParsedExpr, { kind: 'binary' }>,
+  side: 'left' | 'right',
+  rendered: string,
+): string {
+  if (!RELATIONAL_OPS.has(expr.op)) return rendered
+  const [operand, other] = side === 'left' ? [expr.left, expr.right] : [expr.right, expr.left]
+  return host.relationalOperandReadsUndefined(expr.op, operand, other) ? `(bf_number ${rendered})` : rendered
+}
+
 /** The `binary` arm of {@link renderConditionExpr}. */
 function renderConditionBinary(
   host: ConditionExprHost,
@@ -841,10 +867,10 @@ function renderConditionBinary(
   // then fails at render time ("wrong number of args"), not at compile
   // time (#3249).
   const leftResult = renderConditionExpr(host, expr.left)
-  const left = wrapIfMultiToken(leftResult.expr)
+  const left = relationalOperand(host, expr, 'left', wrapIfMultiToken(leftResult.expr))
 
   const rightResult = renderConditionExpr(host, expr.right)
-  const right = wrapIfMultiToken(rightResult.expr)
+  const right = relationalOperand(host, expr, 'right', wrapIfMultiToken(rightResult.expr))
 
   const preamble = leftResult.preamble + rightResult.preamble
 

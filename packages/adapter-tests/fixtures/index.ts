@@ -324,6 +324,8 @@ import { fixture as jsonStringifyBooleanLiteralDestructured } from './json-strin
 import { fixture as unaryMinusCompoundOperand } from './unary-minus-compound-operand'
 import { fixture as omittedOptionalNumberNegation } from './omitted-optional-number-negation'
 import { fixture as omittedOptionalNullableNumberArithmetic } from './omitted-optional-nullable-number-arithmetic'
+import { fixture as omittedOptionalNullableNumberRelational } from './omitted-optional-nullable-number-relational'
+import { fixture as omittedOptionalNumberRelational } from './omitted-optional-number-relational'
 import { fixture as omittedOptionalNullableNumberArithmeticDestructured } from './omitted-optional-nullable-number-arithmetic-destructured'
 import { fixture as nullableNumberArithmeticDestructured } from './nullable-number-arithmetic-destructured'
 import { fixture as callbackIndexParam } from './callback-index-param'
@@ -1548,6 +1550,8 @@ export const jsxFixtures: JSXFixture[] = [
   unaryMinusCompoundOperand,
   omittedOptionalNumberNegation,
   omittedOptionalNullableNumberArithmetic,
+  omittedOptionalNullableNumberRelational,
+  omittedOptionalNumberRelational,
   omittedOptionalNullableNumberArithmeticDestructured,
   nullableNumberArithmeticDestructured,
   callbackIndexParam,

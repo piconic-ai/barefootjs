@@ -538,10 +538,9 @@ const RELATIONAL_OPS: ReadonlySet<string> = new Set(['<', '<=', '>', '>='])
  * relational helpers read a nil operand as JS `null` (`0`), so only an operand
  * whose nil reads as `undefined` needs spelling: it goes through `NaN`, which
  * makes the comparison false, as `undefined < 1` is in JS. A nil whose
- * reading the type leaves open (`n?: number | null`) keeps the helper's
- * `null` reading instead of being refused as arithmetic is (#3700); the
- * nil-reading rewrite of rollout step 4 decides that case for every numeric
- * consumer at once.
+ * reading the type leaves open (`n?: number | null`) is refused as it is in
+ * arithmetic (`arithmeticOperandNilIsAmbiguous`, #3700); the spelling keeps
+ * the helper's `null` reading so the refused template stays well-formed.
  */
 function relationalOperandCoercion(
   operand: ParsedExpr | undefined,
@@ -560,7 +559,8 @@ function relationalOperandCoercion(
  * type cannot say which, so no spelling of {@link arithmeticOperandCoercion}
  * renders both. Template adapters refuse such an operand instead of
  * rendering one reading silently. Same operators and scope as
- * {@link arithmeticOperandCoercion}.
+ * {@link arithmeticOperandCoercion}, relational operators included: they
+ * apply ToNumber too (`undefined < 1` is false, `null < 1` is true).
  */
 export function arithmeticOperandNilIsAmbiguous(
   op: string,
@@ -569,7 +569,8 @@ export function arithmeticOperandNilIsAmbiguous(
   ctx: NullishAttrContext,
   isShadowed: (name: string) => boolean = () => false,
 ): boolean {
-  return isNumericArithmetic(op, other) && arithmeticOperandSeed(operand, ctx, isShadowed) === 'either'
+  if (!isNumericArithmetic(op, other) && !RELATIONAL_OPS.has(op)) return false
+  return arithmeticOperandSeed(operand, ctx, isShadowed) === 'either'
 }
 
 /**

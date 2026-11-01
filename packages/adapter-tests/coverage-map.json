@@ -11399,6 +11399,23 @@
         "text"
       ]
     },
+    "omitted-optional-nullable-number-relational": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:>=",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "omitted-optional-number-arithmetic": {
       "kinds": [
         "binary",
@@ -11465,6 +11482,23 @@
       ],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "omitted-optional-number-relational": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:>=",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
         "text"
       ]
     },
