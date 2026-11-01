@@ -106,7 +106,6 @@ import {
   groupUnaryOperand,
   literalMemberIndex,
   groupObjectLiteralSegments,
-  isStringConcatBinary,
   type ParsedExprEmitter,
   type PrimitivePlan,
   type PrimitiveInputs,
@@ -143,6 +142,8 @@ import {
   relationalHelper,
   isNativeToNumber,
   numberLiteralSpelling,
+  plusSpelling,
+  needsToString,
 } from '@barefootjs/jsx'
 
 import type { PebbleEmitContext } from '../emit-context.ts'
@@ -172,7 +173,15 @@ export const NATIVE_SAFE: NativeSafeTable = {
   // (#3824 step 3). `unproven` describes binary `-` / `*` over operands Phase 1
   // cannot type, which keep the native operator until step 4.
   'to-number': ['number-pair', 'number', 'unproven'],
-  plus: ['number-pair', 'string', 'unproven'],
+  // A `+` is native over two proven numbers and over a proven string (the
+  // host's concatenation, the other operand through `to_string`); anything
+  // else takes the runtime's JS `+` (`plus`; #3824 step 4, pinned by the
+  // `primitives/plus` vectors). Past 2^53 an integer `+` may differ from IEEE
+  // double addition: an accepted gap ("Decisions" (5)).
+  plus: ['number-pair', 'string'],
+  // A template-literal part or concatenation operand is itself only when it
+  // is a proven string; anything else takes `to_string` (#3824 step 4).
+  'to-string': ['string'],
   'strict-eq': [],
   // Native only over two proven numbers; any other pair takes the runtime's
   // JS Abstract Relational Comparison (`lt` / `le` / `gt` / `ge`; #3824
@@ -249,6 +258,21 @@ function flattenPropsMember(
  * surfacing as the Jinja/Twig ports instead of silently degrading to the
  * callback's receiver.
  */
+/**
+ * Spell a `+` plan (#3824 step 4) over grouped operands: Pebble's `+` over two
+ * proven numbers; the host's concatenation when one operand is a proven
+ * string, the other through the runtime's JS `String()` (`to_string`), since
+ * the host would convert it with its own spelling; the runtime's JS `+`
+ * (`plus`) otherwise.
+ */
+function spellPlus(plan: PrimitivePlan | null, l: string, r: string): string {
+  const spelled = plusSpelling(plan)
+  if (spelled.kind === 'add') return `${l} + ${r}`
+  if (spelled.kind === 'plus') return `bf.plus(${l}, ${r})`
+  const [ls, rs] = spelled.stringify
+  return `${ls ? `bf.to_string(${l})` : l} ~ ${rs ? `bf.to_string(${r})` : r}`
+}
+
 /**
  * `x.length` through `bf.length`. An optional-chained `x?.length` yields
  * `null` — JS's `undefined` — for an absent receiver instead of
@@ -377,16 +401,7 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
     // operator for `===`/`!==`.
     if (op === '===') return `bf.eq(${l}, ${r})`
     if (op === '!==') return `bf.neq(${l}, ${r})`
-    // See the file header, divergence 7: a string-typed `+` operand routes
-    // through `~`, not Pebble's (unverified) numeric `+`. Both operands are
-    // wrapped in `bf.string(...)` — confirmed during Phase 3 research that
-    // `~` (`ConcatenateExpression`) calls each operand's raw Java
-    // `.toString()` directly: an un-wrapped `null` operand silently
-    // contributes nothing (not JS's literal `"null"` text) and a
-    // whole-valued `Double` prints `"1.0"`, not JS `String(1)`'s `"1"`.
-    if (isStringConcatBinary(op, left, right, this.isStringName)) {
-      return `bf.string(${l}) ~ bf.string(${r})`
-    }
+    if (op === '+') return spellPlus(plan, l, r)
     // `/` and `%` go through the runtime's JS division and remainder
     // (#3474, #3574).
     const helper = arithmeticHelper(op)
@@ -717,13 +732,7 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     // operator for `===`/`!==`.
     if (op === '===') return `bf.eq(${l}, ${r})`
     if (op === '!==') return `bf.neq(${l}, ${r})`
-    // See the file header, divergence 7 (and the other `binary()`
-    // implementation above for the full `bf.string`-wrapping rationale).
-    // The adapter's string-value registry catches getter/prop/local-const
-    // operands with no literal present (`firstName() + lastName()`).
-    if (isStringConcatBinary(op, left, right, (n, property, path) => this.ctx._isStringValueName(n, property, path))) {
-      return `bf.string(${l}) ~ bf.string(${r})`
-    }
+    if (op === '+') return spellPlus(plan, l, r)
     // `/` and `%` go through the runtime's JS division and remainder
     // (#3474, #3574).
     const helper = arithmeticHelper(op)
@@ -806,25 +815,22 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     return `(${truthyTest(plan, emit(test))} ? ${emit(consequent)} : ${emit(alternate)})`
   }
 
-  templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string {
+  templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string, plans: readonly (PrimitivePlan | null)[]): string {
     // `` `n=${count() + 1}` `` → Pebble string concatenation (`~`):
-    // `'n=' ~ bf.string(count + 1)`. Every interpolated (non-string-literal)
-    // segment routes through `bf.string(...)` before concatenation.
+    // `'n=' ~ bf.to_string(count + 1)`. Every interpolated (non-string-literal)
+    // segment routes through `bf.to_string(...)` (unless its plan proves it a string) before concatenation.
     const terms: string[] = []
-    for (const part of parts) {
+    parts.forEach((part, i) => {
       if (part.type === 'string') {
         if (part.value !== '') {
           terms.push(pebbleStringLiteral(part.value))
         }
       } else {
-        const rendered = emit(part.expr)
-        const needsParens =
-          part.expr.kind === 'binary' ||
-          part.expr.kind === 'logical' ||
-          part.expr.kind === 'conditional'
-        terms.push(`bf.string(${needsParens ? `(${rendered})` : rendered})`)
+        const grouped = groupBinaryOperand(part.expr, emit(part.expr))
+        // The runtime's JS ToString unless the plan proves the part a string (#3824 step 4).
+        terms.push(needsToString(plans[i] ?? null) ? `bf.to_string(${grouped})` : grouped)
       }
-    }
+    })
     if (terms.length === 0) return `''`
     return terms.join(' ~ ')
   }

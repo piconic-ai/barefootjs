@@ -415,7 +415,7 @@ function renderValueCallback(
     // Evaluator-first (#2018): the comparator body is serialized and evaluated
     // per comparison. Falls back to the structured `bf_sort` for a comparator
     // the evaluator can't model (e.g. localeCompare).
-    const evalForm = emitSortEval(recv, body, params, emit, propsObjectIdentifier(host.ctx.state.propsObjectName))
+    const evalForm = emitSortEval(recv, body, params, emit, propsObjectIdentifier(host.ctx.state.propsObjectName), host.ctx.operandTyping())
     if (evalForm !== null) return evalForm
     const cmp = sortComparatorFromArrow(arrow)
     if (cmp !== null) return emitBfSort(recv, cmp)
@@ -429,14 +429,14 @@ function renderValueCallback(
     const direction = method === 'reduceRight' ? 'right' : 'left'
     const init = restArgs[0]
     if (init) {
-      const evalForm = emitReduceEval(recv, body, params, init, direction, emit, propsObjectIdentifier(host.ctx.state.propsObjectName))
+      const evalForm = emitReduceEval(recv, body, params, init, direction, emit, propsObjectIdentifier(host.ctx.state.propsObjectName), host.ctx.operandTyping())
       if (evalForm !== null) return evalForm
     }
     return pushCallbackBF101(host, method, true)
   }
 
   if (method === 'flatMap') {
-    const evalForm = emitFlatMapEval(recv, body, params[0] ?? '_', emit, propsObjectIdentifier(host.ctx.state.propsObjectName))
+    const evalForm = emitFlatMapEval(recv, body, params[0] ?? '_', emit, propsObjectIdentifier(host.ctx.state.propsObjectName), host.ctx.operandTyping())
     if (evalForm !== null) return evalForm
     return pushCallbackBF101(host, method, true)
   }
@@ -444,7 +444,7 @@ function renderValueCallback(
   // Value-producing `.map(cb)` (#2073): eval-only. (The JSX-returning
   // `.map` is an IRLoop upstream and never reaches this dispatch.)
   if (method === 'map') {
-    const evalForm = emitMapEval(recv, body, params[0] ?? '_', emit, propsObjectIdentifier(host.ctx.state.propsObjectName))
+    const evalForm = emitMapEval(recv, body, params[0] ?? '_', emit, propsObjectIdentifier(host.ctx.state.propsObjectName), host.ctx.operandTyping())
     if (evalForm !== null) return evalForm
     return pushCallbackBF101(host, method, true)
   }

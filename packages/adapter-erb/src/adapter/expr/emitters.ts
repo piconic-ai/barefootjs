@@ -34,8 +34,7 @@
 
 import {
   arithmeticHelper,
-  isStringConcatBinary,
-  isStringTypedOperand,
+  groupBinaryOperand,
   literalMemberIndex,
   type ParsedExprEmitter,
   type PrimitivePlan,
@@ -77,6 +76,8 @@ import {
   relationalHelper,
   isNativeToNumber,
   numberLiteralSpelling,
+  plusSpelling,
+  needsToString,
 } from '@barefootjs/jsx'
 
 import type { ErbEmitContext } from '../emit-context.ts'
@@ -107,7 +108,15 @@ export const NATIVE_SAFE: NativeSafeTable = {
   // (#3824 step 3). `unproven` describes binary `-` / `*` over operands Phase 1
   // cannot type, which keep the native operator until step 4.
   'to-number': ['number-pair', 'number', 'unproven'],
-  plus: ['number-pair', 'string', 'unproven'],
+  // A `+` is native over two proven numbers and over a proven string (the
+  // host's concatenation, the other operand through `to_string`); anything
+  // else takes the runtime's JS `+` (`plus`; #3824 step 4, pinned by the
+  // `primitives/plus` vectors). Past 2^53 an integer `+` may differ from IEEE
+  // double addition: an accepted gap ("Decisions" (5)).
+  plus: ['number-pair', 'string'],
+  // A template-literal part or concatenation operand is itself only when it
+  // is a proven string; anything else takes `to_string` (#3824 step 4).
+  'to-string': ['string'],
   'strict-eq': ['number-pair', 'string-pair', 'boolean-pair', 'unproven'],
   // Native only over two proven numbers; any other pair takes the runtime's
   // JS Abstract Relational Comparison (`lt` / `le` / `gt` / `ge`; #3824
@@ -176,19 +185,18 @@ export interface ErbStringTyping {
 const NO_STRING_TYPING: ErbStringTyping = { scope: BindingScope.EMPTY, isStringValueName: () => false }
 
 /**
- * One operand of a `+` the shared layer classified as string concatenation
- * (`isStringConcatBinary`). Ruby's `+` raises on a String plus a number
- * (`no implicit conversion of Integer into String`), so an operand the shared
- * `isStringTypedOperand` does not type as a string goes through the
- * runtime's JS `String()` first: `r.id + '-' + i` is `"x-0"`, and
- * `'r=' + (-4 % 2)` is `"r=0"`.
+ * Spell a `+` plan (#3824 step 4) over grouped operands: Ruby's `+` over two
+ * proven numbers; the host's concatenation when one operand is a proven
+ * string, the other through the runtime's JS `String()` (`to_string`), since
+ * the host would convert it with its own spelling; the runtime's JS `+`
+ * (`plus`) otherwise.
  */
-function concatOperand(
-  operand: ParsedExpr,
-  emitted: string,
-  isStringName: StringNameTest,
-): string {
-  return isStringTypedOperand(operand, isStringName) ? emitted : `bf.string(${emitted})`
+function spellPlus(plan: PrimitivePlan | null, l: string, r: string): string {
+  const spelled = plusSpelling(plan)
+  if (spelled.kind === 'add') return `(${l} + ${r})`
+  if (spelled.kind === 'plus') return `bf.plus(${l}, ${r})`
+  const [ls, rs] = spelled.stringify
+  return `(${ls ? `bf.to_string(${l})` : l} + ${rs ? `bf.to_string(${r})` : r})`
 }
 
 /**
@@ -400,12 +408,7 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     // floors (#3574).
     const helper = arithmeticHelper(op)
     if (helper) return `bf.${helper}(${l}, ${r})`
-    // JS `+` with a string-typed operand is concatenation; Ruby's `+` raises
-    // on a String plus a number, so the other operand goes through
-    // `bf.string`.
-    if (isStringConcatBinary(op, left, right, this.isStringName)) {
-      return `(${concatOperand(left, l, this.isStringName)} + ${concatOperand(right, r, this.isStringName)})`
-    }
+    if (op === '+') return spellPlus(plan, l, r)
     // `<` `<=` `>` `>=`: native only over two proven numbers, the runtime's
     // JS Abstract Relational Comparison otherwise (#3824 step 3).
     const relational = relationalHelper(op, plan)
@@ -770,13 +773,7 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     // floors (#3574).
     const helper = arithmeticHelper(op)
     if (helper) return `bf.${helper}(${l}, ${r})`
-    // JS `+` with a string-typed operand is concatenation; Ruby's `+` raises
-    // on a String plus a number, so the other operand goes through
-    // `bf.string`.
-    const isStringName = (n: string, property?: boolean, path?: readonly string[]) => this.ctx._isStringValueName(n, property, path)
-    if (isStringConcatBinary(op, left, right, isStringName)) {
-      return `(${concatOperand(left, l, isStringName)} + ${concatOperand(right, r, isStringName)})`
-    }
+    if (op === '+') return spellPlus(plan, l, r)
     // `<` `<=` `>` `>=`: native only over two proven numbers, the runtime's
     // JS Abstract Relational Comparison otherwise (#3824 step 3).
     const relational = relationalHelper(op, plan)
@@ -874,21 +871,23 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     return `(${truthyTest(plan, emit(test))} ? ${emit(consequent)} : ${emit(alternate)})`
   }
 
-  templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string {
+  templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string, plans: readonly (PrimitivePlan | null)[]): string {
     // `` `n=${count() + 1}` `` → Ruby string concatenation
-    // (`'n=' + bf.string(v[:count] + 1)`), NOT string interpolation — a
+    // (`'n=' + bf.to_string(v[:count] + 1)`), NOT string interpolation — a
     // literal chunk could itself contain `#{...}`-shaped text, and every
     // dynamic term needs JS ToString semantics (`bf.string`, not Ruby's
     // own `#{}` / `to_s`, e.g. JS `1.0.toString()` is `"1"`) rather than
     // Ruby's native stringification.
     const terms: string[] = []
-    for (const part of parts) {
+    parts.forEach((part, i) => {
       if (part.type === 'string') {
         if (part.value !== '') terms.push(rubyStringLiteral(part.value))
       } else {
-        terms.push(`bf.string(${emit(part.expr)})`)
+        const grouped = groupBinaryOperand(part.expr, emit(part.expr))
+        // The runtime's JS ToString unless the plan proves the part a string (#3824 step 4).
+        terms.push(needsToString(plans[i] ?? null) ? `bf.to_string(${grouped})` : grouped)
       }
-    }
+    })
     if (terms.length === 0) return "''"
     return terms.join(' + ')
   }

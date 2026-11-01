@@ -27,6 +27,8 @@ import {
   collectOperandTyping,
   parseExpression,
   planPrimitive,
+  planToString,
+  rewriteNilReadings,
   type NativeSafeTable,
   type ParsedExpr,
   type ScopedOperandTyping,
@@ -113,7 +115,7 @@ const TARGETS: readonly Target[] = [
 const OP_HELPERS: Readonly<Record<PrimitiveOp, readonly PrimitiveHelper[]>> = {
   'to-boolean': ['truthy'],
   'to-number': ['sub', 'mul', 'div', 'mod', 'to_number'],
-  'to-string': [],
+  'to-string': ['to_string'],
   'boolean-value': ['boolean'],
   get: ['get'],
   'strict-eq': ['strict_eq'],
@@ -264,6 +266,24 @@ const CASES: readonly Case[] = [
     },
   },
   {
+    // A template-literal part (#3824 step 4): itself when it is a proven
+    // string, after the nil-reading rewrite (an omitted `ms?: string` reads
+    // `'undefined'`), the runtime's `to_string` otherwise.
+    id: 'to-string',
+    plan: (node, typing, table) => {
+      const literal = rewriteNilReadings({ kind: 'template-literal', parts: [{ type: 'expression', expr: node }] }, typing)
+      const part = literal.kind === 'template-literal' ? literal.parts[0] : undefined
+      return part?.type === 'expression' ? planToString(part.expr, typing, table) : null
+    },
+    positions: at(
+      {
+        text: (e, label) => ({ label, jsx: `<p>@{\`v=\${${e}}\`}</p>`, node: e, scope: 'component' }),
+        attr: (e, label) => ({ label, jsx: `<p>@<i data-v={\`v=\${${e}}\`} /></p>`, node: e, scope: 'component' }),
+      },
+      { string: 'props.s', number: 'props.n', optional: 'props.ms', 'optional-number': 'props.maybe', index: 'props.items[props.n]' },
+    ),
+  },
+  {
     id: 'to-number',
     positions: {
       ...at(
@@ -373,16 +393,6 @@ const CASES: readonly Case[] = [
  * Shrink-only.
  */
 const DISAGREEMENTS: Readonly<Record<string, string>> = {
-  // `+` over an operand Phase 1 cannot type: numeric addition (`add`), not `plus`.
-  'go plus text optional': 'step 4 (`+`)',
-  'mojolicious plus text optional': 'step 4 (`+`)',
-  'xslate plus text optional': 'step 4 (`+`)',
-  'go plus attr optional': 'step 4 (`+`)',
-  'mojolicious plus attr optional': 'step 4 (`+`)',
-  'xslate plus attr optional': 'step 4 (`+`)',
-  'go plus filter row': 'step 4 (`+`)',
-  'mojolicious plus filter row': 'step 4 (`+`)',
-  'xslate plus filter row': 'step 4 (`+`)',
   // `===`. Operands proven of different types are not folded to a constant;
   // Mojolicious spells `==` / `ne` for an operand it cannot type.
   'go strict-eq text different-types': 'step 8 (`===`)',
@@ -489,8 +499,9 @@ describe('every template adapter spells the primitive plan its NativeSafeTable n
         for (const target of TARGETS) {
           const parts = segments(compile(src, target), variants.length)
           variants.forEach((v, i) => {
-            const node = parseExpression(v.node)
             const scoped = typing.at(scopeFor(v.scope, metadata.propsObjectName))
+            // The emitters plan the node after the nil-reading rewrite (#3824 step 4).
+            const node = rewriteNilReadings(parseExpression(v.node), scoped)
             const plan = planOf ? planOf(node, scoped, target.table) : planPrimitive(node, scoped, target.table)
             const want = expected(plan)
             const got = observed(parts[i]!, plan!, target)

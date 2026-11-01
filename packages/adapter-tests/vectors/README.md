@@ -201,7 +201,11 @@ Perl, Twig and Blade share PHP), and generation refuses a claimed proof no
 vector domain covers. A native claim the vectors refute fails the harness;
 no ledger applies to it. Only the ops a rollout step has wired are listed
 (`truthy`, step 1; `get`, step 2; `to_number` and `lt` / `le` / `gt` /
-`ge`, step 3; `number`, step 6).
+`ge`, step 3; `to_string` and `plus`, step 4; `number`, step 6). A domain
+no table claims runs under the helper binding only: today
+`beyond-safe-integer`, the `plus` cases whose sum passes 2^53, where Ruby,
+Python and PHP add integers exactly (`spec/js-primitive-semantics.md`,
+"Decisions" (5); the limitation `plus-beyond-safe-integer`).
 
 ### The expected-failure ledger
 

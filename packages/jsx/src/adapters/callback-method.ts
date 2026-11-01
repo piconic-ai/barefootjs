@@ -16,6 +16,8 @@
  * runtime binds those.
  */
 
+import { rewriteNilReadingsDeep } from './nil-reading.ts'
+import type { ScopedOperandTyping } from './operand-typing.ts'
 import {
   freeVarsInBody,
   hasOpaqueCall,
@@ -116,8 +118,12 @@ export interface EvalBody {
  * else. Capturing `props` whole would bind it to an undefined template
  * variable, and the predicate would read every `props.X` as `undefined`.
  */
-export function evalBody(body: ParsedExpr, bound: ReadonlySet<string>, propsObject: string): EvalBody | null {
-  const lifted = liftPropsReads(body, bound, propsObject)
+export function evalBody(body: ParsedExpr, bound: ReadonlySet<string>, propsObject: string, typing?: ScopedOperandTyping): EvalBody | null {
+  // The evaluator reads every nil as `null`: with the enclosing scope's
+  // typing, an operand whose nil Phase 1 reads is rewritten first (#3824
+  // step 4a), for a caller that reaches here without `emitParsedExpr`.
+  const read = typing ? rewriteNilReadingsDeep(body, typing.enterCallback([...bound])) : body
+  const lifted = liftPropsReads(read, bound, propsObject)
   const json = serializeParsedExpr(lifted.body)
   if (json === null) return null
   const captured = freeVarsInBody(lifted.body, bound).map((name) => ({

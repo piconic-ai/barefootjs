@@ -3786,10 +3786,22 @@ export function readsNestedCallbackIndex(expr: ParsedExpr): boolean {
 }
 
 /** Build the evaluator's minimal node object, or null for an out-of-surface kind. */
+/**
+ * A literal's evaluator node. JSON has no `NaN` / `Infinity` (the
+ * nil-reading rewrite's `x ?? NaN`, #3824 step 4): such a literal travels as
+ * the builtin `Number('NaN')`.
+ */
+function literalEvalNode(value: string | number | boolean | null): Record<string, unknown> {
+  if (typeof value === 'number' && !Number.isFinite(value)) {
+    return { kind: 'call', callee: { kind: 'identifier', name: 'Number' }, args: [{ kind: 'literal', value: String(value) }] }
+  }
+  return { kind: 'literal', value }
+}
+
 function toEvalNode(e: ParsedExpr): Record<string, unknown> | null {
   switch (e.kind) {
     case 'literal':
-      return { kind: 'literal', value: e.value }
+      return literalEvalNode(e.value)
     case 'identifier':
       return { kind: 'identifier', name: e.name }
     case 'binary': {

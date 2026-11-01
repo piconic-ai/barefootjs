@@ -82,6 +82,7 @@ export type PrimitiveHelper =
   | 'div'
   | 'mod'
   | 'plus'
+  | 'to_string'
   | 'strict_eq'
   | 'lt'
   | 'le'
@@ -94,7 +95,18 @@ export type PrimitiveHelper =
   | 'boolean'
 
 export type PrimitivePlan =
-  | { readonly mode: 'native'; readonly op: PrimitiveOp; readonly proof: Proof }
+  | {
+      readonly mode: 'native'
+      readonly op: PrimitiveOp
+      readonly proof: Proof
+      /**
+       * A native string `+` (`plus` over the `string` proof): which operand
+       * the emitter spells through the runtime's `to_string` before the
+       * host's concatenation, `[left, right]`. A proven string operand is
+       * concatenated as it is (#3824 step 4).
+       */
+      readonly stringify?: readonly [boolean, boolean]
+    }
   | { readonly mode: 'helper'; readonly op: PrimitiveOp; readonly helper: PrimitiveHelper; readonly proof: Proof }
   /** `===` / `!==` across operands proven of different primitive types. */
   | { readonly mode: 'const'; readonly op: PrimitiveOp; readonly value: boolean }
@@ -224,10 +236,64 @@ function planStrictEq(op: string, left: OperandFacts, right: OperandFacts, targe
   return decide('strict-eq', pairProof(left, right), target, 'strict_eq')
 }
 
+/**
+ * A binary `+` (#3824 step 4): the host's `+` over two proven non-nil
+ * numbers (`add` on a target that does not claim it); the host's
+ * concatenation when one operand is a proven non-nil string, with the other
+ * through `to_string` unless it is a proven string too; the runtime's JS `+`
+ * (`plus`) otherwise. The nil-reading rewrite runs first, so a typed
+ * nil-capable operand is already non-nil here.
+ */
 function planPlus(left: OperandFacts, right: OperandFacts, target: NativeSafeTable): PrimitivePlan {
   if (isExactly(left, 'number') && isExactly(right, 'number')) return decide('plus', 'number-pair', target, 'add')
-  if (isExactly(left, 'string') || isExactly(right, 'string')) return decide('plus', 'string', target, 'plus')
+  const ls = isExactly(left, 'string')
+  const rs = isExactly(right, 'string')
+  if (ls || rs) {
+    const plan = decide('plus', 'string', target, 'plus')
+    return plan.mode === 'native' ? { ...plan, stringify: [!ls, !rs] } : plan
+  }
   return decide('plus', 'unproven', target, 'plus')
+}
+
+/**
+ * How an emitter spells a `+` under its plan (#3824 step 4):
+ *
+ * - `add`: the host's numeric `+` (`native`), or the runtime's numbers-only
+ *   `add` helper (`helper`, Perl and Go).
+ * - `concat`: the host's string concatenation, each operand whose
+ *   `stringify` flag is set through the runtime's `to_string`.
+ * - `plus`: the runtime's JS `+`.
+ *
+ * A null plan (an emitter method reached outside `emitParsedExpr`) takes
+ * `plus`, which is never wrong.
+ */
+export type PlusSpelling =
+  | { readonly kind: 'add'; readonly native: boolean }
+  | { readonly kind: 'concat'; readonly stringify: readonly [boolean, boolean] }
+  | { readonly kind: 'plus' }
+
+export function plusSpelling(plan: PrimitivePlan | null): PlusSpelling {
+  if (plan?.op !== 'plus') return { kind: 'plus' }
+  if (plan.mode === 'native') {
+    return plan.proof === 'number-pair' ? { kind: 'add', native: true } : { kind: 'concat', stringify: plan.stringify ?? [true, true] }
+  }
+  return plan.mode === 'helper' && plan.helper === 'add' ? { kind: 'add', native: false } : { kind: 'plus' }
+}
+
+/**
+ * The ToString plan of a template-literal part (#3824 step 4): the part
+ * itself when it is a proven non-nil string and the target claims the
+ * `string` proof for `to-string`, the runtime's `to_string` otherwise. The
+ * nil-reading rewrite has already turned a typed nil-capable part into a
+ * non-nil one.
+ */
+export function planToString(part: ParsedExpr, typing: ScopedOperandTyping, target: NativeSafeTable): PrimitivePlan {
+  return decide('to-string', isExactly(operandFacts(part, typing), 'string') ? 'string' : 'unproven', target, 'to_string')
+}
+
+/** Whether a ToString plan names the runtime's `to_string`; a null plan does. */
+export function needsToString(plan: PrimitivePlan | null): boolean {
+  return !isNativePlan(plan, 'to-string')
 }
 
 function planNumericBinary(op: string, left: OperandFacts, right: OperandFacts, target: NativeSafeTable): PrimitivePlan {

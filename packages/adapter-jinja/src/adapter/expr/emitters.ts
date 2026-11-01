@@ -48,8 +48,6 @@
 
 import {
   arithmeticHelper,
-  isStringConcatBinary,
-  isStringTypedOperand,
   groupBinaryOperand,
   groupUnaryOperand,
   literalMemberIndex,
@@ -90,6 +88,8 @@ import {
   type CallbackLoweringOptions,
   type StringNameTest,
   numberLiteralSpelling,
+  plusSpelling,
+  needsToString,
 } from '@barefootjs/jsx'
 
 import type { JinjaEmitContext } from '../emit-context.ts'
@@ -119,7 +119,15 @@ export const NATIVE_SAFE: NativeSafeTable = {
   // (#3824 step 3). `unproven` describes binary `-` / `*` over operands Phase 1
   // cannot type, which keep the native operator until step 4.
   'to-number': ['number-pair', 'number', 'unproven'],
-  plus: ['number-pair', 'string', 'unproven'],
+  // A `+` is native over two proven numbers (Python's `+`, pinned by the
+  // `primitives/plus` vectors; past 2^53 Python adds integers exactly, an
+  // accepted gap, "Decisions" (5)) and over a proven string (`~`, the other
+  // operand through `bf.to_string`); anything else takes `bf.plus` (#3824
+  // step 4).
+  plus: ['number-pair', 'string'],
+  // A template-literal part or concatenation operand is itself only when it
+  // is a proven string; anything else takes `bf.to_string` (#3824 step 4).
+  'to-string': ['string'],
   'strict-eq': ['number-pair', 'string-pair', 'boolean-pair', 'unproven'],
   // Native only over two proven numbers; any other pair takes the runtime's
   // JS Abstract Relational Comparison (`lt` / `le` / `gt` / `ge`; #3824
@@ -142,20 +150,19 @@ export const NATIVE_SAFE: NativeSafeTable = {
 }
 
 /**
- * One operand of a `+` the shared layer classified as string concatenation
- * (`isStringConcatBinary`), spelled with `~`. Jinja's `+` raises on a string
- * plus a number, and `~` converts a non-string with the host's own spelling
- * (the `-0` of `-4 % 2`, a float's `.0`), so an operand the shared
- * `isStringTypedOperand` does not type as a string goes through the
- * runtime's JS `String()` first: `r.id + '-' + i` is `"x-0"`, and
- * `'r=' + (-4 % 2)` is `"r=0"`.
+ * Spell a `+` plan (#3824 step 4) over grouped operands: Python's `+` over two
+ * proven numbers; Jinja's `~` when one operand is a proven string, the other
+ * through the runtime's JS `String()` (`bf.to_string`), since `~` would
+ * convert it with Python's own spelling (`-0.0`, `1e+21`, `True`, `None`);
+ * the runtime's JS `+` (`bf.plus`) otherwise, as Python's `+` raises on a
+ * string plus a number.
  */
-function concatOperand(
-  operand: ParsedExpr,
-  emitted: string,
-  isStringName: StringNameTest,
-): string {
-  return isStringTypedOperand(operand, isStringName) ? emitted : `bf.string(${emitted})`
+function spellPlus(plan: PrimitivePlan | null, l: string, r: string): string {
+  const spelled = plusSpelling(plan)
+  if (spelled.kind === 'add') return `${l} + ${r}`
+  if (spelled.kind === 'plus') return `bf.plus(${l}, ${r})`
+  const [ls, rs] = spelled.stringify
+  return `${ls ? `bf.to_string(${l})` : l} ~ ${rs ? `bf.to_string(${r})` : r}`
 }
 
 /**
@@ -372,11 +379,7 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
     // (#3474, #3574).
     const helper = arithmeticHelper(op)
     if (helper) return `bf.${helper}(${l}, ${r})`
-    // JS `+` with a string-typed operand is concatenation; Jinja's `+`
-    // raises on a string plus a number. Lower to `~`.
-    if (isStringConcatBinary(op, left, right, this.isStringName)) {
-      return `${concatOperand(left, l, this.isStringName)} ~ ${concatOperand(right, r, this.isStringName)}`
-    }
+    if (op === '+') return spellPlus(plan, l, r)
     // `<` `<=` `>` `>=`: native only over two proven numbers, the runtime's
     // JS Abstract Relational Comparison otherwise (#3824 step 3).
     const relational = relationalHelper(op, plan)
@@ -708,12 +711,7 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     // (#3474, #3574).
     const helper = arithmeticHelper(op)
     if (helper) return `bf.${helper}(${l}, ${r})`
-    // JS `+` with a string-typed operand is concatenation; Jinja's `+`
-    // raises on a string plus a number. Lower to `~`.
-    const isStringName = (n: string, property?: boolean, path?: readonly string[]) => this.ctx._isStringValueName(n, property, path)
-    if (isStringConcatBinary(op, left, right, isStringName)) {
-      return `${concatOperand(left, l, isStringName)} ~ ${concatOperand(right, r, isStringName)}`
-    }
+    if (op === '+') return spellPlus(plan, l, r)
     // `<` `<=` `>` `>=`: native only over two proven numbers, the runtime's
     // JS Abstract Relational Comparison otherwise (#3824 step 3).
     const relational = relationalHelper(op, plan)
@@ -797,28 +795,24 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     return `(${consequentStr} if ${testStr} else ${emit(alternate)})`
   }
 
-  templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string {
+  templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string, plans: readonly (PrimitivePlan | null)[]): string {
     // `` `n=${count() + 1}` `` → Jinja string concatenation (`~`):
-    // `'n=' ~ bf.string(count + 1)`. Every interpolated (non-string-literal)
-    // segment routes through `bf.string(...)` before concatenation — Jinja's
+    // `'n=' ~ bf.to_string(count + 1)`. Each part goes through the runtime's
+    // JS ToString unless its plan proves it a string (#3824 step 4) — Jinja's
     // `~` stringifies each operand with Python `str()`, which diverges from
     // JS `String(x)` for floats/booleans/None (see `jinja-adapter.ts`'s file
     // header, "Stringification").
     const terms: string[] = []
-    for (const part of parts) {
+    parts.forEach((part, i) => {
       if (part.type === 'string') {
         if (part.value !== '') {
           terms.push(`'${escapeJinjaSingleQuoted(part.value)}'`)
         }
-      } else {
-        const rendered = emit(part.expr)
-        const needsParens =
-          part.expr.kind === 'binary' ||
-          part.expr.kind === 'logical' ||
-          part.expr.kind === 'conditional'
-        terms.push(`bf.string(${needsParens ? `(${rendered})` : rendered})`)
+        return
       }
-    }
+      const grouped = groupBinaryOperand(part.expr, emit(part.expr))
+      terms.push(needsToString(plans[i] ?? null) ? `bf.to_string(${grouped})` : grouped)
+    })
     if (terms.length === 0) return `''`
     return terms.join(' ~ ')
   }
