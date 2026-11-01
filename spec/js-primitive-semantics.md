@@ -358,12 +358,15 @@ include `'10' < '9'`.
 **JS.** If either operand is a string (after ToPrimitive), ToString both and
 concatenate; otherwise ToNumber both and add as doubles.
 
-**Native-safe.** Two proven non-nil `number`s: native `+`, except where the
-target's `+` is not IEEE double past 2^53 (Ruby, Python and PHP integers;
-declared as `add/beyond the safe-integer edge rounds as a double` in their
-`vector-divergences.json`; Perl and Go already use `add` / `bf_add`). One
-proven non-nil `string`: native concatenation over `to_string` of the other
-operand. Anything else: `plus`.
+**Native-safe.** Two proven non-nil `number`s: native `+` (Perl and Go
+already use `add` / `bf_add`). On Ruby, Python and PHP, integer `+` is not
+IEEE double once a result passes 2^53; that gap is kept as an accepted,
+registered limitation (see "Decisions" (5)), and the `primitives/plus`
+cases past 2^53 carry the `beyond-safe-integer` domain, which no
+`NativeSafeTable` claims, so the native binding never runs them and the
+claim still passes its vectors with no allowance. One proven non-nil
+`string`: native concatenation over `to_string` of the other operand.
+Anything else: `plus`.
 
 **Helper.** `plus(a, b) → value`: the evaluator's `+` (`_binary('+', …)`).
 `add` stays the numbers-only helper.
@@ -612,7 +615,9 @@ test pins the compile-time half; shared fixtures pin the positions.
    which that table omits) binds each op to its helper and runs every case.
    It also binds each op to the **native operator** and runs only the cases
    whose `domain` its adapter's `NativeSafeTable` claims. A native claim
-   without passing vectors fails the harness. The two Perl adapters, and the
+   without passing vectors fails the harness. A domain no table claims
+   (today only `beyond-safe-integer`, see "Decisions" (5)) runs under the
+   helper binding only. The two Perl adapters, and the
    two PHP adapters, share one table per runtime, read by the harness from a
    JSON file the TS table is generated from (or checked against).
 4. **No divergence allowance** for `primitives/`, as for `eval-vectors.json`.
