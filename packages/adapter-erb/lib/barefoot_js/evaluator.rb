@@ -180,6 +180,12 @@ module BarefootJS
       return number_to_string(v) if v.is_a?(Numeric)
       return v ? 'true' : 'false' if v.is_a?(TrueClass) || v.is_a?(FalseClass)
       return 'null' if v.nil?
+      # Array.prototype.toString is join(","): a nil element prints as "",
+      # and a nested array flattens through its own join. A plain object
+      # prints as "[object Object]".
+      return v.map { |el| el.nil? ? '' : to_string(el) }.join(',') if v.is_a?(Array)
+      return '[object Object]' if v.is_a?(Hash)
+
       raise EvalUnsupported, "cannot coerce #{v.class} to string"
     end
 
@@ -313,11 +319,12 @@ module BarefootJS
     def binary(op, l, r)
       case op
       when '+'
-        # JS `+`: string concatenation once either operand is a string,
-        # numeric addition otherwise.
-        return to_string(l) + to_string(r) if l.is_a?(String) || r.is_a?(String)
+        # JS `+`: string concatenation once either operand is a string after
+        # ToPrimitive (an array or object converts to its ToString), numeric
+        # addition otherwise.
+        return to_string(l) + to_string(r) if concatenates?(l) || concatenates?(r)
 
-        to_number(l) + to_number(r)
+        add(to_number(l), to_number(r))
       when '-' then to_number(l) - to_number(r)
       when '*' then to_number(l) * to_number(r)
       when '/' then divide(l, r)
@@ -452,6 +459,21 @@ module BarefootJS
       else raise EvalUnsupported, "unary operator '#{op}' is not in the evaluator subset"
       end
     end
+
+    def concatenates?(v)
+      v.is_a?(String) || v.is_a?(Array) || v.is_a?(Hash)
+    end
+    private_class_method :concatenates?
+
+    # add(a, b) -- JS numeric `+`, an IEEE double sum. Two Integers add
+    # exactly in Ruby; past 2^53 the exact sum is rounded once to the nearest
+    # double, which is what IEEE addition of the two (exactly held) operands
+    # gives (`2**53 + 1` is `2**53`).
+    def add(a, b)
+      sum = a + b
+      sum.is_a?(Integer) && sum.abs > 2**53 ? sum.to_f : sum
+    end
+    private_class_method :add
 
     # negate(n) -- JS unary `-` over a number: an Integer zero has no sign, so
     # a zero negates as a Float (`-0.0` from `0`, `0.0` from `-0.0`).

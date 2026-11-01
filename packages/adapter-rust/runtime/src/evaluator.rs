@@ -480,9 +480,11 @@ pub fn truthy(v: &JsValue) -> bool {
 pub(crate) fn binary(op: &str, l: &JsValue, r: &JsValue) -> JsValue {
     match op {
         "+" => {
-            // JS `+`: string concatenation once either operand is a string,
-            // numeric addition otherwise.
-            if num::is_string(l) || num::is_string(r) {
+            // JS `+`: string concatenation once either operand is a string
+            // after ToPrimitive (an array or object converts to its
+            // ToString), numeric addition otherwise.
+            let concatenates = |v: &JsValue| num::is_string(v) || matches!(v, JsValue::Array(_) | JsValue::Object(_));
+            if concatenates(l) || concatenates(r) {
                 JsValue::String(format!("{}{}", to_string(l), to_string(r)))
             } else {
                 JsValue::Number(to_number(l) + to_number(r))

@@ -561,7 +561,20 @@ final class Evaluator
         if (is_string($v)) {
             return $v;
         }
-        return ''; // arrays/objects -- not exercised by the evaluator subset's tested paths
+        // Array.prototype.toString is join(","): a nil element prints as "",
+        // and a nested array flattens through its own join. A plain object
+        // (an associative array or a decoded stdClass) prints as
+        // "[object Object]".
+        if (is_array($v) && array_is_list($v)) {
+            return implode(',', array_map(static fn ($el) => $el === null ? '' : self::toStringJs($el), $v));
+        }
+        return '[object Object]';
+    }
+
+    /** An array or object: ToPrimitive gives its ToString, so `+` over it concatenates. */
+    private static function isObjectValue($v): bool
+    {
+        return is_array($v) || is_object($v);
     }
 
     /** Public JS truthiness -- shared by BarefootJS::truthy() so both the
@@ -591,9 +604,10 @@ final class Evaluator
     public static function binary(string $op, $l, $r)
     {
         if ($op === '+') {
-            // JS `+`: string concatenation once either operand is a string,
-            // numeric addition otherwise.
-            if (is_string($l) || is_string($r)) {
+            // JS `+`: string concatenation once either operand is a string
+            // after ToPrimitive (an array or object converts to its
+            // ToString), numeric addition otherwise.
+            if (is_string($l) || is_string($r) || self::isObjectValue($l) || self::isObjectValue($r)) {
                 return self::toStringJs($l) . self::toStringJs($r);
             }
             return self::toNumber($l) + self::toNumber($r);
