@@ -622,8 +622,15 @@ module BarefootJS
       Evaluator.to_string(value)
     end
 
+    # The evaluator refuses a non-primitive `===` operand (its subset
+    # contract). A template reaches this helper only with operands the
+    # compiler could not type, since it refuses a proven object or array
+    # (BF101, #3824 step 8), so an object or array that still arrives here
+    # compares by reference, as JS `===` does.
     def strict_eq(left, right)
       Evaluator.strict_eq(left, right)
+    rescue Evaluator::EvalUnsupported
+      left.equal?(right)
     end
 
     def lt(left, right)

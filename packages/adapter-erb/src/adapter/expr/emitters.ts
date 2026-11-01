@@ -74,6 +74,8 @@ import {
   type NamedTypeFields,
   isNativePlan,
   relationalHelper,
+  strictEqSpelling,
+  type StrictEqSpelling,
   isNativeToNumber,
   numberLiteralSpelling,
   plusSpelling,
@@ -118,7 +120,11 @@ export const NATIVE_SAFE: NativeSafeTable = {
   // A template-literal part or concatenation operand is itself only when it
   // is a proven string; anything else takes `to_string` (#3824 step 4).
   'to-string': ['string'],
-  'strict-eq': ['number-pair', 'string-pair', 'boolean-pair', 'unproven'],
+  // Ruby's `==` over two proven non-nil numbers, strings or booleans; any
+  // other pair takes the runtime's `strict_eq`, and operands proven of
+  // different types fold to a constant (#3824 step 8, pinned by the
+  // `primitives/strict_eq` vectors).
+  'strict-eq': ['number-pair', 'string-pair', 'boolean-pair'],
   // Native only over two proven numbers; any other pair takes the runtime's
   // JS Abstract Relational Comparison (`lt` / `le` / `gt` / `ge`; #3824
   // step 3, pinned by the `primitives/lt` … `ge` vectors).
@@ -399,14 +405,14 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
-    // Unlike Perl's numeric `==` (which coerces a non-numeric string
-    // operand to 0, making `"b" == "a"` erroneously true), Ruby's `==`
-    // never coerces between mismatched types — `"b" == "a"` and
-    // `"b" == 0` are both correctly `false` with no operator selection
-    // needed. JS `===`/`!==` map straight onto Ruby `==`/`!=`.
+    // `===` / `!==` spell their plan (#3824 step 8): Ruby's `==` only over
+    // a proven pair (`1 == 1.0` holds, but nil and mixed operands need
+    // `strict_eq`).
     // `/` and `%` go through the runtime's JS division and remainder
     // (#3474): Ruby `/` on two Integers truncates (#3328), and Ruby `%`
     // floors (#3574).
+    const equality = spellStrictEq(strictEqSpelling(op, left, right, plan), l, r)
+    if (equality !== null) return equality
     const helper = arithmeticHelper(op)
     if (helper) return `bf.${helper}(${l}, ${r})`
     if (op === '+') return spellPlus(plan, l, r)
@@ -772,6 +778,8 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     // `/` and `%` go through the runtime's JS division and remainder
     // (#3474): Ruby `/` on two Integers truncates (#3328), and Ruby `%`
     // floors (#3574).
+    const equality = spellStrictEq(strictEqSpelling(op, left, right, plan), l, r)
+    if (equality !== null) return equality
     const helper = arithmeticHelper(op)
     if (helper) return `bf.${helper}(${l}, ${r})`
     if (op === '+') return spellPlus(plan, l, r)
@@ -965,4 +973,17 @@ function negate(plan: PrimitivePlan | null, operand: string, native: () => strin
  */
 function toNumber(plan: PrimitivePlan | null, operand: string): string {
   return isNativeToNumber(plan) ? operand : `bf.to_number(${operand})`
+}
+
+/**
+ * Spell a `===` / `!==` plan over the rendered operands (#3824 step 8):
+ * Ruby's `==` / `!=` over a proven pair, the folded constant, or the
+ * runtime's `strict_eq`. Null for a nullish test and any other operator,
+ * which keep their own lowering.
+ */
+function spellStrictEq(eq: StrictEqSpelling | null, l: string, r: string): string | null {
+  if (eq === null || eq.kind === 'nullish') return null
+  if (eq.kind === 'const') return eq.value ? 'true' : 'false'
+  if (eq.kind === 'native') return `(${l} ${eq.negated ? '!=' : '=='} ${r})`
+  return `${eq.negated ? '!' : ''}bf.strict_eq(${l}, ${r})`
 }

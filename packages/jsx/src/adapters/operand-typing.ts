@@ -42,6 +42,22 @@ export interface OperandFacts {
    * alone does not tell an array from a record.
    */
   readonly array?: boolean
+  /**
+   * What an element of the array proves, when `array` holds and the
+   * declared element type or the array-literal seed says (#3824 step 8:
+   * `===` refuses an element read that may be an object). Read only by
+   * `mayHoldObject`; no plan reads it.
+   */
+  readonly element?: OperandFacts
+  /**
+   * When `types` has `object` only because of named type references (a
+   * declared `Row` or `Tone`, which Phase 1 types as `interface` whatever
+   * the name resolves to): those names. Absent when a structural object
+   * type or literal contributed `object`. Read only by `mayHoldObject`
+   * (#3824 step 8), which resolves the names against the component's type
+   * definitions: `type Tone = 'warm' | 'cool'` is not an object.
+   */
+  readonly namedObjects?: readonly string[]
 }
 
 /** Facts proving nothing. */
@@ -71,12 +87,22 @@ export function unionFacts(a: OperandFacts, b: OperandFacts): OperandFacts {
   if (a.types.has('unknown') || b.types.has('unknown')) return UNKNOWN_FACTS
   const types = new Set<OperandType>([...a.types, ...b.types])
   const nil = mergeNil(a.nil, b.nil)
+  const namedObjects = mergeNamedObjects(a, b)
   return {
     types,
     ...(nil !== undefined ? { nil } : {}),
     ...(a.index && b.index ? { index: true } : {}),
     ...(a.array && b.array ? { array: true } : {}),
+    ...(namedObjects ? { namedObjects } : {}),
   }
+}
+
+/** The `namedObjects` of a union: kept only while every `object` member came from a named reference. */
+function mergeNamedObjects(a: OperandFacts, b: OperandFacts): readonly string[] | undefined {
+  const ao = a.types.has('object')
+  const bo = b.types.has('object')
+  if (ao && bo) return a.namedObjects && b.namedObjects ? [...a.namedObjects, ...b.namedObjects] : undefined
+  return ao ? a.namedObjects : bo ? b.namedObjects : undefined
 }
 
 /** `facts` with the nil member removed (the value after a `??`). */
@@ -85,7 +111,13 @@ export function withoutNil(facts: OperandFacts): OperandFacts {
   const types = new Set(facts.types)
   types.delete('nil')
   if (types.size === 0) return UNKNOWN_FACTS
-  return { types, ...(facts.index ? { index: true } : {}), ...(facts.array ? { array: true } : {}) }
+  return {
+    types,
+    ...(facts.index ? { index: true } : {}),
+    ...(facts.array ? { array: true } : {}),
+    ...(facts.element ? { element: facts.element } : {}),
+    ...(facts.namedObjects ? { namedObjects: facts.namedObjects } : {}),
+  }
 }
 
 /** `facts` that may also be nil read as `reading`. */
@@ -117,9 +149,30 @@ export function factsOfType(type: LoopValueType | null | undefined): OperandFact
   if (type.kind === 'union' && type.unionTypes && type.unionTypes.length > 0) {
     return type.unionTypes.map(factsOfType).reduce(unionFacts)
   }
-  if (type.kind === 'array') return { types: new Set<OperandType>(['object']), array: true }
-  if (type.kind === 'object' || type.kind === 'interface') return factsOf('object')
+  if (type.kind === 'array') {
+    const element = type.elementType ? factsOfType(type.elementType) : undefined
+    return { types: new Set<OperandType>(['object']), array: true, ...(element ? { element } : {}) }
+  }
+  if (type.kind === 'interface') return { types: new Set<OperandType>(['object']), namedObjects: [type.raw ?? ''] }
+  if (type.kind === 'object') return factsOf('object')
   return UNKNOWN_FACTS
+}
+
+/**
+ * What an element of an array-literal seed proves (`createSignal([{ id: 1 }])`
+ * is typed `unknown[]`): the union of its elements' literal facts, an object
+ * or array literal element proving `object`. Unknown when an element proves
+ * nothing or the literal is empty.
+ */
+function arrayLiteralElementFacts(seed: Extract<ParsedExpr, { kind: 'array-literal' }>): OperandFacts {
+  if (seed.elements.length === 0) return UNKNOWN_FACTS
+  return seed.elements
+    .map((e): OperandFacts => {
+      if (e.kind === 'object-literal') return factsOf('object')
+      if (e.kind === 'array-literal') return { types: new Set<OperandType>(['object']), array: true }
+      return factsOfLiteral(e) ?? UNKNOWN_FACTS
+    })
+    .reduce(unionFacts)
 }
 
 function factsOfPrimitive(primitive: string | undefined): OperandFacts {
@@ -164,6 +217,9 @@ function constantFacts(
 /** A declared type that proves something, else the literal seed's facts. */
 function declaredOrSeeded(type: TypeInfo | null | undefined, seed: ParsedExpr | undefined): OperandFacts {
   const declared = factsOfType(type)
+  if (declared.array && !declared.element && seed?.kind === 'array-literal') {
+    return { ...declared, element: arrayLiteralElementFacts(seed) }
+  }
   if (!declared.types.has('unknown')) return declared
   return factsOfLiteral(seed) ?? UNKNOWN_FACTS
 }

@@ -53,6 +53,8 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   type StringNameTest,
   isNativePlan,
   relationalHelper,
+  strictEqSpelling,
+  type StrictEqSpelling,
   isNativeToNumber,
   numberLiteralSpelling,
   plusSpelling,
@@ -95,7 +97,12 @@ export const NATIVE_SAFE: NativeSafeTable = {
   // A template-literal part or concatenation operand is itself only when it
   // is a proven string; anything else takes `to_string` (#3824 step 4).
   'to-string': ['string'],
-  'strict-eq': ['number-pair', 'string-pair', 'boolean-pair', 'unproven'],
+  // Kolon's `==` compares as strings (`0.1 + 0.2 == 0.3` and `NaN == NaN`
+  // hold), so it is native only over two proven strings; any other pair
+  // takes the runtime's `strict_eq`, and operands proven of different types
+  // fold to a constant (#3824 step 8, pinned by the `primitives/strict_eq`
+  // vectors).
+  'strict-eq': ['string-pair'],
   // Native only over two proven numbers; any other pair takes the runtime's
   // JS Abstract Relational Comparison (`lt` / `le` / `gt` / `ge`; #3824
   // step 3, pinned by the `primitives/lt` … `ge` vectors).
@@ -380,10 +387,9 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     const l = groupBinaryOperand(left, emit(left))
     const r = groupBinaryOperand(right, emit(right))
     if (op === '+') return spellPerlPlus(plan, left, right, l, r, emit, () => false, (e) => emitParsedValue(e, this))
-    // Kolon's `==` / `!=` are value-equality operators that compare strings
-    // and numbers correctly — unlike Perl's numeric `==` (which the Mojo
-    // adapter must steer around with `eq`/`ne`). Kolon has no `eq`/`ne`
-    // operator at all, so string comparisons stay on `==` / `!=` here.
+    // `===` / `!==` spell their plan (#3824 step 8).
+    const equality = spellKolonStrictEq(strictEqSpelling(op, left, right, plan), l, r)
+    if (equality !== null) return equality
     // `/` and `%` go through the runtime's JS division and remainder
     // (#3474, #3574).
     const helper = arithmeticHelper(op)
@@ -714,10 +720,9 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     const l = this.coerceUndefinedOperand(op, left, right, groupBinaryOperand(left, emit(left)))
     const r = this.coerceUndefinedOperand(op, right, left, groupBinaryOperand(right, emit(right)))
     if (op === '+') return spellPerlPlus(plan, left, right, l, r, emit, this.isBooleanName, (e) => emitParsedValue(e, this))
-    // Kolon's `==` / `!=` are value-equality operators handling both strings
-    // and numbers (unlike Perl's numeric `==`, which the Mojo adapter must
-    // route around with `eq`/`ne`). Kolon has no `eq`/`ne` operator, so all
-    // equality comparisons — string or numeric — stay on `==` / `!=`.
+    // `===` / `!==` spell their plan (#3824 step 8).
+    const equality = spellKolonStrictEq(strictEqSpelling(op, left, right, plan), l, r)
+    if (equality !== null) return equality
     // `/` and `%` go through the runtime's JS division and remainder
     // (#3474, #3574).
     const helper = arithmeticHelper(op)
@@ -965,4 +970,17 @@ function negate(plan: PrimitivePlan | null, operand: string, native: () => strin
  */
 function toNumber(plan: PrimitivePlan | null, operand: string): string {
   return isNativeToNumber(plan) ? operand : `$bf.to_number(${operand})`
+}
+
+/**
+ * Spell a `===` / `!==` plan over the rendered operands (#3824 step 8):
+ * Kolon's string `==` / `!=` over two proven strings, the folded constant,
+ * or the runtime's `strict_eq`. Null for a nullish test and any other
+ * operator, which keep their own lowering (Kolon's `==` against `nil`).
+ */
+function spellKolonStrictEq(eq: StrictEqSpelling | null, l: string, r: string): string | null {
+  if (eq === null || eq.kind === 'nullish') return null
+  if (eq.kind === 'const') return eq.value ? '1' : '0'
+  if (eq.kind === 'native') return `${l} ${eq.negated ? '!=' : '=='} ${r}`
+  return `${eq.negated ? '!' : ''}$bf.strict_eq(${l}, ${r})`
 }
