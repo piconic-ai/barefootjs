@@ -5,8 +5,9 @@ import { createFixture } from '../src/types'
  * `undefined` in every position the primitive plan runs (#3750, #3824
  * step 4): a `.filter()` predicate (relational, unary `+`, arithmetic), a
  * body destructure, an element-access read (`props['n']`), an attribute,
- * text, a JSX conditional, a memo and a child prop. `undefined` converts to `NaN`, so every comparison is false
- * and arithmetic is `NaN`; against a string it is `"undefined"`.
+ * text, a JSX conditional, a memo and a child prop. `undefined` converts
+ * to `NaN`, so every comparison is false and arithmetic is `NaN`; against a
+ * string it is `"undefined"`.
  */
 export const fixture = createFixture({
   id: 'nil-reading-positions',

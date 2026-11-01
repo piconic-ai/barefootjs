@@ -59,7 +59,7 @@ const NATIVE_BINDINGS: Readonly<
   get: { op: 'get', domains: { 'array-index': ['array-index'] } },
   // A unary `+` over a proven number is the operand itself. The plan's
   // `to-number` op also covers binary `-` / `*` (`number-pair`, and
-  // `unproven` on the targets that keep their native operator until step 4),
+  // `unproven` on the targets that keep their native operator for them),
   // which no single-operand `to_number` vector exercises.
   to_number: { op: 'to-number', domains: { number: ['number'] }, elsewhere: ['number-pair', 'unproven'] },
   lt: RELATIONAL_BINDING,

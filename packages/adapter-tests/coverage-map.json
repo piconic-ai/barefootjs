@@ -10439,6 +10439,7 @@
         "binary:>",
         "literal:number",
         "literal:string",
+        "member:computed",
         "unary:+",
         "unary:-"
       ],

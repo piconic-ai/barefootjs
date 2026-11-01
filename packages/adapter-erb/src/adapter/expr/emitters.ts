@@ -106,7 +106,8 @@ export const NATIVE_SAFE: NativeSafeTable = {
   'to-boolean': [],
   // A unary `+` is native only over a proven number, `to_number` otherwise
   // (#3824 step 3). `unproven` describes binary `-` / `*` over operands Phase 1
-  // cannot type, which keep the native operator until step 4.
+  // cannot type, which keep the native operator (step 4a only reads their
+  // operands' nil).
   'to-number': ['number-pair', 'number', 'unproven'],
   // A `+` is native over two proven numbers and over a proven string (the
   // host's concatenation, the other operand through `to_string`); anything

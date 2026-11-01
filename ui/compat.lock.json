@@ -9512,7 +9512,7 @@
       "kind": "silent",
       "given": "an omitted prop typed both optional and nullable (`c?: string | null`) under `+` or in a template literal, an omitted optional number under a `+` whose other operand is untyped, or an untyped nil (an out-of-range index read) in a template literal",
       "expected": "the omitted value reads `undefined`: `\"btn undefined\"`, `\"undefinedx\"`, `\"undefined\"`",
-      "actual": "the runtimes hold `undefined` and `null` as one nil, so the either-nil string reads as the empty string and the other two read as `null` (`\"nullx\"`, `\"null\"`); fixed per target once the runtime carries `undefined` (#3848, `spec/js-undefined-value.md`)",
+      "actual": "renders the either-nil string as the empty string and the other two as `null` (`\"nullx\"`, `\"null\"`), since the runtimes hold `undefined` and `null` as one nil; fixed per target once its runtime carries `undefined` (`spec/js-undefined-value.md`)",
       "fixtures": [
         "awaits-undefined-plus-shapes"
       ],
@@ -10245,7 +10245,7 @@
       "kind": "silent",
       "given": "a `+` whose operands Phase 1 proves are numbers, with integer values whose sum passes 2^53 (`2**53 + 1`), on a target that spells the host `+` for two proven numbers",
       "expected": "the sum rounds as an IEEE double, as JS adds: `2**53 + 1` is `9007199254740992`",
-      "actual": "the host adds the integers exactly and renders `9007199254740993`; an accepted gap, since Phase 1 cannot prove an operand stays inside the safe-integer range (`spec/js-primitive-semantics.md`, \"Decisions\" (5))",
+      "actual": "renders `9007199254740993`, the exact integer sum the host computes; an accepted gap, since Phase 1 cannot prove an operand stays inside the safe-integer range (`spec/js-primitive-semantics.md`, \"Decisions\" (5))",
       "fixtures": [
         "plus-beyond-safe-integer"
       ],

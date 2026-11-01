@@ -84,20 +84,15 @@
  *      keeping the exact List-index-vs-Map-key resolution fully under the
  *      Java runtime's own control (Phase 3) rather than depending on an
  *      unverified Pebble builtin.
- *   7. **JS `+` on a string-typed operand routes through `~`, Pebble's
- *      concat operator** (`isStringConcatBinary`, same defensive gate Twig
- *      uses for PHP's numeric-only `+`) — Pebble's own arithmetic `+`
- *      operator's behavior on a non-numeric operand is unverified (no Java
- *      runtime to check against), so this side-steps the question entirely
- *      by using the confirmed-distinct concat operator whenever the adapter
- *      already knows an operand is string-shaped. Both operands are wrapped
- *      in `bf.string(...)` (confirmed during Phase 3 research: `~` calls
- *      each operand's raw Java `.toString()`, so an un-wrapped `null`
- *      operand silently contributes nothing instead of JS's literal
- *      `"null"`, and a whole-valued `Double` prints `"1.0"` instead of JS
- *      `String(1)`'s `"1"`) — same `bf.string` wrapping every other
- *      interpolation position already gets (divergence 2 in
- *      `pebble-adapter.ts`'s file header).
+ *   7. **JS `+` on a proven string operand routes through `~`, Pebble's
+ *      concat operator**, as the primitive plan names it (#3824 step 4):
+ *      `~` calls each operand's raw Java `.toString()` (confirmed during
+ *      Phase 3 research: an un-wrapped `null` operand contributes nothing
+ *      instead of JS's literal `"null"`, and a whole-valued `Double` prints
+ *      `"1.0"` instead of JS `String(1)`'s `"1"`), so the operand that is
+ *      not a proven non-nil string goes through the runtime's JS ToString
+ *      (`bf.to_string`). Two proven numbers take Pebble's own `+`; any other
+ *      `+` the runtime's JS `+` (`bf.plus`).
  */
 
 import {
@@ -171,7 +166,8 @@ export const NATIVE_SAFE: NativeSafeTable = {
   'to-boolean': ['boolean'],
   // A unary `+` is native only over a proven number, `to_number` otherwise
   // (#3824 step 3). `unproven` describes binary `-` / `*` over operands Phase 1
-  // cannot type, which keep the native operator until step 4.
+  // cannot type, which keep the native operator (step 4a only reads their
+  // operands' nil).
   'to-number': ['number-pair', 'number', 'unproven'],
   // A `+` is native over two proven numbers and over a proven string (the
   // host's concatenation, the other operand through `to_string`); anything
