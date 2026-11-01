@@ -1986,6 +1986,7 @@
               "omitted-optional-nullable-number-arithmetic",
               "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
+              "record-const-index-unknown-keys",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
@@ -2009,6 +2010,7 @@
               "omitted-optional-nullable-number-arithmetic",
               "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
+              "record-const-index-unknown-keys",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
@@ -2035,6 +2037,7 @@
               "omitted-optional-nullable-number-arithmetic",
               "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
+              "record-const-index-unknown-keys",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
@@ -2058,6 +2061,7 @@
               "omitted-optional-nullable-number-arithmetic",
               "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
+              "record-const-index-unknown-keys",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
@@ -2082,6 +2086,7 @@
               "omitted-optional-nullable-number-arithmetic",
               "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
+              "record-const-index-unknown-keys",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
@@ -2105,6 +2110,7 @@
               "omitted-optional-nullable-number-arithmetic",
               "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
+              "record-const-index-unknown-keys",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
@@ -2128,6 +2134,7 @@
               "omitted-optional-nullable-number-arithmetic",
               "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
+              "record-const-index-unknown-keys",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
@@ -2152,6 +2159,7 @@
               "omitted-optional-nullable-number-arithmetic",
               "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
+              "record-const-index-unknown-keys",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
@@ -7054,6 +7062,125 @@
           ]
         }
       },
+      "record-const-index-inherited-key": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "record-const-index-unknown-keys"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "record-const-index-inherited-key-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "record-const-index-unknown-keys"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "record-const-index-inherited-key-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF102"
+          ],
+          "limitations": [
+            "record-const-index-unknown-keys"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "record-const-index-inherited-key-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "record-const-index-unknown-keys"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "record-const-index-inherited-key-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "record-const-index-unknown-keys"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "record-const-index-inherited-key-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "record-const-index-unknown-keys"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "record-const-index-inherited-key-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "record-const-index-unknown-keys"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "record-const-index-inherited-key-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "record-const-index-unknown-keys"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "record-const-index-inherited-key-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "record-const-index-unknown-keys"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "record-const-index-inherited-key-client"
+          }
+        }
+      },
       "reduce-nonliteral-seed": {
         "blade": {
           "kind": "refusal",
@@ -9160,6 +9287,10 @@
         "description": "A props object named p types its string, number and boolean props in +, || and attribute positions",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/props-object-non-props-name-operand-typing.ts"
       },
+      "record-const-index-inherited-key": {
+        "description": "a const record indexed by a prop of unknown keys reads inherited keys too",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/record-const-index-inherited-key.ts"
+      },
       "reduce-nonliteral-seed": {
         "description": "A `.reduce()` seeded with a non-literal value — DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/reduce-nonliteral-seed.ts"
@@ -9383,6 +9514,10 @@
       "opaque-local-accessor-call-client": {
         "description": "Local accessor bound to an opaque helper call, read deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call-client.ts"
+      },
+      "record-const-index-inherited-key-client": {
+        "description": "a /* @client */ read of a const record indexed by a prop of unknown keys defers to the browser",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/record-const-index-inherited-key-client.ts"
       },
       "reduce-nonliteral-seed-client": {
         "description": "A `.reduce()` seeded with a non-literal value, deferred to the client via /* @client */",
@@ -10375,6 +10510,31 @@
       ],
       "adapters": [
         "go-template"
+      ]
+    },
+    "record-const-index-unknown-keys": {
+      "title": "Const record indexed by a value of unknown keys",
+      "kind": "refusal",
+      "given": "a component- or module-scope const object literal indexed by a value whose possible keys are not known at compile time (`const labels = { ok: 'Fine' }`, `labels[kind]` with `kind: string`), read as text or a condition",
+      "expected": "the value of the key the index holds, including a key inherited from `Object.prototype` (`labels['toString']` is a function, so a condition on it is true)",
+      "actual": "the compiler refuses with BF101 / BF102",
+      "fixtures": [
+        "record-const-index-inherited-key"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101",
+        "BF102"
       ]
     },
     "ref-effect-attr-state-ssr": {

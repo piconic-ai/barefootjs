@@ -3071,6 +3071,63 @@ export function inlineBinding(
 }
 
 /**
+ * `expr` rebuilt top-down: `replace` sees each node with the param names the
+ * arrows enclosing it bind, and returns the node's replacement (not walked
+ * further) or `null` to keep the node and walk its children. Every
+ * `ParsedExpr` kind is handled, so a new kind surfaces as a compile error
+ * here.
+ */
+export function mapParsedExpr(
+  expr: ParsedExpr,
+  replace: (e: ParsedExpr, enclosing: ReadonlySet<string>) => ParsedExpr | null,
+  enclosing: ReadonlySet<string> = new Set(),
+): ParsedExpr {
+  const replaced = replace(expr, enclosing)
+  if (replaced) return replaced
+  const walk = (e: ParsedExpr): ParsedExpr => mapParsedExpr(e, replace, enclosing)
+  switch (expr.kind) {
+    case 'call':
+      return { kind: 'call', callee: walk(expr.callee), args: expr.args.map(walk) }
+    case 'member':
+      return { ...expr, object: walk(expr.object) }
+    case 'index-access':
+      return { kind: 'index-access', object: walk(expr.object), index: walk(expr.index) }
+    case 'binary':
+      return { kind: 'binary', op: expr.op, left: walk(expr.left), right: walk(expr.right) }
+    case 'logical':
+      return { kind: 'logical', op: expr.op, left: walk(expr.left), right: walk(expr.right) }
+    case 'unary':
+      return { kind: 'unary', op: expr.op, argument: walk(expr.argument) }
+    case 'conditional':
+      return { kind: 'conditional', test: walk(expr.test), consequent: walk(expr.consequent), alternate: walk(expr.alternate) }
+    case 'template-literal':
+      return { kind: 'template-literal', parts: expr.parts.map(p => (p.type === 'expression' ? { type: 'expression', expr: walk(p.expr) } : p)) }
+    case 'arrow': {
+      const inner = expr.params.length === 0 ? enclosing : new Set([...enclosing, ...expr.params])
+      return { ...expr, body: mapParsedExpr(expr.body, replace, inner) }
+    }
+    case 'array-literal':
+      return { kind: 'array-literal', elements: expr.elements.map(walk) }
+    case 'array-method':
+      if (expr.method === 'flat') {
+        return { ...expr, object: walk(expr.object), ...(expr.depthExpr ? { depthExpr: walk(expr.depthExpr) } : {}) }
+      }
+      return { ...expr, object: walk(expr.object), args: expr.args.map(walk) }
+    case 'object-literal':
+      return {
+        kind: 'object-literal',
+        raw: expr.raw,
+        properties: expr.properties.map(p => (p.kind === 'spread' ? { ...p, expr: walk(p.expr) } : { ...p, value: walk(p.value) })),
+      }
+    case 'identifier':
+    case 'literal':
+    case 'regex':
+    case 'unsupported':
+      return expr
+  }
+}
+
+/**
  * Fold a value-producing block body — a {@link ParsedStatement} sequence of
  * `const` bindings, value-producing `if` / early `return`, and a terminal
  * `return` — into a single {@link ParsedExpr}, so block-bodied memos / derived /

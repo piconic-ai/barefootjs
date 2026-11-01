@@ -70,10 +70,13 @@ describe('#2754 — a caller-props forward earns a slot and an init', () => {
   test('a spread of an ordinary object still inlines into the template and earns no slot', () => {
     // Reverse direction: only the caller-props forward is unknowable at
     // compile time. An ordinary object spread is fully emitted by both
-    // templates and must not start allocating slot ids.
+    // templates and must not start allocating slot ids. (Its value reads a
+    // name, so it stays a spread: a static literal one is expanded per key
+    // in Phase 1, #3844.)
     const { clientJs, template } = compile(`
       "use client";
-      const extra = { title: 'x' }
+      const TITLE = 'x'
+      const extra = { title: TITLE }
       export function Ordinary() {
         return <span className="plain" {...extra} />
       }

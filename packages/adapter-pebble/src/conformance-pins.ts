@@ -201,4 +201,8 @@ export const conformancePins: ConformancePins = {
   // Hono's real JS runtime evaluates this shape correctly and must keep
   // doing so.
   'opaque-local-accessor-call': [{ code: 'BF101', severity: 'error', limitation: 'opaque-local-accessor-call' }],
+  // A const record indexed by a prop whose keys are not known at compile
+  // time reads inherited keys in JS (`labels['toString']`); no template
+  // lookup does, so the read refuses rather than rendering `undefined`.
+  'record-const-index-inherited-key': [{ code: 'BF101', severity: 'error', limitation: 'record-const-index-unknown-keys' }],
 }

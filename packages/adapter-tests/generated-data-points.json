@@ -912,6 +912,71 @@
       }
     }
   ],
+  "body-destructure-const-object": [
+    {
+      "name": "gen:title:empty",
+      "props": {
+        "title": "",
+        "items": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:title:markup",
+      "props": {
+        "title": "<b>&\"'</b>",
+        "items": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:title:multibyte",
+      "props": {
+        "title": "日本語",
+        "items": [
+          "r1",
+          "r2"
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "title": "Hi",
+        "items": []
+      }
+    }
+  ],
+  "body-destructure-rest-props": [
+    {
+      "name": "gen:title:empty",
+      "props": {
+        "title": "",
+        "tone": "info",
+        "n": 3
+      }
+    },
+    {
+      "name": "gen:title:markup",
+      "props": {
+        "title": "<b>&\"'</b>",
+        "tone": "info",
+        "n": 3
+      }
+    },
+    {
+      "name": "gen:title:multibyte",
+      "props": {
+        "title": "日本語",
+        "tone": "info",
+        "n": 3
+      }
+    }
+  ],
   "body-destructured-prop-default-renamed": [
     {
       "name": "gen:value:zero",
@@ -3402,6 +3467,46 @@
       "name": "gen:rows:empty",
       "props": {
         "rows": []
+      }
+    }
+  ],
+  "const-object-spread": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
+  "const-object-spread-last-wins": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
       }
     }
   ],
@@ -11113,6 +11218,50 @@
       }
     }
   ],
+  "object-const-member-read": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0,
+        "name": "nm"
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7,
+        "name": "nm"
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890,
+        "name": "nm"
+      }
+    },
+    {
+      "name": "gen:name:empty",
+      "props": {
+        "n": 3,
+        "name": ""
+      }
+    },
+    {
+      "name": "gen:name:markup",
+      "props": {
+        "n": 3,
+        "name": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:name:multibyte",
+      "props": {
+        "n": 3,
+        "name": "日本語"
+      }
+    }
+  ],
   "omitted-optional-attr-ternary-relational": [
     {
       "name": "gen:n:zero",
@@ -12377,6 +12526,80 @@
       }
     }
   ],
+  "props-object-body-rest-spread": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "id": "b1"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "id": "b1"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "id": "b1"
+      }
+    },
+    {
+      "name": "gen:id:absent",
+      "props": {
+        "label": "Go"
+      }
+    },
+    {
+      "name": "gen:id:empty",
+      "props": {
+        "label": "Go",
+        "id": ""
+      }
+    },
+    {
+      "name": "gen:id:markup",
+      "props": {
+        "label": "Go",
+        "id": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:id:multibyte",
+      "props": {
+        "label": "Go",
+        "id": "日本語"
+      }
+    },
+    {
+      "name": "gen:title:empty",
+      "props": {
+        "label": "Go",
+        "id": "b1",
+        "title": ""
+      }
+    },
+    {
+      "name": "gen:title:markup",
+      "props": {
+        "label": "Go",
+        "id": "b1",
+        "title": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:title:multibyte",
+      "props": {
+        "label": "Go",
+        "id": "b1",
+        "title": "日本語"
+      }
+    }
+  ],
   "props-object-non-props-name-operand-typing": [
     {
       "name": "gen:label:empty",
@@ -13144,6 +13367,61 @@
       "name": "gen:start:large",
       "props": {
         "start": 1234567890
+      }
+    }
+  ],
+  "record-const-index-early-return": [
+    {
+      "name": "gen:empty:absent",
+      "props": {
+        "kind": "err"
+      }
+    },
+    {
+      "name": "gen:empty:false",
+      "props": {
+        "kind": "err",
+        "empty": false
+      }
+    }
+  ],
+  "record-const-index-inherited-key": [
+    {
+      "name": "gen:kind:empty",
+      "props": {
+        "kind": ""
+      }
+    },
+    {
+      "name": "gen:kind:markup",
+      "props": {
+        "kind": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:kind:multibyte",
+      "props": {
+        "kind": "日本語"
+      }
+    }
+  ],
+  "record-const-index-inherited-key-client": [
+    {
+      "name": "gen:kind:empty",
+      "props": {
+        "kind": ""
+      }
+    },
+    {
+      "name": "gen:kind:markup",
+      "props": {
+        "kind": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:kind:multibyte",
+      "props": {
+        "kind": "日本語"
       }
     }
   ],

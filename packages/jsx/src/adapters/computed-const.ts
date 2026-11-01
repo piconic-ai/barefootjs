@@ -15,9 +15,9 @@
  * shadow the name are respected.
  */
 
-import { collectContextConsumers, lookupLiteralConst } from '../augment-inherited-props.ts'
-import { freeIdentifiers, inlineBinding, parseExpression, stringifyParsedExpr, type ParsedExpr } from '../expression-parser.ts'
-import type { ConstantInfo, ExpressionAttr, IRMetadata } from '../types.ts'
+import { collectContextConsumers, lookupLiteralConst, resolveStaticConstBinding } from '../augment-inherited-props.ts'
+import { freeIdentifiers, inlineBinding, mapParsedExpr, parseExpression, stringifyParsedExpr, type ParsedExpr } from '../expression-parser.ts'
+import type { ConstantInfo, ExpressionAttr, IRMetadata, ParamInfo } from '../types.ts'
 import { componentBindings } from '../relocate.ts'
 import { PROPS_OBJECT_IDENTIFIER } from '../scope/binding-scope.ts'
 
@@ -46,6 +46,8 @@ export interface ComputedConstContext {
    * (`function C(props: { label: string })`) binds no name.
    */
   componentNames: ReadonlySet<string>
+  /** The component's props params and props object name, which type an index read (`keyedValue`). */
+  props: { params: readonly ParamInfo[]; objectName: string | null }
   /** Whether a loop row or callback binds `name` where the expression is read. */
   isShadowed(name: string): boolean
   /** Whether the adapter binds the const `name` itself, so a read of it stays as written. */
@@ -73,6 +75,7 @@ export function computedConstContext(
     propReads: propReadKeys(metadata, bindings),
     localFunctions: new Set(metadata.localFunctions.filter(f => !f.isModule).map(f => f.name)),
     componentNames: componentScopeNames(metadata),
+    props: { params: metadata.propsParams, objectName: metadata.propsObjectName },
     isShadowed,
     isAdapterBound,
     isGlobal: name => !bindings.has(name) && name !== metadata.restPropsName && !isShadowed(name),
@@ -108,7 +111,9 @@ function propsBindingNames(metadata: IRMetadata): Set<string> {
  * {@link ComputedConstContext.componentNames}. Not `componentBindings`, which
  * also lists every typed prop of a props object as a `prop` binding.
  */
-export function componentScopeNames(metadata: IRMetadata): Set<string> {
+export function componentScopeNames(
+  metadata: Pick<IRMetadata, 'propsObjectName' | 'propsParams' | 'restPropsName' | 'localConstants' | 'localFunctions' | 'signals' | 'memos'>,
+): Set<string> {
   const names = new Set<string>()
   if (metadata.propsObjectName !== null) names.add(metadata.propsObjectName)
   // With no props object the signature destructures, so every param is bound.
@@ -175,6 +180,11 @@ function inlineOnce(expr: ParsedExpr, ctx: ComputedConstContext): ParsedExpr {
   if (!free) return expr
   let result = expr
   for (const name of free) {
+    const object = objectConstInitializer(name, ctx)
+    if (object) {
+      result = projectObjectReads(result, name, object, ctx) ?? result
+      continue
+    }
     const init = inlinableInitializer(name, ctx)
     if (!init) continue
     result = inlineBinding(result, name, init) ?? inlineUnderCallbacks(result, name, init, ctx) ?? result
@@ -380,5 +390,229 @@ function callsOnlyGetters(init: ParsedExpr, getters: ReadonlySet<string>): boole
     for (const value of Object.values(e)) visit(value)
   }
   visit(init)
+  return ok
+}
+
+/**
+ * The initializer of a `const` holding an object literal (`const flags = { a:
+ * n > 1, label: 'L' + n }`, `const labels = { ok: 'Fine', err: 'Broken' }`)
+ * that a read of `name` stands for, resolved in the scope the const is
+ * declared in, or `null` when the read stays as it is. The same visibility
+ * rules as {@link inlinableInitializer}, with the const a read reaches decided
+ * by `resolveStaticConstBinding`; the literal must list plain
+ * `key: value` entries only (no spread), so each key's value is known.
+ */
+function objectConstInitializer(name: string, ctx: ComputedConstContext): ObjectLiteral | null {
+  if (ctx.componentNames.has(name) && !componentConst(name, ctx)) return null
+  const constant = resolveStaticConstBinding(name, ctx.constants, n => ctx.isShadowed(n))
+  const init = constant?.parsed
+  if (!constant || init?.kind !== 'object-literal' || constant.systemConstructKind) return null
+  if (literalValues(init) === null) return null
+  if (ctx.isShadowed(name) || ctx.getters.has(name) || ctx.contextConsumers.has(name) || ctx.propsBindings.has(name)) return null
+  if (ctx.isAdapterBound(name)) return null
+  if (!callsOnlyGetters(init, constant.isModule ? new Set() : ctx.getters)) return null
+  const resolved = resolveInitializer(init, ctx, n => ctx.isShadowed(n), constant.isModule ? 'module' : 'component')
+  return resolved?.kind === 'object-literal' ? resolved : null
+}
+
+/**
+ * `expr` with each read of a property of the object const `name` replaced by
+ * what JS reads there (#3844): `flags.label` by the value the literal gives
+ * `label` (`undefined` for a key it does not list), and `labels[kind]` by
+ * the conditional that picks the value of the key `kind` equals
+ * ({@link keyedValue}). A const that holds an object has no binding in a
+ * template, the same as a computed const.
+ *
+ * An index whose keys are not all known at compile time is read off the
+ * literal itself, which the adapter refuses (BF101). `null` (the read stays
+ * as written) when `expr` reads `name` whole or reads a key
+ * `Object.prototype` holds.
+ */
+function projectObjectReads(
+  expr: ParsedExpr,
+  name: string,
+  object: ObjectLiteral,
+  ctx: ComputedConstContext,
+): ParsedExpr | null {
+  const objectFree = freeIdentifiers(object) ?? new Set<string>()
+  let ok = true
+  // What a read chain rooted at `name` (`flags`, `conf.inner`, `labels[k]`)
+  // holds, or null for a chain rooted elsewhere.
+  const resolve = (e: ParsedExpr, enclosing: ReadonlySet<string>): ParsedExpr | null => {
+    if (e.kind === 'identifier') return e.name === name && !enclosing.has(name) ? object : null
+    if (e.kind !== 'member' && e.kind !== 'index-access') return null
+    const base = resolve(e.object, enclosing)
+    if (base === null) return null
+    // A read off a value that is not an object (`flags.label.length`) is
+    // left to the walk, which projects the inner read.
+    if (base.kind !== 'object-literal') return null
+    const values = literalValues(base)
+    const value = values === null ? undefined : e.kind === 'member' ? memberValue(values, e.property) : keyedValue(values, e.index, enclosing, ctx)
+    if (value === undefined) ok = false
+    // An index whose keys are not known reads the literal itself, which no
+    // template lowers: the adapter refuses it (BF101) instead of reading an
+    // unbound name.
+    if (value === UNPROVABLE_INDEX && e.kind === 'index-access') return { kind: 'index-access', object: base, index: e.index }
+    return value ?? null
+  }
+  const result = mapParsedExpr(expr, (e, enclosing) => {
+    const value = resolve(e, enclosing)
+    if (value === null) return null
+    // A value read where a callback param rebinds one of its names, or an
+    // object read whole, has no projection.
+    if (value.kind === 'object-literal' || [...enclosing].some(p => objectFree.has(p))) ok = false
+    return value
+  })
+  return ok ? foldUndefinedTests(result) : null
+}
+
+/**
+ * `expr` with each conditional whose test compares two operands known at
+ * compile time against `undefined` (`'x' === undefined`, `undefined ===
+ * undefined`) replaced by the branch it takes. A projected read of a key
+ * the literal does or does not list leaves exactly this behind in a
+ * destructure default (`conf.tone === undefined ? 'x' : conf.tone`), and a
+ * backend need not spell `undefined` the same in every position.
+ */
+function foldUndefinedTests(expr: ParsedExpr): ParsedExpr {
+  return mapParsedExpr(expr, e => {
+    if (e.kind !== 'conditional' || e.test.kind !== 'binary' || (e.test.op !== '===' && e.test.op !== '!==')) return null
+    const equal = undefinedEquality(e.test.left, e.test.right)
+    if (equal === null) return null
+    return foldUndefinedTests((equal === (e.test.op === '===')) ? e.consequent : e.alternate)
+  })
+}
+
+/** Whether `a === b` holds, when one side is `undefined` and the other a literal or `undefined`; null otherwise. */
+function undefinedEquality(a: ParsedExpr, b: ParsedExpr): boolean | null {
+  const isUndefined = (e: ParsedExpr) => e.kind === 'identifier' && e.name === 'undefined'
+  const known = (e: ParsedExpr) => isUndefined(e) || e.kind === 'literal'
+  if (!known(a) || !known(b) || (!isUndefined(a) && !isUndefined(b))) return null
+  return isUndefined(a) && isUndefined(b)
+}
+
+type ObjectLiteral = Extract<ParsedExpr, { kind: 'object-literal' }>
+
+/** The value of each key `object` lists (the last one for a repeated key), or null when it spreads another object. */
+function literalValues(object: ObjectLiteral): Map<string, ParsedExpr> | null {
+  const values = new Map<string, ParsedExpr>()
+  for (const p of object.properties) {
+    if (p.kind === 'spread') return null
+    values.set(p.key, p.value)
+  }
+  return values
+}
+
+/**
+ * What `object.<key>` reads: the value the literal gives `key`, and
+ * `undefined` for a key it does not list. `undefined` (no projection) for a
+ * key `Object.prototype` holds, which JS reads from there.
+ */
+function memberValue(values: ReadonlyMap<string, ParsedExpr>, key: string): ParsedExpr | undefined {
+  const value = values.get(key)
+  if (value) return value
+  return key in Object.prototype ? undefined : { kind: 'identifier', name: 'undefined' }
+}
+
+/** {@link keyedValue}'s answer for an index whose keys are not all known. */
+const UNPROVABLE_INDEX: ParsedExpr = { kind: 'unsupported', raw: '', reason: 'index keys not known at compile time' }
+
+/**
+ * `values[index]` as a conditional over the keys the index can hold, with
+ * `undefined` for one the literal does not list ({@link projectObjectReads}).
+ * Sound only when every key the index can hold is known: its type is a
+ * union of string literals (plus `null` / `undefined`) — a prop typed
+ * `'ok' | 'err'` — so strict equality with each key is the property lookup
+ * JS does. {@link UNPROVABLE_INDEX} otherwise, and also when the index calls
+ * something other than a signal or memo getter (the conditional repeats
+ * it), when a key it can hold is inherited from `Object.prototype`
+ * (`labels['toString']` reads a function), or when it can be `null` /
+ * `undefined` and the literal lists `'null'` / `'undefined'`.
+ */
+function keyedValue(
+  values: ReadonlyMap<string, ParsedExpr>,
+  index: ParsedExpr,
+  enclosing: ReadonlySet<string>,
+  ctx: ComputedConstContext,
+): ParsedExpr {
+  if (!readsOnly(index, ctx.getters)) return UNPROVABLE_INDEX
+  // A computed const in the index (`const variant = props.variant ?? 'x'`)
+  // is typed as what it holds.
+  const domain = indexKeyDomain(inlineComputedConsts(index, ctx), enclosing, ctx)
+  if (domain === null) return UNPROVABLE_INDEX
+  if (domain.keys.some(k => !values.has(k) && k in Object.prototype)) return UNPROVABLE_INDEX
+  if (domain.nullish.some(k => values.has(k))) return UNPROVABLE_INDEX
+  let result: ParsedExpr = { kind: 'identifier', name: 'undefined' }
+  for (const key of [...domain.keys].reverse()) {
+    const value = values.get(key)
+    if (!value) continue
+    result = {
+      kind: 'conditional',
+      test: { kind: 'binary', op: '===', left: index, right: { kind: 'literal', value: key, literalType: 'string' } },
+      consequent: value,
+      alternate: result,
+    }
+  }
+  return result
+}
+
+/** The keys an index can hold ({@link keyedValue}): string keys, and whether it can be `null` / `undefined`. */
+interface KeyDomain {
+  keys: string[]
+  nullish: Array<'null' | 'undefined'>
+}
+
+/**
+ * The keys an index read can hold, from its declared type: a prop read
+ * (`kind`, `props.kind`) whose declared type admits only string literals,
+ * `null` and `undefined` (`ParamInfo.literalKeys`; an optional prop adds
+ * `undefined`), or `a ?? 'x'` over such a read. `null` for any other index, including a name a loop row or callback
+ * binds.
+ */
+function indexKeyDomain(index: ParsedExpr, enclosing: ReadonlySet<string>, ctx: ComputedConstContext): KeyDomain | null {
+  if (index.kind === 'logical' && index.op === '??') {
+    const left = indexKeyDomain(index.left, enclosing, ctx)
+    const right = index.right.kind === 'literal' && typeof index.right.value === 'string' ? index.right.value : null
+    if (!left || right === null) return left === null || right === null ? null : left
+    return left.nullish.length === 0 ? left : { keys: [...new Set([...left.keys, right])], nullish: [] }
+  }
+  const param = indexPropParam(index, enclosing, ctx)
+  if (!param) return null
+  if (!param.literalKeys) return null
+  const domain: KeyDomain = { keys: [...param.literalKeys.keys], nullish: [...param.literalKeys.nullish] }
+  const readsDefault = index.kind === 'identifier' && param.defaultValue !== undefined
+  if (param.optional && !readsDefault && !domain.nullish.includes('undefined')) domain.nullish.push('undefined')
+  return domain
+}
+
+/** The prop param an index read reads whole (`kind`, `props.kind`), or undefined. */
+function indexPropParam(index: ParsedExpr, enclosing: ReadonlySet<string>, ctx: ComputedConstContext): ParamInfo | undefined {
+  const visible = (n: string) => !enclosing.has(n) && !ctx.isShadowed(n)
+  const params = ctx.props.params.filter(p => !p.isRest)
+  if (index.kind === 'identifier') {
+    if (!visible(index.name)) return undefined
+    if (ctx.props.objectName !== null && !ctx.propsBindings.has(index.name)) return undefined
+    return params.find(p => p.name === index.name)
+  }
+  if (index.kind !== 'member' || index.object.kind !== 'identifier' || index.object.name !== ctx.props.objectName) return undefined
+  if (!visible(index.object.name)) return undefined
+  return params.find(p => p.sourceName === undefined && p.name === index.property)
+}
+
+/** Whether evaluating `expr` twice reads the same value: it calls nothing but signal and memo getters, and holds no function. */
+function readsOnly(expr: ParsedExpr, getters: ReadonlySet<string>): boolean {
+  let ok = true
+  const visit = (node: unknown): void => {
+    if (!ok || node === null || typeof node !== 'object') return
+    if (Array.isArray(node)) {
+      node.forEach(visit)
+      return
+    }
+    const e = node as ParsedExpr
+    if (e.kind === 'arrow' || e.kind === 'unsupported') ok = false
+    else if (e.kind === 'call' && !(e.callee.kind === 'identifier' && e.args.length === 0 && getters.has(e.callee.name))) ok = false
+    else for (const value of Object.values(e)) visit(value)
+  }
+  visit(expr)
   return ok
 }
