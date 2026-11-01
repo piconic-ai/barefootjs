@@ -69,8 +69,9 @@ describe('#3688 — Phase 1 marks a props-object spread onto a child', () => {
     expect(rest).not.toHaveProperty('propsObject')
     const local = tagSpread(`
       import { Tag } from './tag'
-      export function D(props: { tone?: string }) { const extra = { tone: 'x' }; return <p><Tag {...extra} /></p> }
+      export function D(props: { tone?: string }) { const extra = { tone: props.tone }; return <p><Tag {...extra} /></p> }
     `, 'D')
+    expect(local.kind).toBe('spread')
     expect(local).not.toHaveProperty('propsObject')
   })
 })

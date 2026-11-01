@@ -112,6 +112,16 @@ export interface ParamInfo {
    * `type` for the `props.n` form.
    */
   declaredType?: TypeInfo
+  /**
+   * The values the prop's declared type admits when it is only string
+   * literals, `null` and `undefined` (`'ok' | 'err'`, a same-file alias of
+   * such a union, through a props type that is an intersection or an
+   * interface): the string keys, and which of `null` / `undefined` it also
+   * admits (the `?` modifier not included). Absent for any other type. A
+   * read of a const record indexed by the prop is projected from it
+   * (`computed-const.ts`).
+   */
+  literalKeys?: { keys: string[]; nullish: Array<'null' | 'undefined'> }
   optional: boolean
   defaultValue?: JsSourceText
   /**
@@ -2450,6 +2460,15 @@ export interface IRMetadata {
   restPropsName: string | null
   /** Keys statically expanded from rest props via type analysis (closed type only) */
   restPropsExpandedKeys: string[]
+  /**
+   * Set when `restPropsName` is bound by a component-body destructure of the
+   * props object (`function C(props) { const { label, ...rest } = props }`)
+   * rather than by the signature: the caller keys that destructure takes
+   * before its rest element. A backend that runs the component body as JS
+   * declares the binding from the props object without them. Absent (or
+   * null) for a signature rest and on hand-built metadata.
+   */
+  restPropsOmittedKeys?: string[] | null
   signals: SignalInfo[]
   memos: MemoInfo[]
   effects: EffectInfo[]

@@ -206,6 +206,8 @@ export interface AnalyzerContext {
   restPropsName: string | null
   /** Keys that can be statically expanded from rest props (closed type) */
   restPropsExpandedKeys: string[]
+  /** See `IRMetadata.restPropsOmittedKeys`. */
+  restPropsOmittedKeys: string[] | null
   /** Set when the props parameter is a destructuring pattern — see `PropsDestructuringInfo`. */
   propsDestructuring: PropsDestructuringInfo | null
 
@@ -308,6 +310,7 @@ export function createAnalyzerContext(
     propsObjectObservedWhole: false,
     restPropsName: null,
     restPropsExpandedKeys: [],
+    restPropsOmittedKeys: null,
     propsDestructuring: null,
 
     jsxReturn: null,

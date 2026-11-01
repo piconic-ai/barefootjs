@@ -939,12 +939,8 @@ function visitComponentBody(node: ts.Node, ctx: AnalyzerContext): void {
       if (ts.isIdentifier(decl.name)) {
         const isLet = (node.declarationList.flags & ts.NodeFlags.Let) !== 0
         collectConstant(decl, ctx, false, isLet ? 'let' : 'const')
-      } else if (destructuresPropsObject(decl, ctx)) {
-        // Body-level destructure from `props` (or a component-scope `const`
-        // alias of it) — `collectConstant` handles the expansion into one
-        // entry per destructured name.
-        const isLet = (node.declarationList.flags & ts.NodeFlags.Let) !== 0
-        collectConstant(decl, ctx, false, isLet ? 'let' : 'const')
+      } else if (ts.isObjectBindingPattern(decl.name)) {
+        collectBodyDestructure(decl, node.declarationList.flags, isTopLevel, ctx)
       }
     }
   }
@@ -3917,6 +3913,197 @@ function componentConstDeclaration(name: string, body: ts.Block): ts.VariableDec
   return null
 }
 
+/**
+ * The rest element of a component-body destructure of the props object
+ * (`const { label, ...rest } = props`): it binds the component's rest props
+ * exactly as a signature rest (`({ label, ...rest })`) does, so it is
+ * recorded the same way: `restPropsName`, and the closed-type keys it
+ * holds (`restPropsExpandedKeys`), which are the props type's keys minus the
+ * ones the destructure takes. `restPropsOmittedKeys` records those taken
+ * keys for a backend that runs the body as JS. A component already holding
+ * a rest binding keeps it.
+ */
+function collectBodyRestBinding(pattern: ts.ObjectBindingPattern, ctx: AnalyzerContext): void {
+  const restElement = pattern.elements.find(el => el.dotDotDotToken)
+  if (!restElement || !ts.isIdentifier(restElement.name) || ctx.restPropsName !== null) return
+  const restName = restElement.name.text
+  const taken: string[] = []
+  for (const el of pattern.elements) {
+    if (el.dotDotDotToken) continue
+    const key = bindingElementKey(el)
+    if (key !== null) taken.push(key)
+  }
+  ctx.restPropsName = restName
+  ctx.restPropsOmittedKeys = taken
+  const param = ctx.componentNode?.parameters[0]
+  const allKeys = param?.type ? collectTypeKeys(param.type, ctx) : null
+  if (allKeys) ctx.restPropsExpandedKeys = allKeys.filter(k => !taken.includes(k))
+}
+
+/** The property key a binding element reads (`{ a }`, `{ a: b }`, `{ 'a-b': c }`), or null for a computed key. */
+function bindingElementKey(el: ts.BindingElement): string | null {
+  const name = el.propertyName ?? el.name
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name)) return name.text
+  return null
+}
+
+/**
+ * A component-body object destructure. One of the props object (or a
+ * component-scope `const` alias of it) — `collectConstant` expands it into
+ * one entry per destructured name. A top-level `const` one of another const
+ * object — {@link collectConstDestructure}.
+ */
+function collectBodyDestructure(decl: ts.VariableDeclaration, flags: ts.NodeFlags, isTopLevel: boolean, ctx: AnalyzerContext): void {
+  if (destructuresPropsObject(decl, ctx)) {
+    collectConstant(decl, ctx, false, (flags & ts.NodeFlags.Let) !== 0 ? 'let' : 'const')
+  } else if (isTopLevel && (flags & ts.NodeFlags.Const) !== 0) {
+    collectConstDestructure(decl, ctx)
+  }
+}
+
+/**
+ * A component-body `const` object destructure of a const object or of the
+ * rest props (`const conf = { tone: 'info' }; const { tone } = conf`,
+ * `const { tone } = rest`, `const { a: { b } } = MODULE_CONF`). It binds
+ * each name to the path it reads off the source, so it is collected as one
+ * const per binding, exactly as if the source had written
+ * `const tone = conf.tone`: every backend then reads it through the same
+ * const handling as any other computed const, instead of reading a name
+ * nothing declares.
+ *
+ * The source is an identifier the destructure statement sees as a const
+ * object: the rest props binding, a component-body `const` declared before
+ * the statement, or a module `const` no component binding shadows. A binding
+ * element may rename (`{ tone: t }`), nest an object pattern, or default to
+ * a literal (`{ tone = 'x' }` reads `conf.tone === undefined ? 'x' :
+ * conf.tone`). A statement with any other element (a rest element, a
+ * computed key, an array pattern, a non-literal default) is left
+ * uncollected, as before.
+ */
+function collectConstDestructure(decl: ts.VariableDeclaration, ctx: AnalyzerContext): void {
+  if (!ts.isObjectBindingPattern(decl.name) || !decl.initializer) return
+  let source: ts.Expression = decl.initializer
+  while (ts.isParenthesizedExpression(source)) source = source.expression
+  if (!ts.isIdentifier(source) || !isConstObjectSource(source.text, decl, ctx)) return
+  // A rest a body destructure of the props object binds holds the props
+  // object's keys minus the ones that destructure takes: its key reads are
+  // the props object's, and a taken key reads `undefined`.
+  const bodyRest = source.text === ctx.restPropsName && ctx.restPropsOmittedKeys && ctx.propsObjectName
+  const path = bodyRest ? ctx.propsObjectName! : source.text
+  const bindings: ConstDestructureBinding[] = []
+  if (!collectConstDestructureBindings(decl.name, path, bindings)) return
+  const loc = getSourceLocation(decl, ctx.sourceFile, ctx.filePath)
+  for (const { name, key, value: read, fallback } of bindings) {
+    const value = bodyRest && ctx.restPropsOmittedKeys!.includes(key) ? (fallback ?? 'undefined') : read
+    ctx.localConstants.push({
+      name,
+      value,
+      parsed: parseExpression(`(${value})`),
+      declarationKind: 'const',
+      isExported: false,
+      type: null,
+      loc,
+      freeIdentifiers: new Set([path]),
+      origin: { phase: 'hydrate', scope: 'init', effect: 'pure' },
+    })
+  }
+}
+
+/**
+ * Whether `name`, read by the destructure `use`, names a const object (see
+ * {@link collectConstDestructure}): the rest props, a component-body `const`
+ * declared before `use`, or a module `const` that no component binding
+ * shadows.
+ */
+function isConstObjectSource(name: string, use: ts.VariableDeclaration, ctx: AnalyzerContext): boolean {
+  if (name === ctx.restPropsName) return true
+  const body = ctx.componentBodyBlock
+  if (body === null || !isComponentBodyStatementDeclaration(use, body)) return false
+  const local = componentConstDeclaration(name, body)
+  if (local !== null) return local.pos < use.pos && ts.isIdentifier(local.name)
+  if (componentBodyBindsName(name, body) || ctx.propsObjectName === name) return false
+  if (ctx.propsObjectName === null && ctx.propsParams.some(p => p.name === name)) return false
+  return ctx.localConstants.some(c => c.isModule && c.name === name && (c.declarationKind ?? 'const') === 'const')
+}
+
+/** Whether a direct statement of `body` declares `name` (any binding form, `let` included). */
+function componentBodyBindsName(name: string, body: ts.Block): boolean {
+  for (const stmt of body.statements) {
+    if (ts.isFunctionDeclaration(stmt) && stmt.name?.text === name) return true
+    if (!ts.isVariableStatement(stmt)) continue
+    for (const d of stmt.declarationList.declarations) {
+      if (bindingNameDeclares(d.name, name)) return true
+    }
+  }
+  return false
+}
+
+function bindingNameDeclares(binding: ts.BindingName, name: string): boolean {
+  if (ts.isIdentifier(binding)) return binding.text === name
+  return binding.elements.some(el => !ts.isOmittedExpression(el) && bindingNameDeclares(el.name, name))
+}
+
+/** One const a {@link collectConstDestructure} binding element binds. */
+interface ConstDestructureBinding {
+  name: string
+  /** What it reads off the source path. */
+  value: string
+  /** The key of the destructure's own element it sits under. */
+  key: string
+  /** The source text of its literal default, if any. */
+  fallback?: string
+}
+
+/**
+ * The `{ name, value }` const each element of `pattern` binds, read off
+ * `path` (see {@link collectConstDestructure}), with the key of `pattern`'s
+ * own element it sits under. False when an element has no such const form.
+ */
+function collectConstDestructureBindings(
+  pattern: ts.ObjectBindingPattern,
+  path: string,
+  out: ConstDestructureBinding[],
+  topKey?: string,
+): boolean {
+  for (const el of pattern.elements) {
+    const key = el.dotDotDotToken ? null : bindingElementKey(el)
+    if (key === null) return false
+    const access = isIdentifierName(key) ? `${path}.${key}` : `${path}[${JSON.stringify(key)}]`
+    if (ts.isObjectBindingPattern(el.name) && !el.initializer) {
+      if (!collectConstDestructureBindings(el.name, access, out, topKey ?? key)) return false
+      continue
+    }
+    if (!ts.isIdentifier(el.name)) return false
+    const fallback = el.initializer ? literalDefaultText(el.initializer) : undefined
+    if (fallback === null) return false
+    const value = fallback === undefined ? access : `${access} === undefined ? ${fallback} : ${access}`
+    out.push({ name: el.name.text, value, key: topKey ?? key, ...(fallback !== undefined && { fallback }) })
+  }
+  return true
+}
+
+/** Whether `key` is spelled as an identifier, so `obj.key` reads it. */
+function isIdentifierName(key: string): boolean {
+  const chars = [...key]
+  return chars.length > 0 && chars.every((ch, i) => {
+    const code = ch.codePointAt(0)!
+    return i === 0 ? ts.isIdentifierStart(code, ts.ScriptTarget.Latest) : ts.isIdentifierPart(code, ts.ScriptTarget.Latest)
+  })
+}
+
+/** The source text of a literal default (`'x'`, `1`, `-1`, `true`, `null`), or null for any other one. */
+function literalDefaultText(node: ts.Expression): string | null {
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return JSON.stringify(node.text)
+  if (ts.isNumericLiteral(node)) return node.text
+  if (ts.isPrefixUnaryExpression(node) && node.operator === ts.SyntaxKind.MinusToken && ts.isNumericLiteral(node.operand)) {
+    return `-${node.operand.text}`
+  }
+  if (node.kind === ts.SyntaxKind.TrueKeyword) return 'true'
+  if (node.kind === ts.SyntaxKind.FalseKeyword) return 'false'
+  if (node.kind === ts.SyntaxKind.NullKeyword) return 'null'
+  return null
+}
+
 /** {@link propDefaultReadOf} for a body destructure's binding (`const { label: text = 'x' } = props`). */
 function bodyBindingRead(
   localName: string,
@@ -3964,6 +4151,7 @@ function collectConstant(
     // Bindings already destructured by this pattern, by local name: a later
     // default reads them (`const { off = false, on = off } = props`, #3531).
     const earlier = new Map<string, PropDefaultRead>()
+    collectBodyRestBinding(node.name, ctx)
     for (const el of node.name.elements) {
       if (!ts.isBindingElement(el) || !ts.isIdentifier(el.name) || el.dotDotDotToken) continue
       const localName = el.name.text
@@ -4349,6 +4537,7 @@ function extractProps(param: ts.ParameterDeclaration, ctx: AnalyzerContext): voi
           name: localName,
           type: resolvedType,
           ...unresolvedDeclaredType(member),
+          ...propLiteralKeys(param.type, sourcePropName, ctx),
           // The type's `?` and a destructure default (`{ x = 1 }`) both mean
           // the caller may omit the prop.
           optional: !!member?.optional || !!element.initializer,
@@ -4623,6 +4812,80 @@ function unresolvedDeclaredType(member: DestructuredMemberType | undefined): Pic
   return member && !member.type && member.declared ? { declaredType: member.declared } : {}
 }
 
+/** Upper bound on alias / intersection hops a type walk follows, a guard against a cycle. */
+const MAX_TYPE_HOPS = 8
+
+/**
+ * `ParamInfo.literalKeys` for the member `name` of a props type node: the
+ * member's declared type node, found through a type literal, a same-file
+ * interface or type alias, or an intersection of those (`{ name: N } &
+ * IconProps`), read by {@link literalKeyDomain}. Empty when the member is
+ * not found or its type is not such a union.
+ */
+function propLiteralKeys(typeNode: ts.TypeNode | undefined, name: string, ctx: AnalyzerContext): Pick<ParamInfo, 'literalKeys'> {
+  const memberType = typeNode ? memberTypeNode(typeNode, name, ctx, 0) : null
+  const literalKeys = memberType ? literalKeyDomain(memberType, ctx) : null
+  return literalKeys ? { literalKeys } : {}
+}
+
+function memberTypeNode(typeNode: ts.TypeNode, name: string, ctx: AnalyzerContext, hops: number): ts.TypeNode | null {
+  if (hops > MAX_TYPE_HOPS) return null
+  if (ts.isParenthesizedTypeNode(typeNode)) return memberTypeNode(typeNode.type, name, ctx, hops + 1)
+  if (ts.isIntersectionTypeNode(typeNode)) {
+    for (const part of typeNode.types) {
+      const found = memberTypeNode(part, name, ctx, hops + 1)
+      if (found) return found
+    }
+    return null
+  }
+  const members = ts.isTypeLiteralNode(typeNode) ? typeNode.members : null
+  if (members) return memberSignatureType(members, name, ctx)
+  if (!ts.isTypeReferenceNode(typeNode)) return null
+  const decl = findTypeDeclaration(typeNode.typeName.getText(ctx.sourceFile), ctx.sourceFile)
+  if (!decl) return null
+  if (ts.isInterfaceDeclaration(decl)) return memberSignatureType(decl.members, name, ctx)
+  return memberTypeNode(decl.type, name, ctx, hops + 1)
+}
+
+function memberSignatureType(members: ts.NodeArray<ts.TypeElement>, name: string, ctx: AnalyzerContext): ts.TypeNode | null {
+  for (const member of members) {
+    if (ts.isPropertySignature(member) && member.name.getText(ctx.sourceFile) === name) return member.type ?? null
+  }
+  return null
+}
+
+/**
+ * The string literals, `null` and `undefined` a type node admits when it
+ * admits nothing else (`'ok' | 'err' | undefined`, or a same-file alias of
+ * such a union), or null.
+ */
+function literalKeyDomain(typeNode: ts.TypeNode, ctx: AnalyzerContext, hops = 0): ParamInfo['literalKeys'] | null {
+  if (hops > MAX_TYPE_HOPS) return null
+  if (ts.isParenthesizedTypeNode(typeNode)) return literalKeyDomain(typeNode.type, ctx, hops + 1)
+  if (ts.isTypeReferenceNode(typeNode)) {
+    const decl = findTypeDeclaration(typeNode.typeName.getText(ctx.sourceFile), ctx.sourceFile)
+    return decl && ts.isTypeAliasDeclaration(decl) ? literalKeyDomain(decl.type, ctx, hops + 1) : null
+  }
+  if (!ts.isUnionTypeNode(typeNode)) return literalTypeKey(typeNode)
+  const keys: string[] = []
+  const nullish = new Set<'null' | 'undefined'>()
+  for (const part of typeNode.types) {
+    const inner = literalKeyDomain(part, ctx, hops + 1)
+    if (!inner) return null
+    keys.push(...inner.keys)
+    for (const n of inner.nullish) nullish.add(n)
+  }
+  return { keys, nullish: [...nullish] }
+}
+
+/** {@link literalKeyDomain} for one non-union, non-reference type node: a string literal, `null` or `undefined`. */
+function literalTypeKey(typeNode: ts.TypeNode): ParamInfo['literalKeys'] | null {
+  if (typeNode.kind === ts.SyntaxKind.UndefinedKeyword) return { keys: [], nullish: ['undefined'] }
+  if (!ts.isLiteralTypeNode(typeNode)) return null
+  if (typeNode.literal.kind === ts.SyntaxKind.NullKeyword) return { keys: [], nullish: ['null'] }
+  return ts.isStringLiteral(typeNode.literal) ? { keys: [typeNode.literal.text], nullish: [] } : null
+}
+
 function collectMemberTypes(
   typeNode: ts.TypeNode,
   ctx: AnalyzerContext
@@ -4706,9 +4969,11 @@ function extractPropsFromTypeMembers(
         ? typeNodeToTypeInfo(member.type, ctx.sourceFile)
         : { kind: 'unknown' as const, raw: 'unknown' }
 
+      const literalKeys = member.type ? literalKeyDomain(member.type, ctx) : null
       ctx.propsParams.push({
         name: propName,
         type: propType ?? { kind: 'unknown', raw: 'unknown' },
+        ...(literalKeys && { literalKeys }),
         optional: isOptional,
         defaultValue: undefined,
       })

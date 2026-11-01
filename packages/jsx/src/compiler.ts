@@ -681,6 +681,7 @@ export function buildMetadata(
     propsObjectObservedWhole: ctx.propsObjectObservedWhole,
     restPropsName: ctx.restPropsName,
     restPropsExpandedKeys: ctx.restPropsExpandedKeys,
+    restPropsOmittedKeys: ctx.restPropsOmittedKeys,
     signals: ctx.signals,
     memos: ctx.memos,
     effects: ctx.effects,

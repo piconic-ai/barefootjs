@@ -312,4 +312,8 @@ export const conformancePins: ConformancePins = {
   // child prop carries the key as a plain row read, so the Input has no
   // field to read it from.
   'loop-key-to-string-number-component-row': [{ code: 'BF101', severity: 'error', limitation: 'caller-rows-computed-key' }],
+  // A const record indexed by a prop whose keys are not known at compile
+  // time reads inherited keys in JS (`labels['toString']`); no template
+  // lookup does, so the read refuses rather than rendering `undefined`.
+  'record-const-index-inherited-key': [{ code: 'BF102', severity: 'error', limitation: 'record-const-index-unknown-keys' }],
 }
