@@ -29,6 +29,7 @@ import type {
   ExpressionAttr,
   IRConditional,
   IRIfStatement,
+  IRLoop,
   IRNode,
   IRTemplatePart,
   SourceLocation,
@@ -186,27 +187,9 @@ function walkNode(node: IRNode, visit: (position: TemplatePosition) => void, sco
       walkNode(node.fallback, visit, scope)
       for (const child of node.children) walkNode(child, visit, scope)
       break
-    case 'loop': {
-      if (node.clientOnly) break
-      if (node.arrayParsed) visit({ expr: node.arrayParsed, loc: node.loc, role: 'loop-array' })
-      // The row's positions are read in the row's scope.
-      const row = scope?.enterLoopRow(node)
-      const rowVisit = row ? (position: TemplatePosition) => visit({ scope: row, ...position }) : visit
-      for (const child of node.children) walkNode(child, rowVisit, row)
-      if (node.childComponent) {
-        for (const child of node.childComponent.children) walkNode(child, rowVisit, row)
-      }
-      for (const nested of node.nestedComponents ?? []) {
-        for (const child of nested.children) walkNode(child, rowVisit, row)
-      }
-      for (const seg of node.flatMapCallback?.segments ?? []) {
-        if (seg.kind === 'jsx') walkNode(seg.ir, rowVisit, row)
-      }
-      for (const seg of node.preamble?.segments ?? []) {
-        if (seg.kind === 'jsx') walkNode(seg.ir, rowVisit, row)
-      }
+    case 'loop':
+      walkLoop(node, visit, scope)
       break
-    }
     case 'conditional':
       if (node.clientOnly) break
       walkNode(node.whenTrue, visit, scope)
@@ -217,4 +200,20 @@ function walkNode(node: IRNode, visit: (position: TemplatePosition) => void, sco
       if (node.alternate) walkNode(node.alternate, visit, scope)
       break
   }
+}
+
+/** A loop's array, then its row's positions, each read in the row's scope. */
+function walkLoop(node: IRLoop, visit: (position: TemplatePosition) => void, scope?: BindingScope): void {
+  if (node.clientOnly) return
+  if (node.arrayParsed) visit({ expr: node.arrayParsed, loc: node.loc, role: 'loop-array' })
+  const row = scope?.enterLoopRow(node)
+  const rowVisit = row ? (position: TemplatePosition) => visit({ scope: row, ...position }) : visit
+  const children = [
+    ...node.children,
+    ...(node.childComponent?.children ?? []),
+    ...(node.nestedComponents ?? []).flatMap(nested => nested.children),
+    ...(node.flatMapCallback?.segments ?? []).flatMap(seg => (seg.kind === 'jsx' ? [seg.ir] : [])),
+    ...(node.preamble?.segments ?? []).flatMap(seg => (seg.kind === 'jsx' ? [seg.ir] : [])),
+  ]
+  for (const child of children) walkNode(child, rowVisit, row)
 }
