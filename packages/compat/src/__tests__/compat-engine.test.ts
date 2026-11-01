@@ -72,6 +72,7 @@ describe('compileForCompat', () => {
           'omitted-optional-nullable-number-arithmetic',
           'omitted-optional-nullable-scalar-relational',
           'opaque-local-accessor-call',
+          'optional-row-field-nil-reading',
           'prop-member-chain-signal-seed',
           'signal-read-in-nested-static-loop',
           'static-literal-loop-component-row',

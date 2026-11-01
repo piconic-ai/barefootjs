@@ -315,7 +315,7 @@ function Widget({ values }: { values: number[] }) {
 `)
     // Outside the loop `label` is the string const, so JS `1 + 'x'` is the
     // concatenation `"1x"` (#3762); inside, the numeric row shadows it.
-    expect(template).toContain("1 . 'x'")
+    expect(template).toContain("bf->to_string(1) . 'x'")
     expect(template).toContain('bf->add(2, $label)')
   })
 
@@ -2129,9 +2129,9 @@ export function C() {
   test('template literal with a complex expr lowers to Perl concatenation', () => {
     // Double-quote interpolation would leave `+ 1` unevaluated; concat
     // evaluates the arithmetic, and each substitution prints through
-    // `bf->string` as JS `String(v)` does (#3440).
+    // `bf->to_string`, JS ToString (#3440, #3824 step 4).
     const { template } = gen('`n=${count() + 1}`')
-    expect(template).toContain("'n=' . bf->string(bf->add($count, 1))")
+    expect(template).toContain("'n=' . bf->to_string(bf->add($count, 1))")
   })
 
   test('static template-literal text keeps Perl $ and @ sigils uninterpolated', () => {

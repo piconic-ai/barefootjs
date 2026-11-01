@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -483,13 +484,54 @@ func evalToString(v any) string {
 			return "0"
 		}
 	}
-	// Non-primitive operands (arrays / objects) in ToString position are
-	// outside the evaluator subset — the JS reference refuses them, and the
-	// compiler gates such a callback body with BF101 before it ever reaches
-	// the runtime. This evaluator runs already-validated bodies, so it does
-	// not re-reject here; String() (fmt %v) is a best-effort fallback for that
-	// unreachable path, never exercised by the in-subset corpus.
+	// Array.prototype.toString is join(","): a nil element prints as "", and
+	// a nested array flattens through its own join. A plain object prints as
+	// "[object Object]" (ToPrimitive of an ordinary object).
+	if rv, ok := objectValue(v); ok {
+		if rv.Kind() == reflect.Slice || rv.Kind() == reflect.Array {
+			parts := make([]string, rv.Len())
+			for i := range parts {
+				if el := rv.Index(i).Interface(); el != nil {
+					parts[i] = evalToString(el)
+				}
+			}
+			return strings.Join(parts, ",")
+		}
+		return "[object Object]"
+	}
 	return String(v)
+}
+
+// concatenates reports whether a `+` operand makes the `+` a concatenation.
+func concatenates(v any) bool {
+	if _, ok := v.(string); ok {
+		return true
+	}
+	_, ok := objectValue(v)
+	return ok
+}
+
+// objectValue reports whether v is a JS array or object (a slice, array,
+// map or struct, through any pointer), which ToPrimitive turns into its
+// ToString, so a `+` over it concatenates.
+func objectValue(v any) (reflect.Value, bool) {
+	// A date keeps its own spelling; it is not an ordinary object here.
+	switch v.(type) {
+	case time.Time, *time.Time:
+		return reflect.Value{}, false
+	}
+	rv := reflect.ValueOf(v)
+	for rv.IsValid() && rv.Kind() == reflect.Pointer {
+		if rv.IsNil() {
+			return rv, false
+		}
+		rv = rv.Elem()
+	}
+	switch rv.Kind() {
+	case reflect.Slice, reflect.Array, reflect.Map, reflect.Struct:
+		return rv, true
+	}
+	return rv, false
 }
 
 func evalTruthy(v any) bool {
@@ -503,12 +545,10 @@ func evalTruthy(v any) bool {
 func evalBinary(op string, l, r any) any {
 	switch op {
 	case "+":
-		// JS `+`: string concatenation once either operand is a string,
-		// numeric addition otherwise.
-		if _, lok := l.(string); lok {
-			return evalToString(l) + evalToString(r)
-		}
-		if _, rok := r.(string); rok {
+		// JS `+`: string concatenation once either operand is a string after
+		// ToPrimitive (an array or object converts to its ToString), numeric
+		// addition otherwise.
+		if concatenates(l) || concatenates(r) {
 			return evalToString(l) + evalToString(r)
 		}
 		return evalToNumber(l) + evalToNumber(r)

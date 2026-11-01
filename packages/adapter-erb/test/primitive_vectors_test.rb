@@ -53,7 +53,16 @@ class PrimitiveVectorsTest < Minitest::Test
     'lt' => ->(a, b) { a < b },
     'le' => ->(a, b) { a <= b },
     'gt' => ->(a, b) { a > b },
-    'ge' => ->(a, b) { a >= b }
+    'ge' => ->(a, b) { a >= b },
+    # A proven string is its own ToString; a `+` is Ruby's own `+` over two
+    # numbers, and over a proven string the other operand goes through
+    # `to_string` first (#3824 step 4).
+    'to_string' => ->(v) { v },
+    'plus' => lambda { |a, b|
+      next a + b unless a.is_a?(String) || b.is_a?(String)
+
+      (a.is_a?(String) ? a : BF.to_string(a)) + (b.is_a?(String) ? b : BF.to_string(b))
+    }
   }.freeze
 
   SENTINELS = {

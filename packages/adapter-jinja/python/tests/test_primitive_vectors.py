@@ -50,6 +50,8 @@ BINDINGS = {
 
 _JINJA_IF = Environment().from_string("{% if v %}1{% else %}0{% endif %}")
 _JINJA_INDEX = Environment().compile_expression("recv[key]")
+_JINJA_PLUS = Environment().compile_expression("a + b")
+_JINJA_CONCAT = Environment().compile_expression("a ~ b")
 _JINJA_RELATIONAL = {op: Environment().compile_expression(f"a {op} b") for op in ("<", "<=", ">", ">=")}
 
 # One binding per op the Jinja adapter can spell natively, to the native Jinja
@@ -69,6 +71,13 @@ NATIVE_BINDINGS = {
     "le": lambda a, b: _JINJA_RELATIONAL["<="](a=a, b=b),
     "gt": lambda a, b: _JINJA_RELATIONAL[">"](a=a, b=b),
     "ge": lambda a, b: _JINJA_RELATIONAL[">="](a=a, b=b),
+    # A proven string is its own ToString; a `+` is Python's own `+` over two
+    # numbers and Jinja's `~` over a proven string, the other operand through
+    # `bf.to_string` (#3824 step 4).
+    "to_string": lambda v: v,
+    "plus": lambda a, b: _JINJA_PLUS(a=a, b=b) if not isinstance(a, str) and not isinstance(b, str) else _JINJA_CONCAT(
+        a=a if isinstance(a, str) else bf.to_string(a), b=b if isinstance(b, str) else bf.to_string(b)
+    ),
 }
 
 SENTINELS = {"NaN": math.nan, "Infinity": math.inf, "-Infinity": -math.inf, "-0": -0.0}

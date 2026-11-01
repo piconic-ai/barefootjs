@@ -760,10 +760,10 @@ function Widget(props: { a: string; show: boolean }) {
 
 // A `+` the shared layer classifies as string concatenation: Ruby's `+`
 // raises on a String plus a number, so the operand that is not typed as a
-// string goes through `bf.string`, in both orders. A loop row or filter
+// string goes through `bf.to_string`, in both orders. A loop row or filter
 // param named like a string prop is typed as the param (a number here).
 describe('ErbAdapter - string concatenation operand', () => {
-  test('a number operand of `+` concatenation goes through bf.string', () => {
+  test('a number operand of `+` concatenation goes through bf.to_string', () => {
     const { template } = compileAndGenerate(`
 function Widget(props: { label: string; n: number; nums: number[] }) {
   return <div>
@@ -774,11 +774,11 @@ function Widget(props: { label: string; n: number; nums: number[] }) {
   </div>
 }
 `)
-    expect(template).toContain("('r=' + bf.string(v[:n]))")
-    expect(template).toContain("(bf.string(v[:n]) + '=r')")
-    expect(template).toContain('(bf.string(label) + v[:label])')
-    expect(template).toContain("(bf.string(v_) + 'x')")
-    expect(template).not.toContain("bf.string('r=')")
+    expect(template).toContain("('r=' + bf.to_string(v[:n]))")
+    expect(template).toContain("(bf.to_string(v[:n]) + '=r')")
+    expect(template).toContain('(bf.to_string(label) + v[:label])')
+    expect(template).toContain("(bf.to_string(v_) + 'x')")
+    expect(template).not.toContain("bf.to_string('r=')")
   })
 
   test('a nested callback param named like a string prop is typed as the param', () => {
@@ -787,6 +787,6 @@ function Widget(props: { label: string; rows: { tags: number[] }[] }) {
   return <p>{props.rows.filter(r => r.tags.some(label => 'x' + label === 'x2')).length}</p>
 }
 `)
-    expect(template).toContain("('x' + bf.string(label))")
+    expect(template).toContain("('x' + bf.to_string(label))")
   })
 })

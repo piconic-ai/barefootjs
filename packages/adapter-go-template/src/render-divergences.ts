@@ -156,10 +156,6 @@ export const renderDivergences: RenderDivergences = {
   // by Go field names. A JS-keyed map holding only `Name` then answers a read
   // of `name`; the two map shapes cannot be told apart at runtime.
   'index-read-capitalised-key-only': { limitation: 'index-read-capitalised-key-only' },
-  // A memo Go computes with the runtime evaluator (`bf.EvalExpr`) reads an
-  // omitted optional number prop as `null`, not `undefined`: the evaluator
-  // has one nil and receives no operand coercion, so `maybe < 1` is true.
-  'relational-omitted-number-memo': { limitation: 'evaluated-memo-omitted-number-operand' },
   // A destructure default that calls a callback and reads no earlier prop
   // (`{ b = ['y', ''].filter((x) => x !== '') }`): the props constructor
   // has no conversion from the evaluated array to the field's slice type,
@@ -315,10 +311,10 @@ export const renderDivergences: RenderDivergences = {
   // renamed when a different prop owns the plural (`nestedRowsFieldName`).
   'module-const-destructure-default': { limitation: 'module-const-destructure-default' },
   'module-const-default-hydrate': { limitation: 'module-const-destructure-default' },
-  // A `+` over an optional string row field (`id?: string`): an omitted
-  // field is the template's nil, not JS `undefined` (`undefined!` / `NaN`),
-  // and a present one is not known to be a string.
-  'omitted-optional-row-field-plus': { limitation: 'omitted-optional-row-field-plus' },
+  // A `+` or template literal over a nil Phase 1 cannot read as `undefined`
+  // (an `either` string, a dynamic `+`, an untyped part) keeps today's
+  // output until the runtime carries `undefined` (#3848).
+  'awaits-undefined-plus-shapes': { limitation: 'awaits-undefined-value' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches

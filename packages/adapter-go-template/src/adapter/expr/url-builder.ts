@@ -8,6 +8,9 @@
  */
 
 import {
+  needsToString,
+  planToString,
+  rewriteNilReadings,
   type LoweringNode,
   type ParsedExpr,
   type TemplatePart,
@@ -18,7 +21,7 @@ import {
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
-import { escapeGoString, isGoBoolShaped, lowerJsTruthyTest, wrapIfMultiToken } from '../lib/go-emit.ts'
+import { escapeGoString, GO_NATIVE_SAFE, isGoBoolShaped, lowerJsTruthyTest, wrapIfMultiToken } from '../lib/go-emit.ts'
 
 /**
  * Logical helper id → Go template helper name. `bf_<helper>` is a formula,
@@ -127,12 +130,17 @@ function lowerTernaryBranch(ctx: GoEmitContext, branch: ParsedExpr): string {
  * folds to one escaped string.
  */
 export function lowerTemplateLiteralValue(ctx: GoEmitContext, parts: readonly TemplatePart[]): string {
+  // Each part is read by its nil reading and printed as JS ToString does
+  // (`bf_to_string`) unless its plan proves it a string (#3824 step 4).
+  const typing = ctx.operandTyping()
+  const literal = rewriteNilReadings({ kind: 'template-literal', parts: [...parts] }, typing)
   const terms: string[] = []
-  for (const part of parts) {
+  for (const part of literal.kind === 'template-literal' ? literal.parts : parts) {
     if (part.type === 'string') {
       if (part.value !== '') terms.push(`"${escapeGoString(part.value)}"`)
     } else {
-      terms.push(lowerValueOperand(ctx, part.expr))
+      const value = lowerValueOperand(ctx, part.expr)
+      terms.push(needsToString(planToString(part.expr, typing, GO_NATIVE_SAFE)) ? `(bf_to_string ${value})` : value)
     }
   }
   if (terms.length === 0) return '""'

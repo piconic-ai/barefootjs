@@ -2,9 +2,9 @@
  * Arithmetic lowering, across the eight DSL adapters (#3474).
  *
  * Every DSL adapter lowers `+ - * / %` and unary minus through the decisions
- * `@barefootjs/jsx` makes once: `arithmeticOperandCoercion` (an operand whose
- * nil stands for `null` reads as `0`, one whose nil stands for `undefined`
- * reads as `NaN`), `arithmeticHelper` (`/` is the runtime's JS division,
+ * `@barefootjs/jsx` makes once: the nil-reading rewrite (an operand whose nil
+ * stands for `null` reads as `x ?? 0`, one whose nil stands for `undefined`
+ * as `x ?? NaN`, #3824 step 4), `arithmeticHelper` (`/` is the runtime's JS division,
  * `div`, and `%` its JS remainder, `mod`), and `groupBinaryOperand` /
  * `groupUnaryOperand` (a compound operand keeps its source grouping). The
  * adapter only spells each decision.
@@ -12,10 +12,8 @@
  * The test compiles one component per operator with each adapter and reads
  * the decisions back out of the template, in source order: a `div` or `mod`
  * call for the division or remainder (the Perl runtime names `div`
- * `divide`), a `number` call for the `undefined` coercion, and the
- * adapter's spelling of the `null` coercion. Blade, Twig, Mojolicious and
- * Xslate spell that one as the operand itself, since PHP's and Perl's
- * operators already read nil as `0`, so it is compared on the other four.
+ * `divide`), a `number('NaN')` call for the `undefined` reading, and the
+ * adapter's spelling of `x ?? 0` for the `null` reading.
  * Grouping is compared by compiling two sources that differ only in their
  * parentheses: every adapter must emit two different templates. A local
  * special case in one adapter's `binary` or `unary` breaks the agreement.
@@ -24,16 +22,16 @@ import { describe, test, expect } from 'bun:test'
 import { compileFixtureJSX } from '../harness-program'
 import { DSL_ADAPTERS, helperCallsAt, type DslAdapterCase } from '../dsl-helper-calls'
 
-/** How each adapter spells the `null` coercion; `null` where nil already reads as `0`. */
+/** How each adapter spells the `null` reading's `x ?? 0`. */
 const NULL_AS_ZERO: Readonly<Record<string, RegExp | null>> = {
-  blade: null,
-  erb: / \|\| 0\)/g,
-  jinja: / or 0\)/g,
-  mojolicious: null,
-  pebble: / is null \? 0 : /g,
-  rust: / or 0\)/g,
-  twig: null,
-  xslate: null,
+  blade: / \?\? 0\)/g,
+  erb: /\.nil\? \? 0 : /g,
+  jinja: / else 0\)/g,
+  mojolicious: / \/\/ 0\)/g,
+  pebble: /bf\.coalesce\([^,]+, 0\)/g,
+  rust: / else 0\)/g,
+  twig: / \?\? 0\)/g,
+  xslate: / \/\/ 0\)/g,
 }
 
 const HELPERS: ReadonlySet<string> = new Set(['div', 'mod', 'number'])

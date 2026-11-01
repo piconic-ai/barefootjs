@@ -81,7 +81,10 @@ import {
   prepareLoweringMatchers,
   envSignalReaderFor,
   computeSsrSeedPlan,
-  isStringConcatBinary,
+  rewriteNilReadings,
+  rewriteNilReadingsDeep,
+  isNilReadingFallback,
+  needsToString,
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
   collectLoopBoundNames,
@@ -136,6 +139,7 @@ import {
   type NullishSpelling,
   lowerJsNot,
   lowerJsToNumber,
+  lowerJsPlus,
   lowerUndefinedOperand,
   wrapGoArg,
   emitPredicateEval,
@@ -382,6 +386,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private readonly emitCtx: GoEmitContext = {
     state: this.state,
+    operandTyping: () => this.state.operandTyping.at(this.scope),
     convertExpressionToGo: (jsExpr, out, preParsed) =>
       this.convertExpressionToGo(jsExpr, out, preParsed),
     convertConditionToGo: (jsCondition, preParsed) =>
@@ -840,6 +845,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     ir = withInlinedMemoBodies(ir, bakesField)
     this.state.currentMemos = ir.metadata.memos
     this.state.nullishAttrCtx = collectNullishAttrContext(ir)
+    // The primitive plans' typing (#3824), which `generateTypes` reads too:
+    // the nil-reading rewrite of a memo body or child prop it evaluates.
+    this.state.operandTyping = collectOperandTyping(ir.metadata, {
+      namedFields: typeName => this.state.currentTypeDefinitions.find(td => td.name === typeName)?.properties,
+    })
     return ir
   }
 
@@ -882,9 +892,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // reach the operand coercion; refuse their ambiguous-nil arithmetic once.
     refuseAmbiguousNilMemoArithmetic(ir.metadata.memos ?? [], this.state.nullishAttrCtx, this.state)
     this.state.stringValueNames = collectStringValueNames(ir)
-    this.state.operandTyping = collectOperandTyping(ir.metadata, {
-      namedFields: typeName => this.state.currentTypeDefinitions.find(td => td.name === typeName)?.properties,
-    })
     // A SAME-FILE child's shape (`childComponentShapes`, which `routesToRestBag`
     // reads to pick `bf_with_props` vs `bf_with_bag` delivery, and
     // `childDerivedFieldDeps` for `loopRowChildPropOverrides`) is registered
@@ -5312,12 +5319,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * JS `+` with a string-typed operand is CONCATENATION, not addition — Go's
-   * `bf_add` coerces both sides through `toFloat64` (#2168
-   * string-concat-plus: `'Hello, ' + name` rendered "0", since a string
-   * operand's `toFloat64` is 0). `html/template` has no infix `+` at all, so
-   * both directions are a runtime call; route through `bf_concat_str` when
-   * either operand is string-typed.
+   * JS `+`, as its primitive plan names it (#3824 step 4; `lowerJsPlus`):
+   * `bf_add` over two proven numbers, `bf_concat_str` over a proven string
+   * (the other operand through `bf_to_string`), the runtime's JS `+`
+   * (`bf_plus`) otherwise. `html/template` has no infix `+` at all, so every
+   * direction is a runtime call.
    *
    * Shared by all THREE `case '+':` sites in this file (`binary()` here, the
    * filter-predicate emitter's own `binary` case, and the condition-
@@ -5339,10 +5345,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     callbackParams: readonly string[] = [],
   ): string {
     const scope = callbackParams.length > 0 ? this.scope.enterCallback(callbackParams) : this.scope
-    if (isStringConcatBinary('+', leftExpr, rightExpr, (n, property, path) => this._isStringValueName(n, property, path, scope))) {
-      return `bf_concat_str ${leftRendered} ${rightRendered}`
-    }
-    return `bf_add ${leftRendered} ${rightRendered}`
+    const plan = planPrimitive({ kind: 'binary', op: '+', left: leftExpr, right: rightExpr }, this.state.operandTyping.at(scope), GO_NATIVE_SAFE)
+    return lowerJsPlus(plan, leftRendered, rightRendered)
   }
 
   /** Whether `name` (a signal getter or prop) holds a string value — drives
@@ -5561,11 +5565,32 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /** The spelling of `left ?? right` under `plan` (#3824 step 7). */
   private nullishSpellingOf(left: ParsedExpr, right: ParsedExpr, plan: PrimitivePlan | null, params?: readonly string[]): NullishSpelling {
+    const absentIsZero = this.nullishAbsentIsZero(left, right, params)
+    if (absentIsZero && isNilReadingFallback(right)) this.refuseConcreteNilReading(left)
     return {
       plan,
-      absentIsZero: this.nullishAbsentIsZero(left, right, params),
+      absentIsZero,
       absentLeaves: this.nullishAbsentLeaves(left, right, params),
     }
+  }
+
+  /**
+   * A nil-reading operand (#3824 step 4) whose Go value is a concrete zero:
+   * the `??` the rewrite built would test truthiness, so a present `''` /
+   * `0` / `false` would read as absent. Every such operand must take the
+   * nillable flip (`collectArithmeticAbsentPropNames`); one that did not is
+   * refused loudly rather than rendered wrong.
+   */
+  private refuseConcreteNilReading(operand: ParsedExpr): void {
+    this.state.errors.push({
+      code: 'BF101',
+      severity: 'error',
+      message: `'${stringifyParsedExpr(operand)}' may be omitted, but the Go template adapter holds it as a concrete value, so an omitted value cannot be told from a present zero value where JS reads it as undefined`,
+      loc: this.makeLoc(),
+      suggestion: {
+        message: 'Give the value a default, or make its type admit null so that an omitted value reads as null.',
+      },
+    })
   }
 
   /** The spelling of a value-position `l ?? r` the condition and filter walkers lower (#3824 step 7). */
@@ -5646,9 +5671,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return !!memo && isBoxedNumericMemoBody(this.emitCtx, memo.parsed, this.state.currentSignals, this.state.currentPropsParams)
   }
 
-  templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string {
+  templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string, plans: readonly (PrimitivePlan | null)[]): string {
     let result = ''
-    for (const part of parts) {
+    parts.forEach((part, i) => {
       if (part.type === 'string') {
         // The literal text lands in markup OUTSIDE any `{{…}}` action, so
         // html/template never escapes it. Escape it here, or a `"` in a
@@ -5662,9 +5687,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // template parse error. Same `isTemplateFragment` guard as
         // `renderExpression`.
         const e = emit(part.expr)
-        result += this.isTemplateFragment(e, part.expr.kind) ? e : `{{${this.numericTextExpression(e, part.expr)}}}`
+        if (this.isTemplateFragment(e, part.expr.kind)) result += e
+        // Each part prints as JS ToString does (`bf_to_string`) unless its
+        // plan proves it a string (#3824 step 4).
+        else result += needsToString(plans[i] ?? null) ? `{{bf_to_string ${wrapIfMultiToken(e)}}}` : `{{${e}}}`
       }
-    }
+    })
     return result
   }
 
@@ -5902,7 +5930,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   ): string | null {
     const { method, predicate, param } = expr
     const pe = (fn: string, extra: string[] = []) =>
-      emitPredicateEval(fn, arrayExpr, predicate, param, emit, propsObjectIdentifier(this.state.propsObjectName), extra)
+      emitPredicateEval(fn, arrayExpr, predicate, param, emit, propsObjectIdentifier(this.state.propsObjectName), extra, this.state.operandTyping.at(this.scope))
     switch (method) {
       case 'filter':
         // `.filter(Boolean)` (identity predicate `_t => _t`) keeps its
@@ -6086,7 +6114,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // method-call predicate the evaluator can't model.
     const evalForm = emitPredicateEval(
       'bf_filter_eval', arrayExpr, filterExpr.predicate, filterExpr.param, renderArray,
-      propsObjectIdentifier(this.state.propsObjectName),
+      propsObjectIdentifier(this.state.propsObjectName), [], this.state.operandTyping.at(this.scope),
     )
     if (evalForm !== null) return `len (${evalForm})`
 
@@ -7178,6 +7206,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       const scope = params ? this.scope.enterCallback(params) : this.scope
       return arithmeticOperandCoercion(op, operand, other, this.state.nullishAttrCtx, n => scope.isBound(n))
     },
+    rewriteNilReadings: (expr, params) =>
+      rewriteNilReadings(expr, this.state.operandTyping.at(params ? this.scope.enterCallback(params) : this.scope)),
     filterCaptureAlias: (name) => this.filterCaptureAliases.get(name),
     lookupDestructureBinding: (name) => this.lookupDestructureBinding(name),
     noteWrapperRowRead: (name, rendered) => this.noteWrapperRowRead(name, rendered),

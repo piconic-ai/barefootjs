@@ -120,10 +120,10 @@ export const renderDivergences: RenderDivergences = {
   // adapter (verified against a real render of both fixtures).
   'module-const-destructure-default': { limitation: 'module-const-destructure-default' },
   'module-const-default-hydrate': { limitation: 'module-const-destructure-default' },
-  // A `+` over an optional string row field (`id?: string`): an omitted
-  // field is the template's nil, not JS `undefined` (`undefined!` / `NaN`),
-  // and a present one is not known to be a string.
-  'omitted-optional-row-field-plus': { limitation: 'omitted-optional-row-field-plus' },
+  // A `+` or template literal over a nil Phase 1 cannot read as `undefined`
+  // (an `either` string, a dynamic `+`, an untyped part) keeps today's
+  // output until the runtime carries `undefined` (#3848).
+  'awaits-undefined-plus-shapes': { limitation: 'awaits-undefined-value' },
 }
 
 /**

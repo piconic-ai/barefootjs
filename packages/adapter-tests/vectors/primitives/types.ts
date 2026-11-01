@@ -26,6 +26,12 @@ export type Domain =
   | 'non-zero-number'
   // `number` over a literal's spelling: a safe integer, the native-safe literal.
   | 'safe-integer'
+  /**
+   * `plus` over two numbers whose sum passes 2^53: no `NativeSafeTable`
+   * claims it, so only the helper binding runs it (spec/js-primitive-semantics.md,
+   * "Decisions" (5)). Ruby, Python and PHP add integers exactly there.
+   */
+  | 'beyond-safe-integer'
   // Two operands (`strict_eq`, relational, `plus`).
   | 'number-pair'
   | 'string-pair'
@@ -50,6 +56,7 @@ export const DOMAINS: ReadonlySet<Domain> = new Set<Domain>([
   'object',
   'non-zero-number',
   'safe-integer',
+  'beyond-safe-integer',
   'number-pair',
   'string-pair',
   'boolean-pair',

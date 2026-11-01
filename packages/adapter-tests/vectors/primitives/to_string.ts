@@ -38,5 +38,7 @@ export const to_string: PrimitiveOp = {
     c([1, 2], 'an array joins with a comma'),
     c(['a', null, true], 'a nil element prints as the empty string'),
     c([[1, 2], [3]], 'nested arrays flatten through the join'),
+    c([1.5, -0, 1e21], 'array elements print with Number::toString'),
+    c({ a: 1 }, 'a plain object prints as [object Object]'),
   ],
 }

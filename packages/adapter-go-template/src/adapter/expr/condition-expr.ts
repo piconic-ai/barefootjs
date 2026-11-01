@@ -113,6 +113,13 @@ export interface ConditionExprHost {
    */
   operandCoercion(op: string, operand: ParsedExpr, other: ParsedExpr | undefined, params?: readonly string[]): ArithmeticCoercion
   /**
+   * `expr` with its own operands rewritten by their nil reading
+   * (`rewriteNilReadings`, #3824 step 4), typed at the current scope or,
+   * with `params`, at a predicate's scope. The walkers below run it at
+   * every node, as `emitParsedExpr` does.
+   */
+  rewriteNilReadings(expr: ParsedExpr, params?: readonly string[]): ParsedExpr
+  /**
    * The ToBoolean plan of `test` (#3824): typed at the current scope, or,
    * with `params`, at a predicate's scope with its own bindings entered.
    */
@@ -234,12 +241,13 @@ function renderFilterUnary(
 /** One node of {@link renderFilterExpr}; children recurse through it. */
 function renderFilterExprNode(
   host: ConditionExprHost,
-  expr: ParsedExpr,
+  original: ParsedExpr,
   param: string,
   localVarMap: Map<string, string>,
   datumField?: string,
   fieldlessParam = false,
 ): string | null {
+  const expr = host.rewriteNilReadings(original, [param, ...localVarMap.keys()])
   // #2228: `paramPrefix` prepends the wrapper's datum-carrying field to a
   // loop-param access (`.Todo` under a wrapper, `''` otherwise). Two derived
   // forms because Go template spells "the dot itself" as `.` but "field on
@@ -559,7 +567,8 @@ const plain = (e: string): ConditionParts => ({ preamble: '', expr: e })
  * Lower a parsed condition to a Go-template pipeline plus the preamble a
  * higher-order callback call hoists (`{{$bf_r0 := …}}`).
  */
-export function renderConditionExpr(host: ConditionExprHost, expr: ParsedExpr): { preamble: string; expr: string } {
+export function renderConditionExpr(host: ConditionExprHost, original: ParsedExpr): { preamble: string; expr: string } {
+  const expr = host.rewriteNilReadings(original)
   switch (expr.kind) {
     case 'identifier':
       return renderConditionIdentifier(host, expr)

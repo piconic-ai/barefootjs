@@ -19,6 +19,7 @@ import {
   freeVarsInBody,
   materializeGetterCalls,
   isNullishLiteral,
+  rewriteNilReadingsDeep,
   serializeParsedExpr,
   type CallbackCapture,
   propsObjectIdentifier,
@@ -154,7 +155,7 @@ export function matchFilterArmMemo(
   )
 
   const materialized = materializeGetterCalls(cb.arrow.body, knownGetterNames)
-  const evaluable = evalBody(materialized, new Set(cb.arrow.params), propsObjectIdentifier(ctx.state.propsObjectName))
+  const evaluable = evalBody(materialized, new Set(cb.arrow.params), propsObjectIdentifier(ctx.state.propsObjectName), ctx.operandTyping())
   if (evaluable === null) return null
 
   const paramName = cb.arrow.params[0] ?? '_'
@@ -243,6 +244,8 @@ export function computeMemoInitialValue(
     const typed = evaluated === null ? null : evaluatedAsGoType(evaluated, goType)
     if (typed !== null) return typed
   }
+  const nilRead = nilReadingMemoValue(ctx, memo, signals, propsParams, propFallbackVars, goType)
+  if (nilRead !== null) return nilRead
   const resolved = computeMemoInitialValueOrNull(
     ctx, memo, signals, propsParams, propFallbackVars, new Set([memo.name]),
   )
@@ -258,6 +261,25 @@ export function computeMemoInitialValue(
   if (goType === 'string') return '""'
   if (nillable) return 'nil'
   return '0'
+}
+
+/**
+ * A memo body with an operand whose nil Phase 1 reads (`props.s + '!'` over
+ * an omitted `s?: string`, #3824 step 4), computed by the evaluator, which
+ * runs the nil-reading rewrite; null for any other body, whose native shapes
+ * read no such operand. The native shapes would read the nil as Go's zero.
+ */
+function nilReadingMemoValue(
+  ctx: GoEmitContext,
+  memo: { name: string; parsed?: ParsedExpr },
+  signals: { getter: string; initialValue: JsSourceText; type?: TypeInfo; parsed?: ParsedExpr }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  goType: string | undefined,
+): string | null {
+  if (!memo.parsed || rewriteNilReadingsDeep(memo.parsed, ctx.operandTyping()) === memo.parsed) return null
+  const evaluated = evalExprGo(ctx, memo.parsed, signals, propsParams, propFallbackVars, new Set([memo.name]))
+  return evaluated === null ? null : evaluatedAsGoType(evaluated, goType)
 }
 
 /** String methods with a runtime helper of the same JS semantics. */
@@ -388,7 +410,9 @@ function evaluatorBodyGo(
   const knownGetterNames = new Set<string>(
     ctx.state.ssrSeedPlan.steps.filter(s => s.kind !== 'env-reader').map(s => s.name),
   )
-  const materialized = materializeGetterCalls(body, knownGetterNames)
+  // The evaluator reads every nil as `null`: a typed operand reads its own
+  // nil first (the nil-reading rewrite, #3824 step 4).
+  const materialized = materializeGetterCalls(rewriteNilReadingsDeep(body, ctx.operandTyping()), knownGetterNames)
   const json = serializeParsedExpr(materialized)
   if (json === null) return null
   const entries: string[] = []

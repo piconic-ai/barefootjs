@@ -97,7 +97,19 @@ class PrimitiveVectorsTest {
       Map.entry("lt", a -> pebbleCompare("<", a.get(0), a.get(1))),
       Map.entry("le", a -> pebbleCompare("<=", a.get(0), a.get(1))),
       Map.entry("gt", a -> pebbleCompare(">", a.get(0), a.get(1))),
-      Map.entry("ge", a -> pebbleCompare(">=", a.get(0), a.get(1))));
+      Map.entry("ge", a -> pebbleCompare(">=", a.get(0), a.get(1))),
+      // A proven string is its own ToString; a `+` is Pebble's own `+` over
+      // two numbers and `~` over a proven string, the other operand through
+      // `to_string` (#3824 step 4).
+      Map.entry("to_string", a -> a.get(0)),
+      Map.entry("plus", a -> {
+        Object l = a.get(0);
+        Object r = a.get(1);
+        if (l instanceof String || r instanceof String) {
+          return pebbleCompare("~", l instanceof String ? l : BF.to_string(l), r instanceof String ? r : BF.to_string(r));
+        }
+        return pebbleCompare("+", l, r);
+      }));
 
   /** Pebble's own comparison {@code a <op> b}, handed back through {@code capture}. */
   private static Object pebbleCompare(String op, Object a, Object b) {

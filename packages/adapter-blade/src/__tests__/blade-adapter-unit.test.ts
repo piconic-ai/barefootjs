@@ -426,7 +426,7 @@ function Widget() {
     // The loop body must reference the per-iteration loop var...
     expect(template).toContain('1 + $label')
     // ...never the outer const's hard-coded value.
-    expect(template).not.toContain("1 + 'x'")
+    expect(template).not.toContain("$bf->to_string(1) . 'x'")
   })
 
   test('a numeric const shadowed by a loop param emits the identifier too', () => {
@@ -469,7 +469,7 @@ function Widget({ values }: { values: number[] }) {
 `)
     // Outside the loop `label` is the string const: JS `1 + 'x'` is `"1x"`
     // (#3762). Inside, the numeric row shadows it.
-    expect(template).toContain("$bf->string(1) . 'x'")
+    expect(template).toContain("$bf->to_string(1) . 'x'")
     expect(template).toContain('2 + $label')
   })
 })
@@ -865,9 +865,9 @@ function Widget({ items, n, obj, k }: { items: string[]; n: number; obj: Record<
 
 // #3698: `.` spells a non-string operand with PHP's own conversion (the
 // float `-0.0` of `-4 % 2` as "-0"), so an operand the shared layer does
-// not type as a string goes through `$bf->string` first, in both orders.
+// not type as a string goes through `$bf->to_string` first, in both orders.
 describe('BladeAdapter - string concatenation operand (#3698)', () => {
-  test('a number operand of `+` concatenation goes through $bf->string, a string operand does not', () => {
+  test('a number operand of `+` concatenation goes through $bf->to_string, a string operand does not', () => {
     const { template } = compileAndGenerate(`
 function Widget({ n }: { n: number }) {
   return <p>
@@ -876,8 +876,8 @@ function Widget({ n }: { n: number }) {
   </p>
 }
 `)
-    expect(template).toContain("'r=' . $bf->string(($bf->mod($n, 2)))")
-    expect(template).toContain("$bf->string(($bf->mod($n, 2))) . '=r'")
-    expect(template).not.toContain("$bf->string('r=')")
+    expect(template).toContain("'r=' . $bf->to_string(($bf->mod($n, 2)))")
+    expect(template).toContain("$bf->to_string(($bf->mod($n, 2))) . '=r'")
+    expect(template).not.toContain("$bf->to_string('r=')")
   })
 })

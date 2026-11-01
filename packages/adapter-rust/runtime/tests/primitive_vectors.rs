@@ -83,6 +83,24 @@ fn call_native_binding(fn_name: &str, a: &[JsValue]) -> Option<JsValue> {
             let ctx = minijinja::context! { a => runtime::js_to_mj(&a[0]), b => runtime::js_to_mj(&a[1]) };
             runtime::mj_to_js(&expr.eval(ctx).expect("evaluate the native comparison"))
         }
+        // A proven string is its own ToString; a `+` is MiniJinja's own `+`
+        // over two numbers and `~` over a proven string, the other operand
+        // through `to_string` (#3824 step 4).
+        "to_string" => a[0].clone(),
+        "plus" => {
+            let env = minijinja::Environment::new();
+            let is_str = |v: &JsValue| matches!(v, JsValue::String(_));
+            if is_str(&a[0]) || is_str(&a[1]) {
+                let str_of = |v: &JsValue| if is_str(v) { v.clone() } else { JsValue::String(runtime::js_to_string(v)) };
+                let expr = env.compile_expression("a ~ b").expect("compile the native concatenation");
+                let ctx = minijinja::context! { a => runtime::js_to_mj(&str_of(&a[0])), b => runtime::js_to_mj(&str_of(&a[1])) };
+                runtime::mj_to_js(&expr.eval(ctx).expect("evaluate the native concatenation"))
+            } else {
+                let expr = env.compile_expression("a + b").expect("compile the native addition");
+                let ctx = minijinja::context! { a => runtime::js_to_mj(&a[0]), b => runtime::js_to_mj(&a[1]) };
+                runtime::mj_to_js(&expr.eval(ctx).expect("evaluate the native addition"))
+            }
+        }
         _ => return None,
     })
 }

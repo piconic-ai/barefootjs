@@ -445,7 +445,7 @@ function sortedLoopArray(host: LoopRenderHost, sortComparator: NonNullable<IRLoo
   const body = cmpArrow.kind === 'arrow' ? cmpArrow.body : cmpArrow
   const params = cmpArrow.kind === 'arrow' ? cmpArrow.params : []
   const sorted =
-    emitSortEval(goArray, body, params, sortEmit, propsObjectIdentifier(host.ctx.state.propsObjectName)) ??
+    emitSortEval(goArray, body, params, sortEmit, propsObjectIdentifier(host.ctx.state.propsObjectName), host.ctx.operandTyping()) ??
     emitBfSort(goArray, sortComparatorFromArrow(cmpArrow)!)
   return `(${sorted})`
 }

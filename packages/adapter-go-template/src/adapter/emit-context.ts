@@ -14,7 +14,7 @@
  * genuinely needs it, so the seam documents the real cross-module coupling.
  */
 
-import type { ParsedExpr, TypeInfo, JsSourceText } from '@barefootjs/jsx'
+import type { ParsedExpr, TypeInfo, JsSourceText, ScopedOperandTyping } from '@barefootjs/jsx'
 
 import type { CompileState } from './lib/compile-state.ts'
 import type { PropFallbackVar } from './lib/types.ts'
@@ -22,6 +22,9 @@ import type { PropFallbackVar } from './lib/types.ts'
 export interface GoEmitContext {
   /** Per-compile mutable state (signals, consts, type tables, errors, …). */
   readonly state: CompileState
+
+  /** The component's operand typing at the current emission scope (#3824). */
+  operandTyping(): ScopedOperandTyping
 
   /**
    * Lower a JS expression to its Go-template form (the core recursive entry).
