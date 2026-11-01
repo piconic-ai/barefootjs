@@ -5454,6 +5454,29 @@
         "text"
       ]
     },
+    "filter-predicate-block-shadowed-prop": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "unary"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "logical:||",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "filter-predicate-modulo": {
       "kinds": [
         "array-literal",

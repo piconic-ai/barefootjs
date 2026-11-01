@@ -52,6 +52,7 @@ import { CLIENT_BUILTIN_SOURCE, isClientBuiltinName, type ClientBuiltinTag } fro
 import { containsReactiveExpression, collectReactiveBrandLeaves } from './reactivity-checker.ts'
 import {
   rewriteBarePropRefs as rewriteBarePropRefsCore,
+  rewriteBarePropRefsStructural as rewriteBarePropRefsStructuralCore,
   collectAstPropRefs,
   rewriteScopedValueRefs,
 } from './prop-rewrite.ts'
@@ -624,6 +625,24 @@ function lowerToLocaleDateCalls(text: string, expr: ts.Node, ctx: TransformConte
  * Returns undefined if no rewriting is needed (SolidJS-style or no props).
  */
 function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext): string | undefined {
+  return rewriteBarePropRefsVia(text, expr, ctx, rewriteBarePropRefsCore) ?? undefined
+}
+
+/**
+ * `rewriteBarePropRefs` with no regex fallback (#3845): `null` when `text`
+ * does not parse as an expression, for a caller that refuses the shape
+ * rather than emit a scope-blind splice.
+ */
+function rewriteBarePropRefsStructural(text: string, expr: ts.Node, ctx: TransformContext): string | undefined | null {
+  return rewriteBarePropRefsVia(text, expr, ctx, rewriteBarePropRefsStructuralCore)
+}
+
+function rewriteBarePropRefsVia(
+  text: string,
+  expr: ts.Node,
+  ctx: TransformContext,
+  core: typeof rewriteBarePropRefsStructuralCore,
+): string | undefined | null {
   // #2292: lower a Date-typed prop's catalogued accessor call BEFORE the
   // bare-prop-name rewrite below, so the receiver identifier still picks
   // up the usual `_p.` prefix (destructured mode) or falls through to the
@@ -676,7 +695,7 @@ function rewriteBarePropRefs(text: string, expr: ts.Node, ctx: TransformContext)
         return info ? livePropReadExpr(info, undefined, false) : `${PROPS_PARAM}.${callerKey}`
       }
     : undefined
-  return rewriteBarePropRefsCore(dateLowered, expr, propNames, extraPropRefs, propAliases ?? undefined, replacementFor)
+  return core(dateLowered, expr, propNames, extraPropRefs, propAliases ?? undefined, replacementFor)
 }
 
 /**
@@ -4086,7 +4105,7 @@ function extractFilterPredicate(
     }
     const unbound = unboundFilterParamReason(callback, predicate, ctx)
     if (unbound) return { result: null, unsupportedReason: unbound }
-    return { result: withTemplatePredicate({ param, predicate, raw }, callback, ctx) }
+    return withTemplatePredicate({ param, predicate, raw }, callback, ctx)
   }
 
   // Expression body: filter(t => !t.done)
@@ -4101,7 +4120,7 @@ function extractFilterPredicate(
   const unbound = unboundFilterParamReason(callback, predicate, ctx)
   if (unbound) return { result: null, unsupportedReason: unbound }
 
-  return { result: withTemplatePredicate({ param, predicate, raw }, callback, ctx) }
+  return withTemplatePredicate({ param, predicate, raw }, callback, ctx)
 }
 
 /**
@@ -4110,22 +4129,44 @@ function extractFilterPredicate(
  * `templateArray` gets. The predicate's own parameters are bound for the
  * rewrite, so `filter((one) => one)` keeps its parameter even when a prop is
  * named `one`.
+ *
+ * The rewrite is structural only. A block body is rewritten as the body of
+ * an arrow (`() => { … }`), so its `let` / `const` shadow a prop for their
+ * block and a `var` for the whole body (`walkWithScope`). The regex fallback
+ * is never used: it cannot see an inner binding and would turn
+ * `const one = 'a'` into `const _p.one = 'a'`. A text that does not parse is
+ * refused as off-subset, like any other predicate the compiler cannot
+ * model.
  */
 function withTemplatePredicate(
   result: FilterPredicateResult,
   callback: ts.ArrowFunction,
   ctx: TransformContext,
-): FilterPredicateResult {
+): FilterExtractionResult {
   const savedScope = ctx.scope
   const params = new Set<string>()
   for (const p of callback.parameters) collectBindingNames(p.name, params)
   ctx.scope = savedScope.enterCallback([...params])
   try {
-    const templateRaw = rewriteBarePropRefs(result.raw, callback.body, ctx)
-    return templateRaw === undefined ? result : { ...result, templateRaw }
+    const templateRaw = rewritePredicateBody(result.raw, callback.body, ctx)
+    if (templateRaw === null) {
+      return { result: null, unsupportedReason: 'Filter predicate cannot be rewritten for the client template' }
+    }
+    return { result: templateRaw === undefined ? result : { ...result, templateRaw } }
   } finally {
     ctx.scope = savedScope
   }
+}
+
+/** Arrow head a block-bodied predicate is parsed under, so its body is a function body. */
+const BLOCK_PREDICATE_HEAD = '() => '
+
+/** The structural prop rewrite of a predicate body: `null` when it cannot be done. */
+function rewritePredicateBody(raw: string, body: ts.ConciseBody, ctx: TransformContext): string | undefined | null {
+  if (!ts.isBlock(body)) return rewriteBarePropRefsStructural(raw, body, ctx)
+  const rewritten = rewriteBarePropRefsStructural(`${BLOCK_PREDICATE_HEAD}${raw}`, body, ctx)
+  if (rewritten === undefined || rewritten === null) return rewritten
+  return rewritten.startsWith(BLOCK_PREDICATE_HEAD) ? rewritten.slice(BLOCK_PREDICATE_HEAD.length) : null
 }
 
 /**

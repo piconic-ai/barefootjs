@@ -5461,6 +5461,48 @@
       }
     }
   ],
+  "filter-predicate-block-shadowed-prop": [
+    {
+      "name": "gen:keys:empty",
+      "props": {
+        "keys": [],
+        "one": "b"
+      }
+    },
+    {
+      "name": "gen:one:empty",
+      "props": {
+        "keys": [
+          "a",
+          "b",
+          "c"
+        ],
+        "one": ""
+      }
+    },
+    {
+      "name": "gen:one:markup",
+      "props": {
+        "keys": [
+          "a",
+          "b",
+          "c"
+        ],
+        "one": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:one:multibyte",
+      "props": {
+        "keys": [
+          "a",
+          "b",
+          "c"
+        ],
+        "one": "日本語"
+      }
+    }
+  ],
   "filter-predicate-on-prefixed-prop": [
     {
       "name": "gen:keys:empty",
@@ -12079,6 +12121,63 @@
       }
     }
   ],
+  "props-object-spread-child-hydration-props": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "tone": "info",
+        "__instanceId": "PropsObjectSpreadChildHydrationProps_test"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "tone": "info",
+        "__instanceId": "PropsObjectSpreadChildHydrationProps_test"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "tone": "info",
+        "__instanceId": "PropsObjectSpreadChildHydrationProps_test"
+      }
+    },
+    {
+      "name": "gen:tone:absent",
+      "props": {
+        "label": "x",
+        "__instanceId": "PropsObjectSpreadChildHydrationProps_test"
+      }
+    },
+    {
+      "name": "gen:tone:empty",
+      "props": {
+        "label": "x",
+        "tone": "",
+        "__instanceId": "PropsObjectSpreadChildHydrationProps_test"
+      }
+    },
+    {
+      "name": "gen:tone:markup",
+      "props": {
+        "label": "x",
+        "tone": "<b>&\"'</b>",
+        "__instanceId": "PropsObjectSpreadChildHydrationProps_test"
+      }
+    },
+    {
+      "name": "gen:tone:multibyte",
+      "props": {
+        "label": "x",
+        "tone": "日本語",
+        "__instanceId": "PropsObjectSpreadChildHydrationProps_test"
+      }
+    }
+  ],
   "props-reactive": [
     {
       "name": "gen:label:empty",
@@ -13047,13 +13146,14 @@
       }
     }
   ],
-  "rest-spread-root-hydration-props": [
+  "rest-spread-child-override-hydration-props": [
     {
       "name": "gen:label:empty",
       "props": {
         "label": "",
         "tone": "info",
-        "size": 2
+        "size": 2,
+        "__instanceId": "RestSpreadChildOverrideHydrationProps_test"
       }
     },
     {
@@ -13061,7 +13161,8 @@
       "props": {
         "label": "<b>&\"'</b>",
         "tone": "info",
-        "size": 2
+        "size": 2,
+        "__instanceId": "RestSpreadChildOverrideHydrationProps_test"
       }
     },
     {
@@ -13069,7 +13170,37 @@
       "props": {
         "label": "日本語",
         "tone": "info",
-        "size": 2
+        "size": 2,
+        "__instanceId": "RestSpreadChildOverrideHydrationProps_test"
+      }
+    }
+  ],
+  "rest-spread-root-hydration-props": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "tone": "info",
+        "size": 2,
+        "__instanceId": "RestSpreadRootHydrationProps_test"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "tone": "info",
+        "size": 2,
+        "__instanceId": "RestSpreadRootHydrationProps_test"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "tone": "info",
+        "size": 2,
+        "__instanceId": "RestSpreadRootHydrationProps_test"
       }
     }
   ],

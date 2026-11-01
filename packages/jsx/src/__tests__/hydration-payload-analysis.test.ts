@@ -35,6 +35,13 @@ function templateLine(js: string): string {
   return line!
 }
 
+/** Everything the client registers for `C`, including a multi-line template. */
+function templateSource(js: string): string {
+  const start = js.indexOf("hydrate('C'")
+  expect(start).toBeGreaterThanOrEqual(0)
+  return js.slice(start)
+}
+
 describe('filter predicate in the client template (#3845)', () => {
   test('a destructured prop read in the predicate becomes `_p.<key>`', () => {
     const { js } = compile(`
@@ -72,6 +79,44 @@ describe('filter predicate in the client template (#3845)', () => {
     const line = templateLine(js)
     expect(line).toContain('.filter(k => k === one)')
     expect(line).not.toContain('k === _p.one')
+  })
+
+  test('a block body rewrites the outer read and keeps an inner `const` of the same name', () => {
+    const { js } = compile(`
+      'use client'
+      export function C({ keys, one }: { keys: string[]; one: string }) {
+        return <ul>{keys.filter(k => {
+          const v = one
+          if (k === 'a') {
+            const one = 'a'
+            return k === one
+          }
+          return k === v
+        }).map(k => <li key={k}>{k}</li>)}</ul>
+      }
+    `)
+    const tpl = templateSource(js)
+    expect(tpl).toContain('const v = _p.one')
+    expect(tpl).toContain("const one = 'a'")
+    expect(tpl).toContain('return k === one')
+    expect(tpl).not.toContain('const _p.one')
+  })
+
+  test('a block body keeps a nested-block `var` hoisted over the whole body', () => {
+    const { js } = compile(`
+      'use client'
+      export function C({ keys, one }: { keys: string[]; one: string }) {
+        return <ul>{keys.filter(k => {
+          if (k === 'a') {
+            var one = 'a'
+          }
+          return k === one
+        }).map(k => <li key={k}>{k}</li>)}</ul>
+      }
+    `)
+    const tpl = templateSource(js)
+    expect(tpl).toContain('return k === one')
+    expect(tpl).not.toContain('_p.one')
   })
 })
 

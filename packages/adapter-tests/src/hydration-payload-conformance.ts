@@ -8,7 +8,8 @@
  * (`hydration-props-conformance.ts`, still an inventory tool). Until that
  * is wired in, this suite pins the payload for a short list of fixtures
  * whose client code reads every prop the caller passes, so the root
- * component's decoded `bf-p` must equal the fixture's `props`: keys reached
+ * component's decoded `bf-p` must equal the fixture's `props` (less the
+ * `__` plumbing keys): keys reached
  * only through a `{...rest}` / `{...props}` spread, and props read only in
  * a `.filter()` predicate.
  *
@@ -34,6 +35,7 @@ export const FULL_HYDRATION_PAYLOAD_FIXTURES: ReadonlySet<string> = new Set([
   'rest-spread-child-override-hydration-props',
   'filter-predicate-on-prefixed-prop',
   'filter-predicate-renamed-destructured-prop',
+  'filter-predicate-block-shadowed-prop',
 ])
 
 export interface RunHydrationPayloadConformanceOptions {
@@ -65,8 +67,17 @@ export function runHydrationPayloadConformance(opts: RunHydrationPayloadConforma
         }
         const [root] = extractBfPOccurrences(html)
         expect(root?.parseError).toBeUndefined()
-        expect(root?.value).toEqual(fixture.props)
+        expect(root?.value).toEqual(callerProps(fixture.props))
       })
     }
   })
+}
+
+/**
+ * The fixture's props without the `__`-prefixed plumbing keys (a shared
+ * fixture's `__instanceId`), which the renderer never serializes.
+ */
+function callerProps(props: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
+  if (props === undefined) return undefined
+  return Object.fromEntries(Object.entries(props).filter(([key]) => !key.startsWith('__')))
 }
