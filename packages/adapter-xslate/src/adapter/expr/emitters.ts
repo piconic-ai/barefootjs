@@ -380,6 +380,16 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     return toNumber(plan, arg)
   }
 
+  /**
+   * The operands of a strict equality, each read as a value: a boolean an
+   * operand yields (a literal, a comparison, `!`) is materialized as a JSON
+   * boolean, which `strict_eq` tells from the number `1` / `0` Kolon holds it
+   * as otherwise (#3824 step 8).
+   */
+  private strictEqOperands(left: ParsedExpr, right: ParsedExpr): [string, string] {
+    return [groupBinaryOperand(left, emitParsedValue(left, this)), groupBinaryOperand(right, emitParsedValue(right, this))]
+  }
+
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
@@ -388,7 +398,7 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     const r = groupBinaryOperand(right, emit(right))
     if (op === '+') return spellPerlPlus(plan, left, right, l, r, emit, () => false, (e) => emitParsedValue(e, this))
     // `===` / `!==` spell their plan (#3824 step 8).
-    const equality = spellKolonStrictEq(strictEqSpelling(op, left, right, plan), l, r)
+    const equality = spellKolonStrictEq(strictEqSpelling(op, left, right, plan), ...this.strictEqOperands(left, right))
     if (equality !== null) return equality
     // `/` and `%` go through the runtime's JS division and remainder
     // (#3474, #3574).
@@ -713,6 +723,16 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     return coercion === 'undefined' ? `$bf.number(${operand})` : operand
   }
 
+  /**
+   * The operands of a strict equality, each read as a value: a boolean an
+   * operand yields (a literal, a comparison, `!`) is materialized as a JSON
+   * boolean, which `strict_eq` tells from the number `1` / `0` Kolon holds it
+   * as otherwise (#3824 step 8).
+   */
+  private strictEqOperands(left: ParsedExpr, right: ParsedExpr): [string, string] {
+    return [groupBinaryOperand(left, emitParsedValue(left, this)), groupBinaryOperand(right, emitParsedValue(right, this))]
+  }
+
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
@@ -721,7 +741,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     const r = this.coerceUndefinedOperand(op, right, left, groupBinaryOperand(right, emit(right)))
     if (op === '+') return spellPerlPlus(plan, left, right, l, r, emit, this.isBooleanName, (e) => emitParsedValue(e, this))
     // `===` / `!==` spell their plan (#3824 step 8).
-    const equality = spellKolonStrictEq(strictEqSpelling(op, left, right, plan), l, r)
+    const equality = spellKolonStrictEq(strictEqSpelling(op, left, right, plan), ...this.strictEqOperands(left, right))
     if (equality !== null) return equality
     // `/` and `%` go through the runtime's JS division and remainder
     // (#3474, #3574).

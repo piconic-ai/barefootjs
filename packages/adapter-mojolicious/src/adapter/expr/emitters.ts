@@ -433,6 +433,16 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     return toNumber(plan, arg)
   }
 
+  /**
+   * The operands of a strict equality, each read as a value: a boolean an
+   * operand yields (a literal, a comparison, `!`) is materialized as a JSON
+   * boolean, which `strict_eq` tells from the number `1` / `0` Perl holds it
+   * as otherwise (#3824 step 8).
+   */
+  private strictEqOperands(left: ParsedExpr, right: ParsedExpr): [string, string] {
+    return [groupBinaryOperand(left, emitParsedValue(left, this)), groupBinaryOperand(right, emitParsedValue(right, this))]
+  }
+
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const nullishEquality = emitNullishEquality(op, left, right, emit)
     if (nullishEquality !== null) return nullishEquality
@@ -441,7 +451,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
     const l = groupBinaryOperand(left, emit(left))
     const r = groupBinaryOperand(right, emit(right))
-    const strict = spellPerlStrictEq(strictEqSpelling(op, left, right, plan), l, r)
+    const strict = spellPerlStrictEq(strictEqSpelling(op, left, right, plan), ...this.strictEqOperands(left, right))
     if (strict !== null) return strict
     const equality = emitPerlEquality(op, left, right, l, r, { isStringName: this.isStringName, isNumberName: this.isNumberName })
     if (equality !== null) return equality
@@ -814,6 +824,16 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     return coercion === 'undefined' ? `bf->number(${operand})` : operand
   }
 
+  /**
+   * The operands of a strict equality, each read as a value: a boolean an
+   * operand yields (a literal, a comparison, `!`) is materialized as a JSON
+   * boolean, which `strict_eq` tells from the number `1` / `0` Perl holds it
+   * as otherwise (#3824 step 8).
+   */
+  private strictEqOperands(left: ParsedExpr, right: ParsedExpr): [string, string] {
+    return [groupBinaryOperand(left, emitParsedValue(left, this)), groupBinaryOperand(right, emitParsedValue(right, this))]
+  }
+
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const nullishEquality = emitNullishEquality(op, left, right, emit)
     if (nullishEquality !== null) return nullishEquality
@@ -822,7 +842,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
     const l = this.coerceUndefinedOperand(op, left, right, groupBinaryOperand(left, emit(left)))
     const r = this.coerceUndefinedOperand(op, right, left, groupBinaryOperand(right, emit(right)))
-    const strict = spellPerlStrictEq(strictEqSpelling(op, left, right, plan), l, r)
+    const strict = spellPerlStrictEq(strictEqSpelling(op, left, right, plan), ...this.strictEqOperands(left, right))
     if (strict !== null) return strict
     const equality = emitPerlEquality(op, left, right, l, r, {
       isStringName: (n: string, property?: boolean, path?: readonly string[]) => this.ctx._isStringValueName(n, property, path),

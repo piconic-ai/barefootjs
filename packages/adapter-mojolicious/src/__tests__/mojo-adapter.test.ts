@@ -704,7 +704,7 @@ export function List() {
     expect(result.template).toMatch(/bf->comment\("\/loop:[^"]+"\)/)
   })
 
-  test('compares string signals with Perl `eq`, not numeric `==` (#1672)', () => {
+  test('compares a string signal with an untyped row field through strict_eq, not numeric `==` (#1672, #3824 step 8)', () => {
     // `sel() === t.id` where `sel` is a string signal must lower to `eq`.
     // Perl numeric `==` coerces non-numeric strings to 0, so `"b" == "a"` is
     // true and every loop item would render its true branch.
@@ -718,11 +718,13 @@ export function LoopItemConditional() {
   return <ul>{items().map(t => sel() === t.id && <li key={t.id}>{t.id}</li>)}</ul>
 }
 `)
-    expect(result.template).toContain('$sel eq $t->{id}')
+    // The row field is untyped (a literal-seeded signal), so the plan names
+    // the runtime's JS `===`.
+    expect(result.template).toContain('bf->strict_eq($sel, $t->{id})')
     expect(result.template).not.toContain('$sel == $t->{id}')
   })
 
-  test('compares number signals with Perl `==` (#1672)', () => {
+  test('compares a number signal with an untyped row field through strict_eq (#1672, #3824 step 8)', () => {
     // A numeric signal comparison must stay `==`, not flip to `eq`.
     const result = compileAndGenerate(`
 "use client"
@@ -734,7 +736,7 @@ export function L() {
   return <ul>{items().map(t => sel() === t.n && <li key={t.n}>{t.n}</li>)}</ul>
 }
 `)
-    expect(result.template).toContain('$sel == $t->{n}')
+    expect(result.template).toContain('bf->strict_eq($sel, $t->{n})')
     expect(result.template).not.toContain('$sel eq $t->{n}')
   })
 
@@ -759,10 +761,11 @@ export function L({ a, b }: { a: string | number; b: string | number }) {
     expect(result.template).toContain('bf->strict_eq(bf->at($items, 0), bf->at($items, 1))')
     expect(result.template).toContain('!bf->strict_eq($a, $b)')
     expect(result.template).not.toContain('bf->at($items, 0) == bf->at($items, 1)')
-    expect(result.template).not.toContain('strict_eq(bf->length')
+    // `.length` of an untyped signal is not a proven number (#3824 step 8).
+    expect(result.template).toContain('bf->strict_eq(bf->length($items), 2)')
   })
 
-  test('compares a filter predicate against a renamed body-destructured prop with Perl `ne`, not numeric `!=` (#2883)', () => {
+  test('compares a filter predicate against a renamed body-destructured prop through strict_eq, not numeric `!=` (#2883, #3824 step 8)', () => {
     // `MojoFilterEmitter.identifier()` correctly resolves `skipLabel` to
     // `$skipLabel` (Mojo seeds/derives that stash key for the #2788 alias
     // family, same as the top-level splice path) — the actual bug was
@@ -792,7 +795,9 @@ export function FilterPredicateRenamedProp(props: { fallbackLabel: string }) {
   )
 }
 `)
-    expect(result.template).toContain('$t->{label} ne $skipLabel')
+    // A filter predicate's param proves nothing, so the plan names the
+    // runtime's JS `===`.
+    expect(result.template).toContain('!bf->strict_eq($t->{label}, $skipLabel)')
     expect(result.template).not.toContain('$t->{label} != $skipLabel')
   })
 
