@@ -32,8 +32,18 @@
         1
       ],
       "expect": 9007199254740992,
-      "domain": "number-pair",
+      "domain": "beyond-safe-integer",
       "note": "past 2**53 the sum rounds as a double"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        9007199254740992,
+        2
+      ],
+      "expect": 9007199254740994,
+      "domain": "beyond-safe-integer",
+      "note": "past 2**53 an even sum is exact"
     },
     {
       "fn": "plus",
@@ -253,6 +263,30 @@
       "expect": "x",
       "domain": "object",
       "note": "an empty array prints as the empty string"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        [
+          1
+        ],
+        1
+      ],
+      "expect": "11",
+      "domain": "object",
+      "note": "an array against a number concatenates"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        {
+          "a": 1
+        },
+        ""
+      ],
+      "expect": "[object Object]",
+      "domain": "object",
+      "note": "a plain object prints as [object Object]"
     }
   ]
 }

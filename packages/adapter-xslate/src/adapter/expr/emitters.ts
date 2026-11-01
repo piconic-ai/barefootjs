@@ -17,7 +17,6 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   emitParsedValue,
   literalMemberIndex,
   groupObjectLiteralSegments,
-  isStringConcatBinary,
   type ParsedExprEmitter,
   type PrimitivePlan,
   type PrimitiveInputs,
@@ -56,6 +55,8 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   relationalHelper,
   isNativeToNumber,
   numberLiteralSpelling,
+  plusSpelling,
+  needsToString,
 } from '@barefootjs/jsx'
 
 import type { XslateEmitContext } from '../emit-context.ts'
@@ -87,7 +88,13 @@ export const NATIVE_SAFE: NativeSafeTable = {
   // takes `to_number` (#3824 step 3). Binary `-` / `*` take `subtract` /
   // `multiply` whatever the operands.
   'to-number': ['number'],
+  // A proven string `+` is the host's concatenation (the other operand
+  // through `to_string`); two proven numbers take `add`, anything else the
+  // runtime's JS `+` (`plus`; #3824 step 4).
   plus: ['string'],
+  // A template-literal part or concatenation operand is itself only when it
+  // is a proven string; anything else takes `to_string` (#3824 step 4).
+  'to-string': ['string'],
   'strict-eq': ['number-pair', 'string-pair', 'boolean-pair', 'unproven'],
   // Native only over two proven numbers; any other pair takes the runtime's
   // JS Abstract Relational Comparison (`lt` / `le` / `gt` / `ge`; #3824
@@ -190,6 +197,41 @@ function kolonVar(name: string, onRead: ((name: string) => void) | undefined): s
  * (#2038) instead of silently degrading to the callback's receiver.
  */
 /**
+ * Spell a `+` plan (#3824 step 4) over grouped operands. Perl has no infix
+ * JS `+`: two proven numbers take the runtime's IEEE `add`, a proven string
+ * operand the host's `~` with the other operand through the runtime's JS
+ * `String()` (`to_string`; a comparison through `bool_str`, as Perl holds a
+ * boolean as `1` / `''`), and anything else the runtime's JS `+` (`plus`),
+ * with a comparison operand materialized as a JSON boolean first.
+ */
+function spellPerlPlus(
+  plan: PrimitivePlan | null,
+  left: ParsedExpr,
+  right: ParsedExpr,
+  l: string,
+  r: string,
+  emit: (e: ParsedExpr) => string,
+  isBooleanName: (name: string, componentProperty?: boolean) => boolean,
+  value: (e: ParsedExpr) => string,
+): string {
+  const spelled = plusSpelling(plan)
+  if (spelled.kind === 'add') return `$bf.add(${l}, ${r})`
+  // Each boolean the operand can yield (a comparison, a ternary branch, an
+  // `&&` / `||` operand) is materialized as a JSON boolean, so `plus` sees
+  // `false`, not Perl's `''` / `0` (`(n > 0 && 2) + x` is `'falsex'`).
+  if (spelled.kind === 'plus') return `$bf.plus(${groupBinaryOperand(left, value(left))}, ${groupBinaryOperand(right, value(right))})`
+  const term = (e: ParsedExpr, t: string, stringify: boolean): string => {
+    if (!stringify) return t
+    if (isBooleanResultParsed(e, isBooleanName)) return `$bf.bool_str(${t})`
+    // A comparison an operand returns (`'v=' + (n > 0 && 'y')`) prints as JS
+    // does, through the rewrite `stringifyBooleanBranches` makes.
+    const rewritten = stringifyBooleanBranches(e)
+    return `$bf.to_string(${rewritten === e ? t : groupBinaryOperand(rewritten, emit(rewritten))})`
+  }
+  return `${term(left, l, spelled.stringify[0])} ~ ${term(right, r, spelled.stringify[1])}`
+}
+
+/**
  * `x.length` through `$bf.length`. An optional-chained `x?.length` yields
  * `nil` — JS's `undefined` — for an absent receiver instead of
  * `$bf.length`'s `0`, so a bare read renders empty and a `//` fallback
@@ -210,6 +252,11 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
   get primitives(): PrimitiveInputs {
     return primitivesAt(this.operandTyping, this.operandScope, NATIVE_SAFE)
   }
+  /** A boolean whose value leaves the expression, as a JSON boolean (#3824 step 5). */
+  booleanValue(rendered: string): string {
+    return `$bf.boolean(${rendered})`
+  }
+
 
   /** Type this predicate's operands with the component's `typing` at the predicate's `scope`. */
   typedBy(typing: OperandTyping, scope: BindingScope): this {
@@ -332,12 +379,7 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
     const l = groupBinaryOperand(left, emit(left))
     const r = groupBinaryOperand(right, emit(right))
-    // JS `+` with a string-typed operand is CONCATENATION, not addition —
-    // Kolon's `+` is numeric-only and coerces `'Hello, ' + $name` to 0
-    // (#2176). Lower to Kolon's `~` concat operator.
-    if (isStringConcatBinary(op, left, right, this.isStringName)) {
-      return `${l} ~ ${r}`
-    }
+    if (op === '+') return spellPerlPlus(plan, left, right, l, r, emit, () => false, (e) => emitParsedValue(e, this))
     // Kolon's `==` / `!=` are value-equality operators that compare strings
     // and numbers correctly — unlike Perl's numeric `==` (which the Mojo
     // adapter must steer around with `eq`/`ne`). Kolon has no `eq`/`ne`
@@ -671,21 +713,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
     const l = this.coerceUndefinedOperand(op, left, right, groupBinaryOperand(left, emit(left)))
     const r = this.coerceUndefinedOperand(op, right, left, groupBinaryOperand(right, emit(right)))
-    // JS `+` with a string-typed operand is CONCATENATION, not addition —
-    // Kolon's `+` is numeric-only and coerces `'Hello, ' + $name` to 0
-    // (#2176). Lower to Kolon's `~` concat operator. The adapter's
-    // string-value registry catches getter/prop operands with no literal
-    // present (`firstName() + lastName()`).
-    if (isStringConcatBinary(op, left, right, (n, property, path) => this.ctx._isStringValueName(n, property, path))) {
-      // A number or boolean operand is stringified as JS does, not as Perl's `~` does (#3711, #3783).
-      // A comparison an operand returns (`'v=' + (n > 0 && 'y')`) prints as
-      // JS does, through the rewrite `stringifyBooleanBranches` makes.
-      const ls = stringifyBooleanBranches(left)
-      const rs = stringifyBooleanBranches(right)
-      const lText = ls === left ? l : groupBinaryOperand(ls, emit(ls))
-      const rText = rs === right ? r : groupBinaryOperand(rs, emit(rs))
-      return `${this.concatTerm(ls, lText)} ~ ${this.concatTerm(rs, rText)}`
-    }
+    if (op === '+') return spellPerlPlus(plan, left, right, l, r, emit, this.isBooleanName, (e) => emitParsedValue(e, this))
     // Kolon's `==` / `!=` are value-equality operators handling both strings
     // and numbers (unlike Perl's numeric `==`, which the Mojo adapter must
     // route around with `eq`/`ne`). Kolon has no `eq`/`ne` operator, so all
@@ -812,11 +840,11 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     return `(${truthyTest(plan, emit(test))} ? ${emit(consequent)} : ${emit(alternate)})`
   }
 
-  templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string {
+  templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string, plans: readonly (PrimitivePlan | null)[]): string {
     // `` `n=${count() + 1}` `` → Kolon string concatenation (`~`):
     // `'n=' ~ ($count + 1)`. Kolon's `~` is the explicit concat operator.
     const terms: string[] = []
-    for (const part of parts) {
+    parts.forEach((part, i) => {
       if (part.type === 'string') {
         if (part.value !== '') {
           terms.push(`'${part.value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`)
@@ -826,10 +854,10 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
         // (`stringifyTerm`), so a boolean renders `true` / `false` rather
         // than Perl's `1` / `0` and a number keeps JS formatting (#3440).
         // A string literal is already its own text.
-        const isStringLiteral = part.expr.kind === 'literal' && part.expr.literalType === 'string'
-        terms.push(isStringLiteral ? emit(part.expr) : stringifyTerm(part.expr, emit, this.isBooleanName))
+        // A proven string (#3824 step 4) is already its own text.
+        terms.push(needsToString(plans[i] ?? null) ? toStringTerm(part.expr, emit, this.isBooleanName) : groupBinaryOperand(part.expr, emit(part.expr)))
       }
-    }
+    })
     if (terms.length === 0) return `''`
     return terms.join(' ~ ')
   }
@@ -893,6 +921,20 @@ function stringifyTerm(
   isBooleanName: (name: string, componentProperty?: boolean) => boolean,
 ): string {
   return isBooleanResultParsed(expr, isBooleanName) ? `$bf.bool_str(${emit(expr)})` : `$bf.string(${emit(stringifyBooleanBranches(expr))})`
+}
+
+/**
+ * A template-literal part as JS ToString spells it (#3824 step 4): a boolean
+ * through `bool_str` (Perl holds it as `1` / `''`), anything else through
+ * the runtime's `to_string`, after `stringifyBooleanBranches` rewrites a
+ * comparison a branch yields.
+ */
+function toStringTerm(
+  expr: ParsedExpr,
+  emit: (e: ParsedExpr) => string,
+  isBooleanName: (name: string, componentProperty?: boolean) => boolean,
+): string {
+  return isBooleanResultParsed(expr, isBooleanName) ? `$bf.bool_str(${emit(expr)})` : `$bf.to_string(${emit(stringifyBooleanBranches(expr))})`
 }
 
 /**

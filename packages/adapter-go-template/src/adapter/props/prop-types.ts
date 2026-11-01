@@ -9,10 +9,13 @@ import type { ComponentIR, IRMetadata, ParsedExpr } from '@barefootjs/jsx'
 import {
   BindingScope,
   arithmeticOperandCoercion,
+  collectOperandTyping,
+  rewriteNilReadings,
   asCallbackMethodCall,
   collectAbsentPropSeedReads,
   collectNullishAttrContext,
   nullablePropsYieldedBy,
+  parseExpression,
   hasComputedDefault,
   inDefaultReadOrder,
   isBooleanAttr,
@@ -563,9 +566,11 @@ export function collectOptionalChainReceiverPropNames(ctx: GoEmitContext, ir: Co
  */
 export function collectArithmeticAbsentPropNames(ctx: GoEmitContext, ir: ComponentIR): Set<string> {
   const names = new Set<string>()
+  // The eligibility `resolvePropGoType` flips by: a primitive, or a literal
+  // union of one family (`size?: '' | 'large'`).
   const optionalParams = new Set(
     ir.metadata.propsParams
-      .filter(p => p.optional && p.defaultValue == null && p.type.kind === 'primitive')
+      .filter(p => p.optional && p.defaultValue == null && p.type && collapseLiteralUnion(p.type).kind === 'primitive')
       .map(p => p.name),
   )
   if (optionalParams.size === 0) return names
@@ -580,6 +585,29 @@ export function collectArithmeticAbsentPropNames(ctx: GoEmitContext, ir: Compone
     if (propName === null || !optionalParams.has(propName)) return
     const coercion = arithmeticOperandCoercion(op, operand, other, nullishCtx)
     if (coercion === 'undefined' || coercion === 'undefined-keep') names.add(propName)
+  }
+  // An operand the nil-reading rewrite reads by its nil (`props.s + '!'`,
+  // `` `${props.n}` ``, #3824 step 4) is tested for nil at render, which a
+  // concrete field cannot hold either.
+  const typing = collectOperandTyping(ir.metadata).at(BindingScope.forComponent(ir.metadata.propsObjectName ?? null))
+  const addRewritten = (operand: ParsedExpr, rewritten: ParsedExpr): void => {
+    const propName = rewritten === operand ? null : propNameOf(operand)
+    if (propName !== null && optionalParams.has(propName)) names.add(propName)
+  }
+  const addNilReadings = (node: ParsedExpr): void => {
+    const rewritten = rewriteNilReadings(node, typing)
+    if (rewritten === node) return
+    if (node.kind === 'binary' && rewritten.kind === 'binary') {
+      addRewritten(node.left, rewritten.left)
+      addRewritten(node.right, rewritten.right)
+    } else if (node.kind === 'unary' && rewritten.kind === 'unary') {
+      addRewritten(node.argument, rewritten.argument)
+    } else if (node.kind === 'template-literal' && rewritten.kind === 'template-literal') {
+      node.parts.forEach((part, i) => {
+        const next = rewritten.parts[i]
+        if (part.type === 'expression' && next?.type === 'expression') addRewritten(part.expr, next.expr)
+      })
+    }
   }
   const walk = (node: unknown): void => {
     if (!node || typeof node !== 'object') return
@@ -597,9 +625,21 @@ export function collectArithmeticAbsentPropNames(ctx: GoEmitContext, ir: Compone
     if (rec.kind === 'unary' && (rec.op === '-' || rec.op === '+') && rec.argument) {
       addOperand(rec.op, rec.argument as ParsedExpr, undefined)
     }
+    if ((rec.kind === 'binary' && rec.left && rec.right) || (rec.kind === 'unary' && rec.argument) || (rec.kind === 'template-literal' && Array.isArray(rec.parts))) {
+      addNilReadings(rec as ParsedExpr)
+    }
+    // An attribute ternary's test reaches Phase 2 as text only
+    // (`IRTemplatePart` `'ternary'`), so it is parsed here: an operand it
+    // compares is read by its nil like any other (#3750).
+    if (rec.type === 'ternary' && typeof rec.condition === 'string') walk(parseExpression(rec.condition))
     for (const value of Object.values(rec)) walk(value)
   }
   walk(ir.root)
+  // Memo bodies seed at construction, and a local constant's initializer is
+  // inlined where the constant is read (`const v = props.s + '!'`), both
+  // through the same rewrite.
+  walk((ir.metadata.memos ?? []).map(m => m.parsed))
+  walk((ir.metadata.localConstants ?? []).map(c => c.parsed))
   return names
 }
 

@@ -323,7 +323,19 @@ def _to_string(v: Any) -> str:
         if n == float("-inf"):
             return "-Infinity"
         return _format_number(n)
+    if isinstance(v, (list, tuple)):
+        # Array.prototype.toString is join(","): a nil element prints as "",
+        # and a nested array flattens through its own join.
+        return ",".join("" if el is None else _to_string(el) for el in v)
+    if isinstance(v, dict):
+        return "[object Object]"
     return str(v)
+
+
+def _is_object(v: Any) -> bool:
+    """An array or object: ToPrimitive gives its ToString, so `+` over it
+    concatenates."""
+    return isinstance(v, (list, tuple, dict))
 
 
 def _truthy(v: Any) -> bool:
@@ -350,9 +362,10 @@ def _bool(t: Any) -> bool:
 
 def _binary(op: str, l: Any, r: Any) -> Any:
     if op == "+":
-        # JS `+`: string concatenation once either operand is a string,
-        # numeric addition otherwise.
-        if _is_string(l) or _is_string(r):
+        # JS `+`: string concatenation once either operand is a string
+        # after ToPrimitive (an array or object primitive-converts to its
+        # ToString), numeric addition otherwise.
+        if _is_string(l) or _is_string(r) or _is_object(l) or _is_object(r):
             return _to_string(l) + _to_string(r)
         return _to_number(l) + _to_number(r)
     if op == "-":

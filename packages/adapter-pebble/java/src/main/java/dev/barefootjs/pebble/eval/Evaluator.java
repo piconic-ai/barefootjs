@@ -184,7 +184,32 @@ public final class Evaluator {
     if (v == null) {
       return "null";
     }
+    // Array.prototype.toString is join(","): a nil element prints as "", and
+    // a nested array flattens through its own join. A plain object prints as
+    // "[object Object]".
+    if (v instanceof List) {
+      StringBuilder out = new StringBuilder();
+      boolean first = true;
+      for (Object el : (List<?>) v) {
+        if (!first) {
+          out.append(',');
+        }
+        first = false;
+        if (el != null) {
+          out.append(toStr(el));
+        }
+      }
+      return out.toString();
+    }
+    if (v instanceof Map) {
+      return "[object Object]";
+    }
     throw new EvalUnsupported("cannot coerce " + typeName(v) + " to string");
+  }
+
+  /** An array or object: ToPrimitive gives its ToString, so `+` over it concatenates. */
+  private static boolean concatenates(Object v) {
+    return v instanceof String || v instanceof List || v instanceof Map;
   }
 
   // ---------------------------------------------------------------------
@@ -194,7 +219,10 @@ public final class Evaluator {
   public static Object binary(String op, Object l, Object r) {
     switch (op) {
       case "+":
-        if (l instanceof String || r instanceof String) {
+        // JS `+`: string concatenation once either operand is a string after
+        // ToPrimitive (an array or object converts to its ToString), numeric
+        // addition otherwise.
+        if (concatenates(l) || concatenates(r)) {
           return toStr(l) + toStr(r);
         }
         return toNumber(l) + toNumber(r);

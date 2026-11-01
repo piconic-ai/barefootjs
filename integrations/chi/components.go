@@ -747,9 +747,9 @@ type PostArticleInput struct {
 	Position float64
 	Total float64
 	Base string
-	PrevSlug string
+	PrevSlug interface{}
 	PrevTitle interface{}
-	NextSlug string
+	NextSlug interface{}
 	NextTitle interface{}
 }
 
@@ -772,9 +772,9 @@ type PostArticleProps struct {
 	Position float64 `json:"position"`
 	Total float64 `json:"total"`
 	Base string `json:"base"`
-	PrevSlug string `json:"prevSlug"`
+	PrevSlug interface{} `json:"prevSlug"`
 	PrevTitle interface{} `json:"prevTitle"`
-	NextSlug string `json:"nextSlug"`
+	NextSlug interface{} `json:"nextSlug"`
 	NextTitle interface{} `json:"nextTitle"`
 	LikeButtonSlot9 LikeButtonProps `json:"-"`
 	ReadingTimerSlot10 ReadingTimerProps `json:"-"`
@@ -1679,11 +1679,15 @@ func NewPostArticleProps(in PostArticleInput) PostArticleProps {
 	bfCallerProps["position"] = in.Position
 	bfCallerProps["total"] = in.Total
 	bfCallerProps["base"] = in.Base
-	bfCallerProps["prevSlug"] = in.PrevSlug
+	if in.PrevSlug != nil {
+		bfCallerProps["prevSlug"] = in.PrevSlug
+	}
 	if in.PrevTitle != nil {
 		bfCallerProps["prevTitle"] = in.PrevTitle
 	}
-	bfCallerProps["nextSlug"] = in.NextSlug
+	if in.NextSlug != nil {
+		bfCallerProps["nextSlug"] = in.NextSlug
+	}
 	if in.NextTitle != nil {
 		bfCallerProps["nextTitle"] = in.NextTitle
 	}

@@ -187,6 +187,11 @@ export interface ScopedOperandTyping {
   prop(key: string): OperandFacts
   /** The member chain `root.<path…>` (`row.id`); `name(root)` for an empty path. */
   path(root: string, path: readonly string[]): OperandFacts
+  /**
+   * This typing inside a callback whose `params` bind (`BindingScope.enterCallback`):
+   * each param shadows an outer name and proves nothing itself.
+   */
+  enterCallback(params: readonly string[]): ScopedOperandTyping
 }
 
 export interface OperandTypingOptions {
@@ -408,6 +413,7 @@ function scopedTyping(
       const hit = scope.lookup(root)
       return hit ? bindingFacts(hit.binding, path, namedFields) : UNKNOWN_FACTS
     },
+    enterCallback: params => scopedTyping(scope.enterCallback([...params]), names, props, namedFields),
   }
   return typing
 }
@@ -431,10 +437,12 @@ export function typingFromNameTest(
   test: ((name: string, componentProperty?: boolean) => boolean) | undefined,
 ): ScopedOperandTyping {
   const proven = factsOf(type)
-  return {
+  const typing: ScopedOperandTyping = {
     scope: BindingScope.EMPTY,
     name: name => (test?.(name) ? proven : UNKNOWN_FACTS),
     prop: key => (test?.(key, true) ? proven : UNKNOWN_FACTS),
     path: (root, path) => (path.length === 0 && test?.(root) ? proven : UNKNOWN_FACTS),
+    enterCallback: () => typing,
   }
+  return typing
 }

@@ -92,6 +92,19 @@ var nativeBindings = map[string]func(args []any) any{
 	"le":        nativeComparison("le"),
 	"gt":        nativeComparison("gt"),
 	"ge":        nativeComparison("ge"),
+	// A proven string is its own ToString; a string `+` is `bf_concat_str`
+	// over the proven string and the other operand through `bf_to_string`,
+	// Go's spelling of native concatenation (#3824 step 4).
+	"to_string": func(a []any) any { return a[0] },
+	"plus": func(a []any) any {
+		str := func(v any) any {
+			if _, ok := v.(string); ok {
+				return v
+			}
+			return ToString(v)
+		}
+		return ConcatStr(str(a[0]), str(a[1]))
+	},
 }
 
 // nativeComparison runs the text/template comparison builtin `name` over two

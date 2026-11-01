@@ -295,6 +295,17 @@ import { fixture as indexKeyCanonicalFormCallback } from './index-key-canonical-
 import { fixture as indexReadPositions } from './index-read-positions'
 import { fixture as relationalPositions } from './relational-positions'
 import { fixture as relationalOmittedNumberMemo } from './relational-omitted-number-memo'
+// `+` and ToString at every position (#3740, #3824 step 4).
+import { fixture as plusTostringPositions } from './plus-tostring-positions'
+import { fixture as plusBeyondSafeInteger } from './plus-beyond-safe-integer'
+// An omitted optional prop's nil reading in every position (#3750).
+import { fixture as nilReadingPositions } from './nil-reading-positions'
+import { fixture as omittedOptionalAttrTernaryRelational } from './omitted-optional-attr-ternary-relational'
+import { fixture as nilReadingConcreteZero } from './nil-reading-concrete-zero'
+import { fixture as nilReadingConcreteZeroRowField } from './nil-reading-concrete-zero-row-field'
+import { fixture as plusBooleanBranchOperand } from './plus-boolean-branch-operand'
+// Shapes that keep today's output until the runtimes carry `undefined` (#3848).
+import { fixture as awaitsUndefinedPlusShapes } from './awaits-undefined-plus-shapes'
 import { fixture as indexReadExactKey } from './index-read-exact-key'
 import { fixture as indexReadCapitalisedKeyOnly } from './index-read-capitalised-key-only'
 import { fixture as remainderNegativeZeroString } from './remainder-negative-zero-string'
@@ -1541,6 +1552,14 @@ export const jsxFixtures: JSXFixture[] = [
   indexReadPositions,
   relationalPositions,
   relationalOmittedNumberMemo,
+  plusTostringPositions,
+  plusBeyondSafeInteger,
+  nilReadingPositions,
+  omittedOptionalAttrTernaryRelational,
+  nilReadingConcreteZero,
+  nilReadingConcreteZeroRowField,
+  plusBooleanBranchOperand,
+  awaitsUndefinedPlusShapes,
   indexReadExactKey,
   indexReadCapitalisedKeyOnly,
   remainderNegativeZeroString,

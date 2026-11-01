@@ -36,7 +36,8 @@
 import type { ParsedExpr, FlatDepth, TemplatePart, ObjectLiteralProperty } from '../expression-parser.ts'
 import { asCallbackMethodCall } from '../expression-parser.ts'
 import type { LoweringMatcher, LoweringNode } from '../lowering-registry.ts'
-import { booleanValueSites, foldNegatedNumberLiteral, planPrimitive, type PrimitiveInputs, type PrimitivePlan } from './primitive-plan.ts'
+import { booleanValueSites, foldNegatedNumberLiteral, planPrimitive, planToString, type PrimitiveInputs, type PrimitivePlan } from './primitive-plan.ts'
+import { rewriteNilReadings, rewriteNilReadingsDeep } from './nil-reading.ts'
 
 export type HigherOrderMethod = 'filter' | 'every' | 'some' | 'find' | 'findIndex' | 'findLast' | 'findLastIndex'
 
@@ -199,7 +200,12 @@ export interface ParsedExprEmitter {
     emit: (e: ParsedExpr) => string,
     plan: PrimitivePlan | null,
   ): string
-  templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string): string
+  /**
+   * `plans[i]` is the ToString plan of `parts[i]` (`planToString`, #3824
+   * step 4) for an expression part, null for a string part: the part as it
+   * is when native, through the runtime's `to_string` otherwise.
+   */
+  templateLiteral(parts: TemplatePart[], emit: (e: ParsedExpr) => string, plans: readonly (PrimitivePlan | null)[]): string
   // A higher-order callback method call (`<object>.<method>(<arrow>, …rest)`,
   // method ∈ `CALLBACK_METHODS`): `.filter`/`.find`/`.every`/`.some`/`.sort`/
   // `.reduce`/`.flatMap`/… (#2018 P5). The adapter serializes the `arrow` body
@@ -522,12 +528,47 @@ export function emitParsedValue(expr: ParsedExpr, emitter: ParsedExprEmitter): s
   return emitParsedExpr(expr, emitter, booleanValueSites(expr, emitter.primitives.nativeSafe))
 }
 
+/**
+ * The ToString plans of a template literal's parts, for
+ * {@link ParsedExprEmitter.templateLiteral}: null for a string part.
+ */
+export function templatePartPlans(parts: readonly TemplatePart[], emitter: Pick<ParsedExprEmitter, 'primitives'>): (PrimitivePlan | null)[] {
+  const typing = emitter.primitives.typing()
+  return parts.map(p => (p.type === 'expression' ? planToString(p.expr, typing, emitter.primitives.nativeSafe) : null))
+}
+
+/**
+ * `expr` with the nil-reading rewrite applied to its own operands
+ * (`rewriteNilReadings`, #3824 step 4), in the emitter's scope. Only the
+ * kinds whose coercion the rewrite reads take the typing.
+ */
+export function withNilReadings(expr: ParsedExpr, emitter: Pick<ParsedExprEmitter, 'primitives'>): ParsedExpr {
+  if (expr.kind !== 'binary' && expr.kind !== 'unary' && expr.kind !== 'template-literal') return expr
+  return rewriteNilReadings(expr, emitter.primitives.typing())
+}
+
+/**
+ * A callback's arrow with the nil-reading rewrite run over its whole body:
+ * the body reaches the runtime evaluator (or the adapter's own predicate
+ * form) without passing through {@link emitParsedExpr} node by node.
+ */
+function withNilReadingBody(
+  arrow: Extract<ParsedExpr, { kind: 'arrow' }>,
+  emitter: Pick<ParsedExprEmitter, 'primitives'>,
+): Extract<ParsedExpr, { kind: 'arrow' }> {
+  const body = rewriteNilReadingsDeep(arrow.body, emitter.primitives.typing().enterCallback(arrow.params))
+  return body === arrow.body ? arrow : { ...arrow, body }
+}
+
 function dispatchParsedExpr(
-  expr: ParsedExpr,
+  original: ParsedExpr,
   emitter: ParsedExprEmitter,
   sites: ReadonlyMap<ParsedExpr, PrimitivePlan> | undefined,
 ): string {
   const emit = (child: ParsedExpr): string => emitParsedExpr(child, emitter, sites)
+  // The nil-reading rewrite runs wherever the plan runs: each operand whose
+  // nil Phase 1 can read is made non-nil before the node is planned.
+  const expr = withNilReadings(original, emitter)
   switch (expr.kind) {
     case 'identifier':
       return emitter.identifier(expr.name)
@@ -560,7 +601,7 @@ function dispatchParsedExpr(
       // A higher-order callback call (`arr.filter(p)` / `arr.sort(cmp)` / …)
       // routes to the dedicated `callbackMethod` arm; any other call is generic.
       const cb = asCallbackMethodCall(expr)
-      if (cb) return emitter.callbackMethod(cb.method, cb.object, cb.arrow, cb.args, emit)
+      if (cb) return emitter.callbackMethod(cb.method, cb.object, withNilReadingBody(cb.arrow, emitter), cb.args, emit)
       return emitter.call(expr.callee, expr.args, emit)
     }
     case 'member':
@@ -581,7 +622,7 @@ function dispatchParsedExpr(
     case 'conditional':
       return emitter.conditional(expr.test, expr.consequent, expr.alternate, emit, primitivePlanFor(expr, emitter))
     case 'template-literal':
-      return emitter.templateLiteral(expr.parts, emit)
+      return emitter.templateLiteral(expr.parts, emit, templatePartPlans(expr.parts, emitter))
     case 'arrow':
       return emitter.arrow(expr.params, expr.body, emit)
     case 'regex':

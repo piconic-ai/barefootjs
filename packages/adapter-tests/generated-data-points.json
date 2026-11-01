@@ -849,6 +849,55 @@
       }
     }
   ],
+  "awaits-undefined-plus-shapes": [
+    {
+      "name": "gen:c:union:1",
+      "props": {
+        "x": "x",
+        "items": [
+          "a"
+        ],
+        "c": null
+      }
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "x": "x",
+        "items": [
+          "a"
+        ],
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "x": "x",
+        "items": [
+          "a"
+        ],
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "x": "x",
+        "items": [
+          "a"
+        ],
+        "n": 1234567890
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "x": "x",
+        "items": []
+      }
+    }
+  ],
   "bare-text-optional-scalar": [
     {
       "name": "gen:size:negative",
@@ -9547,6 +9596,73 @@
       }
     }
   ],
+  "nil-reading-concrete-zero": [
+    {
+      "name": "gen:s:absent",
+      "props": {
+        "size": ""
+      }
+    },
+    {
+      "name": "gen:s:markup",
+      "props": {
+        "s": "<b>&\"'</b>",
+        "size": ""
+      }
+    },
+    {
+      "name": "gen:s:multibyte",
+      "props": {
+        "s": "日本語",
+        "size": ""
+      }
+    },
+    {
+      "name": "gen:t:empty",
+      "props": {
+        "s": "",
+        "size": "",
+        "t": ""
+      }
+    },
+    {
+      "name": "gen:t:markup",
+      "props": {
+        "s": "",
+        "size": "",
+        "t": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:t:multibyte",
+      "props": {
+        "s": "",
+        "size": "",
+        "t": "日本語"
+      }
+    },
+    {
+      "name": "gen:size:absent",
+      "props": {
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:size:union:large",
+      "props": {
+        "s": "",
+        "size": "large"
+      }
+    }
+  ],
+  "nil-reading-concrete-zero-row-field": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "nullish-boolean-output-positions": [
     {
       "name": "gen:off:absent",
@@ -11146,6 +11262,44 @@
       }
     }
   ],
+  "omitted-optional-attr-ternary-relational": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890
+      }
+    },
+    {
+      "name": "gen:s:empty",
+      "props": {
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:s:markup",
+      "props": {
+        "s": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:s:multibyte",
+      "props": {
+        "s": "日本語"
+      }
+    }
+  ],
   "omitted-optional-element-access-operands": [
     {
       "name": "gen:n:zero",
@@ -12168,6 +12322,97 @@
       "props": {
         "a": "x",
         "show": false
+      }
+    }
+  ],
+  "plus-beyond-safe-integer": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0,
+        "m": 1
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7,
+        "m": 1
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890,
+        "m": 1
+      }
+    },
+    {
+      "name": "gen:m:zero",
+      "props": {
+        "n": 9007199254740992,
+        "m": 0
+      }
+    },
+    {
+      "name": "gen:m:negative",
+      "props": {
+        "n": 9007199254740992,
+        "m": -7
+      }
+    },
+    {
+      "name": "gen:m:large",
+      "props": {
+        "n": 9007199254740992,
+        "m": 1234567890
+      }
+    }
+  ],
+  "plus-boolean-branch-operand": [
+    {
+      "name": "gen:zero:negative",
+      "props": {
+        "zero": -7,
+        "one": 1,
+        "x": "x",
+        "k": 1
+      }
+    },
+    {
+      "name": "gen:zero:large",
+      "props": {
+        "zero": 1234567890,
+        "one": 1,
+        "x": "x",
+        "k": 1
+      }
+    },
+    {
+      "name": "gen:one:zero",
+      "props": {
+        "zero": 0,
+        "one": 0,
+        "x": "x",
+        "k": 1
+      }
+    },
+    {
+      "name": "gen:one:negative",
+      "props": {
+        "zero": 0,
+        "one": -7,
+        "x": "x",
+        "k": 1
+      }
+    },
+    {
+      "name": "gen:one:large",
+      "props": {
+        "zero": 0,
+        "one": 1234567890,
+        "x": "x",
+        "k": 1
       }
     }
   ],

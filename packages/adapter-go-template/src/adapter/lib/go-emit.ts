@@ -4,8 +4,8 @@
  * Pure free functions — none read adapter instance state.
  */
 
-import type { ArithmeticCoercion, SortComparator, SupportResult, ParsedExpr } from '@barefootjs/jsx'
-import { arithmeticHelper, BindingScope, EMPTY_OPERAND_TYPING, escapeBraceDelimiters, evalBody, isExactly, isNativeToNumber, numberLiteralSpelling, operandFacts, spellTest, type CallbackCapture, type NativeSafeTable, type PrimitivePlan } from '@barefootjs/jsx'
+import type { ArithmeticCoercion, SortComparator, SupportResult, ParsedExpr, ScopedOperandTyping } from '@barefootjs/jsx'
+import { arithmeticHelper, BindingScope, EMPTY_OPERAND_TYPING, escapeBraceDelimiters, evalBody, isExactly, isNativeToNumber, numberLiteralSpelling, operandFacts, plusSpelling, spellTest, type CallbackCapture, type NativeSafeTable, type PrimitivePlan } from '@barefootjs/jsx'
 
 import { capitalize } from "./go-naming.ts"
 
@@ -74,6 +74,9 @@ export const GO_NATIVE_SAFE: NativeSafeTable = {
   // A string `+` is `bf_concat_str`: html/template has no infix operator, so
   // that call is Go's spelling of native concatenation.
   plus: ['string'],
+  // A template-literal part or concatenation operand is itself only when it
+  // is a proven string; anything else takes `bf_to_string` (#3824 step 4).
+  'to-string': ['string'],
   'strict-eq': [],
   relational: [],
   // A unary minus over a non-zero literal folds into the literal; any other
@@ -86,6 +89,21 @@ export const GO_NATIVE_SAFE: NativeSafeTable = {
   get: [],
   // A comparison, `!` and a boolean literal are host booleans already (#3824 step 5).
   'boolean-value': ['boolean'],
+}
+
+/**
+ * A binary `+` over rendered (already grouped) operands, as its plan names it
+ * (#3824 step 4): `bf_add` over two proven numbers, `bf_concat_str` when one
+ * operand is a proven string (the other through the runtime's JS `String()`,
+ * `bf_to_string`, which spells `null` and a number as JS does), and the
+ * runtime's JS `+` (`bf_plus`) otherwise. A null plan takes `bf_plus`.
+ */
+export function lowerJsPlus(plan: PrimitivePlan | null, l: string, r: string): string {
+  const spelled = plusSpelling(plan)
+  if (spelled.kind === 'add') return `bf_add ${l} ${r}`
+  if (spelled.kind === 'plus') return `bf_plus ${l} ${r}`
+  const [ls, rs] = spelled.stringify
+  return `bf_concat_str ${ls ? `(bf_to_string ${l})` : l} ${rs ? `(bf_to_string ${r})` : r}`
 }
 
 /**
@@ -426,6 +444,7 @@ export function emitSortEval(
   params: string[],
   emit: (e: ParsedExpr) => string,
   propsObject: string,
+  typing?: ScopedOperandTyping,
 ): string | null {
   // A comparator needs both params; a wrong-arity arrow would bind the wrong
   // env (or treat a real param as a free var), so fail over to the structured
@@ -433,7 +452,7 @@ export function emitSortEval(
   if (params.length < 2) return null
   const paramA = params[0]
   const paramB = params[1]
-  const evaluable = evalBody(body, new Set([paramA, paramB]), propsObject)
+  const evaluable = evalBody(body, new Set([paramA, paramB]), propsObject, typing)
   if (evaluable === null) return null
   const env = emitEvalEnvArg(evaluable.captured, emit)
   return `bf_sort_eval ${wrapIfMultiToken(recv)} "${escapeGoString(evaluable.json)}" "${paramA}" "${paramB}" ${env}`
@@ -455,6 +474,7 @@ export function emitReduceEval(
   direction: 'left' | 'right',
   emit: (e: ParsedExpr) => string,
   propsObject: string,
+  typing?: ScopedOperandTyping,
 ): string | null {
   // A reducer needs both the accumulator and the element param; a wrong-arity
   // arrow would bind the wrong env, so refuse cleanly (→ BF101) rather than
@@ -472,7 +492,7 @@ export function emitReduceEval(
   } else {
     return null
   }
-  const evaluable = evalBody(body, new Set([paramAcc, paramItem]), propsObject)
+  const evaluable = evalBody(body, new Set([paramAcc, paramItem]), propsObject, typing)
   if (evaluable === null) return null
   const env = emitEvalEnvArg(evaluable.captured, emit)
   return `bf_reduce_eval ${wrapIfMultiToken(recv)} "${escapeGoString(evaluable.json)}" "${paramAcc}" "${paramItem}" ${initGo} "${direction}" ${env}`
@@ -502,8 +522,9 @@ export function emitPredicateEval(
   emit: (e: ParsedExpr) => string,
   propsObject: string,
   extraArgs: string[] = [],
+  typing?: ScopedOperandTyping,
 ): string | null {
-  const evaluable = evalBody(predicate, new Set([param]), propsObject)
+  const evaluable = evalBody(predicate, new Set([param]), propsObject, typing)
   if (evaluable === null) return null
   const env = emitEvalEnvArg(evaluable.captured, emit)
   const extra = extraArgs.length > 0 ? ` ${extraArgs.join(' ')}` : ''
@@ -522,8 +543,9 @@ export function emitFlatMapEval(
   param: string,
   emit: (e: ParsedExpr) => string,
   propsObject: string,
+  typing?: ScopedOperandTyping,
 ): string | null {
-  const evaluable = evalBody(body, new Set([param]), propsObject)
+  const evaluable = evalBody(body, new Set([param]), propsObject, typing)
   if (evaluable === null) return null
   const env = emitEvalEnvArg(evaluable.captured, emit)
   return `bf_flat_map_eval ${wrapIfMultiToken(recv)} "${escapeGoString(evaluable.json)}" "${param}" ${env}`
@@ -543,8 +565,9 @@ export function emitMapEval(
   param: string,
   emit: (e: ParsedExpr) => string,
   propsObject: string,
+  typing?: ScopedOperandTyping,
 ): string | null {
-  const evaluable = evalBody(body, new Set([param]), propsObject)
+  const evaluable = evalBody(body, new Set([param]), propsObject, typing)
   if (evaluable === null) return null
   const env = emitEvalEnvArg(evaluable.captured, emit)
   return `bf_map_eval ${wrapIfMultiToken(recv)} "${escapeGoString(evaluable.json)}" "${param}" ${env}`

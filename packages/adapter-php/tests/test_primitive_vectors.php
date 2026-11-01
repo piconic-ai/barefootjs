@@ -72,6 +72,13 @@ $NATIVE_BINDINGS = [
     'le' => fn ($a, $b) => $a <= $b,
     'gt' => fn ($a, $b) => $a > $b,
     'ge' => fn ($a, $b) => $a >= $b,
+    // A proven string is its own ToString; a `+` is PHP's own `+` over two
+    // numbers and `.` (Twig's `~`) over a proven string, the other operand
+    // through `to_string` (#3824 step 4).
+    'to_string' => fn ($v) => $v,
+    'plus' => fn ($a, $b) => (is_string($a) || is_string($b))
+        ? (is_string($a) ? $a : $bf->to_string($a)) . (is_string($b) ? $b : $bf->to_string($b))
+        : $a + $b,
 ];
 
 /** Materialize the `{"$num": ...}` sentinel, `-0` included. Values are

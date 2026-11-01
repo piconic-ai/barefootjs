@@ -248,8 +248,8 @@ export function Label() {
 `, adapter)
     const { template } = adapter.generate(ir)
     expect(template).not.toContain('{{count: ')
-    // A `number` signal prints through `bf_text` (JS number spelling).
-    expect(template).toContain('count: {{bf_text .N}}')
+    // A `number` signal prints through `bf_to_string` (JS ToString, #3824 step 4).
+    expect(template).toContain('count: {{bf_to_string .N}}')
   })
 
   // A bare string literal that merely *contains* `{{` (NOT a template literal)
@@ -271,7 +271,7 @@ export function Label() {
   test('template literal expression is emitted as-is via renderExpression', () => {
     const adapter = new GoTemplateAdapter()
     const out = adapter.renderExpression({ expr: '`a #${tag}`' } as IRExpression)
-    expect(out).toBe('a #{{bf_text .Tag}}')
+    expect(out).toBe('a #{{bf_to_string .Tag}}')
   })
 
   // Attribute context: when a `${...}` interpolation lowers to a template
@@ -407,7 +407,7 @@ describe('GoTemplateAdapter - bf_ternary value-position lowering (#2335)', () =>
   // `bf_concat_str` runtime helper JS string-concat `+` already uses (#2168).
   test('a multi-part template-literal branch folds to a bf_concat_str chain, not a raw fragment (#2863)', () => {
     expect(render('end ? `${start}-${end}` : start')).toBe(
-      '{{bf_text (bf_ternary (bf_truthy .End) (bf_concat_str (bf_concat_str .Start "-") .End) .Start)}}',
+      '{{bf_text (bf_ternary (bf_truthy .End) (bf_concat_str (bf_concat_str (bf_to_string .Start) "-") (bf_to_string .End)) .Start)}}',
     )
   })
 
@@ -419,12 +419,12 @@ describe('GoTemplateAdapter - bf_ternary value-position lowering (#2335)', () =>
   })
 
   test('a single-part template-literal branch reduces to the bare value, no bf_concat_str wrap (#2863)', () => {
-    expect(render('end ? `${start}` : end')).toBe('{{bf_text (bf_ternary (bf_truthy .End) .Start .End)}}')
+    expect(render('end ? `${start}` : end')).toBe('{{bf_text (bf_ternary (bf_truthy .End) (bf_to_string .Start) .End)}}')
   })
 
   test('static text in a template-literal branch is an escaped Go string literal (#2863)', () => {
     expect(render('end ? `say "hi" ${start}` : end')).toBe(
-      '{{bf_text (bf_ternary (bf_truthy .End) (bf_concat_str "say \\"hi\\" " .Start) .End)}}',
+      '{{bf_text (bf_ternary (bf_truthy .End) (bf_concat_str "say \\"hi\\" " (bf_to_string .Start)) .End)}}',
     )
   })
 
@@ -608,7 +608,7 @@ export function N(props: { value: number }) {
     expect(template).toContain('{{bf_string (bf_add .Value (bf_number "0.5"))}}')
     expect(template).toContain('{{bf_string (bf_div .Value 4)}}')
     expect(template).toContain('{{bf_string (bf_neg .Value)}}')
-    expect(template).toContain('v={{bf_string (bf_mul .Value 2)}}')
+    expect(template).toContain('v={{bf_to_string (bf_mul .Value 2)}}')
   })
 
   test('a plain number prop read goes through bf_text; a string read is left alone and a string concat harmlessly wrapped', () => {
@@ -5887,7 +5887,7 @@ export function CompositeRowChildComponent(props: { items: Item[] }) {
     expect(result.errors ?? []).toEqual([])
     const template = result.files.find(f => f.type === 'markedTemplate')!.content
     expect(template).toContain(
-      '{{template "Badge" (bf_with_props $.BadgeSlot0 "Text" (bf_concat_str (bf_concat_str (bf_concat_str "#" .ID) " ") .Label))}}',
+      '{{template "Badge" (bf_with_props $.BadgeSlot0 "Text" (bf_concat_str (bf_concat_str (bf_concat_str "#" (bf_to_string .ID)) " ") .Label))}}',
     )
   })
 
@@ -7415,7 +7415,7 @@ export function Foo({ count, arr }: { count: string; arr: number[] }) {
   </div>
 }
 `)
-    expect(template).toContain('bf_concat_str 1 .Count')
+    expect(template).toContain('bf_concat_str (bf_to_string 1) .Count')
     expect(template).not.toContain('bf_add 1 .Count')
     expect(template).toContain('bf_add . 1')
   })
@@ -7484,7 +7484,7 @@ export function C(props: { flag?: boolean; tone?: Tone; config?: { a: number } }
   test('a `&&` keeps the value it yields: only the alias prop on its right is read as nil', () => {
     const template = compile("`${(props.flag && props.tone) ?? 'fb'}`")
     expect(template).toContain(
-      'data-v="{{bf_text (index (or (bf_keep_nonnil (index (or (bf_keep_falsy .Flag) (bf_arr (or .Tone nil))) 0)) (bf_arr "fb")) 0)}}"',
+      'data-v="{{bf_to_string (index (or (bf_keep_nonnil (index (or (bf_keep_falsy .Flag) (bf_arr (or .Tone nil))) 0)) (bf_arr "fb")) 0)}}"',
     )
   })
 

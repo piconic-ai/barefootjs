@@ -118,17 +118,18 @@ function Box({ children }: { children: unknown }) {
     expect(template).toContain("'children':")
   })
 
-  test('renders JS `+` on a string-typed operand as `~`, both operands bf.string-wrapped', () => {
+  test('renders JS `+` on a string-typed operand as `~`, a non-string operand through bf.to_string', () => {
     const { template } = compileAndGenerate(`
-export function Greeting({ first, last }: { first: string; last: string }) {
-  return <span>{first + ' ' + last}</span>
+export function Greeting({ first, last, n }: { first: string; last: string; n: number }) {
+  return <span>{first + ' ' + last}|{first + n}</span>
 }
 `)
-    expect(template).toContain('~')
     // Confirmed during Phase 3 research: Pebble's `~` calls each operand's
     // raw Java .toString() directly (no JS-compatible null/number
-    // coercion), so both sides must be bf.string(...)-wrapped.
-    expect(template).toMatch(/bf\.string\([^)]*\)\s*~\s*bf\.string\(/)
+    // coercion), so an operand not proven a non-nil string goes through
+    // the runtime's JS ToString (#3824 step 4); proven strings need nothing.
+    expect(template).toContain("(first ~ ' ') ~ last")
+    expect(template).toContain('first ~ bf.to_string(n)')
   })
 
   test('renders nullish-coalescing via bf.coalesce, not a native `??` operator', () => {

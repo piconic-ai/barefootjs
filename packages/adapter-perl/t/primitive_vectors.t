@@ -87,6 +87,14 @@ my %native_bindings = (
     le     => sub { $_[0] <= $_[1] },
     gt     => sub { $_[0] > $_[1] },
     ge     => sub { $_[0] >= $_[1] },
+    # A proven string is its own ToString; a string `+` is Perl's `.` (Kolon's
+    # `~`), the other operand through `to_string` (#3824 step 4).
+    to_string => sub { $_[0] },
+    plus      => sub {
+        my ($a, $b) = @_;
+        my $str = sub { BarefootJS::Evaluator::_is_string($_[0]) ? $_[0] : $bf->to_string($_[0]) };
+        $str->($a) . $str->($b);
+    },
 );
 
 my $INF = 9**9**9;

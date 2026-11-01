@@ -234,6 +234,32 @@
       "expect": "1,2,3",
       "domain": "object",
       "note": "nested arrays flatten through the join"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        [
+          1.5,
+          {
+            "$num": "-0"
+          },
+          1e+21
+        ]
+      ],
+      "expect": "1.5,0,1e+21",
+      "domain": "object",
+      "note": "array elements print with Number::toString"
+    },
+    {
+      "fn": "to_string",
+      "args": [
+        {
+          "a": 1
+        }
+      ],
+      "expect": "[object Object]",
+      "domain": "object",
+      "note": "a plain object prints as [object Object]"
     }
   ]
 }

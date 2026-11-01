@@ -392,8 +392,20 @@ sub _string_to_number ($s) {
 sub _to_string ($v) {
     return 'null' if !defined $v;
     if (ref $v eq 'JSON::PP::Boolean') { return $v ? 'true' : 'false' }
+    # Array.prototype.toString is join(","): a nil element prints as "", and
+    # a nested array flattens through its own join. A plain object prints as
+    # "[object Object]".
+    return join(',', map { defined $_ ? _to_string($_) : '' } @$v) if ref $v eq 'ARRAY';
+    return '[object Object]' if ref $v eq 'HASH';
     return _format_number($v + 0) if _is_number($v);
     return "$v";
+}
+
+# _is_object: an array or a plain object, which ToPrimitive turns into its
+# ToString, so a `+` over it concatenates.
+sub _is_object ($v) {
+    my $r = ref $v;
+    return ($r eq 'ARRAY' || $r eq 'HASH') ? 1 : 0;
 }
 
 # _format_number: JS `Number::toString`. Perl's own stringification is
@@ -470,10 +482,17 @@ sub _bool ($t) { $t ? JSON::PP::true() : JSON::PP::false() }
 
 sub _binary ($op, $l, $r) {
     if ($op eq '+') {
-        # JS `+`: string concatenation once either operand is a string,
-        # numeric addition otherwise.
-        return _to_string($l) . _to_string($r) if _is_string($l) || _is_string($r);
-        return _double(_to_number($l) + _to_number($r));
+        # JS `+`: string concatenation once either operand is a string after
+        # ToPrimitive (an array or object converts to its ToString), numeric
+        # addition otherwise.
+        return _to_string($l) . _to_string($r)
+            if _is_string($l) || _is_string($r) || _is_object($l) || _is_object($r);
+        my ($ln, $rn) = (_to_number($l), _to_number($r));
+        my $sum = _double($ln + $rn);
+        # Perl adds two integral doubles as integers, which drops the sign of
+        # `-0 + -0`; IEEE addition keeps it.
+        return -(unpack('d', pack('d', 0))) if $sum == 0 && POSIX::signbit($ln) && POSIX::signbit($rn);
+        return $sum;
     }
     return _double(_to_number($l) - _to_number($r)) if $op eq '-';
     return _double(_to_number($l) * _to_number($r)) if $op eq '*';

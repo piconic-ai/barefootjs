@@ -3,15 +3,18 @@
  * if either operand is a string, ToString both and concatenate; otherwise
  * ToNumber both and add as doubles. A nil operand reads as `null` (the
  * runtimes hold one nil), so an omitted operand gives `'nullx'` against a
- * string and `0 + x` against a number; the `undefined` reading is refused
- * at compile time (rollout step 4).
+ * string and `0 + x` against a number; a typed `undefined` reading is
+ * rewritten away at compile time (the nil-reading rewrite, rollout step 4a).
+ * An array or object operand primitive-converts to its ToString, so the `+`
+ * concatenates. A sum past 2^53 carries the `beyond-safe-integer` domain,
+ * which no target claims natively ("Decisions" (5)).
  */
-import { type PrimitiveCase, type PrimitiveOp, pairDomain } from './types'
+import { type Domain, type PrimitiveCase, type PrimitiveOp, pairDomain } from './types'
 
-const c = (a: unknown, b: unknown, note: string): PrimitiveCase => ({
+const c = (a: unknown, b: unknown, note: string, domain: Domain = pairDomain(a, b)): PrimitiveCase => ({
   fn: 'plus',
   args: [a, b],
-  domain: pairDomain(a, b),
+  domain,
   note,
 })
 
@@ -22,7 +25,8 @@ export const plus: PrimitiveOp = {
   cases: [
     c(1, 2, 'two integers add'),
     c(0.1, 0.2, 'two doubles add'),
-    c(9007199254740992, 1, 'past 2**53 the sum rounds as a double'),
+    c(9007199254740992, 1, 'past 2**53 the sum rounds as a double', 'beyond-safe-integer'),
+    c(9007199254740992, 2, 'past 2**53 an even sum is exact', 'beyond-safe-integer'),
     c(-0, -0, '-0 plus -0 is -0'),
     c(-0, 0, '-0 plus 0 is 0'),
     c(Number.NaN, 1, 'NaN propagates'),
@@ -43,5 +47,7 @@ export const plus: PrimitiveOp = {
     c(null, null, 'two nil operands add as 0'),
     c([1, 2], '', 'an array against a string joins with a comma'),
     c('x', [], 'an empty array prints as the empty string'),
+    c([1], 1, 'an array against a number concatenates'),
+    c({ a: 1 }, '', 'a plain object prints as [object Object]'),
   ],
 }

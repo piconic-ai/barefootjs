@@ -3677,7 +3677,7 @@ func TestKeepNonNilNullishValue(t *testing.T) {
 // when it is present, and a present `false` from `&&` is kept.
 func TestAbsentAsNilCompoundNullishLeft(t *testing.T) {
 	const ternary = `{{bf_text (index (or (bf_keep_nonnil (bf_ternary (bf_truthy .Flag) "ok" (or .Tone nil))) (bf_arr (bf_json .Config))) 0)}}`
-	const and = `{{bf_text (index (or (bf_keep_nonnil (index (or (bf_keep_falsy .Flag) (bf_arr (or .Tone nil))) 0)) (bf_arr "fb")) 0)}}`
+	const and = `{{bf_to_string (index (or (bf_keep_nonnil (index (or (bf_keep_falsy .Flag) (bf_arr (or .Tone nil))) 0)) (bf_arr "fb")) 0)}}`
 	calls := 0
 	fm := FuncMap()
 	fm["bf_json"] = func(v any) (string, error) {
