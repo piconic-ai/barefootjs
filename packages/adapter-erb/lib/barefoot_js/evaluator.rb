@@ -199,13 +199,17 @@ module BarefootJS
     # Number <-> String helpers
     # ---------------------------------------------------------------------
 
-    HEX_STRING_RE = /\A0[xX][0-9a-fA-F]+\z/
+    # JS's NonDecimalIntegerLiteral: an unsigned `0x` / `0o` / `0b` integer.
+    RADIX_STRING_RES = { 16 => /\A0[xX][0-9a-fA-F]+\z/, 8 => /\A0[oO][0-7]+\z/, 2 => /\A0[bB][01]+\z/ }.freeze
     NUMERIC_STRING_RE = /\A[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?\z/
 
     def parse_numeric_string(t)
       return Float::INFINITY if t == 'Infinity' || t == '+Infinity'
       return -Float::INFINITY if t == '-Infinity'
-      return Integer(t, 16) if t =~ HEX_STRING_RE
+      # JS rounds the mathematical value once to the nearest double, ties to
+      # even (#3824 step 3); Ruby's exact Integer#to_f does the same, and a
+      # value past the largest double is Infinity.
+      RADIX_STRING_RES.each { |base, re| return Integer(t, base).to_f if t =~ re }
 
       if t =~ NUMERIC_STRING_RE
         # Ruby's Float() rejects a trailing decimal point ("5.", "5.e3"),
@@ -326,12 +330,30 @@ module BarefootJS
       end
     end
 
+    # JS string order, by UTF-16 code unit. Ruby's String#<=> compares UTF-8
+    # bytes, which is code point order: the two differ where an astral
+    # character (whose leading surrogate is 0xD800-0xDBFF) meets a BMP
+    # character above the surrogates ("😀" < "｡" is true in JS). Big-endian
+    # UTF-16 bytes compare in code-unit order.
+    def compare_utf16(l, r)
+      return l <=> r if l.ascii_only? && r.ascii_only?
+
+      utf16_be(l) <=> utf16_be(r)
+    end
+
+    def utf16_be(s)
+      s = s.dup.force_encoding(Encoding::UTF_8) if s.encoding == Encoding::BINARY
+      s.encode(Encoding::UTF_16BE, invalid: :replace, undef: :replace).b
+    end
+
+    private_class_method :compare_utf16, :utf16_be
+
     def relational(op, l, r)
       # JS Abstract Relational Comparison: both strings -> compare by code
       # unit; otherwise coerce both to numbers (a NaN operand is false).
       c =
         if l.is_a?(String) && r.is_a?(String)
-          l < r ? -1 : (l > r ? 1 : 0)
+          compare_utf16(l, r)
         else
           ln = to_number(l).to_f
           rn = to_number(r).to_f

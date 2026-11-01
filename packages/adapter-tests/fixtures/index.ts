@@ -283,6 +283,8 @@ import { fixture as literalIndexOwnKey } from './literal-index-own-key'
 import { fixture as indexKeyCanonicalForm } from './index-key-canonical-form'
 import { fixture as indexKeyCanonicalFormCallback } from './index-key-canonical-form-callback'
 import { fixture as indexReadPositions } from './index-read-positions'
+import { fixture as relationalPositions } from './relational-positions'
+import { fixture as relationalOmittedNumberMemo } from './relational-omitted-number-memo'
 import { fixture as indexReadExactKey } from './index-read-exact-key'
 import { fixture as indexReadCapitalisedKeyOnly } from './index-read-capitalised-key-only'
 import { fixture as remainderNegativeZeroString } from './remainder-negative-zero-string'
@@ -322,6 +324,12 @@ import { fixture as jsonStringifyBooleanLiteralDestructured } from './json-strin
 import { fixture as unaryMinusCompoundOperand } from './unary-minus-compound-operand'
 import { fixture as omittedOptionalNumberNegation } from './omitted-optional-number-negation'
 import { fixture as omittedOptionalNullableNumberArithmetic } from './omitted-optional-nullable-number-arithmetic'
+import { fixture as omittedOptionalNullableNumberRelational } from './omitted-optional-nullable-number-relational'
+import { fixture as omittedOptionalNumberRelational } from './omitted-optional-number-relational'
+import { fixture as omittedOptionalNumberUnaryPlus } from './omitted-optional-number-unary-plus'
+import { fixture as omittedOptionalNullableNumberUnaryPlus } from './omitted-optional-nullable-number-unary-plus'
+import { fixture as omittedOptionalStringRelational } from './omitted-optional-string-relational'
+import { fixture as omittedOptionalNullableStringRelational } from './omitted-optional-nullable-string-relational'
 import { fixture as omittedOptionalNullableNumberArithmeticDestructured } from './omitted-optional-nullable-number-arithmetic-destructured'
 import { fixture as nullableNumberArithmeticDestructured } from './nullable-number-arithmetic-destructured'
 import { fixture as callbackIndexParam } from './callback-index-param'
@@ -1511,6 +1519,8 @@ export const jsxFixtures: JSXFixture[] = [
   indexKeyCanonicalForm,
   indexKeyCanonicalFormCallback,
   indexReadPositions,
+  relationalPositions,
+  relationalOmittedNumberMemo,
   indexReadExactKey,
   indexReadCapitalisedKeyOnly,
   remainderNegativeZeroString,
@@ -1550,6 +1560,12 @@ export const jsxFixtures: JSXFixture[] = [
   unaryMinusCompoundOperand,
   omittedOptionalNumberNegation,
   omittedOptionalNullableNumberArithmetic,
+  omittedOptionalNullableNumberRelational,
+  omittedOptionalNumberRelational,
+  omittedOptionalNumberUnaryPlus,
+  omittedOptionalNullableNumberUnaryPlus,
+  omittedOptionalStringRelational,
+  omittedOptionalNullableStringRelational,
   omittedOptionalNullableNumberArithmeticDestructured,
   nullableNumberArithmeticDestructured,
   callbackIndexParam,

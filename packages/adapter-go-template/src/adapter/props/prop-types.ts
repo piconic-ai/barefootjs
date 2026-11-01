@@ -550,8 +550,9 @@ export function collectOptionalChainReceiverPropNames(ctx: GoEmitContext, ir: Co
 
 /**
  * Names of OPTIONAL no-default props read as an arithmetic operand whose nil
- * reads as `undefined` (`props.n * 2`, `n + 1`, `-n` with `n?: number`)
- * anywhere in the component's element tree (#3533). The shared decision
+ * reads as `undefined` (`props.n * 2`, `n + 1`, `-n`, `+n` with `n?: number`,
+ * or a comparison over `s?: string`) anywhere in the component's element
+ * tree (#3533, #3824 step 3). The shared decision
  * (`arithmeticOperandCoercion`) routes the operand through `bf_number`,
  * which maps nil to `NaN` as JS `ToNumber(undefined)` does. A concrete
  * `float64` field reads an omitted prop as `0`, so these props take the same
@@ -577,7 +578,8 @@ export function collectArithmeticAbsentPropNames(ctx: GoEmitContext, ir: Compone
   const addOperand = (op: string, operand: ParsedExpr, other: ParsedExpr | undefined): void => {
     const propName = propNameOf(operand)
     if (propName === null || !optionalParams.has(propName)) return
-    if (arithmeticOperandCoercion(op, operand, other, nullishCtx) === 'undefined') names.add(propName)
+    const coercion = arithmeticOperandCoercion(op, operand, other, nullishCtx)
+    if (coercion === 'undefined' || coercion === 'undefined-keep') names.add(propName)
   }
   const walk = (node: unknown): void => {
     if (!node || typeof node !== 'object') return
@@ -592,7 +594,9 @@ export function collectArithmeticAbsentPropNames(ctx: GoEmitContext, ir: Compone
       addOperand(rec.op as string, left, right)
       addOperand(rec.op as string, right, left)
     }
-    if (rec.kind === 'unary' && rec.op === '-' && rec.argument) addOperand('-', rec.argument as ParsedExpr, undefined)
+    if (rec.kind === 'unary' && (rec.op === '-' || rec.op === '+') && rec.argument) {
+      addOperand(rec.op, rec.argument as ParsedExpr, undefined)
+    }
     for (const value of Object.values(rec)) walk(value)
   }
   walk(ir.root)

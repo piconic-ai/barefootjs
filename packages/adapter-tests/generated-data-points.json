@@ -11043,6 +11043,30 @@
       }
     }
   ],
+  "omitted-optional-nullable-number-relational": [
+    {
+      "name": "gen:missing:union:1",
+      "props": {
+        "missing": null
+      }
+    }
+  ],
+  "omitted-optional-nullable-number-unary-plus": [
+    {
+      "name": "gen:missing:union:1",
+      "props": {
+        "missing": null
+      }
+    }
+  ],
+  "omitted-optional-nullable-string-relational": [
+    {
+      "name": "gen:missing:union:1",
+      "props": {
+        "missing": null
+      }
+    }
+  ],
   "omitted-optional-number-arithmetic": [
     {
       "name": "gen:missing:zero",
@@ -11174,11 +11198,113 @@
       }
     }
   ],
+  "omitted-optional-number-relational": [
+    {
+      "name": "gen:missing:zero",
+      "props": {
+        "missing": 0
+      }
+    },
+    {
+      "name": "gen:missing:negative",
+      "props": {
+        "missing": -7
+      }
+    },
+    {
+      "name": "gen:missing:large",
+      "props": {
+        "missing": 1234567890
+      }
+    }
+  ],
+  "omitted-optional-number-unary-plus": [
+    {
+      "name": "gen:missing:zero",
+      "props": {
+        "nothing": null,
+        "missing": 0
+      }
+    },
+    {
+      "name": "gen:missing:negative",
+      "props": {
+        "nothing": null,
+        "missing": -7
+      }
+    },
+    {
+      "name": "gen:missing:large",
+      "props": {
+        "nothing": null,
+        "missing": 1234567890
+      }
+    }
+  ],
   "omitted-optional-row-field-plus": [
     {
       "name": "gen:opts:empty",
       "props": {
         "opts": []
+      }
+    }
+  ],
+  "omitted-optional-string-relational": [
+    {
+      "name": "gen:missing:empty",
+      "props": {
+        "present": "b",
+        "missing": ""
+      }
+    },
+    {
+      "name": "gen:missing:markup",
+      "props": {
+        "present": "b",
+        "missing": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:missing:multibyte",
+      "props": {
+        "present": "b",
+        "missing": "日本語"
+      }
+    },
+    {
+      "name": "gen:flag:true",
+      "props": {
+        "present": "b",
+        "flag": true
+      }
+    },
+    {
+      "name": "gen:flag:false",
+      "props": {
+        "present": "b",
+        "flag": false
+      }
+    },
+    {
+      "name": "gen:present:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:present:empty",
+      "props": {
+        "present": ""
+      }
+    },
+    {
+      "name": "gen:present:markup",
+      "props": {
+        "present": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:present:multibyte",
+      "props": {
+        "present": "日本語"
       }
     }
   ],
@@ -12813,6 +12939,53 @@
       "name": "gen:nums:empty",
       "props": {
         "nums": []
+      }
+    }
+  ],
+  "relational-omitted-number-memo": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0,
+        "nul": null
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7,
+        "nul": null
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890,
+        "nul": null
+      }
+    },
+    {
+      "name": "gen:maybe:zero",
+      "props": {
+        "n": 1,
+        "nul": null,
+        "maybe": 0
+      }
+    },
+    {
+      "name": "gen:maybe:negative",
+      "props": {
+        "n": 1,
+        "nul": null,
+        "maybe": -7
+      }
+    },
+    {
+      "name": "gen:maybe:large",
+      "props": {
+        "n": 1,
+        "nul": null,
+        "maybe": 1234567890
       }
     }
   ],

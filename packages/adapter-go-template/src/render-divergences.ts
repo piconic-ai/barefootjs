@@ -156,6 +156,10 @@ export const renderDivergences: RenderDivergences = {
   // by Go field names. A JS-keyed map holding only `Name` then answers a read
   // of `name`; the two map shapes cannot be told apart at runtime.
   'index-read-capitalised-key-only': { limitation: 'index-read-capitalised-key-only' },
+  // A memo Go computes with the runtime evaluator (`bf.EvalExpr`) reads an
+  // omitted optional number prop as `null`, not `undefined`: the evaluator
+  // has one nil and receives no operand coercion, so `maybe < 1` is true.
+  'relational-omitted-number-memo': { limitation: 'evaluated-memo-omitted-number-operand' },
   // A destructure default that calls a callback and reads no earlier prop
   // (`{ b = ['y', ''].filter((x) => x !== '') }`): the props constructor
   // has no conversion from the evaluated array to the field's slice type,

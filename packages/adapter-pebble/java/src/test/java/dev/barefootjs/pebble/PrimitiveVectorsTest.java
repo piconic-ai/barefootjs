@@ -82,7 +82,9 @@ class PrimitiveVectorsTest {
    * One binding per op the Pebble adapter can spell natively, to the native
    * Pebble operator: a test is Pebble's own {@code if} / {@code not}; an
    * index read is Pebble's own {@code []}; a number literal is a Pebble
-   * literal, compiled in a real template. It runs over the cases whose
+   * literal, compiled in a real template; a relational operator is Pebble's
+   * own {@code <} / {@code <=} / {@code >} / {@code >=}; a unary {@code +}
+   * over a number is the operand itself. It runs over the cases whose
    * domain the adapter's NATIVE_SAFE table claims
    * ({@code primitives-native-safe.json}; spec/js-primitive-semantics.md,
    * "Conformance" item 3).
@@ -90,7 +92,27 @@ class PrimitiveVectorsTest {
   private static final Map<String, Function<List<Object>, Object>> NATIVE_BINDINGS = Map.ofEntries(
       Map.entry("truthy", a -> pebbleIf(a.get(0))),
       Map.entry("get", a -> pebbleIndex(a.get(0), a.get(1))),
-      Map.entry("number", a -> pebbleLiteral((String) a.get(0))));
+      Map.entry("number", a -> pebbleLiteral((String) a.get(0))),
+      Map.entry("to_number", a -> a.get(0)),
+      Map.entry("lt", a -> pebbleCompare("<", a.get(0), a.get(1))),
+      Map.entry("le", a -> pebbleCompare("<=", a.get(0), a.get(1))),
+      Map.entry("gt", a -> pebbleCompare(">", a.get(0), a.get(1))),
+      Map.entry("ge", a -> pebbleCompare(">=", a.get(0), a.get(1))));
+
+  /** Pebble's own comparison {@code a <op> b}, handed back through {@code capture}. */
+  private static Object pebbleCompare(String op, Object a, Object b) {
+    Capture capture = new Capture();
+    Map<String, Object> context = new LinkedHashMap<>();
+    context.put("a", a);
+    context.put("b", b);
+    context.put("capture", capture);
+    try {
+      PEBBLE.getTemplate("{{ capture.accept(a " + op + " b) }}").evaluate(new StringWriter(), context);
+    } catch (IOException e) {
+      throw new UncheckedIOException(e);
+    }
+    return capture.value;
+  }
 
   /** Hands a Pebble expression's value back to Java. */
   public static final class Capture {

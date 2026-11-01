@@ -256,6 +256,89 @@
     {
       "fn": "to_number",
       "args": [
+        "0x20000000000001"
+      ],
+      "expect": 9007199254740992,
+      "domain": "string",
+      "note": "a hex string at 2^53 + 1 rounds to even, down"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "0o400000000000000001"
+      ],
+      "expect": 9007199254740992,
+      "domain": "string",
+      "note": "an octal string at 2^53 + 1 rounds to even, down"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "0x2000000000000101"
+      ],
+      "expect": 2305843009213694500,
+      "domain": "string",
+      "note": "a hex string just above a halfway point rounds up"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "0x2000000000000100"
+      ],
+      "expect": 2305843009213694000,
+      "domain": "string",
+      "note": "a hex string at a halfway point rounds to even, down"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "0x2000000000000300"
+      ],
+      "expect": 2305843009213695000,
+      "domain": "string",
+      "note": "a hex string at a halfway point rounds to even, up"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "0b111111111111111111111111111111111111111111111111111111"
+      ],
+      "expect": 18014398509481984,
+      "domain": "string",
+      "note": "a binary string of 54 ones rounds up to 2^54"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "0x0000000000000000000000000000001"
+      ],
+      "expect": 1,
+      "domain": "string",
+      "note": "leading zeros of a hex string carry no bits"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "0xfffffffffffffb00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      ],
+      "expect": 1.7976931348623157e+308,
+      "domain": "string",
+      "note": "a hex string below the overflow halfway point is the largest double"
+    },
+    {
+      "fn": "to_number",
+      "args": [
+        "0xfffffffffffffc00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+      ],
+      "expect": {
+        "$num": "Infinity"
+      },
+      "domain": "string",
+      "note": "a hex string at the overflow halfway point is Infinity"
+    },
+    {
+      "fn": "to_number",
+      "args": [
         "-0x10"
       ],
       "expect": {

@@ -305,9 +305,38 @@ function planUnary(expr: Extract<ParsedExpr, { kind: 'unary' }>, typing: ScopedO
     return folded ? planNumberLiteral(folded.value, target) : decide('neg', 'unproven', target, 'neg')
   }
   if (expr.op === '+') {
-    return decide('to-number', isExactly(operandFacts(expr.argument, typing), 'number') ? 'number' : 'unproven', target, 'to_number')
+    // A unary `+` is ToNumber itself, and no target's native `+x` converts a
+    // string (Python, Ruby and Java raise; Perl, Go and the PHP engines drop
+    // it), so only a proven number is a claimable proof (#3824 step 3). The
+    // table's `unproven` claim for `to-number` describes binary `-` / `*`
+    // over unproven operands, which keep their native operator until step 4.
+    return isExactly(operandFacts(expr.argument, typing), 'number')
+      ? decide('to-number', 'number', target, 'to_number')
+      : { mode: 'helper', op: 'to-number', helper: 'to_number', proof: 'unproven' }
   }
   return null
+}
+
+/**
+ * The helper a relational plan names for `op` (`<` → `lt`, …), or null when
+ * the plan names the native operator (both operands proven non-nil numbers
+ * and the target claims `number-pair`; #3824 step 3). A null plan (an
+ * emitter method reached outside `emitParsedExpr`) takes the helper, which
+ * is never wrong. Null too for an `op` that is not relational.
+ */
+export function relationalHelper(op: string, plan: PrimitivePlan | null): PrimitiveHelper | null {
+  const helper = RELATIONAL_HELPERS[op]
+  if (!helper) return null
+  return isNativePlan(plan, 'relational') ? null : helper
+}
+
+/**
+ * Whether a unary-`+` plan names the native spelling (the operand itself, a
+ * proven number); otherwise the emitter spells the runtime's `to_number`
+ * (#3824 step 3). A null plan takes the helper.
+ */
+export function isNativeToNumber(plan: PrimitivePlan | null): boolean {
+  return isNativePlan(plan, 'to-number')
 }
 
 function planLogical(expr: Extract<ParsedExpr, { kind: 'logical' }>, typing: ScopedOperandTyping, target: NativeSafeTable): PrimitivePlan {

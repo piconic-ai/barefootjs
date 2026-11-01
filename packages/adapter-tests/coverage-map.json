@@ -11456,6 +11456,59 @@
         "text"
       ]
     },
+    "omitted-optional-nullable-number-relational": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:>=",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "omitted-optional-nullable-number-unary-plus": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:<",
+        "literal:number",
+        "literal:string",
+        "unary:+"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "omitted-optional-nullable-string-relational": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:>=",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "omitted-optional-number-arithmetic": {
       "kinds": [
         "binary",
@@ -11525,6 +11578,43 @@
         "text"
       ]
     },
+    "omitted-optional-number-relational": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:>=",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "omitted-optional-number-unary-plus": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:<=",
+        "literal:number",
+        "literal:string",
+        "unary:+"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "omitted-optional-row-field-plus": {
       "kinds": [
         "binary",
@@ -11540,6 +11630,25 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "omitted-optional-string-relational": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:<=",
+        "binary:>",
+        "binary:>=",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
         "text"
       ]
     },
@@ -12743,6 +12852,57 @@
       "kinds": [],
       "axes": [],
       "contexts": []
+    },
+    "relational-omitted-number-memo": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:<",
+        "binary:>=",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "relational-positions": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "array-method:slice",
+        "binary:<",
+        "binary:<=",
+        "binary:>",
+        "binary:>=",
+        "literal:number",
+        "literal:string",
+        "sort-direction:asc",
+        "sort-key:auto",
+        "sort-target:self",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
     },
     "remainder-fraction-zero-divisor": {
       "kinds": [
