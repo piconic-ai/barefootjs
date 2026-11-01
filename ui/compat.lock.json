@@ -4590,32 +4590,6 @@
           ]
         }
       },
-      "json-stringify-compared-string-prop": {
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "string-number-relational-comparison"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "string-number-relational-comparison"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "string-number-relational-comparison"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "string-number-relational-comparison"
-          ]
-        }
-      },
       "jsx-element-prop-array": {
         "blade": {
           "kind": "refusal",
@@ -7178,6 +7152,14 @@
           ]
         }
       },
+      "relational-omitted-number-memo": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "evaluated-memo-omitted-number-operand"
+          ]
+        }
+      },
       "reserved-name-and-internal-twin": {
         "blade": {
           "kind": "refusal",
@@ -8691,10 +8673,6 @@
         "description": "A lowercase index key does not read an object key that differs only by its capitalised first letter",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/index-read-capitalised-key-only.ts"
       },
-      "json-stringify-compared-string-prop": {
-        "description": "JSON.stringify of a numeric-looking string prop stays quoted after a numeric comparison",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/json-stringify-compared-string-prop.ts"
-      },
       "jsx-element-prop-array": {
         "description": "Array literal wrapping JSX at a non-children prop position refuses with BF021",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-element-prop-array.ts"
@@ -8846,6 +8824,10 @@
       "ref-mount-attr": {
         "description": "A ref mount callback writing an attribute the JSX never renders refuses with BF063",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/ref-mount-attr.ts"
+      },
+      "relational-omitted-number-memo": {
+        "description": "A memo comparing an omitted optional number prop is false, and one comparing a null prop reads it…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/relational-omitted-number-memo.ts"
       },
       "reserved-name-and-internal-twin": {
         "description": "Props named loop and __bf_loop render their own values, or the adapter refuses",
@@ -9461,6 +9443,19 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "evaluated-memo-omitted-number-operand": {
+      "title": "An omitted optional number compared in a memo the runtime evaluates",
+      "kind": "silent",
+      "given": "a memo body comparing an optional number prop (`maybe?: number`) with `<` / `<=` / `>` / `>=`, rendered with the prop omitted, where the adapter computes the memo with its runtime evaluator",
+      "expected": "the omitted prop reads `undefined`, which converts to `NaN`, so `maybe < n` and `maybe >= n` are both false",
+      "actual": "the omitted prop reads as `null` (`0`), so `maybe < 1` is true",
+      "fixtures": [
+        "relational-omitted-number-memo"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "fragment-wrapped-conditional-return-branch-scope": {
@@ -10132,22 +10127,6 @@
         "mojolicious",
         "twig",
         "xslate"
-      ]
-    },
-    "string-number-relational-comparison": {
-      "title": "Relational comparison between a string and a number",
-      "kind": "silent",
-      "given": "`<` / `>` / `<=` / `>=` with a string operand and a number operand (a string prop compared with `0`)",
-      "expected": "the string is converted to a number first, so `'-2.0' < 0` is true and `'1e5' < 0` is false",
-      "actual": "throws a type error at render time, or renders the comparison without converting the string (`'-2.0' < 0` is false)",
-      "fixtures": [
-        "json-stringify-compared-string-prop"
-      ],
-      "adapters": [
-        "erb",
-        "jinja",
-        "minijinja",
-        "pebble"
       ]
     },
     "unlowerable-loop-filter-predicate": {

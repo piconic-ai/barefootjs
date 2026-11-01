@@ -227,12 +227,6 @@
               ]
             },
             {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -613,12 +607,6 @@
               ]
             },
             {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -758,12 +746,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -1042,12 +1024,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -3431,12 +3407,6 @@
               ]
             },
             {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
-              ]
-            },
-            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -3717,6 +3687,12 @@
               ]
             },
             {
+              "fixture": "relational-omitted-number-memo",
+              "limitations": [
+                "evaluated-memo-omitted-number-operand"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3808,12 +3784,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -3944,12 +3914,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -4192,12 +4156,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -4938,12 +4896,6 @@
               ]
             },
             {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -5440,6 +5392,12 @@
               ]
             },
             {
+              "fixture": "relational-omitted-number-memo",
+              "limitations": [
+                "evaluated-memo-omitted-number-operand"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -5639,12 +5597,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -5925,12 +5877,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -6467,12 +6413,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -8012,12 +7952,6 @@
               ]
             },
             {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -8706,6 +8640,12 @@
               ]
             },
             {
+              "fixture": "relational-omitted-number-memo",
+              "limitations": [
+                "evaluated-memo-omitted-number-operand"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -8929,12 +8869,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -9281,12 +9215,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -9955,12 +9883,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -11341,12 +11263,6 @@
               ]
             },
             {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -11879,6 +11795,12 @@
               ]
             },
             {
+              "fixture": "relational-omitted-number-memo",
+              "limitations": [
+                "evaluated-memo-omitted-number-operand"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -12048,12 +11970,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -12304,12 +12220,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -12810,12 +12720,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -14357,12 +14261,6 @@
               ]
             },
             {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
-              ]
-            },
-            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -14877,6 +14775,12 @@
               ]
             },
             {
+              "fixture": "relational-omitted-number-memo",
+              "limitations": [
+                "evaluated-memo-omitted-number-operand"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -15058,12 +14962,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -15320,12 +15218,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -15820,12 +15712,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -20094,12 +19980,6 @@
         "erb": {
           "gaps": [
             {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
-              ]
-            },
-            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -20222,12 +20102,6 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
-              ]
-            },
-            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -20273,12 +20147,6 @@
         },
         "minijinja": {
           "gaps": [
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
-              ]
-            },
             {
               "fixture": "module-const-destructure-default",
               "limitations": [
@@ -20371,12 +20239,6 @@
         },
         "pebble": {
           "gaps": [
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
-              ]
-            },
             {
               "fixture": "module-const-destructure-default",
               "limitations": [
@@ -20589,48 +20451,21 @@
       "cells": {
         "hono": {},
         "blade": {},
-        "erb": {
+        "erb": {},
+        "go-template": {
           "gaps": [
             {
-              "fixture": "json-stringify-compared-string-prop",
+              "fixture": "relational-omitted-number-memo",
               "limitations": [
-                "string-number-relational-comparison"
+                "evaluated-memo-omitted-number-operand"
               ]
             }
           ]
         },
-        "go-template": {},
-        "jinja": {
-          "gaps": [
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
-              ]
-            }
-          ]
-        },
-        "minijinja": {
-          "gaps": [
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
-              ]
-            }
-          ]
-        },
+        "jinja": {},
+        "minijinja": {},
         "mojolicious": {},
-        "pebble": {
-          "gaps": [
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
-              ]
-            }
-          ]
-        },
+        "pebble": {},
         "twig": {},
         "xslate": {}
       },
@@ -20644,6 +20479,31 @@
         "description": "A number prop indexes an array prop (value and condition) and compares with its length",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/number-prop-index.ts",
         "code": "props.i < props.items.length"
+      }
+    },
+    "binary:<=": {
+      "cells": {
+        "hono": {},
+        "blade": {},
+        "erb": {},
+        "go-template": {},
+        "jinja": {},
+        "minijinja": {},
+        "mojolicious": {},
+        "pebble": {},
+        "twig": {},
+        "xslate": {}
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 156,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
+      },
+      "example": {
+        "fixture": "relational-positions",
+        "description": "Every relational-operator position gives the JS answer for string, number, mixed, nil and NaN operands",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/relational-positions.ts",
+        "code": "props.n <= props.m"
       }
     },
     "binary:===": {
@@ -21505,7 +21365,16 @@
         "hono": {},
         "blade": {},
         "erb": {},
-        "go-template": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "relational-omitted-number-memo",
+              "limitations": [
+                "evaluated-memo-omitted-number-operand"
+              ]
+            }
+          ]
+        },
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},
@@ -21519,10 +21388,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "comparison-ternary-text",
-        "description": "Comparison operators (>=, ===, !==) as ternary conditions",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/comparison-ternary-text.ts",
-        "code": "n() >= 10"
+        "fixture": "relational-omitted-number-memo",
+        "description": "A memo comparing an omitted optional number prop is false, and one comparing a null prop reads it as 0",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/relational-omitted-number-memo.ts",
+        "code": "props.maybe >= props.n"
       }
     },
     "literal:boolean": {
@@ -22262,12 +22131,6 @@
               ]
             },
             {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
-              ]
-            },
-            {
               "fixture": "markup-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -22630,12 +22493,6 @@
               ]
             },
             {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
-              ]
-            },
-            {
               "fixture": "markup-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -22781,12 +22638,6 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -23089,12 +22940,6 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -23763,12 +23608,6 @@
               ]
             },
             {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
-              ]
-            },
-            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -24115,6 +23954,12 @@
               ]
             },
             {
+              "fixture": "relational-omitted-number-memo",
+              "limitations": [
+                "evaluated-memo-omitted-number-operand"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -24254,12 +24099,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -24420,12 +24259,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {
@@ -24746,12 +24579,6 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
-              ]
-            },
-            {
-              "fixture": "json-stringify-compared-string-prop",
-              "limitations": [
-                "string-number-relational-comparison"
               ]
             },
             {

@@ -12594,6 +12594,57 @@
       "axes": [],
       "contexts": []
     },
+    "relational-omitted-number-memo": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:<",
+        "binary:>=",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "relational-positions": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "array-method:slice",
+        "binary:<",
+        "binary:<=",
+        "binary:>",
+        "binary:>=",
+        "literal:number",
+        "literal:string",
+        "sort-direction:asc",
+        "sort-key:auto",
+        "sort-target:self",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "remainder-fraction-zero-divisor": {
       "kinds": [
         "binary",
