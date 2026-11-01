@@ -951,6 +951,56 @@
       }
     }
   ],
+  "body-destructure-non-identifier-source": [
+    {
+      "name": "gen:nested:object:minimal",
+      "props": {
+        "nested": {
+          "a": ""
+        }
+      }
+    }
+  ],
+  "body-destructure-non-literal-default": [
+    {
+      "name": "gen:fallback:empty",
+      "props": {
+        "fallback": ""
+      }
+    },
+    {
+      "name": "gen:fallback:markup",
+      "props": {
+        "fallback": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:fallback:multibyte",
+      "props": {
+        "fallback": "日本語"
+      }
+    }
+  ],
+  "body-destructure-rest-non-props-source": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
   "body-destructure-rest-props": [
     {
       "name": "gen:title:empty",
@@ -1015,6 +1065,169 @@
       "props": {
         "value": 1,
         "label": "日本語"
+      }
+    }
+  ],
+  "body-rest-member-read": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "id": "I",
+        "items": [
+          "p",
+          "q"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "id": "I",
+        "items": [
+          "p",
+          "q"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "id": "I",
+        "items": [
+          "p",
+          "q"
+        ]
+      }
+    },
+    {
+      "name": "gen:id:absent",
+      "props": {
+        "label": "L",
+        "items": [
+          "p",
+          "q"
+        ]
+      }
+    },
+    {
+      "name": "gen:id:empty",
+      "props": {
+        "label": "L",
+        "id": "",
+        "items": [
+          "p",
+          "q"
+        ]
+      }
+    },
+    {
+      "name": "gen:id:markup",
+      "props": {
+        "label": "L",
+        "id": "<b>&\"'</b>",
+        "items": [
+          "p",
+          "q"
+        ]
+      }
+    },
+    {
+      "name": "gen:id:multibyte",
+      "props": {
+        "label": "L",
+        "id": "日本語",
+        "items": [
+          "p",
+          "q"
+        ]
+      }
+    },
+    {
+      "name": "gen:title:empty",
+      "props": {
+        "label": "L",
+        "id": "I",
+        "items": [
+          "p",
+          "q"
+        ],
+        "title": ""
+      }
+    },
+    {
+      "name": "gen:title:markup",
+      "props": {
+        "label": "L",
+        "id": "I",
+        "items": [
+          "p",
+          "q"
+        ],
+        "title": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:title:multibyte",
+      "props": {
+        "label": "L",
+        "id": "I",
+        "items": [
+          "p",
+          "q"
+        ],
+        "title": "日本語"
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "label": "L",
+        "id": "I",
+        "items": []
+      }
+    }
+  ],
+  "body-rest-taken-key-read": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    },
+    {
+      "name": "gen:id:empty",
+      "props": {
+        "label": "L",
+        "id": ""
+      }
+    },
+    {
+      "name": "gen:id:markup",
+      "props": {
+        "label": "L",
+        "id": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:id:multibyte",
+      "props": {
+        "label": "L",
+        "id": "日本語"
       }
     }
   ],
@@ -13824,6 +14037,15 @@
       }
     }
   ],
+  "rest-binding-shadowed-by-loop-row": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": [],
+        "tone": "outer"
+      }
+    }
+  ],
   "rest-member-ternary": [
     {
       "name": "gen:items:empty",
@@ -13868,6 +14090,49 @@
         "tone": "info",
         "size": 2,
         "__instanceId": "RestSpreadChildOverrideHydrationProps_test"
+      }
+    }
+  ],
+  "rest-spread-explicit-before-closed-rest": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "items": [
+          "p",
+          "q"
+        ],
+        "title": "given"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "items": [
+          "p",
+          "q"
+        ],
+        "title": "given"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "items": [
+          "p",
+          "q"
+        ],
+        "title": "given"
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "label": "x",
+        "items": [],
+        "title": "given"
       }
     }
   ],

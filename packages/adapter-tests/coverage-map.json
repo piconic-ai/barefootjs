@@ -1036,6 +1036,39 @@
         "text"
       ]
     },
+    "body-destructure-non-identifier-source": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "body-destructure-non-literal-default": {
+      "kinds": [
+        "identifier",
+        "object-literal"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "body-destructure-rest-non-props-source": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "body-destructure-rest-props": {
       "kinds": [
         "binary",
@@ -1135,6 +1168,32 @@
         "attribute",
         "condition",
         "loop",
+        "text"
+      ]
+    },
+    "body-rest-member-read": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "body-rest-taken-key-read": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
         "text"
       ]
     },
@@ -2530,9 +2589,14 @@
     "component-rest-spread-explicit-override": {
       "kinds": [
         "identifier",
+        "literal",
+        "logical",
         "member"
       ],
-      "axes": [],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
       "contexts": [
         "attribute",
         "loop",
@@ -13526,6 +13590,18 @@
       ],
       "contexts": []
     },
+    "rest-binding-shadowed-by-loop-row": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "rest-destructure-array-in-map": {
       "kinds": [
         "array-literal",
@@ -13659,6 +13735,23 @@
       "contexts": [
         "attribute",
         "condition",
+        "text"
+      ]
+    },
+    "rest-spread-explicit-before-closed-rest": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
         "text"
       ]
     },

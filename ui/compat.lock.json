@@ -1977,6 +1977,8 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "body-destructure-without-const-form",
+              "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
@@ -2001,6 +2003,8 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "body-destructure-without-const-form",
+              "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
@@ -2028,6 +2032,8 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "body-destructure-without-const-form",
+              "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
@@ -2052,6 +2058,8 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "body-destructure-without-const-form",
+              "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
@@ -2076,6 +2084,8 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "body-destructure-without-const-form",
+              "body-rest-taken-key-read",
               "boolean-in-static-loop-item",
               "callback-index-param",
               "callback-outside-evaluator",
@@ -2101,6 +2111,8 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "body-destructure-without-const-form",
+              "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
@@ -2125,6 +2137,8 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "body-destructure-without-const-form",
+              "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
@@ -2149,6 +2163,8 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "body-destructure-without-const-form",
+              "body-rest-taken-key-read",
               "boolean-in-static-loop-item",
               "callback-index-param",
               "callback-outside-evaluator",
@@ -2224,6 +2240,374 @@
           "kind": "render",
           "limitations": [
             "awaits-undefined-value"
+          ]
+        }
+      },
+      "body-destructure-non-identifier-source": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        }
+      },
+      "body-destructure-non-literal-default": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        }
+      },
+      "body-destructure-rest-non-props-source": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-destructure-without-const-form"
+          ]
+        }
+      },
+      "body-rest-taken-key-read": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-rest-taken-key-read"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-rest-taken-key-read"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-rest-taken-key-read"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-rest-taken-key-read"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-rest-taken-key-read"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-rest-taken-key-read"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-rest-taken-key-read"
+          ]
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-rest-taken-key-read"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-rest-taken-key-read"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-rest-taken-key-read"
           ]
         }
       },
@@ -8971,6 +9355,22 @@
         "description": "A + or template literal over an either-nil string, a dynamic + over an omitted number, and an…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/awaits-undefined-plus-shapes.ts"
       },
+      "body-destructure-non-identifier-source": {
+        "description": "A body destructure of a member read or a call is refused",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-destructure-non-identifier-source.ts"
+      },
+      "body-destructure-non-literal-default": {
+        "description": "A body destructure with a non-literal default is refused",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-destructure-non-literal-default.ts"
+      },
+      "body-destructure-rest-non-props-source": {
+        "description": "A body destructure with a rest element from a const object is refused",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-destructure-rest-non-props-source.ts"
+      },
+      "body-rest-taken-key-read": {
+        "description": "A read of a taken key through a props-object body rest is refused",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-rest-taken-key-read.ts"
+      },
       "callback-index-param": {
         "description": "A `.map()` callback reading its index — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/callback-index-param.ts"
@@ -9697,6 +10097,58 @@
         "pebble",
         "twig",
         "xslate"
+      ]
+    },
+    "body-destructure-without-const-form": {
+      "title": "Component-body destructure with no const form",
+      "kind": "refusal",
+      "given": "a component-body object destructure that is not of the props object and is not a `const` destructure of a const object with plain or literal-defaulted elements: a rest element (`const { a, ...more } = conf`), a non-literal default (`const { a = props.b } = conf`), or a source that is not a plain name (`const { a } = props.nested`, `const { a } = getConf()`)",
+      "expected": "each destructured name holds the value JS binds to it",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "body-destructure-non-identifier-source",
+        "body-destructure-non-literal-default",
+        "body-destructure-rest-non-props-source"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "body-rest-taken-key-read": {
+      "title": "Read of a taken key through a props-object body rest",
+      "kind": "refusal",
+      "given": "a member read, through the rest of a component-body destructure of the props object, of a key the same destructure takes (`const { label, ...rest } = props`, `rest.label`)",
+      "expected": "the read is `undefined`, as the rest never holds the key",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "body-rest-taken-key-read"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
       ]
     },
     "boolean-in-static-loop-item": {

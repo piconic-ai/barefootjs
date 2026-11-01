@@ -15,6 +15,31 @@ import ts from 'typescript'
 export interface ExcludeRange {
   start: number
   end: number
+  /**
+   * Text that stands in for the range instead of dropping it: a read the
+   * analyzer respells (`addSourceReplacement`). Applied only when the whole
+   * range lies inside the node being reconstructed; a node inside the range
+   * (`rest` of `rest.id`) keeps its own text.
+   */
+  replacement?: string
+}
+
+/**
+ * Insert `range` (with its `replacement`) into the sorted, merged `ranges`.
+ * The span must not overlap a range already there; one that does is not
+ * added, and false is returned.
+ */
+export function addSourceReplacement(ranges: ExcludeRange[], range: Required<ExcludeRange>): boolean {
+  let i = 0
+  while (i < ranges.length && ranges[i].end <= range.start) i++
+  if (i < ranges.length && ranges[i].start < range.end) return false
+  ranges.splice(i, 0, range)
+  return true
+}
+
+/** Whether `range` applies to the node spanning `[nodeStart, nodeEnd)`. */
+function appliesWithin(range: ExcludeRange, nodeStart: number, nodeEnd: number): boolean {
+  return range.replacement === undefined || (range.start >= nodeStart && range.end <= nodeEnd)
 }
 
 /**
@@ -59,9 +84,11 @@ export function reconstructWithoutTypes(
   for (let i = lo; i < ranges.length; i++) {
     const range = ranges[i]
     if (range.start >= nodeEnd) break
+    if (!appliesWithin(range, nodeStart, nodeEnd)) continue
     if (range.start > pos) {
       result += fullText.slice(pos, range.start)
     }
+    if (range.replacement !== undefined) result += range.replacement
     pos = Math.max(pos, range.end)
   }
   if (pos < nodeEnd) {
@@ -91,11 +118,11 @@ export function reconstructAsSegments(
   const nodeEnd = node.getEnd()
   const fullText = sourceFile.text
 
-  type Edit = { start: number; end: number; marker: number | null }
+  type Edit = { start: number; end: number; marker: number | null; replacement?: string }
   const edits: Edit[] = []
   for (const r of ranges) {
-    if (r.end <= nodeStart || r.start >= nodeEnd) continue
-    edits.push({ start: r.start, end: r.end, marker: null })
+    if (r.end <= nodeStart || r.start >= nodeEnd || !appliesWithin(r, nodeStart, nodeEnd)) continue
+    edits.push({ start: r.start, end: r.end, marker: null, ...(r.replacement !== undefined && { replacement: r.replacement }) })
   }
   markers.forEach((m, i) => edits.push({ start: m.start, end: m.end, marker: i }))
   edits.sort((a, b) => a.start - b.start || b.end - a.end)
@@ -106,6 +133,7 @@ export function reconstructAsSegments(
   for (const edit of edits) {
     if (edit.start < pos) continue // subsumed by an already-emitted span
     jsBuf += fullText.slice(pos, edit.start)
+    if (edit.replacement !== undefined) jsBuf += edit.replacement
     if (edit.marker !== null) {
       if (jsBuf) segments.push({ js: jsBuf })
       jsBuf = ''

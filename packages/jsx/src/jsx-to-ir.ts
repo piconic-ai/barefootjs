@@ -7304,15 +7304,16 @@ interface ProcessedAttributes {
 // runtime to spread at hydration time, which loses that per-key resolution
 // and is reserved for cases where the key set isn't statically known.
 //
-// The `spreadExpr === restName` check is what restricts unrolling to the
-// rest-prop itself: arbitrary `{...someObject}` spreads can't be unrolled
-// because we don't have a static key list for them.
+// `closedRestSpreadSource` restricts unrolling to the rest-prop itself:
+// arbitrary `{...someObject}` spreads can't be unrolled because we don't
+// have a static key list for them.
 //
 // The shape returned satisfies both IRAttribute and IRProp.
 function expandSpreadAttribute(
   attr: ts.JsxSpreadAttribute,
   ctx: TransformContext,
   constEntries?: ReadonlyArray<{ key: string; text: string }>,
+  restFallbacks?: ReadonlyMap<string, RestKeyFallback>,
 ): Array<{
   name: string
   value: AttrValue
@@ -7322,31 +7323,34 @@ function expandSpreadAttribute(
 }> {
   const spreadExpr = ctx.getJS(attr.expression)
   const expandedKeys = ctx.analyzer.restPropsExpandedKeys
-  const restName = ctx.analyzer.restPropsName
   const loc = getSourceLocation(attr, ctx.sourceFile, ctx.filePath)
   const spreadFreeIdentifiers = extractFreeIdentifiersFromNode(attr.expression)
+  const source = closedRestSpreadSource(attr, ctx)
 
-  if (expandedKeys.length > 0 && restName && spreadExpr === restName) {
+  if (source !== null) {
     // Expanded per-key attrs reference `${restName}.${key}` — `restName` is
     // the only free identifier (the `.${key}` tail is a member-access name,
     // not an identifier reference). `restExpandedKey` (#3057) marks these so
     // Phase 2 (`collectElements`) can bind them reactively off a live
     // `_p.<key>` read instead of the one-time `${restName}.${key}` snapshot
-    // — see `IRAttribute.restExpandedKey`'s docstring.
-    // A rest a body destructure of the props object binds (`const { label,
-    // ...rest } = props`) holds the props object's keys minus the ones the
-    // destructure takes, so each expanded key reads the props object
-    // (#3844): a template binds every declared prop as its own variable,
-    // while its rest bag holds only undeclared keys.
-    const source = ctx.analyzer.restPropsOmittedKeys && ctx.analyzer.propsObjectName ? ctx.analyzer.propsObjectName : restName
+    // — see `IRAttribute.restExpandedKey`'s docstring. `source` is the
+    // props object for a body rest (`closedRestSpreadSource`). A key an
+    // earlier attribute also writes keeps that value when the caller
+    // omitted it (`restFallbacks`, {@link closedRestFallbacks}).
     const perKeyFreeIds: ReadonlySet<string> = new Set([source])
-    return expandedKeys.map(key => ({
-      name: key,
-      value: AttrValueOf.expression(`${source}.${key}`),
-      loc,
-      freeIdentifiers: perKeyFreeIds,
-      restExpandedKey: true,
-    }))
+    return expandedKeys.map(key => {
+      const read = `${source}.${key}`
+      const fallback = restFallbacks?.get(key)
+      return {
+        name: key,
+        value: fallback === undefined
+          ? AttrValueOf.expression(read)
+          : AttrValueOf.expression(restKeyWithFallback(read, fallback.text), { templateExpr: restKeyWithFallback(read, fallback.templateText) }),
+        loc,
+        freeIdentifiers: fallback === undefined ? perKeyFreeIds : new Set([source, ...fallback.freeIdentifiers]),
+        restExpandedKey: true,
+      }
+    })
   }
 
   if (constEntries) return constEntries.map(({ key, text }) => ({ name: key, value: AttrValueOf.expression(text), loc }))
@@ -7366,6 +7370,154 @@ function expandSpreadAttribute(
     loc,
     freeIdentifiers: spreadFreeIdentifiers,
   }]
+}
+
+/**
+ * The name each key of a closed-type rest spread (`{...rest}` with a
+ * statically known key set, `IRMetadata.restPropsExpandedKeys`) is read
+ * off, or null when `attr` is not one. A rest a body destructure of the
+ * props object binds (`const { label, ...rest } = props`) holds the props
+ * object's keys minus the ones the destructure takes, so its keys read the
+ * props object (#3844): a template binds every declared prop as its own
+ * variable, while its rest bag holds only undeclared keys. A loop row or
+ * callback parameter spelled like the rest binding is that binding, not
+ * the component's rest props (#3851).
+ */
+function closedRestSpreadSource(attr: ts.JsxSpreadAttribute, ctx: TransformContext): string | null {
+  const restName = ctx.analyzer.restPropsName
+  if (ctx.analyzer.restPropsExpandedKeys.length === 0 || !restName || ctx.scope.isBound(restName)) return null
+  let expr: ts.Expression = attr.expression
+  while (ts.isParenthesizedExpression(expr)) expr = expr.expression
+  if (!ts.isIdentifier(expr) || expr.text !== restName) return null
+  return ctx.analyzer.restPropsOmittedKeys && ctx.analyzer.propsObjectName ? ctx.analyzer.propsObjectName : restName
+}
+
+/**
+ * What a closed-type rest spread's keys fall back to (#3851). JSX applies
+ * attributes and spreads in order, and a spread overrides only with the
+ * keys its object has: `<Chip tone="x" {...rest} />` keeps `tone="x"` when
+ * the caller omitted `tone`. A closed rest spread is expanded into one
+ * attribute per key the props type declares, so each key an earlier
+ * attribute (or an expanded const spread) writes reads `rest.key ??
+ * (earlier)` instead ({@link restKeyWithFallback}), and the earlier explicit
+ * attribute is dropped: the expanded key now carries both values.
+ *
+ * `fallbacks` maps each closed rest spread to its keys' fallback sources,
+ * and `properties` is `properties` without the dropped attributes. An
+ * earlier value that has no source form (a JSX element prop) or may have an
+ * effect (`isReadOnlyAttrValue`) is refused with BF021. `ref`, `key` and
+ * event handlers are not attribute writes and are left as they are; an
+ * open spread (`{...obj}`) writes keys nothing knows statically, so no
+ * fallback reaches across it.
+ */
+function closedRestFallbacks(
+  properties: readonly ts.JsxAttributeLike[],
+  entries: ReadonlyMap<ts.JsxSpreadAttribute, ReadonlyArray<{ key: string; text: string }>>,
+  ctx: TransformContext,
+): { properties: ts.JsxAttributeLike[]; fallbacks: Map<ts.JsxSpreadAttribute, Map<string, RestKeyFallback>> } {
+  const fallbacks = new Map<ts.JsxSpreadAttribute, Map<string, RestKeyFallback>>()
+  const dropped = new Set<ts.JsxAttributeLike>()
+  const lastWrite = new Map<string, KeyWrite>()
+  for (const attr of properties) {
+    if (ts.isJsxAttribute(attr)) {
+      const name = attr.name.getText(ctx.sourceFile)
+      if (name !== 'ref' && name !== 'key' && !isEventHandlerName(name)) lastWrite.set(name, { attr, value: attrValueFallback(attr, ctx) })
+      continue
+    }
+    if (!ts.isJsxSpreadAttribute(attr)) continue
+    const constEntries = entries.get(attr)
+    const source = constEntries ? null : closedRestSpreadSource(attr, ctx)
+    if (constEntries) {
+      for (const e of constEntries) lastWrite.set(e.key, { value: { text: e.text, templateText: e.text, freeIdentifiers: new Set() } })
+    } else if (source === null) {
+      lastWrite.clear()
+    } else {
+      const keyFallbacks = closedRestKeyFallbacks(attr, source, lastWrite, dropped, ctx)
+      if (keyFallbacks.size > 0) fallbacks.set(attr, keyFallbacks)
+    }
+  }
+  return { properties: properties.filter(attr => !dropped.has(attr)), fallbacks }
+}
+
+/** {@link closedRestFallbacks} for one closed rest spread reading its keys off `source`. */
+function closedRestKeyFallbacks(
+  attr: ts.JsxSpreadAttribute,
+  source: string,
+  lastWrite: Map<string, KeyWrite>,
+  dropped: Set<ts.JsxAttributeLike>,
+  ctx: TransformContext,
+): Map<string, RestKeyFallback> {
+  const keyFallbacks = new Map<string, RestKeyFallback>()
+  for (const key of ctx.analyzer.restPropsExpandedKeys) {
+    const read = `${source}.${key}`
+    const earlier = lastWrite.get(key)
+    lastWrite.set(key, { value: { text: read, templateText: read, freeIdentifiers: new Set([source]) } })
+    if (!earlier) continue
+    if (earlier.value === null || (earlier.attr && !isReadOnlyAttrValue(earlier.attr.initializer))) {
+      const why = earlier.value === null ? 'its value has no expression form to keep' : 'its value may have an effect, which JS runs exactly once'
+      ctx.analyzer.errors.push(createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN, getSourceLocation(earlier.attr ?? attr, ctx.sourceFile, ctx.filePath), {
+        message: `'${key}' is written before a {...${ctx.getJS(attr.expression)}} spread that may also carry it, and ${why} when the caller omits '${key}'.`,
+        suggestion: { message: `Write '${key}' after the spread, or compute the value in a local const and pass that.` },
+      }))
+      continue
+    }
+    keyFallbacks.set(key, earlier.value)
+    lastWrite.set(key, {
+      value: {
+        text: restKeyWithFallback(read, earlier.value.text),
+        templateText: restKeyWithFallback(read, earlier.value.templateText),
+        freeIdentifiers: new Set([source, ...earlier.value.freeIdentifiers]),
+      },
+    })
+    if (earlier.attr) dropped.add(earlier.attr)
+  }
+  return keyFallbacks
+}
+
+/** A value a closed rest spread's key falls back to ({@link closedRestFallbacks}): its source text and free names. */
+interface RestKeyFallback {
+  text: string
+  /** `text` as a client-JS template reads it (`TransformContext.getTemplateJS`). */
+  templateText: string
+  freeIdentifiers: ReadonlySet<string>
+}
+
+/** The last write of a key before a spread: the explicit attribute that made it, if any, and its value (null when it has no expression form). */
+interface KeyWrite {
+  attr?: ts.JsxAttribute
+  value: RestKeyFallback | null
+}
+
+/**
+ * `read`, or `fallback` when the key `read` reads is absent. A caller's
+ * explicit `null` reads as absent too, as everywhere a template tests
+ * whether a spread carries a key: no template backend tells the two apart.
+ */
+function restKeyWithFallback(read: string, fallback: string): string {
+  return `${read} ?? (${fallback})`
+}
+
+/**
+ * A JSX attribute's value as a fallback of a later closed rest spread
+ * ({@link closedRestFallbacks}): `true` for a bare attribute, the string
+ * literal, or the expression. Null for a value with no expression form (a
+ * JSX element, an empty `{}`).
+ */
+function attrValueFallback(attr: ts.JsxAttribute, ctx: TransformContext): RestKeyFallback | null {
+  const value = attr.initializer
+  if (value === undefined) return { text: 'true', templateText: 'true', freeIdentifiers: new Set() }
+  if (ts.isStringLiteral(value)) {
+    const text = JSON.stringify(value.text)
+    return { text, templateText: text, freeIdentifiers: new Set() }
+  }
+  if (!ts.isJsxExpression(value) || value.expression === undefined) return null
+  const expr = unwrapTransparentTsWrappers(value.expression)
+  if (ts.isJsxElement(expr) || ts.isJsxSelfClosingElement(expr) || ts.isJsxFragment(expr)) return null
+  return {
+    text: ctx.getJS(value.expression),
+    templateText: ctx.getTemplateJS(value.expression),
+    freeIdentifiers: extractFreeIdentifiersFromNode(value.expression),
+  }
 }
 
 /**
@@ -7423,6 +7575,22 @@ function isEffectFreeAttrValue(value: ts.JsxAttributeValue | undefined): boolean
   if (value === undefined || ts.isStringLiteral(value)) return true
   if (!ts.isJsxExpression(value)) return false
   return value.expression === undefined || isEffectFreeExpression(value.expression)
+}
+
+/**
+ * Whether a JSX attribute's value reads without an effect for a closed
+ * rest spread's fallback ({@link closedRestFallbacks}), which evaluates it
+ * only when the caller omits the key: an {@link isEffectFreeAttrValue}
+ * value, or a member read off a name (`props.title`, `row?.label`). A prop
+ * or row read has no effect the render can observe; anything else (a call,
+ * an assignment) is refused, since JS evaluates it exactly once.
+ */
+function isReadOnlyAttrValue(value: ts.JsxAttributeValue | undefined): boolean {
+  if (isEffectFreeAttrValue(value)) return true
+  if (value === undefined || !ts.isJsxExpression(value) || value.expression === undefined) return false
+  let expr: ts.Expression = value.expression
+  while (ts.isParenthesizedExpression(expr) || ts.isPropertyAccessExpression(expr)) expr = expr.expression
+  return ts.isIdentifier(expr)
 }
 
 /**
@@ -7590,11 +7758,12 @@ function processAttributes(
   let refExpr: ts.Expression | null = null
   let hasSpread = false
   const spreadPlan = staticSpreadPlan(attributes, ctx)
+  const restPlan = closedRestFallbacks(spreadPlan.properties, spreadPlan.entries, ctx)
 
-  for (const attr of spreadPlan.properties) {
+  for (const attr of restPlan.properties) {
     if (ts.isJsxSpreadAttribute(attr)) {
       hasSpread = true
-      attrs.push(...expandSpreadAttribute(attr, ctx, spreadPlan.entries.get(attr)))
+      attrs.push(...expandSpreadAttribute(attr, ctx, spreadPlan.entries.get(attr), restPlan.fallbacks.get(attr)))
       continue
     }
 
@@ -9247,8 +9416,9 @@ function processComponentProps(
 ): IRProp[] {
   const props: IRProp[] = []
   const spreadPlan = staticSpreadPlan(attributes, ctx)
+  const restPlan = closedRestFallbacks(spreadPlan.properties, spreadPlan.entries, ctx)
 
-  for (const attr of spreadPlan.properties) {
+  for (const attr of restPlan.properties) {
     if (ts.isJsxSpreadAttribute(attr)) {
       // `restExpandedKey` (#3057) is consumed only by the element-attribute
       // path (`collect-elements.ts`'s `attr.restExpandedKey` branch) — a
@@ -9257,7 +9427,7 @@ function processComponentProps(
       // rewrite, so `IRProp` declares no such field. Strip it here rather
       // than letting the shared helper's per-key marking leak into IRProp
       // as an inert flag nothing reads.
-      props.push(...expandSpreadAttribute(attr, ctx, spreadPlan.entries.get(attr)).map(({ restExpandedKey: _restExpandedKey, ...prop }) => markPropsObjectSpread(prop)))
+      props.push(...expandSpreadAttribute(attr, ctx, spreadPlan.entries.get(attr), restPlan.fallbacks.get(attr)).map(({ restExpandedKey: _restExpandedKey, ...prop }) => markPropsObjectSpread(prop)))
       continue
     }
 

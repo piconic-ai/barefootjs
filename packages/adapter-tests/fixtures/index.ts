@@ -795,6 +795,13 @@ import { fixture as memoReduceParamShadowsNullableProp } from './memo-reduce-par
 import { fixture as restMemberTernary } from './rest-member-ternary'
 import { fixture as restMemberTernaryShapes } from './rest-member-ternary-shapes'
 import { fixture as componentRestSpreadExplicitOverride } from './component-rest-spread-explicit-override'
+import { fixture as restSpreadExplicitBeforeClosedRest } from './rest-spread-explicit-before-closed-rest'
+import { fixture as restBindingShadowedByLoopRow } from './rest-binding-shadowed-by-loop-row'
+import { fixture as bodyRestMemberRead } from './body-rest-member-read'
+import { fixture as bodyDestructureRestNonPropsSource } from './body-destructure-rest-non-props-source'
+import { fixture as bodyDestructureNonLiteralDefault } from './body-destructure-non-literal-default'
+import { fixture as bodyDestructureNonIdentifierSource } from './body-destructure-non-identifier-source'
+import { fixture as bodyRestTakenKeyRead } from './body-rest-taken-key-read'
 import { fixture as childUndeclaredPropWholePropsSpread } from './child-undeclared-prop-whole-props-spread'
 import { fixture as childInlineStringArrayProp } from './child-inline-string-array-prop'
 import { fixture as preWhitespace } from './pre-whitespace'
@@ -1986,6 +1993,13 @@ export const jsxFixtures: JSXFixture[] = [
   restMemberTernary,
   restMemberTernaryShapes,
   componentRestSpreadExplicitOverride,
+  restSpreadExplicitBeforeClosedRest,
+  restBindingShadowedByLoopRow,
+  bodyRestMemberRead,
+  bodyDestructureRestNonPropsSource,
+  bodyDestructureNonLiteralDefault,
+  bodyDestructureNonIdentifierSource,
+  bodyRestTakenKeyRead,
   childUndeclaredPropWholePropsSpread,
   childInlineStringArrayProp,
   preWhitespace,

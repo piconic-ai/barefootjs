@@ -2,7 +2,7 @@
  * IR → HTML template string generation and validation.
  */
 
-import type { AttrValue, FlatMapCallback, IRAttribute, IRElement, IRExpression, IRNode, IRProp, MapCallbackPreamble, JsSourceText } from '../types.ts'
+import type { AttrValue, FlatMapCallback, IRAttribute, IRElement, IRExpression, IRNode, IRProp, MapCallbackPreamble, JsSourceText, SpreadAttr } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
 import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, loopItemMarker, freeIdsFromRefs, setIntersects, wrapExprWithLoopParams, specsInsideRow } from './utils.ts'
 import type { LoopParamSpec } from './utils.ts'
@@ -352,6 +352,18 @@ function transformKeyValue(value: AttrValue, transformExpr: (expr: JsSourceText,
 }
 
 /**
+ * Whether the spread `v` forwards the component's own caller bag (the rest
+ * props or the props object, through any alias), which the init's
+ * `applyRestAttrs` applies instead of the template. `name` must be one of
+ * `restSpreadNames`, and Phase 1 must have resolved the spread to the bag
+ * (`SpreadAttr.callerBag`): a loop row or callback parameter spelled like
+ * the rest binding is that binding, spread like any other object (#3851).
+ */
+function isCallerBagSpread(v: SpreadAttr, restSpreadNames: ReadonlySet<string> | undefined, name: string = v.expr): boolean {
+  return !!restSpreadNames?.has(name) && v.callerBag !== undefined
+}
+
+/**
  * Render one element attribute into its template-literal substring for the
  * SSR template path. Switches on `AttrValue.kind` exhaustively so a new
  * variant becomes a type error.
@@ -384,7 +396,7 @@ function renderTemplateAttrPart(
       return templateAttrExpr(attrName, wrap(tmplStr))
     }
     case 'spread': {
-      if (restSpreadNames?.has(v.expr)) return ''
+      if (isCallerBagSpread(v, restSpreadNames)) return ''
       // `wrap` lowers loop-param references — including destructured rest
       // bindings (`...rest` lifted via `paramBindings`) — into their item
       // accessor. Skipping it here meant `{...rest}` inside a `.map()`
@@ -770,7 +782,7 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
       // SSR-reused row never has — visible the moment a row-count change
       // makes reused and rebuilt rows coexist in one list (#2756).
       const mergeCtx: MergeContext = {
-        isFilteredSpread: (v) => !!restSpreadNames?.has(v.expr),
+        isFilteredSpread: (v) => isCallerBagSpread(v, restSpreadNames),
         honorClientOnly: true,
       }
       const useMerge = shouldUseSpreadAttrsMerge(node.attrs, mergeCtx)
@@ -1933,7 +1945,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
       // loops emit `data-key-N` unconditionally per the reconciliation
       // contract).
       const mergeCtx: MergeContext = {
-        isFilteredSpread: (v) => !!restSpreadNames?.has(v.templateExpr ?? v.expr),
+        isFilteredSpread: (v) => isCallerBagSpread(v, restSpreadNames, v.templateExpr ?? v.expr),
         honorClientOnly: true,
       }
       const useMerge = shouldUseSpreadAttrsMerge(node.attrs, mergeCtx)
@@ -2577,7 +2589,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       // `buildSpreadAttrsMergeCall`) keep the contract aligned with
       // the other two CSR-side emit paths.
       const mergeCtx: MergeContext = {
-        isFilteredSpread: (v) => !!restSpreadNames?.has(v.templateExpr ?? v.expr),
+        isFilteredSpread: (v) => isCallerBagSpread(v, restSpreadNames, v.templateExpr ?? v.expr),
         honorClientOnly: true,
       }
       const useMerge = shouldUseSpreadAttrsMerge(node.attrs, mergeCtx)

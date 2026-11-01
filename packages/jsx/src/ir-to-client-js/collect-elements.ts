@@ -2,7 +2,7 @@
  * IR tree traversal → collect elements into ClientJsContext.
  */
 
-import { type IRNode, type IRElement, type IRComponent, type IRConditional, type IRLoop, type IRProp, pickAttrMetaFromIR } from '../types.ts'
+import { type AttrValue, type IRNode, type IRElement, type IRComponent, type IRConditional, type IRLoop, type IRProp, pickAttrMetaFromIR } from '../types.ts'
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBindings, LoopChildBranchSummary, LoopChildConditional, LoopOffset, NestedLoop } from './types.ts'
 import { attrValueToString, freeIdsFromRefs, PROPS_PARAM, toHtmlAttrName, rowBoundNames, withRowAccessor, type LoopParamSpec } from './utils.ts'
 import { classifyReactivity, needsEffectWrapper, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectConditionalBranchComponentNodes, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings, buildLoopRowScope, anyNameIn } from './reactivity.ts'
@@ -577,6 +577,20 @@ function mergedMirrorExpr(name: string, expr: string, index: number, spreadAt: n
   return index < spreadAt ? callerFirstPropExpr(name, expr) : expr
 }
 
+/**
+ * Which caller bag an element's spread attribute forwards, for
+ * `applyRestAttrs`: its text resolved through any `const x__alias = x` hop
+ * onto the rest/props binding (#2723, `resolveRestSpreadOrigin`). Null
+ * when Phase 1 did not resolve the spread to the bag
+ * (`SpreadAttr.callerBag`): a loop row or callback parameter spelled like
+ * the rest binding is that binding (#3851).
+ */
+function callerBagSpreadOrigin(value: AttrValue, ctx: ClientJsContext): 'rest' | 'props' | null {
+  if (value.kind !== 'spread' || value.callerBag === undefined) return null
+  const spreadVal = attrValueToString(value) ?? ''
+  return spreadVal ? resolveRestSpreadOrigin(ctx, spreadVal) : null
+}
+
 /** Build propsExpr for a child component from its IR props. */
 function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string {
   const knownSpreadProp = props.find(p => {
@@ -1110,10 +1124,7 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, insideCond
       // Other identifiers or complex expressions may not exist in the compiled init scope.
       // Always use PROPS_PARAM as the source since the init function parameter is PROPS_PARAM.
       if (attr.name === '...' && attr.value) {
-        const spreadVal = attrValueToString(attr.value) ?? ''
-        // #2723: resolve through any `const x__alias = x` hop onto the
-        // rest/props binding — see `resolveRestSpreadOrigin`'s docstring.
-        const spreadOrigin = spreadVal ? resolveRestSpreadOrigin(ctx, spreadVal) : null
+        const spreadOrigin = callerBagSpreadOrigin(attr.value, ctx)
         if (spreadOrigin !== null) {
           // `applyRestAttrs(_el, _p, exclude)` is handed the FULL props
           // object (`PROPS_PARAM`), not a computed JS rest binding, and the

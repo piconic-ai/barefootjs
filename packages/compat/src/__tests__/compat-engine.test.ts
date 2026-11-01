@@ -55,6 +55,8 @@ describe('compileForCompat', () => {
         severity: 'error',
         limitations: [
           'array-fill',
+          'body-destructure-without-const-form',
+          'body-rest-taken-key-read',
           'callback-index-param',
           'callback-outside-evaluator',
           'caller-rows-computed-key',
