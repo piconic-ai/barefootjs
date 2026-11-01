@@ -2642,6 +2642,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       }
     }
 
+    // #3845: a closed-type rest key the client reads as `_p.<key>`
+    // (`clientAnalysis.usedRestKeys`) travels too, when the caller passed it.
+    const restField = restBagField(ir.metadata)
+    for (const key of restField ? (ir.metadata.clientAnalysis?.usedRestKeys ?? []) : []) {
+      const goKey = JSON.stringify(key)
+      lines.push(`\tif v, ok := in.${restField}[${goKey}]; ok {`)
+      lines.push(`\t\tbfCallerProps[${goKey}] = v`)
+      lines.push(`\t}`)
+    }
+
     lines.push('')
   }
 

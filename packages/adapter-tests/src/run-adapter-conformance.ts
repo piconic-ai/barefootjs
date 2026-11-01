@@ -29,6 +29,7 @@ import { runConformanceSuite } from './conformance'
 import { runDataPointConformance } from './data-point-conformance'
 import { runMarkerConformance } from './marker-conformance'
 import { runClaimPlanConformance } from './claim-plan-conformance'
+import { runHydrationPayloadConformance } from './hydration-payload-conformance'
 import type { ExpectedDiagnostic } from './types'
 import {
   templatePrimitiveCases,
@@ -175,6 +176,16 @@ export function runAdapterConformanceTests(
       ...Object.keys(opts.expectedDiagnostics ?? {}),
     ]),
     skipDataPoints: opts.skipDataPoints,
+  })
+
+  runHydrationPayloadConformance({
+    factory: opts.factory,
+    render,
+    onRenderError: opts.onRenderError,
+    skipFixtures: new Set([
+      ...(opts.skipJsx ?? []),
+      ...Object.keys(opts.expectedDiagnostics ?? {}),
+    ]),
   })
 
   if (opts.skipRenderContract) return

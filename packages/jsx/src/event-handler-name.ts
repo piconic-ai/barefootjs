@@ -12,3 +12,18 @@
 export function isEventHandlerName(name: string): boolean {
   return /^on[A-Z]/.test(name)
 }
+
+/**
+ * Whether a prop can travel in the `bf-p` hydration payload by name: not an
+ * event handler (`isEventHandlerName`, wired through the listener path) and
+ * not `__`-prefixed hydration plumbing. A data prop named `one`, `only` or
+ * `once` travels like any other (#3845).
+ *
+ * Shared by the reference adapter's serialization (`propsToSerialize`) and
+ * the two compile-time classifications of the same set (`computeLiveOnlyProps`,
+ * `checkRichTypePropSerialization`), so the three agree on which props the
+ * payload carries.
+ */
+export function isHydrationPayloadPropName(name: string): boolean {
+  return !isEventHandlerName(name) && !name.startsWith('__')
+}

@@ -307,7 +307,35 @@ export function rewriteBarePropRefs(
   propAliases?: ReadonlyMap<string, string>,
   replacementFor?: (localName: string, callerKey: string) => string,
 ): string | undefined {
-  // Walk AST to find which prop names are actually used as value references
+  const foundPropRefs = foundBarePropRefs(node, propNames, extraPropRefs)
+  if (foundPropRefs.size === 0) return undefined
+  return (
+    applyScopedPropRefRewrite(text, foundPropRefs, propAliases, replacementFor) ??
+    applyRegexPropRefRewrite(text, foundPropRefs, propAliases, replacementFor)
+  )
+}
+
+/**
+ * `rewriteBarePropRefs` without the regex fallback: `null` when `text`
+ * does not parse as an expression, so the caller refuses the shape instead
+ * of splicing names the scope-blind regex would also hit inside an inner
+ * binding (`const one = 'a'` → `const _p.one = 'a'`, #3845).
+ */
+export function rewriteBarePropRefsStructural(
+  text: string,
+  node: ts.Node,
+  propNames: Set<string>,
+  extraPropRefs?: ReadonlySet<string>,
+  propAliases?: ReadonlyMap<string, string>,
+  replacementFor?: (localName: string, callerKey: string) => string,
+): string | undefined | null {
+  const foundPropRefs = foundBarePropRefs(node, propNames, extraPropRefs)
+  if (foundPropRefs.size === 0) return undefined
+  return applyScopedPropRefRewrite(text, foundPropRefs, propAliases, replacementFor)
+}
+
+/** The prop names `node` reads as values, plus the `extraPropRefs` that are props. */
+function foundBarePropRefs(node: ts.Node, propNames: Set<string>, extraPropRefs?: ReadonlySet<string>): Set<string> {
   const foundPropRefs = new Set<string>()
   collectAstPropRefs(node, propNames, foundPropRefs)
   if (extraPropRefs) {
@@ -315,9 +343,5 @@ export function rewriteBarePropRefs(
       if (propNames.has(ref)) foundPropRefs.add(ref)
     }
   }
-  if (foundPropRefs.size === 0) return undefined
-  return (
-    applyScopedPropRefRewrite(text, foundPropRefs, propAliases, replacementFor) ??
-    applyRegexPropRefRewrite(text, foundPropRefs, propAliases, replacementFor)
-  )
+  return foundPropRefs
 }

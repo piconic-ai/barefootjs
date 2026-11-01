@@ -65,6 +65,7 @@ import type { ParsedExpr } from './expression-parser.ts'
 import { parseExpression } from './expression-parser.ts'
 import { prepareLoweringMatchers, type LoweringMatcher } from './lowering-registry.ts'
 import { ErrorCodes } from './errors.ts'
+import { isHydrationPayloadPropName } from './event-handler-name.ts'
 import {
   resolveReceiverType,
   baseTypeName,
@@ -119,7 +120,7 @@ export function checkRichTypePropSerialization(root: IRNode, metadata: IRMetadat
   const usedProps = new Set(metadata.clientAnalysis.usedProps)
   const loc = declLoc ?? root.loc
   for (const param of metadata.propsParams) {
-    if (param.isRest || param.name.startsWith('on') || param.name.startsWith('__')) continue
+    if (param.isRest || !isHydrationPayloadPropName(param.name)) continue
     if (!usedProps.has(param.name)) continue
     const declared = resolvePropDeclaredType(param.sourceName ?? param.name, metadata)
     const typeName = jsonUnsafeTypeName(declared)

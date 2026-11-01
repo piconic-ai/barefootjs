@@ -4,7 +4,8 @@
  * Generates client-side JavaScript from Pure IR for hydration.
  */
 
-import type { ComponentIR } from '../types.ts'
+import type { AttrValue, ClientAnalysis, ComponentIR, IRNode } from '../types.ts'
+import { walkIR } from './walker.ts'
 import type { ClientJsContext } from './types.ts'
 import type {
   TemplatePrimitiveRegistry,
@@ -26,6 +27,7 @@ import { IMPORT_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectExternalI
 import { isInlinableInTemplate } from '../relocate.ts'
 import { buildSourceMapFromIR, type SourceMapV3 } from './source-map.ts'
 import { resolvePropDeclaredType, baseTypeName } from '../rich-type-evidence.ts'
+import { isHydrationPayloadPropName } from '../event-handler-name.ts'
 
 export interface ClientJsResult {
   code: string
@@ -149,11 +151,11 @@ export function generateClientJsWithSourceMap(
 function computeLiveOnlyProps(ir: ComponentIR, neededProps: ReadonlySet<string>): Record<string, string> {
   const liveOnlyProps: Record<string, string> = {}
   for (const param of ir.metadata.propsParams) {
-    // Same exclusions `propsToSerialize` (hono-adapter.ts) applies: `on*` is
-    // the event-handler convention, wired through the listener path rather
-    // than prop serialization, and `__*` is hydration plumbing that never
-    // round-trips through `bf-p`.
-    if (param.isRest || param.name.startsWith('on') || param.name.startsWith('__')) continue
+    // Same exclusions `propsToSerialize` (hono-adapter.ts) applies
+    // (`isHydrationPayloadPropName`): an `on[A-Z]` handler is wired through
+    // the listener path rather than prop serialization, and `__*` is
+    // hydration plumbing that never round-trips through `bf-p`.
+    if (param.isRest || !isHydrationPayloadPropName(param.name)) continue
     if (!neededProps.has(param.name)) continue
     const declared = resolvePropDeclaredType(param.sourceName ?? param.name, ir.metadata)
     const isFunctionTyped =
@@ -171,15 +173,13 @@ function computeLiveOnlyProps(ir: ComponentIR, neededProps: ReadonlySet<string>)
  * and which props the init function actually reads. This runs BEFORE the adapter
  * so the adapter can use the results to optimize bf-p serialization.
  */
-export function analyzeClientNeeds(
-  ir: ComponentIR,
-): { needsInit: boolean; usedProps: string[]; liveOnlyProps: Record<string, string> } {
+export function analyzeClientNeeds(ir: ComponentIR): ClientAnalysis {
   const ctx = createContext(ir, undefined)
   const siblingOffsets = computeLoopSiblingOffsets(ir.root)
   collectElements(ir.root, ctx, siblingOffsets)
 
   if (!needsClientJs(ctx)) {
-    return { needsInit: false, usedProps: [], liveOnlyProps: {} }
+    return { needsInit: false, usedProps: [], usedRestKeys: [], readsCallerBag: false, liveOnlyProps: {} }
   }
 
   // Use the shared reference graph instead of replicating the extraction
@@ -205,7 +205,49 @@ export function analyzeClientNeeds(
     }
   }
 
-  return { needsInit: true, usedProps: [...neededProps], liveOnlyProps: computeLiveOnlyProps(ir, neededProps) }
+  return {
+    needsInit: true,
+    usedProps: [...neededProps],
+    usedRestKeys: usedRestKeys(ir, usedIdentifiers),
+    readsCallerBag: spreadsCallerBag(ir.root),
+    liveOnlyProps: computeLiveOnlyProps(ir, neededProps),
+  }
+}
+
+/**
+ * The closed-type rest keys (`restPropsExpandedKeys`) the client reads (#3845).
+ * A `{...rest}` spread of a closed rest type unrolls into one `rest.<key>`
+ * read per key, which the client reads live as `_p.<key>`. Matched the way
+ * `usedProps` matches a prop: by name among the identifiers the client code
+ * references (member names included), alongside the rest binding itself.
+ */
+function usedRestKeys(ir: ComponentIR, usedIdentifiers: ReadonlySet<string>): string[] {
+  const restName = ir.metadata.restPropsName
+  if (!restName || !usedIdentifiers.has(restName)) return []
+  return ir.metadata.restPropsExpandedKeys.filter(key => usedIdentifiers.has(key) && isHydrationPayloadPropName(key))
+}
+
+/**
+ * Whether the component spreads one of the caller's prop bags whole
+ * (`SpreadAttr.callerBag`, decided in Phase 1) onto an element or a child
+ * component. The client reads every key of that bag off `_p`
+ * (`applyRestAttrs` / `forwardProps`), keys the component never names.
+ */
+function spreadsCallerBag(root: IRNode): boolean {
+  let found = false
+  const isBagSpread = (value: AttrValue): boolean => value.kind === 'spread' && value.callerBag !== undefined
+  walkIR<null>(root, null, {
+    element: ({ node, descend }) => {
+      if (node.attrs.some(attr => isBagSpread(attr.value))) found = true
+      descend()
+    },
+    component: ({ node, descend, descendJsxChildren }) => {
+      if (node.props.some(prop => isBagSpread(prop.value))) found = true
+      descend()
+      descendJsxChildren()
+    },
+  })
+  return found
 }
 
 /** Initialize an empty ClientJsContext from component IR metadata. */

@@ -531,6 +531,12 @@ import { fixture as jsxSpreadReactive } from './jsx-spread-reactive'
 import { fixture as jsxSpreadMultiple } from './jsx-spread-multiple'
 import { fixture as jsxSpreadStaticAndSpread } from './jsx-spread-static-and-spread'
 import { fixture as jsxSpreadRestProp } from './jsx-spread-rest-prop'
+import { fixture as restSpreadRootHydrationProps } from './rest-spread-root-hydration-props'
+import { fixture as propsObjectSpreadChildHydrationProps } from './props-object-spread-child-hydration-props'
+import { fixture as restSpreadChildOverrideHydrationProps } from './rest-spread-child-override-hydration-props'
+import { fixture as filterPredicateOnPrefixedProp } from './filter-predicate-on-prefixed-prop'
+import { fixture as filterPredicateRenamedDestructuredProp } from './filter-predicate-renamed-destructured-prop'
+import { fixture as filterPredicateBlockShadowedProp } from './filter-predicate-block-shadowed-prop'
 import { fixture as jsxSpreadPropsObject } from './jsx-spread-props-object'
 import { fixture as taggedTemplateClassname } from './tagged-template-classname'
 import { fixture as memberExpressionTag } from './member-expression-tag'
@@ -1751,6 +1757,12 @@ export const jsxFixtures: JSXFixture[] = [
   jsxSpreadMultiple,
   jsxSpreadStaticAndSpread,
   jsxSpreadRestProp,
+  restSpreadRootHydrationProps,
+  propsObjectSpreadChildHydrationProps,
+  restSpreadChildOverrideHydrationProps,
+  filterPredicateOnPrefixedProp,
+  filterPredicateRenamedDestructuredProp,
+  filterPredicateBlockShadowedProp,
   jsxSpreadPropsObject,
   taggedTemplateClassname,
   memberExpressionTag,
