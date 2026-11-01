@@ -752,6 +752,13 @@ func evalReadProperty(obj any, key string) any {
 // spec/compiler.md Known limitations) are the remaining follow-up.
 // ---------------------------------------------------------------------------
 
+// ToSlice is an evaluated value as a []any: the elements of a slice or array,
+// nil for anything else. A constructor seed whose field is []any takes an
+// array the evaluator built (`EvalExpr` / `FoldEval` return `any`) through it.
+func ToSlice(v any) []any {
+	return toAnySlice(v)
+}
+
 // toAnySlice copies a reflect-iterable receiver into a fresh []any, returning
 // nil for a non-slice/array (matching the bf_sort / bf_reduce nil-tolerance).
 func toAnySlice(items any) []any {

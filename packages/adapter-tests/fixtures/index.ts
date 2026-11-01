@@ -754,6 +754,11 @@ import { fixture as childStringPropLiteralLookalikePositions } from './child-str
 import { fixture as childStringPropLiteralLookalikeRestBag } from './child-string-prop-literal-lookalike-rest-bag'
 import { fixture as childUndeclaredPropDropped } from './child-undeclared-prop-dropped'
 import { fixture as childRestBagGeneratedFieldName } from './child-rest-bag-generated-field-name'
+import { fixture as memoReduceMapPropSeed } from './memo-reduce-map-prop-seed'
+import { fixture as memoReduceMapPropSeedShapes } from './memo-reduce-map-prop-seed-shapes'
+import { fixture as restMemberTernary } from './rest-member-ternary'
+import { fixture as restMemberTernaryShapes } from './rest-member-ternary-shapes'
+import { fixture as componentRestSpreadExplicitOverride } from './component-rest-spread-explicit-override'
 import { fixture as childUndeclaredPropWholePropsSpread } from './child-undeclared-prop-whole-props-spread'
 import { fixture as childInlineStringArrayProp } from './child-inline-string-array-prop'
 import { fixture as preWhitespace } from './pre-whitespace'
@@ -1907,6 +1912,11 @@ export const jsxFixtures: JSXFixture[] = [
   childStringPropLiteralLookalikeRestBag,
   childUndeclaredPropDropped,
   childRestBagGeneratedFieldName,
+  memoReduceMapPropSeed,
+  memoReduceMapPropSeedShapes,
+  restMemberTernary,
+  restMemberTernaryShapes,
+  componentRestSpreadExplicitOverride,
   childUndeclaredPropWholePropsSpread,
   childInlineStringArrayProp,
   preWhitespace,

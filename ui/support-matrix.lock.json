@@ -2387,33 +2387,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-child",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-earlier",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
                 "destructure-default-callback-unseeded"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-positions",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-shadow",
-              "limitations": [
-                "destructure-default-computed-array"
               ]
             },
             {
@@ -3537,33 +3513,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-child",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-earlier",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
                 "destructure-default-callback-unseeded"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-positions",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-shadow",
-              "limitations": [
-                "destructure-default-computed-array"
               ]
             },
             {
@@ -5170,33 +5122,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-child",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-earlier",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
                 "destructure-default-callback-unseeded"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-positions",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-shadow",
-              "limitations": [
-                "destructure-default-computed-array"
               ]
             },
             {
@@ -8328,33 +8256,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-child",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-earlier",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
                 "destructure-default-callback-unseeded"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-positions",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-shadow",
-              "limitations": [
-                "destructure-default-computed-array"
               ]
             },
             {
@@ -11591,33 +11495,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-child",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-earlier",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
                 "destructure-default-callback-unseeded"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-positions",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-shadow",
-              "limitations": [
-                "destructure-default-computed-array"
               ]
             },
             {
@@ -13605,33 +13485,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-child",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-earlier",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
                 "destructure-default-callback-unseeded"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-positions",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-shadow",
-              "limitations": [
-                "destructure-default-computed-array"
               ]
             },
             {
@@ -14577,33 +14433,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-child",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-earlier",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
                 "destructure-default-callback-unseeded"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-positions",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-shadow",
-              "limitations": [
-                "destructure-default-computed-array"
               ]
             },
             {
@@ -19750,33 +19582,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-child",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-earlier",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
                 "destructure-default-callback-unseeded"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-positions",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-shadow",
-              "limitations": [
-                "destructure-default-computed-array"
               ]
             },
             {
@@ -21330,12 +21138,6 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-positions",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
               "fixture": "filter-index-param-loop",
               "limitations": [
                 "callback-index-param"
@@ -22401,12 +22203,6 @@
               "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
                 "destructure-default-callback-unseeded"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-positions",
-              "limitations": [
-                "destructure-default-computed-array"
               ]
             },
             {
@@ -23923,33 +23719,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-child",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-earlier",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
                 "destructure-default-callback-unseeded"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-positions",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-shadow",
-              "limitations": [
-                "destructure-default-computed-array"
               ]
             },
             {
@@ -25365,33 +25137,9 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-child",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-earlier",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
                 "destructure-default-callback-unseeded"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-positions",
-              "limitations": [
-                "destructure-default-computed-array"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-shadow",
-              "limitations": [
-                "destructure-default-computed-array"
               ]
             },
             {

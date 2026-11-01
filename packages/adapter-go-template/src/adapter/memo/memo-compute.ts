@@ -22,6 +22,7 @@ import {
   serializeParsedExpr,
   type CallbackCapture,
   propsObjectIdentifier,
+  unboundCallbackParamRead,
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
@@ -294,7 +295,9 @@ export function isIntegerValued(expr: ParsedExpr): boolean {
  * An `any`-typed Go value (an {@link evalExprGo} result) converted to a
  * destination of Go type `goType` with JS's coercion: `bf.String` for a
  * `string`, `bf.Truthy` for a `bool`, `bf.Number` for a `float64`, and an
- * `int`/`float64` type switch for an `int` (`unboxToGoScalar`). An
+ * `int`/`float64` type switch for an `int` (`unboxToGoScalar`), and
+ * `bf.ToSlice` for a slice (an array the evaluator built; a typed slice
+ * converts element by element). An
  * `interface{}` or unknown destination takes it as is. Null for any other
  * type, which the value can't be assigned to.
  */
@@ -304,7 +307,21 @@ export function evaluatedAsGoType(evaluated: string, goType: string | undefined)
   if (goType === 'bool') return `bf.Truthy(${evaluated})`
   if (goType === 'float64') return `bf.Number(${evaluated})`
   if (goType === 'int') return unboxToGoScalar(evaluated, 'int')
+  if (goType.startsWith('[]')) return evaluatedAsGoSlice(evaluated, goType)
   return null
+}
+
+/**
+ * An evaluated array as a Go slice of type `goType`: `bf.ToSlice` as is for
+ * a `[]any`, else each element converted by {@link evaluatedAsGoType}. Null
+ * for an element type no conversion reaches (a struct).
+ */
+function evaluatedAsGoSlice(evaluated: string, goType: string): string | null {
+  const elemType = goType.slice(2)
+  if (elemType === 'any' || elemType === 'interface{}') return `bf.ToSlice(${evaluated})`
+  const elem = evaluatedAsGoType('v', elemType)
+  if (elem === null) return null
+  return `func() ${goType} { out := ${goType}{}; for _, v := range bf.ToSlice(${evaluated}) { out = append(out, ${elem}) }; return out }()`
 }
 
 /**
@@ -339,23 +356,80 @@ export function evalExprGo(
     const index = recv === null ? null : evalExprGo(ctx, body.args[0], signals, propsParams, propFallbackVars, resolving)
     return index === null ? null : `bf.At(${recv}, ${index})`
   }
+  // `.reduce(fn, init)` / `.reduceRight(fn, init)`, which the evaluator does
+  // not run as a nested call, folds through the runtime's `FoldEval` (the
+  // template's `bf_reduce_eval`) over the evaluated receiver.
+  const fold = asCallbackMethodCall(body)
+  if (fold && (fold.method === 'reduce' || fold.method === 'reduceRight')) {
+    return foldEvalGo(ctx, fold, signals, propsParams, propFallbackVars, resolving)
+  }
+  // The evaluator applies no operand coercion (#3700).
+  refuseAmbiguousNilArithmetic(body, ctx.state.nullishAttrCtx, BindingScope.EMPTY, ctx.state)
+  const evaluable = evaluatorBodyGo(ctx, body, new Set(), signals, propsParams, propFallbackVars, resolving)
+  return evaluable === null ? null : `bf.EvalExpr("${escapeGoString(evaluable.json)}", ${evaluable.env})`
+}
+
+/**
+ * A body serialized for the runtime evaluator, with the env map of the SSR
+ * values of its free names (minus `params`, which the caller binds). Null
+ * when the body is outside the evaluator's surface or a free name has no SSR
+ * value.
+ */
+function evaluatorBodyGo(
+  ctx: GoEmitContext,
+  body: ParsedExpr,
+  params: ReadonlySet<string>,
+  signals: { getter: string; initialValue: JsSourceText; type?: TypeInfo; parsed?: ParsedExpr }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  resolving: ReadonlySet<string>,
+): { json: string; env: string } | null {
   // Env readers are per-request readers the evaluator can't invoke.
   const knownGetterNames = new Set<string>(
     ctx.state.ssrSeedPlan.steps.filter(s => s.kind !== 'env-reader').map(s => s.name),
   )
-  // The evaluator applies no operand coercion (#3700).
-  refuseAmbiguousNilArithmetic(body, ctx.state.nullishAttrCtx, BindingScope.EMPTY, ctx.state)
   const materialized = materializeGetterCalls(body, knownGetterNames)
   const json = serializeParsedExpr(materialized)
   if (json === null) return null
   const entries: string[] = []
-  for (const name of freeVarsInBody(materialized, new Set())) {
+  for (const name of freeVarsInBody(materialized, params)) {
     if (name === 'undefined') continue
     const goExpr = evalEnvValueGo(ctx, name, signals, propsParams, propFallbackVars, resolving)
     if (goExpr === null) return null
     entries.push(`${JSON.stringify(name)}: ${goExpr}`)
   }
-  return `bf.EvalExpr("${escapeGoString(json)}", map[string]any{${entries.join(', ')}})`
+  return { json, env: `map[string]any{${entries.join(', ')}}` }
+}
+
+/**
+ * A `.reduce(fn, init)` / `.reduceRight(fn, init)` evaluated at construction:
+ * `bf.FoldEval(<receiver>, "<body>", "<acc>", "<item>", <init>, "<dir>",
+ * <env>)`, the receiver and the seed evaluated as {@link evalExprGo} does.
+ * Null without a seed (JS then folds from the first element), when the
+ * reducer reads its index or array parameter, or when any part is outside
+ * the evaluator's surface.
+ */
+function foldEvalGo(
+  ctx: GoEmitContext,
+  fold: NonNullable<ReturnType<typeof asCallbackMethodCall>>,
+  signals: { getter: string; initialValue: JsSourceText; type?: TypeInfo; parsed?: ParsedExpr }[],
+  propsParams: { name: string; sourceName?: string; type?: TypeInfo; defaultValue?: string }[],
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  resolving: ReadonlySet<string>,
+): string | null {
+  const [accName, itemName] = fold.arrow.params
+  if (accName === undefined || itemName === undefined || fold.args.length !== 1) return null
+  if (unboundCallbackParamRead(fold.method, fold.arrow, 'evaluator') !== null) return null
+  const init = fold.args[0]!
+  const initGo = seedLiteralToEvalGo(ctx, init) ?? evalExprGo(ctx, init, signals, propsParams, propFallbackVars, resolving)
+  if (initGo === null) return null
+  const recv = evalExprGo(ctx, fold.object, signals, propsParams, propFallbackVars, resolving)
+  if (recv === null) return null
+  refuseAmbiguousNilArithmetic(fold.arrow.body, ctx.state.nullishAttrCtx, BindingScope.EMPTY, ctx.state)
+  const reducer = evaluatorBodyGo(ctx, fold.arrow.body, new Set([accName, itemName]), signals, propsParams, propFallbackVars, resolving)
+  if (reducer === null) return null
+  const direction = fold.method === 'reduceRight' ? 'right' : 'left'
+  return `bf.FoldEval(${recv}, "${escapeGoString(reducer.json)}", ${JSON.stringify(accName)}, ${JSON.stringify(itemName)}, ${initGo}, "${direction}", ${reducer.env})`
 }
 
 /**
