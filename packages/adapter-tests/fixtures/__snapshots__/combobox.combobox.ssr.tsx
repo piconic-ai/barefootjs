@@ -420,6 +420,7 @@ export function ComboboxSeparator({ className = '', __instanceId, __bfScope: _bf
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ComboboxSeparator', {})
   }

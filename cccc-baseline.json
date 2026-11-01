@@ -135,7 +135,7 @@
     },
     "packages/adapter-hono/src/adapter/hono-adapter.ts": {
       "generateComponent": [
-        66
+        59
       ]
     },
     "packages/adapter-hono/src/test-render.tsx": {

@@ -144,11 +144,16 @@ export const VOID_ELEMENTS = new Set([
  * The `base` override lets the CSR-template path pre-substitute
  * props (`_p.items.toSorted(...)`) before the chain rides on top.
  */
-function applyLoopChain(loop: import('../types.ts').IRLoop, base: string = loop.array): string {
+function applyLoopChain(loop: import('../types.ts').IRLoop, base: string = loop.array, moduleScope = false): string {
+  const filter = loop.filterPredicate
   return buildLoopChainExpr({
     base,
     sortComparator: loop.sortComparator,
-    filterPredicate: loop.filterPredicate,
+    // The module-scope template reads the predicate's `_p.`-rewritten twin
+    // (Phase 1's `templateRaw`, #3845), as it reads `templateArray`.
+    filterPredicate: filter && moduleScope && filter.templateRaw !== undefined
+      ? { param: filter.param, raw: filter.templateRaw }
+      : filter,
     chainOrder: loop.chainOrder,
   })
 }
@@ -2873,7 +2878,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       // (already prop-substituted) so the chain inherits the same
       // `_p.X` rewrites the pre-Tier-B path used.
       const chainedTemplateArray = node.sortComparator || node.filterPredicate
-        ? applyLoopChain(node, node.templateArray)
+        ? applyLoopChain(node, node.templateArray, true)
         : node.templateArray
       const safeRawArrayExpr = transformExprOrUnsafe(node.array, chainedTemplateArray) ?? '[]'
       const { array: iterArrayExpr, callbackParam } = applyIterationShape(node, safeRawArrayExpr, indexParam)

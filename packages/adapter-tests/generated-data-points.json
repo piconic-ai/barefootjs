@@ -5461,6 +5461,48 @@
       }
     }
   ],
+  "filter-predicate-on-prefixed-prop": [
+    {
+      "name": "gen:keys:empty",
+      "props": {
+        "keys": [],
+        "one": "b"
+      }
+    },
+    {
+      "name": "gen:one:empty",
+      "props": {
+        "keys": [
+          "a",
+          "b",
+          "c"
+        ],
+        "one": ""
+      }
+    },
+    {
+      "name": "gen:one:markup",
+      "props": {
+        "keys": [
+          "a",
+          "b",
+          "c"
+        ],
+        "one": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:one:multibyte",
+      "props": {
+        "keys": [
+          "a",
+          "b",
+          "c"
+        ],
+        "one": "日本語"
+      }
+    }
+  ],
   "filter-predicate-props-member": [
     {
       "name": "gen:items:empty",
@@ -5515,6 +5557,51 @@
           }
         ],
         "hiddenId": 1234567890
+      }
+    }
+  ],
+  "filter-predicate-renamed-destructured-prop": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "skip": 3
+      }
+    },
+    {
+      "name": "gen:skip:zero",
+      "props": {
+        "items": [
+          1,
+          2.5,
+          3,
+          4
+        ],
+        "skip": 0
+      }
+    },
+    {
+      "name": "gen:skip:negative",
+      "props": {
+        "items": [
+          1,
+          2.5,
+          3,
+          4
+        ],
+        "skip": -7
+      }
+    },
+    {
+      "name": "gen:skip:large",
+      "props": {
+        "items": [
+          1,
+          2.5,
+          3,
+          4
+        ],
+        "skip": 1234567890
       }
     }
   ],
@@ -12957,6 +13044,32 @@
       "props": {
         "rows": [],
         "count": 2
+      }
+    }
+  ],
+  "rest-spread-root-hydration-props": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "tone": "info",
+        "size": 2
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "tone": "info",
+        "size": 2
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "tone": "info",
+        "size": 2
       }
     }
   ],

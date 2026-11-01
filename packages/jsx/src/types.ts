@@ -744,6 +744,16 @@ export interface IRLoop {
     param: string
     predicate?: ParsedExpr        // Boolean predicate expression (folded from any block body)
     raw: string  // Original string for error messages
+    /**
+     * `raw` with each destructured-prop read rewritten to its live `_p.<key>`
+     * read, the predicate's `templateArray` twin (#3845). The client
+     * template runs at module scope, where the component's destructured
+     * locals don't exist, so its `.filter(...)` reads this text. Decided in
+     * Phase 1 against the binding scope at the predicate (the predicate's
+     * own parameter and any enclosing row binding shadow a prop of the same
+     * name). Unset when the predicate reads no destructured prop.
+     */
+    templateRaw?: string
   }
 
   /**
@@ -1520,6 +1530,17 @@ export interface SpreadAttr {
    * any other spread, including a `{...rest}` bag.
    */
   propsObject?: true
+  /**
+   * Which of the caller's own prop bags this spread forwards whole: `'props'`
+   * for the component's props object, `'rest'` for its destructured
+   * `...rest` binding, through any alias hop (`resolveRestSpreadOriginCore`).
+   * Decided once in Phase 1, where a name an enclosing loop row or callback
+   * binds is that binding, not the bag. Unset for any other spread, and never
+   * set on a closed-type rest spread (that one unrolls per key). The client
+   * reads every key of such a spread off `_p`, so the hydration payload must
+   * carry the caller's whole bag (`ClientAnalysis.readsCallerBag`, #3845).
+   */
+  callerBag?: 'props' | 'rest'
 }
 
 export interface JsxChildrenAttr {
@@ -2607,6 +2628,19 @@ export interface PropUsage {
 export interface ClientAnalysis {
   needsInit: boolean
   usedProps: string[]
+  /**
+   * Caller keys of a closed-type `...rest` (`restPropsExpandedKeys`) the
+   * client reads as `_p.<key>`. They are not `propsParams`, so `usedProps`
+   * never lists them, but the hydration payload must carry them (#3845).
+   */
+  usedRestKeys: string[]
+  /**
+   * The client reads one of the caller's prop bags whole (a spread whose
+   * `SpreadAttr.callerBag` is set): every key the caller passed reaches the
+   * client through `_p`, so the hydration payload carries the caller's whole
+   * bag, not only the named props (#3845).
+   */
+  readsCallerBag: boolean
   /**
    * The subset of `usedProps` whose declared type is a function — the client
    * code CALLS these, so they cannot arrive as JSON. Keyed by caller-facing

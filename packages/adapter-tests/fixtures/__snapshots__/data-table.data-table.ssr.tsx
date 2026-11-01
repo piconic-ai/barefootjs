@@ -68,6 +68,7 @@ export function DataTableColumnHeader({ title, sorted = false, onSort, className
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof title === 'object' && title !== null && 'isEscaped' in title)) __hydrateProps['title'] = title
     if (!(typeof sorted === 'object' && sorted !== null && 'isEscaped' in sorted)) __hydrateProps['sorted'] = sorted
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
@@ -89,6 +90,7 @@ export function DataTablePagination({ canPrev, canNext, onPrev, onNext, children
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof canPrev === 'object' && canPrev !== null && 'isEscaped' in canPrev)) __hydrateProps['canPrev'] = canPrev
     if (!(typeof canNext === 'object' && canNext !== null && 'isEscaped' in canNext)) __hydrateProps['canNext'] = canNext
     if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children

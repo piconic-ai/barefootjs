@@ -428,6 +428,7 @@ export function CheckIcon({ size, className = '', __instanceId, __bfScope: _bfSc
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CheckIcon', {})
@@ -449,6 +450,7 @@ export function ChevronDownIcon({ size, className = '', __instanceId, __bfScope:
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ChevronDownIcon', {})
@@ -470,6 +472,7 @@ export function ChevronUpIcon({ size, className = '', __instanceId, __bfScope: _
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ChevronUpIcon', {})
@@ -491,6 +494,7 @@ export function ChevronLeftIcon({ size, className = '', __instanceId, __bfScope:
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ChevronLeftIcon', {})
@@ -512,6 +516,7 @@ export function ChevronRightIcon({ size, className = '', __instanceId, __bfScope
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ChevronRightIcon', {})
@@ -533,6 +538,7 @@ export function XIcon({ size, className = '', __instanceId, __bfScope: _bfScope,
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'XIcon', {})
@@ -554,6 +560,7 @@ export function PlusIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'PlusIcon', {})
@@ -575,6 +582,7 @@ export function MinusIcon({ size, className = '', __instanceId, __bfScope: _bfSc
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'MinusIcon', {})
@@ -596,6 +604,7 @@ export function SunIcon({ size, className = '', __instanceId, __bfScope: _bfScop
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SunIcon', {})
@@ -617,6 +626,7 @@ export function MoonIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'MoonIcon', {})
@@ -638,6 +648,7 @@ export function MonitorIcon({ size, className = '', __instanceId, __bfScope: _bf
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'MonitorIcon', {})
@@ -659,6 +670,7 @@ export function CopyIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CopyIcon', {})
@@ -680,6 +692,7 @@ export function ClipboardIcon({ size, className = '', __instanceId, __bfScope: _
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ClipboardIcon', {})
@@ -701,6 +714,7 @@ export function ClipboardCheckIcon({ size, className = '', __instanceId, __bfSco
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ClipboardCheckIcon', {})
@@ -722,6 +736,7 @@ export function MenuIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'MenuIcon', {})
@@ -743,6 +758,7 @@ export function ArrowLeftIcon({ size, className = '', __instanceId, __bfScope: _
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ArrowLeftIcon', {})
@@ -764,6 +780,7 @@ export function ArrowRightIcon({ size, className = '', __instanceId, __bfScope: 
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ArrowRightIcon', {})
@@ -785,6 +802,7 @@ export function ArrowUpDownIcon({ size, className = '', __instanceId, __bfScope:
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'ArrowUpDownIcon', {})
@@ -806,6 +824,7 @@ export function EllipsisIcon({ size, className = '', __instanceId, __bfScope: _b
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'EllipsisIcon', {})
@@ -827,6 +846,7 @@ export function GitHubIcon({ size, className = '', __instanceId, __bfScope: _bfS
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'GitHubIcon', {})
@@ -848,6 +868,7 @@ export function SettingsIcon({ size, className = '', __instanceId, __bfScope: _b
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SettingsIcon', {})
@@ -869,6 +890,7 @@ export function GlobeIcon({ size, className = '', __instanceId, __bfScope: _bfSc
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'GlobeIcon', {})
@@ -890,6 +912,7 @@ export function LogOutIcon({ size, className = '', __instanceId, __bfScope: _bfS
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'LogOutIcon', {})
@@ -911,6 +934,7 @@ export function CircleHelpIcon({ size, className = '', __instanceId, __bfScope: 
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CircleHelpIcon', {})
@@ -932,6 +956,7 @@ export function SearchIcon({ size, className = '', __instanceId, __bfScope: _bfS
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'SearchIcon', {})
@@ -953,6 +978,7 @@ export function CircleCheckIcon({ size, className = '', __instanceId, __bfScope:
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CircleCheckIcon', {})
@@ -974,6 +1000,7 @@ export function CircleXIcon({ size, className = '', __instanceId, __bfScope: _bf
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CircleXIcon', {})
@@ -995,6 +1022,7 @@ export function TriangleAlertIcon({ size, className = '', __instanceId, __bfScop
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'TriangleAlertIcon', {})
@@ -1016,6 +1044,7 @@ export function InfoIcon({ size, className = '', __instanceId, __bfScope: _bfSco
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'InfoIcon', {})
@@ -1037,6 +1066,7 @@ export function CalendarIcon({ size, className = '', __instanceId, __bfScope: _b
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'CalendarIcon', {})
@@ -1058,6 +1088,7 @@ export function GripVerticalIcon({ size, className = '', __instanceId, __bfScope
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'GripVerticalIcon', {})
@@ -1079,6 +1110,7 @@ export function LoaderCircleIcon({ size, className = '', __instanceId, __bfScope
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'LoaderCircleIcon', {})
@@ -1100,6 +1132,7 @@ export function PanelLeftIcon({ size, className = '', __instanceId, __bfScope: _
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'PanelLeftIcon', {})
@@ -1123,6 +1156,7 @@ export function Icon({ name, size = 'md', className = '', __instanceId, __bfScop
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof name === 'object' && name !== null && 'isEscaped' in name)) __hydrateProps['name'] = name
     if (!(typeof size === 'object' && size !== null && 'isEscaped' in size)) __hydrateProps['size'] = size
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className

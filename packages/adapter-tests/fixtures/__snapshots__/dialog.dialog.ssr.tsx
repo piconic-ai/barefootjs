@@ -265,6 +265,7 @@ export function DialogHeader({ className = '', children, __instanceId, __bfScope
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'DialogHeader', {})
@@ -285,6 +286,7 @@ export function DialogTitle({ className = '', id, children, __instanceId, __bfSc
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     if (!(typeof id === 'object' && id !== null && 'isEscaped' in id)) __hydrateProps['id'] = id
     if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
@@ -306,6 +308,7 @@ export function DialogDescription({ className = '', id, children, __instanceId, 
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     if (!(typeof id === 'object' && id !== null && 'isEscaped' in id)) __hydrateProps['id'] = id
     if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
@@ -327,6 +330,7 @@ export function DialogFooter({ className = '', children, __instanceId, __bfScope
   let __bfPropsJson = __bfParentProps
   if (!__bfChild && !__bfNoSerialize) {
     const __hydrateProps: Record<string, unknown> = {}
+    for (const [__k, __v] of Object.entries(props)) if (!(typeof __v === 'object' && __v !== null && 'isEscaped' in __v)) __hydrateProps[__k] = __v
     if (!(typeof className === 'object' && className !== null && 'isEscaped' in className)) __hydrateProps['className'] = className
     if (!(typeof children === 'object' && children !== null && 'isEscaped' in children)) __hydrateProps['children'] = children
     __bfPropsJson = __bfParentProps || serializeHydrationProps(__hydrateProps, 'DialogFooter', {})

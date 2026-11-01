@@ -45,7 +45,7 @@ import {
 import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation, collectReactiveGetterNames, tsTypeToTypeInfo } from './analyzer-context.ts'
 import { parseExpression, isSupported, parseBlockBody, foldBlockToExpr, predicateTernaryToLogical, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, CALLBACK_METHODS, unboundCallbackParamRead, unboundCallbackParamReason, type ParsedExpr } from './expression-parser.ts'
 import { fallbackChainParts, nullishChainParts } from './children-nullish.ts'
-import type { IRLoopSort, FunctionInfo, ConstantInfo, ParamInfo, FreeReference } from './types.ts'
+import type { IRLoopSort, FunctionInfo, ConstantInfo, ParamInfo, FreeReference, SpreadAttr } from './types.ts'
 import { formatParamWithType } from './module-exports.ts'
 import { createError, ErrorCodes, internalInvariant } from './errors.ts'
 import { CLIENT_BUILTIN_SOURCE, isClientBuiltinName, type ClientBuiltinTag } from './builtins.ts'
@@ -3990,6 +3990,7 @@ type FilterPredicateResult = {
   param: string
   predicate?: ParsedExpr
   raw: string
+  templateRaw?: string
 }
 
 /**
@@ -4085,7 +4086,7 @@ function extractFilterPredicate(
     }
     const unbound = unboundFilterParamReason(callback, predicate, ctx)
     if (unbound) return { result: null, unsupportedReason: unbound }
-    return { result: { param, predicate, raw } }
+    return { result: withTemplatePredicate({ param, predicate, raw }, callback, ctx) }
   }
 
   // Expression body: filter(t => !t.done)
@@ -4100,7 +4101,31 @@ function extractFilterPredicate(
   const unbound = unboundFilterParamReason(callback, predicate, ctx)
   if (unbound) return { result: null, unsupportedReason: unbound }
 
-  return { result: { param, predicate, raw } }
+  return { result: withTemplatePredicate({ param, predicate, raw }, callback, ctx) }
+}
+
+/**
+ * Attach the predicate's client-template text (`templateRaw`, #3845): `raw`
+ * with each destructured-prop read rewritten to `_p.<key>`, the same rewrite
+ * `templateArray` gets. The predicate's own parameters are bound for the
+ * rewrite, so `filter((one) => one)` keeps its parameter even when a prop is
+ * named `one`.
+ */
+function withTemplatePredicate(
+  result: FilterPredicateResult,
+  callback: ts.ArrowFunction,
+  ctx: TransformContext,
+): FilterPredicateResult {
+  const savedScope = ctx.scope
+  const params = new Set<string>()
+  for (const p of callback.parameters) collectBindingNames(p.name, params)
+  ctx.scope = savedScope.enterCallback([...params])
+  try {
+    const templateRaw = rewriteBarePropRefs(result.raw, callback.body, ctx)
+    return templateRaw === undefined ? result : { ...result, templateRaw }
+  } finally {
+    ctx.scope = savedScope
+  }
 }
 
 /**
@@ -7281,12 +7306,31 @@ function expandSpreadAttribute(
   // it. The closed-type expansion branch above returns before this
   // point, so closed-type rest spreads stay on the per-key fast path.
   const slotId = generateSpreadSlotId(ctx)
+  const value = AttrValueOf.spread(spreadExpr, ctx.getTemplateJS(attr.expression), slotId)
+  const callerBag = callerBagOfSpread(value, ctx)
   return [{
     name: '...',
-    value: AttrValueOf.spread(spreadExpr, ctx.getTemplateJS(attr.expression), slotId),
+    value: callerBag ? { ...value, callerBag } : value,
     loc,
     freeIdentifiers: spreadFreeIdentifiers,
   }]
+}
+
+/**
+ * Which caller prop bag a spread forwards whole (`SpreadAttr.callerBag`):
+ * its `expr` / `templateExpr` resolved through any alias hop
+ * (`resolveRestSpreadOriginCore`). A name an enclosing loop row or callback
+ * binds is that binding, not the component's bag (#3713: `items.map((props)
+ * => <Tag {...props} />)`).
+ */
+function callerBagOfSpread(value: SpreadAttr, ctx: TransformContext): 'props' | 'rest' | undefined {
+  const constants = constantValuesByName(ctx)
+  for (const name of new Set([value.expr, value.templateExpr])) {
+    if (!name || ctx.scope.isBound(name)) continue
+    const origin = resolveRestSpreadOriginCore(ctx.analyzer, constants, name)
+    if (origin !== null) return origin
+  }
+  return undefined
 }
 
 // Extract free identifiers from an attribute's initializer expression
@@ -9043,7 +9087,7 @@ function processComponentProps(
       // rewrite, so `IRProp` declares no such field. Strip it here rather
       // than letting the shared helper's per-key marking leak into IRProp
       // as an inert flag nothing reads.
-      props.push(...expandSpreadAttribute(attr, ctx).map(({ restExpandedKey: _restExpandedKey, ...prop }) => markPropsObjectSpread(prop, ctx)))
+      props.push(...expandSpreadAttribute(attr, ctx).map(({ restExpandedKey: _restExpandedKey, ...prop }) => markPropsObjectSpread(prop)))
       continue
     }
 
@@ -9852,25 +9896,15 @@ function forwardsCallerRestProps(attrs: IRAttribute[], ctx: TransformContext): b
 
 /**
  * Mark a child-component spread of the component's own props object
- * (`SpreadAttr.propsObject`, #3688). Resolved with the same rule — and the
- * same `expr` / `templateExpr` pair — as `forwardsCallerRestProps`, narrowed
- * to the `'props'` origin: a `{...rest}` bag leaves out the keys the
- * component destructured, so it does not merge as the caller's props.
+ * (`SpreadAttr.propsObject`, #3688): the `'props'` case of
+ * `SpreadAttr.callerBag` (`callerBagOfSpread`). A `{...rest}` bag leaves out
+ * the keys the component destructured, so it does not merge as the caller's
+ * props.
  */
-function markPropsObjectSpread<T extends { value: AttrValue }>(prop: T, ctx: TransformContext): T {
+function markPropsObjectSpread<T extends { value: AttrValue }>(prop: T): T {
   const value = prop.value
-  if (value.kind !== 'spread') return prop
-  const constants = constantValuesByName(ctx)
-  for (const name of new Set([value.expr, value.templateExpr])) {
-    // A name an enclosing loop row or callback binds is that binding, not
-    // the component's props object (#3713: `items.map((props) => <Tag
-    // {...props} />)`).
-    if (!name || ctx.scope.isBound(name)) continue
-    if (resolveRestSpreadOriginCore(ctx.analyzer, constants, name) === 'props') {
-      return { ...prop, value: { ...value, propsObject: true } }
-    }
-  }
-  return prop
+  if (value.kind !== 'spread' || value.callerBag !== 'props') return prop
+  return { ...prop, value: { ...value, propsObject: true } }
 }
 
 /** `ctx.analyzer.localConstants` indexed by name → value text, memoized per component walk. */
