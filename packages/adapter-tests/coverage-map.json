@@ -9373,6 +9373,28 @@
         "text"
       ]
     },
+    "memo-reduce-param-shadows-nullable-prop": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "memo-string-concat-signal": {
       "kinds": [
         "binary",

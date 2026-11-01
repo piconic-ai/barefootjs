@@ -425,7 +425,9 @@ function foldEvalGo(
   if (initGo === null) return null
   const recv = evalExprGo(ctx, fold.object, signals, propsParams, propFallbackVars, resolving)
   if (recv === null) return null
-  refuseAmbiguousNilArithmetic(fold.arrow.body, ctx.state.nullishAttrCtx, BindingScope.EMPTY, ctx.state)
+  // The reducer's own parameters shadow same-named props (`(acc, n) => acc + n`
+  // with an `n?: number | null` prop reads the element, not the prop).
+  refuseAmbiguousNilArithmetic(fold.arrow.body, ctx.state.nullishAttrCtx, BindingScope.EMPTY.enterCallback(fold.arrow.params), ctx.state)
   const reducer = evaluatorBodyGo(ctx, fold.arrow.body, new Set([accName, itemName]), signals, propsParams, propFallbackVars, resolving)
   if (reducer === null) return null
   const direction = fold.method === 'reduceRight' ? 'right' : 'left'

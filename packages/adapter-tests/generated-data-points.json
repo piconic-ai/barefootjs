@@ -8466,6 +8466,14 @@
       }
     }
   ],
+  "memo-reduce-param-shadows-nullable-prop": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "memo-string-concat-signal": [
     {
       "name": "gen:name:empty",

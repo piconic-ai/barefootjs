@@ -756,6 +756,7 @@ import { fixture as childUndeclaredPropDropped } from './child-undeclared-prop-d
 import { fixture as childRestBagGeneratedFieldName } from './child-rest-bag-generated-field-name'
 import { fixture as memoReduceMapPropSeed } from './memo-reduce-map-prop-seed'
 import { fixture as memoReduceMapPropSeedShapes } from './memo-reduce-map-prop-seed-shapes'
+import { fixture as memoReduceParamShadowsNullableProp } from './memo-reduce-param-shadows-nullable-prop'
 import { fixture as restMemberTernary } from './rest-member-ternary'
 import { fixture as restMemberTernaryShapes } from './rest-member-ternary-shapes'
 import { fixture as componentRestSpreadExplicitOverride } from './component-rest-spread-explicit-override'
@@ -1914,6 +1915,7 @@ export const jsxFixtures: JSXFixture[] = [
   childRestBagGeneratedFieldName,
   memoReduceMapPropSeed,
   memoReduceMapPropSeedShapes,
+  memoReduceParamShadowsNullableProp,
   restMemberTernary,
   restMemberTernaryShapes,
   componentRestSpreadExplicitOverride,
