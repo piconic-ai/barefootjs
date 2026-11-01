@@ -566,9 +566,11 @@ export function collectOptionalChainReceiverPropNames(ctx: GoEmitContext, ir: Co
  */
 export function collectArithmeticAbsentPropNames(ctx: GoEmitContext, ir: ComponentIR): Set<string> {
   const names = new Set<string>()
+  // The eligibility `resolvePropGoType` flips by: a primitive, or a literal
+  // union of one family (`size?: '' | 'large'`).
   const optionalParams = new Set(
     ir.metadata.propsParams
-      .filter(p => p.optional && p.defaultValue == null && p.type.kind === 'primitive')
+      .filter(p => p.optional && p.defaultValue == null && p.type && collapseLiteralUnion(p.type).kind === 'primitive')
       .map(p => p.name),
   )
   if (optionalParams.size === 0) return names
@@ -633,8 +635,11 @@ export function collectArithmeticAbsentPropNames(ctx: GoEmitContext, ir: Compone
     for (const value of Object.values(rec)) walk(value)
   }
   walk(ir.root)
-  // Memo bodies seed at construction, through the same rewrite.
+  // Memo bodies seed at construction, and a local constant's initializer is
+  // inlined where the constant is read (`const v = props.s + '!'`), both
+  // through the same rewrite.
   walk((ir.metadata.memos ?? []).map(m => m.parsed))
+  walk((ir.metadata.localConstants ?? []).map(c => c.parsed))
   return names
 }
 

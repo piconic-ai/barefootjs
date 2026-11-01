@@ -212,13 +212,14 @@ function spellPerlPlus(
   r: string,
   emit: (e: ParsedExpr) => string,
   isBooleanName: (name: string, componentProperty?: boolean) => boolean,
+  value: (e: ParsedExpr) => string,
 ): string {
   const spelled = plusSpelling(plan)
   if (spelled.kind === 'add') return `$bf.add(${l}, ${r})`
-  if (spelled.kind === 'plus') {
-    const value = (e: ParsedExpr, t: string) => (isBooleanResultParsed(e, isBooleanName) ? `$bf.boolean(${t})` : t)
-    return `$bf.plus(${value(left, l)}, ${value(right, r)})`
-  }
+  // Each boolean the operand can yield (a comparison, a ternary branch, an
+  // `&&` / `||` operand) is materialized as a JSON boolean, so `plus` sees
+  // `false`, not Perl's `''` / `0` (`(n > 0 && 2) + x` is `'falsex'`).
+  if (spelled.kind === 'plus') return `$bf.plus(${groupBinaryOperand(left, value(left))}, ${groupBinaryOperand(right, value(right))})`
   const term = (e: ParsedExpr, t: string, stringify: boolean): string => {
     if (!stringify) return t
     if (isBooleanResultParsed(e, isBooleanName)) return `$bf.bool_str(${t})`
@@ -251,6 +252,11 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
   get primitives(): PrimitiveInputs {
     return primitivesAt(this.operandTyping, this.operandScope, NATIVE_SAFE)
   }
+  /** A boolean whose value leaves the expression, as a JSON boolean (#3824 step 5). */
+  booleanValue(rendered: string): string {
+    return `$bf.boolean(${rendered})`
+  }
+
 
   /** Type this predicate's operands with the component's `typing` at the predicate's `scope`. */
   typedBy(typing: OperandTyping, scope: BindingScope): this {
@@ -373,7 +379,7 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
     const l = groupBinaryOperand(left, emit(left))
     const r = groupBinaryOperand(right, emit(right))
-    if (op === '+') return spellPerlPlus(plan, left, right, l, r, emit, () => false)
+    if (op === '+') return spellPerlPlus(plan, left, right, l, r, emit, () => false, (e) => emitParsedValue(e, this))
     // Kolon's `==` / `!=` are value-equality operators that compare strings
     // and numbers correctly — unlike Perl's numeric `==` (which the Mojo
     // adapter must steer around with `eq`/`ne`). Kolon has no `eq`/`ne`
@@ -707,7 +713,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
     const l = this.coerceUndefinedOperand(op, left, right, groupBinaryOperand(left, emit(left)))
     const r = this.coerceUndefinedOperand(op, right, left, groupBinaryOperand(right, emit(right)))
-    if (op === '+') return spellPerlPlus(plan, left, right, l, r, emit, this.isBooleanName)
+    if (op === '+') return spellPerlPlus(plan, left, right, l, r, emit, this.isBooleanName, (e) => emitParsedValue(e, this))
     // Kolon's `==` / `!=` are value-equality operators handling both strings
     // and numbers (unlike Perl's numeric `==`, which the Mojo adapter must
     // route around with `eq`/`ne`). Kolon has no `eq`/`ne` operator, so all

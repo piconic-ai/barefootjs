@@ -291,6 +291,9 @@ import { fixture as plusBeyondSafeInteger } from './plus-beyond-safe-integer'
 // An omitted optional prop's nil reading in every position (#3750).
 import { fixture as nilReadingPositions } from './nil-reading-positions'
 import { fixture as omittedOptionalAttrTernaryRelational } from './omitted-optional-attr-ternary-relational'
+import { fixture as nilReadingConcreteZero } from './nil-reading-concrete-zero'
+import { fixture as nilReadingConcreteZeroRowField } from './nil-reading-concrete-zero-row-field'
+import { fixture as plusBooleanBranchOperand } from './plus-boolean-branch-operand'
 // Shapes that keep today's output until the runtimes carry `undefined` (#3848).
 import { fixture as awaitsUndefinedPlusShapes } from './awaits-undefined-plus-shapes'
 import { fixture as indexReadExactKey } from './index-read-exact-key'
@@ -1533,6 +1536,9 @@ export const jsxFixtures: JSXFixture[] = [
   plusBeyondSafeInteger,
   nilReadingPositions,
   omittedOptionalAttrTernaryRelational,
+  nilReadingConcreteZero,
+  nilReadingConcreteZeroRowField,
+  plusBooleanBranchOperand,
   awaitsUndefinedPlusShapes,
   indexReadExactKey,
   indexReadCapitalisedKeyOnly,

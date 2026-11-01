@@ -69,10 +69,25 @@ function presentTypes(facts: OperandFacts): Set<string> {
   return types
 }
 
+/** The `??` nodes the rewrite builds, so a target can check their left operand can hold nil. */
+const NIL_READINGS = new WeakSet<ParsedExpr>()
+
+/**
+ * Whether `l ?? r` was built by the rewrite (its right operand is the
+ * rewrite's fallback). A target whose host types an absent value as a
+ * concrete zero (Go) must give `l` a nillable representation, or refuse:
+ * the nil test would see a present `''` / `0` / `false` as absent.
+ */
+export function isNilReadingFallback(right: ParsedExpr): boolean {
+  return NIL_READINGS.has(right)
+}
+
 /** `operand ?? fallback`; the fallback alone when the operand can only be nil. */
 function coalesce(operand: ParsedExpr, facts: OperandFacts, fallback: ParsedExpr): ParsedExpr {
   if (presentTypes(facts).size === 0) return fallback
-  return { kind: 'logical', op: '??', left: operand, right: fallback }
+  const right: ParsedExpr = { ...fallback }
+  NIL_READINGS.add(right)
+  return { kind: 'logical', op: '??', left: operand, right }
 }
 
 /** An operand of a numeric consumer: its nil as `0` (`null`) or `NaN` (`undefined`). */

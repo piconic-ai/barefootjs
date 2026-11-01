@@ -83,6 +83,7 @@ import {
   computeSsrSeedPlan,
   rewriteNilReadings,
   rewriteNilReadingsDeep,
+  isNilReadingFallback,
   needsToString,
   dangerousInnerHtmlDiagnostic,
   resolveStaticLoopSource,
@@ -5564,11 +5565,32 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /** The spelling of `left ?? right` under `plan` (#3824 step 7). */
   private nullishSpellingOf(left: ParsedExpr, right: ParsedExpr, plan: PrimitivePlan | null, params?: readonly string[]): NullishSpelling {
+    const absentIsZero = this.nullishAbsentIsZero(left, right, params)
+    if (absentIsZero && isNilReadingFallback(right)) this.refuseConcreteNilReading(left)
     return {
       plan,
-      absentIsZero: this.nullishAbsentIsZero(left, right, params),
+      absentIsZero,
       absentLeaves: this.nullishAbsentLeaves(left, right, params),
     }
+  }
+
+  /**
+   * A nil-reading operand (#3824 step 4) whose Go value is a concrete zero:
+   * the `??` the rewrite built would test truthiness, so a present `''` /
+   * `0` / `false` would read as absent. Every such operand must take the
+   * nillable flip (`collectArithmeticAbsentPropNames`); one that did not is
+   * refused loudly rather than rendered wrong.
+   */
+  private refuseConcreteNilReading(operand: ParsedExpr): void {
+    this.state.errors.push({
+      code: 'BF101',
+      severity: 'error',
+      message: `'${stringifyParsedExpr(operand)}' may be omitted, but the Go template adapter holds it as a concrete value, so an omitted value cannot be told from a present zero value where JS reads it as undefined`,
+      loc: this.makeLoc(),
+      suggestion: {
+        message: 'Give the value a default, or make its type admit null so that an omitted value reads as null.',
+      },
+    })
   }
 
   /** The spelling of a value-position `l ?? r` the condition and filter walkers lower (#3824 step 7). */
