@@ -98,6 +98,8 @@ Checked with Node 22.22.0 and Hono 4.13.13 (probe `js/contract.mjs`).
 | `[3, undefined, 1, null, 2].sort((a, b) => a - b)` | `undefined` last, comparator not called | `null` sorts as `0`: `[null,1,2,3,undefined]` |
 | `"aundefinedb".includes(x)` | `true` (needle is ToString'd) | (`"anullb"`) `true` |
 | `new URLSearchParams({a: x})` | `a=undefined` | `a=null` |
+| `[1,2].slice(0, x)`; `[1,2].join(x)` | `[1,2]`; `'1,2'` (the argument's default) | `[]`; `'1null2'` (coerced) |
+| `'abc'.padStart(5, x)`; `'abc'.substring(1, x)` | `'  abc'`; `'bc'` | `'nuabc'`; `'a'` |
 
 Producers of `undefined`:
 
@@ -590,8 +592,32 @@ overloaded `bool` covers any native position left.
 ### Runtime helper code to audit
 
 The count is every nil test in the helper and evaluator sources (`grep -c`
-over the files named). Each test is either "nullish" (→ `is_nullish`) or
-"is JSON `null`" (→ `is_null`).
+over the files named). Each test falls in one of three categories:
+
+- **nullish** (→ `is_nullish`): `??`, `?.`, `== null`, truthiness of nil;
+- **is JSON `null`** (→ `is_null`): `=== null`, ToString / ToNumber of `null`;
+- **an optional argument's default** (→ `is_undefined`): JS applies a
+  method argument's default only when it is omitted or `undefined`; an
+  explicit `null` is coerced like any other value. Node:
+  `[1,2].slice(0, undefined)` is `[1,2]` but `.slice(0, null)` is `[]`;
+  `[1,2].join(undefined)` is `'1,2'` but `.join(null)` is `'1null2'`;
+  `'abc'.padStart(5, undefined)` is `'  abc'` but `.padStart(5, null)` is
+  `'nuabc'`; `'abc'.substring(1, null)` is `'a'`. Today the runtimes test
+  host nil for these defaults (for example Python `slice`'s `end is None`,
+  `runtime.py:1617`, and `join`'s separator, `runtime.py:1528-1532`), and the
+  compiler synthesizes the default for an omitted argument as host nil
+  (`packages/jsx/src/adapters/array-method.ts:88,176-183`, spelled `none` on
+  Jinja, `adapter-jinja/src/adapter/expr/array-method.ts:29`). Each U step
+  switches the synthesized spelling to that runtime's `UNDEF` in the same
+  change that switches the helper's default test to `is_undefined`, so an
+  omitted argument keeps its default and an explicit `null` gets ordinary
+  coercion.
+
+The `primitives/` and catalogue vectors gain omitted / `undefined` / `null`
+twins for every optional argument the method catalogue supports (`slice`,
+`substring`, `join`, `padStart` / `padEnd`, `indexOf` / `includes` from
+index, `split` limit, `at`), so correcting a default cannot silently break
+the ordinary omitted call.
 
 | Runtime | Files | Count |
 | --- | --- | --- |
@@ -750,7 +776,7 @@ the same rules for the life of this rollout, and the file is deleted in U9.
 | Step | Content | Validation | Risk |
 | --- | --- | --- | --- |
 | **4a** (folded from #3824 step 4) | Builds the parts of step 4 that need no runtime support: `to_string` / `plus` helpers delegating to the evaluator; the evaluator array-ToString fix (Python known); the nil-reading rewrite for typed `null` / `undefined` readings in every position (closes #3750); the nil split. **Not** decision 2's limitation or decision 8's refusal (see U1) | `primitives/` `to_string` / `plus` ledger entries for step 4 emptied; `omitted-optional-row-field-plus` graduates on nine | High, as the spec rates step 4: every concatenation and template literal |
-| **U0** | Infrastructure, output-preserving. Adds the `$undef` encoding in the three generators and seven harness decoders; adds the §2 cases, with every runtime's failures listed in the ledgers; adds a `carriesUndefined: false` entry to every target's `NativeSafeTable` (and the JSON mirror `primitives-native-safe.json`); adds fixtures for each §1 row in each position (with explicit `null` props, omitted props and forwarded `undefined`), pinned as render divergences per adapter | byte-identical emitted output; ledgers list exactly the new cases | Low |
+| **U0** | Infrastructure, output-preserving. Adds the `$undef` encoding in the three generators and seven harness decoders; adds the §2 cases and the optional-argument twins (§4 "Runtime helper code to audit"), with every runtime's failures listed in the ledgers; adds a `carriesUndefined: false` entry to every target's `NativeSafeTable` (and the JSON mirror `primitives-native-safe.json`); adds fixtures for each §1 row in each position (with explicit `null` props, omitted props and forwarded `undefined`), pinned as render divergences per adapter | byte-identical emitted output; ledgers list exactly the new cases | Low |
 | **U1** | Shared compiler. `planPrimitive` reads `carriesUndefined`: true → the helper for `either` / unknown / dynamic `+`; false → today's plan (today's output, plus the existing numeric-`either` BF101; §7 (4)). Adds strict `=== null` / `=== undefined` versus loose `== null` in the plan. Changes the manifest's `ssrDefaults` to omit `value` when there is no default (every runtime reads a missing `value` as nil today: Python `d.get("value")`, Rust `unwrap_or(Null)`, PHP `?? null`, Perl `$d->{value}`. So this is output-preserving) | plan test over every adapter; output unchanged while every flag is false | Medium: the plan gains one input |
 | **U2** Python (Jinja) | `UNDEF` and the predicates; evaluator; helpers (`to_string`, `plus`, `get`, `at`, `find`, `json`, sort); `?.` result; seed (decision 6); harness stops the null-fill; flag → true | ledger entries for `python` emptied; Jinja pins graduate: `omitted-optional-nullable-number-arithmetic`, `defaulted-array-prop-explicit-null`, U0 fixtures | Medium: cheapest engine (native Undefined), most runtime helpers touched |
 | **U3** Rust (MiniJinja) | `JsValue::Undefined` (95 `JsValue::Null` sites); `mj_to_js` / `js_to_mj`; `search_params` → `null`; `barefootjs::Opt<T>`; the rest as U2 | same, `rust` | Medium: the enum change is checked by the compiler, so a missed `match` arm fails to build |
