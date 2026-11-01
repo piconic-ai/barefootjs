@@ -15839,6 +15839,22 @@
         "text"
       ]
     },
+    "strict-equality-reference-client": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:!==",
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "strict-equality-reference-rewrite": {
       "kinds": [
         "binary",
