@@ -308,21 +308,78 @@ pub fn eval_json(json_str: &str, env: &Env) -> Result<JsValue, serde_json::Error
 // JS coercion primitives (ToNumber / ToString / ToBoolean).
 // ---------------------------------------------------------------------------
 
+/// JS StringToNumber (ECMA-262 StringNumericLiteral), ASCII digits only:
+/// the string is trimmed and `""` is 0; a signed decimal literal with an
+/// optional exponent, the exact spelling `Infinity`, and an unsigned `0x` /
+/// `0o` / `0b` integer are their values; anything else (`infinity`, `inf`,
+/// `nan`, `1_000`, `-0x10`) is NaN. Rust's `f64::from_str` alone accepts
+/// `inf` / `infinity` / `nan` in any case and rejects the radix forms, so it
+/// only parses what the decimal grammar admitted.
+fn string_to_number(s: &str) -> f64 {
+    let t = s.trim();
+    if t.is_empty() {
+        return 0.0;
+    }
+    if let Some(n) = parse_radix_integer(t) {
+        return n;
+    }
+    let body = t.strip_prefix(['+', '-']).unwrap_or(t);
+    if body == "Infinity" {
+        return if t.starts_with('-') { f64::NEG_INFINITY } else { f64::INFINITY };
+    }
+    if !is_decimal_literal(body) {
+        return f64::NAN;
+    }
+    t.parse::<f64>().unwrap_or(f64::NAN)
+}
+
+/// `0x1F` / `0o17` / `0b101` (prefix in either case, no sign) as the double
+/// nearest its value; `None` for any other string.
+fn parse_radix_integer(t: &str) -> Option<f64> {
+    let bytes = t.as_bytes();
+    if bytes.len() < 3 || bytes[0] != b'0' {
+        return None;
+    }
+    let base = match bytes[1] {
+        b'x' | b'X' => 16,
+        b'o' | b'O' => 8,
+        b'b' | b'B' => 2,
+        _ => return None,
+    };
+    let mut n = 0.0_f64;
+    for ch in t[2..].chars() {
+        let d = ch.to_digit(base)?;
+        n = n * f64::from(base) + f64::from(d);
+    }
+    Some(n)
+}
+
+/// An unsigned StrUnsignedDecimalLiteral without `Infinity`: digits with an
+/// optional point (`5`, `5.`, `.5`, `1.5`) and an optional exponent.
+fn is_decimal_literal(body: &str) -> bool {
+    let (mantissa, exponent) = match body.find(['e', 'E']) {
+        Some(i) => (&body[..i], Some(&body[i + 1..])),
+        None => (body, None),
+    };
+    let (int_part, frac_part) = match mantissa.find('.') {
+        Some(i) => (&mantissa[..i], &mantissa[i + 1..]),
+        None => (mantissa, ""),
+    };
+    let digits = |s: &str| s.bytes().all(|b| b.is_ascii_digit());
+    let mantissa_ok = digits(int_part) && digits(frac_part) && !(int_part.is_empty() && frac_part.is_empty());
+    let exponent_ok = exponent.is_none_or(|e| {
+        let e = e.strip_prefix(['+', '-']).unwrap_or(e);
+        !e.is_empty() && digits(e)
+    });
+    mantissa_ok && exponent_ok
+}
+
 pub fn to_number(v: &JsValue) -> f64 {
     match v {
         JsValue::Null => 0.0,
         JsValue::Bool(b) => if *b { 1.0 } else { 0.0 },
         JsValue::Number(n) => *n,
-        JsValue::String(s) => {
-            let t = s.trim();
-            if t.is_empty() {
-                0.0
-            } else if num::looks_like_number(t) {
-                num::parse_number_literal(t)
-            } else {
-                f64::NAN
-            }
-        }
+        JsValue::String(s) => string_to_number(s),
         JsValue::Array(_) | JsValue::Object(_) => f64::NAN,
         // Unreachable in practice: this evaluator only ever sees `JsValue`s
         // decoded from a `serde_json::Value` ParsedExpr tree or produced by
@@ -411,14 +468,24 @@ pub(crate) fn binary(op: &str, l: &JsValue, r: &JsValue) -> JsValue {
     }
 }
 
+/// JS string order, by UTF-16 code unit. `str::cmp` is UTF-8 byte order,
+/// i.e. code point order, which differs where an astral character (whose
+/// leading surrogate is 0xD800-0xDBFF) meets a BMP character above the
+/// surrogates (`"😀" < "｡"` is true in JS).
+fn compare_utf16(l: &str, r: &str) -> std::cmp::Ordering {
+    if l.is_ascii() && r.is_ascii() {
+        return l.cmp(r);
+    }
+    l.encode_utf16().cmp(r.encode_utf16())
+}
+
 pub(crate) fn relational(op: &str, l: &JsValue, r: &JsValue) -> bool {
-    // JS Abstract Relational Comparison: both strings -> compare by code
-    // unit (UTF-8 byte order agrees with UTF-16 code-unit order for all but
-    // rare non-BMP edge cases -- same simplification the Python port's
-    // native `str` comparison makes); otherwise coerce both to numbers (a
-    // NaN operand makes it false).
+    // JS Abstract Relational Comparison: both strings -> compare by UTF-16
+    // code unit; otherwise coerce both to numbers (a NaN operand makes it
+    // false). Shared with the template helpers `bf.lt` / `le` / `gt` / `ge`
+    // (`runtime::js_relational`).
     let c = if let (JsValue::String(ls), JsValue::String(rs)) = (l, r) {
-        ls.cmp(rs)
+        compare_utf16(ls, rs)
     } else {
         let (ln, rn) = (to_number(l), to_number(r));
         if ln.is_nan() || rn.is_nan() {

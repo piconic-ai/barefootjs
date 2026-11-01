@@ -351,17 +351,15 @@ func evalToNumber(v any) float64 {
 		case "-Infinity":
 			return math.Inf(-1)
 		}
+		// An unsigned radix-prefixed integer ("0x10" / "0o17" / "0b101") is
+		// its value, as in JS; a signed one ("-0x10") is NaN.
+		if f, ok := parseJSRadixInteger(t); ok {
+			return f
+		}
 		// Decimal / exponent numeric strings parse JS-faithfully, including
 		// overflow: strconv.ParseFloat rejects underscores, hex-floats, and
 		// non-canonical "inf"/"nan" spellings via the anchored decimal-grammar
-		// gate below, so those correctly yield NaN. The radix-prefixed forms
-		// JS Number() also accepts ("0x10" / "0o17" / "0b101") are a
-		// documented divergence region: they fail the decimal grammar (a
-		// leading "0x"/"0o"/"0b" is not a valid decimal literal) and yield
-		// NaN here, as they do in the Perl evaluator (looks_like_number is
-		// false for them), so Go==Perl while differing from the JS
-		// reference. Template data carries JSON numbers, not radix-string
-		// literals, so this never arises in practice.
+		// gate below, so those correctly yield NaN.
 		if !jsDecimalNumberRe.MatchString(t) {
 			return math.NaN()
 		}
@@ -383,6 +381,45 @@ func evalToNumber(v any) float64 {
 		}
 		return math.NaN()
 	}
+}
+
+// parseJSRadixInteger parses JS's NonDecimalIntegerLiteral ("0x1F",
+// "0o17", "0b101", prefix in either case, no sign, no separators) into the
+// double nearest its value. ok is false for any other string.
+func parseJSRadixInteger(t string) (float64, bool) {
+	if len(t) < 3 || t[0] != '0' {
+		return 0, false
+	}
+	var base float64
+	switch t[1] {
+	case 'x', 'X':
+		base = 16
+	case 'o', 'O':
+		base = 8
+	case 'b', 'B':
+		base = 2
+	default:
+		return 0, false
+	}
+	n := 0.0
+	for _, ch := range t[2:] {
+		var d float64
+		switch {
+		case ch >= '0' && ch <= '9':
+			d = float64(ch - '0')
+		case ch >= 'a' && ch <= 'f':
+			d = float64(ch-'a') + 10
+		case ch >= 'A' && ch <= 'F':
+			d = float64(ch-'A') + 10
+		default:
+			return 0, false
+		}
+		if d >= base {
+			return 0, false
+		}
+		n = n*base + d
+	}
+	return n, true
 }
 
 // evalIsNumeric reports whether v is one of the Go numeric types (all of
@@ -483,29 +520,11 @@ func evalBinary(op string, l, r any) any {
 }
 
 func evalRelational(op string, l, r any) bool {
-	// JS Abstract Relational Comparison: both strings → compare by code
-	// unit; otherwise coerce both to numbers (a NaN operand makes every
-	// comparison false).
-	var c int
-	ls, lok := l.(string)
-	rs, rok := r.(string)
-	if lok && rok {
-		if ls < rs {
-			c = -1
-		} else if ls > rs {
-			c = 1
-		}
-	} else {
-		ln := evalToNumber(l)
-		rn := evalToNumber(r)
-		if math.IsNaN(ln) || math.IsNaN(rn) {
-			return false
-		}
-		if ln < rn {
-			c = -1
-		} else if ln > rn {
-			c = 1
-		}
+	// JS Abstract Relational Comparison, shared with the template helpers
+	// Lt / Le / Gt / Ge (compareJS): one implementation, two entry points.
+	c, ok := compareJS(l, r)
+	if !ok {
+		return false
 	}
 	switch op {
 	case "<":

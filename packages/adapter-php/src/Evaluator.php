@@ -455,13 +455,48 @@ final class Evaluator
             return (float) $v;
         }
         if (is_string($v)) {
-            $t = trim($v);
-            if ($t === '') {
-                return 0.0;
-            }
-            return self::looksLikeNumber($t) ? self::parseNumberLiteral($t) : NAN;
+            return self::stringToNumber($v);
         }
         return NAN; // array / object
+    }
+
+    private const JS_DECIMAL_RE = '/\A([+-]?)(?:Infinity|(?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?)\z/';
+    private const JS_RADIX_RE = '/\A0([xXoObB])([0-9a-fA-F]+)\z/';
+
+    /**
+     * JS StringToNumber (ECMA-262 StringNumericLiteral), ASCII digits only:
+     * the string is trimmed and '' is 0; a signed decimal literal with an
+     * optional exponent, the exact spelling `Infinity`, and an unsigned
+     * `0x` / `0o` / `0b` integer are their values; anything else (`infinity`,
+     * `nan`, `1_000`, `-0x10`) is NAN. Distinct from looksLikeNumber(), which
+     * the display helper `number` keeps (it accepts `inf` / `nan`).
+     */
+    private static function stringToNumber(string $s): float
+    {
+        $t = trim($s);
+        if ($t === '') {
+            return 0.0;
+        }
+        if (preg_match(self::JS_RADIX_RE, $t, $m)) {
+            $base = ['x' => 16, 'o' => 8, 'b' => 2][strtolower($m[1])];
+            $n = 0.0;
+            foreach (str_split($m[2]) as $digit) {
+                $d = hexdec($digit);
+                if ($d >= $base) {
+                    return NAN;
+                }
+                $n = $n * $base + $d;
+            }
+            return $n;
+        }
+        if (!preg_match(self::JS_DECIMAL_RE, $t, $m)) {
+            return NAN;
+        }
+        $body = ltrim($t, '+-');
+        if ($body === 'Infinity') {
+            return $m[1] === '-' ? -INF : INF;
+        }
+        return (float) $t;
     }
 
     public static function toStringJs($v): string
@@ -567,9 +602,10 @@ final class Evaluator
         // silently defeat the eval-vectors.json pin that two numeric
         // strings compare LEXICALLY under JS `<` (see the golden vector
         // "two numeric strings compare lexically, not numerically").
-        // strcmp() always does a raw byte comparison.
+        // strcmp() always does a raw byte comparison, which is code point
+        // order over UTF-8; compareUtf16() turns it into JS's UTF-16 order.
         if (is_string($l) && is_string($r)) {
-            $c = strcmp($l, $r) <=> 0;
+            $c = self::compareUtf16($l, $r);
         } else {
             $ln = self::toNumber($l);
             $rn = self::toNumber($r);
@@ -585,6 +621,21 @@ final class Evaluator
             '>=' => $c >= 0,
             default => false,
         };
+    }
+
+    /**
+     * JS string order, by UTF-16 code unit. A raw byte comparison of UTF-8 is
+     * code point order, which differs where an astral character (whose
+     * leading surrogate is 0xD800-0xDBFF) meets a BMP character above the
+     * surrogates ("😀" < "｡" is true in JS). Big-endian UTF-16 bytes compare
+     * in code-unit order.
+     */
+    private static function compareUtf16(string $l, string $r): int
+    {
+        if (preg_match('/[\x80-\xff]/', $l . $r) !== 1) {
+            return strcmp($l, $r) <=> 0;
+        }
+        return strcmp(mb_convert_encoding($l, 'UTF-16BE', 'UTF-8'), mb_convert_encoding($r, 'UTF-16BE', 'UTF-8')) <=> 0;
     }
 
     /** Strict `===`: equal JS type and value, no coercion. Also the shared

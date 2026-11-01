@@ -4582,14 +4582,15 @@ func isNilish(v any) bool {
 func Ne(a, b any) bool { return !Eq(a, b) }
 
 // compareJS orders two values like JS's relational operators: two strings
-// compare by code unit, anything else as numbers — Go numeric kinds mixed
-// freely (`1.5 > 0`), numeric strings, booleans, and nil as 0. ok is false
-// when an operand is not a number (JS NaN), which makes every relational
-// operator false.
+// compare by UTF-16 code unit, anything else as numbers — Go numeric kinds
+// mixed freely (`1.5 > 0`), numeric strings, booleans, and nil as 0. ok is
+// false when an operand is not a number (JS NaN), which makes every
+// relational operator false. The callback evaluator's evalRelational and
+// the template helpers Lt / Le / Gt / Ge share it.
 func compareJS(a, b any) (int, bool) {
 	if sa, ok := a.(string); ok {
 		if sb, ok := b.(string); ok {
-			return strings.Compare(sa, sb), true
+			return compareUTF16(sa, sb), true
 		}
 	}
 	x, ok := relationalNumber(a)
@@ -4611,6 +4612,44 @@ func compareJS(a, b any) (int, bool) {
 	return 0, false
 }
 
+// compareUTF16 orders two strings by UTF-16 code unit, as JS does. Go's
+// string order is code point order (UTF-8 bytes); the two differ only where
+// an astral character (whose leading surrogate is 0xD800-0xDBFF) meets a BMP
+// character above the surrogates (`"😀" < "｡"` is true in JS), so the first
+// differing runes are compared by their first UTF-16 unit.
+func compareUTF16(a, b string) int {
+	for a != "" && b != "" {
+		ra, wa := utf8.DecodeRuneInString(a)
+		rb, wb := utf8.DecodeRuneInString(b)
+		if ra != rb {
+			ua, ub := firstUTF16Unit(ra), firstUTF16Unit(rb)
+			if ua == ub {
+				// Two astral characters with the same leading surrogate.
+				ua, ub = ra, rb
+			}
+			if ua < ub {
+				return -1
+			}
+			return 1
+		}
+		a, b = a[wa:], b[wb:]
+	}
+	switch {
+	case a == "" && b == "":
+		return 0
+	case a == "":
+		return -1
+	}
+	return 1
+}
+
+func firstUTF16Unit(r rune) rune {
+	if r >= 0x10000 {
+		return 0xD800 + (r-0x10000)>>10
+	}
+	return r
+}
+
 func relationalNumber(v any) (float64, bool) {
 	if f, ok := numericKindValue(v); ok {
 		return f, !math.IsNaN(f)
@@ -4624,9 +4663,10 @@ func relationalNumber(v any) (float64, bool) {
 		}
 		return 0, true
 	case string:
-		// The evaluator's JS StringToNumber: decimal grammar only (no "1_0",
-		// "0x1p2" or "inf"), the exact Infinity spellings, and an overflowing
-		// literal as ±Infinity ("1e1000").
+		// The evaluator's JS StringToNumber: the decimal grammar (no "1_0",
+		// "0x1p2" or "inf"), unsigned "0x" / "0o" / "0b" integers, the exact
+		// Infinity spellings, and an overflowing literal as ±Infinity
+		// ("1e1000").
 		f := evalToNumber(t)
 		return f, !math.IsNaN(f)
 	}

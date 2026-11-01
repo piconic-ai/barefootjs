@@ -134,6 +134,7 @@ import {
   isConcreteScalarGoType,
   type NullishSpelling,
   lowerJsNot,
+  lowerJsToNumber,
   wrapGoArg,
   emitPredicateEval,
   goBinaryHelperCall,
@@ -5371,7 +5372,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         ? `bf_neg (bf_number ${wrapIfMultiToken(arg)})`
         : `bf_neg ${wrapIfMultiToken(arg)}`
     }
-    return arg
+    return lowerJsToNumber(plan, arg)
   }
 
   logical(
@@ -7154,6 +7155,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     ctx: this.emitCtx,
     testPlan: (test, params) =>
       planTest(test, this.state.operandTyping.at(params ? this.scope.enterCallback(params) : this.scope), GO_NATIVE_SAFE),
+    primitivePlan: (node, params) =>
+      planPrimitive(node, this.state.operandTyping.at(params ? this.scope.enterCallback(params) : this.scope), GO_NATIVE_SAFE),
     nullishSpelling: (expr, params) => this.nullishSpelling(expr, params),
     renderParsedExpr: (expr) => this.renderParsedExpr(expr),
     makeLoc: () => this.makeLoc(),

@@ -521,12 +521,35 @@ export function arithmeticOperandCoercion(
   ctx: NullishAttrContext,
   isShadowed: (name: string) => boolean = () => false,
 ): ArithmeticCoercion {
+  if (RELATIONAL_OPS.has(op)) return relationalOperandCoercion(operand, ctx, isShadowed)
   if (!isNumericArithmetic(op, other)) return null
   const seed = arithmeticOperandSeed(operand, ctx, isShadowed)
   if (seed === 'absent') return 'undefined'
   // `'either'` is refused (`arithmeticOperandNilIsAmbiguous`); the spelling
   // keeps the `null` reading so the refused template stays well-formed.
   return seed === 'either' ? 'null' : seed
+}
+
+/** The relational operators, whose operands JS converts with ToNumber unless both are strings. */
+const RELATIONAL_OPS: ReadonlySet<string> = new Set(['<', '<=', '>', '>='])
+
+/**
+ * The coercion of a relational operand (#3824 step 3). The runtime's
+ * relational helpers read a nil operand as JS `null` (`0`), so only an operand
+ * whose nil reads as `undefined` needs spelling: it goes through `NaN`, which
+ * makes the comparison false, as `undefined < 1` is in JS. A nil whose
+ * reading the type leaves open (`n?: number | null`) keeps the helper's
+ * `null` reading instead of being refused as arithmetic is (#3700); the
+ * nil-reading rewrite of rollout step 4 decides that case for every numeric
+ * consumer at once.
+ */
+function relationalOperandCoercion(
+  operand: ParsedExpr | undefined,
+  ctx: NullishAttrContext,
+  isShadowed: (name: string) => boolean,
+): ArithmeticCoercion {
+  const seed = arithmeticOperandSeed(operand, ctx, isShadowed)
+  return seed === 'absent' || seed === 'undefined' ? 'undefined' : null
 }
 
 /**

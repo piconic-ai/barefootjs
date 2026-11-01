@@ -283,6 +283,8 @@ import { fixture as literalIndexOwnKey } from './literal-index-own-key'
 import { fixture as indexKeyCanonicalForm } from './index-key-canonical-form'
 import { fixture as indexKeyCanonicalFormCallback } from './index-key-canonical-form-callback'
 import { fixture as indexReadPositions } from './index-read-positions'
+import { fixture as relationalPositions } from './relational-positions'
+import { fixture as relationalOmittedNumberMemo } from './relational-omitted-number-memo'
 import { fixture as indexReadExactKey } from './index-read-exact-key'
 import { fixture as indexReadCapitalisedKeyOnly } from './index-read-capitalised-key-only'
 import { fixture as remainderNegativeZeroString } from './remainder-negative-zero-string'
@@ -1499,6 +1501,8 @@ export const jsxFixtures: JSXFixture[] = [
   indexKeyCanonicalForm,
   indexKeyCanonicalFormCallback,
   indexReadPositions,
+  relationalPositions,
+  relationalOmittedNumberMemo,
   indexReadExactKey,
   indexReadCapitalisedKeyOnly,
   remainderNegativeZeroString,

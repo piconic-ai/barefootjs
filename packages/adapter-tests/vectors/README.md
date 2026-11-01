@@ -200,7 +200,8 @@ claims the union of its adapters' tables: Mojolicious and Xslate share
 Perl, Twig and Blade share PHP), and generation refuses a claimed proof no
 vector domain covers. A native claim the vectors refute fails the harness;
 no ledger applies to it. Only the ops a rollout step has wired are listed
-(`truthy`, step 1; `get`, step 2).
+(`truthy`, step 1; `get`, step 2; `to_number` and `lt` / `le` / `gt` /
+`ge`, step 3; `number`, step 6).
 
 ### The expected-failure ledger
 

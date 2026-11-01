@@ -23,7 +23,7 @@ import {
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
-import { goBinaryHelperCall, goNumberLiteral, GO_REMEDIATION_OPTIONS, isLiteralKeyRead, lowerJsLogicalTest, lowerJsLogicalValue, lowerJsNullishValue, lowerAbsentAsNil, lowerJsTruthyTest, wrapIfMultiToken, type NullishSpelling } from '../lib/go-emit.ts'
+import { goBinaryHelperCall, goNumberLiteral, GO_REMEDIATION_OPTIONS, isLiteralKeyRead, lowerJsLogicalTest, lowerJsLogicalValue, lowerJsNullishValue, lowerAbsentAsNil, lowerJsToNumber, lowerJsTruthyTest, wrapIfMultiToken, type NullishSpelling } from '../lib/go-emit.ts'
 import { isPropsObjectName } from '../lib/compile-state.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import type { HigherOrderShape } from '../lib/types.ts'
@@ -105,6 +105,8 @@ export interface ConditionExprHost {
    * with `params`, at a predicate's scope with its own bindings entered.
    */
   testPlan(test: ParsedExpr, params?: readonly string[]): PrimitivePlan
+  /** The primitive plan of an operator node (#3824), typed like {@link testPlan}. */
+  primitivePlan(node: ParsedExpr, params?: readonly string[]): PrimitivePlan | null
   /** How a value-position `l ?? r` is spelled (#3824 step 7), typed like {@link testPlan}. */
   nullishSpelling(expr: Extract<ParsedExpr, { kind: 'logical' }>, params?: readonly string[]): NullishSpelling
 }
@@ -210,7 +212,8 @@ function renderFilterUnary(
   }
   const arg = renderFilterExprNode(host, expr.argument, param, localVarMap, datumField, fieldlessParam)
   if (arg === null) return null
-  return expr.op === '-' ? `bf_neg ${wrapIfMultiToken(arg)}` : arg
+  if (expr.op === '-') return `bf_neg ${wrapIfMultiToken(arg)}`
+  return expr.op === '+' ? lowerJsToNumber(host.primitivePlan(expr, [param]), arg) : arg
 }
 
 /** One node of {@link renderFilterExpr}; children recurse through it. */
@@ -589,6 +592,7 @@ export function renderConditionExpr(host: ConditionExprHost, expr: ParsedExpr): 
       // multi-token argument (`or .N 0`, from `-(n() ?? 0)`) must be
       // parenthesised or Go reads it as extra sibling args (#3249).
       if (expr.op === '-') return { preamble: arg.preamble, expr: `bf_neg ${wrapIfMultiToken(arg.expr)}` }
+      if (expr.op === '+') return { preamble: arg.preamble, expr: lowerJsToNumber(host.primitivePlan(expr), arg.expr) }
       return arg
     }
 

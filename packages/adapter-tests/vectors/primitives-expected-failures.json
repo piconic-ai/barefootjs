@@ -4,32 +4,11 @@
   "about": "Step-0 scaffold: every (runtime, case) of primitives/*.json that fails today, each naming the rollout step expected to remove it. Shrink-only: a harness fails on an unexpected failure and on a listed case that now passes. Each rollout step empties its entries; the file goes away when every runtime is empty.",
   "runtimes": {
     "go": {
-      "ge/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
-      "gt/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
-      "le/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
-      "lt/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
       "plus/an array against a string joins with a comma": {
         "step": 4
       },
       "plus/an empty array prints as the empty string": {
         "step": 4
-      },
-      "to_number/a binary string is its value": {
-        "step": 3
-      },
-      "to_number/a hex string is its value": {
-        "step": 3
-      },
-      "to_number/an octal string is its value": {
-        "step": 3
       },
       "to_string/a nil element prints as the empty string": {
         "step": 4
@@ -45,12 +24,6 @@
       }
     },
     "java": {
-      "ge/-0 and 0 are equal": {
-        "step": 3
-      },
-      "lt/-0 and 0 are equal": {
-        "step": 3
-      },
       "plus/an array against a string joins with a comma": {
         "step": 4
       },
@@ -71,18 +44,6 @@
       }
     },
     "perl": {
-      "ge/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
-      "gt/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
-      "le/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
-      "lt/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
       "plus/-0 plus -0 is -0": {
         "step": 4
       },
@@ -91,21 +52,6 @@
       },
       "plus/an empty array prints as the empty string": {
         "step": 4
-      },
-      "to_number/a binary string is its value": {
-        "step": 3
-      },
-      "to_number/a hex string is its value": {
-        "step": 3
-      },
-      "to_number/a lower-case \"infinity\" is NaN": {
-        "step": 3
-      },
-      "to_number/an octal string is its value": {
-        "step": 3
-      },
-      "to_number/the string \"-0\" is -0": {
-        "step": 3
       },
       "to_string/a nil element prints as the empty string": {
         "step": 4
@@ -121,32 +67,8 @@
       }
     },
     "php": {
-      "ge/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
-      "gt/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
-      "le/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
-      "lt/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
       "plus/an array against a string joins with a comma": {
         "step": 4
-      },
-      "to_number/a binary string is its value": {
-        "step": 3
-      },
-      "to_number/a hex string is its value": {
-        "step": 3
-      },
-      "to_number/a lower-case \"infinity\" is NaN": {
-        "step": 3
-      },
-      "to_number/an octal string is its value": {
-        "step": 3
       },
       "to_string/a nil element prints as the empty string": {
         "step": 4
@@ -159,35 +81,11 @@
       }
     },
     "python": {
-      "ge/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
-      "gt/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
-      "le/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
-      "lt/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
       "plus/an array against a string joins with a comma": {
         "step": 4
       },
       "plus/an empty array prints as the empty string": {
         "step": 4
-      },
-      "to_number/a binary string is its value": {
-        "step": 3
-      },
-      "to_number/a hex string is its value": {
-        "step": 3
-      },
-      "to_number/a lower-case \"infinity\" is NaN": {
-        "step": 3
-      },
-      "to_number/an octal string is its value": {
-        "step": 3
       },
       "to_string/a nil element prints as the empty string": {
         "step": 4
@@ -203,29 +101,11 @@
       }
     },
     "ruby": {
-      "ge/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
-      "gt/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
-      "le/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
-      "lt/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
       "plus/an array against a string joins with a comma": {
         "step": 4
       },
       "plus/an empty array prints as the empty string": {
         "step": 4
-      },
-      "to_number/a binary string is its value": {
-        "step": 3
-      },
-      "to_number/an octal string is its value": {
-        "step": 3
       },
       "to_string/a nil element prints as the empty string": {
         "step": 4
@@ -240,31 +120,6 @@
         "step": 4
       }
     },
-    "rust": {
-      "ge/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
-      "gt/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
-      "le/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
-      "lt/an astral character against U+FF61 (UTF-16 units)": {
-        "step": 3
-      },
-      "to_number/a binary string is its value": {
-        "step": 3
-      },
-      "to_number/a hex string is its value": {
-        "step": 3
-      },
-      "to_number/a lower-case \"infinity\" is NaN": {
-        "step": 3
-      },
-      "to_number/an octal string is its value": {
-        "step": 3
-      }
-    }
+    "rust": {}
   }
 }

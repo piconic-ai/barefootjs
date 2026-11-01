@@ -15,9 +15,9 @@
  * the committed JSON drifts from the tables.
  *
  * Only the ops whose native binding the harnesses wire are listed: `truthy`
- * (rollout step 1), `get` (step 2) and `number`, the number-literal plan's
- * host literal (step 6). Each later step adds its op here and to every
- * harness.
+ * (rollout step 1), `get` (step 2), `to_number` and `lt` / `le` / `gt` /
+ * `ge` (step 3), and `number`, the number-literal plan's host literal
+ * (step 6). Each later step adds its op here and to every harness.
  */
 import { dirname, join } from 'node:path'
 import type { NativeSafeTable, PrimitiveOp, Proof } from '@barefootjs/jsx'
@@ -50,9 +50,22 @@ export const RUNTIME_TABLES: Readonly<Record<string, readonly NativeSafeTable[]>
  * Each vector op with a native binding: the plan op its native operator
  * spells, and the vector domains a claimed proof covers.
  */
-const NATIVE_BINDINGS: Readonly<Record<string, { op: PrimitiveOp; domains: Partial<Record<Proof, readonly Domain[]>> }>> = {
+const RELATIONAL_BINDING = { op: 'relational', domains: { 'number-pair': ['number-pair'] } } as const
+
+const NATIVE_BINDINGS: Readonly<
+  Record<string, { op: PrimitiveOp; domains: Partial<Record<Proof, readonly Domain[]>>; elsewhere?: readonly Proof[] }>
+> = {
   truthy: { op: 'to-boolean', domains: { boolean: ['boolean'] } },
   get: { op: 'get', domains: { 'array-index': ['array-index'] } },
+  // A unary `+` over a proven number is the operand itself. The plan's
+  // `to-number` op also covers binary `-` / `*` (`number-pair`, and
+  // `unproven` on the targets that keep their native operator until step 4),
+  // which no single-operand `to_number` vector exercises.
+  to_number: { op: 'to-number', domains: { number: ['number'] }, elsewhere: ['number-pair', 'unproven'] },
+  lt: RELATIONAL_BINDING,
+  le: RELATIONAL_BINDING,
+  gt: RELATIONAL_BINDING,
+  ge: RELATIONAL_BINDING,
   number: { op: 'number-literal', domains: { 'safe-integer': ['safe-integer'] } },
 }
 
@@ -69,6 +82,7 @@ function claimedDomains(fn: string, tables: readonly NativeSafeTable[]): Domain[
   const binding = NATIVE_BINDINGS[fn]!
   const domains = new Set<Domain>()
   for (const proof of new Set(tables.flatMap((t) => t[binding.op] ?? []))) {
+    if (binding.elsewhere?.includes(proof)) continue
     const covered = binding.domains[proof]
     if (!covered) throw new Error(`a NATIVE_SAFE table claims '${binding.op}' for proof '${proof}', which no ${fn} vector domain pins`)
     for (const d of covered) domains.add(d)

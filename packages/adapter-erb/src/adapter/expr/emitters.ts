@@ -74,6 +74,8 @@ import {
   type StringNameTest,
   type NamedTypeFields,
   isNativePlan,
+  relationalHelper,
+  isNativeToNumber,
   numberLiteralSpelling,
 } from '@barefootjs/jsx'
 
@@ -101,10 +103,16 @@ export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'ERB', 
  */
 export const NATIVE_SAFE: NativeSafeTable = {
   'to-boolean': [],
+  // A unary `+` is native only over a proven number, `to_number` otherwise
+  // (#3824 step 3). `unproven` describes binary `-` / `*` over operands Phase 1
+  // cannot type, which keep the native operator until step 4.
   'to-number': ['number-pair', 'number', 'unproven'],
   plus: ['number-pair', 'string', 'unproven'],
   'strict-eq': ['number-pair', 'string-pair', 'boolean-pair', 'unproven'],
-  relational: ['number-pair', 'unproven'],
+  // Native only over two proven numbers; any other pair takes the runtime's
+  // JS Abstract Relational Comparison (`lt` / `le` / `gt` / `ge`; #3824
+  // step 3, pinned by the `primitives/lt` … `ge` vectors).
+  relational: ['number-pair'],
   // A unary minus over a non-zero literal folds into the literal; any other
   // operand takes `neg`, which keeps the sign of zero. A literal is native
   // only as a safe integer; `number('<JS spelling>')` otherwise, and `-0` is
@@ -376,10 +384,10 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     // JS `!x` tests JS truthiness, not Ruby's — wrap. See file docstring.
     if (op === '!') return `!${truthyTest(plan, arg)}`
     if (op === '-') return negate(plan, arg, () => `-(${arg})`)
-    return arg
+    return toNumber(plan, arg)
   }
 
-  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
     // Unlike Perl's numeric `==` (which coerces a non-numeric string
@@ -398,6 +406,10 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     if (isStringConcatBinary(op, left, right, this.isStringName)) {
       return `(${concatOperand(left, l, this.isStringName)} + ${concatOperand(right, r, this.isStringName)})`
     }
+    // `<` `<=` `>` `>=`: native only over two proven numbers, the runtime's
+    // JS Abstract Relational Comparison otherwise (#3824 step 3).
+    const relational = relationalHelper(op, plan)
+    if (relational) return `bf.${relational}(${l}, ${r})`
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*',
@@ -732,7 +744,7 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
       const operand = this.coerceNullishOperand(op, argument, undefined, arg)
       return negate(plan, operand, () => `-(${operand})`)
     }
-    return arg
+    return toNumber(plan, arg)
   }
 
   /** Spell `arithmeticOperandCoercion` (#3474): a `null` operand reads as
@@ -744,7 +756,7 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     return coercion === 'null' ? `(${operand} || 0)` : operand
   }
 
-  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = this.coerceNullishOperand(op, left, right, emit(left))
     const r = this.coerceNullishOperand(op, right, left, emit(right))
     // `/` and `%` go through the runtime's JS division and remainder
@@ -759,6 +771,10 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     if (isStringConcatBinary(op, left, right, isStringName)) {
       return `(${concatOperand(left, l, isStringName)} + ${concatOperand(right, r, isStringName)})`
     }
+    // `<` `<=` `>` `>=`: native only over two proven numbers, the runtime's
+    // JS Abstract Relational Comparison otherwise (#3824 step 3).
+    const relational = relationalHelper(op, plan)
+    if (relational) return `bf.${relational}(${l}, ${r})`
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
       '+': '+', '-': '-', '*': '*',
@@ -934,4 +950,13 @@ export function numberLiteral(value: string | number | boolean | null, plan: Pri
  */
 function negate(plan: PrimitivePlan | null, operand: string, native: () => string): string {
   return isNativePlan(plan, 'neg') ? native() : `bf.neg(${operand})`
+}
+
+/**
+ * Spell a unary-`+` plan over `operand` (#3824 step 3): the operand itself
+ * when the plan proves it a number, the runtime's JS ToNumber (`to_number`)
+ * otherwise.
+ */
+function toNumber(plan: PrimitivePlan | null, operand: string): string {
+  return isNativeToNumber(plan) ? operand : `bf.to_number(${operand})`
 }

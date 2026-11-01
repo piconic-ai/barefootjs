@@ -690,8 +690,10 @@ function Widget({ n, values }: { n: string; values: number[] }) {
   return <ul>{values.filter(n => n + 1 > 3).map(v => <li key={v}>{v}</li>)}</ul>
 }
 `)
-    expect(template).toContain('(v + 1) > 3')
-    expect(template).not.toContain('(v ~ 1) > 3')
+    // The row is not proven a number, so `>` takes the runtime's JS
+    // comparison (#3824 step 3); its operand keeps the numeric `+`.
+    expect(template).toContain('bf.gt((v + 1), 3)')
+    expect(template).not.toContain('v ~ 1')
   })
 })
 

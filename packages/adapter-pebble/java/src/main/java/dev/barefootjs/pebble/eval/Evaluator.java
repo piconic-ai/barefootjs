@@ -220,6 +220,12 @@ public final class Evaluator {
     }
   }
 
+  /**
+   * JS Abstract Relational Comparison, shared with the template helpers
+   * {@code bf.lt} / {@code le} / {@code gt} / {@code ge}: two strings compare
+   * by UTF-16 code unit (Java's own {@code String} order); anything else
+   * through ToNumber, and a NaN makes the result false.
+   */
   public static boolean relational(String op, Object l, Object r) {
     int c;
     if (l instanceof String && r instanceof String) {
@@ -231,7 +237,8 @@ public final class Evaluator {
       if (Double.isNaN(ln) || Double.isNaN(rn)) {
         return false;
       }
-      c = Double.compare(ln, rn);
+      // Not Double.compare, which orders -0.0 below 0.0; JS holds them equal.
+      c = ln < rn ? -1 : (ln > rn ? 1 : 0);
     }
     switch (op) {
       case "<":

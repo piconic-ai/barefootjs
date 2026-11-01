@@ -238,11 +238,33 @@ def _to_number(v: Any) -> float:
     if _is_number(v):
         return float(v)
     if isinstance(v, str):
-        t = v.strip()
-        if t == "":
-            return 0.0
-        return parse_number_literal(t) if looks_like_number(t) else _nan()
+        return _string_to_number(v)
     return _nan()  # list / dict
+
+
+# JS StringToNumber's grammar (ECMA-262 StringNumericLiteral), ASCII digits
+# only: a signed decimal literal with an optional exponent, the exact
+# spelling `Infinity`, or an unsigned `0x` / `0o` / `0b` integer. Distinct from
+# `looks_like_number`, which the display helper `number()` keeps (it mirrors
+# Perl's and accepts `inf` / `nan`).
+_JS_DECIMAL_RE = re.compile(r"[+-]?(?:Infinity|(?:[0-9]+\.?[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?)")
+_JS_RADIX_RE = re.compile(r"0(?:[xX][0-9a-fA-F]+|[oO][0-7]+|[bB][01]+)")
+
+
+def _string_to_number(s: str) -> float:
+    t = s.strip()
+    if t == "":
+        return 0.0
+    if _JS_RADIX_RE.fullmatch(t):
+        try:
+            return float(int(t, 0))
+        except OverflowError:
+            return math.inf
+    if _JS_DECIMAL_RE.fullmatch(t):
+        if t.lstrip("+-") == "Infinity":
+            return -math.inf if t.startswith("-") else math.inf
+        return float(t)
+    return _nan()
 
 
 def _format_number(n: float) -> str:
@@ -365,7 +387,7 @@ def _relational(op: str, l: Any, r: Any) -> bool:
     # JS Abstract Relational Comparison: both strings -> compare by code
     # unit; otherwise coerce both to numbers (a NaN operand makes it false).
     if _is_string(l) and _is_string(r):
-        c = -1 if l < r else (1 if l > r else 0)
+        c = _compare_utf16(l, r)
     else:
         ln, rn = _to_number(l), _to_number(r)
         if ln != ln or rn != rn:  # NaN -> false
@@ -380,6 +402,18 @@ def _relational(op: str, l: Any, r: Any) -> bool:
     if op == ">=":
         return _bool(c >= 0)
     return _bool(False)
+
+
+def _compare_utf16(l: str, r: str) -> int:
+    # JS orders strings by UTF-16 code unit, Python's `<` by code point: they
+    # differ when an astral character (a leading surrogate, 0xD800-0xDBFF)
+    # meets a BMP character above the surrogates (`'😀' < '｡'` is true in
+    # JS). Big-endian UTF-16 bytes compare in code-unit order.
+    if l.isascii() and r.isascii():
+        return -1 if l < r else (1 if l > r else 0)
+    lu = l.encode("utf-16-be", "surrogatepass")
+    ru = r.encode("utf-16-be", "surrogatepass")
+    return -1 if lu < ru else (1 if lu > ru else 0)
 
 
 def _strict_eq(l: Any, r: Any) -> bool:

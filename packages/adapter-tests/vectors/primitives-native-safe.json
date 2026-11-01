@@ -9,6 +9,13 @@
         "boolean"
       ],
       "get": [],
+      "to_number": [
+        "number"
+      ],
+      "lt": [],
+      "le": [],
+      "gt": [],
+      "ge": [],
       "number": [
         "safe-integer"
       ]
@@ -18,6 +25,21 @@
         "boolean"
       ],
       "get": [],
+      "to_number": [
+        "number"
+      ],
+      "lt": [
+        "number-pair"
+      ],
+      "le": [
+        "number-pair"
+      ],
+      "gt": [
+        "number-pair"
+      ],
+      "ge": [
+        "number-pair"
+      ],
       "number": [
         "safe-integer"
       ]
@@ -27,6 +49,21 @@
         "boolean"
       ],
       "get": [],
+      "to_number": [
+        "number"
+      ],
+      "lt": [
+        "number-pair"
+      ],
+      "le": [
+        "number-pair"
+      ],
+      "gt": [
+        "number-pair"
+      ],
+      "ge": [
+        "number-pair"
+      ],
       "number": [
         "safe-integer"
       ]
@@ -36,6 +73,21 @@
         "boolean"
       ],
       "get": [],
+      "to_number": [
+        "number"
+      ],
+      "lt": [
+        "number-pair"
+      ],
+      "le": [
+        "number-pair"
+      ],
+      "gt": [
+        "number-pair"
+      ],
+      "ge": [
+        "number-pair"
+      ],
       "number": [
         "safe-integer"
       ]
@@ -47,6 +99,21 @@
       "get": [
         "array-index"
       ],
+      "to_number": [
+        "number"
+      ],
+      "lt": [
+        "number-pair"
+      ],
+      "le": [
+        "number-pair"
+      ],
+      "gt": [
+        "number-pair"
+      ],
+      "ge": [
+        "number-pair"
+      ],
       "number": [
         "safe-integer"
       ]
@@ -54,6 +121,21 @@
     "ruby": {
       "truthy": [],
       "get": [],
+      "to_number": [
+        "number"
+      ],
+      "lt": [
+        "number-pair"
+      ],
+      "le": [
+        "number-pair"
+      ],
+      "gt": [
+        "number-pair"
+      ],
+      "ge": [
+        "number-pair"
+      ],
       "number": [
         "safe-integer"
       ]
@@ -65,6 +147,13 @@
       "get": [
         "array-index"
       ],
+      "to_number": [
+        "number"
+      ],
+      "lt": [],
+      "le": [],
+      "gt": [],
+      "ge": [],
       "number": [
         "safe-integer"
       ]

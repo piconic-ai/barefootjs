@@ -5,7 +5,7 @@
  */
 
 import type { SortComparator, SupportResult, ParsedExpr } from '@barefootjs/jsx'
-import { arithmeticHelper, BindingScope, EMPTY_OPERAND_TYPING, escapeBraceDelimiters, evalBody, isExactly, numberLiteralSpelling, operandFacts, spellTest, type CallbackCapture, type NativeSafeTable, type PrimitivePlan } from '@barefootjs/jsx'
+import { arithmeticHelper, BindingScope, EMPTY_OPERAND_TYPING, escapeBraceDelimiters, evalBody, isExactly, isNativeToNumber, numberLiteralSpelling, operandFacts, spellTest, type CallbackCapture, type NativeSafeTable, type PrimitivePlan } from '@barefootjs/jsx'
 
 import { capitalize } from "./go-naming.ts"
 
@@ -67,7 +67,10 @@ export function wrapIfMultiToken(rendered: string): string {
  */
 export const GO_NATIVE_SAFE: NativeSafeTable = {
   'to-boolean': ['boolean'],
-  'to-number': [],
+  // A unary `+` over a proven number is the operand itself; anything else
+  // takes `bf_to_number` (#3824 step 3). Binary `-` / `*` take `bf_sub` /
+  // `bf_mul` whatever the operands.
+  'to-number': ['number'],
   // A string `+` is `bf_concat_str`: html/template has no infix operator, so
   // that call is Go's spelling of native concatenation.
   plus: ['string'],
@@ -83,6 +86,15 @@ export const GO_NATIVE_SAFE: NativeSafeTable = {
   get: [],
   // A comparison, `!` and a boolean literal are host booleans already (#3824 step 5).
   'boolean-value': ['boolean'],
+}
+
+/**
+ * A unary `+` over a rendered operand, as its plan names it (#3824 step 3):
+ * the operand itself when the plan proves it a number, the runtime's JS
+ * ToNumber (`bf_to_number`) otherwise. A null plan takes the helper.
+ */
+export function lowerJsToNumber(plan: PrimitivePlan | null, rendered: string): string {
+  return isNativeToNumber(plan) ? rendered : `bf_to_number ${wrapIfMultiToken(rendered)}`
 }
 
 /**
