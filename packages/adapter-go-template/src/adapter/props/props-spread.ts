@@ -71,6 +71,22 @@ export function isFinalPropWriter(prop: IRProp, keys: ReadonlyMap<string, Resolv
   return base?.kind === 'children'
 }
 
+/**
+ * The props of a call without `{...props}` that are the values their keys
+ * end up with, per the shared plan: a prop a later one of the same key
+ * replaces (`<Chip {...rest} tone="x" />`, whose closed rest spread is
+ * expanded to a `tone={rest.tone}` before `tone="x"`) is dropped, so the
+ * child's Input literal sets each field once and the later writer wins, as
+ * in JSX. A call that also spreads an object whose keys are unknown is
+ * returned whole.
+ */
+export function finalPropWriters(ctx: GoEmitContext, ir: ComponentIR, props: readonly IRProp[]): readonly IRProp[] {
+  const resolved = resolveComponentPropKeys(planComponentProps({ props: [...props], children: [], slotId: null }, planOptions(ctx, ir)))
+  if (resolved === null) return props
+  const keys = new Map(resolved.map((r) => [r.key, r]))
+  return props.filter((p) => isFinalPropWriter(p, keys))
+}
+
 /** Every component call in `node`'s subtree, the root included. */
 function forEachComponent(node: IRNode, visit: (props: readonly IRProp[]) => void): void {
   switch (node.type) {

@@ -2107,6 +2107,49 @@
       }
     }
   ],
+  "component-rest-spread-explicit-override": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "items": [
+          "p",
+          "q"
+        ],
+        "tone": "info"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "items": [
+          "p",
+          "q"
+        ],
+        "tone": "info"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "items": [
+          "p",
+          "q"
+        ],
+        "tone": "info"
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "label": "x",
+        "items": [],
+        "tone": "info"
+      }
+    }
+  ],
   "component-rest-spread-in-loop-row": [
     {
       "name": "gen:items:empty",
@@ -8407,6 +8450,30 @@
       }
     }
   ],
+  "memo-reduce-map-prop-seed": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "memo-reduce-map-prop-seed-shapes": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
+  "memo-reduce-param-shadows-nullable-prop": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": []
+      }
+    }
+  ],
   "memo-string-concat-signal": [
     {
       "name": "gen:name:empty",
@@ -12919,6 +12986,24 @@
           "first"
         ],
         "b": []
+      }
+    }
+  ],
+  "rest-member-ternary": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "tone": "warn"
+      }
+    }
+  ],
+  "rest-member-ternary-shapes": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": [],
+        "count": 2
       }
     }
   ],

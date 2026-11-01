@@ -2904,68 +2904,12 @@
           ]
         }
       },
-      "destructure-default-body-renamed-callback-child": {
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "destructure-default-computed-array"
-          ],
-          "escape": {
-            "state": "debt"
-          }
-        }
-      },
-      "destructure-default-body-renamed-callback-earlier": {
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "destructure-default-computed-array"
-          ],
-          "escape": {
-            "state": "debt"
-          }
-        }
-      },
       "destructure-default-body-renamed-callback-memo-chain": {
         "go-template": {
           "kind": "render",
           "limitations": [
             "destructure-default-callback-unseeded"
           ]
-        }
-      },
-      "destructure-default-body-renamed-callback-positions": {
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "destructure-default-computed-array"
-          ],
-          "escape": {
-            "state": "debt"
-          }
-        }
-      },
-      "destructure-default-body-renamed-callback-shadow": {
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "destructure-default-computed-array"
-          ],
-          "escape": {
-            "state": "debt"
-          }
         }
       },
       "destructure-default-body-renamed-callback-signal": {
@@ -8569,25 +8513,9 @@
         "description": "A renamed body destructure default holding a callback renders its value when the prop is omitted",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback.ts"
       },
-      "destructure-default-body-renamed-callback-child": {
-        "description": "A renamed body destructure default holding a callback reaches a child component prop",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback-child.ts"
-      },
-      "destructure-default-body-renamed-callback-earlier": {
-        "description": "A renamed body destructure default filtering an earlier binding with a callback takes the filtered…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback-earlier.ts"
-      },
       "destructure-default-body-renamed-callback-memo-chain": {
         "description": "A renamed body destructure default holding a callback, read through a memo of a memo, renders its…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback-memo-chain.ts"
-      },
-      "destructure-default-body-renamed-callback-positions": {
-        "description": "A renamed body destructure default holding a callback renders in an attribute and a condition",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback-positions.ts"
-      },
-      "destructure-default-body-renamed-callback-shadow": {
-        "description": "A callback parameter in a renamed body destructure default shadows a signal getter of the same name",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback-shadow.ts"
       },
       "destructure-default-body-renamed-callback-signal": {
         "description": "A renamed body destructure default holding a callback seeds a signal with its value",
@@ -9431,10 +9359,6 @@
       "expected": "the omitted prop takes the computed array",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
-        "destructure-default-body-renamed-callback-child",
-        "destructure-default-body-renamed-callback-earlier",
-        "destructure-default-body-renamed-callback-positions",
-        "destructure-default-body-renamed-callback-shadow",
         "destructure-default-body-renamed-computed-array",
         "destructure-default-param-computed-array"
       ],

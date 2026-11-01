@@ -9,9 +9,5 @@ export default defineLimitation({
   fixtures: [
     'destructure-default-body-renamed-computed-array',
     'destructure-default-param-computed-array',
-    'destructure-default-body-renamed-callback-earlier',
-    'destructure-default-body-renamed-callback-positions',
-    'destructure-default-body-renamed-callback-child',
-    'destructure-default-body-renamed-callback-shadow',
   ],
 })

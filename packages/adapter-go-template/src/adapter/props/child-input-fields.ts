@@ -45,7 +45,7 @@ import { hasNoInputSlot, objectBakeTargetFor, routesToRestBag } from '../lib/typ
 import { evaluateChildPropValue, evaluateUntypedChildPropValue, resolveLocalGetterAsGo, templatePartsToGoCode, unboxNillablePropRef } from '../value/child-prop-value.ts'
 import { parsedLiteralToGo } from '../value/parsed-literal-to-go.ts'
 import { objectLiteralToGoComposite, unboxToGoScalar } from '../value/value-lowering.ts'
-import { isFinalPropWriter, isPropsObjectSpread, resolvePropsSpreadCall } from './props-spread.ts'
+import { finalPropWriters, isFinalPropWriter, isPropsObjectSpread, resolvePropsSpreadCall } from './props-spread.ts'
 
 type GetterSignal = { getter: string; setter: string | null; initialValue: JsSourceText; type: TypeInfo; parsed?: ParsedExpr }
 type GetterMemo = { name: string; computation: JsSourceText; deps: string[]; parsed?: ParsedExpr; parsedBlock?: ParsedStatement[]; parsedBlockComplete?: boolean }
@@ -572,7 +572,7 @@ function planChildCallProps(
   passedOr: (name: string, value: string) => string
 } {
   const call = resolvePropsSpreadCall(ctx, ir, child.props)
-  if (call === null) return { props: child.props, paramFields: [], passedOr: (_name, value) => value }
+  if (call === null) return { props: finalPropWriters(ctx, ir, child.props), paramFields: [], passedOr: (_name, value) => value }
   const spread = child.props.find(p => isPropsObjectSpread(p, ctx.state.propsObjectName))!
   const props = child.props.filter(p => p !== spread)
   if (call.kind === 'unresolved') {
