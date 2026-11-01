@@ -21,9 +21,10 @@ export const conformancePins: ConformancePins = {
   // A prop typed both optional and nullable: the engine cannot tell an
   // omitted one (`NaN` in arithmetic) from a `null` one (`0`).
   // An optional row field is a concrete struct field: the nil reading
-  // (#3824 step 4) cannot tell an omitted one from a supplied `''` / `0`.
-  'omitted-optional-row-field-plus': [{ code: 'BF101', severity: 'error', limitation: 'optional-row-field-nil-reading' }],
-  'nil-reading-concrete-zero-row-field': [{ code: 'BF101', severity: 'error', limitation: 'optional-row-field-nil-reading' }],
+  // (#3824 step 4) cannot tell an omitted one from a supplied `''` / `0`, and no
+  // rewrite of the expression gives Go a nil to test until row fields carry one.
+  'omitted-optional-row-field-plus': [{ code: 'BF101', severity: 'error', limitation: 'optional-row-field-nil-reading', unescapable: true }],
+  'nil-reading-concrete-zero-row-field': [{ code: 'BF101', severity: 'error', limitation: 'optional-row-field-nil-reading', unescapable: true }],
   'omitted-optional-nullable-number-arithmetic': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
   'omitted-optional-nullable-number-arithmetic-destructured': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
   'omitted-optional-nullable-number-relational': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],

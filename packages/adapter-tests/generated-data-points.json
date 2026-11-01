@@ -9491,6 +9491,73 @@
       }
     }
   ],
+  "nil-reading-concrete-zero": [
+    {
+      "name": "gen:s:absent",
+      "props": {
+        "size": ""
+      }
+    },
+    {
+      "name": "gen:s:markup",
+      "props": {
+        "s": "<b>&\"'</b>",
+        "size": ""
+      }
+    },
+    {
+      "name": "gen:s:multibyte",
+      "props": {
+        "s": "日本語",
+        "size": ""
+      }
+    },
+    {
+      "name": "gen:t:empty",
+      "props": {
+        "s": "",
+        "size": "",
+        "t": ""
+      }
+    },
+    {
+      "name": "gen:t:markup",
+      "props": {
+        "s": "",
+        "size": "",
+        "t": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:t:multibyte",
+      "props": {
+        "s": "",
+        "size": "",
+        "t": "日本語"
+      }
+    },
+    {
+      "name": "gen:size:absent",
+      "props": {
+        "s": ""
+      }
+    },
+    {
+      "name": "gen:size:union:large",
+      "props": {
+        "s": "",
+        "size": "large"
+      }
+    }
+  ],
+  "nil-reading-concrete-zero-row-field": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "nullish-boolean-output-positions": [
     {
       "name": "gen:off:absent",
@@ -12150,6 +12217,53 @@
       "props": {
         "n": 9007199254740992,
         "m": 1234567890
+      }
+    }
+  ],
+  "plus-boolean-branch-operand": [
+    {
+      "name": "gen:zero:negative",
+      "props": {
+        "zero": -7,
+        "one": 1,
+        "x": "x",
+        "k": 1
+      }
+    },
+    {
+      "name": "gen:zero:large",
+      "props": {
+        "zero": 1234567890,
+        "one": 1,
+        "x": "x",
+        "k": 1
+      }
+    },
+    {
+      "name": "gen:one:zero",
+      "props": {
+        "zero": 0,
+        "one": 0,
+        "x": "x",
+        "k": 1
+      }
+    },
+    {
+      "name": "gen:one:negative",
+      "props": {
+        "zero": 0,
+        "one": -7,
+        "x": "x",
+        "k": 1
+      }
+    },
+    {
+      "name": "gen:one:large",
+      "props": {
+        "zero": 0,
+        "one": 1234567890,
+        "x": "x",
+        "k": 1
       }
     }
   ],

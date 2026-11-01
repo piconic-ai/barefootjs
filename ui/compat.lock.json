@@ -6087,6 +6087,20 @@
           ]
         }
       },
+      "nil-reading-concrete-zero-row-field": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "optional-row-field-nil-reading"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "nullish-optional-row-field": {
         "go-template": {
           "kind": "render",
@@ -6687,6 +6701,20 @@
           "escape": {
             "state": "escapable",
             "twin": "omitted-optional-string-relational"
+          }
+        }
+      },
+      "omitted-optional-row-field-plus": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "optional-row-field-nil-reading"
+          ],
+          "escape": {
+            "state": "debt"
           }
         }
       },
@@ -9076,6 +9104,10 @@
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
       },
+      "nil-reading-concrete-zero-row-field": {
+        "description": "An optional row field supplied as the empty string and omitted, under a string concatenation",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nil-reading-concrete-zero-row-field.ts"
+      },
       "nullish-optional-row-field": {
         "description": "An omitted optional row field takes the ?? fallback and a present \"\" or 0 is kept",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-optional-row-field.ts"
@@ -9099,6 +9131,10 @@
       "omitted-optional-nullable-string-relational": {
         "description": "A comparison over an omitted optional prop typed string | null (undefined → NaN → false)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-nullable-string-relational.ts"
+      },
+      "omitted-optional-row-field-plus": {
+        "description": "A + over an optional string row field renders undefined / NaN when the row omits it and…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-row-field-plus.ts"
       },
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
@@ -10235,6 +10271,23 @@
         "pebble",
         "twig",
         "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "optional-row-field-nil-reading": {
+      "title": "An optional row field read by its nil under a coercion",
+      "kind": "refusal",
+      "given": "an optional scalar row field (`id?: string`) under a `+`, a template literal, an arithmetic or a relational operator, on a target whose row struct holds the field as a concrete value",
+      "expected": "a supplied empty or zero value is kept (`'' + '!'` is `!`) and an omitted field reads `undefined` (`undefined!`)",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "nil-reading-concrete-zero-row-field",
+        "omitted-optional-row-field-plus"
+      ],
+      "adapters": [
+        "go-template"
       ],
       "diagnostics": [
         "BF101"

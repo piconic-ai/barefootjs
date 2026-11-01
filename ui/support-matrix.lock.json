@@ -3651,6 +3651,12 @@
               ]
             },
             {
+              "fixture": "nil-reading-concrete-zero-row-field",
+              "limitations": [
+                "optional-row-field-nil-reading"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -3678,6 +3684,12 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-row-field-plus",
+              "limitations": [
+                "optional-row-field-nil-reading"
               ]
             },
             {
@@ -8682,6 +8694,12 @@
               ]
             },
             {
+              "fixture": "nil-reading-concrete-zero-row-field",
+              "limitations": [
+                "optional-row-field-nil-reading"
+              ]
+            },
+            {
               "fixture": "nullish-optional-row-field",
               "limitations": [
                 "nullish-optional-scalar-row-field"
@@ -8715,6 +8733,12 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-row-field-plus",
+              "limitations": [
+                "optional-row-field-nil-reading"
               ]
             },
             {
@@ -11981,6 +12005,12 @@
               ]
             },
             {
+              "fixture": "nil-reading-concrete-zero-row-field",
+              "limitations": [
+                "optional-row-field-nil-reading"
+              ]
+            },
+            {
               "fixture": "nullish-optional-row-field",
               "limitations": [
                 "nullish-optional-scalar-row-field"
@@ -12014,6 +12044,12 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-row-field-plus",
+              "limitations": [
+                "optional-row-field-nil-reading"
               ]
             },
             {
@@ -15081,6 +15117,12 @@
               ]
             },
             {
+              "fixture": "nil-reading-concrete-zero-row-field",
+              "limitations": [
+                "optional-row-field-nil-reading"
+              ]
+            },
+            {
               "fixture": "nullish-optional-row-field",
               "limitations": [
                 "nullish-optional-scalar-row-field"
@@ -15108,6 +15150,12 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-row-field-plus",
+              "limitations": [
+                "optional-row-field-nil-reading"
               ]
             },
             {
@@ -20644,6 +20692,12 @@
               ]
             },
             {
+              "fixture": "nil-reading-concrete-zero-row-field",
+              "limitations": [
+                "optional-row-field-nil-reading"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -20653,6 +20707,12 @@
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-row-field-plus",
+              "limitations": [
+                "optional-row-field-nil-reading"
               ]
             },
             {
@@ -23179,6 +23239,12 @@
               ]
             },
             {
+              "fixture": "omitted-optional-row-field-plus",
+              "limitations": [
+                "optional-row-field-nil-reading"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -24764,6 +24830,12 @@
               ]
             },
             {
+              "fixture": "nil-reading-concrete-zero-row-field",
+              "limitations": [
+                "optional-row-field-nil-reading"
+              ]
+            },
+            {
               "fixture": "nullish-optional-row-field",
               "limitations": [
                 "nullish-optional-scalar-row-field"
@@ -24785,6 +24857,12 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
+              ]
+            },
+            {
+              "fixture": "omitted-optional-row-field-plus",
+              "limitations": [
+                "optional-row-field-nil-reading"
               ]
             },
             {

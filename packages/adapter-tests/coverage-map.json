@@ -10420,6 +10420,38 @@
         "condition"
       ]
     },
+    "nil-reading-concrete-zero": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "nil-reading-concrete-zero-row-field": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "nil-reading-positions": {
       "kinds": [
         "arrow",
@@ -12207,6 +12239,29 @@
       ],
       "axes": [
         "binary:+"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "plus-boolean-branch-operand": {
+      "kinds": [
+        "binary",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:<",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "logical:||"
       ],
       "contexts": [
         "attribute",
