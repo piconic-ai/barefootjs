@@ -562,8 +562,10 @@ public final class Bf {
     return JsNumber.jsMod(JsNumber.toDouble(a), JsNumber.toDouble(b));
   }
 
+  // JS unary `-` (#3824 step 6): `-ToNumber(x)`, the evaluator's primitive,
+  // so a string coerces and `neg(0)` is -0.0.
   public double neg(Object a) {
-    return -JsNumber.toDouble(a);
+    return (double) Evaluator.unary("-", a);
   }
 
   public double number(Object v) {

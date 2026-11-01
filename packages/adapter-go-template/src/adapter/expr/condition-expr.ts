@@ -15,6 +15,7 @@
 import {
   asCallbackMethodCall,
   exprToString,
+  foldNegatedNumberLiteral,
   identifierPath,
   type ParsedExpr,
   type PrimitivePlan,
@@ -22,7 +23,7 @@ import {
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
-import { goBinaryHelperCall, GO_REMEDIATION_OPTIONS, isLiteralKeyRead, lowerJsLogicalTest, lowerJsLogicalValue, lowerJsNullishValue, lowerAbsentAsNil, lowerJsTruthyTest, wrapIfMultiToken, type NullishSpelling } from '../lib/go-emit.ts'
+import { goBinaryHelperCall, goNumberLiteral, GO_REMEDIATION_OPTIONS, isLiteralKeyRead, lowerJsLogicalTest, lowerJsLogicalValue, lowerJsNullishValue, lowerAbsentAsNil, lowerJsTruthyTest, wrapIfMultiToken, type NullishSpelling } from '../lib/go-emit.ts'
 import { isPropsObjectName } from '../lib/compile-state.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import type { HigherOrderShape } from '../lib/types.ts'
@@ -183,6 +184,35 @@ function renderFilterTest(
   return value === null ? null : lowerJsTruthyTest(host.testPlan(expr, [param]), value)
 }
 
+/** A literal in a filter predicate; a number is spelled from its plan (#3824 step 6). */
+function renderFilterLiteral(expr: Extract<ParsedExpr, { kind: 'literal' }>): string {
+  if (expr.literalType === 'string') return `"${expr.value}"`
+  if (expr.literalType === 'null') return 'nil'
+  return typeof expr.value === 'number' ? goNumberLiteral(expr.value, null) : String(expr.value)
+}
+
+/** A unary node of a filter predicate. */
+function renderFilterUnary(
+  host: ConditionExprHost,
+  expr: Extract<ParsedExpr, { kind: 'unary' }>,
+  param: string,
+  localVarMap: Map<string, string>,
+  datumField?: string,
+  fieldlessParam = false,
+): string | null {
+  // `-1.5` is the literal `-1.5` (#3824 step 6).
+  const folded = foldNegatedNumberLiteral(expr)
+  if (folded) return goNumberLiteral(folded.value, null)
+  // `!x` negates `x`'s test.
+  if (expr.op === '!') {
+    const test = renderFilterTest(host, expr.argument, param, localVarMap, datumField, fieldlessParam)
+    return test === null ? null : `not ${wrapIfMultiToken(test)}`
+  }
+  const arg = renderFilterExprNode(host, expr.argument, param, localVarMap, datumField, fieldlessParam)
+  if (arg === null) return null
+  return expr.op === '-' ? `bf_neg ${wrapIfMultiToken(arg)}` : arg
+}
+
 /** One node of {@link renderFilterExpr}; children recurse through it. */
 function renderFilterExprNode(
   host: ConditionExprHost,
@@ -210,13 +240,7 @@ function renderFilterExprNode(
       return renderFilterIdentifier(host, expr, param, localVarMap, paramDot)
 
     case 'literal':
-      if (expr.literalType === 'string') {
-        return `"${expr.value}"`
-      }
-      if (expr.literalType === 'null') {
-        return 'nil'
-      }
-      return String(expr.value)
+      return renderFilterLiteral(expr)
 
     case 'member':
       return renderFilterMember(host, expr, param, localVarMap, datumField, fieldlessParam, paramPrefix, paramDot, paramHasFields)
@@ -224,19 +248,8 @@ function renderFilterExprNode(
     case 'call':
       return renderFilterCall(host, expr, param, localVarMap, datumField, fieldlessParam, paramPrefix, paramHasFields)
 
-    case 'unary': {
-      // `!x` negates `x`'s test.
-      if (expr.op === '!') {
-        const test = renderFilterTest(host, expr.argument, param, localVarMap, datumField, fieldlessParam)
-        return test === null ? null : `not ${wrapIfMultiToken(test)}`
-      }
-      const arg = renderFilterExprNode(host, expr.argument, param, localVarMap, datumField, fieldlessParam)
-      if (arg === null) return null
-      if (expr.op === '-') {
-        return `bf_neg ${wrapIfMultiToken(arg)}`
-      }
-      return arg
-    }
+    case 'unary':
+      return renderFilterUnary(host, expr, param, localVarMap, datumField, fieldlessParam)
 
     case 'binary':
       return renderFilterBinary(host, expr, param, localVarMap, datumField, fieldlessParam)
@@ -536,7 +549,7 @@ export function renderConditionExpr(host: ConditionExprHost, expr: ParsedExpr): 
     case 'literal':
       if (expr.literalType === 'string') return plain(JSON.stringify(String(expr.value)))
       if (expr.literalType === 'null') return plain('nil')
-      return plain(String(expr.value))
+      return plain(typeof expr.value === 'number' ? goNumberLiteral(expr.value, null) : String(expr.value))
 
     case 'call':
       return renderConditionCall(host, expr)
@@ -562,6 +575,9 @@ export function renderConditionExpr(host: ConditionExprHost, expr: ParsedExpr): 
       return renderConditionBinary(host, expr)
 
     case 'unary': {
+      // `-1.5` is the literal `-1.5` (#3824 step 6).
+      const folded = foldNegatedNumberLiteral(expr)
+      if (folded) return plain(goNumberLiteral(folded.value, null))
       // `!x` negates `x`'s test (`renderConditionTest`), multi-token
       // argument parenthesised.
       if (expr.op === '!') {

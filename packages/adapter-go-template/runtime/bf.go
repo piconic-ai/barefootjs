@@ -1394,12 +1394,14 @@ func Mod(a, b any) any {
 	return math.Mod(toFloat64(a), toFloat64(b))
 }
 
-// Neg returns -a (negation).
+// Neg is JS unary `-` (#3824 step 6): `-ToNumber(a)`, the evaluator's
+// primitive, so a numeric string coerces and a zero keeps its sign (`Neg(0)`
+// is -0.0, which an int cannot hold). A non-zero int stays an int.
 func Neg(a any) any {
-	if v, ok := a.(int); ok {
+	if v, ok := a.(int); ok && v != 0 {
 		return -v
 	}
-	return -toFloat64(a)
+	return -ToNumber(a)
 }
 
 // =============================================================================

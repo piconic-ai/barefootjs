@@ -16,18 +16,6 @@
       "lt/an astral character against U+FF61 (UTF-16 units)": {
         "step": 3
       },
-      "neg/0 negates to -0": {
-        "step": 6
-      },
-      "neg/a non-numeric string is NaN": {
-        "step": 6
-      },
-      "neg/a numeric string coerces": {
-        "step": 6
-      },
-      "neg/true negates to -1": {
-        "step": 6
-      },
       "plus/an array against a string joins with a comma": {
         "step": 4
       },
@@ -63,24 +51,6 @@
       "lt/-0 and 0 are equal": {
         "step": 3
       },
-      "neg/a non-numeric string is NaN": {
-        "step": 6
-      },
-      "neg/a numeric string coerces": {
-        "step": 6
-      },
-      "neg/false negates to -0": {
-        "step": 6
-      },
-      "neg/nil reads as null and negates to -0": {
-        "step": 6
-      },
-      "neg/the empty string coerces to 0 and negates to -0": {
-        "step": 6
-      },
-      "neg/true negates to -1": {
-        "step": 6
-      },
       "plus/an array against a string joins with a comma": {
         "step": 4
       },
@@ -112,18 +82,6 @@
       },
       "lt/an astral character against U+FF61 (UTF-16 units)": {
         "step": 3
-      },
-      "neg/0 negates to -0": {
-        "step": 6
-      },
-      "neg/false negates to -0": {
-        "step": 6
-      },
-      "neg/nil reads as null and negates to -0": {
-        "step": 6
-      },
-      "neg/the empty string coerces to 0 and negates to -0": {
-        "step": 6
       },
       "plus/-0 plus -0 is -0": {
         "step": 4
@@ -256,18 +214,6 @@
       },
       "lt/an astral character against U+FF61 (UTF-16 units)": {
         "step": 3
-      },
-      "neg/0 negates to -0": {
-        "step": 6
-      },
-      "neg/false negates to -0": {
-        "step": 6
-      },
-      "neg/nil reads as null and negates to -0": {
-        "step": 6
-      },
-      "neg/the empty string coerces to 0 and negates to -0": {
-        "step": 6
       },
       "plus/an array against a string joins with a comma": {
         "step": 4

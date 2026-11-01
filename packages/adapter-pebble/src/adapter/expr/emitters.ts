@@ -139,6 +139,8 @@ import {
   unloweredCallRefusal,
   type CallbackLoweringOptions,
   type StringNameTest,
+  isNativePlan,
+  numberLiteralSpelling,
 } from '@barefootjs/jsx'
 
 import type { PebbleEmitContext } from '../emit-context.ts'
@@ -168,8 +170,12 @@ export const NATIVE_SAFE: NativeSafeTable = {
   plus: ['number-pair', 'string', 'unproven'],
   'strict-eq': [],
   relational: ['number-pair', 'unproven'],
-  neg: ['number', 'unproven'],
-  'number-literal': ['safe-integer', 'unproven'],
+  // A unary minus over a non-zero literal folds into the literal; any other
+  // operand takes `neg`, which keeps the sign of zero. A literal is native
+  // only as a safe integer; `number('<JS spelling>')` otherwise, and `-0` is
+  // `neg(0)` (#3824 step 6, pinned by the `primitives/number` vectors).
+  neg: [],
+  'number-literal': ['safe-integer'],
   nullish: [],
   get: [],
   // A comparison, `!` and a boolean literal are host booleans already (#3824 step 5).
@@ -305,11 +311,11 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
     return pebbleIdent(name)
   }
 
-  literal(value: string | number | boolean | null, literalType: LiteralType, _plan: PrimitivePlan | null): string {
+  literal(value: string | number | boolean | null, literalType: LiteralType, plan: PrimitivePlan | null): string {
     if (literalType === 'string') return pebbleStringLiteral(String(value))
     if (literalType === 'boolean') return value ? 'true' : 'false'
     if (literalType === 'null') return 'null'
-    return String(value)
+    return numberLiteral(value, plan)
   }
 
   member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
@@ -346,7 +352,10 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
 
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     if (op === '!') return `not ${truthyTest(plan, emit(argument))}`
-    if (op === '-') return `-${groupUnaryOperand(argument, emit(argument))}`
+    if (op === '-') {
+      const arg = emit(argument)
+      return negate(plan, arg, () => `-${groupUnaryOperand(argument, arg)}`)
+    }
     return emit(argument)
   }
 
@@ -540,11 +549,11 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     return pebbleIdent(name)
   }
 
-  literal(value: string | number | boolean | null, literalType: LiteralType, _plan: PrimitivePlan | null): string {
+  literal(value: string | number | boolean | null, literalType: LiteralType, plan: PrimitivePlan | null): string {
     if (literalType === 'string') return pebbleStringLiteral(String(value))
     if (literalType === 'boolean') return value ? 'true' : 'false'
     if (literalType === 'null') return 'null'
-    return String(value)
+    return numberLiteral(value, plan)
   }
 
   member(object: ParsedExpr, property: string, computed: boolean, optional: boolean, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
@@ -663,9 +672,9 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     if (op === '!') return `not ${truthyTest(plan, emit(argument))}`
     if (op === '-') {
       // Unary minus applies JS `ToNumber` like binary `-` (#3533).
-      const arg = groupUnaryOperand(argument, emit(argument))
+      const arg = emit(argument)
       const operand = this.coerceNullishOperand(op, argument, undefined, arg)
-      return operand === arg ? `-${arg}` : `-(${operand})`
+      return negate(plan, operand, () => (operand === arg ? `-${groupUnaryOperand(argument, arg)}` : `-(${operand})`))
     }
     return emit(argument)
   }
@@ -847,4 +856,25 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     // confirmed `MemberCacheUtils` limitation).
     return `bf.merge([${segments.join(', ')}])`
   }
+}
+
+/**
+ * Spell a number literal's plan (#3824 step 6): a safe integer as itself,
+ * any other literal through the runtime's `number` over its JS spelling
+ * (`1e+21`, `1e-7`, `0.1`), and `-0` as `neg(0)`.
+ */
+export function numberLiteral(value: string | number | boolean | null, plan: PrimitivePlan | null): string {
+  if (typeof value !== 'number') return String(value)
+  const spelled = numberLiteralSpelling(value, plan)
+  if (spelled.kind === 'native') return spelled.text
+  return spelled.kind === 'parse' ? `bf.number('${spelled.text}')` : 'bf.neg(0)'
+}
+
+/**
+ * Spell a unary-minus plan over `operand` (#3824 step 6): the runtime's
+ * `neg`, JS `-ToNumber(x)` keeping the sign of zero, unless the plan names
+ * the native operator.
+ */
+function negate(plan: PrimitivePlan | null, operand: string, native: () => string): string {
+  return isNativePlan(plan, 'neg') ? native() : `bf.neg(${operand})`
 }

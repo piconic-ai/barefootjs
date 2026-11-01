@@ -36,7 +36,7 @@
 import type { ParsedExpr, FlatDepth, TemplatePart, ObjectLiteralProperty } from '../expression-parser.ts'
 import { asCallbackMethodCall } from '../expression-parser.ts'
 import type { LoweringMatcher, LoweringNode } from '../lowering-registry.ts'
-import { booleanValueSites, planPrimitive, type PrimitiveInputs, type PrimitivePlan } from './primitive-plan.ts'
+import { booleanValueSites, foldNegatedNumberLiteral, planPrimitive, type PrimitiveInputs, type PrimitivePlan } from './primitive-plan.ts'
 
 export type HigherOrderMethod = 'filter' | 'every' | 'some' | 'find' | 'findIndex' | 'findLast' | 'findLastIndex'
 
@@ -569,8 +569,13 @@ function dispatchParsedExpr(
       return emitter.indexAccess(expr.object, expr.index, emit, primitivePlanFor(expr, emitter))
     case 'binary':
       return emitter.binary(expr.op, expr.left, expr.right, emit, primitivePlanFor(expr, emitter))
-    case 'unary':
+    case 'unary': {
+      // `-1.5` is the literal `-1.5` (#3824 step 6): a unary minus over a
+      // non-zero number literal is spelled as the literal it folds into.
+      const folded = foldNegatedNumberLiteral(expr)
+      if (folded) return emitter.literal(folded.value, 'number', primitivePlanFor(folded, emitter))
       return emitter.unary(expr.op, expr.argument, emit, primitivePlanFor(expr, emitter))
+    }
     case 'logical':
       return emitter.logical(expr.op, expr.left, expr.right, emit, primitivePlanFor(expr, emitter))
     case 'conditional':

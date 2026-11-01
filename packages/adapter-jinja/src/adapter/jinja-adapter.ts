@@ -175,7 +175,7 @@ import {
 } from './lib/jinja-naming.ts'
 import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToJinja } from './lib/static-value.ts'
-import { JinjaFilterEmitter, JinjaTopLevelEmitter, truthyTest, CALLBACK_LOWERING, NATIVE_SAFE } from './expr/emitters.ts'
+import { JinjaFilterEmitter, JinjaTopLevelEmitter, truthyTest, CALLBACK_LOWERING, NATIVE_SAFE, numberLiteral } from './expr/emitters.ts'
 import type { JinjaEmitContext, JinjaSpreadContext, JinjaMemoContext } from './emit-context.ts'
 import {
   conditionalSpreadToJinja,
@@ -1377,7 +1377,7 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
   private _resolveLiteralConst(name: string): string | null {
     const lit = lookupLiteralConst(name, this.localConstants, n => this.scope.isBound(n))
     if (lit === null) return null
-    if (lit.kind === 'number') return lit.text
+    if (lit.kind === 'number') return numberLiteral(lit.value, null)
     if (lit.kind === 'boolean') return lit.text === 'true' ? 'true' : 'false'
     if (lit.kind === 'null') return 'none'
     return `'${escapeJinjaSingleQuoted(lit.text)}'`

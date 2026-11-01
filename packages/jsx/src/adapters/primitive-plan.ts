@@ -280,14 +280,30 @@ export function spellTest(plan: PrimitivePlan | null, rendered: string, helper: 
   return plan?.mode === 'native' && plan.op === 'to-boolean' ? rendered : helper(rendered)
 }
 
-function isNonZeroNumberLiteral(expr: ParsedExpr): boolean {
-  return expr.kind === 'literal' && expr.literalType === 'number' && expr.value !== 0
+type NumberLiteral = Extract<ParsedExpr, { kind: 'literal' }> & { value: number }
+
+/**
+ * A unary `-` over a non-zero number literal, folded into the literal it
+ * denotes (`-1.5` is the literal `-1.5`); null for any other node
+ * (`spec/js-primitive-semantics.md`, "Unary `-` and number literals"). The
+ * fold is the only native-safe unary minus: any other operand can be an
+ * integer zero in a host whose integer and float types differ, and the sign
+ * of `-0` would be lost, so it takes the `neg` helper. `-0` itself is not
+ * folded: a zero operand is exactly that case.
+ */
+export function foldNegatedNumberLiteral(expr: ParsedExpr): NumberLiteral | null {
+  if (expr.kind !== 'unary' || expr.op !== '-') return null
+  const arg = expr.argument
+  if (arg.kind !== 'literal' || arg.literalType !== 'number' || typeof arg.value !== 'number' || arg.value === 0) return null
+  return { kind: 'literal', value: -arg.value, literalType: 'number', raw: String(-arg.value) }
 }
 
 function planUnary(expr: Extract<ParsedExpr, { kind: 'unary' }>, typing: ScopedOperandTyping, target: NativeSafeTable): PrimitivePlan | null {
   if (expr.op === '!') return planToBoolean(expr.argument, typing, target)
-  // Only a non-zero number literal keeps its sign through a host integer.
-  if (expr.op === '-') return decide('neg', isNonZeroNumberLiteral(expr.argument) ? 'number' : 'unproven', target, 'neg')
+  if (expr.op === '-') {
+    const folded = foldNegatedNumberLiteral(expr)
+    return folded ? planNumberLiteral(folded.value, target) : decide('neg', 'unproven', target, 'neg')
+  }
   if (expr.op === '+') {
     return decide('to-number', isExactly(operandFacts(expr.argument, typing), 'number') ? 'number' : 'unproven', target, 'to_number')
   }
@@ -316,8 +332,50 @@ export function isNativePlan(plan: PrimitivePlan | null, op: PrimitiveOp): boole
 }
 
 function planNumberLiteral(value: number, target: NativeSafeTable): PrimitivePlan {
-  const safe = Number.isSafeInteger(value) && !Object.is(value, -0)
-  return decide('number-literal', safe ? 'safe-integer' : 'unproven', target, 'number')
+  // `-0` is spelled `neg(0)`: no host parses a negative-zero literal.
+  if (Object.is(value, -0)) return { mode: 'helper', op: 'number-literal', helper: 'neg', proof: 'unproven' }
+  return decide('number-literal', Number.isSafeInteger(value) ? 'safe-integer' : 'unproven', target, 'number')
+}
+
+/**
+ * Whether `expr` is a number literal that no target spells as a host literal
+ * (anything but a safe integer, so `-0` too): its value comes from the
+ * runtime's `number` / `neg` and prints in the host's own notation (Perl
+ * `1e-07`, Go `1e+20`) unless the text sink routes it through the runtime's
+ * JS `Number::toString`.
+ */
+export function isRuntimeNumberLiteral(expr: ParsedExpr): boolean {
+  return expr.kind === 'literal' && expr.literalType === 'number' && typeof expr.value === 'number' &&
+    (!Number.isSafeInteger(expr.value) || Object.is(expr.value, -0))
+}
+
+/** The number-literal claim every target makes: a safe integer is spelled as a host literal. */
+const SAFE_INTEGER_LITERALS: NativeSafeTable = { 'number-literal': ['safe-integer'] }
+
+/**
+ * How an emitter spells a number literal of `value` under its plan:
+ *
+ * - `native`: the host literal `text` (a safe integer, `String(value)`).
+ * - `parse`: the runtime's `number` helper over the string `text`, the JS
+ *   spelling `String(value)` (`1e+21`, `1e-7`, `0.1`,
+ *   `100000000000000000000`), which every runtime's `number` parses, so no
+ *   target needs an exponent or big-integer literal syntax.
+ * - `negative-zero`: the runtime's `neg` helper over `0`.
+ *
+ * A null plan (an emitter method reached outside `emitParsedExpr`) gets the
+ * plan of a target that claims only safe integers natively, which every
+ * target's table does.
+ */
+export type NumberLiteralSpelling =
+  | { readonly kind: 'native'; readonly text: string }
+  | { readonly kind: 'parse'; readonly text: string }
+  | { readonly kind: 'negative-zero' }
+
+export function numberLiteralSpelling(value: number, plan: PrimitivePlan | null): NumberLiteralSpelling {
+  const decided = plan?.op === 'number-literal' ? plan : planNumberLiteral(value, SAFE_INTEGER_LITERALS)
+  if (decided.mode === 'native') return { kind: 'native', text: String(value) }
+  if (decided.mode === 'helper' && decided.helper === 'neg') return { kind: 'negative-zero' }
+  return { kind: 'parse', text: String(value) }
 }
 
 /**

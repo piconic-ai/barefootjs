@@ -9,6 +9,7 @@ import { gt } from './gt'
 import { le } from './le'
 import { lt } from './lt'
 import { neg } from './neg'
+import { number } from './number'
 import { plus } from './plus'
 import { strict_eq } from './strict_eq'
 import { to_number } from './to_number'
@@ -28,4 +29,5 @@ export const primitiveOps: readonly PrimitiveOp[] = [
   ge,
   plus,
   neg,
+  number,
 ]

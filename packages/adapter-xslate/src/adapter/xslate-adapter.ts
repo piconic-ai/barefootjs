@@ -116,7 +116,7 @@ import { XSLATE_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
 import { kolonHashKey, kolonStringLiteral } from './lib/kolon-naming.ts'
 import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToKolon } from './lib/static-value.ts'
-import { XslateFilterEmitter, XslateTopLevelEmitter, CALLBACK_LOWERING, NATIVE_SAFE, truthyTest } from './expr/emitters.ts'
+import { XslateFilterEmitter, XslateTopLevelEmitter, CALLBACK_LOWERING, NATIVE_SAFE, truthyTest, numberLiteral } from './expr/emitters.ts'
 import type { XslateEmitContext, XslateSpreadContext, XslateMemoContext } from './emit-context.ts'
 import {
   conditionalSpreadToKolon,
@@ -1512,7 +1512,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
   private _resolveLiteralConst(name: string): string | null {
     const lit = lookupLiteralConst(name, this.localConstants, n => this.scope.isBound(n))
     if (lit === null) return null
-    if (lit.kind === 'number') return lit.text
+    if (lit.kind === 'number') return numberLiteral(lit.value, null)
     // A JS boolean value, held as a JSON boolean (#3824 step 5).
     if (lit.kind === 'boolean') return lit.text === 'true' ? '$bf.boolean(1)' : '$bf.boolean(0)'
     if (lit.kind === 'null') return 'nil'

@@ -134,8 +134,8 @@ export { emitParsedExpr, emitParsedValue, primitivePlanFor, arithmeticHelper, gr
 export type { StringNameTest } from './adapters/parsed-expr-emitter.ts'
 export { concatType, declaredValueTypes, loopRowType, type DeclaredValueTypes } from './adapters/loop-row-type.ts'
 export { collectNumberValueNames, isNumberValuedExpr, numberValuedSeedNames } from './adapters/number-value.ts'
-export { operandFacts, planPrimitive, planTest, spellTest, primitivesAt, isNativePlan, booleanValueSites, planTextDisplay } from './adapters/primitive-plan.ts'
-export type { PrimitiveOp, Proof, NativeSafeTable, PrimitiveHelper, PrimitivePlan, PrimitiveInputs, TextDisplay } from './adapters/primitive-plan.ts'
+export { operandFacts, planPrimitive, planTest, spellTest, primitivesAt, isNativePlan, booleanValueSites, planTextDisplay, foldNegatedNumberLiteral, numberLiteralSpelling, isRuntimeNumberLiteral } from './adapters/primitive-plan.ts'
+export type { PrimitiveOp, Proof, NativeSafeTable, PrimitiveHelper, PrimitivePlan, PrimitiveInputs, TextDisplay, NumberLiteralSpelling } from './adapters/primitive-plan.ts'
 export {
   collectOperandTyping,
   EMPTY_OPERAND_TYPING,
@@ -501,7 +501,7 @@ export { BOOLEAN_ATTRS, isBooleanAttr } from './html-constants.ts'
 export { USE_CLIENT_DIRECTIVE, CLIENT_EXPRESSION_DIRECTIVE } from './directives.ts'
 
 // Shared props-object-pattern helpers for the Go / Mojo template adapters
-export { augmentInheritedPropAccesses, parseRecordIndexAccess, evalStringArrayJoin, collectModuleStringConsts, lookupStaticRecordLiteral, lookupStaticArrayElement, resolveStaticConstBinding, lookupLiteralConst, collectContextConsumers, contextConsumerSeed } from './augment-inherited-props.ts'
+export { augmentInheritedPropAccesses, parseRecordIndexAccess, evalStringArrayJoin, collectModuleStringConsts, lookupStaticRecordLiteral, lookupStaticArrayElement, resolveStaticConstBinding, lookupLiteralConst, collectContextConsumers, contextConsumerSeed, type LiteralConst } from './augment-inherited-props.ts'
 export type { RecordIndexAccess, RecordIndexEntry, ContextConsumer } from './augment-inherited-props.ts'
 
 // HTML element attribute types

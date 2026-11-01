@@ -24,6 +24,8 @@ export type Domain =
   | 'object'
   // `neg`: the note's only native-safe unary-minus operand.
   | 'non-zero-number'
+  // `number` over a literal's spelling: a safe integer, the native-safe literal.
+  | 'safe-integer'
   // Two operands (`strict_eq`, relational, `plus`).
   | 'number-pair'
   | 'string-pair'
@@ -47,6 +49,7 @@ export const DOMAINS: ReadonlySet<Domain> = new Set<Domain>([
   'nil',
   'object',
   'non-zero-number',
+  'safe-integer',
   'number-pair',
   'string-pair',
   'boolean-pair',

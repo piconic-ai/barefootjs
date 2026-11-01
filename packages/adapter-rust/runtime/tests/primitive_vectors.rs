@@ -33,6 +33,7 @@ fn call_binding(fn_name: &str, a: &[JsValue]) -> Option<JsValue> {
         "ge" => JsValue::Bool(runtime::js_relational(">=", &a[0], &a[1])),
         "plus" => runtime::js_plus(&a[0], &a[1]),
         "neg" => runtime::js_neg(&a[0]),
+        "number" => JsValue::Number(runtime::js_number(&a[0])),
         _ => return None,
     })
 }
@@ -40,7 +41,8 @@ fn call_binding(fn_name: &str, a: &[JsValue]) -> Option<JsValue> {
 /// One binding per op the MiniJinja adapter can spell natively, to the
 /// native MiniJinja operator, over the values a template receives
 /// (`js_to_mj`): a test is MiniJinja's own `{% if %}` / `not`; an index read
-/// is MiniJinja's own `[]` (an undefined result reads as null). It runs over
+/// is MiniJinja's own `[]` (an undefined result reads as null); a number
+/// literal is a MiniJinja literal. It runs over
 /// the cases whose domain the adapter's NATIVE_SAFE table claims
 /// (`primitives-native-safe.json`; spec/js-primitive-semantics.md,
 /// "Conformance" item 3). `None` for an op with no native binding, which
@@ -58,6 +60,12 @@ fn call_native_binding(fn_name: &str, a: &[JsValue]) -> Option<JsValue> {
             let expr = env.compile_expression("recv[key]").expect("compile the native index read");
             let ctx = minijinja::context! { recv => runtime::js_to_mj(&a[0]), key => runtime::js_to_mj(&a[1]) };
             runtime::mj_to_js(&expr.eval(ctx).expect("evaluate the native index read"))
+        }
+        "number" => {
+            let env = minijinja::Environment::new();
+            let text = a[0].as_str().expect("a number literal's spelling is a string");
+            let expr = env.compile_expression(text).expect("compile the native literal");
+            runtime::mj_to_js(&expr.eval(()).expect("evaluate the native literal"))
         }
         _ => return None,
     })

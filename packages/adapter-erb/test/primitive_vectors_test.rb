@@ -31,18 +31,22 @@ class PrimitiveVectorsTest < Minitest::Test
     'gt' => ->(a, b) { BF.gt(a, b) },
     'ge' => ->(a, b) { BF.ge(a, b) },
     'plus' => ->(a, b) { BF.plus(a, b) },
-    'neg' => ->(v) { BF.neg(v) }
+    'neg' => ->(v) { BF.neg(v) },
+    'number' => ->(v) { BF.number(v) }
   }.freeze
 
   # One binding per op the ERB adapter can spell natively, to the native Ruby
   # operator: a test is Ruby's own truthiness (`if`, `!`, `?:`); an index read
-  # is Ruby's own `[]`. It runs over the cases whose domain the adapter's
-  # NATIVE_SAFE table claims (primitives-native-safe.json;
-  # spec/js-primitive-semantics.md, "Conformance" item 3). The table claims
-  # nothing today, so no case runs.
+  # is Ruby's own `[]`; a number literal is a Ruby literal. It runs over the
+  # cases whose domain the adapter's NATIVE_SAFE table claims
+  # (primitives-native-safe.json; spec/js-primitive-semantics.md,
+  # "Conformance" item 3).
   NATIVE_BINDINGS = {
     'truthy' => ->(v) { v ? true : false },
-    'get' => ->(recv, key) { recv[key] }
+    'get' => ->(recv, key) { recv[key] },
+    # The argument is a vector's JS spelling of a safe integer (`-3`), which
+    # is also Ruby literal syntax; the template evaluates the same text.
+    'number' => ->(text) { Kernel.eval(text) }
   }.freeze
 
   SENTINELS = {

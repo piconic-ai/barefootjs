@@ -15,6 +15,8 @@ import {
   operandFacts,
   parseExpression,
   planPrimitive,
+  foldNegatedNumberLiteral,
+  numberLiteralSpelling,
   type IRMetadata,
   type NativeSafeTable,
   type OperandFacts,
@@ -229,8 +231,12 @@ describe('planPrimitive', () => {
     expect(plan("props.n !== 'a'", ALL)).toBe('const strict-eq true')
   })
 
-  test('unary minus is native only over a non-zero number literal', () => {
-    expect(plan('-1', PROVEN_ONLY)).toBe('native neg number')
+  test('unary minus over a non-zero number literal folds into the literal; any other operand takes `neg`', () => {
+    expect(plan('-1', PROVEN_ONLY)).toBe('native number-literal safe-integer')
+    expect(plan('-1.5', PROVEN_ONLY)).toBe('helper number-literal number unproven')
+    expect(plan('-1e21', ALL)).toBe('native number-literal unproven')
+    // `-0` does not fold: the zero operand is the case `neg` exists for.
+    expect(plan('-0', ALL)).toBe('native neg unproven')
     expect(plan('-0', PROVEN_ONLY)).toBe('helper neg neg unproven')
     expect(plan('-props.n', PROVEN_ONLY)).toBe('helper neg neg unproven')
     expect(plan('+props.n', PROVEN_ONLY)).toBe('native to-number number')
@@ -238,9 +244,32 @@ describe('planPrimitive', () => {
 
   test('a number literal is native only when it is a safe integer', () => {
     expect(plan('42', PROVEN_ONLY)).toBe('native number-literal safe-integer')
+    expect(plan('9007199254740991', PROVEN_ONLY)).toBe('native number-literal safe-integer')
+    expect(plan('9007199254740992', PROVEN_ONLY)).toBe('helper number-literal number unproven')
     expect(plan('1.5', PROVEN_ONLY)).toBe('helper number-literal number unproven')
     expect(plan('1e21', PROVEN_ONLY)).toBe('helper number-literal number unproven')
+    expect(plan('100000000000000000000', PROVEN_ONLY)).toBe('helper number-literal number unproven')
     expect(plan("'42'", PROVEN_ONLY)).toBe('none')
+  })
+
+  test('a number literal is spelled from its plan: host literal, `number` over the JS spelling, or `neg(0)`', () => {
+    const spell = (src: string) => {
+      const node = parseExpression(src)
+      const literal = foldNegatedNumberLiteral(node) ?? node
+      const value = literal.kind === 'literal' && typeof literal.value === 'number' ? literal.value : -0
+      return numberLiteralSpelling(value, planPrimitive(node, typing, PROVEN_ONLY))
+    }
+    expect(spell('42')).toEqual({ kind: 'native', text: '42' })
+    expect(spell('-3')).toEqual({ kind: 'native', text: '-3' })
+    expect(spell('1e21')).toEqual({ kind: 'parse', text: '1e+21' })
+    expect(spell('1e-7')).toEqual({ kind: 'parse', text: '1e-7' })
+    expect(spell('1e20')).toEqual({ kind: 'parse', text: '100000000000000000000' })
+    expect(spell('-1.5')).toEqual({ kind: 'parse', text: '-1.5' })
+    expect(spell('9007199254740993')).toEqual({ kind: 'parse', text: '9007199254740992' })
+    expect(numberLiteralSpelling(-0, null)).toEqual({ kind: 'negative-zero' })
+    // A null plan (an emitter reached outside the dispatcher) gets the safe-integer claim.
+    expect(numberLiteralSpelling(7, null)).toEqual({ kind: 'native', text: '7' })
+    expect(numberLiteralSpelling(0.5, null)).toEqual({ kind: 'parse', text: '0.5' })
   })
 
   test('`??` is native when its left side is proven never nil', () => {

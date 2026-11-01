@@ -1,0 +1,144 @@
+{
+  "version": 1,
+  "generator": "packages/adapter-tests/vectors/primitives/generate.ts",
+  "spec": "spec/js-primitive-semantics.md",
+  "fn": "number",
+  "step": 6,
+  "cases": [
+    {
+      "fn": "number",
+      "args": [
+        "0"
+      ],
+      "expect": 0,
+      "domain": "safe-integer",
+      "note": "zero"
+    },
+    {
+      "fn": "number",
+      "args": [
+        "7"
+      ],
+      "expect": 7,
+      "domain": "safe-integer",
+      "note": "a positive integer"
+    },
+    {
+      "fn": "number",
+      "args": [
+        "-3"
+      ],
+      "expect": -3,
+      "domain": "safe-integer",
+      "note": "a negative integer"
+    },
+    {
+      "fn": "number",
+      "args": [
+        "9007199254740991"
+      ],
+      "expect": 9007199254740991,
+      "domain": "safe-integer",
+      "note": "the largest safe integer"
+    },
+    {
+      "fn": "number",
+      "args": [
+        "-9007199254740991"
+      ],
+      "expect": -9007199254740991,
+      "domain": "safe-integer",
+      "note": "the smallest safe integer"
+    },
+    {
+      "fn": "number",
+      "args": [
+        "9007199254740992"
+      ],
+      "expect": 9007199254740992,
+      "domain": "number",
+      "note": "2^53 is past the safe integers"
+    },
+    {
+      "fn": "number",
+      "args": [
+        "100000000000000000000"
+      ],
+      "expect": 100000000000000000000,
+      "domain": "number",
+      "note": "1e20 spells as 21 digits"
+    },
+    {
+      "fn": "number",
+      "args": [
+        "-100000000000000000000"
+      ],
+      "expect": -100000000000000000000,
+      "domain": "number",
+      "note": "-1e20 spells as a negative 21-digit integer"
+    },
+    {
+      "fn": "number",
+      "args": [
+        "1e+21"
+      ],
+      "expect": 1e+21,
+      "domain": "number",
+      "note": "1e21 spells in exponent form"
+    },
+    {
+      "fn": "number",
+      "args": [
+        "1e-7"
+      ],
+      "expect": 1e-7,
+      "domain": "number",
+      "note": "1e-7 spells in exponent form"
+    },
+    {
+      "fn": "number",
+      "args": [
+        "1.5e-7"
+      ],
+      "expect": 1.5e-7,
+      "domain": "number",
+      "note": "a fraction in exponent form"
+    },
+    {
+      "fn": "number",
+      "args": [
+        "0.1"
+      ],
+      "expect": 0.1,
+      "domain": "number",
+      "note": "a decimal fraction"
+    },
+    {
+      "fn": "number",
+      "args": [
+        "-1.5"
+      ],
+      "expect": -1.5,
+      "domain": "number",
+      "note": "a negative fraction"
+    },
+    {
+      "fn": "number",
+      "args": [
+        "1.7976931348623157e+308"
+      ],
+      "expect": 1.7976931348623157e+308,
+      "domain": "number",
+      "note": "the largest double"
+    },
+    {
+      "fn": "number",
+      "args": [
+        "5e-324"
+      ],
+      "expect": 5e-324,
+      "domain": "number",
+      "note": "the smallest denormal"
+    }
+  ]
+}

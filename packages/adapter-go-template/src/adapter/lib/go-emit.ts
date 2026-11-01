@@ -5,7 +5,7 @@
  */
 
 import type { SortComparator, SupportResult, ParsedExpr } from '@barefootjs/jsx'
-import { arithmeticHelper, BindingScope, EMPTY_OPERAND_TYPING, escapeBraceDelimiters, evalBody, isExactly, operandFacts, spellTest, type CallbackCapture, type NativeSafeTable, type PrimitivePlan } from '@barefootjs/jsx'
+import { arithmeticHelper, BindingScope, EMPTY_OPERAND_TYPING, escapeBraceDelimiters, evalBody, isExactly, numberLiteralSpelling, operandFacts, spellTest, type CallbackCapture, type NativeSafeTable, type PrimitivePlan } from '@barefootjs/jsx'
 
 import { capitalize } from "./go-naming.ts"
 
@@ -73,8 +73,12 @@ export const GO_NATIVE_SAFE: NativeSafeTable = {
   plus: ['string'],
   'strict-eq': [],
   relational: [],
+  // A unary minus over a non-zero literal folds into the literal; any other
+  // operand takes `neg`, which keeps the sign of zero. A literal is native
+  // only as a safe integer; `number('<JS spelling>')` otherwise, and `-0` is
+  // `neg(0)` (#3824 step 6, pinned by the `primitives/number` vectors).
   neg: [],
-  'number-literal': ['safe-integer', 'unproven'],
+  'number-literal': ['safe-integer'],
   nullish: ['non-nil'],
   get: [],
   // A comparison, `!` and a boolean literal are host booleans already (#3824 step 5).
@@ -684,4 +688,17 @@ export function goLiteral(value: string): string {
  */
 export function isLiteralKeyRead(computed: boolean): boolean {
   return computed
+}
+
+/**
+ * A number literal as a Go template action, spelled from its primitive plan
+ * (#3824 step 6): a safe integer is a template literal; any other literal is
+ * `bf_number` over its JS spelling (`1e20` overflows the template's integer
+ * parse), and `-0` is `bf_neg 0`. A null plan is the plan every target's
+ * table gives (`numberLiteralSpelling`).
+ */
+export function goNumberLiteral(value: number, plan: PrimitivePlan | null): string {
+  const spelled = numberLiteralSpelling(value, plan)
+  if (spelled.kind === 'native') return spelled.text
+  return spelled.kind === 'parse' ? `(bf_number ${JSON.stringify(spelled.text)})` : '(bf_neg 0)'
 }

@@ -1,8 +1,10 @@
 /**
  * `neg` — JS unary `-` (spec/js-primitive-semantics.md, "Unary `-` and
  * number literals"): `-(ToNumber(x))`, keeping the sign of zero, so
- * `neg(0)` is `-0`. The `non-zero-number` domain is the only one the note
- * calls native-safe.
+ * `neg(0)` is `-0`. The `non-zero-number` domain is the operand the note
+ * calls native-safe: Phase 1 folds a unary minus over a non-zero literal
+ * into the literal (the `number` vectors), so no target spells `neg`
+ * natively.
  */
 import { type PrimitiveCase, type PrimitiveOp, unaryDomain } from './types'
 

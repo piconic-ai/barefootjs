@@ -21,9 +21,10 @@
  * missing its `raw` token. The caller then keeps `nil`.
  */
 
-import type { ParsedExpr, TypeDefinition, TypeInfo } from '@barefootjs/jsx'
+import { foldNegatedNumberLiteral, numberLiteralSpelling, type ParsedExpr, type TypeDefinition, type TypeInfo } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
+import { goNumberLiteral } from '../lib/go-emit.ts'
 import { goFieldNameForKey } from '../lib/go-naming.ts'
 import { propertyInfoToGo, typeInfoToGo } from '../type/type-codegen.ts'
 
@@ -109,29 +110,52 @@ export function bakeSourceKeyedObjectAsGoMap(ctx: GoEmitContext, expr: ParsedExp
 }
 
 /**
- * A literal number's exact Go source text, unwrapping a leading unary minus
- * (`-1` parses as `{kind:'unary', op:'-', argument:{literalType:'number'}}`).
- * Needs the exact source token — re-stringifying the parsed numeric VALUE
- * could change spelling / lose precision — so this defers (`null`) rather
- * than reconstructing one, same as every other non-literal shape here.
+ * A number literal's value and exact source token, unwrapping a leading unary
+ * minus (`-1` parses as `{kind:'unary', op:'-', argument:{literalType:'number'}}`);
+ * null for any other shape, and for a literal with no `raw` token (a
+ * synthesized one): re-stringifying the parsed VALUE could change spelling,
+ * so that defers like every other non-literal shape here.
+ */
+function numberLiteralOf(expr: ParsedExpr): { value: number; raw: string } | null {
+  const folded = foldNegatedNumberLiteral(expr)
+  const negated = expr.kind === 'unary' && expr.op === '-'
+  const literal = negated ? expr.argument : expr
+  if (literal.kind !== 'literal' || literal.literalType !== 'number' || literal.raw === undefined) return null
+  if (typeof literal.value !== 'number') return null
+  if (!negated) return { value: literal.value, raw: literal.raw }
+  // `-0` does not fold: it is the negative zero, spelled by the plan.
+  return { value: folded ? folded.value : -literal.value, raw: `-${literal.raw}` }
+}
+
+/**
+ * A number literal's Go source text (the `New<Component>Props` constructor),
+ * spelled from the primitive plan (#3824 step 6): a safe integer is its
+ * exact source token; any other literal is `bf.Number` over its JS spelling
+ * (an untyped Go constant past 2^63 does not convert to `interface{}`), and
+ * `-0` is a run-time negation, since Go constant arithmetic has no negative
+ * zero.
  *
  * Shared by `parsedLiteralToGo`'s own number/unary-minus cases below and
  * `convertInitialValue`'s primitive-number branch (`value-lowering.ts`) —
- * the SAME literal needs the SAME exact-token handling wherever it's baked.
+ * the SAME literal needs the SAME handling wherever it's baked.
  */
 export function numberLiteralRawGo(expr: ParsedExpr): string | null {
-  if (
-    expr.kind === 'unary' &&
-    expr.op === '-' &&
-    expr.argument.kind === 'literal' &&
-    expr.argument.literalType === 'number'
-  ) {
-    return expr.argument.raw !== undefined ? `-${expr.argument.raw}` : null
-  }
-  if (expr.kind === 'literal' && expr.literalType === 'number') {
-    return expr.raw ?? null
-  }
-  return null
+  const literal = numberLiteralOf(expr)
+  if (!literal) return null
+  const spelled = numberLiteralSpelling(literal.value, null)
+  if (spelled.kind === 'native') return literal.raw
+  return spelled.kind === 'parse' ? `bf.Number(${JSON.stringify(spelled.text)})` : '-bf.Number(0)'
+}
+
+/**
+ * The same literal spelled as a template action (a module const inlined into
+ * `{{…}}`): `bf_number "1e+21"` / `bf_neg 0`, as the emitter's `literal`
+ * spells it.
+ */
+export function numberLiteralTemplateGo(expr: ParsedExpr): string | null {
+  const literal = numberLiteralOf(expr)
+  if (!literal) return null
+  return Number.isSafeInteger(literal.value) && !Object.is(literal.value, -0) ? literal.raw : goNumberLiteral(literal.value, null)
 }
 
 function isUndefinedIdentifier(expr: ParsedExpr): boolean {

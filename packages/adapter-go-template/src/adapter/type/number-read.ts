@@ -17,6 +17,7 @@
  */
 
 import {
+  isRuntimeNumberLiteral,
   arrayElementType,
   concatType,
   loopValueTypeAt,
@@ -62,8 +63,9 @@ export function isKnownNonNumber(ctx: GoEmitContext, expr: ParsedExpr, scope: Bi
   switch (expr.kind) {
     case 'literal':
       // A literal prints as Go's constant does; only a computed float can
-      // take `fmt`'s exponent form.
-      return true
+      // take `fmt`'s exponent form, and so can a literal the plan spells
+      // `bf_number "1e+21"` (#3824 step 6).
+      return !isRuntimeNumberLiteral(expr)
     case 'template-literal':
       return true
     case 'binary':
