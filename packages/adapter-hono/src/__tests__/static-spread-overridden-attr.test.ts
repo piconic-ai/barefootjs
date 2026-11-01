@@ -63,6 +63,39 @@ export function Tag(props: { title?: string }) {
     expect(html).not.toContain('marked')
   })
 
+  test('a member read (which can run a getter) is still evaluated once', async () => {
+    // The getter also runs when the props are serialized into `bf-p`, so the
+    // count is compared against the same read with no spread at all.
+    const props = {
+      value: {
+        get title() {
+          const g = globalThis as Counter
+          g.__bfMarkCalls = (g.__bfMarkCalls ?? 0) + 1
+          return 'marked'
+        },
+      },
+    }
+    const render = (spread: string) =>
+      renderHonoComponent({
+        adapter: new HonoAdapter(),
+        source: `
+const base = { title: 'final' }
+export function P(props: { value: { title: string } }) {
+  return <p title={props.value.title} ${spread}>x</p>
+}
+`,
+        props,
+      })
+    await render('')
+    const withoutSpread = (globalThis as Counter).__bfMarkCalls ?? 0
+    ;(globalThis as Counter).__bfMarkCalls = 0
+    const html = await render('{...base}')
+    expect(withoutSpread).toBeGreaterThan(0)
+    expect((globalThis as Counter).__bfMarkCalls).toBe(withoutSpread)
+    expect(html).toContain('title="final"')
+    expect(html).not.toContain('title="marked"')
+  })
+
   test('an effect-free overridden value is dropped and the spread still expands', async () => {
     const html = await renderHonoComponent({
       adapter: new HonoAdapter(),

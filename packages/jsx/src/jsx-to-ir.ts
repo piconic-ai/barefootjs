@@ -7427,17 +7427,17 @@ function isEffectFreeAttrValue(value: ts.JsxAttributeValue | undefined): boolean
 
 /**
  * A literal (string, number, boolean, `null`, a template literal without
- * substitutions, a negated number), or a name or non-optional member chain
- * of names (`label`, `props.title`), possibly parenthesized. Anything else
- * (a call, an assignment, `new`, an operator) is treated as possibly having
- * an effect.
+ * substitutions, a negated number) or a plain name (`label`), possibly
+ * parenthesized. Anything else is treated as possibly having an effect: a
+ * call, an assignment, `new`, an operator, and also a member access
+ * (`props.value.title`), which can run a getter.
  */
 function isEffectFreeExpression(expr: ts.Expression): boolean {
   if (ts.isParenthesizedExpression(expr)) return isEffectFreeExpression(expr.expression)
   if (ts.isStringLiteral(expr) || ts.isNumericLiteral(expr) || ts.isNoSubstitutionTemplateLiteral(expr) || ts.isIdentifier(expr)) return true
   if (expr.kind === ts.SyntaxKind.TrueKeyword || expr.kind === ts.SyntaxKind.FalseKeyword || expr.kind === ts.SyntaxKind.NullKeyword) return true
   if (ts.isPrefixUnaryExpression(expr) && expr.operator === ts.SyntaxKind.MinusToken) return ts.isNumericLiteral(expr.operand)
-  return ts.isPropertyAccessExpression(expr) && !expr.questionDotToken && isEffectFreeExpression(expr.expression)
+  return false
 }
 
 /**
