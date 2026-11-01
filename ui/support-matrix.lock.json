@@ -3205,6 +3205,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3301,9 +3307,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
+              "fixture": "plus-beyond-safe-integer",
               "limitations": [
-                "omitted-optional-row-field-plus"
+                "plus-beyond-safe-integer"
               ]
             },
             {
@@ -3352,6 +3358,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -3437,12 +3449,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3488,6 +3494,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "conditional-nested-loop-signal-reactivity",
               "limitations": [
@@ -3669,12 +3681,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3690,12 +3696,6 @@
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "relational-omitted-number-memo",
-              "limitations": [
-                "evaluated-memo-omitted-number-operand"
               ]
             },
             {
@@ -3732,6 +3732,12 @@
         },
         "jinja": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -3826,12 +3832,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -3881,6 +3881,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3974,12 +3980,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -4029,6 +4029,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4110,12 +4116,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -4159,6 +4159,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4252,12 +4258,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -4295,6 +4295,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4391,9 +4397,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
+              "fixture": "plus-beyond-safe-integer",
               "limitations": [
-                "omitted-optional-row-field-plus"
+                "plus-beyond-safe-integer"
               ]
             },
             {
@@ -4443,6 +4449,12 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4536,12 +4548,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -5479,12 +5485,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "relational-omitted-number-memo",
-              "limitations": [
-                "evaluated-memo-omitted-number-operand"
               ]
             },
             {
@@ -7588,6 +7588,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -7834,15 +7840,15 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "plus-beyond-safe-integer",
+              "limitations": [
+                "plus-beyond-safe-integer"
               ]
             },
             {
@@ -7951,6 +7957,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -8180,12 +8192,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -8285,6 +8291,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -8706,12 +8718,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -8757,12 +8763,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "relational-omitted-number-memo",
-              "limitations": [
-                "evaluated-memo-omitted-number-operand"
               ]
             },
             {
@@ -8865,6 +8865,12 @@
         },
         "jinja": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -9109,12 +9115,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -9230,6 +9230,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -9473,12 +9479,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -9594,6 +9594,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -9819,12 +9825,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -9934,6 +9934,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -10177,12 +10183,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -10286,6 +10286,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -10532,15 +10538,15 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "plus-beyond-safe-integer",
+              "limitations": [
+                "plus-beyond-safe-integer"
               ]
             },
             {
@@ -10650,6 +10656,12 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -10887,12 +10899,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -11151,6 +11157,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -11331,12 +11343,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -11418,6 +11424,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -11593,12 +11605,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -11680,6 +11686,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -12005,12 +12017,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -12050,12 +12056,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "relational-omitted-number-memo",
-              "limitations": [
-                "evaluated-memo-omitted-number-operand"
               ]
             },
             {
@@ -12134,6 +12134,12 @@
         },
         "jinja": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -12312,12 +12318,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -12403,6 +12403,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -12583,12 +12589,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -12670,6 +12670,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -12842,12 +12848,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -12939,6 +12939,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -13116,12 +13122,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -13195,6 +13195,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -13372,12 +13378,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -13463,6 +13463,12 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -13634,12 +13640,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -14251,6 +14251,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -14431,9 +14437,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
+              "fixture": "plus-beyond-safe-integer",
               "limitations": [
-                "omitted-optional-row-field-plus"
+                "plus-beyond-safe-integer"
               ]
             },
             {
@@ -14524,6 +14530,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -14687,12 +14699,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -14768,6 +14774,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -15099,12 +15111,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -15144,12 +15150,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "relational-omitted-number-memo",
-              "limitations": [
-                "evaluated-memo-omitted-number-operand"
               ]
             },
             {
@@ -15222,6 +15222,12 @@
         },
         "jinja": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -15400,12 +15406,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -15497,6 +15497,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -15674,12 +15680,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -15771,6 +15771,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -15930,12 +15936,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -16027,6 +16027,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -16204,12 +16210,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -16301,6 +16301,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -16481,9 +16487,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
+              "fixture": "plus-beyond-safe-integer",
               "limitations": [
-                "omitted-optional-row-field-plus"
+                "plus-beyond-safe-integer"
               ]
             },
             {
@@ -16574,6 +16580,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -16746,12 +16758,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -17290,6 +17296,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -17330,6 +17342,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -17369,6 +17387,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -17434,6 +17458,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -17473,6 +17503,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -17514,6 +17550,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -17554,6 +17596,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -17587,6 +17635,12 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -17627,6 +17681,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -20444,6 +20504,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -20462,9 +20528,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
+              "fixture": "plus-beyond-safe-integer",
               "limitations": [
-                "omitted-optional-row-field-plus"
+                "plus-beyond-safe-integer"
               ]
             },
             {
@@ -20490,6 +20556,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -20505,12 +20577,6 @@
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -20535,6 +20601,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "conditional-nested-loop-signal-reactivity",
               "limitations": [
@@ -20584,12 +20656,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
                 "props-object-non-props-name-operand-typing"
@@ -20612,6 +20678,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -20627,12 +20699,6 @@
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -20658,6 +20724,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -20673,12 +20745,6 @@
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -20704,6 +20770,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -20719,12 +20791,6 @@
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -20750,6 +20816,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -20765,12 +20837,6 @@
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -20796,6 +20862,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -20814,9 +20886,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
+              "fixture": "plus-beyond-safe-integer",
               "limitations": [
-                "omitted-optional-row-field-plus"
+                "plus-beyond-safe-integer"
               ]
             },
             {
@@ -20842,6 +20914,12 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -20857,12 +20935,6 @@
               "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -20986,12 +21058,6 @@
               "fixture": "omitted-optional-nullable-number-unary-plus",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "relational-omitted-number-memo",
-              "limitations": [
-                "evaluated-memo-omitted-number-operand"
               ]
             }
           ]
@@ -21990,12 +22056,6 @@
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
               ]
-            },
-            {
-              "fixture": "relational-omitted-number-memo",
-              "limitations": [
-                "evaluated-memo-omitted-number-operand"
-              ]
             }
           ]
         },
@@ -22763,12 +22823,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -22920,12 +22974,6 @@
               "fixture": "omitted-optional-nullable-number-unary-plus",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -23131,12 +23179,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -23303,12 +23345,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -23463,12 +23499,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -23620,12 +23650,6 @@
               "fixture": "omitted-optional-nullable-number-unary-plus",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -23789,12 +23813,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -23934,12 +23952,6 @@
               "fixture": "omitted-optional-nullable-number-unary-plus",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -24097,12 +24109,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -24185,6 +24191,12 @@
         },
         "blade": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -24306,12 +24318,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -24363,6 +24369,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -24478,12 +24490,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -24535,6 +24541,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -24776,12 +24788,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -24797,12 +24803,6 @@
               "fixture": "props-object-non-props-name-operand-typing",
               "limitations": [
                 "props-object-non-props-name-operand-typing"
-              ]
-            },
-            {
-              "fixture": "relational-omitted-number-memo",
-              "limitations": [
-                "evaluated-memo-omitted-number-operand"
               ]
             },
             {
@@ -24864,6 +24864,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -24981,12 +24987,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -25042,6 +25042,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -25162,12 +25168,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -25219,6 +25219,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -25331,12 +25337,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -25398,6 +25398,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -25515,12 +25521,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -25564,6 +25564,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -25681,12 +25687,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -25742,6 +25742,12 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -25853,12 +25859,6 @@
               "fixture": "omitted-optional-nullable-string-relational",
               "limitations": [
                 "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-row-field-plus",
-              "limitations": [
-                "omitted-optional-row-field-plus"
               ]
             },
             {
@@ -26586,10 +26586,34 @@
     "member:computed": {
       "cells": {
         "hono": {},
-        "blade": {},
-        "erb": {},
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            }
+          ]
+        },
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            }
+          ]
+        },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            },
             {
               "fixture": "index-read-capitalised-key-only",
               "limitations": [
@@ -26604,12 +26628,66 @@
             }
           ]
         },
-        "jinja": {},
-        "minijinja": {},
-        "mojolicious": {},
-        "pebble": {},
-        "twig": {},
-        "xslate": {}
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            }
+          ]
+        },
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "awaits-undefined-plus-shapes",
+              "limitations": [
+                "awaits-undefined-value"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",

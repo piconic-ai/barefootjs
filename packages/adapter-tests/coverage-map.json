@@ -985,6 +985,24 @@
         "attribute"
       ]
     },
+    "awaits-undefined-plus-shapes": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "bare-text-optional-scalar": {
       "kinds": [
         "identifier"
@@ -10402,6 +10420,35 @@
         "condition"
       ]
     },
+    "nil-reading-positions": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:-",
+        "binary:<",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "unary:+",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "nullable-number-arithmetic-destructured": {
       "kinds": [
         "binary",
@@ -11408,6 +11455,11 @@
         "text"
       ]
     },
+    "omitted-optional-attr-ternary-relational": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
     "omitted-optional-element-access-operands": {
       "kinds": [
         "binary",
@@ -12142,6 +12194,44 @@
       "contexts": [
         "attribute",
         "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "plus-beyond-safe-integer": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "binary:+"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "plus-tostring-positions": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:/",
+        "binary:===",
+        "literal:number",
+        "literal:string",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
         "loop",
         "text"
       ]

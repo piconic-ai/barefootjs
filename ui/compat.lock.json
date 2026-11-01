@@ -2163,6 +2163,62 @@
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
     "fixtures": {
+      "awaits-undefined-plus-shapes": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "awaits-undefined-value"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "awaits-undefined-value"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "awaits-undefined-value"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "awaits-undefined-value"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "awaits-undefined-value"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "awaits-undefined-value"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "awaits-undefined-value"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "awaits-undefined-value"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "awaits-undefined-value"
+          ]
+        }
+      },
       "callback-index-param": {
         "blade": {
           "kind": "refusal",
@@ -6634,62 +6690,6 @@
           }
         }
       },
-      "omitted-optional-row-field-plus": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "omitted-optional-row-field-plus"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "omitted-optional-row-field-plus"
-          ]
-        },
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "omitted-optional-row-field-plus"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "omitted-optional-row-field-plus"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "omitted-optional-row-field-plus"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "omitted-optional-row-field-plus"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "omitted-optional-row-field-plus"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "omitted-optional-row-field-plus"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "omitted-optional-row-field-plus"
-          ]
-        }
-      },
       "opaque-local-accessor-call": {
         "blade": {
           "kind": "refusal",
@@ -6821,6 +6821,20 @@
           "escape": {
             "state": "debt"
           }
+        }
+      },
+      "plus-beyond-safe-integer": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "plus-beyond-safe-integer"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "plus-beyond-safe-integer"
+          ]
         }
       },
       "preamble-cells": {
@@ -7458,14 +7472,6 @@
           ],
           "limitations": [
             "ref-effect-attr-state-ssr"
-          ]
-        }
-      },
-      "relational-omitted-number-memo": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "evaluated-memo-omitted-number-operand"
           ]
         }
       },
@@ -8806,6 +8812,10 @@
       }
     },
     "docs": {
+      "awaits-undefined-plus-shapes": {
+        "description": "A + or template literal over an either-nil string, a dynamic + over an omitted number, and an…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/awaits-undefined-plus-shapes.ts"
+      },
       "callback-index-param": {
         "description": "A `.map()` callback reading its index — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/callback-index-param.ts"
@@ -9090,10 +9100,6 @@
         "description": "A comparison over an omitted optional prop typed string | null (undefined → NaN → false)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-nullable-string-relational.ts"
       },
-      "omitted-optional-row-field-plus": {
-        "description": "A + over an optional string row field renders undefined / NaN when the row omits it and…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-row-field-plus.ts"
-      },
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call.ts"
@@ -9101,6 +9107,10 @@
       "optional-object-prop-member-signal-seed": {
         "description": "a signal seeded from a member of an optional object prop renders its seed (or the fallback) at SSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-object-prop-member-signal-seed.ts"
+      },
+      "plus-beyond-safe-integer": {
+        "description": "A + over two numbers whose sum passes 2^53 rounds as a double",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/plus-beyond-safe-integer.ts"
       },
       "preamble-cells": {
         "description": "keyed .map() row with a preamble-built leaf child — patched in place on same-key update, not frozen",
@@ -9129,10 +9139,6 @@
       "ref-mount-attr": {
         "description": "A ref mount callback writing an attribute the JSX never renders refuses with BF063",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/ref-mount-attr.ts"
-      },
-      "relational-omitted-number-memo": {
-        "description": "A memo comparing an omitted optional number prop is false, and one comparing a null prop reads it…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/relational-omitted-number-memo.ts"
       },
       "reserved-name-and-internal-twin": {
         "description": "Props named loop and __bf_loop render their own values, or the adapter refuses",
@@ -9501,6 +9507,27 @@
         "BF056"
       ]
     },
+    "awaits-undefined-value": {
+      "title": "A `+` or template-literal operand whose nil may stand for `undefined` and Phase 1 cannot say",
+      "kind": "silent",
+      "given": "an omitted prop typed both optional and nullable (`c?: string | null`) under `+` or in a template literal, an omitted optional number under a `+` whose other operand is untyped, or an untyped nil (an out-of-range index read) in a template literal",
+      "expected": "the omitted value reads `undefined`: `\"btn undefined\"`, `\"undefinedx\"`, `\"undefined\"`",
+      "actual": "the runtimes hold `undefined` and `null` as one nil, so the either-nil string reads as the empty string and the other two read as `null` (`\"nullx\"`, `\"null\"`); fixed per target once the runtime carries `undefined` (#3848, `spec/js-undefined-value.md`)",
+      "fixtures": [
+        "awaits-undefined-plus-shapes"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
     "boolean-in-static-loop-item": {
       "title": "Boolean field in a static loop item",
       "kind": "refusal",
@@ -9756,19 +9783,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "evaluated-memo-omitted-number-operand": {
-      "title": "An omitted optional number compared in a memo the runtime evaluates",
-      "kind": "silent",
-      "given": "a memo body comparing an optional number prop (`maybe?: number`) with `<` / `<=` / `>` / `>=`, rendered with the prop omitted, where the adapter computes the memo with its runtime evaluator",
-      "expected": "the omitted prop reads `undefined`, which converts to `NaN`, so `maybe < n` and `maybe >= n` are both false",
-      "actual": "renders `maybe < n` as true for `n = 1`, because the evaluator reads the omitted prop as `null` (`0`)",
-      "fixtures": [
-        "relational-omitted-number-memo"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "fragment-wrapped-conditional-return-branch-scope": {
@@ -10202,27 +10216,6 @@
         "BF101"
       ]
     },
-    "omitted-optional-row-field-plus": {
-      "title": "A `+` over an optional string row field",
-      "kind": "silent",
-      "given": "a `+` in a `.map()` row whose operand is a row field declared optional and string (`id?: string`), read as `row.id` or destructured, over rows that omit the field and rows that have it",
-      "expected": "an omitted field reads `undefined` (`o.id + '!'` is `undefined!`, `o.id + 1` is `NaN`) and a present one concatenates (`o1`)",
-      "actual": "renders an omitted field as empty or `0` or throws at render time, and adds a present one as a number",
-      "fixtures": [
-        "omitted-optional-row-field-plus"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
     "opaque-local-accessor-call": {
       "title": "Opaque local accessor invoked from a template position",
       "kind": "refusal",
@@ -10245,6 +10238,20 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "plus-beyond-safe-integer": {
+      "title": "A `+` over two numbers whose sum passes 2^53",
+      "kind": "silent",
+      "given": "a `+` whose operands Phase 1 proves are numbers, with integer values whose sum passes 2^53 (`2**53 + 1`), on a target that spells the host `+` for two proven numbers",
+      "expected": "the sum rounds as an IEEE double, as JS adds: `2**53 + 1` is `9007199254740992`",
+      "actual": "the host adds the integers exactly and renders `9007199254740993`; an accepted gap, since Phase 1 cannot prove an operand stays inside the safe-integer range (`spec/js-primitive-semantics.md`, \"Decisions\" (5))",
+      "fixtures": [
+        "plus-beyond-safe-integer"
+      ],
+      "adapters": [
+        "blade",
+        "twig"
       ]
     },
     "prop-member-chain-signal-seed": {
