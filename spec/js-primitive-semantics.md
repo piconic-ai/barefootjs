@@ -508,8 +508,9 @@ Before planning, Phase 1 rewrites a nil-capable operand of a ToNumber or
 ToString consumer by its nil reading, the same way `stringifyBooleanBranches`
 rewrites a tree today. The rewrite applies only where the consumer's
 coercion is known statically: a numeric operator, a template-literal part,
-or a `+` whose other operand is proven `number` (numeric) or proven `string`
-(concatenation):
+or a `+` whose other operand is proven `string` (concatenation) or is proven
+`number` while the nil-capable operand's own non-nil type is `number`
+(numeric):
 
 | Consumer | nil reads as `null` | nil reads as `undefined` |
 | --- | --- | --- |
@@ -526,6 +527,15 @@ and stay identical to the evaluator's `_to_number` / `_to_string` (nil reads
 as `null`). This generalizes `arithmeticOperandCoercion` (#3474) from number
 props to every typed read, and closes the #3750 gaps by construction: the
 rewrite runs wherever the plan runs.
+
+A `+` whose two branches coerce differently is split on nil instead. For
+`o.id + 1` with `id?: string`, the present branch concatenates (`'o1'`) and
+the omitted branch adds (`undefined + 1` is `NaN`), so the table's numeric
+row would give `NaN` for both. Both coercions are still static, so Phase 1
+plans `o.id == nil ? number('NaN') : to_string(o.id) + 1` (string operand,
+proven `number` other operand, nil reading `undefined`); with a nil reading
+of `null` the nil branch is `1`. This is not the runtime-decided shape
+below and needs no refusal.
 
 A `+` whose other operand is a union or `unknown` picks numeric addition or
 concatenation only at runtime, so neither row of the table preserves the
@@ -695,7 +705,7 @@ The eight questions this note left open were decided on 2026-11-01. Each entry n
 
 1. **Trust declared types at the runtime boundary: yes.** Native-safe rests on TypeScript types, and the host must pass JSON-typed values (a `number` prop receives a number, not `'1'`, #3769). The runtime does not normalise numeric strings. The adapter docs state the host's obligation. *Unblocks step 3 (relational, ToNumber) and step 8.*
 2. **`either` nil reading for strings: read as `undefined`, and register a `silent` limitation.** A `c?: string | null` operand of `+` or a template-literal part reads its nil as `undefined` (`'btn undefined'`). That is the JS answer for an omitted prop, the common case. An explicit `null` then renders `'undefined'` instead of `'null'`, which is registered as a limitation with its fixture and pins. Refusing (as arithmetic does, #3700) would break `'btn ' + props.className` (#3740). *Step 4.*
-3. **Nils whose type gives no reading: accept the evaluator's rule (nil reads as `null`).** This covers reads the nil-reading rewrite cannot type: an index read, an `unknown` or untyped value, and an explicit `null` against a missing JSON key. It does not cover an `either` read (a prop or row field typed `x?: T | null`), which has its own policy: a string `either` reads as `undefined` (decision 2) and a numeric `either` is refused with BF101 ("Nil reading is a tree rewrite"), for props and row fields alike. The plan reads such a nil as `null`, as `_to_number` / `_to_string` already do. Refusing would reject most code over row data. A read whose type does give the reading keeps it: an optional row field typed `x?: T` (no `null`) reads as `undefined` through the rewrite, so step 4 still graduates `omitted-optional-row-field-plus` (`undefined!`, `NaN`). *Step 4.*
+3. **Nils whose type gives no reading: accept the evaluator's rule (nil reads as `null`).** This covers reads the nil-reading rewrite cannot type: an index read, an `unknown` or untyped value, and an explicit `null` against a missing JSON key. It does not cover an `either` read (a prop or row field typed `x?: T | null`), which has its own policy: a string `either` reads as `undefined` (decision 2) and a numeric `either` is refused with BF101 ("Nil reading is a tree rewrite"), for props and row fields alike. The plan reads such a nil as `null`, as `_to_number` / `_to_string` already do. Refusing would reject most code over row data. A read whose type does give the reading keeps it: an optional row field typed `x?: T` (no `null`) reads as `undefined` through the rewrite (or the nil split for a string field under `+ number`), so step 4 still graduates `omitted-optional-row-field-plus` (`undefined!`, `NaN`, `o1`). *Step 4.*
 4. **`===` on objects (#3774): option (b), refuse.** `===` / `!==` with an operand not proven primitive is BF101 on template adapters, matching the evaluator contract (`spec/compiler.md`). `x === null` style tests are unaffected, because they lower as nullish checks. *Unblocks step 8.*
 5. **Native `+` past 2^53 on Ruby, Python and PHP: keep the native operator, as an accepted gap.** Their `NATIVE_SAFE.plus` claims `number × number`, although their integer `+` differs from IEEE double once a result passes 2^53; Phase 1 cannot prove an operand stays inside the safe-integer range. To keep the conformance rule that a claimed native domain passes its vectors with no allowance, the `primitives/plus` cases whose result passes 2^53 get their own domain, `beyond-safe-integer`, which no table claims: the helper binding runs them on every runtime, the native binding does not. The gap itself is registered as a `silent` limitation with a fixture and pins on these three runtimes, and the catalogue's existing `add/beyond the safe-integer edge` entries in their `vector-divergences.json` stay. Perl and Go keep `add` / `bf_add`. *Step 4.*
 6. **Lone surrogates (#3704): a permanent, documented limitation.** `string-at-lone-surrogate` is reclassified as a limitation that will not be fixed. A surrogate half reads as U+FFFD, as step 2 does for index reads. *No step blocked.*
