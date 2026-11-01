@@ -7381,7 +7381,9 @@ function expandSpreadAttribute(
  * attribute and expanded spread. A spread that is not expanded (`{...rest}`,
  * a computed object) overrides nothing statically; what it holds is merged
  * at render time after what comes before it, as before. Each key is
- * therefore written once, with the value JS gives it.
+ * therefore written once, with the value JS gives it. When an overridden
+ * attribute's value may have an effect, nothing is expanded (see the end
+ * of the function).
  */
 function staticSpreadPlan(attributes: ts.JsxAttributes, ctx: TransformContext): {
   properties: ts.JsxAttributeLike[]
@@ -7402,7 +7404,40 @@ function staticSpreadPlan(attributes: ts.JsxAttributes, ctx: TransformContext): 
     entries.set(attr, spread.filter(e => !written.has(e.key)))
     for (const e of spread) written.add(e.key)
   }
+  // Dropping an overridden attribute drops the evaluation of its value. JS
+  // still evaluates it, so a value that may have an effect (a call, an
+  // assignment) keeps every spread of the element a spread, merged in order
+  // at render time.
+  if ([...overridden].some(attr => !ts.isJsxAttribute(attr) || !isEffectFreeAttrValue(attr.initializer))) {
+    return { properties: [...attributes.properties], entries: new Map() }
+  }
   return { properties: attributes.properties.filter(attr => !overridden.has(attr)), entries }
+}
+
+/**
+ * Whether evaluating a JSX attribute's value can have no effect: no value
+ * (`disabled`), a string, or an expression {@link isEffectFreeExpression}
+ * accepts.
+ */
+function isEffectFreeAttrValue(value: ts.JsxAttributeValue | undefined): boolean {
+  if (value === undefined || ts.isStringLiteral(value)) return true
+  if (!ts.isJsxExpression(value)) return false
+  return value.expression === undefined || isEffectFreeExpression(value.expression)
+}
+
+/**
+ * A literal (string, number, boolean, `null`, a template literal without
+ * substitutions, a negated number), or a name or non-optional member chain
+ * of names (`label`, `props.title`), possibly parenthesized. Anything else
+ * (a call, an assignment, `new`, an operator) is treated as possibly having
+ * an effect.
+ */
+function isEffectFreeExpression(expr: ts.Expression): boolean {
+  if (ts.isParenthesizedExpression(expr)) return isEffectFreeExpression(expr.expression)
+  if (ts.isStringLiteral(expr) || ts.isNumericLiteral(expr) || ts.isNoSubstitutionTemplateLiteral(expr) || ts.isIdentifier(expr)) return true
+  if (expr.kind === ts.SyntaxKind.TrueKeyword || expr.kind === ts.SyntaxKind.FalseKeyword || expr.kind === ts.SyntaxKind.NullKeyword) return true
+  if (ts.isPrefixUnaryExpression(expr) && expr.operator === ts.SyntaxKind.MinusToken) return ts.isNumericLiteral(expr.operand)
+  return ts.isPropertyAccessExpression(expr) && !expr.questionDotToken && isEffectFreeExpression(expr.expression)
 }
 
 /**
