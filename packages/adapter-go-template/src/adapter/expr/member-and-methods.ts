@@ -164,6 +164,25 @@ function renderHigherOrderMemberRead(
 }
 
 /**
+ * `rest.<key>` on the component's own destructured rest binding as the
+ * case-tolerant `bf_get` read of the rest bag's `map[string]any` field, or
+ * null when `object` is not that binding (or a loop row / callback binding
+ * shadows it). Value and condition position both read a rest member here,
+ * so a condition sees the same value a plain read renders.
+ */
+export function restBagMemberRead(
+  state: GoEmitContext['state'],
+  object: ParsedExpr,
+  property: string,
+  isBound: (name: string) => boolean,
+  rootFieldRef: (name: string) => string,
+): string | null {
+  if (object.kind !== 'identifier' || !state.restPropsName || object.name !== state.restPropsName) return null
+  if (isBound(object.name)) return null
+  return `bf_get ${rootFieldRef(object.name)} ${JSON.stringify(property)}`
+}
+
+/**
  * A read off a props object, the rest bag, a map-rooted context chain or a
  * module object-literal const, or null when the receiver is none of those.
  */
@@ -195,14 +214,8 @@ function renderBindingMemberRead(
   // INNER `.map(({ ...rest }) => ...)` binding of the same name shadowing
   // the outer rest bag (the shared shadow-guard predicate — see
   // `spec/compiler.md`'s `BindingScope` section).
-  if (
-    object.kind === 'identifier' &&
-    host.ctx.state.restPropsName &&
-    object.name === host.ctx.state.restPropsName &&
-    !host.isBound(object.name)
-  ) {
-    return `bf_get ${host.rootFieldRef(object.name)} ${JSON.stringify(property)}`
-  }
+  const restRead = restBagMemberRead(host.ctx.state, object, property, name => host.isBound(name), name => host.rootFieldRef(name))
+  if (restRead !== null) return restRead
 
   // A member chain rooted in a `useContext` local whose `createContext`
   // default is object-shaped (#2087 — `defaultKind === 'object'`) reads off

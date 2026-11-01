@@ -27,6 +27,7 @@ import { goBinaryHelperCall, goNumberLiteral, GO_REMEDIATION_OPTIONS, isLiteralK
 import { isPropsObjectName } from '../lib/compile-state.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import type { HigherOrderShape } from '../lib/types.ts'
+import { restBagMemberRead } from './member-and-methods.ts'
 import { lowerTemplateLiteralValue, lowerTernary } from './url-builder.ts'
 
 
@@ -755,6 +756,15 @@ function renderConditionMember(
     !host.hasScopeBinding(expr.object.name)
   ) {
     return plain(host.propKeyFieldRef(expr.property))
+  }
+
+  // A member of the component's own rest binding (`rest.tone`) reads the
+  // rest bag as value position does, not a capitalized map key.
+  if (!expr.computed) {
+    const restRead = restBagMemberRead(
+      host.ctx.state, expr.object, expr.property, name => host.hasScopeBinding(name), name => host.rootFieldRef(name),
+    )
+    if (restRead !== null) return plain(restRead)
   }
 
   // A module record or array literal const read with a literal key
