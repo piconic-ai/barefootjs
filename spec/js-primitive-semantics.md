@@ -175,7 +175,7 @@ helper otherwise; M = mixed, decided per position or per emitter.
 | ToString (concat) | H | M | M | P | P | P | P | P | H |
 | Boolean value | — | M | M | — | — | — | — | — | — |
 | index read | H | H | H | N | N | H | H | H | H |
-| `===` | H | M | N | N | N | H | H | N | H |
+| `===` | H | P | P | P | P | H | H | P | H |
 | relational | H | N | N | N | N | N | N | N | N |
 | binary `+` | H | H | H | P | P | P | P | P | P |
 | unary `-` | H | N | N | N | N | N | N | N | N |
@@ -326,12 +326,24 @@ Exists as `strict_eq` (Perl), `bf_eq` / `bf_ne` (Go), `eq` / `neq` (PHP,
 Java). Python, Ruby and Rust have it only in the evaluator. The negated form
 is `!strict_eq` on every target.
 
-**Objects.** Needs a product decision; see rollout step 8.
+**Objects.** Refused with BF101 on template adapters ("Decisions" (4)):
+an operand whose facts admit `object` (an object, array or interface type
+that resolves to a type with fields, an object or array literal), or an
+element read (`a[i]`, `.at()`, `.find()`) of an array whose declared element
+type or array-literal seed holds objects (`mayHoldObject`). A nullish test
+(`x === null`, `x === undefined`) is not a strict equality and keeps the
+target's nil test. The refusal is recorded once per component over every
+template position and memo body (`refuseNonPrimitiveStrictEquality`).
 
-**Status.** Go, Twig, Blade, Pebble: helper. Mojolicious: `eq` for a
-string-typed side, `strict_eq` when neither side is number or boolean, `==`
-otherwise (`emitPerlEquality`, `adapter-mojolicious/src/adapter/expr/operand.ts`).
-Xslate, Jinja, MiniJinja, ERB: native `==` for every pair.
+**Status.** Plan-driven since step 8 (`strictEqSpelling`). Native pairs:
+ERB, Jinja, MiniJinja and Mojolicious claim `number-pair`, `string-pair`
+and `boolean-pair` (Mojolicious spells `eq` for strings, `==` otherwise);
+Xslate claims `string-pair` only, because Kolon's `==` compares as strings
+(`NaN == NaN` and `0.1 + 0.2 == 0.3` render true). Go, Twig, Blade and
+Pebble claim nothing and call `bf_eq` / `eq`. Operands proven of different
+types fold to `false` (`true` for `!==`) everywhere. Go gives an optional
+prop compared with `===` a nillable field, so an omitted prop differs from
+`0`.
 
 ### Relational `<` `<=` `>` `>=`
 
@@ -670,7 +682,7 @@ output only where the fixture shows the JS answer.
 | 5 | Boolean values and display | #3808, #3789 items 1–2 and the JSON comment | `boolean-text-child` | Medium: Perl value representation |
 | 6 | Unary `-` and number literals | #3819, #3814, #3720 | `negative-zero-literal` | Low: literal spelling only |
 | 7 | Nullish on Go | #3789 items 3–4 | `nullish-over-false-yielding-operand` | Low: Go only |
-| 8 | `===` | #3769; #3774 after the decision | `object-equality-by-contents`, `array-self-equality` | Needs a product decision |
+| 8 | `===` | #3769, #3774 | `object-equality-by-contents`, `array-self-equality` become BF101 refusals (decision 4) | Medium: every `===` not over a proven pair becomes a helper call; object operands become a build error |
 
 Order: step 1 is the pilot because five adapters already run the same proof,
 so the plan reproduces their output and only Perl and Go change. Steps 2
