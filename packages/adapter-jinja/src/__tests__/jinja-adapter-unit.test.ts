@@ -431,7 +431,7 @@ function Widget() {
     // The loop body must reference the per-iteration loop var...
     expect(template).toContain('1 + label')
     // ...never the outer const's hard-coded value.
-    expect(template).not.toContain("1 + 'x'")
+    expect(template).not.toContain("bf.to_string(1) ~ 'x'")
   })
 
   test('a numeric const shadowed by a loop param emits the identifier too', () => {
@@ -472,7 +472,7 @@ function Widget({ values }: { values: number[] }) {
   </div>
 }
 `)
-    expect(template).toContain("1 + 'x'")
+    expect(template).toContain("bf.to_string(1) ~ 'x'")
     expect(template).toContain('2 + label')
   })
 })
@@ -762,11 +762,11 @@ export function Counter() {
 
 // A `+` the shared layer classifies as string concatenation: Jinja's `+`
 // raises on a string plus a number, so it lowers to `~`, and the operand
-// that is not typed as a string goes through `bf.string`, in both orders. A
+// that is not typed as a string goes through `bf.to_string`, in both orders. A
 // loop row or filter param named like a string prop is typed as the param
 // (a number here).
 describe('JinjaAdapter - string concatenation operand', () => {
-  test('a number operand of `+` concatenation goes through bf.string and `~`', () => {
+  test('a number operand of `+` concatenation goes through bf.to_string and `~`', () => {
     const { template } = compileAndGenerate(`
 function Widget(props: { label: string; n: number; nums: number[] }) {
   return <div>
@@ -777,10 +777,10 @@ function Widget(props: { label: string; n: number; nums: number[] }) {
   </div>
 }
 `)
-    expect(template).toContain("'r=' ~ bf.string(n)")
-    expect(template).toContain("bf.string(n) ~ '=r'")
-    expect(template).toContain('bf.string(label) ~ __bf_root_label')
-    expect(template).toContain("(bf.string(v) ~ 'x') != '0x'")
-    expect(template).not.toContain("bf.string('r=')")
+    expect(template).toContain("'r=' ~ bf.to_string(n)")
+    expect(template).toContain("bf.to_string(n) ~ '=r'")
+    expect(template).toContain('bf.to_string(label) ~ __bf_root_label')
+    expect(template).toContain("(bf.to_string(v) ~ 'x') != '0x'")
+    expect(template).not.toContain("bf.to_string('r=')")
   })
 })

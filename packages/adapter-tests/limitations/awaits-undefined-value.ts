@@ -7,6 +7,6 @@ export default defineLimitation({
     'an omitted prop typed both optional and nullable (`c?: string | null`) under `+` or in a template literal, an omitted optional number under a `+` whose other operand is untyped, or an untyped nil (an out-of-range index read) in a template literal',
   expected: 'the omitted value reads `undefined`: `"btn undefined"`, `"undefinedx"`, `"undefined"`',
   actual:
-    'the runtimes hold `undefined` and `null` as one nil, so the either-nil string reads as the empty string and the other two read as `null` (`"nullx"`, `"null"`); fixed per target once the runtime carries `undefined` (#3848, `spec/js-undefined-value.md`)',
+    'renders the either-nil string as the empty string and the other two as `null` (`"nullx"`, `"null"`), since the runtimes hold `undefined` and `null` as one nil; fixed per target once its runtime carries `undefined` (`spec/js-undefined-value.md`)',
   fixtures: ['awaits-undefined-plus-shapes'],
 })
