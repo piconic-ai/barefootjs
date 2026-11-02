@@ -141,11 +141,12 @@ function computedNameOf(n: ts.Node): ts.ComputedPropertyName | undefined {
 /**
  * Depth-first walk that maintains the binding stack described above and
  * reports every identifier along with whether a binding within `root`
- * currently shadows it.
+ * currently shadows it. `isShadowed` answers the same question for any
+ * other name at that identifier's position.
  */
 export function walkWithScope(
   root: ts.Node,
-  visit: (ident: ts.Identifier, parent: ts.Node | undefined, shadowed: boolean) => void,
+  visit: (ident: ts.Identifier, parent: ts.Node | undefined, shadowed: boolean, isShadowed: (name: string) => boolean) => void,
 ): void {
   const scopeStack: Set<string>[] = []
   const isShadowed = (name: string) => scopeStack.some(frame => frame.has(name))
@@ -157,7 +158,7 @@ export function walkWithScope(
     const outerName = frame ? computedNameOf(n) : undefined
     if (outerName) rec(outerName, n)
     if (frame) scopeStack.push(frame)
-    if (ts.isIdentifier(n)) visit(n, parent, isShadowed(n.text))
+    if (ts.isIdentifier(n)) visit(n, parent, isShadowed(n.text), isShadowed)
     ts.forEachChild(n, child => {
       if (child !== outerName) rec(child, n)
     })

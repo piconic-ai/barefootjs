@@ -664,6 +664,10 @@ function evalEnvValueGo(
     // second entry with the same caller-facing name; each key appears once.
     const keys = [...new Set(propsParams.map(p => p.sourceName ?? p.name))]
     goExpr = `map[string]any{${keys.map(key => `${JSON.stringify(key)}: in.${capitalizeFieldName(key)}`).join(', ')}}`
+  } else if (name === ctx.state.restPropsName) {
+    // The rest props (`rest.tone ?? 'x'`) as the rest bag, which holds
+    // exactly the keys the caller passed (#3851).
+    goExpr = `in.${ctx.state.restBagField ?? capitalizeFieldName(name)}`
   }
   return goExpr
 }

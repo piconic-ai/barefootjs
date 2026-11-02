@@ -592,7 +592,7 @@
         62
       ],
       "collectFromElement": [
-        55
+        50
       ]
     },
     "packages/jsx/src/ir-to-client-js/compute-inlinability.ts": {

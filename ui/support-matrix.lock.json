@@ -7944,6 +7944,36 @@
         "hono": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-non-literal-default",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
+              "fixture": "body-rest-taken-key-read",
+              "limitations": [
+                "body-rest-taken-key-read"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -7987,6 +8017,36 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-non-literal-default",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
+              "fixture": "body-rest-taken-key-read",
+              "limitations": [
+                "body-rest-taken-key-read"
               ]
             },
             {
@@ -8390,6 +8450,36 @@
               ]
             },
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-non-literal-default",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
+              "fixture": "body-rest-taken-key-read",
+              "limitations": [
+                "body-rest-taken-key-read"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -8751,6 +8841,36 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-non-literal-default",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
+              "fixture": "body-rest-taken-key-read",
+              "limitations": [
+                "body-rest-taken-key-read"
               ]
             },
             {
@@ -9364,6 +9484,36 @@
               ]
             },
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-non-literal-default",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
+              "fixture": "body-rest-taken-key-read",
+              "limitations": [
+                "body-rest-taken-key-read"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -9755,6 +9905,36 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-non-literal-default",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
+              "fixture": "body-rest-taken-key-read",
+              "limitations": [
+                "body-rest-taken-key-read"
               ]
             },
             {
@@ -10152,6 +10332,36 @@
               ]
             },
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-non-literal-default",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
+              "fixture": "body-rest-taken-key-read",
+              "limitations": [
+                "body-rest-taken-key-read"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -10525,6 +10735,36 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-non-literal-default",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
+              "fixture": "body-rest-taken-key-read",
+              "limitations": [
+                "body-rest-taken-key-read"
               ]
             },
             {
@@ -10913,6 +11153,36 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-non-literal-default",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
+              "fixture": "body-rest-taken-key-read",
+              "limitations": [
+                "body-rest-taken-key-read"
               ]
             },
             {
@@ -11313,6 +11583,36 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-non-literal-default",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
+              "fixture": "body-rest-taken-key-read",
+              "limitations": [
+                "body-rest-taken-key-read"
               ]
             },
             {
@@ -11879,6 +12179,12 @@
         "hono": {
           "gaps": [
             {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -11904,6 +12210,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
               ]
             },
             {
@@ -12205,6 +12517,12 @@
               ]
             },
             {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -12494,6 +12812,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
               ]
             },
             {
@@ -12981,6 +13305,12 @@
               ]
             },
             {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -13279,6 +13609,12 @@
               ]
             },
             {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -13574,6 +13910,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
               ]
             },
             {
@@ -13881,6 +14223,12 @@
               ]
             },
             {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -14170,6 +14518,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
               ]
             },
             {
@@ -14468,6 +14822,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
               ]
             },
             {
@@ -15261,6 +15621,24 @@
         "hono": {
           "gaps": [
             {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
+              "fixture": "body-rest-taken-key-read",
+              "limitations": [
+                "body-rest-taken-key-read"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -15292,6 +15670,24 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
+              "fixture": "body-rest-taken-key-read",
+              "limitations": [
+                "body-rest-taken-key-read"
               ]
             },
             {
@@ -15581,6 +15977,24 @@
               ]
             },
             {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
+              "fixture": "body-rest-taken-key-read",
+              "limitations": [
+                "body-rest-taken-key-read"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -15828,6 +16242,24 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
+              "fixture": "body-rest-taken-key-read",
+              "limitations": [
+                "body-rest-taken-key-read"
               ]
             },
             {
@@ -16297,6 +16729,24 @@
               ]
             },
             {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
+              "fixture": "body-rest-taken-key-read",
+              "limitations": [
+                "body-rest-taken-key-read"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -16574,6 +17024,24 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
+              "fixture": "body-rest-taken-key-read",
+              "limitations": [
+                "body-rest-taken-key-read"
               ]
             },
             {
@@ -16857,6 +17325,24 @@
               ]
             },
             {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
+              "fixture": "body-rest-taken-key-read",
+              "limitations": [
+                "body-rest-taken-key-read"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -17116,6 +17602,24 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
+              "fixture": "body-rest-taken-key-read",
+              "limitations": [
+                "body-rest-taken-key-read"
               ]
             },
             {
@@ -17396,6 +17900,24 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
+              "fixture": "body-rest-taken-key-read",
+              "limitations": [
+                "body-rest-taken-key-read"
               ]
             },
             {
@@ -17685,6 +18207,24 @@
               ]
             },
             {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
+              "fixture": "body-rest-taken-key-read",
+              "limitations": [
+                "body-rest-taken-key-read"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -17965,9 +18505,36 @@
     },
     "object-literal": {
       "cells": {
-        "hono": {},
+        "hono": {
+          "gaps": [
+            {
+              "fixture": "body-destructure-non-literal-default",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            }
+          ]
+        },
         "blade": {
           "gaps": [
+            {
+              "fixture": "body-destructure-non-literal-default",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
             {
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
@@ -18015,6 +18582,18 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-literal-default",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
@@ -18060,6 +18639,18 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "body-destructure-non-literal-default",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
             {
               "fixture": "literal-index-own-key",
               "limitations": [
@@ -18137,6 +18728,18 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-literal-default",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
@@ -18183,6 +18786,18 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-literal-default",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
@@ -18228,6 +18843,18 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "body-destructure-non-literal-default",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
             {
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
@@ -18287,6 +18914,18 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-literal-default",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
@@ -18333,6 +18972,18 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-literal-default",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
@@ -18378,6 +19029,18 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "body-destructure-non-literal-default",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
             {
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
@@ -18441,10 +19104,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L183"
       },
       "example": {
-        "fixture": "dangerous-inner-html-dynamic",
-        "description": "dangerouslySetInnerHTML with a prop-derived value renders on Hono/CSR, refuses on template adapters",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/dangerous-inner-html-dynamic.ts",
-        "code": "{ __html: html }"
+        "fixture": "body-destructure-non-literal-default",
+        "description": "A body destructure with a non-literal default is refused",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-destructure-non-literal-default.ts",
+        "code": "{}"
       }
     },
     "regex": {
@@ -25952,6 +26615,12 @@
         "hono": {
           "gaps": [
             {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
@@ -25965,6 +26634,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
               ]
             },
             {
@@ -26176,6 +26851,12 @@
               ]
             },
             {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -26375,6 +27056,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
               ]
             },
             {
@@ -26736,6 +27423,12 @@
               ]
             },
             {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -26944,6 +27637,12 @@
               ]
             },
             {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -27149,6 +27848,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
               ]
             },
             {
@@ -27366,6 +28071,12 @@
               ]
             },
             {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -27565,6 +28276,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
               ]
             },
             {
@@ -27773,6 +28490,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "body-destructure-rest-non-props-source",
+              "limitations": [
+                "body-destructure-without-const-form"
               ]
             },
             {

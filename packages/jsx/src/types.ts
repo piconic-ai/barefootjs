@@ -1700,6 +1700,15 @@ export interface IRAttribute extends AttrMeta {
    * like SSR / hydrated / csr-mount agree it should.
    */
   restExpandedKey?: boolean
+  /**
+   * With `restExpandedKey`: the value an earlier attribute gave the same key
+   * (`<p title="fixed" {...rest}>`), which the key keeps when the caller
+   * omits it (#3851, `closedRestFallbacks` in jsx-to-ir.ts). Client-template
+   * source text (destructured props spelled `_p.xxx`), so `collectElements`
+   * binds `_p.<key> ?? (restFallback)` instead of a bare `_p.<key>` that
+   * would remove the attribute SSR rendered.
+   */
+  restFallback?: JsSourceText
 }
 
 export interface IREvent {

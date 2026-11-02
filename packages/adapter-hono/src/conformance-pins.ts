@@ -51,4 +51,12 @@ export const conformancePins: ConformancePins = {
   'ref-mount-attr': [
     { code: 'BF063', severity: 'error', limitation: 'ref-effect-attr-state-ssr' },
   ],
+  // A component-body destructure with no const form, and a read of a taken
+  // key through a props-object body rest, are refused in the shared
+  // analyzer, ahead of any adapter (#3854).
+  'body-destructure-rest-non-props-source': [{ code: 'BF101', severity: 'error', limitation: 'body-destructure-without-const-form' }],
+  'body-destructure-non-literal-default': [{ code: 'BF101', severity: 'error', limitation: 'body-destructure-without-const-form' }],
+  'body-destructure-non-identifier-source': [{ code: 'BF101', severity: 'error', limitation: 'body-destructure-without-const-form' }],
+  'body-rest-taken-key-read': [{ code: 'BF101', severity: 'error', limitation: 'body-rest-taken-key-read' }],
+  'body-rest-props-name-shadowed': [{ code: 'BF101', severity: 'error', limitation: 'body-rest-props-name-shadowed' }],
 }

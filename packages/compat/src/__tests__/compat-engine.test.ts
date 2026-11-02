@@ -56,6 +56,9 @@ describe('compileForCompat', () => {
         limitations: [
           'array-fill',
           'array-self-equality',
+          'body-destructure-without-const-form',
+          'body-rest-props-name-shadowed',
+          'body-rest-taken-key-read',
           'callback-index-param',
           'callback-outside-evaluator',
           'caller-rows-computed-key',
