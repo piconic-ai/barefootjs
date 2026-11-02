@@ -15706,6 +15706,40 @@
       }
     }
   ],
+  "strict-equality-optional-array-element": [
+    {
+      "name": "gen:rows:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
+  "strict-equality-preamble-reference": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": [],
+        "obj": {
+          "id": 1
+        }
+      }
+    },
+    {
+      "name": "gen:obj:object:minimal",
+      "props": {
+        "rows": [
+          1
+        ],
+        "obj": {
+          "id": 0
+        }
+      }
+    }
+  ],
   "strict-equality-reference-client": [
     {
       "name": "gen:obj:object:minimal",
