@@ -25,7 +25,8 @@
       "plus": [
         "string-mixed",
         "string-pair"
-      ]
+      ],
+      "strict_eq": []
     },
     "java": {
       "truthy": [
@@ -57,7 +58,8 @@
         "number-pair",
         "string-mixed",
         "string-pair"
-      ]
+      ],
+      "strict_eq": []
     },
     "perl": {
       "truthy": [
@@ -87,6 +89,11 @@
       ],
       "plus": [
         "string-mixed",
+        "string-pair"
+      ],
+      "strict_eq": [
+        "boolean-pair",
+        "number-pair",
         "string-pair"
       ]
     },
@@ -120,7 +127,8 @@
         "number-pair",
         "string-mixed",
         "string-pair"
-      ]
+      ],
+      "strict_eq": []
     },
     "python": {
       "truthy": [
@@ -154,6 +162,11 @@
         "number-pair",
         "string-mixed",
         "string-pair"
+      ],
+      "strict_eq": [
+        "boolean-pair",
+        "number-pair",
+        "string-pair"
       ]
     },
     "ruby": {
@@ -184,6 +197,11 @@
         "number-pair",
         "string-mixed",
         "string-pair"
+      ],
+      "strict_eq": [
+        "boolean-pair",
+        "number-pair",
+        "string-pair"
       ]
     },
     "rust": {
@@ -209,6 +227,11 @@
       "plus": [
         "number-pair",
         "string-mixed",
+        "string-pair"
+      ],
+      "strict_eq": [
+        "boolean-pair",
+        "number-pair",
         "string-pair"
       ]
     }

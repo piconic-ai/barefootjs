@@ -57,6 +57,7 @@ import {
   arithmeticOperandCoercion,
   refuseAmbiguousNilArithmetic,
   refuseAmbiguousNilMemoArithmetic,
+  refuseNonPrimitiveStrictEquality,
   type ArithmeticCoercion,
   collectNullishAttrContext,
   isNativePlan,
@@ -144,6 +145,7 @@ import {
   wrapGoArg,
   emitPredicateEval,
   goBinaryHelperCall,
+  goStrictEqConst,
   buildUnsupportedSuggestion,
   GO_REMEDIATION_OPTIONS,
   goPropDefault,
@@ -891,6 +893,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // Memo bodies seed at construction through several paths that never
     // reach the operand coercion; refuse their ambiguous-nil arithmetic once.
     refuseAmbiguousNilMemoArithmetic(ir.metadata.memos ?? [], this.state.nullishAttrCtx, this.state)
+    // `===` / `!==` over an object or array (#3774, #3824 step 8).
+    refuseNonPrimitiveStrictEquality(ir, this.state.operandTyping, this.state)
     this.state.stringValueNames = collectStringValueNames(ir)
     // A SAME-FILE child's shape (`childComponentShapes`, which `routesToRestBag`
     // reads to pick `bf_with_props` vs `bf_with_bag` delivery, and
@@ -5286,7 +5290,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return emit(n)
   }
 
-  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+  binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
+    // Operands proven of different types fold to a constant (#3824 step 8).
+    const folded = goStrictEqConst(op, left, right, plan)
+    if (folded !== null) return folded
     const l = this.emitOperand(left, emit)
     const r = this.emitOperand(right, emit)
     // Every Go form below is a prefix function call (`bf_mul a b`, `gt a b`,

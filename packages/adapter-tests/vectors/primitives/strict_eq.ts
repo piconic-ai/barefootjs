@@ -2,7 +2,8 @@
  * `strict_eq` — JS `===` over primitives (spec/js-primitive-semantics.md,
  * "`===` / `!==`"): same type and same value, no coercion; `NaN !== NaN`,
  * `0 === -0`, nil equals only nil. Objects and arrays are out of this
- * corpus: their policy is rollout step 8's product decision.
+ * corpus: a template adapter refuses a `===` over one with BF101 (rollout
+ * step 8, "Decisions" (4)).
  */
 import { type PrimitiveCase, type PrimitiveOp, pairDomain } from './types'
 

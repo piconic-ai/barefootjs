@@ -693,6 +693,13 @@ import { fixture as strictEqualityUntypedOperands } from './strict-equality-unty
 import { fixture as strictEqualityUntypedOperandsPropsObject } from './strict-equality-untyped-operands-props-object'
 import { fixture as strictEqualitySameReference } from './strict-equality-same-reference'
 import { fixture as strictEqualityDistinctReference } from './strict-equality-distinct-reference'
+import { fixture as strictEqualityPositions } from './strict-equality-positions'
+import { fixture as strictEqualityReferenceRewrite } from './strict-equality-reference-rewrite'
+import { fixture as strictEqualityBoxedNumberTypedSignalChild } from './strict-equality-boxed-number-typed-signal-child'
+import { fixture as strictEqualityPreambleReference } from './strict-equality-preamble-reference'
+import { fixture as strictEqualityOptionalArrayElement } from './strict-equality-optional-array-element'
+import { fixture as strictEqualityNullableArrayElement } from './strict-equality-nullable-array-element'
+import { fixture as strictEqualityReferenceClient } from './strict-equality-reference-client'
 import { fixture as escapedTernaryBranch } from './escaped-ternary-branch'
 import { fixture as templateLiteralMultiInterp } from './template-literal-multi-interp'
 import { fixture as optionalChainingProp } from './optional-chaining-prop'
@@ -2440,6 +2447,13 @@ export const jsxFixtures: JSXFixture[] = [
   strictEqualityUntypedOperandsPropsObject,
   strictEqualitySameReference,
   strictEqualityDistinctReference,
+  strictEqualityPositions,
+  strictEqualityReferenceRewrite,
+  strictEqualityBoxedNumberTypedSignalChild,
+  strictEqualityPreambleReference,
+  strictEqualityOptionalArrayElement,
+  strictEqualityNullableArrayElement,
+  strictEqualityReferenceClient,
   escapedTernaryBranch,
   signalArraySeedRowStruct,
   signalArrayPropFallbackSeed,

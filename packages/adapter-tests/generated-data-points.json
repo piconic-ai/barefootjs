@@ -16035,6 +16035,151 @@
       }
     }
   ],
+  "strict-equality-optional-array-element": [
+    {
+      "name": "gen:rows:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
+  "strict-equality-preamble-reference": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": [],
+        "obj": {
+          "id": 1
+        }
+      }
+    },
+    {
+      "name": "gen:obj:object:minimal",
+      "props": {
+        "rows": [
+          1
+        ],
+        "obj": {
+          "id": 0
+        }
+      }
+    }
+  ],
+  "strict-equality-reference-client": [
+    {
+      "name": "gen:obj:object:minimal",
+      "props": {
+        "obj": {
+          "id": 0
+        },
+        "other": {
+          "id": 1
+        },
+        "arr": [
+          1
+        ]
+      }
+    },
+    {
+      "name": "gen:other:object:minimal",
+      "props": {
+        "obj": {
+          "id": 1
+        },
+        "other": {
+          "id": 0
+        },
+        "arr": [
+          1
+        ]
+      }
+    },
+    {
+      "name": "gen:arr:empty",
+      "props": {
+        "obj": {
+          "id": 1
+        },
+        "other": {
+          "id": 1
+        },
+        "arr": []
+      }
+    }
+  ],
+  "strict-equality-reference-rewrite": [
+    {
+      "name": "gen:obj:object:minimal",
+      "props": {
+        "obj": {
+          "id": 0
+        },
+        "other": {
+          "id": 1
+        },
+        "arr": [
+          1
+        ],
+        "otherArr": [
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "name": "gen:other:object:minimal",
+      "props": {
+        "obj": {
+          "id": 1
+        },
+        "other": {
+          "id": 0
+        },
+        "arr": [
+          1
+        ],
+        "otherArr": [
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "name": "gen:arr:empty",
+      "props": {
+        "obj": {
+          "id": 1
+        },
+        "other": {
+          "id": 1
+        },
+        "arr": [],
+        "otherArr": [
+          1,
+          2
+        ]
+      }
+    },
+    {
+      "name": "gen:otherArr:empty",
+      "props": {
+        "obj": {
+          "id": 1
+        },
+        "other": {
+          "id": 1
+        },
+        "arr": [
+          1
+        ],
+        "otherArr": []
+      }
+    }
+  ],
   "strict-equality-same-reference": [
     {
       "name": "gen:obj:object:minimal",

@@ -49,8 +49,6 @@ export const renderDivergences: RenderDivergences = {
   // A prop the child does not declare, spread onto its root through
   // `{...props}`, is missing from the element.
   'child-undeclared-prop-whole-props-spread': { limitation: 'whole-props-spread-undeclared-prop' },
-  // `===` / `!==` between objects or arrays compares contents, not references.
-  'strict-equality-distinct-reference': { limitation: 'object-equality-by-contents' },
   // `.at(i)` on half of a surrogate pair: the runtime string can't hold a
   // lone surrogate, so it returns U+FFFD (halves compare equal, and
   // rejoining them renders `��` instead of the emoji).

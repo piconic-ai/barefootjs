@@ -1977,6 +1977,7 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "array-self-equality",
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
@@ -1985,6 +1986,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-equality-by-contents",
               "off-subset-callback-body",
               "omitted-optional-nullable-number-arithmetic",
               "omitted-optional-nullable-scalar-relational",
@@ -2004,6 +2006,7 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "array-self-equality",
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
@@ -2012,6 +2015,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-equality-by-contents",
               "off-subset-callback-body",
               "omitted-optional-nullable-number-arithmetic",
               "omitted-optional-nullable-scalar-relational",
@@ -2034,6 +2038,7 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "array-self-equality",
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
@@ -2042,6 +2047,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-equality-by-contents",
               "off-subset-callback-body",
               "omitted-optional-nullable-number-arithmetic",
               "omitted-optional-nullable-scalar-relational",
@@ -2061,6 +2067,7 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "array-self-equality",
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
@@ -2069,6 +2076,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-equality-by-contents",
               "off-subset-callback-body",
               "omitted-optional-nullable-number-arithmetic",
               "omitted-optional-nullable-scalar-relational",
@@ -2088,6 +2096,7 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "array-self-equality",
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
@@ -2097,6 +2106,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-equality-by-contents",
               "off-subset-callback-body",
               "omitted-optional-nullable-number-arithmetic",
               "omitted-optional-nullable-scalar-relational",
@@ -2116,6 +2126,7 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "array-self-equality",
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
@@ -2124,6 +2135,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-equality-by-contents",
               "off-subset-callback-body",
               "omitted-optional-nullable-number-arithmetic",
               "omitted-optional-nullable-scalar-relational",
@@ -2143,6 +2155,7 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "array-self-equality",
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
@@ -2151,6 +2164,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-equality-by-contents",
               "off-subset-callback-body",
               "omitted-optional-nullable-number-arithmetic",
               "omitted-optional-nullable-scalar-relational",
@@ -2170,6 +2184,7 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "array-self-equality",
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
@@ -2179,6 +2194,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-equality-by-contents",
               "off-subset-callback-body",
               "omitted-optional-nullable-number-arithmetic",
               "omitted-optional-nullable-scalar-relational",
@@ -8990,48 +9006,597 @@
       },
       "strict-equality-distinct-reference": {
         "blade": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "object-equality-by-contents"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
         },
         "erb": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "object-equality-by-contents"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
         },
         "go-template": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "object-equality-by-contents"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
         },
         "jinja": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "object-equality-by-contents"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
         },
         "minijinja": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "object-equality-by-contents"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-equality-by-contents"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-equality-by-contents"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
         },
         "twig": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "object-equality-by-contents"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-equality-by-contents"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        }
+      },
+      "strict-equality-nullable-array-element": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        }
+      },
+      "strict-equality-optional-array-element": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        }
+      },
+      "strict-equality-preamble-reference": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
         }
       },
       "strict-equality-same-reference": {
-        "go-template": {
-          "kind": "render",
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
             "array-self-equality"
-          ]
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-self-equality"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
         }
       },
       "string-at-lone-surrogate": {
@@ -9871,6 +10436,18 @@
         "description": "=== / !== between distinct objects or arrays with equal contents is false / true",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/strict-equality-distinct-reference.ts"
       },
+      "strict-equality-nullable-array-element": {
+        "description": "!== between an element of a nullable object array and itself is false",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/strict-equality-nullable-array-element.ts"
+      },
+      "strict-equality-optional-array-element": {
+        "description": "=== between an element of an optional object array and itself is true",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/strict-equality-optional-array-element.ts"
+      },
+      "strict-equality-preamble-reference": {
+        "description": "=== between an object and itself in a loop preamble const is true",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/strict-equality-preamble-reference.ts"
+      },
       "strict-equality-same-reference": {
         "description": "=== / !== between an object or array and itself is true / false",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/strict-equality-same-reference.ts"
@@ -10083,6 +10660,10 @@
         "description": "prop-precompute twin of static-nested-loop-ref — items moved to a prop, full SSR (#2909)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-nested-loop-ref-precomputed.ts"
       },
+      "strict-equality-reference-rewrite": {
+        "description": "=== / !== over a primitive field of two objects or arrays instead of the objects themselves",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/strict-equality-reference-rewrite.ts"
+      },
       "unlowered-global-call-precomputed": {
         "description": "prop-precompute twin of unlowered-global-call — the value arrives as a prop (#3505)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/unlowered-global-call-precomputed.ts"
@@ -10145,16 +10726,30 @@
       ]
     },
     "array-self-equality": {
-      "title": "Strict equality between an array and itself",
-      "kind": "silent",
-      "given": "`===` / `!==` with the same array on both sides (`arr === arr`)",
+      "title": "Strict equality between an object or array and itself",
+      "kind": "refusal",
+      "given": "`===` / `!==` with the same object or array on both sides (`arr === arr`), including in a loop preamble `const` and on an element of an optional or nullable object array (`rows[0] === rows[0]`)",
       "expected": "`===` is true and `!==` is false",
-      "actual": "renders `===` as false and `!==` as true",
+      "actual": "the compiler refuses with BF101",
       "fixtures": [
+        "strict-equality-nullable-array-element",
+        "strict-equality-optional-array-element",
+        "strict-equality-preamble-reference",
         "strict-equality-same-reference"
       ],
       "adapters": [
-        "go-template"
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
       ]
     },
     "authored-format-date-call": {
@@ -10870,10 +11465,10 @@
     },
     "object-equality-by-contents": {
       "title": "Strict equality between distinct objects or arrays with the same contents",
-      "kind": "silent",
+      "kind": "refusal",
       "given": "`===` / `!==` between two distinct objects or arrays whose contents are equal (two props holding `{ id: 1 }`, two elements of `[{ id: 1 }, { id: 1 }]`)",
       "expected": "the comparison is by reference, so `===` is false and `!==` is true",
-      "actual": "renders `===` as true and `!==` as false: the comparison is by contents",
+      "actual": "the compiler refuses with BF101",
       "fixtures": [
         "strict-equality-distinct-reference"
       ],
@@ -10883,7 +11478,13 @@
         "go-template",
         "jinja",
         "minijinja",
-        "twig"
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
       ]
     },
     "off-subset-callback-body": {

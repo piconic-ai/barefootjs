@@ -121,6 +121,7 @@ import {
   type StringNameTest,
   isNativePlan,
   relationalHelper,
+  strictEqSpelling,
   isNativeToNumber,
   numberLiteralSpelling,
   plusSpelling,
@@ -164,6 +165,9 @@ export const NATIVE_SAFE: NativeSafeTable = {
   // A template-literal part or concatenation operand is itself only when it
   // is a proven string; anything else takes `to_string` (#3824 step 4).
   'to-string': ['string'],
+  // Always the runtime's `eq` / `neq`: the host's `==` is loose and its
+  // `===` tells an integer from a float (#3824 step 8). Operands proven of
+  // different types fold to a constant.
   'strict-eq': [],
   // Native only over two proven numbers; any other pair takes the runtime's
   // JS Abstract Relational Comparison (`lt` / `le` / `gt` / `ge`; #3824
@@ -394,6 +398,9 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
     // See the file header, divergence 8: PHP's `==`/`!=`/`===`/`!==` are
     // NEVER emitted for JS `===`/`!==`. `$bf->eq`/`$bf->neq` are the one
     // shared JS-strict-equality implementation.
+    // Operands proven of different types fold to a constant (#3824 step 8).
+    const equality = strictEqSpelling(op, left, right, plan)
+    if (equality?.kind === 'const') return equality.value ? 'true' : 'false'
     if (op === '===') return `$bf->eq(${l}, ${r})`
     if (op === '!==') return `$bf->neq(${l}, ${r})`
     if (op === '+') return spellPlus(plan, l, r)
@@ -705,6 +712,9 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     const r = this.coerceUndefinedOperand(op, right, left, groupBinaryOperand(right, emit(right)))
     // See the file header, divergence 8: PHP's `==`/`!=`/`===`/`!==` are
     // NEVER emitted for JS `===`/`!==`.
+    // Operands proven of different types fold to a constant (#3824 step 8).
+    const equality = strictEqSpelling(op, left, right, plan)
+    if (equality?.kind === 'const') return equality.value ? 'true' : 'false'
     if (op === '===') return `$bf->eq(${l}, ${r})`
     if (op === '!==') return `$bf->neq(${l}, ${r})`
     if (op === '+') return spellPlus(plan, l, r)

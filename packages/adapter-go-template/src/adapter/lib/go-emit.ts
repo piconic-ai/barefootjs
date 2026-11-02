@@ -5,7 +5,7 @@
  */
 
 import type { ArithmeticCoercion, SortComparator, SupportResult, ParsedExpr, ScopedOperandTyping } from '@barefootjs/jsx'
-import { arithmeticHelper, BindingScope, EMPTY_OPERAND_TYPING, escapeBraceDelimiters, evalBody, isExactly, isNativeToNumber, numberLiteralSpelling, operandFacts, plusSpelling, spellTest, type CallbackCapture, type NativeSafeTable, type PrimitivePlan } from '@barefootjs/jsx'
+import { arithmeticHelper, BindingScope, EMPTY_OPERAND_TYPING, escapeBraceDelimiters, evalBody, isExactly, isNativeToNumber, numberLiteralSpelling, operandFacts, plusSpelling, spellTest, strictEqSpelling, type CallbackCapture, type NativeSafeTable, type PrimitivePlan } from '@barefootjs/jsx'
 
 import { capitalize } from "./go-naming.ts"
 
@@ -77,6 +77,9 @@ export const GO_NATIVE_SAFE: NativeSafeTable = {
   // A template-literal part or concatenation operand is itself only when it
   // is a proven string; anything else takes `bf_to_string` (#3824 step 4).
   'to-string': ['string'],
+  // Always `bf_eq` / `bf_ne`: html/template's `eq` refuses operands of
+  // different kinds. Operands proven of different types fold to a constant
+  // (#3824 step 8).
   'strict-eq': [],
   relational: [],
   // A unary minus over a non-zero literal folds into the literal; any other
@@ -588,6 +591,16 @@ export function stringTolerantEqOperands(l: string, r: string): [string, string]
   // argument — `(bf_string (or .Placement "top"))`, not `(bf_string or …)`.
   const wrap = (x: string) => (isStrLit(x) ? x : `(bf_string ${wrapGoArg(x)})`)
   return [wrap(l), wrap(r)]
+}
+
+/**
+ * The folded `===` / `!==` of operands proven of different primitive types
+ * (`true` / `false`, #3824 step 8), or null for any other plan. Every other
+ * strict equality takes `bf_eq` / `bf_ne` ({@link goComparisonCall}).
+ */
+export function goStrictEqConst(op: string, left: ParsedExpr, right: ParsedExpr, plan: PrimitivePlan | null): string | null {
+  const eq = strictEqSpelling(op, left, right, plan)
+  return eq?.kind === 'const' ? String(eq.value) : null
 }
 
 const GO_COMPARISON_HELPERS: Readonly<Record<string, string>> = {

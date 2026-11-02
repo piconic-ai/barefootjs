@@ -617,11 +617,11 @@ func evalStrictEq(l, r any) bool {
 		return ok && rv == lv
 	}
 	// Non-primitive operands (arrays / objects) are outside the subset: the JS
-	// reference refuses `===` on them and the compiler gates such a body with
-	// BF101 upstream, so this is unreachable for an in-subset corpus. The
-	// runtime trusts that gate rather than re-validating, returning false
-	// here (it does not attempt JS reference identity, which templates can't
-	// model anyway).
+	// reference refuses `===` on them, and the compiler refuses with BF101 a
+	// `===` over an operand it can prove may be an object or array
+	// (`refuseNonPrimitiveStrictEquality`, #3824 step 8). An operand it could
+	// not type returns false here: templates cannot model JS reference
+	// identity.
 	return false
 }
 

@@ -55,6 +55,8 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   type StringNameTest,
   isNativePlan,
   relationalHelper,
+  strictEqSpelling,
+  type StrictEqSpelling,
   isNativeToNumber,
   numberLiteralSpelling,
   plusSpelling,
@@ -98,6 +100,10 @@ export const NATIVE_SAFE: NativeSafeTable = {
   // A template-literal part or concatenation operand is itself only when it
   // is a proven string; anything else takes `to_string` (#3824 step 4).
   'to-string': ['string'],
+  // Perl's `==` over two proven numbers or booleans and `eq` over two proven
+  // strings; any other pair takes the runtime's `strict_eq`, and operands
+  // proven of different types fold to a constant (#3824 step 8, pinned by
+  // the `primitives/strict_eq` vectors).
   'strict-eq': ['number-pair', 'string-pair', 'boolean-pair'],
   // Native only over two proven numbers; any other pair takes the runtime's
   // JS Abstract Relational Comparison (`lt` / `le` / `gt` / `ge`; #3824
@@ -197,27 +203,6 @@ function flattenPropsMember(
   return null
 }
 
-/** Perl coerces an absent lookup (`undef`) to zero in numeric equality.
- * A strict comparison against a non-null literal must instead keep it
- * distinct from false/0/empty string. Evaluate the lookup once, shared
- * by value and filter emission. */
-function emitLookupLiteralEquality(
-  op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string,
-  isStringName: (name: string) => boolean,
-): string | null {
-  if (op !== '===' && op !== '!==') return null
-  const isLookup = (expr: ParsedExpr) => expr.kind === 'index-access' ||
-    (expr.kind === 'member' && (expr.optional || expr.computed))
-  const isLiteral = (expr: ParsedExpr) => expr.kind === 'literal' && expr.literalType !== 'null'
-  const [lookup, literal] = isLookup(left) && isLiteral(right) ? [left, right]
-    : isLookup(right) && isLiteral(left) ? [right, left] : []
-  if (!lookup || !literal) return null
-  const cmp = isStringTypedOperand(literal, isStringName) ? 'eq' : '=='
-  // Evaluate the lookup outside the helper's lexical scope: its temporary
-  // cannot shadow a source binding used by the lookup argument.
-  const equality = `(sub { my $bf_lookup = shift; defined($bf_lookup) && ($bf_lookup ${cmp} ${emit(literal)}) })->(${emit(lookup)})`
-  return op === '!==' ? `!(${equality})` : equality
-}
 
 /** JS `x === null` / `x === undefined` (and the loose forms) is a
  * nullish test. Perl's numeric `$x == undef` coerces both sides to 0, so a
@@ -259,7 +244,8 @@ function grepLexical(param: string, enclosing: ReadonlyMap<string, string>): str
 }
 
 /**
- * Spell a `+` plan (#3824 step 4) over grouped operands. Perl has no infix
+ * Spell a `+` plan (#3824 step 4) over the grouped operands `operand`
+ * renders on demand, each at most once. Perl has no infix
  * JS `+`: two proven numbers take the runtime's IEEE `add`, a proven string
  * operand the host's `.` with the other operand through the runtime's JS
  * `String()` (`to_string`; a comparison through `bool_str`, as Perl holds a
@@ -270,27 +256,27 @@ function spellPerlPlus(
   plan: PrimitivePlan | null,
   left: ParsedExpr,
   right: ParsedExpr,
-  l: string,
-  r: string,
+  operand: (side: 0 | 1) => string,
   emit: (e: ParsedExpr) => string,
   isBooleanName: (name: string, componentProperty?: boolean) => boolean,
   value: (e: ParsedExpr) => string,
 ): string {
   const spelled = plusSpelling(plan)
-  if (spelled.kind === 'add') return `bf->add(${l}, ${r})`
+  if (spelled.kind === 'add') return `bf->add(${operand(0)}, ${operand(1)})`
   // Each boolean the operand can yield (a comparison, a ternary branch, an
   // `&&` / `||` operand) is materialized as a JSON boolean, so `plus` sees
   // `false`, not Perl's `''` / `0` (`(n > 0 && 2) + x` is `'falsex'`).
   if (spelled.kind === 'plus') return `bf->plus(${groupBinaryOperand(left, value(left))}, ${groupBinaryOperand(right, value(right))})`
-  const term = (e: ParsedExpr, t: string, stringify: boolean): string => {
-    if (!stringify) return t
-    if (isBooleanResultParsed(e, isBooleanName)) return `bf->bool_str(${t})`
+  const term = (side: 0 | 1, stringify: boolean): string => {
+    const e = side === 0 ? left : right
+    if (!stringify) return operand(side)
+    if (isBooleanResultParsed(e, isBooleanName)) return `bf->bool_str(${operand(side)})`
     // A comparison an operand returns (`'v=' + (n > 0 && 'y')`) prints as JS
     // does, through the rewrite `stringifyBooleanBranches` makes.
     const rewritten = stringifyBooleanBranches(e)
-    return `bf->to_string(${rewritten === e ? t : groupBinaryOperand(rewritten, emit(rewritten))})`
+    return `bf->to_string(${rewritten === e ? operand(side) : groupBinaryOperand(rewritten, emit(rewritten))})`
   }
-  return `${term(left, l, spelled.stringify[0])} . ${term(right, r, spelled.stringify[1])}`
+  return `${term(0, spelled.stringify[0])} . ${term(1, spelled.stringify[1])}`
 }
 
 /**
@@ -448,19 +434,34 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     return toNumber(plan, arg)
   }
 
+  /**
+   * The operands of a strict equality, each read as a value: a boolean an
+   * operand yields (a literal, a comparison, `!`) is materialized as a JSON
+   * boolean, which `strict_eq` tells from the number `1` / `0` Perl holds it
+   * as otherwise (#3824 step 8).
+   */
+  private strictEqOperands(left: ParsedExpr, right: ParsedExpr): [string, string] {
+    return [groupBinaryOperand(left, emitParsedValue(left, this)), groupBinaryOperand(right, emitParsedValue(right, this))]
+  }
+
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
-    const lookupEquality = emitLookupLiteralEquality(op, left, right, emit, this.isStringName)
-    if (lookupEquality !== null) return lookupEquality
     const nullishEquality = emitNullishEquality(op, left, right, emit)
     if (nullishEquality !== null) return nullishEquality
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
-    const l = groupBinaryOperand(left, emit(left))
-    const r = groupBinaryOperand(right, emit(right))
+    // Each path renders each operand subtree once: a strict equality reads
+    // both as values, `+` only the forms its spelling uses, and every other
+    // operator the forms below. Rendering both would revisit every nested
+    // operand once per level, exponential in the depth.
+    const strict = spellPerlStrictEq(strictEqSpelling(op, left, right, plan), () => this.strictEqOperands(left, right))
+    if (strict !== null) return strict
+    const operand = (side: 0 | 1): string => (side === 0 ? groupBinaryOperand(left, emit(left)) : groupBinaryOperand(right, emit(right)))
+    if (op === '+') return spellPerlPlus(plan, left, right, operand, emit, () => false, (e) => emitParsedValue(e, this))
+    const l = operand(0)
+    const r = operand(1)
     const equality = emitPerlEquality(op, left, right, l, r, { isStringName: this.isStringName, isNumberName: this.isNumberName })
     if (equality !== null) return equality
-    if (op === '+') return spellPerlPlus(plan, left, right, l, r, emit, () => false, (e) => emitParsedValue(e, this))
     // `/` and `%` go through the runtime's JS division and remainder
     // (#3474, #3574).
     const helper = arithmeticHelper(op)
@@ -829,23 +830,38 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     return coercion === 'undefined' ? `bf->number(${operand})` : operand
   }
 
+  /**
+   * The operands of a strict equality, each read as a value: a boolean an
+   * operand yields (a literal, a comparison, `!`) is materialized as a JSON
+   * boolean, which `strict_eq` tells from the number `1` / `0` Perl holds it
+   * as otherwise (#3824 step 8).
+   */
+  private strictEqOperands(left: ParsedExpr, right: ParsedExpr): [string, string] {
+    return [groupBinaryOperand(left, emitParsedValue(left, this)), groupBinaryOperand(right, emitParsedValue(right, this))]
+  }
+
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
-    const lookupEquality = emitLookupLiteralEquality(op, left, right, emit, (n: string, property?: boolean, path?: readonly string[]) => this.ctx._isStringValueName(n, property, path))
-    if (lookupEquality !== null) return lookupEquality
     const nullishEquality = emitNullishEquality(op, left, right, emit)
     if (nullishEquality !== null) return nullishEquality
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
-    const l = this.coerceUndefinedOperand(op, left, right, groupBinaryOperand(left, emit(left)))
-    const r = this.coerceUndefinedOperand(op, right, left, groupBinaryOperand(right, emit(right)))
+    // Each path renders each operand subtree once (see the filter emitter's
+    // `binary`).
+    const strict = spellPerlStrictEq(strictEqSpelling(op, left, right, plan), () => this.strictEqOperands(left, right))
+    if (strict !== null) return strict
+    const operand = (side: 0 | 1): string => (side === 0
+      ? this.coerceUndefinedOperand(op, left, right, groupBinaryOperand(left, emit(left)))
+      : this.coerceUndefinedOperand(op, right, left, groupBinaryOperand(right, emit(right))))
+    if (op === '+') return spellPerlPlus(plan, left, right, operand, emit, this.isBooleanName, (e) => emitParsedValue(e, this))
+    const l = operand(0)
+    const r = operand(1)
     const equality = emitPerlEquality(op, left, right, l, r, {
       isStringName: (n: string, property?: boolean, path?: readonly string[]) => this.ctx._isStringValueName(n, property, path),
       isNumberName: (n: string, property?: boolean) => this.ctx._isNumberValueName(n, property),
       isBooleanName: (n: string, property?: boolean) => this.ctx._isBooleanValueName(n, property),
     })
     if (equality !== null) return equality
-    if (op === '+') return spellPerlPlus(plan, left, right, l, r, emit, this.isBooleanName, (e) => emitParsedValue(e, this))
     // `/` and `%` go through the runtime's JS division and remainder
     // (#3474, #3574).
     const helper = arithmeticHelper(op)
@@ -1110,4 +1126,24 @@ function negate(plan: PrimitivePlan | null, operand: string, native: () => strin
  */
 function toNumber(plan: PrimitivePlan | null, operand: string): string {
   return isNativeToNumber(plan) ? operand : `bf->to_number(${operand})`
+}
+
+/**
+ * Spell a `===` / `!==` plan over the operands `operands` renders, which it
+ * calls only when the plan reads them (#3824 step 8):
+ * Perl's `eq` / `ne` over two proven strings, `==` / `!=` over two proven
+ * numbers or booleans (Perl holds a boolean as `1` / `''` / `0` or a JSON
+ * boolean, which compare numerically), the folded constant, or the
+ * runtime's `strict_eq`. Null for a nullish test and any other operator,
+ * which keep their own lowering.
+ */
+export function spellPerlStrictEq(eq: StrictEqSpelling | null, operands: () => readonly [string, string]): string | null {
+  if (eq === null || eq.kind === 'nullish') return null
+  if (eq.kind === 'const') return eq.value ? '1' : '0'
+  const [l, r] = operands()
+  if (eq.kind === 'native') {
+    if (eq.proof === 'string-pair') return `${l} ${eq.negated ? 'ne' : 'eq'} ${r}`
+    return `${l} ${eq.negated ? '!=' : '=='} ${r}`
+  }
+  return `${eq.negated ? '!' : ''}bf->strict_eq(${l}, ${r})`
 }

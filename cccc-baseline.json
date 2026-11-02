@@ -829,7 +829,7 @@
     },
     "packages/jsx/src/template-position-walk.ts": {
       "walkNode": [
-        68
+        34
       ]
     },
     "packages/jsx/src/to-locale-date-lowering.ts": {

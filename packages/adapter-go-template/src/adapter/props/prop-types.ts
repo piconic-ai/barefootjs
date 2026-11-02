@@ -11,6 +11,7 @@ import {
   arithmeticOperandCoercion,
   collectOperandTyping,
   rewriteNilReadings,
+  isNullishTest,
   asCallbackMethodCall,
   collectAbsentPropSeedReads,
   collectNullishAttrContext,
@@ -555,7 +556,8 @@ export function collectOptionalChainReceiverPropNames(ctx: GoEmitContext, ir: Co
  * Names of OPTIONAL no-default props read as an arithmetic operand whose nil
  * reads as `undefined` (`props.n * 2`, `n + 1`, `-n`, `+n` with `n?: number`,
  * or a comparison over `s?: string`) anywhere in the component's element
- * tree (#3533, #3824 step 3). The shared decision
+ * tree (#3533, #3824 step 3), or as an operand of a strict equality
+ * (`maybe === 0`, #3824 step 8). The shared decision
  * (`arithmeticOperandCoercion`) routes the operand through `bf_number`,
  * which maps nil to `NaN` as JS `ToNumber(undefined)` does. A concrete
  * `float64` field reads an omitted prop as `0`, so these props take the same
@@ -580,6 +582,10 @@ export function collectArithmeticAbsentPropNames(ctx: GoEmitContext, ir: Compone
   const propNameOf = (operand: ParsedExpr): string | null =>
     propsObjectKeyRead(propsObject, operand) ??
       (!propsObject && operand.kind === 'identifier' ? operand.name : null)
+  const addStrictEqOperand = (operand: ParsedExpr): void => {
+    const propName = propNameOf(operand)
+    if (propName !== null && optionalParams.has(propName)) names.add(propName)
+  }
   const addOperand = (op: string, operand: ParsedExpr, other: ParsedExpr | undefined): void => {
     const propName = propNameOf(operand)
     if (propName === null || !optionalParams.has(propName)) return
@@ -621,6 +627,13 @@ export function collectArithmeticAbsentPropNames(ctx: GoEmitContext, ir: Compone
       const right = rec.right as ParsedExpr
       addOperand(rec.op as string, left, right)
       addOperand(rec.op as string, right, left)
+      // A strict equality tells an omitted prop (nil) from `0` / `''` /
+      // `false` (#3824 step 8): `maybe === 0` is false when `maybe` is
+      // omitted, which a concrete field reads as `0`.
+      if ((rec.op === '===' || rec.op === '!==') && !isNullishTest(rec.op, left, right)) {
+        addStrictEqOperand(left)
+        addStrictEqOperand(right)
+      }
     }
     if (rec.kind === 'unary' && (rec.op === '-' || rec.op === '+') && rec.argument) {
       addOperand(rec.op, rec.argument as ParsedExpr, undefined)
