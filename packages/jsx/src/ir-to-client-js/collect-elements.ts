@@ -591,6 +591,17 @@ function callerBagSpreadOrigin(value: AttrValue, ctx: ClientJsContext): 'rest' |
   return spreadVal ? resolveRestSpreadOrigin(ctx, spreadVal) : null
 }
 
+/**
+ * The live `_p.<key>` read a closed-rest-expanded attribute binds to
+ * (`IRAttribute.restExpandedKey`, #3057), with the value an earlier
+ * attribute gave the key when the caller omits it, as SSR rendered it
+ * (`IRAttribute.restFallback`, #3851).
+ */
+function restKeyLiveRead(attr: IRElement['attrs'][number]): string {
+  const read = `${PROPS_PARAM}.${attr.name}`
+  return attr.restFallback === undefined ? read : `${read} ?? (${attr.restFallback})`
+}
+
 /** Build propsExpr for a child component from its IR props. */
 function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string {
   const knownSpreadProp = props.find(p => {
@@ -1213,7 +1224,7 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, insideCond
           ctx.reactiveAttrs.push({
             slotId: element.slotId,
             attrName: attr.name,
-            expression: `${PROPS_PARAM}.${attr.name}`,
+            expression: restKeyLiveRead(attr),
             ...pickAttrMetaFromIR(attr),
           })
           continue

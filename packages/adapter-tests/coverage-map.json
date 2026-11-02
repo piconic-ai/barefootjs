@@ -1187,6 +1187,18 @@
         "text"
       ]
     },
+    "body-rest-props-name-shadowed": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "body-rest-taken-key-read": {
       "kinds": [
         "identifier",

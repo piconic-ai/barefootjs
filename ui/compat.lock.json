@@ -1978,6 +1978,7 @@
             "limitations": [
               "array-fill",
               "body-destructure-without-const-form",
+              "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
@@ -2004,6 +2005,7 @@
             "limitations": [
               "array-fill",
               "body-destructure-without-const-form",
+              "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
@@ -2033,6 +2035,7 @@
             "limitations": [
               "array-fill",
               "body-destructure-without-const-form",
+              "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
@@ -2059,6 +2062,7 @@
             "limitations": [
               "array-fill",
               "body-destructure-without-const-form",
+              "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
@@ -2085,6 +2089,7 @@
             "limitations": [
               "array-fill",
               "body-destructure-without-const-form",
+              "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
               "boolean-in-static-loop-item",
               "callback-index-param",
@@ -2112,6 +2117,7 @@
             "limitations": [
               "array-fill",
               "body-destructure-without-const-form",
+              "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
@@ -2138,6 +2144,7 @@
             "limitations": [
               "array-fill",
               "body-destructure-without-const-form",
+              "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
@@ -2164,6 +2171,7 @@
             "limitations": [
               "array-fill",
               "body-destructure-without-const-form",
+              "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
               "boolean-in-static-loop-item",
               "callback-index-param",
@@ -2516,6 +2524,98 @@
           ],
           "limitations": [
             "body-destructure-without-const-form"
+          ]
+        }
+      },
+      "body-rest-props-name-shadowed": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-rest-props-name-shadowed"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-rest-props-name-shadowed"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-rest-props-name-shadowed"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-rest-props-name-shadowed"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-rest-props-name-shadowed"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-rest-props-name-shadowed"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-rest-props-name-shadowed"
+          ]
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-rest-props-name-shadowed"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-rest-props-name-shadowed"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-rest-props-name-shadowed"
           ]
         }
       },
@@ -9367,6 +9467,10 @@
         "description": "A body destructure with a rest element from a const object is refused",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-destructure-rest-non-props-source.ts"
       },
+      "body-rest-props-name-shadowed": {
+        "description": "A body rest read or spread inside a row that shadows the props name is refused",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-rest-props-name-shadowed.ts"
+      },
       "body-rest-taken-key-read": {
         "description": "A read of a taken key through a props-object body rest is refused",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-rest-taken-key-read.ts"
@@ -10109,6 +10213,31 @@
         "body-destructure-non-identifier-source",
         "body-destructure-non-literal-default",
         "body-destructure-rest-non-props-source"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "body-rest-props-name-shadowed": {
+      "title": "Props-object body rest used where the props name is shadowed",
+      "kind": "refusal",
+      "given": "a member read or spread of the rest of a component-body destructure of the props object, inside a loop row or callback parameter named like the props object (`const { rows, ...rest } = props`, `rows.map(props => <li {...rest}>{rest.id}</li>)`)",
+      "expected": "the rest's keys are the component's props, not the row's",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "body-rest-props-name-shadowed"
       ],
       "adapters": [
         "hono",

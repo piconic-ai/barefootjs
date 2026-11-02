@@ -802,6 +802,7 @@ import { fixture as bodyDestructureRestNonPropsSource } from './body-destructure
 import { fixture as bodyDestructureNonLiteralDefault } from './body-destructure-non-literal-default'
 import { fixture as bodyDestructureNonIdentifierSource } from './body-destructure-non-identifier-source'
 import { fixture as bodyRestTakenKeyRead } from './body-rest-taken-key-read'
+import { fixture as bodyRestPropsNameShadowed } from './body-rest-props-name-shadowed'
 import { fixture as childUndeclaredPropWholePropsSpread } from './child-undeclared-prop-whole-props-spread'
 import { fixture as childInlineStringArrayProp } from './child-inline-string-array-prop'
 import { fixture as preWhitespace } from './pre-whitespace'
@@ -2000,6 +2001,7 @@ export const jsxFixtures: JSXFixture[] = [
   bodyDestructureNonLiteralDefault,
   bodyDestructureNonIdentifierSource,
   bodyRestTakenKeyRead,
+  bodyRestPropsNameShadowed,
   childUndeclaredPropWholePropsSpread,
   childInlineStringArrayProp,
   preWhitespace,

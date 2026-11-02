@@ -3959,7 +3959,9 @@ function collectBodyRestBinding(pattern: ts.ObjectBindingPattern, ctx: AnalyzerC
  * binding reaches is respelled: not one a nested binding of the same name
  * shadows (`items.map(rest => rest.id)`, `walkWithScope`), not an
  * assignment target, and not a key the props type does not declare (that
- * one stays a read of the rest bag, which holds it).
+ * one stays a read of the rest bag, which holds it). A read where a nested
+ * binding shadows the props object's name is refused
+ * ({@link refuseRestReadUnderShadowedProps}).
  */
 function respellBodyRestMemberReads(restName: string, taken: readonly string[], ctx: AnalyzerContext): void {
   const body = ctx.componentBodyBlock
@@ -3967,12 +3969,16 @@ function respellBodyRestMemberReads(restName: string, taken: readonly string[], 
   if (body === null || propsName === null) return
   const declared = new Set([...ctx.restPropsExpandedKeys, ...taken])
   for (const stmt of body.statements) {
-    walkWithScope(stmt, (ident, parent, shadowed) => {
+    walkWithScope(stmt, (ident, parent, shadowed, isShadowed) => {
       if (shadowed || ident.text !== restName || parent === undefined) return
       const key = restMemberReadKey(ident, parent)
       if (key === null || !declared.has(key) || isWrittenAccess(parent)) return
       if (taken.includes(key)) {
         refuseTakenKeyRestRead(parent, restName, key, ctx)
+        return
+      }
+      if (isShadowed(propsName)) {
+        refuseRestReadUnderShadowedProps(parent, propsName, ctx)
         return
       }
       addSourceReplacement(ctx.typeExcludeRanges, { start: parent.getStart(ctx.sourceFile), end: parent.getEnd(), replacement: propsMemberRead(propsName, key) })
@@ -3994,6 +4000,23 @@ function refuseTakenKeyRestRead(access: ts.Node, restName: string, key: string, 
     message: `\`${access.getText(ctx.sourceFile)}\` reads '${key}' through the rest \`${restName}\`, but the same destructure takes '${key}', so the rest never holds it and the read is always undefined.`,
     loc: getSourceLocation(access, ctx.sourceFile, ctx.filePath),
     suggestion: { message: `Read the destructured '${key}' binding instead, or drop the read.` },
+  })
+}
+
+/**
+ * BF101 for a read through a props-object body rest where a nested binding
+ * shadows the props object's name (`rows.map(props => rest.id)`): the read
+ * would be respelled `props.id`, which there names the nested binding, and
+ * no other spelling reaches the component's prop on every backend
+ * ({@link respellBodyRestMemberReads}).
+ */
+function refuseRestReadUnderShadowedProps(access: ts.Node, propsName: string, ctx: AnalyzerContext): void {
+  ctx.errors.push({
+    code: 'BF101',
+    severity: 'error',
+    message: `\`${access.getText(ctx.sourceFile)}\` reads the component's props through a rest, inside a binding that shadows the props object's name \`${propsName}\`, so the read has no spelling that reaches the component's prop.`,
+    loc: getSourceLocation(access, ctx.sourceFile, ctx.filePath),
+    suggestion: { message: `Rename the inner \`${propsName}\` binding, or read the value into a const outside it.` },
   })
 }
 

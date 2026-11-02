@@ -191,4 +191,5 @@ export const conformancePins: ConformancePins = {
   'body-destructure-non-literal-default': [{ code: 'BF101', severity: 'error', limitation: 'body-destructure-without-const-form' }],
   'body-destructure-non-identifier-source': [{ code: 'BF101', severity: 'error', limitation: 'body-destructure-without-const-form' }],
   'body-rest-taken-key-read': [{ code: 'BF101', severity: 'error', limitation: 'body-rest-taken-key-read' }],
+  'body-rest-props-name-shadowed': [{ code: 'BF101', severity: 'error', limitation: 'body-rest-props-name-shadowed' }],
 }

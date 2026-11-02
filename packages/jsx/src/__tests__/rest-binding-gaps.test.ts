@@ -56,6 +56,7 @@ export function P({ label, ...rest }: { label: string; title?: string }) {
 `)
     const [p] = elements(ir.root, 'p')
     expect(attrExpr(p, 'title')).toEqual(['rest.title ?? ("fixed")'])
+    expect(p.attrs.find(a => a.name === 'title')?.restFallback).toBe('"fixed"')
   })
 
   test('a later attribute still wins over the spread, with no fallback', () => {
@@ -142,6 +143,17 @@ export function C(props: { label: string; [key: string]: unknown }) {
 `)
     const [i] = elements(ir.root, 'i')
     expect(attrExpr(i, 'data-x')).toEqual(['rest.other'])
+  })
+
+  test('a read or spread under a row that shadows the props name is refused (BF101)', () => {
+    const src = (use: string) => `
+export function C(props: { id?: string; rows: { key: string }[] }) {
+  const { rows, ...rest } = props
+  return <ul>{rows.map(props => <li key={props.key} ${use} />)}</ul>
+}
+`
+    expect(codes(src('data-x={rest.id}'))).toEqual(['BF101'])
+    expect(codes(src('{...rest}'))).toEqual(['BF101'])
   })
 
   test('a read of a taken key is refused (BF101)', () => {

@@ -1190,6 +1190,70 @@
       }
     }
   ],
+  "body-rest-props-name-shadowed": [
+    {
+      "name": "gen:id:absent",
+      "props": {
+        "rows": [
+          {
+            "key": "a"
+          },
+          {
+            "key": "b"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:id:empty",
+      "props": {
+        "id": "",
+        "rows": [
+          {
+            "key": "a"
+          },
+          {
+            "key": "b"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:id:markup",
+      "props": {
+        "id": "<b>&\"'</b>",
+        "rows": [
+          {
+            "key": "a"
+          },
+          {
+            "key": "b"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:id:multibyte",
+      "props": {
+        "id": "日本語",
+        "rows": [
+          {
+            "key": "a"
+          },
+          {
+            "key": "b"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "id": "outer",
+        "rows": []
+      }
+    }
+  ],
   "body-rest-taken-key-read": [
     {
       "name": "gen:label:empty",

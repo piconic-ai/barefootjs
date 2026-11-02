@@ -7578,6 +7578,12 @@
               ]
             },
             {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
               "fixture": "body-rest-taken-key-read",
               "limitations": [
                 "body-rest-taken-key-read"
@@ -7645,6 +7651,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
               ]
             },
             {
@@ -8048,6 +8060,12 @@
               ]
             },
             {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
               "fixture": "body-rest-taken-key-read",
               "limitations": [
                 "body-rest-taken-key-read"
@@ -8409,6 +8427,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
               ]
             },
             {
@@ -9028,6 +9052,12 @@
               ]
             },
             {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
               "fixture": "body-rest-taken-key-read",
               "limitations": [
                 "body-rest-taken-key-read"
@@ -9419,6 +9449,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
               ]
             },
             {
@@ -9816,6 +9852,12 @@
               ]
             },
             {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
               "fixture": "body-rest-taken-key-read",
               "limitations": [
                 "body-rest-taken-key-read"
@@ -10183,6 +10225,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
               ]
             },
             {
@@ -10565,6 +10613,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
               ]
             },
             {
@@ -10965,6 +11019,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
               ]
             },
             {
@@ -14727,6 +14787,12 @@
               ]
             },
             {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
               "fixture": "body-rest-taken-key-read",
               "limitations": [
                 "body-rest-taken-key-read"
@@ -14770,6 +14836,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
               ]
             },
             {
@@ -15065,6 +15137,12 @@
               ]
             },
             {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
               "fixture": "body-rest-taken-key-read",
               "limitations": [
                 "body-rest-taken-key-read"
@@ -15318,6 +15396,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
               ]
             },
             {
@@ -15793,6 +15877,12 @@
               ]
             },
             {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
               "fixture": "body-rest-taken-key-read",
               "limitations": [
                 "body-rest-taken-key-read"
@@ -16076,6 +16166,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
               ]
             },
             {
@@ -16365,6 +16461,12 @@
               ]
             },
             {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
+              ]
+            },
+            {
               "fixture": "body-rest-taken-key-read",
               "limitations": [
                 "body-rest-taken-key-read"
@@ -16630,6 +16732,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
               ]
             },
             {
@@ -16916,6 +17024,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
               ]
             },
             {
@@ -17208,6 +17322,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-rest-props-name-shadowed",
+              "limitations": [
+                "body-rest-props-name-shadowed"
               ]
             },
             {

@@ -45,7 +45,7 @@ import {
 import { type AnalyzerContext, type MultiReturnJsxInfo, getSourceLocation, collectReactiveGetterNames, tsTypeToTypeInfo } from './analyzer-context.ts'
 import { parseExpression, freeIdentifiers, isSupported, parseBlockBody, foldBlockToExpr, predicateTernaryToLogical, tsNodeToParsedExpr, sortComparatorFromArrow, stringifyParsedExpr, cssKebabCase, CALLBACK_METHODS, unboundCallbackParamRead, unboundCallbackParamReason, type ParsedExpr } from './expression-parser.ts'
 import { fallbackChainParts, nullishChainParts } from './children-nullish.ts'
-import type { IRLoopSort, FunctionInfo, ConstantInfo, ParamInfo, FreeReference, SpreadAttr } from './types.ts'
+import type { IRLoopSort, FunctionInfo, ConstantInfo, ParamInfo, FreeReference, SpreadAttr, JsSourceText } from './types.ts'
 import { resolveStaticConstBinding } from './augment-inherited-props.ts'
 import { componentScopeNames } from './adapters/computed-const.ts'
 import { formatParamWithType } from './module-exports.ts'
@@ -7320,12 +7320,14 @@ function expandSpreadAttribute(
   loc: SourceLocation
   freeIdentifiers?: ReadonlySet<string>
   restExpandedKey?: boolean
+  restFallback?: JsSourceText
 }> {
   const spreadExpr = ctx.getJS(attr.expression)
   const expandedKeys = ctx.analyzer.restPropsExpandedKeys
   const loc = getSourceLocation(attr, ctx.sourceFile, ctx.filePath)
   const spreadFreeIdentifiers = extractFreeIdentifiersFromNode(attr.expression)
   const source = closedRestSpreadSource(attr, ctx)
+  if (source === null && refuseBodyRestSpreadUnderShadowedProps(attr, ctx)) return []
 
   if (source !== null) {
     // Expanded per-key attrs reference `${restName}.${key}` — `restName` is
@@ -7349,6 +7351,7 @@ function expandSpreadAttribute(
         loc,
         freeIdentifiers: fallback === undefined ? perKeyFreeIds : new Set([source, ...fallback.freeIdentifiers]),
         restExpandedKey: true,
+        ...(fallback !== undefined && { restFallback: fallback.templateText }),
       }
     })
   }
@@ -7389,7 +7392,35 @@ function closedRestSpreadSource(attr: ts.JsxSpreadAttribute, ctx: TransformConte
   let expr: ts.Expression = attr.expression
   while (ts.isParenthesizedExpression(expr)) expr = expr.expression
   if (!ts.isIdentifier(expr) || expr.text !== restName) return null
-  return ctx.analyzer.restPropsOmittedKeys && ctx.analyzer.propsObjectName ? ctx.analyzer.propsObjectName : restName
+  const source = ctx.analyzer.restPropsOmittedKeys && ctx.analyzer.propsObjectName ? ctx.analyzer.propsObjectName : restName
+  // A body rest's keys read the props object, which a loop row or callback
+  // parameter of the same name hides here: no spelling of the per-key read
+  // reaches the component's props (`expandSpreadAttribute` refuses it).
+  return source !== restName && ctx.scope.isBound(source) ? null : source
+}
+
+/**
+ * BF101 for a spread of a props-object body rest (`const { a, ...rest } =
+ * props`) where a loop row or callback parameter shadows the props
+ * object's name (`rows.map(props => <li {...rest} />)`): its keys are read
+ * off the props object, which that binding hides (#3854).
+ */
+function refuseBodyRestSpreadUnderShadowedProps(attr: ts.JsxSpreadAttribute, ctx: TransformContext): boolean {
+  const restName = ctx.analyzer.restPropsName
+  const propsName = ctx.analyzer.propsObjectName
+  if (!restName || !propsName || !ctx.analyzer.restPropsOmittedKeys || ctx.analyzer.restPropsExpandedKeys.length === 0) return false
+  if (ctx.scope.isBound(restName) || !ctx.scope.isBound(propsName)) return false
+  let expr: ts.Expression = attr.expression
+  while (ts.isParenthesizedExpression(expr)) expr = expr.expression
+  if (!ts.isIdentifier(expr) || expr.text !== restName) return false
+  ctx.analyzer.errors.push({
+    code: 'BF101',
+    severity: 'error',
+    message: `\`{...${restName}}\` spreads the component's props through a rest, inside a binding that shadows the props object's name \`${propsName}\`, so its keys have no spelling that reaches the component's props.`,
+    loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
+    suggestion: { message: `Rename the inner \`${propsName}\` binding.` },
+  })
+  return true
 }
 
 /**
@@ -9427,7 +9458,7 @@ function processComponentProps(
       // rewrite, so `IRProp` declares no such field. Strip it here rather
       // than letting the shared helper's per-key marking leak into IRProp
       // as an inert flag nothing reads.
-      props.push(...expandSpreadAttribute(attr, ctx, spreadPlan.entries.get(attr), restPlan.fallbacks.get(attr)).map(({ restExpandedKey: _restExpandedKey, ...prop }) => markPropsObjectSpread(prop)))
+      props.push(...expandSpreadAttribute(attr, ctx, spreadPlan.entries.get(attr), restPlan.fallbacks.get(attr)).map(({ restExpandedKey: _restExpandedKey, restFallback: _restFallback, ...prop }) => markPropsObjectSpread(prop)))
       continue
     }
 
