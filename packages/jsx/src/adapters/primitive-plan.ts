@@ -283,7 +283,9 @@ export function mayHoldObject(
   const receiver = elementReadReceiver(expr)
   if (!receiver) return false
   const facts = operandFacts(receiver, typing)
-  return facts.array === true && facts.element !== undefined && holdsObject(facts.element)
+  // `element` alone, not `array`: a nullable or union-typed array
+  // (`rows?: Row[]`) keeps its element evidence without being proven an array.
+  return facts.element !== undefined && holdsObject(facts.element)
 }
 
 /** The BF101 reason of a `===` / `!==` over an operand that may be an object (#3774). */

@@ -43,10 +43,12 @@ export interface OperandFacts {
    */
   readonly array?: boolean
   /**
-   * What an element of the array proves, when `array` holds and the
+   * What an element proves when the value is or may be an array and the
    * declared element type or the array-literal seed says (#3824 step 8:
-   * `===` refuses an element read that may be an object). Read only by
-   * `mayHoldObject`; no plan reads it.
+   * `===` refuses an element read that may be an object). A union keeps it
+   * from any member that has it (`rows?: Row[]` is `Row[]` or nil), so it is
+   * possible-object evidence only and never proves the value an array:
+   * `array` does that. Read only by `mayHoldObject`; no plan reads it.
    */
   readonly element?: OperandFacts
   /**
@@ -81,20 +83,36 @@ function mergeNil(a: NilReading | undefined, b: NilReading | undefined): NilRead
 
 /**
  * The facts of a value that is one of `a` or `b`. An unknown member makes the
- * whole value unknown; `index` and `array` hold only when both hold.
+ * whole value unknown; `index` and `array` hold only when both hold, while
+ * `element` is kept from either member ({@link mergeElement}).
  */
 export function unionFacts(a: OperandFacts, b: OperandFacts): OperandFacts {
   if (a.types.has('unknown') || b.types.has('unknown')) return UNKNOWN_FACTS
   const types = new Set<OperandType>([...a.types, ...b.types])
   const nil = mergeNil(a.nil, b.nil)
   const namedObjects = mergeNamedObjects(a, b)
+  const element = mergeElement(a.element, b.element)
   return {
     types,
     ...(nil !== undefined ? { nil } : {}),
     ...(a.index && b.index ? { index: true } : {}),
     ...(a.array && b.array ? { array: true } : {}),
+    ...(element ? { element } : {}),
     ...(namedObjects ? { namedObjects } : {}),
   }
+}
+
+/**
+ * The `element` of a union, as possible-object evidence: the one member's
+ * when only one has it (a nil or non-array member has no elements), else
+ * their union, or, when that proves nothing, the member whose elements may be
+ * objects (an unknown element type must not erase a known `Row`).
+ */
+function mergeElement(a: OperandFacts | undefined, b: OperandFacts | undefined): OperandFacts | undefined {
+  if (!a || !b) return a ?? b
+  const both = unionFacts(a, b)
+  if (!both.types.has('unknown')) return both
+  return a.types.has('object') ? a : b
 }
 
 /** The `namedObjects` of a union: kept only while every `object` member came from a named reference. */

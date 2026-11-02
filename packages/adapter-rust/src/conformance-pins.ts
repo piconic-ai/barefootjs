@@ -24,6 +24,8 @@ export const conformancePins: ConformancePins = {
   'strict-equality-distinct-reference': [{ code: 'BF101', severity: 'error', limitation: 'object-equality-by-contents' }],
   'strict-equality-same-reference': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
   'strict-equality-preamble-reference': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
+  'strict-equality-optional-array-element': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
+  'strict-equality-nullable-array-element': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
   // A prop typed both optional and nullable: the engine cannot tell an
   // omitted one (`NaN` in arithmetic) from a `null` one (`0`).
   'omitted-optional-nullable-number-arithmetic': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
