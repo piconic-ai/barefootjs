@@ -11,6 +11,7 @@ import { jsxFixtures } from '../../fixtures'
 import { normalizeHTML, stripConditionalMarkersForCrossAdapter } from '../jsx-runner'
 import { renderCsrComponent } from '../csr-render'
 import { CSR_RENDER_DIVERGENCES, CSR_SKIP_FIXTURES } from '../csr-skip-set'
+import { conformancePins as honoConformancePins } from '@barefootjs/hono'
 
 describe('CSR Conformance Tests', () => {
   // Fixtures to skip in CSR conformance tests — see `../csr-skip-set.ts`
@@ -21,6 +22,21 @@ describe('CSR Conformance Tests', () => {
   for (const fixture of jsxFixtures) {
     if (skipFixtures.has(fixture.id)) continue
     if (!fixture.expectedHtml) continue
+    // A fixture the reference adapter refuses at compile time (a shared
+    // analyzer refusal, pinned on Hono) keeps its correct `expectedHtml` as
+    // the contract a future lowering must meet; the client compile refuses
+    // it too, which is what is asserted here.
+    if (honoConformancePins[fixture.id]?.length) {
+      test(`[${fixture.id}] ${fixture.description} (refused)`, async () => {
+        await expect(renderCsrComponent({
+          source: fixture.source,
+          props: fixture.props !== undefined ? structuredClone(fixture.props) : undefined,
+          components: fixture.components,
+          componentName: fixture.componentName,
+        })).rejects.toThrow('Compilation errors')
+      })
+      continue
+    }
 
     test(`[${fixture.id}] ${fixture.description}`, async () => {
       const html = await renderCsrComponent({

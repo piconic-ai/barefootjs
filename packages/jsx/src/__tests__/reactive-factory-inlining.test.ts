@@ -203,9 +203,12 @@ describe('Reactive factory inlining (#931)', () => {
     `
 
     const result = compileJSX(source, 'Comp.tsx', { adapter })
-    expect(result.errors.filter(e => e.severity === 'error')).toHaveLength(0)
     const bf110 = result.errors.find(e => e.code === 'BF110')
     expect(bf110).toBeUndefined()
+    // Not a factory call, so the destructure is an ordinary body destructure
+    // of a call, which no backend binds: refused with BF101 (#3854), where
+    // it used to compile clean with `x` left unbound.
+    expect(result.errors.filter(e => e.severity === 'error').map(e => e.code)).toEqual(['BF101'])
   })
 })
 

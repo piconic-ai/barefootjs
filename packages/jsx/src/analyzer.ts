@@ -37,6 +37,8 @@ import { signalSecondBinding } from './signal-initializer.ts'
 import { observesWholePropsObject } from './props-object-whole-read.ts'
 import { separateSignalPropBindings, programWithSeparatedSource } from './signal-prop-name-collision.ts'
 import { isAssignmentTargetIdentifier } from './assignment-target.ts'
+import { addSourceReplacement } from './strip-types.ts'
+import { walkWithScope } from './scope/lexical-scope-walk.ts'
 
 // =============================================================================
 // TypeScript Program Creation
@@ -3938,6 +3940,111 @@ function collectBodyRestBinding(pattern: ts.ObjectBindingPattern, ctx: AnalyzerC
   const param = ctx.componentNode?.parameters[0]
   const allKeys = param?.type ? collectTypeKeys(param.type, ctx) : null
   if (allKeys) ctx.restPropsExpandedKeys = allKeys.filter(k => !taken.includes(k))
+  respellBodyRestMemberReads(restName, taken, ctx)
+}
+
+/**
+ * Respell each member read of a props-object body rest (`const { label,
+ * ...rest } = props`, `rest.id`) as the read of the props object it is
+ * (#3854): the rest holds the props object's keys minus the ones the
+ * destructure takes, so `rest.id` reads `props.id`; a read of a taken key
+ * (`rest.label`) is refused ({@link refuseTakenKeyRestRead}). Every backend
+ * then reads it as it reads the props object: a template binds each
+ * declared prop as its own variable, while its rest bag holds only the keys
+ * the props type does not declare, so the read can't go to the bag.
+ *
+ * Decided here, where the rest is recorded, and spelled through `getJS`
+ * (`addSourceReplacement`): every expression, const and handler built from
+ * the source afterwards carries the respelled read. Only a read the rest
+ * binding reaches is respelled: not one a nested binding of the same name
+ * shadows (`items.map(rest => rest.id)`, `walkWithScope`), not an
+ * assignment target, and not a key the props type does not declare (that
+ * one stays a read of the rest bag, which holds it). A read where a nested
+ * binding shadows the props object's name is refused
+ * ({@link refuseRestReadUnderShadowedProps}).
+ */
+function respellBodyRestMemberReads(restName: string, taken: readonly string[], ctx: AnalyzerContext): void {
+  const body = ctx.componentBodyBlock
+  const propsName = ctx.propsObjectName
+  if (body === null || propsName === null) return
+  const declared = new Set([...ctx.restPropsExpandedKeys, ...taken])
+  for (const stmt of body.statements) {
+    walkWithScope(stmt, (ident, parent, shadowed, isShadowed) => {
+      if (shadowed || ident.text !== restName || parent === undefined) return
+      const key = restMemberReadKey(ident, parent)
+      if (key === null || !declared.has(key) || isWrittenAccess(parent)) return
+      if (taken.includes(key)) {
+        refuseTakenKeyRestRead(parent, restName, key, ctx)
+        return
+      }
+      if (isShadowed(propsName)) {
+        refuseRestReadUnderShadowedProps(parent, propsName, ctx)
+        return
+      }
+      addSourceReplacement(ctx.typeExcludeRanges, { start: parent.getStart(ctx.sourceFile), end: parent.getEnd(), replacement: propsMemberRead(propsName, key) })
+    })
+  }
+}
+
+/**
+ * BF101 for a read through a props-object body rest of a key the same
+ * destructure takes (`const { label, ...rest } = props`, `rest.label`):
+ * the rest never holds it, so the read is always `undefined`. No backend
+ * spells a bare `undefined` read the way JS renders it, so the read is
+ * refused rather than respelled ({@link respellBodyRestMemberReads}).
+ */
+function refuseTakenKeyRestRead(access: ts.Node, restName: string, key: string, ctx: AnalyzerContext): void {
+  ctx.errors.push({
+    code: 'BF101',
+    severity: 'error',
+    message: `\`${access.getText(ctx.sourceFile)}\` reads '${key}' through the rest \`${restName}\`, but the same destructure takes '${key}', so the rest never holds it and the read is always undefined.`,
+    loc: getSourceLocation(access, ctx.sourceFile, ctx.filePath),
+    suggestion: { message: `Read the destructured '${key}' binding instead, or drop the read.` },
+  })
+}
+
+/**
+ * BF101 for a read through a props-object body rest where a nested binding
+ * shadows the props object's name (`rows.map(props => rest.id)`): the read
+ * would be respelled `props.id`, which there names the nested binding, and
+ * no other spelling reaches the component's prop on every backend
+ * ({@link respellBodyRestMemberReads}).
+ */
+function refuseRestReadUnderShadowedProps(access: ts.Node, propsName: string, ctx: AnalyzerContext): void {
+  ctx.errors.push({
+    code: 'BF101',
+    severity: 'error',
+    message: `\`${access.getText(ctx.sourceFile)}\` reads the component's props through a rest, inside a binding that shadows the props object's name \`${propsName}\`, so the read has no spelling that reaches the component's prop.`,
+    loc: getSourceLocation(access, ctx.sourceFile, ctx.filePath),
+    suggestion: { message: `Rename the inner \`${propsName}\` binding, or read the value into a const outside it.` },
+  })
+}
+
+/** The key `parent` reads off `ident` (`ident.key`, `ident?.key`, `ident['key']`), or null when `parent` is no such read. */
+function restMemberReadKey(ident: ts.Identifier, parent: ts.Node): string | null {
+  if (ts.isPropertyAccessExpression(parent) && parent.expression === ident && ts.isIdentifier(parent.name)) return parent.name.text
+  if (ts.isElementAccessExpression(parent) && parent.expression === ident && ts.isStringLiteralLike(parent.argumentExpression)) {
+    return parent.argumentExpression.text
+  }
+  return null
+}
+
+/** Whether the member access `access` is written (`a.b = 1`, `a.b += 1`, `a.b++`, `delete a.b`) rather than read. */
+function isWrittenAccess(access: ts.Node): boolean {
+  const parent = access.parent
+  if (ts.isBinaryExpression(parent)) {
+    const op = parent.operatorToken.kind
+    return parent.left === access && op >= ts.SyntaxKind.FirstAssignment && op <= ts.SyntaxKind.LastAssignment
+  }
+  if (ts.isPrefixUnaryExpression(parent) || ts.isPostfixUnaryExpression(parent)) {
+    return parent.operator === ts.SyntaxKind.PlusPlusToken || parent.operator === ts.SyntaxKind.MinusMinusToken
+  }
+  return ts.isDeleteExpression(parent)
+}
+
+/** `props.key`, or `props["key"]` for a key that is not an identifier. */
+function propsMemberRead(propsName: string, key: string): string {
+  return isIdentifierName(key) ? `${propsName}.${key}` : `${propsName}[${JSON.stringify(key)}]`
 }
 
 /** The property key a binding element reads (`{ a }`, `{ a: b }`, `{ 'a-b': c }`), or null for a computed key. */
@@ -3951,14 +4058,46 @@ function bindingElementKey(el: ts.BindingElement): string | null {
  * A component-body object destructure. One of the props object (or a
  * component-scope `const` alias of it) — `collectConstant` expands it into
  * one entry per destructured name. A top-level `const` one of another const
- * object — {@link collectConstDestructure}.
+ * object — {@link collectConstDestructure}. Any other top-level one binds
+ * names nothing declares, so it is refused ({@link refuseBodyDestructure}).
  */
 function collectBodyDestructure(decl: ts.VariableDeclaration, flags: ts.NodeFlags, isTopLevel: boolean, ctx: AnalyzerContext): void {
   if (destructuresPropsObject(decl, ctx)) {
     collectConstant(decl, ctx, false, (flags & ts.NodeFlags.Let) !== 0 ? 'let' : 'const')
-  } else if (isTopLevel && (flags & ts.NodeFlags.Const) !== 0) {
-    collectConstDestructure(decl, ctx)
+  } else if (isTopLevel && !((flags & ts.NodeFlags.Const) !== 0 && collectConstDestructure(decl, ctx))) {
+    refuseBodyDestructure(decl, flags, ctx)
   }
+}
+
+/**
+ * BF101 for a component-body object destructure no backend binds (#3854):
+ * a `let` one, one whose source is not an identifier naming a const object
+ * (`getConf()`, `props.nested`, an imported name), or one with an element
+ * that has no const form (a rest element, a non-literal default, a computed
+ * key). The compiler rebuilds the body from what it collects, so such a
+ * statement used to be dropped, leaving its names unbound in every output.
+ */
+function refuseBodyDestructure(decl: ts.VariableDeclaration, flags: ts.NodeFlags, ctx: AnalyzerContext): void {
+  ctx.errors.push({
+    code: 'BF101',
+    severity: 'error',
+    message: `The destructure \`${decl.getText(ctx.sourceFile)}\` has no compiled form: ${bodyDestructureRefusalReason(decl, flags, ctx)}.`,
+    loc: getSourceLocation(decl, ctx.sourceFile, ctx.filePath),
+    suggestion: {
+      message:
+        'Destructure the props object or a `const` object declared before it, with plain or literal-defaulted elements; or read the values directly (`const a = getConf().a`).',
+    },
+  })
+}
+
+/** Why {@link refuseBodyDestructure} refuses `decl`, for its message. */
+function bodyDestructureRefusalReason(decl: ts.VariableDeclaration, flags: ts.NodeFlags, ctx: AnalyzerContext): string {
+  if ((flags & ts.NodeFlags.Const) === 0) return 'only a `const` destructure is collected'
+  let source: ts.Expression | undefined = decl.initializer
+  while (source && ts.isParenthesizedExpression(source)) source = source.expression
+  if (!source || !ts.isIdentifier(source)) return 'its source is not a plain name'
+  if (!isConstObjectSource(source.text, decl, ctx)) return `\`${source.text}\` is not the props object or a \`const\` object declared before it`
+  return 'an element is a rest element, has a non-literal default, or has a computed key'
 }
 
 /**
@@ -3976,22 +4115,22 @@ function collectBodyDestructure(decl: ts.VariableDeclaration, flags: ts.NodeFlag
  * the statement, or a module `const` no component binding shadows. A binding
  * element may rename (`{ tone: t }`), nest an object pattern, or default to
  * a literal (`{ tone = 'x' }` reads `conf.tone === undefined ? 'x' :
- * conf.tone`). A statement with any other element (a rest element, a
- * computed key, an array pattern, a non-literal default) is left
- * uncollected, as before.
+ * conf.tone`). False, collecting nothing, for any other source or a
+ * statement with any other element (a rest element, a computed key, an
+ * array pattern, a non-literal default); the caller refuses it.
  */
-function collectConstDestructure(decl: ts.VariableDeclaration, ctx: AnalyzerContext): void {
-  if (!ts.isObjectBindingPattern(decl.name) || !decl.initializer) return
+function collectConstDestructure(decl: ts.VariableDeclaration, ctx: AnalyzerContext): boolean {
+  if (!ts.isObjectBindingPattern(decl.name) || !decl.initializer) return false
   let source: ts.Expression = decl.initializer
   while (ts.isParenthesizedExpression(source)) source = source.expression
-  if (!ts.isIdentifier(source) || !isConstObjectSource(source.text, decl, ctx)) return
+  if (!ts.isIdentifier(source) || !isConstObjectSource(source.text, decl, ctx)) return false
   // A rest a body destructure of the props object binds holds the props
   // object's keys minus the ones that destructure takes: its key reads are
   // the props object's, and a taken key reads `undefined`.
   const bodyRest = source.text === ctx.restPropsName && ctx.restPropsOmittedKeys && ctx.propsObjectName
   const path = bodyRest ? ctx.propsObjectName! : source.text
   const bindings: ConstDestructureBinding[] = []
-  if (!collectConstDestructureBindings(decl.name, path, bindings)) return
+  if (!collectConstDestructureBindings(decl.name, path, bindings)) return false
   const loc = getSourceLocation(decl, ctx.sourceFile, ctx.filePath)
   for (const { name, key, value: read, fallback } of bindings) {
     const value = bodyRest && ctx.restPropsOmittedKeys!.includes(key) ? (fallback ?? 'undefined') : read
@@ -4007,6 +4146,7 @@ function collectConstDestructure(decl: ts.VariableDeclaration, ctx: AnalyzerCont
       origin: { phase: 'hydrate', scope: 'init', effect: 'pure' },
     })
   }
+  return true
 }
 
 /**
