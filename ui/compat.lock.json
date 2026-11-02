@@ -5305,6 +5305,14 @@
           }
         }
       },
+      "loop-row-child-absent-optional-field-attr": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "absent-optional-row-field-forwarded"
+          ]
+        }
+      },
       "loop-row-child-caller-rows-outer-state-key": {
         "go-template": {
           "kind": "refusal",
@@ -9655,6 +9663,10 @@
         "description": "A component loop row over a number array keyed by n.toString() renders data-key",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-key-to-string-number-component-row.ts"
       },
+      "loop-row-child-absent-optional-field-attr": {
+        "description": "A loop-row child fed an absent optional row field omits the attributes bound to it",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-absent-optional-field-attr.ts"
+      },
       "loop-row-child-caller-rows-outer-state-key": {
         "description": "A component loop row with a computed prop, keyed by an expression reading outer state, carries its…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-caller-rows-outer-state-key.ts"
@@ -10094,6 +10106,19 @@
     }
   },
   "limitations": {
+    "absent-optional-row-field-forwarded": {
+      "title": "An absent optional row field passed to a loop-row child component",
+      "kind": "silent",
+      "given": "a loop row's optional scalar field (`tone?: string`) passed as it is to a child component's prop (`<Item tone={r.tone} />`), over rows that omit the field, where the child binds the prop to an attribute (`class={tone}`, `data-tone={tone}`)",
+      "expected": "the child receives `undefined` for a row that omits the field, so the attribute is omitted",
+      "actual": "renders the attribute empty (`class=\"\"`): the row stores an omitted field as its type's zero value, so the child receives a present `''`",
+      "fixtures": [
+        "loop-row-child-absent-optional-field-attr"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
     "ambient-locale-date-formatting": {
       "title": "Ambient-locale Date formatting",
       "kind": "by-design",

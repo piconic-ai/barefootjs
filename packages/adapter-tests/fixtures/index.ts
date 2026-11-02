@@ -1291,6 +1291,9 @@ import { fixture as loopRowChildPropNamedRowPlural } from './loop-row-child-prop
 import { fixture as loopRowChildBodylessPropNamedRowPlural } from './loop-row-child-bodyless-prop-named-row-plural'
 import { fixture as loopRowScalarMemberLength } from './loop-row-scalar-member-length'
 import { fixture as loopUndefinedElement } from './loop-undefined-element'
+import { fixture as absentOptionalPropClassAttr } from './absent-optional-prop-class-attr'
+import { fixture as loopRowChildAbsentOptionalFieldAttr } from './loop-row-child-absent-optional-field-attr'
+import { fixture as undefinedIdentifierNullish } from './undefined-identifier-nullish'
 import { fixture as stringLengthUtf16Positions } from './string-length-utf16-positions'
 import { fixture as loopRowChildKeyShapes } from './loop-row-child-key-shapes'
 import { fixture as loopRowChildPropDestinations } from './loop-row-child-prop-destinations'
@@ -2301,6 +2304,9 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildBodylessPropNamedRowPlural,
   loopRowScalarMemberLength,
   loopUndefinedElement,
+  absentOptionalPropClassAttr,
+  loopRowChildAbsentOptionalFieldAttr,
+  undefinedIdentifierNullish,
   stringLengthUtf16Positions,
   loopRowChildKeyShapes,
   loopRowChildPropDestinations,

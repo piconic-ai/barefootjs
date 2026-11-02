@@ -381,7 +381,6 @@ function omittableAttrPropReads(
   propsObject: string | null,
   nullableProps: ReadonlyMap<string, string>,
 ): string[] {
-  if (attr.name === 'class' || attr.name === 'className' || attr.name === 'style') return []
   if (isBooleanAttr(attr.name)) return []
   if (attr.value?.kind !== 'expression' || attr.value.presenceOrUndefined) return []
   const parsed = attr.value.parsed as ParsedExpr | undefined
@@ -400,9 +399,12 @@ function omittableAttrPropReads(
  * render the zero value (`rows="0"`) instead of dropping the attribute, so
  * these props take the same `interface{}` flip as `??` consumption
  * (`resolvePropGoType`). The match mirrors `emitExpression`'s guard branch:
- * bare identifiers / `<propsObject>.<name>` only, skipping `class`/`style`
- * (own lowerings) and boolean/presence attrs (truthiness-tested, where a nil
- * and a zero value already coincide). Same shadowing caveat as
+ * bare identifiers / `<propsObject>.<name>` only, skipping boolean/presence
+ * attrs (truthiness-tested, where a nil and a zero value already coincide).
+ * `class` / `className` / `style` are included (#3859): Hono omits them on
+ * `undefined` like any other attribute. Only a primitive prop is flipped, so
+ * a `style` object prop keeps its type, and a `style={{ … }}` literal never
+ * reads a prop whole. Same shadowing caveat as
  * `collectNullishConsumedPropNames`: a same-named loop/callback param can
  * misattribute, making the flip merely unnecessary, not incorrect.
  */

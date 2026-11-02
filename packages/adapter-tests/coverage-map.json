@@ -1,5 +1,22 @@
 {
   "fixtures": {
+    "absent-optional-prop-class-attr": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "accordion": {
       "kinds": [
         "array-literal",
@@ -7779,6 +7796,18 @@
         "binary:+",
         "literal:number"
       ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-child-absent-optional-field-attr": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
       "contexts": [
         "attribute",
         "loop",
@@ -17187,6 +17216,24 @@
       ],
       "contexts": [
         "attribute"
+      ]
+    },
+    "undefined-identifier-nullish": {
+      "kinds": [
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
       ]
     },
     "undefined-method-result-attr": {

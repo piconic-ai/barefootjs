@@ -615,8 +615,8 @@ export function goComparisonCall(
   const helper = GO_COMPARISON_HELPERS[op]
   if (!helper) return null
   if (helper === 'bf_eq' || helper === 'bf_ne') {
-    // `x === undefined` is a nil test. The bare `undefined` operand renders
-    // as `""` elsewhere, which would also match a present `''` (#3435).
+    // `x === undefined` is a nil test, never a string comparison, which
+    // would also match a present `''` (#3435).
     const isUndefined = (e: ParsedExpr | undefined) => e?.kind === 'identifier' && e.name === 'undefined'
     if (isUndefined(operands?.[1])) return `${helper} ${wrapIfMultiToken(l)} nil`
     if (isUndefined(operands?.[0])) return `${helper} nil ${wrapIfMultiToken(r)}`

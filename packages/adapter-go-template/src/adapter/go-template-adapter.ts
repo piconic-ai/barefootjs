@@ -4679,11 +4679,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   // ===========================================================================
 
   identifier(name: string): string {
-    // `undefined` / `null` inside a larger expression tree (a ternary branch
-    // like `props.isActive ? 'page' : undefined`) renders as the empty string —
-    // the top-level `convertExpressionToGo` short-circuit doesn't see nested
-    // ones.
-    if (name === 'undefined' || name === 'null') return '""'
+    // `undefined` inside a larger expression tree is Go's `nil`, as a `null`
+    // literal is (#3860): `??`, `bf_keep_nonnil` and the attribute nil guard
+    // read it as absent, and a nil prints as "" in text. An attribute ternary
+    // whose falsy branch is `undefined` never gets here — it is wrapped in
+    // the test instead (`emitOmittableTernaryAttr`).
+    if (name === 'undefined' || name === 'null') return 'nil'
     // Module pure-string const (e.g. `const baseClasses = '...'` in a className
     // template literal): inline the literal value rather than emit
     // `{{.BaseClasses}}` against a Props field that never exists.

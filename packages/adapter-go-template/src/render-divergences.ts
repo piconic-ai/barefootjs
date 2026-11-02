@@ -125,6 +125,10 @@ export const renderDivergences: RenderDivergences = {
   // stores an omitted field as its zero value, so the lowering keeps Go's
   // `or` there and a present `''` / `0` takes the fallback.
   'nullish-optional-row-field': { limitation: 'nullish-optional-scalar-row-field' },
+  // The same row storage seen through a loop-row child: an omitted optional
+  // row field reaches the child as `''`, so its `class={tone}` renders
+  // `class=""` instead of being omitted.
+  'loop-row-child-absent-optional-field-attr': { limitation: 'absent-optional-row-field-forwarded' },
   // `===` / `!==` between objects or arrays compares contents, not references.
   'strict-equality-distinct-reference': { limitation: 'object-equality-by-contents' },
   // An array compared with itself reads unequal.

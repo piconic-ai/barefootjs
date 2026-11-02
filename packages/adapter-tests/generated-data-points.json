@@ -1,4 +1,60 @@
 {
+  "absent-optional-prop-class-attr": [
+    {
+      "name": "gen:tone:empty",
+      "props": {
+        "hue": "",
+        "tone": ""
+      }
+    },
+    {
+      "name": "gen:tone:markup",
+      "props": {
+        "hue": "",
+        "tone": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:tone:multibyte",
+      "props": {
+        "hue": "",
+        "tone": "日本語"
+      }
+    },
+    {
+      "name": "gen:hue:markup",
+      "props": {
+        "hue": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:hue:multibyte",
+      "props": {
+        "hue": "日本語"
+      }
+    },
+    {
+      "name": "gen:css:empty",
+      "props": {
+        "hue": "",
+        "css": ""
+      }
+    },
+    {
+      "name": "gen:css:markup",
+      "props": {
+        "hue": "",
+        "css": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:css:multibyte",
+      "props": {
+        "hue": "",
+        "css": "日本語"
+      }
+    }
+  ],
   "aliased-destructured-prop": [
     {
       "name": "gen:text:empty",
@@ -8208,6 +8264,14 @@
       "name": "gen:groups:empty",
       "props": {
         "groups": []
+      }
+    }
+  ],
+  "loop-row-child-absent-optional-field-attr": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
       }
     }
   ],
