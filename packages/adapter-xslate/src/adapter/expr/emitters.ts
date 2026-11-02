@@ -204,7 +204,8 @@ function kolonVar(name: string, onRead: ((name: string) => void) | undefined): s
  * (#2038) instead of silently degrading to the callback's receiver.
  */
 /**
- * Spell a `+` plan (#3824 step 4) over grouped operands. Perl has no infix
+ * Spell a `+` plan (#3824 step 4) over the grouped operands `operand`
+ * renders on demand, each at most once. Perl has no infix
  * JS `+`: two proven numbers take the runtime's IEEE `add`, a proven string
  * operand the host's `~` with the other operand through the runtime's JS
  * `String()` (`to_string`; a comparison through `bool_str`, as Perl holds a
@@ -215,27 +216,27 @@ function spellPerlPlus(
   plan: PrimitivePlan | null,
   left: ParsedExpr,
   right: ParsedExpr,
-  l: string,
-  r: string,
+  operand: (side: 0 | 1) => string,
   emit: (e: ParsedExpr) => string,
   isBooleanName: (name: string, componentProperty?: boolean) => boolean,
   value: (e: ParsedExpr) => string,
 ): string {
   const spelled = plusSpelling(plan)
-  if (spelled.kind === 'add') return `$bf.add(${l}, ${r})`
+  if (spelled.kind === 'add') return `$bf.add(${operand(0)}, ${operand(1)})`
   // Each boolean the operand can yield (a comparison, a ternary branch, an
   // `&&` / `||` operand) is materialized as a JSON boolean, so `plus` sees
   // `false`, not Perl's `''` / `0` (`(n > 0 && 2) + x` is `'falsex'`).
   if (spelled.kind === 'plus') return `$bf.plus(${groupBinaryOperand(left, value(left))}, ${groupBinaryOperand(right, value(right))})`
-  const term = (e: ParsedExpr, t: string, stringify: boolean): string => {
-    if (!stringify) return t
-    if (isBooleanResultParsed(e, isBooleanName)) return `$bf.bool_str(${t})`
+  const term = (side: 0 | 1, stringify: boolean): string => {
+    const e = side === 0 ? left : right
+    if (!stringify) return operand(side)
+    if (isBooleanResultParsed(e, isBooleanName)) return `$bf.bool_str(${operand(side)})`
     // A comparison an operand returns (`'v=' + (n > 0 && 'y')`) prints as JS
     // does, through the rewrite `stringifyBooleanBranches` makes.
     const rewritten = stringifyBooleanBranches(e)
-    return `$bf.to_string(${rewritten === e ? t : groupBinaryOperand(rewritten, emit(rewritten))})`
+    return `$bf.to_string(${rewritten === e ? operand(side) : groupBinaryOperand(rewritten, emit(rewritten))})`
   }
-  return `${term(left, l, spelled.stringify[0])} ~ ${term(right, r, spelled.stringify[1])}`
+  return `${term(0, spelled.stringify[0])} ~ ${term(1, spelled.stringify[1])}`
 }
 
 /**
@@ -394,12 +395,17 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
-    const l = groupBinaryOperand(left, emit(left))
-    const r = groupBinaryOperand(right, emit(right))
-    if (op === '+') return spellPerlPlus(plan, left, right, l, r, emit, () => false, (e) => emitParsedValue(e, this))
+    // Each path renders each operand subtree once: a strict equality reads
+    // both as values, `+` only the forms its spelling uses, and every other
+    // operator the forms below. Rendering both would revisit every nested
+    // operand once per level, exponential in the depth.
     // `===` / `!==` spell their plan (#3824 step 8).
-    const equality = spellKolonStrictEq(strictEqSpelling(op, left, right, plan), ...this.strictEqOperands(left, right))
+    const equality = spellKolonStrictEq(strictEqSpelling(op, left, right, plan), () => this.strictEqOperands(left, right))
     if (equality !== null) return equality
+    const operand = (side: 0 | 1): string => (side === 0 ? groupBinaryOperand(left, emit(left)) : groupBinaryOperand(right, emit(right)))
+    if (op === '+') return spellPerlPlus(plan, left, right, operand, emit, () => false, (e) => emitParsedValue(e, this))
+    const l = operand(0)
+    const r = operand(1)
     // `/` and `%` go through the runtime's JS division and remainder
     // (#3474, #3574).
     const helper = arithmeticHelper(op)
@@ -737,12 +743,16 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     // Preserve source grouping: a compound operand re-emitted as infix
     // text is otherwise re-parsed under THIS language's precedence —
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
-    const l = this.coerceUndefinedOperand(op, left, right, groupBinaryOperand(left, emit(left)))
-    const r = this.coerceUndefinedOperand(op, right, left, groupBinaryOperand(right, emit(right)))
-    if (op === '+') return spellPerlPlus(plan, left, right, l, r, emit, this.isBooleanName, (e) => emitParsedValue(e, this))
-    // `===` / `!==` spell their plan (#3824 step 8).
-    const equality = spellKolonStrictEq(strictEqSpelling(op, left, right, plan), ...this.strictEqOperands(left, right))
+    // Each path renders each operand subtree once (see the filter emitter's
+    // `binary`). `===` / `!==` spell their plan (#3824 step 8).
+    const equality = spellKolonStrictEq(strictEqSpelling(op, left, right, plan), () => this.strictEqOperands(left, right))
     if (equality !== null) return equality
+    const operand = (side: 0 | 1): string => (side === 0
+      ? this.coerceUndefinedOperand(op, left, right, groupBinaryOperand(left, emit(left)))
+      : this.coerceUndefinedOperand(op, right, left, groupBinaryOperand(right, emit(right))))
+    if (op === '+') return spellPerlPlus(plan, left, right, operand, emit, this.isBooleanName, (e) => emitParsedValue(e, this))
+    const l = operand(0)
+    const r = operand(1)
     // `/` and `%` go through the runtime's JS division and remainder
     // (#3474, #3574).
     const helper = arithmeticHelper(op)
@@ -993,14 +1003,16 @@ function toNumber(plan: PrimitivePlan | null, operand: string): string {
 }
 
 /**
- * Spell a `===` / `!==` plan over the rendered operands (#3824 step 8):
+ * Spell a `===` / `!==` plan over the operands `operands` renders, which it
+ * calls only when the plan reads them (#3824 step 8):
  * Kolon's string `==` / `!=` over two proven strings, the folded constant,
  * or the runtime's `strict_eq`. Null for a nullish test and any other
  * operator, which keep their own lowering (Kolon's `==` against `nil`).
  */
-function spellKolonStrictEq(eq: StrictEqSpelling | null, l: string, r: string): string | null {
+function spellKolonStrictEq(eq: StrictEqSpelling | null, operands: () => readonly [string, string]): string | null {
   if (eq === null || eq.kind === 'nullish') return null
   if (eq.kind === 'const') return eq.value ? '1' : '0'
+  const [l, r] = operands()
   if (eq.kind === 'native') return `${l} ${eq.negated ? '!=' : '=='} ${r}`
   return `${eq.negated ? '!' : ''}$bf.strict_eq(${l}, ${r})`
 }
