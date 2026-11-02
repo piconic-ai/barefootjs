@@ -22,6 +22,7 @@ export const conformancePins: ConformancePins = {
   // no template runtime can tell from equal contents (#3824 step 8).
   'strict-equality-distinct-reference': [{ code: 'BF101', severity: 'error', limitation: 'object-equality-by-contents' }],
   'strict-equality-same-reference': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
+  'strict-equality-preamble-reference': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
   // A prop typed both optional and nullable: the engine cannot tell an
   // omitted one (`NaN` in arithmetic) from a `null` one (`0`).
   // An optional row field is a concrete struct field: the nil reading

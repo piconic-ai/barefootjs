@@ -696,6 +696,7 @@ import { fixture as strictEqualityDistinctReference } from './strict-equality-di
 import { fixture as strictEqualityPositions } from './strict-equality-positions'
 import { fixture as strictEqualityReferenceRewrite } from './strict-equality-reference-rewrite'
 import { fixture as strictEqualityBoxedNumberTypedSignalChild } from './strict-equality-boxed-number-typed-signal-child'
+import { fixture as strictEqualityPreambleReference } from './strict-equality-preamble-reference'
 import { fixture as strictEqualityReferenceClient } from './strict-equality-reference-client'
 import { fixture as escapedTernaryBranch } from './escaped-ternary-branch'
 import { fixture as templateLiteralMultiInterp } from './template-literal-multi-interp'
@@ -2431,6 +2432,7 @@ export const jsxFixtures: JSXFixture[] = [
   strictEqualityPositions,
   strictEqualityReferenceRewrite,
   strictEqualityBoxedNumberTypedSignalChild,
+  strictEqualityPreambleReference,
   strictEqualityReferenceClient,
   escapedTernaryBranch,
   signalArraySeedRowStruct,

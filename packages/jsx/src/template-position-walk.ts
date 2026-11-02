@@ -9,7 +9,9 @@
  * (expression, spread, and structured template parts), loop arrays, and the
  * children of elements, components, fragments, providers, async boundaries,
  * loops (including child components, nested components, and `flatMap` /
- * preamble JSX segments) and conditional branches.
+ * preamble JSX segments) and conditional branches, and a loop preamble's
+ * value-declaration initializers (`const same = a === b` in a `.map()` body),
+ * which a template adapter evaluates at SSR as a per-row local.
  *
  * A `/* @client *\/`-marked position (`clientOnly`) is skipped: the whole read
  * is deferred to the client, where real JS evaluates it.
@@ -53,6 +55,10 @@ import type { BindingScope } from './scope/binding-scope.ts'
  *   text parsed on demand here; every adapter lowers them from that raw text,
  *   so nothing attached to the IR can stand in for them.
  * - `loop-array` — a loop's array expression.
+ * - `preamble-init` — the initializer of a loop preamble's value declaration
+ *   (`MapCallbackPreamble.declarations`), bound as a per-row local. The read
+ *   of that local is a bare name elsewhere in the row, so the initializer is
+ *   the only position that shows what the template computes.
  */
 export type TemplatePositionRole =
   | 'text'
@@ -62,6 +68,7 @@ export type TemplatePositionRole =
   | 'spread'
   | 'template-part'
   | 'loop-array'
+  | 'preamble-init'
 
 /**
  * The IR slot a position's `expr` lives in, for a pass that rewrites the
@@ -202,12 +209,20 @@ function walkNode(node: IRNode, visit: (position: TemplatePosition) => void, sco
   }
 }
 
-/** A loop's array, then its row's positions, each read in the row's scope. */
+/**
+ * A loop's array, then its row's positions, each read in the row's scope:
+ * the preamble's declaration initializers first (the row scope binds every
+ * preamble name, and an initializer can only read an earlier one), then the
+ * row's children.
+ */
 function walkLoop(node: IRLoop, visit: (position: TemplatePosition) => void, scope?: BindingScope): void {
   if (node.clientOnly) return
   if (node.arrayParsed) visit({ expr: node.arrayParsed, loc: node.loc, role: 'loop-array' })
   const row = scope?.enterLoopRow(node)
   const rowVisit = row ? (position: TemplatePosition) => visit({ scope: row, ...position }) : visit
+  for (const declaration of node.preamble?.declarations ?? []) {
+    rowVisit({ expr: declaration.valueParsed, loc: node.loc, role: 'preamble-init' })
+  }
   const children = [
     ...node.children,
     ...(node.childComponent?.children ?? []),
