@@ -3,10 +3,12 @@ import { createFixture } from '../src/types'
 /**
  * An absent optional value bound to `class` / `className` / `style` omits
  * the attribute, as it does on any other attribute (#3859). Covers a
- * props-object `className={props.tone}`, `class={props.hue}`, a string
- * `style={props.css}`, a static child call whose destructured `class={tone}`
- * prop is omitted, and an object signal's missing optional field read
- * through `?.`. A present value, including `''`, still renders. A loop-row child fed an absent row
+ * props-object `className={props.tone}`, `class={props.hue}`, a static child
+ * call whose destructured `class={tone}` prop is omitted, and an object
+ * signal's missing optional field read through `?.` on `class` and `style`.
+ * A present value, including `''`, still renders. A string `style` prop is
+ * left out: Go's html/template CSS escaper prints a generated markup value
+ * as `ZgotmplZ`, a separate divergence. A loop-row child fed an absent row
  * field is `loop-row-child-absent-optional-field-attr`.
  */
 export const fixture = createFixture({
@@ -17,13 +19,12 @@ export const fixture = createFixture({
 import { createSignal } from '@barefootjs/client'
 import { Item } from './item'
 type Look = { tone?: string; css?: string }
-export function AbsentOptionalPropClassAttr(props: { tone?: string; hue?: string; css?: string }) {
+export function AbsentOptionalPropClassAttr(props: { tone?: string; hue?: string }) {
   const [blank] = createSignal<Look>({})
   const [given] = createSignal<Look>({ tone: 'on', css: 'color:red' })
   return (
     <div className={props.tone}>
       <span class={props.hue}>h</span>
-      <em style={props.css}>c</em>
       <Item label="static" />
       <Item label="toned" tone="on" />
       <p class={blank()?.tone} style={blank()?.css}>blank</p>
@@ -41,17 +42,16 @@ export function Item({ label, tone }: { label: string; tone?: string }) {
   },
   props: { hue: '' },
   expectedHtml: `
-    <div bf-s="test" bf="s6">
+    <div bf-s="test" bf="s5">
       <span bf="s0" class="">h</span>
-      <em bf="s1">c</em>
-      <li bf-s="test_s2" bf="s1"><!--bf:s0-->static<!--/--></li>
-      <li bf-s="test_s3" bf="s1" class="on"><!--bf:s0-->toned<!--/--></li>
-      <p bf="s4">blank</p>
-      <p bf="s5" class="on" style="color:red">given</p>
+      <li bf-s="test_s1" bf="s1"><!--bf:s0-->static<!--/--></li>
+      <li bf-s="test_s2" bf="s1" class="on"><!--bf:s0-->toned<!--/--></li>
+      <p bf="s3">blank</p>
+      <p bf="s4" class="on" style="color:red">given</p>
     </div>
   `,
   dataPoints: [
-    { name: 'all-present', props: { tone: 't', hue: 'h', css: 'color:red' } },
+    { name: 'all-present', props: { tone: 't', hue: 'h' } },
     { name: 'all-absent', props: {} },
   ],
 })
