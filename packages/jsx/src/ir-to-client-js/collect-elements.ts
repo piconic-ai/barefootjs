@@ -11,7 +11,7 @@ import { detectRootNamespaceWrapTag } from './control-flow/stringify/template-pa
 import { expandDynamicPropValue, expandConstantForReactivity, resolveRestSpreadOrigin, resolveRestSpreadNames } from './prop-handling.ts'
 import { extractFreeIdentifiersFromText } from './csr-substitute.ts'
 import { walkIR, stopAt } from './walker.ts'
-import { callerFirstPropExpr, childPropsObjectExpr, isSpreadPropName, lastPropsObjectSpreadIndex } from './child-props-object.ts'
+import { childPropsObjectExpr, isSpreadPropName, mergedExplicitPropExpr } from './child-props-object.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { classifyDOMProp } from '@barefootjs/shared'
 import type { BindingScope } from '../scope/binding-scope.ts'
@@ -569,15 +569,6 @@ function componentInitPropValue(prop: IRProp, ctx: ClientJsContext): { expr: str
 }
 
 /**
- * The merged value of the explicit prop at `index` for a reactive DOM
- * mirror: caller-first when a later props-object spread (at `spreadAt`, see
- * `lastPropsObjectSpreadIndex`) overrides it, `expr` as written otherwise.
- */
-function mergedMirrorExpr(name: string, expr: string, index: number, spreadAt: number): string {
-  return index < spreadAt ? callerFirstPropExpr(name, expr) : expr
-}
-
-/**
  * Which caller bag an element's spread attribute forwards, for
  * `applyRestAttrs`: its text resolved through any `const x__alias = x` hop
  * onto the rest/props binding (#2723, `resolveRestSpreadOrigin`). Null
@@ -612,8 +603,12 @@ function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string 
     // rest/props binding — see `resolveRestSpreadOrigin`'s docstring.
     return resolveRestSpreadOrigin(ctx, expr) !== null
   })
+  // The rest bag without the keys the component destructured, keyed the
+  // way they arrive on `_p` (the `applyRestAttrs` exclusion set).
+  const consumedKeys = ctx.propsParams.map(p => p.sourceName ?? p.name)
   return childPropsObjectExpr(props, prop => componentInitPropValue(prop, ctx), {
     forwardCaller: knownSpreadProp !== undefined,
+    restBag: `forwardProps(${PROPS_PARAM}, {}, ${JSON.stringify(consumedKeys)})`,
   })
 }
 
@@ -623,7 +618,6 @@ function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string 
  * side-effect helper so `buildComponentPropsExpr` stays a pure function.
  */
 function collectReactiveChildProps(node: IRComponent, ctx: ClientJsContext): void {
-  const spreadAt = lastPropsObjectSpreadIndex(node.props)
   for (const [index, prop] of node.props.entries()) {
     if (prop.name === '...' || prop.name.startsWith('...')) continue
     if (prop.value.kind === 'jsx-children') continue
@@ -664,7 +658,7 @@ function collectReactiveChildProps(node: IRComponent, ctx: ClientJsContext): voi
       slotId: node.slotId,
       propName: prop.name,
       attrName,
-      expression: mergedMirrorExpr(prop.name, expandedValue, index, spreadAt),
+      expression: mergedExplicitPropExpr(node.props, index, expandedValue, spread => expandDynamicPropValue(attrValueToString(spread.value)!, ctx)),
       ...pickAttrMetaFromIR(prop),
     })
   }
@@ -1039,7 +1033,6 @@ export function collectElements(
     component: ({ node: c, descend, descendJsxChildren }) => {
       if (c.slotId) {
         // Reactive props need effects to update the element when values change.
-        const spreadAt = lastPropsObjectSpreadIndex(c.props)
         for (const [index, prop] of c.props.entries()) {
           if (prop.value.kind === 'jsx-children') continue
           if (isEventHandlerName(prop.name)) continue
@@ -1056,7 +1049,7 @@ export function collectElements(
               ctx.reactiveProps.push({
                 slotId: c.slotId,
                 propName: prop.name,
-                expression: mergedMirrorExpr(prop.name, value, index, spreadAt),
+                expression: mergedExplicitPropExpr(c.props, index, value, spread => expandDynamicPropValue(attrValueToString(spread.value)!, ctx)),
                 componentName: c.name,
               })
             }

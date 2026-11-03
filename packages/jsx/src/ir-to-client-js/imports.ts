@@ -35,7 +35,7 @@ export const RUNTIME_IMPORT_CANDIDATES = [
   'withParentScope',
   'createPortal',
   'provideContext', 'createContext', 'useContext',
-  'forwardProps', 'applyRestAttrs', 'splitProps', 'spreadAttrs', 'styleToCss', 'escapeAttr', 'escapeText', 'escapeTextOrNode',
+  'forwardProps', 'spreadChildProps', 'applyRestAttrs', 'splitProps', 'spreadAttrs', 'styleToCss', 'escapeAttr', 'escapeText', 'escapeTextOrNode',
   // Whole-item loop conditional's `bf-loop-i:<key>` anchor comment (#1665,
   // #2795 follow-up) — neutralizes `-` so a key can't close the comment early.
   'escapeCommentText',

@@ -7391,12 +7391,25 @@ function closedRestSpreadSource(attr: ts.JsxSpreadAttribute, ctx: TransformConte
   if (ctx.analyzer.restPropsExpandedKeys.length === 0 || !restName || ctx.scope.isBound(restName)) return null
   let expr: ts.Expression = attr.expression
   while (ts.isParenthesizedExpression(expr)) expr = expr.expression
-  if (!ts.isIdentifier(expr) || expr.text !== restName) return null
+  if (!ts.isIdentifier(expr) || !isRestBinding(expr.text, restName, ctx)) return null
   const source = ctx.analyzer.restPropsOmittedKeys && ctx.analyzer.propsObjectName ? ctx.analyzer.propsObjectName : restName
   // A body rest's keys read the props object, which a loop row or callback
   // parameter of the same name hides here: no spelling of the per-key read
   // reaches the component's props (`expandSpreadAttribute` refuses it).
   return source !== restName && ctx.scope.isBound(source) ? null : source
+}
+
+/**
+ * Whether the use-site identifier `name` holds the component's rest props:
+ * the rest binding itself, or a component-scope `const` alias hop of it
+ * (`const a = rest`, through any number of hops). An alias reads the same
+ * object, so its spread unrolls per key like the rest's own. A name the
+ * enclosing loop rows or callbacks bind is that binding.
+ */
+function isRestBinding(name: string, restName: string, ctx: TransformContext): boolean {
+  if (name === restName) return true
+  if (ctx.scope.isBound(name)) return false
+  return resolveAliasOrigin(childrenAliasHops(ctx.analyzer), name, n => (n === restName ? true : null)) === true
 }
 
 /**
@@ -7412,7 +7425,7 @@ function refuseBodyRestSpreadUnderShadowedProps(attr: ts.JsxSpreadAttribute, ctx
   if (ctx.scope.isBound(restName) || !ctx.scope.isBound(propsName)) return false
   let expr: ts.Expression = attr.expression
   while (ts.isParenthesizedExpression(expr)) expr = expr.expression
-  if (!ts.isIdentifier(expr) || expr.text !== restName) return false
+  if (!ts.isIdentifier(expr) || !isRestBinding(expr.text, restName, ctx)) return false
   ctx.analyzer.errors.push({
     code: 'BF101',
     severity: 'error',

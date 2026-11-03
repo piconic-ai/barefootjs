@@ -96,6 +96,7 @@ export function Parent(props: { label?: string; own?: string }) {
   test('a spread of keys only known at render time next to {...props} is refused', () => {
     const { bf101 } = compile(source(OPTIONAL, '<Tag {...props.extra} {...props} />', '; extra?: { tone?: string }'))
     expect(bf101.map(e => e.message)).toEqual([
+      "'{...props.extra}' on <Tag> spreads an object whose keys the Go template adapter can't name at compile time, so it can't build <Tag>'s input from it",
       "'{...props}' on <Tag> can't be merged with the other props of the call: the call also spreads an object whose keys are only known at render time",
     ])
   })

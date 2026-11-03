@@ -5788,6 +5788,18 @@
               ]
             },
             {
+              "fixture": "object-spread-loop-row-child",
+              "limitations": [
+                "object-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "object-spread-prop-child",
+              "limitations": [
+                "object-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -9267,6 +9279,18 @@
               "fixture": "nullish-optional-row-field",
               "limitations": [
                 "nullish-optional-scalar-row-field"
+              ]
+            },
+            {
+              "fixture": "object-spread-loop-row-child",
+              "limitations": [
+                "object-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "object-spread-prop-child",
+              "limitations": [
+                "object-spread-onto-child-component"
               ]
             },
             {
@@ -13121,6 +13145,18 @@
               ]
             },
             {
+              "fixture": "object-spread-loop-row-child",
+              "limitations": [
+                "object-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "object-spread-prop-child",
+              "limitations": [
+                "object-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "omitted-optional-nullable-number-arithmetic",
               "limitations": [
                 "omitted-optional-nullable-number-arithmetic"
@@ -16572,6 +16608,18 @@
               "fixture": "nullish-optional-row-field",
               "limitations": [
                 "nullish-optional-scalar-row-field"
+              ]
+            },
+            {
+              "fixture": "object-spread-loop-row-child",
+              "limitations": [
+                "object-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "object-spread-prop-child",
+              "limitations": [
+                "object-spread-onto-child-component"
               ]
             },
             {
@@ -24492,6 +24540,18 @@
               ]
             },
             {
+              "fixture": "object-spread-loop-row-child",
+              "limitations": [
+                "object-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "object-spread-prop-child",
+              "limitations": [
+                "object-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -27290,6 +27350,18 @@
               "fixture": "nullish-optional-row-field",
               "limitations": [
                 "nullish-optional-scalar-row-field"
+              ]
+            },
+            {
+              "fixture": "object-spread-loop-row-child",
+              "limitations": [
+                "object-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "object-spread-prop-child",
+              "limitations": [
+                "object-spread-onto-child-component"
               ]
             },
             {

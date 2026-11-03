@@ -58,11 +58,13 @@ function wrapAttrValueExpression(value: AttrValue, wrap: (s: string) => string):
       return AttrValueOf.expression(wrap(flat ?? 'undefined'))
     }
     case 'spread':
-      // Keep the Phase-1 props-object marker: the props object merges this
-      // spread in source order (#3713).
+      // Keep the Phase-1 caller-bag markers: the props object merges this
+      // spread in source order (#3713), and any other spread of an object
+      // merges its own keys (#3861).
       return {
         ...AttrValueOf.spread(wrap(value.expr), value.templateExpr ? wrap(value.templateExpr) : undefined),
         ...(value.propsObject && { propsObject: true as const }),
+        ...(value.callerBag !== undefined && { callerBag: value.callerBag }),
       }
   }
 }

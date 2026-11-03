@@ -329,6 +329,11 @@ export const conformancePins: ConformancePins = {
   'body-destructure-rest-non-props-source': [{ code: 'BF101', severity: 'error', limitation: 'body-destructure-without-const-form' }],
   'body-destructure-non-literal-default': [{ code: 'BF101', severity: 'error', limitation: 'body-destructure-without-const-form' }],
   'body-destructure-non-identifier-source': [{ code: 'BF101', severity: 'error', limitation: 'body-destructure-without-const-form' }],
+  // A spread of an object other than the props onto a child component: the
+  // child's Input literal is built one field per key at compile time, and
+  // the spread names no key (#3861).
+  'object-spread-loop-row-child': [{ code: 'BF101', severity: 'error', limitation: 'object-spread-onto-child-component', unescapable: true }],
+  'object-spread-prop-child': [{ code: 'BF101', severity: 'error', limitation: 'object-spread-onto-child-component', unescapable: true }],
   'body-rest-taken-key-read': [{ code: 'BF101', severity: 'error', limitation: 'body-rest-taken-key-read' }],
   'body-rest-props-name-shadowed': [{ code: 'BF101', severity: 'error', limitation: 'body-rest-props-name-shadowed' }],
 }

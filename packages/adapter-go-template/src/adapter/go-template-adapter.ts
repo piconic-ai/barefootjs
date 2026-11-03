@@ -191,7 +191,7 @@ import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { computeMemoInitialValue, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evaluatedAsGoType, computedPropSeedGo } from "./memo/memo-compute.ts"
 import { collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
-import { collectPropsSpreadForwardedParams } from "./props/props-spread.ts"
+import { collectPropsSpreadForwardedParams, refuseObjectSpreadsOntoChildren } from "./props/props-spread.ts"
 import { callsComponent, collectNillableForwardedPropNames } from "./props/child-forwarded-nillable.ts"
 import { buildPropTypeOverrides, dependentDefaultNormalization, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames, collectArithmeticAbsentPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
@@ -895,6 +895,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     refuseAmbiguousNilMemoArithmetic(ir.metadata.memos ?? [], this.state.nullishAttrCtx, this.state)
     // `===` / `!==` over an object or array (#3774, #3824 step 8).
     refuseNonPrimitiveStrictEquality(ir, this.state.operandTyping, this.state)
+    // A spread of an arbitrary object onto a child component (#3861).
+    refuseObjectSpreadsOntoChildren(this.emitCtx, ir)
     this.state.stringValueNames = collectStringValueNames(ir)
     // A SAME-FILE child's shape (`childComponentShapes`, which `routesToRestBag`
     // reads to pick `bf_with_props` vs `bf_with_bag` delivery, and

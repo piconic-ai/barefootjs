@@ -11539,6 +11539,15 @@
       }
     }
   ],
+  "object-spread-loop-row-child": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": [],
+        "__instanceId": "ObjectSpreadLoopRowChild_test"
+      }
+    }
+  ],
   "omitted-optional-attr-ternary-relational": [
     {
       "name": "gen:n:zero",
@@ -14098,6 +14107,35 @@
           "first"
         ],
         "b": []
+      }
+    }
+  ],
+  "rest-alias-spread-child": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "tone": "info",
+        "size": 2,
+        "__instanceId": "RestAliasSpreadChild_test"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "tone": "info",
+        "size": 2,
+        "__instanceId": "RestAliasSpreadChild_test"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "tone": "info",
+        "size": 2,
+        "__instanceId": "RestAliasSpreadChild_test"
       }
     }
   ],

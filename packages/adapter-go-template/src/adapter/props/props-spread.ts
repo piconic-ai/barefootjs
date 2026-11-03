@@ -127,3 +127,56 @@ export function collectPropsSpreadForwardedParams(ctx: GoEmitContext, ir: Compon
   })
   return names
 }
+
+/**
+ * BF101 for each spread of an arbitrary object onto a child component in
+ * `ir` (`<Chip {...row} />`, a loop row's `{...r}`, #3861): a spread that is
+ * not one of the caller's own prop bags (`SpreadAttr.callerBag`). Go builds
+ * the child's `<Child>Input{...}` literal at compile time, one field per
+ * key, and an object spread names no key, so the child would render
+ * without any of them. A call under a `/* @client *\/` conditional or loop
+ * renders on the client only, and a dynamic tag (`IRComponent.dynamicTag`)
+ * is lowered to a children passthrough; both are left alone.
+ */
+export function refuseObjectSpreadsOntoChildren(ctx: GoEmitContext, ir: ComponentIR): void {
+  const visit = (node: IRNode): void => {
+    switch (node.type) {
+      case 'component':
+        for (const prop of node.props) {
+          if (prop.value.kind === 'spread' && prop.value.callerBag === undefined && !node.dynamicTag) refuseObjectSpread(ctx, node.name, prop)
+          if (prop.value.kind === 'jsx-children') prop.value.children.forEach(visit)
+        }
+        node.children.forEach(visit)
+        return
+      case 'conditional':
+        if (node.clientOnly) return
+        visit(node.whenTrue)
+        visit(node.whenFalse)
+        return
+      case 'if-statement':
+        visit(node.consequent)
+        if (node.alternate) visit(node.alternate)
+        return
+      case 'loop':
+        if (node.clientOnly) return
+        node.children.forEach(visit)
+        return
+      default:
+        if ('children' in node) node.children.forEach(visit)
+    }
+  }
+  visit(ir.root)
+}
+
+function refuseObjectSpread(ctx: GoEmitContext, childName: string, prop: IRProp): void {
+  if (prop.value.kind !== 'spread') return
+  ctx.state.errors.push({
+    code: 'BF101',
+    severity: 'error',
+    message: `'{...${prop.value.expr}}' on <${childName}> spreads an object whose keys the Go template adapter can't name at compile time, so it can't build <${childName}>'s input from it`,
+    loc: prop.loc,
+    suggestion: {
+      message: `Pass the object's keys to <${childName}> one by one.`,
+    },
+  })
+}

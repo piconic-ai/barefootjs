@@ -19,6 +19,7 @@ import { interp, spliceChildValue, conditionalMarkup, renderChildCall, mappedRow
 import { markupSlotIdsOf } from './markup-slots.ts'
 import { isEventHandlerName } from '../event-handler-name.ts'
 import { writesAnyBinding } from '../props-binding.ts'
+import { isObjectSpreadProp } from './child-props-object.ts'
 
 /** Static HTML is embedded in a JS template literal; dynamic expressions use interp(). */
 function escapeStaticTemplateHtml(text: string): string {
@@ -419,11 +420,16 @@ function renderTemplateAttrPart(
  * (`SpreadAttr.propsObject`, decided in Phase 1): kept in source order next
  * to the explicit props, the object literal merges like the JSX call does
  * (#3688) — a later key overrides an earlier one, and the spread overrides
- * only the keys the caller passed. Any other spread stays out.
+ * only the keys the caller passed. A spread of any other object
+ * (`isObjectSpreadProp`: a loop row, an object prop, a local) is kept the
+ * same way, so its keys reach the child in source order (#3861). A
+ * `{...rest}` bag stays out: the init forwards it.
  */
 function keepsTemplateComponentProp(p: IRProp): boolean {
   if (p.name === 'key') return false
-  if (p.name === '...' || p.name.startsWith('...')) return p.value.kind === 'spread' && p.value.propsObject === true
+  if (p.name === '...' || p.name.startsWith('...')) {
+    return p.value.kind === 'spread' && (p.value.propsObject === true || isObjectSpreadProp(p))
+  }
   return true
 }
 
@@ -2476,13 +2482,16 @@ export function computeDeferredChildSlots(
         }
         if (n.slotId) {
           const dropped = n.props.some(p => {
-            // Spread props (`...`) are forwarded via the rest-spread path
-            // (`restSpreadNames`), not the per-prop inline form, so they are
-            // out of scope for this drop check; `key` and event handlers
-            // (`onX`) likewise never carry init-scope render values. This
-            // filter set MUST mirror the `propsEntries` filter in the CSR
-            // `component` emit below so the deferral decision matches output.
-            if (p.name === '...' || p.name.startsWith('...') || p.name === 'key') return false
+            // A caller-bag spread (`...props`, `...rest`) is forwarded off
+            // `_p`, not the per-prop inline form, so it is out of scope for
+            // this drop check; a spread of any other object is inlined like
+            // an explicit prop and checked the same way (#3861). `key` and
+            // event handlers (`onX`) never carry init-scope render values.
+            // This filter set MUST mirror the `propsEntries` filter in the
+            // CSR `component` emit below so the deferral decision matches
+            // output.
+            if (p.name === 'key') return false
+            if ((p.name === '...' || p.name.startsWith('...')) && !isObjectSpreadProp(p)) return false
             if (p.name === 'ref') return false
             if (isEventHandlerName(p.name)) return false
             if (p.clientOnly) return false

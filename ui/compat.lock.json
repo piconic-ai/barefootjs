@@ -6617,6 +6617,34 @@
           ]
         }
       },
+      "object-spread-loop-row-child": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-spread-onto-child-component"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "object-spread-prop-child": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-spread-onto-child-component"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "omitted-optional-nullable-number-arithmetic": {
         "blade": {
           "kind": "refusal",
@@ -10308,6 +10336,14 @@
         "description": "An omitted optional row field takes the ?? fallback and a present \"\" or 0 is kept",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-optional-row-field.ts"
       },
+      "object-spread-loop-row-child": {
+        "description": "a loop row spread onto a child component reaches it key by key (#3861)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/object-spread-loop-row-child.ts"
+      },
+      "object-spread-prop-child": {
+        "description": "an object prop spread onto a child component merges in source order (#3861)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/object-spread-prop-child.ts"
+      },
       "omitted-optional-nullable-number-arithmetic": {
         "description": "Arithmetic over an omitted optional prop typed number | null (undefined → NaN)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-nullable-number-arithmetic.ts"
@@ -11482,6 +11518,23 @@
         "pebble",
         "twig",
         "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "object-spread-onto-child-component": {
+      "title": "An object other than the props spread onto a child component",
+      "kind": "refusal",
+      "given": "a child component call that spreads an object other than the component's own props: a loop row (`rows.map((r) => <Chip key={r.id} {...r} />)`) or an object prop (`<Chip {...row} />`)",
+      "expected": "every key of the object reaches the child, merged with the call's explicit props in source order",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "object-spread-loop-row-child",
+        "object-spread-prop-child"
+      ],
+      "adapters": [
+        "go-template"
       ],
       "diagnostics": [
         "BF101"

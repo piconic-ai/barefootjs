@@ -1,0 +1,12 @@
+---
+"@barefootjs/jsx": patch
+"@barefootjs/client": patch
+"@barefootjs/go-template": patch
+---
+
+A spread of an object other than the component's own props onto a child component (`<Chip {...row} />`, a loop row's `{...r}`) no longer drops its keys:
+
+- Client JS: the spread merges with the call's explicit props in source order, in the CSR template (`renderChild`) and in the child's init. Init merges through the new runtime helper `spreadChildProps`, which reads the spread object again through a getter, so a later value of the object reaches the child. A child whose spread reads a value only init can see is rendered by init, as an explicit prop is.
+- A `{...props}` or `{...rest}` spread on the same call merges in source order with it: `<Tag {...childProps} {...props} />` lets the caller's keys win over the object's.
+- A `const` alias of a closed-type rest (`const a = rest`, through any number of hops) is the rest itself: its spread unrolls per key like `{...rest}`, so the keys the component destructured are not forwarded.
+- Go: the child's input is built one field per key at compile time, so an object spread onto a child component is refused with BF101 instead of rendering the child empty.
