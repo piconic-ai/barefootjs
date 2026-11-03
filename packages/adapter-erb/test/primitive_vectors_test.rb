@@ -54,6 +54,8 @@ class PrimitiveVectorsTest < Minitest::Test
     'le' => ->(a, b) { a <= b },
     'gt' => ->(a, b) { a > b },
     'ge' => ->(a, b) { a >= b },
+    # A strict equality over a proven pair is Ruby's own `==` (#3824 step 8).
+    'strict_eq' => ->(a, b) { a == b },
     # A proven string is its own ToString; a `+` is Ruby's own `+` over two
     # numbers, and over a proven string the other operand goes through
     # `to_string` first (#3824 step 4).

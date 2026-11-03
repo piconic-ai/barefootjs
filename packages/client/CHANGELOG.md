@@ -1,5 +1,22 @@
 # @barefootjs/client
 
+## 0.40.2
+
+### Patch Changes
+
+- e20c8e9: A fragment-rooted child component (`<><span>{children}</span></>`) keeps the children and handlers a loop row forwards through it.
+  
+  - A handler on an element forwarded through a fragment-rooted child nested in a loop row (`{rows().map(o => <Chip key={o.id}><Chip><button onClick={…} /></Chip></Chip>)}`) is wired, on hydrated and client-built rows. It was never attached.
+  - A client-built row whose fragment-rooted component receives another component as `children` renders those children. The outer component rendered empty.
+  - A child mounted by a client-built row inside a fragment-rooted component is scoped under that component (`${host}_${slot}`), as SSR scopes it, rather than under a random id.
+- c4a28d5: A JS boolean now renders as it does in JSX on every template adapter and in the client runtime (#3824 step 5).
+  
+  - A text child whose value is a boolean renders nothing, as JSX renders no `true` / `false` child (#3789). The shared plan decides it from the types: a child proven a boolean (or nil) renders only its markers, and a child that may be a boolean among other types goes through the new runtime helper `display` (`bf_display` in Go), which blanks a boolean. The client runtime's text writes (`escapeText`, `textOrNode`, the 'text' slot writer and `__bfText`) render a boolean as no text too, and a loop row's text slot is written through `textOrNode` instead of `String`.
+  - Mojolicious and Xslate pass a boolean that leaves the expression as a JSON boolean (`boolean`), so it prints `true` / `false`, not Perl's `1` / `''` / `0`: a child prop (#3808), a signal seed, memo or loop-row local, a `JSON.stringify` element, a displayed text child, an inlined boolean `const`, a `createContext` default and a bare `<Child flag />`. A comparison concatenated to a string (`'c=' + (n > 1)`) prints `true` / `false` too. A test (`if`, `?:`, `!`) keeps Perl's own truthiness.
+  - A signal or local constant initialized with a comparison or `!` is typed `boolean`, so its tests are native where the target's table allows it.
+- 4cf4474: Client JS: rows of a static (module-const) array whose row component has a fragment root are now initialised after hydration and after a CSR mount, so their handlers attach. The row init looked rows up with an element attribute selector, which cannot match the `<!--bf-scope:-->` comment that scopes a fragment-rooted row. It now finds rows by slot through the new runtime helpers `childScopesBySlot` / `childScopeBySlot`, which match both forms. The same applies to a fragment-rooted component nested in a static array's element row or inner loop.
+- @barefootjs/shared@0.40.2
+
 ## 0.40.1
 
 ### Patch Changes

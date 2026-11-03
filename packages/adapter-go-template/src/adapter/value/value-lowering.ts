@@ -110,9 +110,12 @@ function unboxMemberScalar(ctx: GoEmitContext, ref: string, expectedType: TypeIn
 }
 
 /**
- * `ref` (an `interface{}` value) asserted to the concrete Go scalar
+ * `ref` (an `interface{}` value) unboxed into the concrete Go scalar
  * `expectedType` names, zero-defaulting a nil or mismatched value — or null
- * when `expectedType` isn't a string / number / boolean.
+ * when `expectedType` isn't a string / number / boolean. A number arrives
+ * boxed as `float64` (JSON-decoded input) or `int` (a Go caller's literal),
+ * so it goes through `unboxToGoScalar`'s type switch rather than a
+ * `float64`-only assertion, which would read a boxed `int` as `0`.
  */
 function assertNillableScalar(ref: string, expectedType: TypeInfo): string | null {
   const scalar = unwrapNullableUnion(expectedType)
@@ -122,8 +125,7 @@ function assertNillableScalar(ref: string, expectedType: TypeInfo): string | nul
     scalar.primitive === 'number' ? 'float64' :
     scalar.primitive === 'string' ? 'string' : null
   if (!goType) return null
-  const zero = goType === 'bool' ? 'false' : goType === 'string' ? '""' : '0'
-  return `func() ${goType} { if v, ok := ${ref}.(${goType}); ok { return v }; return ${zero} }()`
+  return unboxToGoScalar(ref, goType)
 }
 
 /**

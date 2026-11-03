@@ -129,10 +129,6 @@ export const renderDivergences: RenderDivergences = {
   // row field reaches the child as `''`, so its `class={tone}` renders
   // `class=""` instead of being omitted.
   'loop-row-child-absent-optional-field-attr': { limitation: 'absent-optional-row-field-forwarded' },
-  // `===` / `!==` between objects or arrays compares contents, not references.
-  'strict-equality-distinct-reference': { limitation: 'object-equality-by-contents' },
-  // An array compared with itself reads unequal.
-  'strict-equality-same-reference': { limitation: 'array-self-equality' },
   // A JSX prop holding a nested component, forwarded by the receiving
   // component to a grandchild prop, renders nothing in the grandchild.
   'jsx-prop-nested-component-forwarded': { limitation: 'nested-component-in-jsx-prop-forwarded' },

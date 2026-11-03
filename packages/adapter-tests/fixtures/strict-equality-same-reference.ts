@@ -1,6 +1,11 @@
 import { createFixture } from '../src/types'
 
 /**
+ * Every template adapter refuses the comparison with BF101 (#3774, #3824
+ * step 8): its runtime holds a decoded prop as a value and cannot compare by
+ * reference. The rewrite compares a primitive field:
+ * `strict-equality-reference-rewrite`.
+ *
  * `===` / `!==` between an object or array and itself: a value is equal to
  * its own reference.
  */
@@ -28,4 +33,8 @@ export function StrictEqualitySameReference({ obj, arr }: { obj: { id: number };
       <p bf="s7"><!--bf-cond-start:s6-->eq<!--bf-cond-end:s6--></p>
     </div>
   `,
+  escapes: [
+    { kind: 'rewrite', fixture: 'strict-equality-reference-rewrite' },
+    { kind: 'client-directive', fixture: 'strict-equality-reference-client' },
+  ],
 })

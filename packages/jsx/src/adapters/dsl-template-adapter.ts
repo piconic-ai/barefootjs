@@ -34,6 +34,7 @@ import {
   refuseAmbiguousNilMemoArithmetic,
   type AmbiguousNilArithmeticSink,
 } from './ambiguous-nil-arithmetic.ts'
+import { refuseNonPrimitiveStrictEquality } from './non-primitive-equality.ts'
 import { collectImportedLoopChildComponentErrors } from './component-tree.ts'
 import { computedConstContext, type ComputedConstContext } from './computed-const.ts'
 import { searchParamsLocalNames } from './env-signal.ts'
@@ -471,5 +472,7 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
       this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName, this.loopChildDiagnosticName))
     }
     refuseAmbiguousNilMemoArithmetic(ir.metadata.memos ?? [], this.nullishAttrCtx, this.ambiguousNilSink())
+    // `===` / `!==` over an object or array (#3774, #3824 step 8).
+    refuseNonPrimitiveStrictEquality(ir, this.operandTyping, this.ambiguousNilSink())
   }
 }

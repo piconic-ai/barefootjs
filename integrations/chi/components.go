@@ -126,7 +126,7 @@ type ConditionalReturnInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	Variant string
+	Variant interface{}
 }
 
 // ConditionalReturnProps is the props type for the ConditionalReturn component.
@@ -140,7 +140,7 @@ type ConditionalReturnProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	Variant string `json:"variant"`
+	Variant interface{} `json:"variant"`
 	Count float64 `json:"-"`
 }
 
@@ -1093,7 +1093,9 @@ func NewConditionalReturnProps(in ConditionalReturnInput) ConditionalReturnProps
 	}
 
 	bfCallerProps := map[string]interface{}{}
-	bfCallerProps["variant"] = in.Variant
+	if in.Variant != nil {
+		bfCallerProps["variant"] = in.Variant
+	}
 
 	return ConditionalReturnProps{
 		ScopeID: scopeID,

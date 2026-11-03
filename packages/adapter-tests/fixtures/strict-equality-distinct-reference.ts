@@ -1,6 +1,11 @@
 import { createFixture } from '../src/types'
 
 /**
+ * Every template adapter refuses the comparison with BF101 (#3774, #3824
+ * step 8): its runtime holds a decoded prop as a value and cannot compare by
+ * reference. The rewrite compares a primitive field:
+ * `strict-equality-reference-rewrite`.
+ *
  * `===` / `!==` between two distinct objects or arrays with the same
  * contents compares reference identity, so they are not equal. The operands
  * are two props and two elements of one array literal, each a separate
@@ -37,4 +42,8 @@ export function StrictEqualityDistinctReference({ obj, other, arr, otherArr }: {
       <p bf="s7"><!--bf-cond-start:s6-->distinct<!--bf-cond-end:s6--></p>
     </div>
   `,
+  escapes: [
+    { kind: 'rewrite', fixture: 'strict-equality-reference-rewrite' },
+    { kind: 'client-directive', fixture: 'strict-equality-reference-client' },
+  ],
 })

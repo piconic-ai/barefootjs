@@ -9,7 +9,9 @@
  * (expression, spread, and structured template parts), loop arrays, and the
  * children of elements, components, fragments, providers, async boundaries,
  * loops (including child components, nested components, and `flatMap` /
- * preamble JSX segments) and conditional branches.
+ * preamble JSX segments) and conditional branches, and a loop preamble's
+ * value-declaration initializers (`const same = a === b` in a `.map()` body),
+ * which a template adapter evaluates at SSR as a per-row local.
  *
  * A `/* @client *\/`-marked position (`clientOnly`) is skipped: the whole read
  * is deferred to the client, where real JS evaluates it.
@@ -29,12 +31,14 @@ import type {
   ExpressionAttr,
   IRConditional,
   IRIfStatement,
+  IRLoop,
   IRNode,
   IRTemplatePart,
   SourceLocation,
 } from './types.ts'
 import type { ParsedExpr } from './expression-parser.ts'
 import { parseExpression } from './expression-parser.ts'
+import type { BindingScope } from './scope/binding-scope.ts'
 
 /**
  * How the template uses the value at a position:
@@ -51,6 +55,10 @@ import { parseExpression } from './expression-parser.ts'
  *   text parsed on demand here; every adapter lowers them from that raw text,
  *   so nothing attached to the IR can stand in for them.
  * - `loop-array` — a loop's array expression.
+ * - `preamble-init` — the initializer of a loop preamble's value declaration
+ *   (`MapCallbackPreamble.declarations`), bound as a per-row local. The read
+ *   of that local is a bare name elsewhere in the row, so the initializer is
+ *   the only position that shows what the template computes.
  */
 export type TemplatePositionRole =
   | 'text'
@@ -60,6 +68,7 @@ export type TemplatePositionRole =
   | 'spread'
   | 'template-part'
   | 'loop-array'
+  | 'preamble-init'
 
 /**
  * The IR slot a position's `expr` lives in, for a pass that rewrites the
@@ -79,10 +88,21 @@ export interface TemplatePosition {
   /** The attribute or prop name, when the position is an attribute / prop value. */
   attrName?: string
   host?: TemplatePositionHost
+  /**
+   * The scope the position is read in, when the walk was given the
+   * component's scope: each loop's children are read in its row
+   * (`BindingScope.enterLoopRow`), its array outside it. The innermost
+   * scope wins: an outer wrapper never replaces a row's.
+   */
+  scope?: BindingScope
 }
 
-export function walkTemplatePositions(root: IRNode, visit: (position: TemplatePosition) => void): void {
-  walkNode(root, visit)
+/**
+ * Visit every template-lowered position under `root`. With `scope` (the
+ * component's), each position also carries the scope it is read in.
+ */
+export function walkTemplatePositions(root: IRNode, visit: (position: TemplatePosition) => void, scope?: BindingScope): void {
+  walkNode(root, scope ? (position) => visit({ scope, ...position }) : visit, scope)
 }
 
 /**
@@ -142,7 +162,7 @@ function walkAttrValue(
   }
 }
 
-function walkNode(node: IRNode, visit: (position: TemplatePosition) => void): void {
+function walkNode(node: IRNode, visit: (position: TemplatePosition) => void, scope?: BindingScope): void {
   if (node.type === 'expression') {
     if (!node.clientOnly && node.parsed) visit({ expr: node.parsed, loc: node.loc, role: 'text' })
   } else if (node.type === 'conditional') {
@@ -168,38 +188,47 @@ function walkNode(node: IRNode, visit: (position: TemplatePosition) => void): vo
     case 'component':
     case 'fragment':
     case 'provider':
-      for (const child of node.children) walkNode(child, visit)
+      for (const child of node.children) walkNode(child, visit, scope)
       break
     case 'async':
-      walkNode(node.fallback, visit)
-      for (const child of node.children) walkNode(child, visit)
+      walkNode(node.fallback, visit, scope)
+      for (const child of node.children) walkNode(child, visit, scope)
       break
-    case 'loop': {
-      if (node.clientOnly) break
-      if (node.arrayParsed) visit({ expr: node.arrayParsed, loc: node.loc, role: 'loop-array' })
-      for (const child of node.children) walkNode(child, visit)
-      if (node.childComponent) {
-        for (const child of node.childComponent.children) walkNode(child, visit)
-      }
-      for (const nested of node.nestedComponents ?? []) {
-        for (const child of nested.children) walkNode(child, visit)
-      }
-      for (const seg of node.flatMapCallback?.segments ?? []) {
-        if (seg.kind === 'jsx') walkNode(seg.ir, visit)
-      }
-      for (const seg of node.preamble?.segments ?? []) {
-        if (seg.kind === 'jsx') walkNode(seg.ir, visit)
-      }
+    case 'loop':
+      walkLoop(node, visit, scope)
       break
-    }
     case 'conditional':
       if (node.clientOnly) break
-      walkNode(node.whenTrue, visit)
-      walkNode(node.whenFalse, visit)
+      walkNode(node.whenTrue, visit, scope)
+      walkNode(node.whenFalse, visit, scope)
       break
     case 'if-statement':
-      walkNode(node.consequent, visit)
-      if (node.alternate) walkNode(node.alternate, visit)
+      walkNode(node.consequent, visit, scope)
+      if (node.alternate) walkNode(node.alternate, visit, scope)
       break
   }
+}
+
+/**
+ * A loop's array, then its row's positions, each read in the row's scope:
+ * the preamble's declaration initializers first (the row scope binds every
+ * preamble name, and an initializer can only read an earlier one), then the
+ * row's children.
+ */
+function walkLoop(node: IRLoop, visit: (position: TemplatePosition) => void, scope?: BindingScope): void {
+  if (node.clientOnly) return
+  if (node.arrayParsed) visit({ expr: node.arrayParsed, loc: node.loc, role: 'loop-array' })
+  const row = scope?.enterLoopRow(node)
+  const rowVisit = row ? (position: TemplatePosition) => visit({ scope: row, ...position }) : visit
+  for (const declaration of node.preamble?.declarations ?? []) {
+    rowVisit({ expr: declaration.valueParsed, loc: node.loc, role: 'preamble-init' })
+  }
+  const children = [
+    ...node.children,
+    ...(node.childComponent?.children ?? []),
+    ...(node.nestedComponents ?? []).flatMap(nested => nested.children),
+    ...(node.flatMapCallback?.segments ?? []).flatMap(seg => (seg.kind === 'jsx' ? [seg.ir] : [])),
+    ...(node.preamble?.segments ?? []).flatMap(seg => (seg.kind === 'jsx' ? [seg.ir] : [])),
+  ]
+  for (const child of children) walkNode(child, rowVisit, row)
 }

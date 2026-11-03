@@ -18,6 +18,13 @@ export const conformancePins: ConformancePins = {
   'map-array-builder-body': [{ code: 'BF021', severity: 'error', limitation: 'statement-body-callback' }],
   'map-array-builder-escaping': [{ code: 'BF021', severity: 'error', limitation: 'statement-body-callback' }],
   'fill-unsupported': [{ code: 'BF101', severity: 'error', limitation: 'array-fill' }],
+  // `===` / `!==` over an object or array: JS compares by reference, which
+  // no template runtime can tell from equal contents (#3824 step 8).
+  'strict-equality-distinct-reference': [{ code: 'BF101', severity: 'error', limitation: 'object-equality-by-contents' }],
+  'strict-equality-same-reference': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
+  'strict-equality-preamble-reference': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
+  'strict-equality-optional-array-element': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
+  'strict-equality-nullable-array-element': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
   // A prop typed both optional and nullable: the engine cannot tell an
   // omitted one (`NaN` in arithmetic) from a `null` one (`0`).
   // An optional row field is a concrete struct field: the nil reading

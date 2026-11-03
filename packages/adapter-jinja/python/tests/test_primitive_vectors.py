@@ -52,7 +52,7 @@ _JINJA_IF = Environment().from_string("{% if v %}1{% else %}0{% endif %}")
 _JINJA_INDEX = Environment().compile_expression("recv[key]")
 _JINJA_PLUS = Environment().compile_expression("a + b")
 _JINJA_CONCAT = Environment().compile_expression("a ~ b")
-_JINJA_RELATIONAL = {op: Environment().compile_expression(f"a {op} b") for op in ("<", "<=", ">", ">=")}
+_JINJA_RELATIONAL = {op: Environment().compile_expression(f"a {op} b") for op in ("<", "<=", ">", ">=", "==")}
 
 # One binding per op the Jinja adapter can spell natively, to the native Jinja
 # operator: a test is Jinja's own `{% if %}` (`not`, `if … else`); an index
@@ -71,6 +71,8 @@ NATIVE_BINDINGS = {
     "le": lambda a, b: _JINJA_RELATIONAL["<="](a=a, b=b),
     "gt": lambda a, b: _JINJA_RELATIONAL[">"](a=a, b=b),
     "ge": lambda a, b: _JINJA_RELATIONAL[">="](a=a, b=b),
+    # A strict equality over a proven pair is Jinja's own `==` (#3824 step 8).
+    "strict_eq": lambda a, b: _JINJA_RELATIONAL["=="](a=a, b=b),
     # A proven string is its own ToString; a `+` is Python's own `+` over two
     # numbers and Jinja's `~` over a proven string, the other operand through
     # `bf.to_string` (#3824 step 4).

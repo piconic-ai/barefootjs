@@ -16,6 +16,7 @@ import {
   parseExpression,
   planPrimitive,
   foldNegatedNumberLiteral,
+  mayHoldObject,
   numberLiteralSpelling,
   type IRMetadata,
   type NativeSafeTable,
@@ -387,5 +388,29 @@ describe('defaults, from analyzed components', () => {
     expect(factsOf('a', at)).toBe('nil|number (null)')
     expect(factsOf('b', at)).toBe('unknown')
     expect(plan('b ?? 0', NON_NIL_NULLISH, at)).toBe('helper nullish coalesce unproven')
+  })
+})
+
+describe('array element evidence through a union (#3824 step 8)', () => {
+  const row: TypeInfo = { kind: 'interface', raw: 'Row' }
+  const withRows = (type: TypeInfo, optional = false) =>
+    collectOperandTyping(meta({ propsParams: [param('rows', type, optional)] })).at(BindingScope.EMPTY)
+  const isRow = (name: string) => name === 'Row'
+
+  test('an optional or nullable object array keeps its element evidence for the refusal', () => {
+    for (const at of [withRows(array(row), true), withRows(union(array(row), prim('null')))]) {
+      expect(mayHoldObject(parseExpression('rows[0]'), at, isRow)).toBe(true)
+      expect(mayHoldObject(parseExpression('rows.at(0)'), at, isRow)).toBe(true)
+    }
+  })
+
+  test('the kept element evidence does not prove a nullable array an array', () => {
+    const facts = operandFacts(parseExpression('rows'), withRows(array(row), true))
+    expect(facts.array).toBeUndefined()
+    expect(facts.types.has('nil')).toBe(true)
+  })
+
+  test('a primitive element array is still not refused', () => {
+    expect(mayHoldObject(parseExpression('rows[0]'), withRows(array(prim('number')), true), isRow)).toBe(false)
   })
 })

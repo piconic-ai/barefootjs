@@ -24,7 +24,7 @@ import {
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
-import { goBinaryHelperCall, goNumberLiteral, GO_REMEDIATION_OPTIONS, isLiteralKeyRead, lowerJsLogicalTest, lowerJsLogicalValue, lowerJsNullishValue, lowerAbsentAsNil, lowerJsToNumber, lowerJsTruthyTest, lowerUndefinedOperand, wrapIfMultiToken, type NullishSpelling } from '../lib/go-emit.ts'
+import { goBinaryHelperCall, goNumberLiteral, goStrictEqConst, GO_REMEDIATION_OPTIONS, isLiteralKeyRead, lowerJsLogicalTest, lowerJsLogicalValue, lowerJsNullishValue, lowerAbsentAsNil, lowerJsToNumber, lowerJsTruthyTest, lowerUndefinedOperand, wrapIfMultiToken, type NullishSpelling } from '../lib/go-emit.ts'
 import { isPropsObjectName } from '../lib/compile-state.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import type { HigherOrderShape } from '../lib/types.ts'
@@ -524,6 +524,9 @@ function renderFilterBinary(
   const wl = wrapIfMultiToken(left)
   const wr = wrapIfMultiToken(right)
 
+  // Operands proven of different types fold to a constant (#3824 step 8).
+  const folded = goStrictEqConst(expr.op, expr.left, expr.right, host.primitivePlan(expr, [param, ...localVarMap.keys()]))
+  if (folded !== null) return folded
   const call = goBinaryHelperCall(expr.op, wl, wr, [expr.left, expr.right])
   if (call !== null) return call
   switch (expr.op) {
@@ -894,7 +897,9 @@ function renderConditionBinary(
   const preamble = leftResult.preamble + rightResult.preamble
 
   let result: string
-  const call = goBinaryHelperCall(expr.op, left, right, [expr.left, expr.right])
+  // Operands proven of different types fold to a constant (#3824 step 8).
+  const folded = goStrictEqConst(expr.op, expr.left, expr.right, host.primitivePlan(expr))
+  const call = folded ?? goBinaryHelperCall(expr.op, left, right, [expr.left, expr.right])
   if (call !== null) {
     result = call
   } else switch (expr.op) {

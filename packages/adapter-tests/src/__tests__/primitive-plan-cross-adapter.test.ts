@@ -250,9 +250,16 @@ const CASES: readonly Case[] = [
           optional: 'props.maybe === 1',
           'optional-string': "props.ms !== 'a'",
           'different-types': 'props.n === props.s',
+          'boolean-number': 'props.on !== 1',
+          'string-number': "props.s === 1",
+          'signal-pair': 'count() === props.n',
         },
       ),
-      filter: [filter('x === props.n', 'x === props.n', 'row'), filter("props.s === 'a'", "props.s === 'a'", 'string-pair')],
+      filter: [
+        filter('x === props.n', 'x === props.n', 'row'),
+        filter("props.s === 'a'", "props.s === 'a'", 'string-pair'),
+        filter("props.n !== 'a'", "props.n !== 'a'", 'different-types'),
+      ],
     },
   },
   {
@@ -393,42 +400,6 @@ const CASES: readonly Case[] = [
  * Shrink-only.
  */
 const DISAGREEMENTS: Readonly<Record<string, string>> = {
-  // `===`. Operands proven of different types are not folded to a constant;
-  // Mojolicious spells `==` / `ne` for an operand it cannot type.
-  'go strict-eq text different-types': 'step 8 (`===`)',
-  'blade strict-eq text different-types': 'step 8 (`===`)',
-  'erb strict-eq text different-types': 'step 8 (`===`)',
-  'jinja strict-eq text different-types': 'step 8 (`===`)',
-  'mojolicious strict-eq text optional': 'step 8 (`===`)',
-  'mojolicious strict-eq text optional-string': 'step 8 (`===`)',
-  'mojolicious strict-eq text different-types': 'step 8 (`===`)',
-  'pebble strict-eq text different-types': 'step 8 (`===`)',
-  'rust strict-eq text different-types': 'step 8 (`===`)',
-  'twig strict-eq text different-types': 'step 8 (`===`)',
-  'xslate strict-eq text different-types': 'step 8 (`===`)',
-  'go strict-eq attr different-types': 'step 8 (`===`)',
-  'blade strict-eq attr different-types': 'step 8 (`===`)',
-  'erb strict-eq attr different-types': 'step 8 (`===`)',
-  'jinja strict-eq attr different-types': 'step 8 (`===`)',
-  'mojolicious strict-eq attr optional': 'step 8 (`===`)',
-  'mojolicious strict-eq attr optional-string': 'step 8 (`===`)',
-  'mojolicious strict-eq attr different-types': 'step 8 (`===`)',
-  'pebble strict-eq attr different-types': 'step 8 (`===`)',
-  'rust strict-eq attr different-types': 'step 8 (`===`)',
-  'twig strict-eq attr different-types': 'step 8 (`===`)',
-  'xslate strict-eq attr different-types': 'step 8 (`===`)',
-  'go strict-eq if different-types': 'step 8 (`===`)',
-  'blade strict-eq if different-types': 'step 8 (`===`)',
-  'erb strict-eq if different-types': 'step 8 (`===`)',
-  'jinja strict-eq if different-types': 'step 8 (`===`)',
-  'mojolicious strict-eq if optional': 'step 8 (`===`)',
-  'mojolicious strict-eq if optional-string': 'step 8 (`===`)',
-  'mojolicious strict-eq if different-types': 'step 8 (`===`)',
-  'pebble strict-eq if different-types': 'step 8 (`===`)',
-  'rust strict-eq if different-types': 'step 8 (`===`)',
-  'twig strict-eq if different-types': 'step 8 (`===`)',
-  'xslate strict-eq if different-types': 'step 8 (`===`)',
-  'mojolicious strict-eq filter row': 'step 8 (`===`)',
 }
 
 const PROPS =
@@ -464,9 +435,18 @@ function expected(plan: PrimitivePlan | null): Outcome {
   return plan.mode
 }
 
+/**
+ * A host equality operator (`==`, `!=`, Perl's `eq` / `ne`; not an EP
+ * `<%==` tag). A folded
+ * `===` spells none, nor the helper (#3824 step 8).
+ */
+const EQUALITY_OPERATOR = /(?<!<%)==|!=|(?<![\w$.])(?:eq|ne)(?![\w(])/
+
 function observed(segment: string, plan: PrimitivePlan, target: Target): Outcome {
   const helpers: readonly PrimitiveHelper[] = plan.mode === 'helper' ? [plan.helper] : OP_HELPERS[plan.op]
-  return helpers.some((h) => target.call(h)?.test(segment)) ? 'helper' : 'native'
+  if (helpers.some((h) => target.call(h)?.test(segment))) return 'helper'
+  if (plan.mode === 'const') return EQUALITY_OPERATOR.test(segment) ? 'native' : 'const'
+  return 'native'
 }
 
 function scopeFor(kind: Scope, propsObjectName: string | null): BindingScope {

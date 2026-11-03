@@ -55,6 +55,7 @@ describe('compileForCompat', () => {
         severity: 'error',
         limitations: [
           'array-fill',
+          'array-self-equality',
           'body-destructure-without-const-form',
           'body-rest-props-name-shadowed',
           'body-rest-taken-key-read',
@@ -71,6 +72,7 @@ describe('compileForCompat', () => {
           'loop-row-key-outer-state',
           'module-scope-helper-call',
           'nested-callback-in-filter-predicate',
+          'object-equality-by-contents',
           'off-subset-callback-body',
           'omitted-optional-nullable-number-arithmetic',
           'omitted-optional-nullable-scalar-relational',

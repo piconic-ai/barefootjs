@@ -59,6 +59,8 @@ import {
   primitivesAt,
   isNativePlan,
   relationalHelper,
+  strictEqSpelling,
+  type StrictEqSpelling,
   isNativeToNumber,
   spellTest,
   EMPTY_OPERAND_TYPING,
@@ -128,7 +130,11 @@ export const NATIVE_SAFE: NativeSafeTable = {
   // A template-literal part or concatenation operand is itself only when it
   // is a proven string; anything else takes `to_string` (#3824 step 4).
   'to-string': ['string'],
-  'strict-eq': ['number-pair', 'string-pair', 'boolean-pair', 'unproven'],
+  // MiniJinja's `==` over two proven non-nil numbers, strings or booleans;
+  // any other pair takes the runtime's `strict_eq`, and operands proven of
+  // different types fold to a constant (#3824 step 8, pinned by the
+  // `primitives/strict_eq` vectors).
+  'strict-eq': ['number-pair', 'string-pair', 'boolean-pair'],
   // Never native: MiniJinja orders NaN above every number (`NaN >= 1` is
   // true), so even two proven numbers take the runtime's JS Abstract
   // Relational Comparison (`lt` / `le` / `gt` / `ge`; #3824 step 3, pinned by
@@ -365,11 +371,12 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
     const l = groupBinaryOperand(left, emit(left))
     const r = groupBinaryOperand(right, emit(right))
-    // Jinja's `==` / `!=` are value-equality operators that compare strings
-    // and numbers correctly — unlike Perl's numeric `==` (which the Mojo
-    // adapter must steer around with `eq`/`ne`). Same reasoning as Kolon.
+    // `===` / `!==` spell their plan (#3824 step 8): MiniJinja's `==` only
+    // over a proven pair.
     // `/` and `%` go through the runtime's JS division and remainder
     // (#3474, #3574).
+    const equality = spellStrictEq(strictEqSpelling(op, left, right, plan), l, r)
+    if (equality !== null) return equality
     const helper = arithmeticHelper(op)
     if (helper) return `bf.${helper}(${l}, ${r})`
     if (op === '+') return spellPlus(plan, l, r)
@@ -681,10 +688,11 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     // `(count() + 2) * 3` would silently become `count + 2 * 3` (#2173).
     const l = this.coerceNullishOperand(op, left, right, groupBinaryOperand(left, emit(left)))
     const r = this.coerceNullishOperand(op, right, left, groupBinaryOperand(right, emit(right)))
-    // Jinja's `==` / `!=` handle both strings and numbers (unlike Perl's
-    // numeric `==`), so all equality comparisons stay on `==` / `!=`.
+    // `===` / `!==` spell their plan (#3824 step 8).
     // `/` and `%` go through the runtime's JS division and remainder
     // (#3474, #3574).
+    const equality = spellStrictEq(strictEqSpelling(op, left, right, plan), l, r)
+    if (equality !== null) return equality
     const helper = arithmeticHelper(op)
     if (helper) return `bf.${helper}(${l}, ${r})`
     if (op === '+') return spellPlus(plan, l, r)
@@ -880,4 +888,17 @@ function negate(plan: PrimitivePlan | null, operand: string, native: () => strin
  */
 function toNumber(plan: PrimitivePlan | null, operand: string): string {
   return isNativeToNumber(plan) ? operand : `bf.to_number(${operand})`
+}
+
+/**
+ * Spell a `===` / `!==` plan over the rendered operands (#3824 step 8):
+ * MiniJinja's `==` / `!=` over a proven pair, the folded constant, or the
+ * runtime's `strict_eq`. Null for a nullish test and any other operator,
+ * which keep their own lowering.
+ */
+function spellStrictEq(eq: StrictEqSpelling | null, l: string, r: string): string | null {
+  if (eq === null || eq.kind === 'nullish') return null
+  if (eq.kind === 'const') return eq.value ? 'true' : 'false'
+  if (eq.kind === 'native') return `${l} ${eq.negated ? '!=' : '=='} ${r}`
+  return eq.negated ? `(not bf.strict_eq(${l}, ${r}))` : `bf.strict_eq(${l}, ${r})`
 }

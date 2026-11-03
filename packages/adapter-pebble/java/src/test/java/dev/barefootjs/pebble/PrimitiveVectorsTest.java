@@ -98,6 +98,9 @@ class PrimitiveVectorsTest {
       Map.entry("le", a -> pebbleCompare("<=", a.get(0), a.get(1))),
       Map.entry("gt", a -> pebbleCompare(">", a.get(0), a.get(1))),
       Map.entry("ge", a -> pebbleCompare(">=", a.get(0), a.get(1))),
+      // A strict equality is Pebble's own `==`, which the adapter never
+      // spells: it claims no strict-equality proof (#3824 step 8).
+      Map.entry("strict_eq", a -> pebbleCompare("==", a.get(0), a.get(1))),
       // A proven string is its own ToString; a `+` is Pebble's own `+` over
       // two numbers and `~` over a proven string, the other operand through
       // `to_string` (#3824 step 4).

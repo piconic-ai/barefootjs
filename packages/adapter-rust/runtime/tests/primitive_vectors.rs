@@ -70,11 +70,14 @@ fn call_native_binding(fn_name: &str, a: &[JsValue]) -> Option<JsValue> {
             runtime::mj_to_js(&expr.eval(()).expect("evaluate the native literal"))
         }
         "to_number" => a[0].clone(),
-        "lt" | "le" | "gt" | "ge" => {
+        // A strict equality over a proven pair is MiniJinja's own `==`
+        // (#3824 step 8).
+        "lt" | "le" | "gt" | "ge" | "strict_eq" => {
             let op = match fn_name {
                 "lt" => "<",
                 "le" => "<=",
                 "gt" => ">",
+                "strict_eq" => "==",
                 _ => ">=",
             };
             let source = format!("a {op} b");

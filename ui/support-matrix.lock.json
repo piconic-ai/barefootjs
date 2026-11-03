@@ -939,6 +939,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -1072,6 +1078,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -1359,6 +1371,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -1451,6 +1469,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -1524,6 +1548,12 @@
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -1633,6 +1663,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -1712,6 +1748,12 @@
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -1797,6 +1839,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -1864,6 +1912,18 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -1943,6 +2003,18 @@
               ]
             },
             {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -2019,6 +2091,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -2086,6 +2164,18 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -3349,6 +3439,30 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -3482,6 +3596,30 @@
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -3729,6 +3867,24 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "strict-equality-same-reference",
               "limitations": [
                 "array-self-equality"
@@ -3883,6 +4039,30 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -4031,6 +4211,30 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -4158,6 +4362,36 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -4300,6 +4534,36 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             }
           ]
@@ -4451,6 +4715,30 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -4590,6 +4878,36 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -4898,6 +5216,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -5157,6 +5481,12 @@
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -5834,6 +6164,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -6114,6 +6450,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -6367,6 +6709,18 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -6644,6 +6998,18 @@
               ]
             },
             {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -6918,6 +7284,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -7183,6 +7555,18 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -8008,6 +8392,30 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -8375,6 +8783,30 @@
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -8994,6 +9426,24 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "strict-equality-same-reference",
               "limitations": [
                 "array-self-equality"
@@ -9406,6 +9856,30 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -9806,6 +10280,30 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -10179,6 +10677,36 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -10573,6 +11101,36 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -10976,6 +11534,30 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -11361,6 +11943,36 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -11859,6 +12471,30 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -12130,6 +12766,30 @@
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -12599,6 +13259,24 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "strict-equality-same-reference",
               "limitations": [
                 "array-self-equality"
@@ -12885,6 +13563,30 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -13162,6 +13864,30 @@
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -13445,6 +14171,36 @@
               ]
             },
             {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -13719,6 +14475,36 @@
               ]
             },
             {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -13990,6 +14776,30 @@
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -14270,6 +15080,36 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -15109,6 +15949,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -15368,6 +16214,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -15855,6 +16707,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -16144,6 +17002,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -16439,6 +17303,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -16710,6 +17580,12 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -17002,6 +17878,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -17303,6 +18185,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -17586,6 +18474,12 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -18016,6 +18910,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -18065,6 +18965,12 @@
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -18187,6 +19093,12 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -19553,6 +20465,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -19566,6 +20484,12 @@
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -19585,6 +20509,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -19598,6 +20528,12 @@
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -19617,6 +20553,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -19627,6 +20569,18 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -19634,13 +20588,34 @@
             }
           ]
         },
-        "pebble": {},
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            }
+          ]
+        },
         "twig": {
           "gaps": [
             {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -19653,6 +20628,18 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
             {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
@@ -21135,6 +22122,18 @@
               "limitations": [
                 "object-equality-by-contents"
               ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
             }
           ]
         },
@@ -21144,6 +22143,18 @@
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             }
           ]
@@ -21199,6 +22210,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "strict-equality-same-reference",
               "limitations": [
                 "array-self-equality"
@@ -21213,6 +22230,18 @@
               "limitations": [
                 "object-equality-by-contents"
               ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
             }
           ]
         },
@@ -21223,11 +22252,65 @@
               "limitations": [
                 "object-equality-by-contents"
               ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
             }
           ]
         },
-        "mojolicious": {},
-        "pebble": {},
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            }
+          ]
+        },
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            }
+          ]
+        },
         "twig": {
           "gaps": [
             {
@@ -21235,10 +22318,43 @@
               "limitations": [
                 "object-equality-by-contents"
               ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
             }
           ]
         },
-        "xslate": {}
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -22177,6 +23293,24 @@
               ]
             },
             {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -22232,6 +23366,24 @@
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -22329,6 +23481,18 @@
               ]
             },
             {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "strict-equality-same-reference",
               "limitations": [
                 "array-self-equality"
@@ -22405,6 +23569,24 @@
               ]
             },
             {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -22475,6 +23657,24 @@
               ]
             },
             {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -22524,6 +23724,30 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -22588,6 +23812,30 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             }
           ]
@@ -22655,6 +23903,24 @@
               ]
             },
             {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -22716,6 +23982,30 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -23454,6 +24744,18 @@
               "limitations": [
                 "object-equality-by-contents"
               ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
             }
           ]
         },
@@ -23475,6 +24777,18 @@
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             }
           ]
@@ -23516,6 +24830,18 @@
               "limitations": [
                 "object-equality-by-contents"
               ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
             }
           ]
         },
@@ -23537,6 +24863,18 @@
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             }
           ]
@@ -23560,6 +24898,18 @@
               "limitations": [
                 "object-equality-by-contents"
               ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
             }
           ]
         },
@@ -23582,6 +24932,24 @@
               "limitations": [
                 "boolean-in-static-loop-item"
               ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
             }
           ]
         },
@@ -23597,6 +24965,24 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             }
           ]
@@ -23620,6 +25006,18 @@
               "limitations": [
                 "object-equality-by-contents"
               ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
             }
           ]
         },
@@ -23641,6 +25039,24 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             }
           ]
@@ -23810,6 +25226,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -23961,6 +25383,12 @@
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -24184,6 +25612,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -24338,6 +25772,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -24489,6 +25929,12 @@
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -24652,6 +26098,18 @@
               ]
             },
             {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -24800,6 +26258,18 @@
               ]
             },
             {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -24945,6 +26415,12 @@
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -25105,6 +26581,18 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -25329,6 +26817,30 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -25510,6 +27022,30 @@
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -25853,6 +27389,24 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "strict-equality-same-reference",
               "limitations": [
                 "array-self-equality"
@@ -26049,6 +27603,30 @@
               ]
             },
             {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -26236,6 +27814,30 @@
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -26429,6 +28031,36 @@
               ]
             },
             {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
@@ -26613,6 +28245,36 @@
               ]
             },
             {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -26794,6 +28456,30 @@
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -26984,6 +28670,36 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "strict-equality-distinct-reference",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
+              "fixture": "strict-equality-nullable-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-preamble-reference",
+              "limitations": [
+                "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "strict-equality-same-reference",
+              "limitations": [
+                "array-self-equality"
               ]
             },
             {
@@ -27676,6 +29392,12 @@
               "limitations": [
                 "awaits-undefined-value"
               ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
             }
           ]
         },
@@ -27685,6 +29407,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             }
           ]
@@ -27708,6 +29436,12 @@
               "limitations": [
                 "non-identifier-literal-key"
               ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
             }
           ]
         },
@@ -27717,6 +29451,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             }
           ]
@@ -27728,6 +29468,12 @@
               "limitations": [
                 "awaits-undefined-value"
               ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
             }
           ]
         },
@@ -27737,6 +29483,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             }
           ]
@@ -27748,6 +29500,12 @@
               "limitations": [
                 "awaits-undefined-value"
               ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
             }
           ]
         },
@@ -27758,6 +29516,12 @@
               "limitations": [
                 "awaits-undefined-value"
               ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
+              ]
             }
           ]
         },
@@ -27767,6 +29531,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "strict-equality-optional-array-element",
+              "limitations": [
+                "array-self-equality"
               ]
             }
           ]

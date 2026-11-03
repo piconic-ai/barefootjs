@@ -88,6 +88,9 @@ var nativeBindings = map[string]func(args []any) any{
 	},
 	"number":    func(a []any) any { return nativeLiteral(a[0].(string)) },
 	"to_number": func(a []any) any { return a[0] },
+	// A strict equality is the `eq` builtin, which the adapter never spells:
+	// it claims no strict-equality proof (#3824 step 8).
+	"strict_eq": nativeComparison("eq"),
 	"lt":        nativeComparison("lt"),
 	"le":        nativeComparison("le"),
 	"gt":        nativeComparison("gt"),

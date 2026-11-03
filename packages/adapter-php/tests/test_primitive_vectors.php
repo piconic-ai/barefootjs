@@ -72,6 +72,11 @@ $NATIVE_BINDINGS = [
     'le' => fn ($a, $b) => $a <= $b,
     'gt' => fn ($a, $b) => $a > $b,
     'ge' => fn ($a, $b) => $a >= $b,
+    // A strict equality per the note's PHP row: `==` over two numbers (an
+    // int and a float compare by value), `===` over two strings or two
+    // booleans (`"1e0" == "1"` holds). Neither adapter claims it: both spell
+    // `eq` / `neq` (#3824 step 8).
+    'strict_eq' => fn ($a, $b) => (is_string($a) || is_bool($a)) ? $a === $b : $a == $b,
     // A proven string is its own ToString; a `+` is PHP's own `+` over two
     // numbers and `.` (Twig's `~`) over a proven string, the other operand
     // through `to_string` (#3824 step 4).

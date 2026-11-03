@@ -237,6 +237,89 @@ function planStrictEq(op: string, left: OperandFacts, right: OperandFacts, targe
   return decide('strict-eq', pairProof(left, right), target, 'strict_eq')
 }
 
+/** The literal `null`, or an unbound `undefined`: the operand of a nullish test. */
+export function isNilLiteralOperand(expr: ParsedExpr, typing?: ScopedOperandTyping): boolean {
+  if (expr.kind === 'literal') return expr.literalType === 'null'
+  return expr.kind === 'identifier' && expr.name === 'undefined' && !typing?.scope.isBound('undefined')
+}
+
+/** A `===` / `!==` / `==` / `!=` with a nil literal on one side: a nullish test, not a strict equality. */
+export function isNullishTest(op: string, left: ParsedExpr, right: ParsedExpr, typing?: ScopedOperandTyping): boolean {
+  return (op === '===' || op === '!==' || op === '==' || op === '!=') &&
+    (isNilLiteralOperand(left, typing) || isNilLiteralOperand(right, typing))
+}
+
+/** The array element reads whose value is one element of their receiver. */
+const ELEMENT_READ_METHODS: ReadonlySet<string> = new Set(['at', 'find', 'findLast'])
+
+/** The receiver of an element read (`a[i]`, `a.at(i)`, `a.find(p)`), or null. */
+function elementReadReceiver(expr: ParsedExpr): ParsedExpr | null {
+  if (expr.kind === 'index-access') return expr.object
+  if (expr.kind === 'member' && expr.computed) return expr.object
+  if (expr.kind === 'array-method' && ELEMENT_READ_METHODS.has(expr.method)) return expr.object
+  return null
+}
+
+/**
+ * Whether `expr` may hold an object or array at its read
+ * (`spec/js-primitive-semantics.md`, "Decisions" (4)): its facts admit
+ * `object` (an object, array or interface type, an object or array
+ * literal), or it is an element read of an array whose declared element
+ * type or array-literal seed admits one (`rows().at(0)` over
+ * `createSignal([{ id: 1 }])`, typed `unknown[]`). An operand Phase 1
+ * proves nothing else about (an untyped row field, a call result) is not
+ * refused: the runtime's `strict_eq` compares it. A named type reference
+ * (`Row`, `Tone`) counts only when `isObjectTypeName` resolves it to an
+ * object shape; by default it does not.
+ */
+export function mayHoldObject(
+  expr: ParsedExpr,
+  typing: ScopedOperandTyping,
+  isObjectTypeName: (name: string) => boolean = () => false,
+): boolean {
+  const holdsObject = (facts: OperandFacts): boolean =>
+    facts.types.has('object') && (!facts.namedObjects || facts.namedObjects.some(isObjectTypeName))
+  if (holdsObject(operandFacts(expr, typing))) return true
+  const receiver = elementReadReceiver(expr)
+  if (!receiver) return false
+  const facts = operandFacts(receiver, typing)
+  // `element` alone, not `array`: a nullable or union-typed array
+  // (`rows?: Row[]`) keeps its element evidence without being proven an array.
+  return facts.element !== undefined && holdsObject(facts.element)
+}
+
+/** The BF101 reason of a `===` / `!==` over an operand that may be an object (#3774). */
+export const NON_PRIMITIVE_EQUALITY_REASON = 'non-primitive-strict-equality'
+
+/**
+ * How an emitter spells a `===` / `!==` under its plan (#3824 step 8):
+ *
+ * - `native`: the target's own operator for the proven pair (`proof`).
+ * - `helper`: the runtime's `strict_eq`, negated for `!==`. A refused plan
+ *   spells it too: the refusal itself is recorded once per component by
+ *   `refuseNonPrimitiveStrictEquality`.
+ * - `const`: the folded answer for operands proven of different types.
+ * - `nullish`: a nullish test (`x === null`), which keeps the target's nil
+ *   test.
+ *
+ * Null for any other operator (loose `==` keeps its own lowering). A null
+ * plan takes the helper, which is never wrong.
+ */
+export type StrictEqSpelling =
+  | { readonly kind: 'native'; readonly proof: Proof; readonly negated: boolean }
+  | { readonly kind: 'helper'; readonly negated: boolean }
+  | { readonly kind: 'const'; readonly value: boolean }
+  | { readonly kind: 'nullish' }
+
+export function strictEqSpelling(op: string, left: ParsedExpr, right: ParsedExpr, plan: PrimitivePlan | null): StrictEqSpelling | null {
+  if (op !== '===' && op !== '!==') return null
+  if (isNilLiteralOperand(left) || isNilLiteralOperand(right)) return { kind: 'nullish' }
+  const negated = op === '!=='
+  if (plan?.op === 'strict-eq' && plan.mode === 'const') return { kind: 'const', value: plan.value }
+  if (plan?.op === 'strict-eq' && plan.mode === 'native') return { kind: 'native', proof: plan.proof, negated }
+  return { kind: 'helper', negated }
+}
+
 /**
  * A binary `+` (#3824 step 4): the host's `+` over two proven non-nil
  * numbers (`add` on a target that does not claim it); the host's
@@ -311,7 +394,14 @@ function planBinary(expr: Extract<ParsedExpr, { kind: 'binary' }>, typing: Scope
   if (!isPrimitiveOp) return null
   const left = operandFacts(expr.left, typing)
   const right = operandFacts(expr.right, typing)
-  if (op === '===' || op === '!==') return planStrictEq(op, left, right, target)
+  if (op === '===' || op === '!==') {
+    // `x === null` is a nullish test, lowered by each target's nil test.
+    if (isNullishTest(op, expr.left, expr.right, typing)) return null
+    if (mayHoldObject(expr.left, typing) || mayHoldObject(expr.right, typing)) {
+      return { mode: 'refuse', op: 'strict-eq', reason: NON_PRIMITIVE_EQUALITY_REASON }
+    }
+    return planStrictEq(op, left, right, target)
+  }
   if (op === '+') return planPlus(left, right, target)
   const relational = RELATIONAL_HELPERS[op]
   if (relational) {
