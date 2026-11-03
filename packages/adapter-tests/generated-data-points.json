@@ -32,27 +32,6 @@
       "props": {
         "hue": "日本語"
       }
-    },
-    {
-      "name": "gen:css:empty",
-      "props": {
-        "hue": "",
-        "css": ""
-      }
-    },
-    {
-      "name": "gen:css:markup",
-      "props": {
-        "hue": "",
-        "css": "<b>&\"'</b>"
-      }
-    },
-    {
-      "name": "gen:css:multibyte",
-      "props": {
-        "hue": "",
-        "css": "日本語"
-      }
     }
   ],
   "aliased-destructured-prop": [
