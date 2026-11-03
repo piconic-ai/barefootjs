@@ -11661,6 +11661,23 @@
         "text"
       ]
     },
+    "object-spread-branch-child": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "object-spread-loop-row-child": {
       "kinds": [
         "call",

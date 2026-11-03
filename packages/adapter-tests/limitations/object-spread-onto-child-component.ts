@@ -7,5 +7,5 @@ export default defineLimitation({
     'a child component call that spreads an object other than the component\'s own props: a loop row (`rows.map((r) => <Chip key={r.id} {...r} />)`) or an object prop (`<Chip {...row} />`)',
   expected: 'every key of the object reaches the child, merged with the call\'s explicit props in source order',
   diagnostic: 'BF101',
-  fixtures: ['object-spread-loop-row-child', 'object-spread-prop-child'],
+  fixtures: ['object-spread-branch-child', 'object-spread-loop-row-child', 'object-spread-prop-child'],
 })

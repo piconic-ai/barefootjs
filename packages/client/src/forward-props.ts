@@ -6,6 +6,8 @@
  * components with {...rest} spread on child components.
  */
 
+import { untrack } from '@barefootjs/client/reactive'
+
 /**
  * Create a props object that merges explicit overrides with forwarded source props.
  * Preserves getter-based reactivity from both overrides and source.
@@ -65,9 +67,18 @@ export type ChildPropsPart = Record<string, unknown> | (() => unknown)
  * An object part is copied with its property descriptors, so an explicit
  * prop's getter stays a getter. A function part is a spread of an arbitrary
  * object (`<Chip {...row} />`). Its keys are taken from the value it
- * returns now, and each key reads the thunk again through a getter, so the
+ * returns, and each key reads the thunk again through a getter, so the
  * child sees a later value of the spread object (a loop row accessor, a
  * prop that holds an object) the way it sees an explicit prop.
+ *
+ * The merge runs on the first read of the result, not when this is called.
+ * A call site evaluates its props object even when the child does not exist:
+ * `initChild` with a null scope (the component took another early-return
+ * branch), or a dynamic tag (`<Tag {...children.props} />`) that never
+ * registers. Calling a spread thunk there evaluated an expression the
+ * source only evaluates inside its branch, such as `children.props` with
+ * no `children` at hydration, and the throw stopped the parent's init.
+ * The first read is untracked, so taking the keys subscribes no effect.
  *
  * Not an authoring API: emitted by the compiler.
  *
@@ -80,6 +91,21 @@ export type ChildPropsPart = Record<string, unknown> | (() => unknown)
  * @internal
  */
 export function spreadChildProps(...parts: ChildPropsPart[]): Record<string, unknown> {
+  let merged: Record<string, unknown> | undefined
+  const resolve = (): Record<string, unknown> => (merged ??= untrack(() => mergeChildPropsParts(parts)))
+  return new Proxy({} as Record<string, unknown>, {
+    get: (_, key) => resolve()[key as string],
+    set: (_, key, value) => Reflect.set(resolve(), key, value),
+    has: (_, key) => key in resolve(),
+    ownKeys: () => Reflect.ownKeys(resolve()),
+    getOwnPropertyDescriptor: (_, key) => Reflect.getOwnPropertyDescriptor(resolve(), key),
+    defineProperty: (_, key, desc) => Reflect.defineProperty(resolve(), key, { ...desc, configurable: true }),
+    deleteProperty: (_, key) => Reflect.deleteProperty(resolve(), key),
+  })
+}
+
+/** The eager merge behind {@link spreadChildProps}. */
+function mergeChildPropsParts(parts: readonly ChildPropsPart[]): Record<string, unknown> {
   const result: Record<string, unknown> = {}
   for (const part of parts) {
     if (typeof part === 'function') {

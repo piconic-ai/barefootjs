@@ -4,7 +4,7 @@
  * (`<Chip tone="a" {...row} label={x()} />`).
  */
 import { describe, test, expect } from 'bun:test'
-import { createSignal } from '@barefootjs/client/reactive'
+import { createEffect, createSignal } from '@barefootjs/client/reactive'
 import { spreadChildProps } from '../../src/forward-props'
 
 describe('spreadChildProps', () => {
@@ -38,5 +38,32 @@ describe('spreadChildProps', () => {
     expect(props.label).toBe('Alpha')
     setRow({ label: 'Alpha+' })
     expect(props.label).toBe('Alpha+')
+  })
+})
+
+describe('spreadChildProps is lazy', () => {
+  test('no spread thunk runs until the result is read', () => {
+    // A call site evaluates the props object even when the child does not
+    // exist (the UI Slot's `() => children.props` with no `children`).
+    const children = undefined as unknown as { props: Record<string, unknown> }
+    const props = spreadChildProps(() => children.props, { tone: 'base' })
+    expect(() => props.tone).toThrow(TypeError)
+  })
+
+  test('keys, descriptors and `in` see the merged props', () => {
+    const props = spreadChildProps({ a: 1 }, () => ({ b: 2 }))
+    expect(Object.keys(props)).toEqual(['a', 'b'])
+    expect('b' in props).toBe(true)
+    expect(Object.getOwnPropertyDescriptor(props, 'b')?.enumerable).toBe(true)
+    expect({ ...Object.getOwnPropertyDescriptors(props) }.a?.value).toBe(1)
+  })
+
+  test('taking the keys inside an effect subscribes it to nothing', () => {
+    const [row, setRow] = createSignal({ label: 'Alpha' })
+    const props = spreadChildProps(() => row())
+    let runs = 0
+    createEffect(() => { runs++; void Object.keys(props) })
+    setRow({ label: 'Alpha+' })
+    expect(runs).toBe(1)
   })
 })

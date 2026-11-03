@@ -547,6 +547,7 @@ import { fixture as jsxSpreadRestProp } from './jsx-spread-rest-prop'
 import { fixture as restSpreadRootHydrationProps } from './rest-spread-root-hydration-props'
 import { fixture as propsObjectSpreadChildHydrationProps } from './props-object-spread-child-hydration-props'
 import { fixture as restSpreadChildOverrideHydrationProps } from './rest-spread-child-override-hydration-props'
+import { fixture as objectSpreadBranchChild } from './object-spread-branch-child'
 import { fixture as objectSpreadLoopRowChild } from './object-spread-loop-row-child'
 import { fixture as objectSpreadPropChild } from './object-spread-prop-child'
 import { fixture as restAliasSpreadChild } from './rest-alias-spread-child'
@@ -1804,6 +1805,7 @@ export const jsxFixtures: JSXFixture[] = [
   restSpreadRootHydrationProps,
   propsObjectSpreadChildHydrationProps,
   restSpreadChildOverrideHydrationProps,
+  objectSpreadBranchChild,
   objectSpreadLoopRowChild,
   objectSpreadPropChild,
   restAliasSpreadChild,

@@ -332,6 +332,7 @@ export const conformancePins: ConformancePins = {
   // A spread of an object other than the props onto a child component: the
   // child's Input literal is built one field per key at compile time, and
   // the spread names no key (#3861).
+  'object-spread-branch-child': [{ code: 'BF101', severity: 'error', limitation: 'object-spread-onto-child-component', unescapable: true }],
   'object-spread-loop-row-child': [{ code: 'BF101', severity: 'error', limitation: 'object-spread-onto-child-component', unescapable: true }],
   'object-spread-prop-child': [{ code: 'BF101', severity: 'error', limitation: 'object-spread-onto-child-component', unescapable: true }],
   'body-rest-taken-key-read': [{ code: 'BF101', severity: 'error', limitation: 'body-rest-taken-key-read' }],

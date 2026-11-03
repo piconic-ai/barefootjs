@@ -74,7 +74,8 @@
         "packages/client/src/runtime/dynamic-text.ts",
         "packages/client/src/runtime/row-portal.ts",
         "packages/client/src/create-query.ts",
-        "packages/client/src/create-mutation.ts"
+        "packages/client/src/create-mutation.ts",
+        "packages/client/src/forward-props.ts"
       ],
       "linter": {
         "rules": {

@@ -5788,6 +5788,12 @@
               ]
             },
             {
+              "fixture": "object-spread-branch-child",
+              "limitations": [
+                "object-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "object-spread-loop-row-child",
               "limitations": [
                 "object-spread-onto-child-component"
@@ -9279,6 +9285,12 @@
               "fixture": "nullish-optional-row-field",
               "limitations": [
                 "nullish-optional-scalar-row-field"
+              ]
+            },
+            {
+              "fixture": "object-spread-branch-child",
+              "limitations": [
+                "object-spread-onto-child-component"
               ]
             },
             {
@@ -13145,6 +13157,12 @@
               ]
             },
             {
+              "fixture": "object-spread-branch-child",
+              "limitations": [
+                "object-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "object-spread-loop-row-child",
               "limitations": [
                 "object-spread-onto-child-component"
@@ -16608,6 +16626,12 @@
               "fixture": "nullish-optional-row-field",
               "limitations": [
                 "nullish-optional-scalar-row-field"
+              ]
+            },
+            {
+              "fixture": "object-spread-branch-child",
+              "limitations": [
+                "object-spread-onto-child-component"
               ]
             },
             {
@@ -24540,6 +24564,12 @@
               ]
             },
             {
+              "fixture": "object-spread-branch-child",
+              "limitations": [
+                "object-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "object-spread-loop-row-child",
               "limitations": [
                 "object-spread-onto-child-component"
@@ -27350,6 +27380,12 @@
               "fixture": "nullish-optional-row-field",
               "limitations": [
                 "nullish-optional-scalar-row-field"
+              ]
+            },
+            {
+              "fixture": "object-spread-branch-child",
+              "limitations": [
+                "object-spread-onto-child-component"
               ]
             },
             {

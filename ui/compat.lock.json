@@ -6617,6 +6617,20 @@
           ]
         }
       },
+      "object-spread-branch-child": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-spread-onto-child-component"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "object-spread-loop-row-child": {
         "go-template": {
           "kind": "refusal",
@@ -10336,6 +10350,10 @@
         "description": "An omitted optional row field takes the ?? fallback and a present \"\" or 0 is kept",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-optional-row-field.ts"
       },
+      "object-spread-branch-child": {
+        "description": "an object spread inside an untaken early-return branch is not evaluated at init (#3861)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/object-spread-branch-child.ts"
+      },
       "object-spread-loop-row-child": {
         "description": "a loop row spread onto a child component reaches it key by key (#3861)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/object-spread-loop-row-child.ts"
@@ -11530,6 +11548,7 @@
       "expected": "every key of the object reaches the child, merged with the call's explicit props in source order",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
+        "object-spread-branch-child",
         "object-spread-loop-row-child",
         "object-spread-prop-child"
       ],
