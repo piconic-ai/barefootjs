@@ -9156,6 +9156,12 @@
               ]
             },
             {
+              "fixture": "loop-row-child-absent-optional-field-attr",
+              "limitations": [
+                "absent-optional-row-field-forwarded"
+              ]
+            },
+            {
               "fixture": "loop-row-child-caller-rows-outer-state-key",
               "limitations": [
                 "loop-row-key-outer-state"
@@ -16554,6 +16560,12 @@
               "fixture": "loop-key-to-string-number-component-row",
               "limitations": [
                 "caller-rows-computed-key"
+              ]
+            },
+            {
+              "fixture": "loop-row-child-absent-optional-field-attr",
+              "limitations": [
+                "absent-optional-row-field-forwarded"
               ]
             },
             {

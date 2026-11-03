@@ -305,7 +305,8 @@ function isNullableScalarField(property: PropertyInfo): boolean {
 /**
  * Single-hop field reads off a signal getter call (`user().name`,
  * `user()?.name`) in a position where a missing field is observable: the
- * whole value of a non-class/style, non-boolean attribute, the left operand
+ * whole value of a non-boolean attribute (`class` and `style` included,
+ * #3859), the left operand
  * of `??`, or the receiver of a further `?.` hop (`user().name?.length`).
  */
 function collectNullableSignalFieldReads(
@@ -329,7 +330,6 @@ function collectNullableSignalFieldReads(
     const rec = node as Record<string, unknown>
     if (rec.type === 'element' && Array.isArray(rec.attrs)) {
       for (const attr of rec.attrs as Array<{ name: string; value: { kind?: string; parsed?: unknown } }>) {
-        if (attr.name === 'class' || attr.name === 'className' || attr.name === 'style') continue
         if (isBooleanAttr(attr.name) || attr.value?.kind !== 'expression') continue
         fieldRead(attr.value.parsed)
       }

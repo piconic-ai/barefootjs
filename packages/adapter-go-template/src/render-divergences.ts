@@ -125,6 +125,10 @@ export const renderDivergences: RenderDivergences = {
   // stores an omitted field as its zero value, so the lowering keeps Go's
   // `or` there and a present `''` / `0` takes the fallback.
   'nullish-optional-row-field': { limitation: 'nullish-optional-scalar-row-field' },
+  // The same row storage seen through a loop-row child: an omitted optional
+  // row field reaches the child as `''`, so its `class={tone}` renders
+  // `class=""` instead of being omitted.
+  'loop-row-child-absent-optional-field-attr': { limitation: 'absent-optional-row-field-forwarded' },
   // A JSX prop holding a nested component, forwarded by the receiving
   // component to a grandchild prop, renders nothing in the grandchild.
   'jsx-prop-nested-component-forwarded': { limitation: 'nested-component-in-jsx-prop-forwarded' },
