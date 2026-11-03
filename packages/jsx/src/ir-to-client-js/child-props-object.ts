@@ -18,7 +18,7 @@
  */
 
 import type { AttrValue } from '../types.ts'
-import { PROPS_PARAM, quotePropName } from './utils.ts'
+import { codeSafeStringLiteral, PROPS_PARAM, quotePropName } from './utils.ts'
 
 /** One explicit prop's value as a call-site builder spells it. */
 export interface ChildPropValue {
@@ -61,7 +61,7 @@ export function lastPropsObjectSpreadIndex(props: readonly ChildPropLike[]): num
  * merge is spelled into the value itself.
  */
 export function callerFirstPropExpr(name: string, expr: string): string {
-  const key = JSON.stringify(name)
+  const key = codeSafeStringLiteral(name)
   return `(${key} in ${PROPS_PARAM} ? ${PROPS_PARAM}[${key}] : ${expr})`
 }
 
@@ -94,6 +94,14 @@ export interface ChildPropsObjectOptions {
   restBag?: string
 }
 
+/**
+ * A JS array literal of code-safe string literals (`codeSafeStringLiteral`),
+ * printed exactly as `JSON.stringify` prints an array of ordinary names.
+ */
+export function codeSafeStringArray(values: readonly string[]): string {
+  return `[${values.map(codeSafeStringLiteral).join(',')}]`
+}
+
 /** An object literal of `entries`, `{}` when there are none. */
 function objectLiteral(entries: readonly string[]): string {
   return entries.length > 0 ? `{ ${entries.join(', ')} }` : '{}'
@@ -123,7 +131,7 @@ export function mergedExplicitPropExpr<P extends ChildPropLike>(
   spreadOf: (prop: P) => string,
 ): string {
   const name = props[index]!.name
-  const key = JSON.stringify(name)
+  const key = codeSafeStringLiteral(name)
   let merged = expr
   // The last spread kind applied: two props-object spreads in a row merge once.
   let last: 'props' | 'object' | null = null
@@ -178,7 +186,7 @@ export function childPropsObjectExpr<P extends ChildPropLike>(
   entries.push(...(options.trailing ?? []))
   const object = objectLiteral(entries)
   if (spreadAt < 0 && !options.forwardCaller) return object
-  return `forwardProps(${PROPS_PARAM}, ${object}, ${JSON.stringify(explicitNames)})`
+  return `forwardProps(${PROPS_PARAM}, ${object}, ${codeSafeStringArray(explicitNames)})`
 }
 
 /** One explicit prop's object-literal entry: a getter or a data property. */
@@ -228,5 +236,5 @@ function spreadPartsExpr<P extends ChildPropLike>(
   flush()
   const merged = `spreadChildProps(${parts.join(', ')})`
   if (!options.forwardCaller || mergesCaller) return merged
-  return `forwardProps(${PROPS_PARAM}, ${merged}, ${JSON.stringify(explicitNames)})`
+  return `forwardProps(${PROPS_PARAM}, ${merged}, ${codeSafeStringArray(explicitNames)})`
 }

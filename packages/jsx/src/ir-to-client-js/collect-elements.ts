@@ -11,7 +11,7 @@ import { detectRootNamespaceWrapTag } from './control-flow/stringify/template-pa
 import { expandDynamicPropValue, expandConstantForReactivity, resolveRestSpreadOrigin, resolveRestSpreadNames } from './prop-handling.ts'
 import { extractFreeIdentifiersFromText } from './csr-substitute.ts'
 import { walkIR, stopAt } from './walker.ts'
-import { childPropsObjectExpr, isSpreadPropName, mergedExplicitPropExpr } from './child-props-object.ts'
+import { childPropsObjectExpr, codeSafeStringArray, isSpreadPropName, mergedExplicitPropExpr } from './child-props-object.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { classifyDOMProp } from '@barefootjs/shared'
 import type { BindingScope } from '../scope/binding-scope.ts'
@@ -608,7 +608,7 @@ function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string 
   const consumedKeys = ctx.propsParams.map(p => p.sourceName ?? p.name)
   return childPropsObjectExpr(props, prop => componentInitPropValue(prop, ctx), {
     forwardCaller: knownSpreadProp !== undefined,
-    restBag: `forwardProps(${PROPS_PARAM}, {}, ${JSON.stringify(consumedKeys)})`,
+    restBag: `forwardProps(${PROPS_PARAM}, {}, ${codeSafeStringArray(consumedKeys)})`,
   })
 }
 
