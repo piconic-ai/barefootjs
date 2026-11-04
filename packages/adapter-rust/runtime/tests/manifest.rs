@@ -76,6 +76,31 @@ fn derive_stash_rest_props_prefers_props_own_key() {
     assert_eq!(rest.get("class"), Some(&JsValue::String("x".into())));
 }
 
+/// `extractSsrDefaults` writes no `value` for a prop without a default
+/// (spec/js-undefined-value.md, rollout step U1): such an entry seeds
+/// `Null`, exactly as `"value": null` did, and its key is still set.
+#[test]
+fn derive_stash_missing_value_seeds_null_like_value_null() {
+    let missing = obj(vec![
+        ("n", obj(vec![("propName", JsValue::String("n".into()))])),
+        ("rest", obj(vec![("isRestProps", JsValue::Bool(true))])),
+    ]);
+    let explicit = obj(vec![
+        ("n", obj(vec![("propName", JsValue::String("n".into())), ("value", JsValue::Null)])),
+        ("rest", obj(vec![("isRestProps", JsValue::Bool(true)), ("value", JsValue::Null)])),
+    ]);
+    for props in [
+        obj(vec![]),
+        obj(vec![("n", JsValue::Null)]),
+        obj(vec![("n", JsValue::Number(3.0))]),
+        obj(vec![("rest", obj(vec![("a", JsValue::Number(1.0))]))]),
+    ] {
+        assert_eq!(derive_stash_from_defaults(&missing, &props), derive_stash_from_defaults(&explicit, &props));
+    }
+    let out = derive_stash_from_defaults(&missing, &obj(vec![]));
+    assert_eq!(out, obj(vec![("n", JsValue::Null), ("rest", JsValue::Null)]));
+}
+
 #[test]
 fn derive_stash_bare_value_entry_passes_through() {
     // A non-object entry (bare JSON value) is used as-is -- mirrors

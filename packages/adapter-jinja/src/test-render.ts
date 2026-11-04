@@ -485,7 +485,8 @@ function ssrDefaultsToPy(defaults: Record<string, SsrDefault>): string {
 
 /** Serialise a single `SsrDefault` entry to a Python dict literal. */
 function ssrDefaultEntryToPy(d: SsrDefault): string {
-  const parts: string[] = [`'value': ${toPyLiteral(d.value)}`]
+  // A prop with no default has no `value`; the runtime reads it as nil.
+  const parts: string[] = 'value' in d ? [`'value': ${toPyLiteral(d.value)}`] : []
   if (d.propName !== undefined) parts.push(`'propName': ${pyStr(d.propName)}`)
   if (d.isRestProps) parts.push(`'isRestProps': True`)
   return `{${parts.join(', ')}}`

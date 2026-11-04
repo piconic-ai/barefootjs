@@ -1,5 +1,11 @@
 import { describe, test, expect } from 'bun:test'
-import { arithmeticCoercionOrRefuse, refuseAmbiguousNilArithmetic } from '../adapters/ambiguous-nil-arithmetic'
+import {
+  arithmeticCoercionOrRefuse,
+  refuseAmbiguousNilArithmetic,
+  refuseAmbiguousNilMemoArithmetic,
+  targetArithmeticCoercion,
+} from '../adapters/ambiguous-nil-arithmetic'
+import type { NativeSafeTable } from '../adapters/primitive-plan'
 import { analyzeComponent } from '../analyzer'
 import { exprToString, parseExpression } from '../expression-parser'
 import {
@@ -18,6 +24,10 @@ import {
 } from '../nullable-signal-attr'
 import { BindingScope } from '../scope/binding-scope'
 import type { ComponentIR } from '../types'
+
+const COLLAPSING: NativeSafeTable = { carriesUndefined: false }
+/** A synthetic target that carries `undefined` (no real adapter does yet, rollout step U1). */
+const CARRYING: NativeSafeTable = { carriesUndefined: true }
 
 function nullableGetters(decls: string): Set<string> {
   const source = `
@@ -450,13 +460,26 @@ describe('the BF101 of an ambiguous nil names the prop family (#3824 step 3)', (
 
   test('a numeric operand keeps the arithmetic message; a string or boolean one names its type', () => {
     const sink = { errors: [] as import('../types').CompilerError[], componentName: 'C' }
-    arithmeticCoercionOrRefuse('*', parseExpression('props.n'), parseExpression('2'), ctx, () => false, sink)
-    arithmeticCoercionOrRefuse('<', parseExpression('props.s'), parseExpression('1'), ctx, () => false, sink)
-    refuseAmbiguousNilArithmetic(parseExpression('props.b >= 1'), ctx, BindingScope.EMPTY, sink)
+    arithmeticCoercionOrRefuse('*', parseExpression('props.n'), parseExpression('2'), ctx, () => false, sink, COLLAPSING)
+    arithmeticCoercionOrRefuse('<', parseExpression('props.s'), parseExpression('1'), ctx, () => false, sink, COLLAPSING)
+    refuseAmbiguousNilArithmetic(parseExpression('props.b >= 1'), ctx, BindingScope.EMPTY, sink, COLLAPSING)
     expect(sink.errors.map(e => e.code)).toEqual(['BF101', 'BF101', 'BF101'])
     expect(sink.errors[0]!.message).toStartWith('Arithmetic over `props.n` reads a number prop declared both optional and nullable (`?: number | null`).')
     expect(sink.errors[1]!.message).toStartWith('A comparison over `props.s` reads a string prop declared both optional and nullable (`?: string | null`).')
     expect(sink.errors[2]!.message).toStartWith('A comparison over `props.b` reads a boolean prop')
     expect(sink.errors[1]!.suggestion?.message).toContain('`?: string`')
+  })
+
+  test('a target that carries undefined refuses nothing and leaves the operand to the helper (U1)', () => {
+    const sink = { errors: [] as import('../types').CompilerError[], componentName: 'C' }
+    const coercion = arithmeticCoercionOrRefuse('*', parseExpression('props.n'), parseExpression('2'), ctx, () => false, sink, CARRYING)
+    arithmeticCoercionOrRefuse('<', parseExpression('props.s'), parseExpression('1'), ctx, () => false, sink, CARRYING)
+    refuseAmbiguousNilArithmetic(parseExpression('props.b >= 1'), ctx, BindingScope.EMPTY, sink, CARRYING)
+    refuseAmbiguousNilMemoArithmetic([{ name: 'm', parsed: parseExpression('props.n * 2') } as never], ctx, sink, CARRYING)
+    expect(sink.errors).toEqual([])
+    expect(coercion).toBeNull()
+    // The collapsed branch keeps today's `null` reading of the refused operand.
+    expect(targetArithmeticCoercion('*', parseExpression('props.n'), parseExpression('2'), ctx, () => false, COLLAPSING)).toBe('null')
+    expect(targetArithmeticCoercion('*', parseExpression('props.n'), parseExpression('2'), ctx, () => false, CARRYING)).toBeNull()
   })
 })

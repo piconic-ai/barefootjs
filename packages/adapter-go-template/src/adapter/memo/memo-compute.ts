@@ -29,7 +29,7 @@ import {
 import type { GoEmitContext } from '../emit-context.ts'
 import type { PropFallbackVar } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
-import { escapeGoString } from '../lib/go-emit.ts'
+import { escapeGoString, GO_NATIVE_SAFE, goNilReadingSite } from '../lib/go-emit.ts'
 import {
   convertInitialValue,
   getSignalInitialValueAsGo,
@@ -155,7 +155,7 @@ export function matchFilterArmMemo(
   )
 
   const materialized = materializeGetterCalls(cb.arrow.body, knownGetterNames)
-  const evaluable = evalBody(materialized, new Set(cb.arrow.params), propsObjectIdentifier(ctx.state.propsObjectName), ctx.operandTyping())
+  const evaluable = evalBody(materialized, new Set(cb.arrow.params), propsObjectIdentifier(ctx.state.propsObjectName), goNilReadingSite(ctx.operandTyping()))
   if (evaluable === null) return null
 
   const paramName = cb.arrow.params[0] ?? '_'
@@ -277,7 +277,7 @@ function nilReadingMemoValue(
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   goType: string | undefined,
 ): string | null {
-  if (!memo.parsed || rewriteNilReadingsDeep(memo.parsed, ctx.operandTyping()) === memo.parsed) return null
+  if (!memo.parsed || rewriteNilReadingsDeep(memo.parsed, ctx.operandTyping(), GO_NATIVE_SAFE) === memo.parsed) return null
   const evaluated = evalExprGo(ctx, memo.parsed, signals, propsParams, propFallbackVars, new Set([memo.name]))
   return evaluated === null ? null : evaluatedAsGoType(evaluated, goType)
 }
@@ -386,7 +386,7 @@ export function evalExprGo(
     return foldEvalGo(ctx, fold, signals, propsParams, propFallbackVars, resolving)
   }
   // The evaluator applies no operand coercion (#3700).
-  refuseAmbiguousNilArithmetic(body, ctx.state.nullishAttrCtx, BindingScope.EMPTY, ctx.state)
+  refuseAmbiguousNilArithmetic(body, ctx.state.nullishAttrCtx, BindingScope.EMPTY, ctx.state, GO_NATIVE_SAFE)
   const evaluable = evaluatorBodyGo(ctx, body, new Set(), signals, propsParams, propFallbackVars, resolving)
   return evaluable === null ? null : `bf.EvalExpr("${escapeGoString(evaluable.json)}", ${evaluable.env})`
 }
@@ -412,7 +412,7 @@ function evaluatorBodyGo(
   )
   // The evaluator reads every nil as `null`: a typed operand reads its own
   // nil first (the nil-reading rewrite, #3824 step 4).
-  const materialized = materializeGetterCalls(rewriteNilReadingsDeep(body, ctx.operandTyping()), knownGetterNames)
+  const materialized = materializeGetterCalls(rewriteNilReadingsDeep(body, ctx.operandTyping(), GO_NATIVE_SAFE), knownGetterNames)
   const json = serializeParsedExpr(materialized)
   if (json === null) return null
   const entries: string[] = []
@@ -451,7 +451,7 @@ function foldEvalGo(
   if (recv === null) return null
   // The reducer's own parameters shadow same-named props (`(acc, n) => acc + n`
   // with an `n?: number | null` prop reads the element, not the prop).
-  refuseAmbiguousNilArithmetic(fold.arrow.body, ctx.state.nullishAttrCtx, BindingScope.EMPTY.enterCallback(fold.arrow.params), ctx.state)
+  refuseAmbiguousNilArithmetic(fold.arrow.body, ctx.state.nullishAttrCtx, BindingScope.EMPTY.enterCallback(fold.arrow.params), ctx.state, GO_NATIVE_SAFE)
   const reducer = evaluatorBodyGo(ctx, fold.arrow.body, new Set([accName, itemName]), signals, propsParams, propFallbackVars, resolving)
   if (reducer === null) return null
   const direction = fold.method === 'reduceRight' ? 'right' : 'left'

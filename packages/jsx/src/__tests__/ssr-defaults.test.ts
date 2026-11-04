@@ -80,7 +80,24 @@ describe('extractSsrDefaults', () => {
     const defaults = extractSsrDefaults(metadata)
     expect(defaults?.count).toEqual({ value: 0 })
     expect(defaults?.doubled).toEqual({ value: 0 })
-    expect(defaults?.initial).toEqual({ propName: 'initial', value: null })
+    expect(defaults?.initial).toEqual({ propName: 'initial' })
+  })
+
+  test('a prop with no default has no `value` key; one with a default keeps it, even when null (U1)', () => {
+    const metadata = metadataFor(`
+      'use client'
+      function Chip({ c, size = 'md', none = null }: { c?: string; size?: string; none?: string | null }) {
+        return <p className={size}>{c}{none}</p>
+      }
+    `)
+    // The manifest text is what every runtime reads (`toEqual` would not tell
+    // a missing key from an `undefined` one).
+    expect(JSON.parse(JSON.stringify(extractSsrDefaults(metadata)))).toEqual({
+      c: { propName: 'c' },
+      size: { propName: 'size', value: 'md' },
+      none: { propName: 'none', value: null },
+    })
+    expect('value' in (extractSsrDefaults(metadata)?.c ?? {})).toBe(false)
   })
 
   test('seeds every declared bare-props prop, including direct template reads (#2126)', () => {
@@ -99,7 +116,7 @@ describe('extractSsrDefaults', () => {
     `)
 
     const defaults = extractSsrDefaults(metadata)
-    expect(defaults?.label).toEqual({ propName: 'label', value: null })
+    expect(defaults?.label).toEqual({ propName: 'label' })
     expect(defaults?.n).toEqual({ value: 0 })
   })
 
@@ -129,7 +146,7 @@ describe('extractSsrDefaults', () => {
     `)
 
     const defaults = extractSsrDefaults(metadata)
-    expect(defaults?.label).toEqual({ propName: 'label', value: null })
+    expect(defaults?.label).toEqual({ propName: 'label' })
   })
 
   test('self-derived signal collision (#2669, shape B): non-idempotent derivation must not seed the pre-fix double-applied value', () => {
@@ -137,7 +154,7 @@ describe('extractSsrDefaults', () => {
     // the pre-fix EVALUATED value (2, for no caller prop) makes the
     // template's own recompute apply the `* 2` a second time (`2 * 2 =
     // 4`) — wrong even with no caller props at all. Pin that the entry
-    // is the RAW-prop shape (`value: null`), not `{ value: 2 }`.
+    // is the RAW-prop shape (no `value`), not `{ value: 2 }`.
     const metadata = metadataFor(`
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -148,7 +165,7 @@ describe('extractSsrDefaults', () => {
     `)
 
     const defaults = extractSsrDefaults(metadata)
-    expect(defaults?.count).toEqual({ propName: 'count', value: null })
+    expect(defaults?.count).toEqual({ propName: 'count' })
   })
 
   test('self-derived memo collision (#2669): the same rule applies to a memo whose computation derives from a same-named prop', () => {
@@ -169,7 +186,7 @@ describe('extractSsrDefaults', () => {
     `)
 
     const defaults = extractSsrDefaults(metadata)
-    expect(defaults?.label).toEqual({ propName: 'label', value: null })
+    expect(defaults?.label).toEqual({ propName: 'label' })
     expect(defaults?.n).toEqual({ value: 0 })
   })
 
@@ -190,7 +207,7 @@ describe('extractSsrDefaults', () => {
     `)
 
     const defaults = extractSsrDefaults(metadata)
-    expect(defaults?.label).toEqual({ propName: 'label', value: null })
+    expect(defaults?.label).toEqual({ propName: 'label' })
     expect(defaults?.[metadata.signals[0].getter]).toEqual({ value: 'sig' })
   })
 
@@ -214,7 +231,7 @@ describe('extractSsrDefaults', () => {
     `)
 
     const defaults = extractSsrDefaults(metadata)
-    expect(defaults?.label).toEqual({ propName: 'label', value: null })
+    expect(defaults?.label).toEqual({ propName: 'label' })
   })
 
   test('self-derived memo collision THROUGH a component-scope const (#2685 review)', () => {
@@ -229,7 +246,7 @@ describe('extractSsrDefaults', () => {
     `)
 
     const defaults = extractSsrDefaults(metadata)
-    expect(defaults?.label).toEqual({ propName: 'label', value: null })
+    expect(defaults?.label).toEqual({ propName: 'label' })
   })
 
   test('multi-hop const chain resolves transitively (#2685 review): `const a = props.x; const b = a`', () => {
@@ -252,7 +269,7 @@ describe('extractSsrDefaults', () => {
 
     const defaults = extractSsrDefaults(metadata)
     expect(defaults?.count).toEqual({ value: 1 })
-    expect(defaults?.x).toEqual({ propName: 'x', value: null })
+    expect(defaults?.x).toEqual({ propName: 'x' })
   })
 
   test('safety-net seeding sees a prop through a component-scope const (#2685 review)', () => {
@@ -276,7 +293,7 @@ describe('extractSsrDefaults', () => {
 
     const defaults = extractSsrDefaults(metadata)
     expect(defaults?.count).toEqual({ value: 0 })
-    expect(defaults?.initial).toEqual({ propName: 'initial', value: null })
+    expect(defaults?.initial).toEqual({ propName: 'initial' })
   })
 
   test('NEGATIVE (#2685 review): a const NOT derived from props keeps the signal-wins behavior', () => {
@@ -308,7 +325,7 @@ describe('extractSsrDefaults', () => {
     // under its own name, and the prop keeps its prop entry.
     const defaults = extractSsrDefaults(metadata)
     expect(defaults?.bfSignal_label).toEqual({ value: null })
-    expect(defaults?.label).toEqual({ propName: 'label', value: null })
+    expect(defaults?.label).toEqual({ propName: 'label' })
   })
 
   test('aliased destructured prop (#2460): `propName` is the CALLER-facing key, not the local binding', () => {
@@ -327,9 +344,9 @@ describe('extractSsrDefaults', () => {
     const defaults = extractSsrDefaults(metadata)
     expect(defaults).toBeDefined()
     // Keyed by the LOCAL binding (the template variable name)...
-    expect(defaults?.count).toEqual({ propName: 'n', value: null })
+    expect(defaults?.count).toEqual({ propName: 'n' })
     // ...but `propName` is the CALLER-facing key.
-    expect(defaults?.text).toEqual({ propName: 'text', value: null })
+    expect(defaults?.text).toEqual({ propName: 'text' })
   })
 
   test('aliased destructured prop with a default (#2460): `propName` still resolves to the source key', () => {
@@ -351,8 +368,8 @@ describe('extractSsrDefaults', () => {
     `)
 
     const defaults = extractSsrDefaults(metadata)
-    expect(defaults?.n).toEqual({ propName: 'n', value: null })
-    expect(defaults?.text).toEqual({ propName: 'text', value: null })
+    expect(defaults?.n).toEqual({ propName: 'n' })
+    expect(defaults?.text).toEqual({ propName: 'text' })
   })
 
   test('bare-props-form BODY-destructured default (#2943) seeds the evaluated default, not null', () => {
@@ -391,7 +408,7 @@ describe('extractSsrDefaults', () => {
       }
     `)
     const defaults = extractSsrDefaults(metadata)
-    expect(defaults?.label).toEqual({ propName: 'label', value: null })
+    expect(defaults?.label).toEqual({ propName: 'label' })
     expect(defaults?.text).toEqual({ propName: 'label', value: 'none' })
 
     expect(deriveStashFromDefaults(defaults!, { label: 'named' })).toMatchObject({ text: 'named' })
@@ -413,7 +430,7 @@ describe('extractSsrDefaults', () => {
     `)
 
     const defaults = extractSsrDefaults(metadata)
-    expect(defaults?.children).toEqual({ propName: 'children', value: null })
+    expect(defaults?.children).toEqual({ propName: 'children' })
     expect(defaults?.kids).toEqual(defaults?.children)
   })
 
@@ -434,7 +451,7 @@ describe('extractSsrDefaults', () => {
     `)
 
     const defaults = extractSsrDefaults(metadata)
-    expect(defaults?.children).toEqual({ propName: 'children', value: null })
+    expect(defaults?.children).toEqual({ propName: 'children' })
     expect(defaults?.kids).toEqual(defaults?.children)
   })
 
@@ -641,7 +658,7 @@ describe('extractSsrDefaults', () => {
     `)
 
     const defaults = extractSsrDefaults(metadata)
-    expect(defaults?.label).toEqual({ propName: 'label', value: null })
+    expect(defaults?.label).toEqual({ propName: 'label' })
     expect(defaults?.labelAlias).toBe(defaults?.label)
   })
 
@@ -676,7 +693,7 @@ describe('extractSsrDefaults', () => {
     expect(defaults?.off).toEqual({ propName: 'off', value: false })
     // A static `!off` would read `true` and win over the in-template
     // `on ?? !off` whatever `off` the caller passed.
-    expect(defaults?.on).toEqual({ propName: 'on', value: null })
+    expect(defaults?.on).toEqual({ propName: 'on' })
   })
 })
 
@@ -809,6 +826,15 @@ describe('deriveStashFromDefaults', () => {
     // object-shaped branches below and throw reading `d.isRestProps`.
     const defaults = { flag: null } as unknown as Record<string, SsrDefault>
     expect(deriveStashFromDefaults(defaults, {})).toEqual({ flag: null })
+  })
+
+  test('an entry without `value` (a prop with no default) seeds null, as `value: null` did (U1)', () => {
+    const missing: Record<string, SsrDefault> = { n: { propName: 'n' }, rest: { isRestProps: true } }
+    const explicit: Record<string, SsrDefault> = { n: { propName: 'n', value: null }, rest: { isRestProps: true, value: null } }
+    for (const props of [{}, { n: null }, { n: 3 }, { rest: { a: 1 } }]) {
+      expect(deriveStashFromDefaults(missing, props)).toEqual(deriveStashFromDefaults(explicit, props))
+    }
+    expect(deriveStashFromDefaults(missing, {})).toEqual({ n: null, rest: null })
   })
 
   test('mixed defaults map resolves every entry kind independently', () => {

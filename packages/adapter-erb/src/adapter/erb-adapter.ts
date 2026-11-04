@@ -228,6 +228,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
   }
 
   protected readonly loopChildDiagnosticName = 'ERB'
+  protected readonly nativeSafe = NATIVE_SAFE
 
   /**
    * Names (signal getters + props) whose value is a string. Ruby's `==`

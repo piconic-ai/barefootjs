@@ -134,10 +134,10 @@ export { emitParsedExpr, emitParsedValue, primitivePlanFor, arithmeticHelper, gr
 export type { StringNameTest } from './adapters/parsed-expr-emitter.ts'
 export { concatType, declaredValueTypes, loopRowType, type DeclaredValueTypes } from './adapters/loop-row-type.ts'
 export { collectNumberValueNames, isNumberValuedExpr, numberValuedSeedNames } from './adapters/number-value.ts'
-export { operandFacts, planPrimitive, planTest, spellTest, primitivesAt, isNativePlan, relationalHelper, isNativeToNumber, booleanValueSites, planTextDisplay, foldNegatedNumberLiteral, numberLiteralSpelling, isRuntimeNumberLiteral, plusSpelling, planToString, needsToString, strictEqSpelling, mayHoldObject, isNullishTest, isNilLiteralOperand, NON_PRIMITIVE_EQUALITY_REASON } from './adapters/primitive-plan.ts'
+export { operandFacts, planPrimitive, planTest, spellTest, primitivesAt, isNativePlan, relationalHelper, isNativeToNumber, booleanValueSites, planTextDisplay, foldNegatedNumberLiteral, numberLiteralSpelling, isRuntimeNumberLiteral, plusSpelling, planToString, needsToString, strictEqSpelling, mayHoldObject, isNullishTest, isNilLiteralOperand, collapsesNil, refuseUnspelledNilTest, NON_PRIMITIVE_EQUALITY_REASON } from './adapters/primitive-plan.ts'
 export { refuseNonPrimitiveStrictEquality, type NonPrimitiveEqualitySink } from './adapters/non-primitive-equality.ts'
 export { rewriteNilReadings, rewriteNilReadingsDeep, isNilReadingFallback, NAN_LITERAL } from './adapters/nil-reading.ts'
-export type { PrimitiveOp, Proof, NativeSafeClaims, NativeSafeTable, PrimitiveHelper, PrimitivePlan, PrimitiveInputs, TextDisplay, NumberLiteralSpelling, PlusSpelling, StrictEqSpelling } from './adapters/primitive-plan.ts'
+export type { PrimitiveOp, Proof, NativeSafeClaims, NativeSafeTable, PrimitiveHelper, NilTestHelper, PrimitivePlan, PrimitiveInputs, TextDisplay, NumberLiteralSpelling, PlusSpelling, StrictEqSpelling } from './adapters/primitive-plan.ts'
 export {
   collectOperandTyping,
   EMPTY_OPERAND_TYPING,
@@ -159,6 +159,7 @@ export { filterCaptureCollisions } from './adapters/filter-capture-collisions.ts
 export { templateNameCollisionErrors } from './adapters/template-name-collisions.ts'
 export {
   arithmeticCoercionOrRefuse,
+  targetArithmeticCoercion,
   refuseAmbiguousNilArithmetic,
   refuseAmbiguousNilMemoArithmetic,
   type AmbiguousNilArithmeticSink,
@@ -204,6 +205,7 @@ export type {
   CallbackLoweringOptions,
   CallbackPlan,
   EvalBody,
+  NilReadingSite,
   PredicateMethod,
   SortPlan,
 } from './adapters/callback-method.ts'

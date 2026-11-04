@@ -778,7 +778,8 @@ function ssrDefaultsToPhp(defaults: Record<string, SsrDefault>): string {
 
 /** Serialise a single `SsrDefault` entry to a PHP assoc-array literal. */
 function ssrDefaultEntryToPhp(d: SsrDefault): string {
-  const parts: string[] = [`'value' => ${toPhpLiteral(d.value)}`]
+  // A prop with no default has no `value`; the runtime reads it as nil.
+  const parts: string[] = 'value' in d ? [`'value' => ${toPhpLiteral(d.value)}`] : []
   if (d.propName !== undefined) parts.push(`'propName' => ${phpStr(d.propName)}`)
   if (d.isRestProps) parts.push(`'isRestProps' => true`)
   return `[${parts.join(', ')}]`

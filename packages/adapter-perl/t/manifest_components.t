@@ -167,4 +167,19 @@ subtest '_snake_case mirrors the Mojo adapter toTemplateName' => sub {
     is BarefootJS::_snake_case('InputOTP'),      'input_o_t_p',    'acronym splits per capital';
 };
 
+# `extractSsrDefaults` writes no `value` for a prop without a default
+# (spec/js-undefined-value.md, rollout step U1): such an entry seeds undef,
+# exactly as `value => undef` did, and its key still exists.
+subtest '_derive_stash_from_defaults reads a missing value as undef' => sub {
+    my $missing  = { n => { propName => 'n' }, rest => { isRestProps => 1 } };
+    my $explicit = { n => { propName => 'n', value => undef }, rest => { isRestProps => 1, value => undef } };
+    for my $props ({}, { n => undef }, { n => 3 }, { rest => { a => 1 } }) {
+        is { BarefootJS::_derive_stash_from_defaults($missing, $props) },
+            { BarefootJS::_derive_stash_from_defaults($explicit, $props) }, 'same seed as value => undef';
+    }
+    my %seed = BarefootJS::_derive_stash_from_defaults($missing, {});
+    ok exists $seed{n},    'the template variable still exists';
+    ok !defined $seed{n},  'and is undef';
+};
+
 done_testing;

@@ -18,6 +18,7 @@ import {
 import { BindingScope } from '../scope/binding-scope.ts'
 import { declaredValueTypes, loopRowType, type DeclaredValueTypes } from './loop-row-type.ts'
 import { collectOperandTyping, EMPTY_OPERAND_TYPING, type OperandTyping, type ScopedOperandTyping } from './operand-typing.ts'
+import type { NativeSafeTable } from './primitive-plan.ts'
 import { rootPropAliasesForLoop, rootPropAliasNames } from '../scope/root-prop-alias.ts'
 import type {
   CompilerError,
@@ -219,6 +220,12 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
   /** The adapter's name in the BF103 imported-loop-child diagnostic ("The Jinja adapter emits …"). */
   protected abstract readonly loopChildDiagnosticName: string
   /**
+   * The adapter's native-safe table (`NATIVE_SAFE`): the target whose plan
+   * decides whether an arithmetic operand's nil is ambiguous (#3700; refused
+   * only on a target that collapses `undefined` into its nil, `collapsesNil`).
+   */
+  protected abstract readonly nativeSafe: NativeSafeTable
+  /**
    * For an adapter that renames reserved names: two source names the
    * renaming turns into one template variable would read the same value, so
    * `generate()` refuses them (#3404). `null` when the adapter renames none.
@@ -277,7 +284,7 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     other: ParsedExpr | undefined,
     isShadowed: (name: string) => boolean,
   ): ArithmeticCoercion {
-    return arithmeticCoercionOrRefuse(op, operand, other, this.nullishAttrCtx, isShadowed, this.ambiguousNilSink())
+    return arithmeticCoercionOrRefuse(op, operand, other, this.nullishAttrCtx, isShadowed, this.ambiguousNilSink(), this.nativeSafe)
   }
 
   /**
@@ -288,7 +295,7 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
    * frame.
    */
   protected refuseAmbiguousNilArithmeticIn(expr: ParsedExpr, params: readonly string[]): void {
-    refuseAmbiguousNilArithmetic(expr, this.nullishAttrCtx, this.scope.enterCallback(params), this.ambiguousNilSink())
+    refuseAmbiguousNilArithmetic(expr, this.nullishAttrCtx, this.scope.enterCallback(params), this.ambiguousNilSink(), this.nativeSafe)
   }
 
   private ambiguousNilSink(): AmbiguousNilArithmeticSink {
@@ -471,7 +478,7 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     if (!options?.siblingTemplatesRegistered) {
       this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName, this.loopChildDiagnosticName))
     }
-    refuseAmbiguousNilMemoArithmetic(ir.metadata.memos ?? [], this.nullishAttrCtx, this.ambiguousNilSink())
+    refuseAmbiguousNilMemoArithmetic(ir.metadata.memos ?? [], this.nullishAttrCtx, this.ambiguousNilSink(), this.nativeSafe)
     // `===` / `!==` over an object or array (#3774, #3824 step 8).
     refuseNonPrimitiveStrictEquality(ir, this.operandTyping, this.ambiguousNilSink())
   }

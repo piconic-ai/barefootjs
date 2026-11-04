@@ -49,8 +49,13 @@ export interface SsrDefault {
    * adapter's own derivation supplies one. JSON-encodable: number,
    * string, boolean, null, or a tree of plain objects / arrays. `null`
    * when the source expression isn't statically evaluable.
+   *
+   * Absent on a prop entry whose prop has no destructure default
+   * (`spec/js-undefined-value.md`, "Shared: the seed and the default"):
+   * there is no default to fall back to, and every reader seeds such an
+   * entry with its nil, as {@link deriveStashFromDefaults} does.
    */
-  value: unknown
+  value?: unknown
   /**
    * When set, the manifest consumer prefers `props[propName]` over
    * `value`. Mirrors destructured-prop defaults
@@ -135,16 +140,26 @@ export function deriveStashFromDefaults(
       continue
     }
     if (d.isRestProps) {
-      extra[name] = name in props ? props[name] : d.value
+      extra[name] = name in props ? props[name] : fallbackOf(d)
       continue
     }
     if (d.propName !== undefined && d.propName in props && props[d.propName] != null) {
       extra[name] = props[d.propName]
     } else {
-      extra[name] = d.value
+      extra[name] = fallbackOf(d)
     }
   }
   return extra
+}
+
+/**
+ * An entry's static fallback: its `value`, or `null` when it has none (a
+ * prop with no default), as every runtime port reads a missing `value`
+ * (Python `d.get("value")`, Perl `$d->{value}`, PHP `?? null`, Rust
+ * `unwrap_or(Null)`, Ruby `d[:value]`, Java `d.get("value")`).
+ */
+function fallbackOf(d: SsrDefault): unknown {
+  return 'value' in d ? d.value : null
 }
 
 const UNRESOLVED = Symbol('unresolved')
@@ -199,8 +214,11 @@ function addPropSsrDefaults(
       // No destructure default — the template reads the prop as-is;
       // Perl's `//` operator decides what `undef` becomes. The entry
       // still matters so the template variable exists and consumers
-      // can supply the propName even with no static fallback.
-      out[p.name] = { propName: callerPropName, value: null }
+      // can supply the propName even with no static fallback. It has no
+      // `value` (`spec/js-undefined-value.md`, "Shared: the seed and the
+      // default"): every runtime's seed reads a missing `value` as its
+      // nil, as it read the `null` this used to write.
+      out[p.name] = { propName: callerPropName }
     }
   }
 }

@@ -210,6 +210,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
   }
 
   protected readonly loopChildDiagnosticName = 'Mojo'
+  protected readonly nativeSafe = NATIVE_SAFE
 
   /**
    * Names (signal getters + props) whose value is a string, so `===`/`!==`

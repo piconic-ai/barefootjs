@@ -36,7 +36,7 @@
 import type { ParsedExpr, FlatDepth, TemplatePart, ObjectLiteralProperty } from '../expression-parser.ts'
 import { asCallbackMethodCall } from '../expression-parser.ts'
 import type { LoweringMatcher, LoweringNode } from '../lowering-registry.ts'
-import { booleanValueSites, foldNegatedNumberLiteral, planPrimitive, planToString, type PrimitiveInputs, type PrimitivePlan } from './primitive-plan.ts'
+import { booleanValueSites, foldNegatedNumberLiteral, planPrimitive, planToString, refuseUnspelledNilTest, type PrimitiveInputs, type PrimitivePlan } from './primitive-plan.ts'
 import { rewriteNilReadings, rewriteNilReadingsDeep } from './nil-reading.ts'
 
 export type HigherOrderMethod = 'filter' | 'every' | 'some' | 'find' | 'findIndex' | 'findLast' | 'findLastIndex'
@@ -544,7 +544,7 @@ export function templatePartPlans(parts: readonly TemplatePart[], emitter: Pick<
  */
 export function withNilReadings(expr: ParsedExpr, emitter: Pick<ParsedExprEmitter, 'primitives'>): ParsedExpr {
   if (expr.kind !== 'binary' && expr.kind !== 'unary' && expr.kind !== 'template-literal') return expr
-  return rewriteNilReadings(expr, emitter.primitives.typing())
+  return rewriteNilReadings(expr, emitter.primitives.typing(), emitter.primitives.nativeSafe)
 }
 
 /**
@@ -556,7 +556,7 @@ function withNilReadingBody(
   arrow: Extract<ParsedExpr, { kind: 'arrow' }>,
   emitter: Pick<ParsedExprEmitter, 'primitives'>,
 ): Extract<ParsedExpr, { kind: 'arrow' }> {
-  const body = rewriteNilReadingsDeep(arrow.body, emitter.primitives.typing().enterCallback(arrow.params))
+  const body = rewriteNilReadingsDeep(arrow.body, emitter.primitives.typing().enterCallback(arrow.params), emitter.primitives.nativeSafe)
   return body === arrow.body ? arrow : { ...arrow, body }
 }
 
@@ -608,8 +608,13 @@ function dispatchParsedExpr(
       return emitter.member(expr.object, expr.property, expr.computed, expr.optional, emit, primitivePlanFor(expr, emitter))
     case 'index-access':
       return emitter.indexAccess(expr.object, expr.index, emit, primitivePlanFor(expr, emitter))
-    case 'binary':
-      return emitter.binary(expr.op, expr.left, expr.right, emit, primitivePlanFor(expr, emitter))
+    case 'binary': {
+      const plan = primitivePlanFor(expr, emitter)
+      // A nil test (a target that carries `undefined`) has no emitter
+      // spelling yet; refused here so no emitter's own `==` lowering sees it.
+      refuseUnspelledNilTest(plan)
+      return emitter.binary(expr.op, expr.left, expr.right, emit, plan)
+    }
     case 'unary': {
       // `-1.5` is the literal `-1.5` (#3824 step 6): a unary minus over a
       // non-zero number literal is spelled as the literal it folds into.

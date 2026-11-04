@@ -14,8 +14,14 @@ import {
   serializeParsedExpr,
   stringifyParsedExpr,
   BindingScope,
+  type NativeSafeTable,
   type ParsedExpr,
 } from '../index'
+
+/** A target that collapses `undefined` into its nil, as every target does today. */
+const COLLAPSING: NativeSafeTable = { carriesUndefined: false }
+/** A synthetic target that carries `undefined` (no real adapter does yet, rollout step U1). */
+const CARRYING: NativeSafeTable = { carriesUndefined: true }
 
 const SRC = `export function C(props: { n?: number; nn: number | null; e?: number | null; s?: string; sn: string | null; c?: string | null; m: number; t: string; x: any }) { return <p>{props.m}</p> }`
 
@@ -41,7 +47,8 @@ function show(e: ParsedExpr): string {
   }
 }
 
-const rewrite = (src: string): string => show(rewriteNilReadings(parseExpression(src), typing()))
+const rewrite = (src: string, target: NativeSafeTable = COLLAPSING): string =>
+  show(rewriteNilReadings(parseExpression(src), typing(), target))
 
 describe('rewriteNilReadings', () => {
   test('a numeric consumer reads an undefined nil as NaN and a null one as 0', () => {
@@ -69,9 +76,19 @@ describe('rewriteNilReadings', () => {
   })
 
   test('the deep form enters callbacks and serializes NaN through Number', () => {
-    const deep = rewriteNilReadingsDeep(parseExpression('props.items.filter(i => i > props.n)'), typing())
+    const deep = rewriteNilReadingsDeep(parseExpression('props.items.filter(i => i > props.n)'), typing(), COLLAPSING)
     const arrow = deep.kind === 'call' ? deep.args[0] : undefined
     expect(arrow?.kind === 'arrow' ? show(arrow.body) : null).toBe('(i > (props.n ?? NaN))')
-    expect(serializeParsedExpr(rewriteNilReadings(parseExpression('props.n * 2'), typing()))).toContain('"name":"Number"')
+    expect(serializeParsedExpr(rewriteNilReadings(parseExpression('props.n * 2'), typing(), COLLAPSING))).toContain('"name":"Number"')
+  })
+
+  test('on a target that carries undefined, an either string operand is left to the helper (U1)', () => {
+    expect(rewrite("'btn ' + props.c", CARRYING)).toBe("('btn ' + props.c)")
+    expect(rewrite('`${props.c}`', CARRYING)).toBe('`${props.c}`')
+    expect(rewrite('`${props.c}`')).toBe("`${(props.c ?? '')}`")
+    // A nil the type reads keeps its reading: it is an optimisation there.
+    expect(rewrite("props.s + '!'", CARRYING)).toBe("((props.s ?? 'undefined') + '!')")
+    expect(rewrite('props.n * 2', CARRYING)).toBe('((props.n ?? NaN) * 2)')
+    expect(rewrite('(props.e * 2)', CARRYING)).toBe('(props.e * 2)')
   })
 })

@@ -90,6 +90,19 @@ class DeriveVarsFromDefaultsTest < Minitest::Test
     assert_equal({}, extra[:rest])
   end
 
+  # `extractSsrDefaults` writes no `value` for a prop without a default
+  # (spec/js-undefined-value.md, rollout step U1): such an entry seeds nil,
+  # exactly as `value: nil` did, and its key is still set.
+  def test_entry_without_value_seeds_nil_like_value_nil
+    missing = { n: { propName: 'n' }, rest: { isRestProps: true } }
+    explicit = { n: { propName: 'n', value: nil }, rest: { isRestProps: true, value: nil } }
+    [{}, { n: nil }, { n: 3 }, { rest: { a: 1 } }].each do |props|
+      assert_equal BarefootJS::Context.send(:derive_vars_from_defaults, explicit, props),
+                   BarefootJS::Context.send(:derive_vars_from_defaults, missing, props)
+    end
+    assert_equal({ n: nil, rest: nil }, BarefootJS::Context.send(:derive_vars_from_defaults, missing, {}))
+  end
+
   # ---------------------------------------------------------------------
   # End-to-end: register_components_from_manifest + real ERB rendering
   # ---------------------------------------------------------------------

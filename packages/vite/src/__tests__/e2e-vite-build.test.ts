@@ -215,11 +215,12 @@ describe('e2e: vite build', () => {
     // Counter's own `count` signal seeds a literal SSR default even with no
     // backing prop (`ssrDefaults` covers every signal needing an in-template
     // seed, not only optional-prop-derived ones); Greeting's required `name`
-    // prop reference seeds a `{ propName, value: null }` row the same way.
+    // prop reference seeds a `{ propName }` row (no `value`: it has no
+    // default) the same way.
     expect(manifest.Counter).toEqual({ markedTemplate: 'Counter.tmpl', ssrDefaults: { count: { value: 0 } } })
     expect(manifest.Greeting).toEqual({
       markedTemplate: 'Greeting.tmpl',
-      ssrDefaults: { name: { propName: 'name', value: null } },
+      ssrDefaults: { name: { propName: 'name' } },
     })
     expect('components' in manifest.Counter).toBe(false)
     // The absent-key contract itself (no entry carries `ssrDefaults: {}`)
