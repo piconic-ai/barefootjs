@@ -27,8 +27,13 @@
  */
 import { asCallbackMethodCall, type ParsedExpr, type TemplatePart } from '@barefootjs/jsx'
 
-/** A runtime value in the evaluator's domain (JSON-shaped). */
-export type EvalValue = string | number | boolean | null | EvalValue[] | { [k: string]: EvalValue }
+/**
+ * A runtime value in the evaluator's domain: JSON values plus `undefined`
+ * (spec/js-undefined-value.md, §2 "Value domain"). `null` comes only from a
+ * literal or from data; a missing field, an out-of-range index and the
+ * unbound `undefined` identifier read as `undefined`.
+ */
+export type EvalValue = string | number | boolean | null | undefined | EvalValue[] | { [k: string]: EvalValue }
 
 /** The environment: `acc` / `item` / `index` plus captured free vars. */
 export type EvalEnv = Record<string, EvalValue>
@@ -47,6 +52,7 @@ function toNumber(v: EvalValue): number {
   if (typeof v === 'number') return v
   if (typeof v === 'boolean') return v ? 1 : 0
   if (v === null) return 0
+  if (v === undefined) return Number.NaN
   if (typeof v === 'string') {
     const t = v.trim()
     if (t === '') return 0
@@ -62,6 +68,7 @@ function toStr(v: EvalValue): string {
   if (typeof v === 'number') return numToStr(v)
   if (typeof v === 'boolean') return v ? 'true' : 'false'
   if (v === null) return 'null'
+  if (v === undefined) return 'undefined'
   throw new EvalUnsupported(`cannot coerce ${typeof v} to string`)
 }
 
@@ -74,13 +81,13 @@ function toBool(v: EvalValue): boolean {
   if (typeof v === 'boolean') return v
   if (typeof v === 'number') return v !== 0 && !Number.isNaN(v)
   if (typeof v === 'string') return v !== ''
-  if (v === null) return false
+  if (v === null || v === undefined) return false
   // arrays/objects are always truthy in JS
   return true
 }
 
 function isNullish(v: EvalValue): boolean {
-  return v === null
+  return v === null || v === undefined
 }
 
 // ---------------------------------------------------------------------------
@@ -236,11 +243,11 @@ function readProperty(obj: EvalValue, key: string): EvalValue {
     throw new EvalUnsupported(`property '${key}' on an array is not in the evaluator subset`)
   }
   if (obj !== null && typeof obj === 'object') {
-    // Own-property only: a missing field reads as `null` (the backends'
-    // single absent value). `key in obj` would walk the prototype chain and
-    // surface `toString` / `constructor` as "present", returning non-JSON
-    // values that Go maps / Perl hashes have no analogue for.
-    return Object.prototype.hasOwnProperty.call(obj, key) ? (obj as { [k: string]: EvalValue })[key] : null
+    // Own-property only: a missing field reads as `undefined`. `key in obj`
+    // would walk the prototype chain and surface `toString` / `constructor`
+    // as "present", returning non-JSON values that Go maps / Perl hashes
+    // have no analogue for.
+    return Object.prototype.hasOwnProperty.call(obj, key) ? (obj as { [k: string]: EvalValue })[key] : undefined
   }
   throw new EvalUnsupported(`cannot read property '${key}' of ${obj === null ? 'null' : typeof obj}`)
 }
@@ -275,19 +282,19 @@ function includes(obj: EvalValue, needle: EvalValue): boolean {
 /**
  * `.join(sep?)` (#2094) — elements ToString'd and joined; a null/undefined
  * element ToStrings to the empty string (matching JS `Array.prototype.join`,
- * where `null`/`undefined` elements are skipped/empty rather than the
- * literal string `"null"` that `toStr` would otherwise produce for a `null`
- * `EvalValue`). Default separator is `,`, matching JS.
+ * where `null`/`undefined` elements are empty rather than the literal
+ * `"null"` / `"undefined"` that `toStr` would otherwise produce). Default
+ * separator is `,`, matching JS.
  */
 function evalJoin(obj: EvalValue, sep: string): string {
   if (!Array.isArray(obj)) throw new EvalUnsupported('.join on a non-array is not in the evaluator subset')
-  return obj.map((el) => (el === null ? '' : toStr(el))).join(sep)
+  return obj.map((el) => (el === null || el === undefined ? '' : toStr(el))).join(sep)
 }
 
 function readIndex(obj: EvalValue, index: EvalValue): EvalValue {
   if (Array.isArray(obj)) {
     const i = toNumber(index)
-    if (!Number.isInteger(i) || i < 0 || i >= obj.length) return null
+    if (!Number.isInteger(i) || i < 0 || i >= obj.length) return undefined
     return obj[i]
   }
   if (obj !== null && typeof obj === 'object') {
@@ -307,6 +314,8 @@ export function evaluate(expr: ParsedExpr, env: EvalEnv): EvalValue {
 
     case 'identifier': {
       if (!(expr.name in env)) {
+        // The unshadowed `undefined` identifier is the constant (§2).
+        if (expr.name === 'undefined') return undefined
         throw new EvalUnsupported(`unbound identifier '${expr.name}'`)
       }
       return env[expr.name]

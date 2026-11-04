@@ -853,7 +853,7 @@
         "item": {}
       },
       "expect": 9,
-      "note": "?? coalesces a missing field (reads as null)"
+      "note": "?? coalesces a missing field (reads as undefined)"
     },
     {
       "src": "item.n ? 'y' : 'n'",
@@ -1086,8 +1086,10 @@
       "env": {
         "item": {}
       },
-      "expect": null,
-      "note": "a missing field reads as null"
+      "expect": {
+        "$undef": true
+      },
+      "note": "a missing field reads as undefined"
     },
     {
       "src": "item.tags.length",
@@ -1267,8 +1269,10 @@
         ],
         "i": 5
       },
-      "expect": null,
-      "note": "out-of-range index reads as null"
+      "expect": {
+        "$undef": true
+      },
+      "note": "out-of-range index reads as undefined"
     },
     {
       "src": "row[k]",
@@ -1291,6 +1295,226 @@
       },
       "expect": 9,
       "note": "index access into an object by a string key"
+    },
+    {
+      "src": "undefined",
+      "expr": {
+        "kind": "identifier",
+        "name": "undefined"
+      },
+      "env": {},
+      "expect": {
+        "$undef": true
+      },
+      "note": "the unbound undefined identifier is the constant"
+    },
+    {
+      "src": "item.missing + ''",
+      "expr": {
+        "kind": "binary",
+        "op": "+",
+        "left": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "missing",
+          "computed": false,
+          "optional": false
+        },
+        "right": {
+          "kind": "literal",
+          "value": "",
+          "literalType": "string"
+        }
+      },
+      "env": {
+        "item": {}
+      },
+      "expect": "undefined",
+      "note": "a missing field concatenates as \"undefined\""
+    },
+    {
+      "src": "item.missing + 1",
+      "expr": {
+        "kind": "binary",
+        "op": "+",
+        "left": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "missing",
+          "computed": false,
+          "optional": false
+        },
+        "right": {
+          "kind": "literal",
+          "value": 1,
+          "literalType": "number",
+          "raw": "1"
+        }
+      },
+      "env": {
+        "item": {}
+      },
+      "expect": {
+        "$num": "NaN"
+      },
+      "note": "a missing field adds as NaN"
+    },
+    {
+      "src": "item.missing === null",
+      "expr": {
+        "kind": "binary",
+        "op": "===",
+        "left": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "missing",
+          "computed": false,
+          "optional": false
+        },
+        "right": {
+          "kind": "literal",
+          "value": null,
+          "literalType": "null"
+        }
+      },
+      "env": {
+        "item": {}
+      },
+      "expect": false,
+      "note": "a missing field is not === null"
+    },
+    {
+      "src": "item.missing === undefined",
+      "expr": {
+        "kind": "binary",
+        "op": "===",
+        "left": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "missing",
+          "computed": false,
+          "optional": false
+        },
+        "right": {
+          "kind": "identifier",
+          "name": "undefined"
+        }
+      },
+      "env": {
+        "item": {}
+      },
+      "expect": true,
+      "note": "a missing field is === undefined"
+    },
+    {
+      "src": "item.v === undefined",
+      "expr": {
+        "kind": "binary",
+        "op": "===",
+        "left": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "v",
+          "computed": false,
+          "optional": false
+        },
+        "right": {
+          "kind": "identifier",
+          "name": "undefined"
+        }
+      },
+      "env": {
+        "item": {
+          "v": {
+            "$undef": true
+          }
+        }
+      },
+      "expect": true,
+      "note": "a present key holding undefined is === undefined"
+    },
+    {
+      "src": "[item.missing].includes(null)",
+      "expr": {
+        "kind": "array-method",
+        "method": "includes",
+        "object": {
+          "kind": "array-literal",
+          "elements": [
+            {
+              "kind": "member",
+              "object": {
+                "kind": "identifier",
+                "name": "item"
+              },
+              "property": "missing",
+              "computed": false,
+              "optional": false
+            }
+          ]
+        },
+        "args": [
+          {
+            "kind": "literal",
+            "value": null,
+            "literalType": "null"
+          }
+        ]
+      },
+      "env": {
+        "item": {}
+      },
+      "expect": false,
+      "note": ".includes tells undefined from null (SameValueZero)"
+    },
+    {
+      "src": "({ a: item.missing })",
+      "expr": {
+        "kind": "object-literal",
+        "properties": [
+          {
+            "kind": "prop",
+            "key": "a",
+            "keyKind": "identifier",
+            "shorthand": false,
+            "value": {
+              "kind": "member",
+              "object": {
+                "kind": "identifier",
+                "name": "item"
+              },
+              "property": "missing",
+              "computed": false,
+              "optional": false
+            }
+          }
+        ],
+        "raw": "({ a: item.missing })"
+      },
+      "env": {
+        "item": {}
+      },
+      "expect": {
+        "a": {
+          "$undef": true
+        }
+      },
+      "note": "an object-literal member may hold undefined"
     },
     {
       "src": "`${item.id}: ${item.name}`",
@@ -1700,7 +1924,7 @@
       "expect": {
         "done": true
       },
-      "note": "spreading a missing field (reads as null) is a no-op"
+      "note": "spreading a missing field (reads as undefined) is a no-op"
     },
     {
       "src": "Math.max(a, b)",
@@ -2769,6 +2993,43 @@
       },
       "expect": "a,,b",
       "note": ".join renders a null element as empty (not the string \"null\")"
+    },
+    {
+      "src": "item.tags.join(',')",
+      "expr": {
+        "kind": "array-method",
+        "method": "join",
+        "object": {
+          "kind": "member",
+          "object": {
+            "kind": "identifier",
+            "name": "item"
+          },
+          "property": "tags",
+          "computed": false,
+          "optional": false
+        },
+        "args": [
+          {
+            "kind": "literal",
+            "value": ",",
+            "literalType": "string"
+          }
+        ]
+      },
+      "env": {
+        "item": {
+          "tags": [
+            "a",
+            {
+              "$undef": true
+            },
+            "b"
+          ]
+        }
+      },
+      "expect": "a,,b",
+      "note": ".join renders an undefined element as empty (not the string \"undefined\")"
     },
     {
       "src": "item.tags.map(t => '#' + t)",

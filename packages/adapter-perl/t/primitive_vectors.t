@@ -7,8 +7,9 @@ use JSON::PP ();
 use POSIX ();
 use Scalar::Util qw(looks_like_number);
 
-use lib "$FindBin::Bin/../lib";
+use lib "$FindBin::Bin/../lib", "$FindBin::Bin/lib";
 use BarefootJS;
+use VectorUndefined ();
 use BarefootJS::Evaluator ();
 
 binmode Test::More->builder->$_, ':encoding(UTF-8)'
@@ -117,6 +118,7 @@ my %SENTINEL = (
 # delegate to read them as JS booleans. `$num` sentinels become doubles.
 sub decode_arg {
     my ($v) = @_;
+    return VectorUndefined::arg() if VectorUndefined::is_sentinel($v);
     return [ map { decode_arg($_) } @$v ] if ref $v eq 'ARRAY';
     if (ref $v eq 'HASH') {
         return $SENTINEL{ $v->{'$num'} }->() if keys %$v == 1 && exists $v->{'$num'};
@@ -186,6 +188,7 @@ sub run_case {
 # the same sign; a string expect needs a string.
 sub match {
     my ($got, $expect) = @_;
+    return VectorUndefined::runtime_undefined($got) if VectorUndefined::is_sentinel($expect);
     return !defined $got if !defined $expect;
     return 0 if !defined $got;
     if (ref $expect eq 'HASH' && keys %$expect == 1 && exists $expect->{'$num'}) {

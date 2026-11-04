@@ -66,7 +66,21 @@ export type Proof =
   | 'unproven'
 
 /** The (op, proof) pairs a target's native operators are pinned for. */
-export type NativeSafeTable = Readonly<Partial<Record<PrimitiveOp, readonly Proof[]>>>
+export type NativeSafeClaims = Readonly<Partial<Record<PrimitiveOp, readonly Proof[]>>>
+
+/**
+ * A target's native-operator claims ({@link NativeSafeClaims}) plus the data
+ * the plan needs about its runtime.
+ *
+ * `carriesUndefined` declares whether the target's runtime carries JS
+ * `undefined` as a value distinct from `null` (`spec/js-undefined-value.md`,
+ * "Carries undefined"): it passes the `undefined`-specific vectors and has
+ * no entry left in the expected-failure ledgers. It is required so that a
+ * new adapter must declare it. Every target declares `false` until its U
+ * step; nothing reads it for planning yet (rollout step U1 does), and
+ * {@link decide} reads only the op claims.
+ */
+export type NativeSafeTable = NativeSafeClaims & { readonly carriesUndefined: boolean }
 
 /**
  * The runtime helper a plan names, by its catalogue id
@@ -536,7 +550,7 @@ export function isRuntimeNumberLiteral(expr: ParsedExpr): boolean {
 }
 
 /** The number-literal claim every target makes: a safe integer is spelled as a host literal. */
-const SAFE_INTEGER_LITERALS: NativeSafeTable = { 'number-literal': ['safe-integer'] }
+const SAFE_INTEGER_LITERALS: NativeSafeTable = { 'number-literal': ['safe-integer'], carriesUndefined: false }
 
 /**
  * How an emitter spells a number literal of `value` under its plan:

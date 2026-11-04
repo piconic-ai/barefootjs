@@ -3,8 +3,9 @@
  * `+` / `-` and the relational operators (spec/js-primitive-semantics.md,
  * "ToNumber"). Strings are trimmed; `""` is 0; a numeric literal (decimal,
  * exponent, `0x` / `0o` / `0b`, `Infinity`) is its value; anything else is
- * `NaN`. A nil argument reads as `null` (→ 0), as the evaluator's
- * `_to_number` does: the nil-reading rewrite runs before the helper.
+ * `NaN`. A host-nil argument is `null` (→ 0), as the evaluator's
+ * `_to_number` does; `undefined` (the `$undef` sentinel) is `NaN`
+ * (spec/js-undefined-value.md, §2).
  */
 import { type PrimitiveCase, type PrimitiveOp, unaryDomain } from './types'
 
@@ -21,6 +22,7 @@ export const to_number: PrimitiveOp = {
     c(true, 'true is 1'),
     c(false, 'false is 0'),
     c(null, 'nil reads as null and is 0'),
+    c(undefined, 'undefined is NaN'),
     c('', 'the empty string is 0'),
     c('   ', 'a whitespace-only string is 0'),
     c(' 8 ', 'surrounding whitespace is trimmed'),

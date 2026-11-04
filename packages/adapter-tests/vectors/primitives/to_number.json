@@ -66,6 +66,19 @@
     {
       "fn": "to_number",
       "args": [
+        {
+          "$undef": true
+        }
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "domain": "nil",
+      "note": "undefined is NaN"
+    },
+    {
+      "fn": "to_number",
+      "args": [
         ""
       ],
       "expect": 0,

@@ -141,6 +141,19 @@
       },
       "domain": "nil",
       "note": "nil reads as null and negates to -0"
+    },
+    {
+      "fn": "neg",
+      "args": [
+        {
+          "$undef": true
+        }
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "domain": "nil",
+      "note": "undefined negates to NaN"
     }
   ]
 }

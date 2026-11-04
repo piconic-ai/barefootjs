@@ -1,7 +1,7 @@
 /**
  * `truthy` — JS ToBoolean, the test of `if`, `?:`, `!`, `&&`, `||`
  * (spec/js-primitive-semantics.md, "ToBoolean"). `false`, `0`, `-0`, `NaN`,
- * `""` and nil are falsy; every other value is truthy, including `"0"`,
+ * `""`, `null` and `undefined` are falsy; every other value is truthy, including `"0"`,
  * `"00"`, `" "`, `[]` and `{}`.
  */
 import { type PrimitiveCase, type PrimitiveOp, unaryDomain } from './types'
@@ -28,6 +28,7 @@ export const truthy: PrimitiveOp = {
     c(' ', 'a single space is truthy'),
     c('', 'the empty string is falsy'),
     c(null, 'nil is falsy'),
+    c(undefined, 'undefined is falsy'),
     c([], 'an empty array is truthy'),
     c([0], 'an array holding 0 is truthy'),
     c({}, 'an empty object is truthy'),

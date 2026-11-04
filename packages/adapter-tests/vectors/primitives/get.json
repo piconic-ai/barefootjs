@@ -43,7 +43,9 @@
         ],
         3
       ],
-      "expect": null,
+      "expect": {
+        "$undef": true
+      },
       "domain": "array-index",
       "note": "an index past the end reads undefined"
     },
@@ -84,7 +86,9 @@
         ],
         "01"
       ],
-      "expect": null,
+      "expect": {
+        "$undef": true
+      },
       "domain": "array-key",
       "note": "a leading zero is not an array index"
     },
@@ -98,7 +102,9 @@
         ],
         "1e0"
       ],
-      "expect": null,
+      "expect": {
+        "$undef": true
+      },
       "domain": "array-key",
       "note": "an exponent spelling is not an array index"
     },
@@ -112,7 +118,9 @@
         ],
         "1.0"
       ],
-      "expect": null,
+      "expect": {
+        "$undef": true
+      },
       "domain": "array-key",
       "note": "a fraction spelling is not an array index"
     },
@@ -126,7 +134,9 @@
         ],
         "-0"
       ],
-      "expect": null,
+      "expect": {
+        "$undef": true
+      },
       "domain": "array-key",
       "note": "the string \"-0\" is not an array index"
     },
@@ -140,7 +150,9 @@
         ],
         " 1"
       ],
-      "expect": null,
+      "expect": {
+        "$undef": true
+      },
       "domain": "array-key",
       "note": "a padded key is not an array index"
     },
@@ -170,7 +182,9 @@
         ],
         1.1
       ],
-      "expect": null,
+      "expect": {
+        "$undef": true
+      },
       "domain": "array-key",
       "note": "a fractional index reads undefined"
     },
@@ -184,7 +198,9 @@
         ],
         -1
       ],
-      "expect": null,
+      "expect": {
+        "$undef": true
+      },
       "domain": "array-key",
       "note": "a negative index reads undefined (no wrap-around)"
     },
@@ -198,7 +214,9 @@
         ],
         null
       ],
-      "expect": null,
+      "expect": {
+        "$undef": true
+      },
       "domain": "array-key",
       "note": "a nil key reads the \"null\" property"
     },
@@ -212,7 +230,9 @@
         ],
         true
       ],
-      "expect": null,
+      "expect": {
+        "$undef": true
+      },
       "domain": "array-key",
       "note": "a boolean key reads the \"true\" property"
     },
@@ -226,7 +246,9 @@
         ],
         "9223372036854775808"
       ],
-      "expect": null,
+      "expect": {
+        "$undef": true
+      },
       "domain": "array-key",
       "note": "an index key past the 64-bit range reads undefined"
     },
@@ -240,7 +262,9 @@
         ],
         100000000000000000000
       ],
-      "expect": null,
+      "expect": {
+        "$undef": true
+      },
       "domain": "array-index",
       "note": "a number key past the 64-bit range reads undefined"
     },
@@ -270,7 +294,9 @@
         "abc",
         3
       ],
-      "expect": null,
+      "expect": {
+        "$undef": true
+      },
       "domain": "string-receiver",
       "note": "a string index past the end reads undefined"
     },
@@ -280,7 +306,9 @@
         "abc",
         -1
       ],
-      "expect": null,
+      "expect": {
+        "$undef": true
+      },
       "domain": "string-receiver",
       "note": "a negative string index reads undefined"
     },
@@ -290,7 +318,9 @@
         "abc",
         "9223372036854775808"
       ],
-      "expect": null,
+      "expect": {
+        "$undef": true
+      },
       "domain": "string-receiver",
       "note": "a string index key past the 64-bit range reads undefined"
     },
@@ -334,7 +364,9 @@
         },
         "b"
       ],
-      "expect": null,
+      "expect": {
+        "$undef": true
+      },
       "domain": "object-key",
       "note": "a missing object key reads undefined"
     },
@@ -346,7 +378,9 @@
         },
         "ID"
       ],
-      "expect": null,
+      "expect": {
+        "$undef": true
+      },
       "domain": "object-key",
       "note": "an object key matches exactly (no case variant)"
     },

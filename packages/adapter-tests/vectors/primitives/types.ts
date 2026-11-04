@@ -91,7 +91,11 @@ export interface PrimitiveOp {
   cases: PrimitiveCase[]
 }
 
-/** The JS type a single operand has, as the domains spell it. */
+/**
+ * The JS type a single operand has, as the domains spell it. `null` and
+ * `undefined` share the one `nil` domain (spec/js-undefined-value.md, §2):
+ * no `NativeSafeTable` claims a native operator over nil.
+ */
 export function unaryDomain(v: unknown): Domain {
   if (v === null || v === undefined) return 'nil'
   if (typeof v === 'boolean') return 'boolean'

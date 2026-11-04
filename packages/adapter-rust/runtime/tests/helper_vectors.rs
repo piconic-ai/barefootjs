@@ -33,6 +33,8 @@ use serde_json::Value as JsonValue;
 use std::collections::{BTreeMap, HashMap, HashSet};
 use std::path::PathBuf;
 
+mod vector_undefined;
+
 fn vectors_path() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../adapter-tests/vectors/vectors.json")
 }
@@ -214,6 +216,9 @@ fn call_binding(fn_name: &str, args: &[JsValue]) -> Option<JsValue> {
 /// hashes, booleans by truthiness, numbers numerically, arrays/objects
 /// recursively.
 fn matches(got: &JsValue, expect: &JsonValue) -> bool {
+    if vector_undefined::is_sentinel(expect) {
+        return vector_undefined::is_runtime_undefined(got);
+    }
     if expect.is_null() {
         return matches!(got, JsValue::Null);
     }
@@ -283,7 +288,8 @@ fn py_truthy(v: &JsValue) -> bool {
 /// `packages/adapter-tests/src/__tests__/divergences.test.ts`.
 #[derive(Deserialize)]
 struct DivergenceEntry {
-    #[serde(default)]
+    /// `Some(Null)` for a pinned `"expect": null`, `None` when absent.
+    #[serde(default, deserialize_with = "present_value")]
     expect: Option<JsonValue>,
     #[serde(default)]
     throws: bool,
@@ -301,6 +307,12 @@ struct DivergenceFile {
     backend: String,
     divergences: HashMap<String, DivergenceEntry>,
     unsupported: HashMap<String, String>,
+}
+
+/// Deserializes a present field as `Some`, even when it is JSON `null`
+/// (plain `Option` would read a pinned `null` as absent).
+fn present_value<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Option<JsonValue>, D::Error> {
+    JsonValue::deserialize(d).map(Some)
 }
 
 #[test]
@@ -333,7 +345,7 @@ fn helper_vectors_match_js_reference_or_declared_divergence() {
         let note = case["note"].as_str().unwrap();
         let key = format!("{fn_name}/{note}");
         let raw_args = case["args"].as_array().cloned().unwrap_or_default();
-        let args: Vec<JsValue> = raw_args.iter().map(materialize_arg).collect();
+        let args: Vec<JsValue> = raw_args.iter().map(|a| vector_undefined::to_arg(materialize_arg(a))).collect();
         let expect = &case["expect"];
 
         if let Some(reason) = div_file.unsupported.get(fn_name) {

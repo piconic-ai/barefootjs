@@ -20,9 +20,10 @@ import math
 import os
 import unittest
 
-from jinja2 import Environment
+from jinja2 import Environment, Undefined
 
 from barefootjs import BarefootJS
+from tests.vector_undefined import UNDEFINED_EXPECT, is_runtime_undefined, load_expected_failures, undefined_to_arg
 
 VECTORS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "adapter-tests", "vectors")
 PRIMITIVE_FILES = sorted(glob.glob(os.path.join(VECTORS_DIR, "primitives", "*.json")))
@@ -49,15 +50,17 @@ BINDINGS = {
 }
 
 _JINJA_IF = Environment().from_string("{% if v %}1{% else %}0{% endif %}")
-_JINJA_INDEX = Environment().compile_expression("recv[key]")
+# `undefined_to_none=False` keeps Jinja's own Undefined for a missing element,
+# which is what a template position sees (and what a `$undef` expect matches
+# in the native binding, see `_native_undefined`).
+_JINJA_INDEX = Environment().compile_expression("recv[key]", undefined_to_none=False)
 _JINJA_PLUS = Environment().compile_expression("a + b")
 _JINJA_CONCAT = Environment().compile_expression("a ~ b")
 _JINJA_RELATIONAL = {op: Environment().compile_expression(f"a {op} b") for op in ("<", "<=", ">", ">=", "==")}
 
 # One binding per op the Jinja adapter can spell natively, to the native Jinja
 # operator: a test is Jinja's own `{% if %}` (`not`, `if … else`); an index
-# read is Jinja's own `[]` (an undefined result reads as None, as a template's
-# nil); a number literal is a Jinja literal; a relational operator is Jinja's
+# read is Jinja's own `[]` (a missing element is Jinja's Undefined); a number literal is a Jinja literal; a relational operator is Jinja's
 # own `<` / `<=` / `>` / `>=`; a unary `+` over a number is the operand
 # itself. It runs over the cases whose domain the adapter's NATIVE_SAFE table
 # claims (primitives-native-safe.json; spec/js-primitive-semantics.md,
@@ -86,10 +89,13 @@ SENTINELS = {"NaN": math.nan, "Infinity": math.inf, "-Infinity": -math.inf, "-0"
 
 
 def _decode(v):
-    """Materialize the `{"$num": ...}` sentinel, `-0` included."""
+    """Materialize the `{"$num": ...}` sentinel, `-0` included, and mark a
+    `{"$undef": true}` (see vector_undefined.py)."""
     if isinstance(v, list):
         return [_decode(x) for x in v]
     if isinstance(v, dict):
+        if v == {"$undef": True}:
+            return UNDEFINED_EXPECT
         if list(v) == ["$num"]:
             return SENTINELS[v["$num"]]
         return {k: _decode(x) for k, x in v.items()}
@@ -104,6 +110,8 @@ def _match(got, expect):
     """The primitives contract: types are strict (a bool for a boolean, a
     number for a number, a str for a string), numbers compare as doubles and
     a zero compares by sign."""
+    if expect is UNDEFINED_EXPECT:
+        return is_runtime_undefined(got)
     if expect is None:
         return got is None
     if isinstance(expect, bool):
@@ -128,16 +136,29 @@ def _match(got, expect):
     return isinstance(got, str) and got == expect
 
 
-def _run(case, bind=None):
+def _native_undefined(got):
+    """A native Jinja operator yields Jinja's own Undefined for JS
+    `undefined` (a missing element), so the native binding matches a `$undef`
+    expect by it, unlike the helper binding (vector_undefined.py)."""
+    return isinstance(got, Undefined)
+
+
+def _match_native(got, expect):
+    if expect is UNDEFINED_EXPECT:
+        return _native_undefined(got)
+    return _match(got, expect)
+
+
+def _run(case, bind=None, match=_match):
     bind = bind or BINDINGS.get(case["fn"])
     if bind is None:
         return False, f"no Python binding for '{case['fn']}' -- add it to BINDINGS"
     try:
-        got = bind(*[_decode(a) for a in case["args"]])
+        got = bind(*[undefined_to_arg(_decode(a)) for a in case["args"]])
     except Exception as exc:  # noqa: BLE001
         return False, f"raised {exc!r}"
     expect = _decode(case["expect"])
-    if _match(got, expect):
+    if match(got, expect):
         return True, ""
     return False, f"got {got!r}, want {expect!r}"
 
@@ -145,8 +166,7 @@ def _run(case, bind=None):
 @unittest.skipUnless(PRIMITIVE_FILES, "primitive vectors not available outside the monorepo checkout")
 class PrimitiveVectorsTest(unittest.TestCase):
     def test_primitive_vectors(self):
-        with open(LEDGER_PATH, encoding="utf-8") as fh:
-            expected = json.load(fh)["runtimes"]["python"]
+        expected = load_expected_failures(LEDGER_PATH)
         problems, seen, total, passed = [], set(), 0, 0
         for path in PRIMITIVE_FILES:
             with open(path, encoding="utf-8") as fh:
@@ -183,7 +203,7 @@ class PrimitiveVectorsTest(unittest.TestCase):
                 if case["domain"] not in domains:
                     continue
                 ran += 1
-                ok, detail = _run(case, bind)
+                ok, detail = _run(case, bind, _match_native)
                 if not ok:
                     problems.append(f"NATIVE-FAIL {case['fn']}/{case['note']} (domain {case['domain']}): {detail}")
         print(f"primitives (native): {ran} claimed cases")

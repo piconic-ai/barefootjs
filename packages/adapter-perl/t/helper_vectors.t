@@ -6,8 +6,9 @@ use File::Spec;
 use JSON::PP ();
 use Scalar::Util qw(looks_like_number);
 
-use lib "$FindBin::Bin/../lib";
+use lib "$FindBin::Bin/../lib", "$FindBin::Bin/lib";
 use BarefootJS;
+use VectorUndefined ();
 
 # vectors.json is UTF-8 (string args like "café"; `≡` in some notes). Decode it
 # as UTF-8 (below) and route TAP through a UTF-8 layer so wide test names don't
@@ -274,6 +275,7 @@ done_testing;
 # branch is exercised, not just its ISO-string branch.
 sub normalize_arg {
     my ($v) = @_;
+    return VectorUndefined::arg() if VectorUndefined::is_sentinel($v);
     return [ map { normalize_arg($_) } @$v ] if ref $v eq 'ARRAY';
     if (ref $v eq 'HASH') {
         my @keys = keys %$v;
@@ -289,6 +291,7 @@ sub normalize_arg {
 # numbers numerically, arrays/hashes recursively.
 sub _match {
     my ($got, $expect) = @_;
+    return VectorUndefined::runtime_undefined($got) if VectorUndefined::is_sentinel($expect);
     return !defined $got if !defined $expect;
     if (ref $expect eq 'HASH' && exists $expect->{'$num'}) {
         my $kind = $expect->{'$num'};

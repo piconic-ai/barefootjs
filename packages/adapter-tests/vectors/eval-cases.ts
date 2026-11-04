@@ -78,7 +78,7 @@ export const evalCases: EvalCase[] = [
   { src: "item.label || 'untitled'", env: { item: { label: 'set' } }, note: '|| returns the truthy left operand' },
   { src: 'item.qty ?? 0', env: { item: { qty: 0 } }, note: '?? keeps a present zero (only null coalesces)' },
   { src: 'item.qty ?? 0', env: { item: { qty: null } }, note: '?? coalesces a null to the default' },
-  { src: 'item.missing ?? 9', env: { item: {} }, note: '?? coalesces a missing field (reads as null)' },
+  { src: 'item.missing ?? 9', env: { item: {} }, note: '?? coalesces a missing field (reads as undefined)' },
 
   // ----- conditional (ternary), incl. the sort 3-way comparator -----------
   { src: "item.n ? 'y' : 'n'", env: { item: { n: 0 } }, note: 'ternary test: 0 is falsy' },
@@ -88,7 +88,7 @@ export const evalCases: EvalCase[] = [
 
   // ----- member / index access --------------------------------------------
   { src: 'item.a.b', env: { item: { a: { b: 42 } } }, note: 'nested member access' },
-  { src: 'item.missing', env: { item: {} }, note: 'a missing field reads as null' },
+  { src: 'item.missing', env: { item: {} }, note: 'a missing field reads as undefined' },
   { src: 'item.tags.length', env: { item: { tags: ['x', 'y', 'z'] } }, note: '.length on an array field' },
   { src: 'item.name.length', env: { item: { name: 'abcd' } }, note: '.length on a string field' },
   // Non-ASCII BMP `.length` (#2196 Level 1): every backend must agree with
@@ -103,8 +103,20 @@ export const evalCases: EvalCase[] = [
   { src: 'item.name.length', env: { item: { name: '日本' } }, note: '.length on a non-ASCII BMP string (CJK)' },
   { src: 'item.name.length', env: { item: { name: 'ﾊ' } }, note: '.length on a non-ASCII BMP string (halfwidth katakana)' },
   { src: 'item[i]', env: { item: [10, 20, 30], i: 1 }, note: 'index access by a numeric variable' },
-  { src: 'item[i]', env: { item: [10, 20], i: 5 }, note: 'out-of-range index reads as null' },
+  { src: 'item[i]', env: { item: [10, 20], i: 5 }, note: 'out-of-range index reads as undefined' },
   { src: 'row[k]', env: { row: { price: 9 }, k: 'price' }, note: 'index access into an object by a string key' },
+
+  // ----- undefined vs null (spec/js-undefined-value.md, §2) ----------------
+  // A missing field is `undefined`, data `null` is `null`; they differ under
+  // ToString, ToNumber and `===`, and an object member may hold `undefined`.
+  { src: 'undefined', env: {}, note: 'the unbound undefined identifier is the constant' },
+  { src: "item.missing + ''", env: { item: {} }, note: 'a missing field concatenates as "undefined"' },
+  { src: 'item.missing + 1', env: { item: {} }, note: 'a missing field adds as NaN' },
+  { src: 'item.missing === null', env: { item: {} }, note: 'a missing field is not === null' },
+  { src: 'item.missing === undefined', env: { item: {} }, note: 'a missing field is === undefined' },
+  { src: 'item.v === undefined', env: { item: { v: undefined } }, note: 'a present key holding undefined is === undefined' },
+  { src: '[item.missing].includes(null)', env: { item: {} }, note: '.includes tells undefined from null (SameValueZero)' },
+  { src: '({ a: item.missing })', env: { item: {} }, note: 'an object-literal member may hold undefined' },
 
   // ----- template literal -------------------------------------------------
   { src: '`${item.id}: ${item.name}`', env: { item: { id: 7, name: 'widget' } }, note: 'template literal interpolates and stringifies parts' },
@@ -145,7 +157,7 @@ export const evalCases: EvalCase[] = [
   {
     src: '({ ...item.missing, done: true })',
     env: { item: {} },
-    note: 'spreading a missing field (reads as null) is a no-op',
+    note: 'spreading a missing field (reads as undefined) is a no-op',
   },
 
   // ----- built-in calls (the deterministic allowlist) ---------------------
@@ -199,6 +211,7 @@ export const evalCases: EvalCase[] = [
   { src: 'item.tags.join()', env: { item: { tags: ['a', 'b'] } }, note: '.join with no separator defaults to a comma' },
   { src: "item.tags.join('-')", env: { item: { tags: [] } }, note: '.join on an empty array is the empty string' },
   { src: "item.tags.join(',')", env: { item: { tags: ['a', null, 'b'] } }, note: '.join renders a null element as empty (not the string "null")' },
+  { src: "item.tags.join(',')", env: { item: { tags: ['a', undefined, 'b'] } }, note: '.join renders an undefined element as empty (not the string "undefined")' },
 
   // ----- nested `.map` / `.filter` inside a callback body (#2094) ---------
   // The #1938 blog-showcase shape: a flatMap projection body itself maps a
