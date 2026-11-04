@@ -5,7 +5,8 @@
  * adapter consults during lowering; no adapter instance state.
  */
 
-import type { ComponentIR } from '../types.ts'
+import type { ComponentIR, TypeInfo } from '../types.ts'
+import { collapsesNil, type NativeSafeTable } from './primitive-plan.ts'
 
 /**
  * Props whose declared TS type is boolean. A bare binding of one
@@ -26,15 +27,24 @@ export function collectBooleanTypedProps(ir: ComponentIR): Set<string> {
  * declared optional (#2259, e.g. textarea's `rows`). A bare reference to one
  * is absent (`None` / `nil` / `null` / `undef`) when the caller omits it, so
  * each adapter guards it with its own presence test before rendering.
+ *
+ * On a `target` that carries `undefined` (`collapsesNil` false), a
+ * destructure default applies to an absent or `undefined` prop only, so a
+ * defaulted prop whose declared type admits `null` is still `null` when the
+ * caller passes one (`spec/js-undefined-value.md`, "Decisions" (6)), and is
+ * guarded too. A target that collapses the two nils seeds the default for a
+ * `null` as well, so its defaulted props are never nil.
  */
-export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
+export function collectNullableOptionalProps(ir: ComponentIR, target?: NativeSafeTable): Set<string> {
+  const defaultKeepsNull = target !== undefined && !collapsesNil(target)
   return new Set([
     ...ir.metadata.propsParams
       .filter(
         p =>
-          p.defaultValue === undefined &&
           !p.isRest &&
-          (p.type?.kind !== 'primitive' || p.optional),
+          (p.defaultValue === undefined
+            ? p.type?.kind !== 'primitive' || p.optional
+            : defaultKeepsNull && admitsNull(p.declaredType ?? p.type)),
       )
       .map(p => p.name),
     // A closed-type `{...rest}` key (#3057) is never destructured with its
@@ -45,6 +55,13 @@ export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
     // too: the guard simply always passes for it.
     ...ir.metadata.restPropsExpandedKeys,
   ])
+}
+
+/** Whether a declared type admits `null` (`T | null`, or `null` itself). */
+function admitsNull(type: TypeInfo | undefined): boolean {
+  if (!type) return false
+  if (type.kind === 'primitive') return type.primitive === 'null'
+  return type.kind === 'union' && (type.unionTypes ?? []).some(admitsNull)
 }
 
 export interface BooleanTypedPropContext {

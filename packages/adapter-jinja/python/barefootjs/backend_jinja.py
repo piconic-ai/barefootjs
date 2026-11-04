@@ -35,7 +35,28 @@ from typing import Any, Callable, Optional, Sequence
 from jinja2 import ChainableUndefined, Environment, FileSystemLoader, Undefined
 from markupsafe import Markup
 
+from . import evaluator as _evaluator
 from .runtime import jinja_ident
+
+
+class JsUndefined(ChainableUndefined):
+    """JS `undefined` (spec/js-undefined-value.md, section 4): the
+    Environment's `undefined`, so a var or key that was never set is this
+    class natively, and the runtime's own reads (a missing field, an
+    out-of-range index, an omitted prop) produce its singleton `UNDEF`.
+    Falsy, prints as `""`, chains through attribute and item reads, and is
+    neither `none` nor `defined` to Jinja's tests. The engine-free runtime
+    recognizes it by its class marker."""
+
+    __slots__ = ()
+    _bf_js_undefined = True
+
+    def __repr__(self) -> str:
+        return "UNDEF"
+
+
+UNDEF = JsUndefined()
+_evaluator.register_undefined(UNDEF)
 
 
 def _prepare_for_json(value: Any) -> Any:
@@ -52,10 +73,12 @@ def _prepare_for_json(value: Any) -> Any:
         if math.isnan(value) or math.isinf(value):
             return None
         return value
+    # `JSON.stringify` drops a member holding `undefined` and writes an
+    # `undefined` element as `null`; `json.dumps` would raise on it.
     if isinstance(value, dict):
-        return {k: _prepare_for_json(v) for k, v in value.items()}
+        return {k: _prepare_for_json(v) for k, v in value.items() if not _evaluator.is_undefined(v)}
     if isinstance(value, (list, tuple)):
-        return [_prepare_for_json(v) for v in value]
+        return [None if _evaluator.is_undefined(v) else _prepare_for_json(v) for v in value]
     return value
 
 
@@ -89,7 +112,7 @@ class JinjaBackend:
         else:
             options = dict(environment_options or {})
             options.setdefault("autoescape", True)
-            options.setdefault("undefined", ChainableUndefined)
+            options.setdefault("undefined", JsUndefined)
             # The compile-time adapter (`@barefootjs/jinja`'s
             # `jinja-adapter.ts` file header) documents `trim_blocks=True,
             # lstrip_blocks=True` as part of the render `Environment`'s
@@ -124,9 +147,11 @@ class JinjaBackend:
 
     def is_undefined(self, value: Any) -> bool:
         """Whether `value` is Jinja's `Undefined` sentinel (any subclass,
-        `ChainableUndefined` included): a var or key that was never set, which
-        JS reads as `undefined`. `bf.keep_nonnil` (a JS `??`, #3839) treats
-        it as absent, as it does `None`."""
+        `JsUndefined` included): a var or key that was never set, which JS
+        reads as `undefined`. The runtime's `is_undefined` / `is_nullish`
+        accept it, as they do `UNDEF`, so an Environment a host built with
+        another `undefined` class still reads its missing vars as JS
+        `undefined` there."""
         return isinstance(value, Undefined)
 
     def mark_raw(self, s: Any) -> Markup:

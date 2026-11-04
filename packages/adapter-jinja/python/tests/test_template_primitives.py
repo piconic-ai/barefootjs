@@ -13,7 +13,7 @@ import json
 import math
 import unittest
 
-from barefootjs import BarefootJS
+from barefootjs import UNDEF, BarefootJS, is_undefined
 from barefootjs import evaluator as _evaluator
 
 
@@ -79,7 +79,9 @@ class TemplatePrimitivesTest(unittest.TestCase):
         self.assertEqual(self.bf.div(1, self.bf.mod(-4, 2)), -math.inf)
         self.assertTrue(_is_nan(self.bf.div(0, 0)))
         self.assertTrue(_is_nan(self.bf.div(float("nan"), 0)))
-        self.assertTrue(_is_nan(self.bf.div(None, 2)))
+        # JS ToNumber: `null / 2` is 0, `undefined / 2` NaN.
+        self.assertEqual(self.bf.div(None, 2), 0)
+        self.assertTrue(_is_nan(self.bf.div(UNDEF, 2)))
 
     def test_evaluator_division_by_a_signed_zero(self):
         # `1 / (-4 % 2)` in a callback body: the infinity takes the zero's sign.
@@ -220,11 +222,11 @@ class TemplatePrimitivesTest(unittest.TestCase):
         self.assertEqual(self.bf.at(arr, 2), "c")
         self.assertEqual(self.bf.at(arr, -1), "c")
         self.assertEqual(self.bf.at(arr, -3), "a")
-        self.assertIsNone(self.bf.at(arr, 3))
-        self.assertIsNone(self.bf.at(arr, -4))
-        self.assertIsNone(self.bf.at([], 0))
-        self.assertIsNone(self.bf.at(None, 0))
-        self.assertIsNone(self.bf.at({"a": 1}, 0))
+        self.assertTrue(is_undefined(self.bf.at(arr, 3)))
+        self.assertTrue(is_undefined(self.bf.at(arr, -4)))
+        self.assertTrue(is_undefined(self.bf.at([], 0)))
+        self.assertTrue(is_undefined(self.bf.at(None, 0)))
+        self.assertTrue(is_undefined(self.bf.at({"a": 1}, 0)))
 
     def test_string_index_methods_count_utf16_units(self):
         # #3613: string receivers count UTF-16 code units, like JS.
@@ -241,8 +243,8 @@ class TemplatePrimitivesTest(unittest.TestCase):
         self.assertEqual(self.bf.at("日本語", -1), "語")
         self.assertEqual(self.bf.at("a😀b", -1), "b")
         self.assertEqual(self.bf.at("a😀b", 3), "b")
-        self.assertIsNone(self.bf.at("abc", 3))
-        self.assertIsNone(self.bf.at("", 0))
+        self.assertTrue(is_undefined(self.bf.at("abc", 3)))
+        self.assertTrue(is_undefined(self.bf.at("", 0)))
         # Half of a surrogate pair: U+FFFD where JS keeps a lone surrogate
         # (pinned divergence, limitation `string-at-lone-surrogate`).
         self.assertEqual(self.bf.at("a😀b", 1), "\ufffd")
@@ -258,8 +260,8 @@ class TemplatePrimitivesTest(unittest.TestCase):
         # fractions truncate toward zero -- never a ValueError.
         nan, inf = float("nan"), float("inf")
         self.assertEqual(self.bf.at("abc", nan), "a")
-        self.assertIsNone(self.bf.at("abc", inf))
-        self.assertIsNone(self.bf.at("abc", -inf))
+        self.assertTrue(is_undefined(self.bf.at("abc", inf)))
+        self.assertTrue(is_undefined(self.bf.at("abc", -inf)))
         self.assertEqual(self.bf.at("abc", 1.9), "b")
         self.assertEqual(self.bf.at("abc", -1.5), "c")
         self.assertTrue(self.bf.starts_with("abc", "a", nan))
@@ -282,12 +284,17 @@ class TemplatePrimitivesTest(unittest.TestCase):
     def test_slice_mutation_isolation_and_clamping(self):
         arr = ["a", "b", "c", "d", "e"]
         self.assertEqual(self.bf.slice(arr, 1, 3), ["b", "c"])
-        self.assertEqual(self.bf.slice(arr, 2, None), ["c", "d", "e"])
-        self.assertEqual(self.bf.slice(arr, -2, None), ["d", "e"])
+        # An absent end is `UNDEF` (the slice runs to the end); a `null` end
+        # is ToIntegerOrInfinity'd to 0, as JS does.
+        self.assertEqual(self.bf.slice(arr, 2, UNDEF), ["c", "d", "e"])
+        self.assertEqual(self.bf.slice(arr, 2), ["c", "d", "e"])
+        self.assertEqual(self.bf.slice(arr, -2, UNDEF), ["d", "e"])
+        self.assertEqual(self.bf.slice(arr, 2, None), [])
+        self.assertEqual(self.bf.slice(arr, None, 2), ["a", "b"])
         self.assertEqual(self.bf.slice(arr, 0, -1), ["a", "b", "c", "d"])
-        self.assertEqual(self.bf.slice(arr, 100, None), [])
+        self.assertEqual(self.bf.slice(arr, 100, UNDEF), [])
         self.assertEqual(self.bf.slice(arr, 3, 1), [])
-        self.assertEqual(self.bf.slice(None, 0, None), [])
+        self.assertEqual(self.bf.slice(None, 0, UNDEF), [])
 
         src = ["a", "b", "c"]
         out = self.bf.slice(src, 0, 2)
@@ -300,8 +307,8 @@ class TemplatePrimitivesTest(unittest.TestCase):
         # list instead of a substring.
         word = "barefootjs"
         self.assertEqual(self.bf.slice(word, 0, 4), "bare")
-        self.assertEqual(self.bf.slice(word, -4, None), "otjs")
-        self.assertEqual(self.bf.slice(word, 4, None), "footjs")
+        self.assertEqual(self.bf.slice(word, -4, UNDEF), "otjs")
+        self.assertEqual(self.bf.slice(word, 4, UNDEF), "footjs")
         self.assertEqual(self.bf.slice(word, 5, 2), "")
         # Multi-byte: index by character, not byte.
         self.assertEqual(self.bf.slice("héllo", 0, 2), "hé")

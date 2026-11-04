@@ -161,9 +161,9 @@ BINDINGS = {
     "index_of": lambda *a: bf.index_of(*a),
     "last_index_of": lambda *a: bf.last_index_of(*a),
     "concat": lambda a, b: bf.concat(a, b),
-    # The adapters always pass three value args (None for an absent end) --
-    # mirror that exact shape, like helper_vectors.t does.
-    "slice": lambda recv, start, end=None: bf.slice(recv, start, end),
+    # The adapters always pass three value args (`UNDEF` for an absent end)
+    # -- mirror that exact shape, like helper_vectors.t does.
+    "slice": lambda recv, start, end=VECTOR_UNDEFINED_ARG: bf.slice(recv, start, end),
     "reverse": bf.reverse,
     "flat": lambda *a: bf.flat(*a),
     "flat_dynamic": lambda *a: bf.flat_dynamic(*a),

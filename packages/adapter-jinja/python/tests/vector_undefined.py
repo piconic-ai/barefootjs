@@ -2,31 +2,25 @@
 encoding for vectors"): the one-key `{"$undef": true}` sentinel, shared by the
 primitive, helper and eval vector harnesses.
 
-The Python runtime has no undefined value yet (rollout step U2 adds it), so
-for now:
-
-- in `args` and the evaluator `env` the sentinel decodes to
-  `VECTOR_UNDEFINED_ARG`, the host nil a template receives for `undefined`
-  today;
-- in an `expect` it matches only a value `is_runtime_undefined` accepts. None
-  exists yet, so it never matches, also inside nested lists and dicts, and
-  every such case is listed in an expected-failure ledger or pinned as a
-  divergence.
-
-U2 flips both here: `VECTOR_UNDEFINED_ARG` becomes the runtime's undefined and
-`is_runtime_undefined` recognizes it.
+- In `args` and the evaluator `env` the sentinel decodes to
+  `VECTOR_UNDEFINED_ARG`, the runtime's `UNDEF` (rollout step U2), which a
+  template receives for `undefined`.
+- In an `expect` it matches only a value `is_runtime_undefined` accepts: the
+  runtime's `UNDEF`, also inside nested lists and dicts.
 """
 
 from __future__ import annotations
 
 import json
 
-VECTOR_UNDEFINED_ARG = None
+from barefootjs import UNDEF, is_undefined
+
+VECTOR_UNDEFINED_ARG = UNDEF
 
 
 def is_runtime_undefined(got) -> bool:
-    """Whether `got` is the runtime's own undefined value (none yet: U2)."""
-    return False
+    """Whether `got` is the runtime's own undefined value."""
+    return is_undefined(got)
 
 
 class _UndefinedExpect:

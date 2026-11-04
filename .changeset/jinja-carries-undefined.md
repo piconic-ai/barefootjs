@@ -1,0 +1,10 @@
+---
+"@barefootjs/jinja": minor
+"@barefootjs/jsx": patch
+---
+
+The Jinja adapter and its Python runtime now carry JS `undefined` apart from `null` (`spec/js-undefined-value.md`, rollout step U2). Host `None` is JS `null`; JS `undefined` is the runtime's `UNDEF`, a `JsUndefined` (a `ChainableUndefined` subclass) that the `JinjaBackend` Environment uses as its `undefined`, so a never-set template variable is `undefined` too. A missing field, an out-of-range index, `.at()` / `.find()` with no result, the `undefined` identifier, `?.` over a nullish receiver and an omitted declared prop read as `UNDEF`. `String()` / template literals / `+` print it as `"undefined"` (`null` as `"null"`), `Number()` and arithmetic read it as `NaN` (`null` as `0`), `x === null` / `x === undefined` are strict tests (`bf.is_null` / `bf.is_undefined`; `x == null` is `bf.is_nullish`), `JSON.stringify` and the `bf-p` payload drop an `undefined` member and write an `undefined` element as `null`, `includes` / `indexOf` tell the two apart, a sort puts `undefined` last, and an optional method argument (`slice` end, `join` / `split` separator, `padStart` pad, …) takes its default only when it is omitted or `undefined`. A destructure default now applies only to an absent or `undefined` prop: an explicit `null` keeps `null`. The package exports `UNDEF`, `JsUndefined`, `is_undefined`, `is_null` and `is_nullish`.
+
+Migration: a host that passed `None` to mean "unset" now gets JS `null` semantics (`'btn ' + c` renders `btn null`, and a destructure default no longer applies). To leave a prop unset, omit its key; to pass a prop that is present and `undefined`, pass `barefootjs.UNDEF`. A host that builds its own Jinja `Environment` should pass `undefined=JsUndefined`.
+
+`@barefootjs/jsx`: `ParsedExprEmitter` gains an optional `nilTest` method, which the dispatcher calls for a nil-test plan (`nilTestOperand` names its operand), and `collectNullableOptionalProps` takes the target's `NativeSafeTable`: on a target that carries `undefined`, a defaulted prop whose type admits `null` is presence-uncertain too. Targets that do not carry `undefined` compile as before.

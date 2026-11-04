@@ -89,6 +89,7 @@ import {
   unloweredCallRefusal,
   type CallbackLoweringOptions,
   type StringNameTest,
+  type NilTestHelper,
   numberLiteralSpelling,
   plusSpelling,
   needsToString,
@@ -116,9 +117,9 @@ export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Jinja'
  * own listed there.
  */
 export const NATIVE_SAFE: NativeSafeTable = {
-  // The runtime does not carry JS `undefined` apart from `null` yet
-  // (spec/js-undefined-value.md); rollout step U2 flips it.
-  carriesUndefined: false,
+  // The runtime carries JS `undefined` (`UNDEF`, a `JsUndefined`) apart
+  // from `null` (host `None`), spec/js-undefined-value.md rollout step U2.
+  carriesUndefined: true,
   'to-boolean': ['boolean'],
   // A unary `+` is native only over a proven number, `to_number` otherwise
   // (#3824 step 3). `unproven` describes binary `-` / `*` over operands Phase 1
@@ -232,6 +233,36 @@ function spellGet(plan: PrimitivePlan | null, receiver: string, key: string): st
   return isNativePlan(plan, 'get') ? `${receiver}[${key}]` : `bf.get(${receiver}, ${key})`
 }
 
+/**
+ * JS `undefined` in a template: the runtime's `UNDEF`, which the `bf` object
+ * exposes as `bf.undefined` (spec/js-undefined-value.md, rollout step U2).
+ * Jinja's `none` is JS `null`.
+ */
+export const JINJA_UNDEFINED = 'bf.undefined'
+
+/**
+ * Spell a nil-test plan (`x === null` / `x === undefined` / `x == null`,
+ * `spec/js-undefined-value.md` "Decisions" (7)) through the runtime's
+ * `is_null` / `is_undefined` / `is_nullish`.
+ */
+function spellNilTest(helper: NilTestHelper, negated: boolean, operand: string): string {
+  const test = `bf.${helper}(${operand})`
+  return negated ? `(not ${test})` : test
+}
+
+/**
+ * Spell a binary `-` / `*` plan: Python's own operator when the plan is
+ * native (two proven numbers), the runtime's JS ToNumber arithmetic
+ * (`bf.sub` / `bf.mul`) when it names the helper, as it does for an operand
+ * that may be `UNDEF` (a target that carries `undefined`). Null for any
+ * other operator.
+ */
+function spellNumericBinary(op: string, plan: PrimitivePlan | null, l: string, r: string): string | null {
+  if (op !== '-' && op !== '*') return null
+  if (plan?.mode === 'helper' && (plan.helper === 'sub' || plan.helper === 'mul')) return `bf.${plan.helper}(${l}, ${r})`
+  return `${l} ${op} ${r}`
+}
+
 /** A literal key (`obj['a.b']`, `rows[0]`): never a proven index, so always `bf.get`. */
 function emitComputedMember(object: ParsedExpr, property: string, emit: (e: ParsedExpr) => string): string {
   return spellGet(null, emit(object), emit(literalMemberIndex(property)))
@@ -274,14 +305,14 @@ function flattenPropsMember(
  */
 /**
  * `x.length` through `bf.length`. An optional-chained `x?.length` yields
- * `none` — JS's `undefined` — for an absent receiver instead of
+ * JS's `undefined` (`bf.undefined`) for a nullish receiver instead of
  * `bf.length`'s `0`, so a bare read renders empty and a `??` fallback takes
- * over (#3332). The receiver test matches the `??` lowering's (`is defined
- * and is not none`), as an Undefined is not `none`.
+ * over (#3332). The receiver test is nullish (`is defined and is not none`),
+ * as an Undefined is not `none`.
  */
 function optionalLength(receiver: string, optional: boolean): string {
   const read = `bf.length(${receiver})`
-  return optional ? `(${read} if (${receiver} is defined and ${receiver} is not none) else none)` : read
+  return optional ? `(${read} if (${receiver} is defined and ${receiver} is not none) else ${JINJA_UNDEFINED})` : read
 }
 
 export class JinjaFilterEmitter implements ParsedExprEmitter {
@@ -341,6 +372,8 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
     if (name === this.param) return jinjaIdent(this.param)
     const signal = this.localVarMap.get(name)
     if (signal) return jinjaIdent(signal)
+    // The unbound `undefined` identifier is the constant.
+    if (name === 'undefined' && !this.isOuterBound(name)) return JINJA_UNDEFINED
     return jinjaIdent(name)
   }
 
@@ -415,11 +448,16 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
     // JS Abstract Relational Comparison otherwise (#3824 step 3).
     const relational = relationalHelper(op, plan)
     if (relational) return `bf.${relational}(${l}, ${r})`
+    const numeric = spellNumericBinary(op, plan, l, r)
+    if (numeric !== null) return numeric
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
-      '+': '+', '-': '-', '*': '*',
     }
     return `${l} ${opMap[op] ?? op} ${r}`
+  }
+
+  nilTest(helper: NilTestHelper, negated: boolean, operand: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    return spellNilTest(helper, negated, emit(operand))
   }
 
   logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
@@ -561,9 +599,10 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
   }
 
   identifier(name: string): string {
-    // `undefined` / `null` nested inside a larger expression tree — Jinja
-    // `none` (#1897).
-    if (name === 'undefined' || name === 'null') return 'none'
+    // `undefined` nested inside a larger expression tree is the runtime's
+    // `UNDEF`, a `null` identifier Jinja's `none` (#1897).
+    if (name === 'undefined') return JINJA_UNDEFINED
+    if (name === 'null') return 'none'
     // Inline a module-scope pure-string const (`const x = 'literal'`) — it
     // never reaches the per-render context, so a bare reference would
     // resolve to Undefined.
@@ -737,11 +776,16 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     // JS Abstract Relational Comparison otherwise (#3824 step 3).
     const relational = relationalHelper(op, plan)
     if (relational) return `bf.${relational}(${l}, ${r})`
+    const numeric = spellNumericBinary(op, plan, l, r)
+    if (numeric !== null) return numeric
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
-      '+': '+', '-': '-', '*': '*',
     }
     return `${l} ${opMap[op] ?? op} ${r}`
+  }
+
+  nilTest(helper: NilTestHelper, negated: boolean, operand: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    return spellNilTest(helper, negated, emit(operand))
   }
 
   logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {

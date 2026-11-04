@@ -36,7 +36,7 @@
 import type { ParsedExpr, FlatDepth, TemplatePart, ObjectLiteralProperty } from '../expression-parser.ts'
 import { asCallbackMethodCall } from '../expression-parser.ts'
 import type { LoweringMatcher, LoweringNode } from '../lowering-registry.ts'
-import { booleanValueSites, foldNegatedNumberLiteral, planPrimitive, planToString, refuseUnspelledNilTest, type PrimitiveInputs, type PrimitivePlan } from './primitive-plan.ts'
+import { booleanValueSites, foldNegatedNumberLiteral, nilTestOperand, planPrimitive, planToString, refuseUnspelledNilTest, type NilTestHelper, type PrimitiveInputs, type PrimitivePlan } from './primitive-plan.ts'
 import { rewriteNilReadings, rewriteNilReadingsDeep } from './nil-reading.ts'
 
 export type HigherOrderMethod = 'filter' | 'every' | 'some' | 'find' | 'findIndex' | 'findLast' | 'findLastIndex'
@@ -185,6 +185,16 @@ export interface ParsedExprEmitter {
     plan: PrimitivePlan | null,
   ): string
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string
+  /**
+   * A nil-test plan (`spec/js-undefined-value.md`, "Decisions" (3) and (7)):
+   * on a target that carries `undefined`, `x === null`, `x === undefined`
+   * and the loose `x == null` plan as the runtime's `is_null`,
+   * `is_undefined` and `is_nullish` over `operand` (the side that is not the
+   * nil literal, {@link nilTestOperand}), `negated` for `!==` / `!=`. An
+   * emitter without it refuses the plan ({@link refuseUnspelledNilTest});
+   * only the emitter of a target that carries `undefined` receives one.
+   */
+  nilTest?(helper: NilTestHelper, negated: boolean, operand: ParsedExpr, emit: (e: ParsedExpr) => string): string
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string
   logical(
     op: '&&' | '||' | '??',
@@ -548,6 +558,25 @@ export function withNilReadings(expr: ParsedExpr, emitter: Pick<ParsedExprEmitte
 }
 
 /**
+ * A `binary` node. A nil test (a target that carries `undefined`) goes to
+ * the emitter's `nilTest`; an emitter without one refuses it here, so no
+ * emitter's own `==` lowering sees it.
+ */
+function dispatchBinary(
+  expr: Extract<ParsedExpr, { kind: 'binary' }>,
+  emitter: ParsedExprEmitter,
+  emit: (e: ParsedExpr) => string,
+): string {
+  const plan = primitivePlanFor(expr, emitter)
+  if (plan?.op === 'nil-test' && plan.mode === 'helper' && emitter.nilTest) {
+    const operand = nilTestOperand(expr.left, expr.right, emitter.primitives.typing())
+    return emitter.nilTest(plan.helper as NilTestHelper, expr.op === '!==' || expr.op === '!=', operand, emit)
+  }
+  refuseUnspelledNilTest(plan)
+  return emitter.binary(expr.op, expr.left, expr.right, emit, plan)
+}
+
+/**
  * A callback's arrow with the nil-reading rewrite run over its whole body:
  * the body reaches the runtime evaluator (or the adapter's own predicate
  * form) without passing through {@link emitParsedExpr} node by node.
@@ -608,13 +637,8 @@ function dispatchParsedExpr(
       return emitter.member(expr.object, expr.property, expr.computed, expr.optional, emit, primitivePlanFor(expr, emitter))
     case 'index-access':
       return emitter.indexAccess(expr.object, expr.index, emit, primitivePlanFor(expr, emitter))
-    case 'binary': {
-      const plan = primitivePlanFor(expr, emitter)
-      // A nil test (a target that carries `undefined`) has no emitter
-      // spelling yet; refused here so no emitter's own `==` lowering sees it.
-      refuseUnspelledNilTest(plan)
-      return emitter.binary(expr.op, expr.left, expr.right, emit, plan)
-    }
+    case 'binary':
+      return dispatchBinary(expr, emitter, emit)
     case 'unary': {
       // `-1.5` is the literal `-1.5` (#3824 step 6): a unary minus over a
       // non-zero number literal is spelled as the literal it folds into.

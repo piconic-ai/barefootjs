@@ -2049,8 +2049,6 @@
               "nested-callback-in-filter-predicate",
               "object-equality-by-contents",
               "off-subset-callback-body",
-              "omitted-optional-nullable-number-arithmetic",
-              "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
               "record-const-index-unknown-keys",
               "unlowerable-loop-filter-predicate",
@@ -2225,12 +2223,6 @@
           ]
         },
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "awaits-undefined-value"
-          ]
-        },
-        "jinja": {
           "kind": "render",
           "limitations": [
             "awaits-undefined-value"
@@ -6707,19 +6699,6 @@
             "twin": "omitted-optional-number-arithmetic"
           }
         },
-        "jinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic"
-          }
-        },
         "minijinja": {
           "kind": "refusal",
           "codes": [
@@ -6814,19 +6793,6 @@
           }
         },
         "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic-destructured"
-          }
-        },
-        "jinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -6945,19 +6911,6 @@
             "twin": "omitted-optional-number-relational"
           }
         },
-        "jinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-relational"
-          }
-        },
         "minijinja": {
           "kind": "refusal",
           "codes": [
@@ -7064,19 +7017,6 @@
             "twin": "omitted-optional-number-unary-plus"
           }
         },
-        "jinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-unary-plus"
-          }
-        },
         "minijinja": {
           "kind": "refusal",
           "codes": [
@@ -7171,19 +7111,6 @@
           }
         },
         "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-scalar-relational"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-string-relational"
-          }
-        },
-        "jinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -7570,12 +7497,6 @@
           ]
         },
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "props-object-non-props-name-operand-typing"
-          ]
-        },
-        "jinja": {
           "kind": "render",
           "limitations": [
             "props-object-non-props-name-operand-typing"
@@ -9895,12 +9816,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "minijinja": {
           "kind": "render",
           "limitations": [
@@ -9951,12 +9866,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "minijinja": {
           "kind": "render",
           "limitations": [
@@ -10002,12 +9911,6 @@
           ]
         },
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "jinja": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10140,19 +10043,6 @@
             "twin": "omitted-optional-number-arithmetic"
           }
         },
-        "jinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic"
-          }
-        },
         "minijinja": {
           "kind": "refusal",
           "codes": [
@@ -10238,12 +10128,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "minijinja": {
           "kind": "render",
           "limitations": [
@@ -10294,12 +10178,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "minijinja": {
           "kind": "render",
           "limitations": [
@@ -10345,12 +10223,6 @@
           ]
         },
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "jinja": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10415,19 +10287,6 @@
           }
         },
         "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-relational"
-          }
-        },
-        "jinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -10525,12 +10384,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "minijinja": {
           "kind": "render",
           "limitations": [
@@ -10576,12 +10429,6 @@
           ]
         },
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "jinja": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10637,12 +10484,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "minijinja": {
           "kind": "render",
           "limitations": [
@@ -10693,12 +10534,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "minijinja": {
           "kind": "render",
           "limitations": [
@@ -10744,12 +10579,6 @@
           ]
         },
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "jinja": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -11889,7 +11718,6 @@
         "blade",
         "erb",
         "go-template",
-        "jinja",
         "minijinja",
         "mojolicious",
         "pebble",
@@ -12171,7 +11999,6 @@
         "blade",
         "erb",
         "go-template",
-        "jinja",
         "minijinja",
         "mojolicious",
         "pebble",
@@ -12686,7 +12513,6 @@
         "blade",
         "erb",
         "go-template",
-        "jinja",
         "minijinja",
         "mojolicious",
         "pebble",
@@ -12710,7 +12536,6 @@
         "blade",
         "erb",
         "go-template",
-        "jinja",
         "minijinja",
         "mojolicious",
         "pebble",
@@ -12807,7 +12632,6 @@
         "blade",
         "erb",
         "go-template",
-        "jinja",
         "minijinja",
         "mojolicious",
         "pebble",

@@ -136,7 +136,7 @@ class EvaluatorTest(unittest.TestCase):
 
         # `.length` is a string/array property only; a numeric scalar has none.
         length = evaluator.evaluate(nmem(nid("n"), "length"), {"n": 123})
-        self.assertIsNone(length)
+        self.assertTrue(evaluator.is_undefined(length))
 
     def test_array_method_includes(self):
         # `.includes` (#2075) is the one `array-method` in the evaluator
@@ -221,7 +221,7 @@ class EvaluatorTest(unittest.TestCase):
 
         self.assertTrue(evaluator.every([], pred, "u"))
         self.assertFalse(evaluator.some([], pred, "u"))
-        self.assertIsNone(evaluator.find([], pred, "u"))
+        self.assertTrue(evaluator.is_undefined(evaluator.find([], pred, "u")))
         self.assertEqual(evaluator.find_index([], pred, "u"), -1)
 
         pred_json = json.dumps(pred)

@@ -15,7 +15,8 @@
 import { escapeJinjaSingleQuoted, jinjaHashKey } from './jinja-naming.ts'
 
 export function staticValueToJinja(value: unknown): string | null {
-  if (value === null || value === undefined) return 'none'
+  if (value === undefined) return 'bf.undefined'
+  if (value === null) return 'none'
   if (typeof value === 'boolean') return value ? 'true' : 'false'
   if (typeof value === 'number') return String(value)
   if (typeof value === 'string') return `'${escapeJinjaSingleQuoted(value)}'`

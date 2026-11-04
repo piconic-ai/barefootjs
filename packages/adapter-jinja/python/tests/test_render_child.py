@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import unittest
 
-from barefootjs import BarefootJS
+from barefootjs import UNDEF, BarefootJS
 
 
 class _StubBackend:
@@ -121,16 +121,45 @@ class RenderChildTest(unittest.TestCase):
 
 
 class TestDeriveStashFromDefaults(unittest.TestCase):
-    def test_entry_without_value_seeds_none_like_value_none(self):
-        # `extractSsrDefaults` writes no `value` for a prop without a default
-        # (spec/js-undefined-value.md, rollout step U1).
+    """The seed (spec/js-undefined-value.md, "Decisions" (6)): a destructure
+    default applies to an absent or `undefined` prop only; an explicit
+    `None` is JS `null` and keeps its value."""
+
+    def setUp(self):
         from barefootjs.runtime import _derive_stash_from_defaults
 
-        missing = {"n": {"propName": "n"}, "rest": {"isRestProps": True}}
-        explicit = {"n": {"propName": "n", "value": None}, "rest": {"isRestProps": True, "value": None}}
-        for props in ({}, {"n": None}, {"n": 3}, {"rest": {"a": 1}}):
-            self.assertEqual(_derive_stash_from_defaults(missing, props), _derive_stash_from_defaults(explicit, props))
-        self.assertEqual(_derive_stash_from_defaults(missing, {}), {"n": None, "rest": None})
+        self.derive = _derive_stash_from_defaults
+
+    def test_prop_with_a_default(self):
+        defaults = {"v": {"propName": "v", "value": "D"}}
+        self.assertEqual(self.derive(defaults, {}), {"v": "D"})
+        self.assertEqual(self.derive(defaults, {"v": UNDEF}), {"v": "D"})
+        self.assertEqual(self.derive(defaults, {"v": None}), {"v": None})
+        self.assertEqual(self.derive(defaults, {"v": 0}), {"v": 0})
+
+    def test_prop_without_a_default_seeds_undefined(self):
+        # `extractSsrDefaults` writes no `value` for a prop without a default
+        # (rollout step U1); such a prop, absent or `undefined`, is `UNDEF`.
+        defaults = {"n": {"propName": "n"}}
+        self.assertIs(self.derive(defaults, {})["n"], UNDEF)
+        self.assertIs(self.derive(defaults, {"n": UNDEF})["n"], UNDEF)
+        self.assertIsNone(self.derive(defaults, {"n": None})["n"])
+        self.assertEqual(self.derive(defaults, {"n": 3}), {"n": 3})
+
+    def test_renamed_and_reserved_props(self):
+        # `{ n: count = 1 }` seeds `count` from the caller's `n`; a reserved
+        # name is looked up and written mangled.
+        renamed = {"count": {"propName": "n", "value": 1}}
+        self.assertEqual(self.derive(renamed, {}), {"count": 1})
+        self.assertEqual(self.derive(renamed, {"n": None}), {"count": None})
+        reserved = {"class": {"propName": "class", "value": "x"}}
+        self.assertEqual(self.derive(reserved, {"class_": None}), {"class_": None})
+        self.assertEqual(self.derive(reserved, {}), {"class_": "x"})
+
+    def test_signal_and_rest_entries(self):
+        defaults = {"count": {"value": 0}, "rest": {"isRestProps": True, "value": {}}}
+        self.assertEqual(self.derive(defaults, {}), {"count": 0, "rest": {}})
+        self.assertEqual(self.derive(defaults, {"rest": {"a": 1}}), {"count": 0, "rest": {"a": 1}})
 
 
 if __name__ == "__main__":

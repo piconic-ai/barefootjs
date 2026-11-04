@@ -42,6 +42,7 @@ for candidate in (HERE / "lib", HERE.parent.parent / "packages" / "adapter-jinja
 
 from barefootjs import BarefootJS
 from barefootjs.backend_jinja import JinjaBackend
+from barefootjs.runtime import _derive_stash_from_defaults, jinja_ident
 
 # URL prefix the app is mounted under. Defaults to /integrations/django so
 # the app is deploy-ready for barefootjs.dev/integrations/django.
@@ -103,7 +104,7 @@ def jbool(v: Any) -> bool:
 # The build manifest -- a plain build artifact (dist/templates/manifest.json),
 # not adapter internals -- lists each component's `ssrDefaults`: the set of
 # signal/memo names an optional-prop-derived initial value needs BOUND (to
-# the real prop or to `None`) in the render context. `register_child_renderer`
+# the real prop, or to its default or `UNDEF`) in the render context. `register_child_renderer`
 # via `register_components_from_manifest` derives this automatically for
 # manifest-registered (`ui/*`) children; this integration's shared components
 # aren't manifest-registered (see render_component's manual child wiring
@@ -136,34 +137,22 @@ except FileNotFoundError:
 
 
 def stash_from_ssr_defaults(component: str, props: dict) -> dict:
-    """Port of `barefootjs.runtime._derive_stash_from_defaults` for
-    root-level renders (see the MANIFEST comment above for why root renders
-    need their own copy instead of getting it via `register_child_renderer`).
+    """The template stash a manifest entry's `ssrDefaults` derives for a
+    root-level render, through the runtime's own seed
+    (`barefootjs.runtime._derive_stash_from_defaults`, the one
+    `register_child_renderer` uses for manifest-registered `ui/*` children;
+    see the MANIFEST comment above for why root renders call it themselves).
 
-    Why this matters: a signal whose initial value derives from an optional
-    prop (`const [count] = createSignal(props.initial ?? 0)`) is seeded
-    in-template as `{% set count = (initial if initial is not none else 0)
-    %}` (see packages/adapter-jinja's memo/seed.ts) -- that lowering expects
-    `initial` to always be BOUND in the render context (to the real value or
-    to `None`), never omitted outright, since a Jinja `ChainableUndefined`
-    read is `is not none` (unlike Python's own `None`), so an entirely
-    absent key silently skips the `else 0` fallback and raises on the next
-    arithmetic use. Without this, `/counter` 500s on `props.initial` (the
-    same shape as the ssrDefaults contract's `propName` field documents).
+    A signal whose initial value derives from an optional prop
+    (`const [count] = createSignal(props.initial ?? 0)`) is seeded
+    in-template from `initial`, and every declared prop is bound: a prop the
+    caller passed keeps its value (`None` is JS `null`), an omitted one takes
+    its default, or `UNDEF` (JS `undefined`) when it has none
+    (spec/js-undefined-value.md, "Shared: the seed and the default").
     """
     entry = MANIFEST.get(component) or {}
     defaults = entry.get("ssrDefaults") or {}
-    extra: dict[str, Any] = {}
-    for name, d in defaults.items():
-        if not isinstance(d, dict):
-            extra[name] = d
-            continue
-        prop_name = d.get("propName")
-        if prop_name is not None and props.get(prop_name) is not None:
-            extra[name] = props[prop_name]
-        else:
-            extra[name] = d.get("value")
-    return extra
+    return _derive_stash_from_defaults(defaults, {jinja_ident(k): v for k, v in props.items()})
 
 
 # ---------------------------------------------------------------------------

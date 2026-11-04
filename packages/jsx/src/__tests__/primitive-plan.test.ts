@@ -19,6 +19,9 @@ import {
   mayHoldObject,
   numberLiteralSpelling,
   collapsesNil,
+  collectNullableOptionalProps,
+  nilTestOperand,
+  exprToString,
   refuseUnspelledNilTest,
   strictEqSpelling,
   type IRMetadata,
@@ -374,6 +377,32 @@ describe('carriesUndefined (spec/js-undefined-value.md, rollout step U1)', () =>
     expect(() => strictEqSpelling('===', parseExpression('props.maybe'), parseExpression('null'), p)).toThrow('no spelling')
     expect(() => refuseUnspelledNilTest(planPrimitive(parseExpression('props.n === 1'), typing, PROVEN_ONLY))).not.toThrow()
     expect(strictEqSpelling('===', parseExpression('props.maybe'), parseExpression('null'), null)).toEqual({ kind: 'nullish' })
+  })
+
+  test('the operand of a nil test is the side that is not the nil literal', () => {
+    const operand = (src: string) => {
+      const e = parseExpression(src)
+      if (e.kind !== 'binary') throw new Error(src)
+      return exprToString(nilTestOperand(e.left, e.right, typing))
+    }
+    expect(operand('props.maybe === null')).toBe('props.maybe')
+    expect(operand('undefined !== props.maybe')).toBe('props.maybe')
+    expect(operand('null === undefined')).toBe('null')
+  })
+
+  test('a defaulted prop typed with `null` is presence-uncertain only on a target that carries undefined', () => {
+    const ir = {
+      metadata: meta({
+        propsParams: [
+          param('v', union(prim('string'), prim('null')), true, "'D'"),
+          param('w', prim('string'), true, "'D'"),
+          param('x', prim('string'), true),
+        ],
+      }),
+    } as unknown as Parameters<typeof collectNullableOptionalProps>[0]
+    const withMeta = { ...ir, metadata: { ...ir.metadata, restPropsExpandedKeys: [] } } as typeof ir
+    expect([...collectNullableOptionalProps(withMeta, PROVEN_ONLY)].sort()).toEqual(['x'])
+    expect([...collectNullableOptionalProps(withMeta, carrying(PROVEN_ONLY))].sort()).toEqual(['v', 'x'])
   })
 })
 
