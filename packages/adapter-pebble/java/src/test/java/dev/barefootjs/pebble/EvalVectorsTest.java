@@ -14,11 +14,14 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -29,12 +32,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * `expr` tree through {@link Evaluator} against its `env` and asserting
  * an EXACT match (no divergence allowance — every backend must match the
  * JS reference exactly here, per the vectors README's "Value-compat
- * comparison contract").
+ * comparison contract"). The only allowance is the shrink-only
+ * expected-failure ledger of the undefined rollout
+ * (`spec/js-undefined-value.md`, §6), keyed by note: an unlisted failure
+ * fails, and so do a listed case that now passes and a listed note that
+ * names no case.
  */
 class EvalVectorsTest {
 
   private static final Path VECTORS_PATH =
       Path.of("../../adapter-tests/vectors/eval-vectors.json").normalize();
+
+  private static final Path LEDGER_PATH =
+      Path.of("../../adapter-tests/vectors/eval-expected-failures.json").normalize();
 
   private static final Gson GSON = new GsonBuilder()
       .setObjectToNumberStrategy(ToNumberPolicy.DOUBLE)
@@ -48,6 +58,8 @@ class EvalVectorsTest {
     }
     JsonObject doc = GSON.fromJson(Files.readString(VECTORS_PATH), JsonObject.class);
     JsonArray cases = doc.getAsJsonArray("cases");
+    JsonObject expected = VectorUndefined.loadExpectedFailures(LEDGER_PATH);
+    Set<String> notes = new HashSet<>();
 
     List<DynamicTest> tests = new ArrayList<>();
     int i = 0;
@@ -58,15 +70,34 @@ class EvalVectorsTest {
       String testName = note + " (" + src + ")";
       i++;
 
+      notes.add(note);
       tests.add(DynamicTest.dynamicTest(testName, () -> {
         JsonObject expr = c.getAsJsonObject("expr");
         Map<String, Object> env = toEnv(c.getAsJsonObject("env"));
-        Object got = Evaluator.evaluate(expr, env);
         Object expect = decodeExpect(c.get("expect"));
-        assertTrue(strictMatch(got, expect),
-            testName + ": got " + explain(got) + ", want " + explain(expect));
+        boolean ok;
+        String detail;
+        try {
+          Object got = Evaluator.evaluate(expr, env);
+          ok = strictMatch(got, expect);
+          detail = "got " + explain(got) + ", want " + explain(expect);
+        } catch (RuntimeException e) {
+          ok = false;
+          detail = "threw " + e;
+        }
+        if (expected.has(note)) {
+          assertFalse(ok, "ledger entry '" + note + "' now passes; remove it from the ledger (step "
+              + expected.getAsJsonObject(note).get("step").getAsString() + ")");
+        } else {
+          assertTrue(ok, "UNEXPECTED-FAIL " + note + ": " + detail);
+        }
       }));
     }
+    tests.add(DynamicTest.dynamicTest("every ledger entry names an eval case", () -> {
+      for (String note : expected.keySet()) {
+        assertTrue(notes.contains(note), "ledger entry '" + note + "' matches no eval case -- renamed note?");
+      }
+    }));
     return tests.stream();
   }
 
@@ -80,6 +111,11 @@ class EvalVectorsTest {
   }
 
   private static Object materialize(JsonElement el) {
+    return materialize(el, VectorUndefined.ARG);
+  }
+
+  /** {@code undefined} replaces a `$undef` sentinel ({@link VectorUndefined#ARG} or {@link VectorUndefined#EXPECT}). */
+  private static Object materialize(JsonElement el, Object undefined) {
     if (el.isJsonNull()) {
       return null;
     }
@@ -96,13 +132,16 @@ class EvalVectorsTest {
     if (el.isJsonArray()) {
       List<Object> out = new ArrayList<>();
       for (JsonElement e : el.getAsJsonArray()) {
-        out.add(materialize(e));
+        out.add(materialize(e, undefined));
       }
       return out;
     }
+    if (VectorUndefined.isSentinel(el)) {
+      return undefined;
+    }
     Map<String, Object> out = new LinkedHashMap<>();
     for (Map.Entry<String, JsonElement> e : el.getAsJsonObject().entrySet()) {
-      out.put(e.getKey(), materialize(e.getValue()));
+      out.put(e.getKey(), materialize(e.getValue(), undefined));
     }
     return out;
   }
@@ -121,7 +160,7 @@ class EvalVectorsTest {
         }
       }
     }
-    return materialize(el);
+    return materialize(el, VectorUndefined.EXPECT);
   }
 
   /**
@@ -132,6 +171,9 @@ class EvalVectorsTest {
    */
   @SuppressWarnings("unchecked")
   private static boolean strictMatch(Object got, Object expect) {
+    if (expect == VectorUndefined.EXPECT) {
+      return VectorUndefined.isRuntimeUndefined(got);
+    }
     if (expect == null) {
       return got == null;
     }

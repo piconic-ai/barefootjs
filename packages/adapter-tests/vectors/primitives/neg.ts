@@ -33,5 +33,6 @@ export const neg: PrimitiveOp = {
     c(true, 'true negates to -1'),
     c(false, 'false negates to -0'),
     c(null, 'nil reads as null and negates to -0'),
+    c(undefined, 'undefined negates to NaN'),
   ],
 }

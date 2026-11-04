@@ -5,6 +5,7 @@ require 'json'
 require 'set'
 require 'time'
 require 'barefoot_js'
+require_relative 'vector_undefined'
 
 # Golden helper vectors generated from the JS reference implementations
 # (spec/template-helpers.md in the monorepo). The file lives in
@@ -57,6 +58,7 @@ class HelperVectorsTest < Minitest::Test
   # same shape `normalize_arg` walks in the Perl port, since a vector's
   # `args` may nest the sentinel inside a higher-order projection payload.
   def self.materialize_arg(v)
+    return VectorUndefined::ARG if VectorUndefined.sentinel?(v)
     return v.map { |x| materialize_arg(x) } if v.is_a?(Array)
     return Time.iso8601(v[:"$date"]) if v.is_a?(Hash) && v.keys == [:"$date"]
     return v.transform_values { |x| materialize_arg(x) } if v.is_a?(Hash)
@@ -264,6 +266,7 @@ class HelperVectorsTest < Minitest::Test
   # expect -- non-finite sentinel hashes, booleans by identity, numbers
   # numerically, arrays/hashes recursively, strings by ==.
   def value_match?(got, expect)
+    return VectorUndefined.runtime_undefined?(got) if VectorUndefined.sentinel?(expect)
     return got.nil? if expect.nil?
     if expect.is_a?(Hash) && expect.key?(:$num)
       kind = expect[:$num]

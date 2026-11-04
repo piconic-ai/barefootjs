@@ -160,8 +160,9 @@ describe('operandFacts', () => {
   })
 })
 
-const NONE: NativeSafeTable = {}
+const NONE: NativeSafeTable = { carriesUndefined: false }
 const ALL: NativeSafeTable = {
+  carriesUndefined: false,
   'to-boolean': ['boolean', 'unproven'],
   'to-number': ['number-pair', 'number', 'unproven'],
   plus: ['number-pair', 'string', 'unproven'],
@@ -173,6 +174,7 @@ const ALL: NativeSafeTable = {
   get: ['array-index', 'unproven'],
 }
 const PROVEN_ONLY: NativeSafeTable = {
+  carriesUndefined: false,
   'to-boolean': ['boolean'],
   'to-number': ['number-pair', 'number'],
   plus: ['number-pair', 'string'],
@@ -307,7 +309,7 @@ function analyzed(src: string): ScopedOperandTyping {
   return collectOperandTyping(metadata).at(BindingScope.forComponent(metadata.propsObjectName))
 }
 
-const NON_NIL_NULLISH: NativeSafeTable = { nullish: ['non-nil'] }
+const NON_NIL_NULLISH: NativeSafeTable = { nullish: ['non-nil'], carriesUndefined: false }
 
 describe('defaults, from analyzed components', () => {
   test('a renamed body-destructure default types the local binding, not the original property', () => {

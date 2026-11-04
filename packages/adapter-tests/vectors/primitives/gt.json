@@ -302,6 +302,40 @@
       "expect": true,
       "domain": "nil",
       "note": "nil against a negative number"
+    },
+    {
+      "fn": "gt",
+      "args": [
+        null,
+        0
+      ],
+      "expect": false,
+      "domain": "nil",
+      "note": "nil against 0: null is 0"
+    },
+    {
+      "fn": "gt",
+      "args": [
+        {
+          "$undef": true
+        },
+        1
+      ],
+      "expect": false,
+      "domain": "nil",
+      "note": "undefined against a number is NaN"
+    },
+    {
+      "fn": "gt",
+      "args": [
+        {
+          "$undef": true
+        },
+        0
+      ],
+      "expect": false,
+      "domain": "nil",
+      "note": "undefined against 0 is NaN, unlike null"
     }
   ]
 }

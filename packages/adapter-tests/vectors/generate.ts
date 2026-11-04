@@ -26,38 +26,73 @@ export interface VectorFile {
 }
 
 /**
+ * The reserved sentinel for JS `undefined` (spec/js-undefined-value.md,
+ * "JSON encoding for vectors"): an object with exactly this one key, like
+ * `{"$num": ...}`. Allowed in `args`, `expect` and the evaluator `env`.
+ * Inside an object, a member whose value is the sentinel is a present key
+ * holding `undefined`, distinct from a missing key.
+ */
+export const UNDEF_SENTINEL: Readonly<{ $undef: true }> = Object.freeze({ $undef: true })
+
+/** Refuse an object that would collide with a reserved sentinel key. */
+function assertNoReservedKey(value: object, context: string): void {
+  for (const key of ['$num', '$undef']) {
+    if (key in value) throw new Error(`${context}: the "${key}" key is reserved for the sentinel`)
+  }
+}
+
+/**
  * Vectors are plain JSON: finite numbers, strings, booleans, null, and
- * arrays/objects thereof. Per the spec, a non-finite number in an
- * EXPECT value is encoded as the reserved sentinel
- * `{"$num": "NaN" | "Infinity" | "-Infinity"}`; `undefined` is never
- * encodable. Args must stay finite (refused loudly) until a
- * composition case needs otherwise.
+ * arrays/objects thereof, plus the `{"$undef": true}` sentinel for JS
+ * `undefined`. Per the spec, a non-finite number in an EXPECT value is
+ * encoded as the reserved sentinel `{"$num": "NaN" | "Infinity" |
+ * "-Infinity"}`. Args (and the evaluator env) must stay finite (refused
+ * loudly) until a composition case needs otherwise.
  */
 export function assertEncodable(value: unknown, context: string): void {
-  if (value === undefined) throw new Error(`${context}: undefined is not encodable in vectors.json`)
   if (typeof value === 'number' && !Number.isFinite(value)) {
     throw new Error(`${context}: non-finite number ${value} is not encodable in vectors.json`)
   }
   if (Array.isArray(value)) {
     value.forEach((v, i) => assertEncodable(v, `${context}[${i}]`))
   } else if (value !== null && typeof value === 'object') {
+    // A `$date` envelope is an args-only sentinel of its own (the `date`
+    // helper's cases); it is plain data here.
+    assertNoReservedKey(value, context)
     for (const [k, v] of Object.entries(value)) assertEncodable(v, `${context}.${k}`)
   }
 }
 
+/**
+ * Encode an `args` / `env` value: `undefined` becomes the sentinel, at the
+ * top level, as an array element and as an object member (a present key).
+ * Everything else is already plain JSON ({@link assertEncodable}).
+ */
+export function encodeInput(value: unknown, context: string): unknown {
+  assertEncodable(value, context)
+  return encodeUndefined(value)
+}
+
+function encodeUndefined(value: unknown): unknown {
+  if (value === undefined) return UNDEF_SENTINEL
+  if (Array.isArray(value)) return value.map(encodeUndefined)
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, encodeUndefined(v)]))
+  }
+  return value
+}
+
 export function encodeExpect(value: unknown, context: string): unknown {
-  // JS distinguishes undefined from null; the template backends have a
-  // single absent value (Go nil / Perl undef). Per the spec, an
-  // undefined EXPECT encodes as null (value-compat).
-  if (value === undefined) return null
+  if (value === undefined) return UNDEF_SENTINEL
   if (typeof value === 'number' && !Number.isFinite(value)) {
     return { $num: Number.isNaN(value) ? 'NaN' : value > 0 ? 'Infinity' : '-Infinity' }
   }
   if (Array.isArray(value)) {
-    return value.map((v, i) => encodeExpect(v, `${context}[${i}]`))
+    // A hole reads as `undefined`, like an explicit element.
+    return Array.from(value, (v, i) => encodeExpect(v, `${context}[${i}]`))
   }
   if (value !== null && typeof value === 'object') {
-    if ('$num' in value) throw new Error(`${context}: the "$num" key is reserved for the sentinel`)
+    assertNoReservedKey(value, context)
     return Object.fromEntries(
       Object.entries(value).map(([k, v]) => [k, encodeExpect(v, `${context}.${k}`)]),
     )
@@ -74,12 +109,12 @@ export function buildVectors(): VectorFile {
       const ref = reference[c.fn]
       if (!ref) throw new Error(`no JS reference implementation for helper "${c.fn}" in cases.ts`)
       const context = `${c.fn}(${JSON.stringify(c.args)})`
-      assertEncodable(c.args, context)
+      const args = encodeInput(c.args, context) as unknown[]
       const expect = encodeExpect(
         (ref as (...args: unknown[]) => unknown)(...c.args),
         `${context} → expect`,
       )
-      return { fn: c.fn, args: c.args, expect, note: c.note }
+      return { fn: c.fn, args, expect, note: c.note }
     }),
   }
 }

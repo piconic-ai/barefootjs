@@ -1,7 +1,7 @@
 /**
  * `strict_eq` — JS `===` over primitives (spec/js-primitive-semantics.md,
  * "`===` / `!==`"): same type and same value, no coercion; `NaN !== NaN`,
- * `0 === -0`, nil equals only nil. Objects and arrays are out of this
+ * `0 === -0`, `null` equals only `null` and `undefined` only `undefined`. Objects and arrays are out of this
  * corpus: a template adapter refuses a `===` over one with BF101 (rollout
  * step 8, "Decisions" (4)).
  */
@@ -40,5 +40,8 @@ export const strict_eq: PrimitiveOp = {
     c(null, 0, 'nil never equals 0'),
     c(null, '', 'nil never equals the empty string'),
     c(false, null, 'false never equals nil'),
+    c(undefined, undefined, 'undefined equals undefined'),
+    c(undefined, null, 'undefined never equals null'),
+    c(undefined, 0, 'undefined never equals 0'),
   ],
 }

@@ -133,10 +133,35 @@ type primitiveCase struct {
 	Note   string            `json:"note"`
 }
 
-type primitiveLedger struct {
+// expectedFailureLedger is the shape of primitives-expected-failures.json and
+// eval-expected-failures.json. `step` is a #3824 step number or a #3848 U-step
+// id ("U8"), so it is kept raw and only printed.
+type expectedFailureLedger struct {
 	Runtimes map[string]map[string]struct {
-		Step int `json:"step"`
+		Step json.RawMessage `json:"step"`
 	} `json:"runtimes"`
+}
+
+// loadExpectedFailures reads the "go" runtime of a ledger: case key → step.
+func loadExpectedFailures(t *testing.T, path string) map[string]string {
+	t.Helper()
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+	var ledger expectedFailureLedger
+	if err := json.Unmarshal(raw, &ledger); err != nil {
+		t.Fatalf("parse %s: %v", path, err)
+	}
+	entries, ok := ledger.Runtimes["go"]
+	if !ok {
+		t.Fatalf("%s has no \"go\" runtime", path)
+	}
+	out := make(map[string]string, len(entries))
+	for key, entry := range entries {
+		out[key] = string(entry.Step)
+	}
+	return out
 }
 
 func TestPrimitiveVectors(t *testing.T) {
@@ -149,18 +174,7 @@ func TestPrimitiveVectors(t *testing.T) {
 	}
 	sort.Strings(files)
 
-	raw, err := os.ReadFile(primitivesLedgerPath)
-	if err != nil {
-		t.Fatalf("read %s: %v", primitivesLedgerPath, err)
-	}
-	var ledger primitiveLedger
-	if err := json.Unmarshal(raw, &ledger); err != nil {
-		t.Fatalf("parse %s: %v", primitivesLedgerPath, err)
-	}
-	expected, ok := ledger.Runtimes["go"]
-	if !ok {
-		t.Fatalf("%s has no \"go\" runtime", primitivesLedgerPath)
-	}
+	expected := loadExpectedFailures(t, primitivesLedgerPath)
 
 	seen := map[string]bool{}
 	total, passed := 0, 0
@@ -180,10 +194,10 @@ func TestPrimitiveVectors(t *testing.T) {
 			seen[key] = true
 			total++
 			ok, detail := runPrimitiveCase(c)
-			entry, listed := expected[key]
+			step, listed := expected[key]
 			switch {
 			case ok && listed:
-				t.Errorf("ledger entry %q now passes; remove it from the ledger (step %d)", key, entry.Step)
+				t.Errorf("ledger entry %q now passes; remove it from the ledger (step %s)", key, step)
 			case !ok && !listed:
 				t.Errorf("UNEXPECTED-FAIL %s: %s", key, detail)
 			}
@@ -223,7 +237,7 @@ func runPrimitiveCaseWith(c primitiveCase, bind func(args []any) any) (ok bool, 
 		if err != nil {
 			return false, err.Error()
 		}
-		args[i] = v
+		args[i] = undefinedToArg(v)
 	}
 	expect, err := decodePrimitiveValue(c.Expect)
 	if err != nil {

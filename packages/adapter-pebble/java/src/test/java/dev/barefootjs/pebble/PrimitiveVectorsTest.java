@@ -228,9 +228,7 @@ class PrimitiveVectorsTest {
     files.sort(null);
     assertTrue(!files.isEmpty(), "no primitives/*.json under " + dir);
 
-    JsonObject ledger = JsonParser.parseString(
-        Files.readString(VECTORS_DIR.resolve("primitives-expected-failures.json"))).getAsJsonObject();
-    JsonObject expected = ledger.getAsJsonObject("runtimes").getAsJsonObject("java");
+    JsonObject expected = VectorUndefined.loadExpectedFailures(VECTORS_DIR.resolve("primitives-expected-failures.json"));
 
     List<String> problems = new ArrayList<>();
     Set<String> seen = new HashSet<>();
@@ -249,7 +247,7 @@ class PrimitiveVectorsTest {
           passed++;
           if (listed) {
             problems.add("ledger entry '" + key + "' now passes; remove it from the ledger (step "
-                + expected.getAsJsonObject(key).get("step").getAsInt() + ")");
+                + expected.getAsJsonObject(key).get("step").getAsString() + ")");
           }
         } else if (!listed) {
           problems.add("UNEXPECTED-FAIL " + key + ": " + failure);
@@ -278,7 +276,7 @@ class PrimitiveVectorsTest {
     }
     List<Object> args = new ArrayList<>();
     for (JsonElement a : c.getAsJsonArray("args")) {
-      args.add(decode(a));
+      args.add(decode(a, VectorUndefined.ARG));
     }
     Object got;
     try {
@@ -286,12 +284,16 @@ class PrimitiveVectorsTest {
     } catch (RuntimeException e) {
       return "threw " + e;
     }
-    Object expect = decode(c.get("expect"));
+    Object expect = decode(c.get("expect"), VectorUndefined.EXPECT);
     return match(got, expect) ? null : "got " + got + ", want " + expect;
   }
 
-  /** JSON to runtime value: numbers as doubles, the `$num` sentinel (`-0` included) resolved. */
-  private static Object decode(JsonElement el) {
+  /**
+   * JSON to runtime value: numbers as doubles, the `$num` sentinel (`-0`
+   * included) resolved, and `$undef` replaced by {@code undefined}
+   * ({@link VectorUndefined#ARG} or {@link VectorUndefined#EXPECT}).
+   */
+  private static Object decode(JsonElement el, Object undefined) {
     if (el == null || el.isJsonNull()) {
       return null;
     }
@@ -304,10 +306,13 @@ class PrimitiveVectorsTest {
     }
     if (el.isJsonArray()) {
       List<Object> out = new ArrayList<>();
-      el.getAsJsonArray().forEach(e -> out.add(decode(e)));
+      el.getAsJsonArray().forEach(e -> out.add(decode(e, undefined)));
       return out;
     }
     JsonObject obj = el.getAsJsonObject();
+    if (VectorUndefined.isSentinel(obj)) {
+      return undefined;
+    }
     if (obj.size() == 1 && obj.has("$num")) {
       switch (obj.get("$num").getAsString()) {
         case "NaN": return Double.NaN;
@@ -318,7 +323,7 @@ class PrimitiveVectorsTest {
       }
     }
     Map<String, Object> out = new LinkedHashMap<>();
-    obj.entrySet().forEach(e -> out.put(e.getKey(), decode(e.getValue())));
+    obj.entrySet().forEach(e -> out.put(e.getKey(), decode(e.getValue(), undefined)));
     return out;
   }
 
@@ -329,6 +334,9 @@ class PrimitiveVectorsTest {
    */
   @SuppressWarnings("unchecked")
   private static boolean match(Object got, Object expect) {
+    if (expect == VectorUndefined.EXPECT) {
+      return VectorUndefined.isRuntimeUndefined(got);
+    }
     if (expect == null) {
       return got == null;
     }

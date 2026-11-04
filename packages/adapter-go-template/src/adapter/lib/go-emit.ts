@@ -66,6 +66,9 @@ export function wrapIfMultiToken(rendered: string): string {
  * `primitive-plan-cross-adapter.test.ts` holds the emission to it.
  */
 export const GO_NATIVE_SAFE: NativeSafeTable = {
+  // The runtime does not carry JS `undefined` apart from `null` yet
+  // (spec/js-undefined-value.md); rollout step U8 flips it.
+  carriesUndefined: false,
   'to-boolean': ['boolean'],
   // A unary `+` over a proven number is the operand itself; anything else
   // takes `bf_to_number` (#3824 step 3). Binary `-` / `*` take `bf_sub` /

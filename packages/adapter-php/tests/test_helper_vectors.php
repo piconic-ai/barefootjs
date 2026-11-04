@@ -33,6 +33,7 @@ declare(strict_types=1);
  */
 
 require_once __DIR__ . '/_harness.php';
+require_once __DIR__ . '/_vector_undefined.php';
 bf_require_runtime();
 bf_reset();
 
@@ -135,6 +136,9 @@ function bfv_bind_reduce(BarefootJS $bf, $recv, $op, $keyKind, $key, $rtype, $in
 function bfv_materialize(array $args): array
 {
     return array_map(function ($a) {
+        if (bf_is_undef_sentinel($a)) {
+            return bf_vector_undefined_arg();
+        }
         if (is_array($a) && array_keys($a) === ['$date']) {
             return new \DateTimeImmutable($a['$date']);
         }
@@ -241,6 +245,9 @@ $UNSUPPORTED = $divergencesDoc['unsupported'] ?? [];
 
 function bfv_match($got, $expect): bool
 {
+    if (bf_is_undef_sentinel($expect)) {
+        return bf_is_runtime_undefined($got);
+    }
     if ($expect === null) {
         return $got === null;
     }

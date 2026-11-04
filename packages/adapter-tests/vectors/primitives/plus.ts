@@ -1,11 +1,12 @@
 /**
  * `plus` — JS binary `+` (spec/js-primitive-semantics.md, "Binary `+`"):
  * if either operand is a string, ToString both and concatenate; otherwise
- * ToNumber both and add as doubles. A nil operand reads as `null` (the
- * runtimes hold one nil), so an omitted operand gives `'nullx'` against a
- * string and `0 + x` against a number; a typed `undefined` reading is
- * rewritten away at compile time (the nil-reading rewrite, rollout step 4a).
- * An array or object operand primitive-converts to its ToString, so the `+`
+ * ToNumber both and add as doubles. A host-nil operand is `null`, so it
+ * gives `'nullx'` against a string and `0 + x` against a number. An
+ * `undefined` operand (the `$undef` sentinel) is `NaN` against a number and
+ * `'undefined'` against a string (spec/js-undefined-value.md, §2); a runtime
+ * that does not carry `undefined` yet lists those cases in the
+ * expected-failure ledger under its U step. An array or object operand primitive-converts to its ToString, so the `+`
  * concatenates. A sum past 2^53 carries the `beyond-safe-integer` domain,
  * which no target claims natively ("Decisions" (5)).
  */
@@ -45,6 +46,11 @@ export const plus: PrimitiveOp = {
     c(null, 'x', 'a nil operand against a string prints as "null"'),
     c('x', null, 'a string against a nil operand'),
     c(null, null, 'two nil operands add as 0'),
+    c(undefined, 1, 'undefined against a number adds as NaN'),
+    c(undefined, 'x', 'undefined against a string prints as "undefined"'),
+    c('x', undefined, 'a string against undefined'),
+    c(undefined, null, 'undefined plus null is NaN'),
+    c(undefined, undefined, 'two undefined operands add as NaN'),
     c([1, 2], '', 'an array against a string joins with a comma'),
     c('x', [], 'an empty array prints as the empty string'),
     c([1], 1, 'an array against a number concatenates'),

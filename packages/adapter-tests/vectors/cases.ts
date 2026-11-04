@@ -403,6 +403,13 @@ export const cases: HelperCase[] = [
   { fn: 'to_fixed', args: [2.5, 0], note: 'zero digits rounds to integer string' },
   { fn: 'to_fixed', args: [1.005, 2], note: 'IEEE-754 double: 1.005 formats as 1.00 on all backends' },
   { fn: 'to_fixed', args: ['7.1', 3], note: 'numeric-string operand routes through number coercion' },
+  // Optional-argument twins (spec/js-undefined-value.md, §4 "Runtime helper
+  // code to audit"): the argument omitted (as the compiler lowers it), an
+  // explicit `undefined` and an explicit `null`. JS applies the default only
+  // to the first two; `null` is coerced like any other value.
+  { fn: 'to_fixed', args: [1.5, 0], note: 'digits omitted: the compiler passes the default 0' },
+  { fn: 'to_fixed', args: [1.5, undefined], note: 'digits undefined is the default 0' },
+  { fn: 'to_fixed', args: [1.5, null], note: 'digits null coerces to 0' },
 
   { fn: 'lower', args: ['HeLLo'], note: 'mixed case' },
   { fn: 'lower', args: ['ABC123'], note: 'digits pass through' },
@@ -441,6 +448,13 @@ export const cases: HelperCase[] = [
   // Positions count UTF-16 code units (#3613): '本' is one unit, '😀' two.
   { fn: 'starts_with', args: ['日本語', '本', 1], note: 'position counts a BMP character as one unit' },
   { fn: 'starts_with', args: ['a😀b', 'b', 3], note: 'position counts an astral character as two units' },
+  // Optional-argument twins (spec/js-undefined-value.md, §4 "Runtime helper
+  // code to audit"): the argument omitted (as the compiler lowers it), an
+  // explicit `undefined` and an explicit `null`. JS applies the default only
+  // to the first two; `null` is coerced like any other value.
+  { fn: 'starts_with', args: ['abc', 'a'], note: 'position omitted tests from 0' },
+  { fn: 'starts_with', args: ['abc', 'a', undefined], note: 'position undefined tests from 0' },
+  { fn: 'starts_with', args: ['abc', 'a', null], note: 'position null coerces to 0' },
 
   { fn: 'ends_with', args: ['hello', 'lo'], note: 'matching suffix' },
   { fn: 'ends_with', args: ['hello', 'he'], note: 'non-suffix substring' },
@@ -450,6 +464,13 @@ export const cases: HelperCase[] = [
   { fn: 'ends_with', args: ['abc', 'abcd'], note: 'suffix longer than receiver' },
   { fn: 'ends_with', args: ['日本語', '本', 2], note: 'endPosition counts a BMP character as one unit' },
   { fn: 'ends_with', args: ['a😀b', '😀', 3], note: 'endPosition counts an astral character as two units' },
+  // Optional-argument twins (spec/js-undefined-value.md, §4 "Runtime helper
+  // code to audit"): the argument omitted (as the compiler lowers it), an
+  // explicit `undefined` and an explicit `null`. JS applies the default only
+  // to the first two; `null` is coerced like any other value.
+  { fn: 'ends_with', args: ['abc', 'c'], note: 'endPosition omitted is the length' },
+  { fn: 'ends_with', args: ['abc', 'c', undefined], note: 'endPosition undefined is the length' },
+  { fn: 'ends_with', args: ['abc', 'c', null], note: 'endPosition null coerces to 0' },
 
   { fn: 'replace', args: ['a-b-a', 'a', 'X'], note: 'first occurrence only' },
   { fn: 'replace', args: ['abc', 'z', 'X'], note: 'pattern not found leaves receiver unchanged' },
@@ -472,6 +493,13 @@ export const cases: HelperCase[] = [
   { fn: 'repeat', args: ['x', 0], note: 'zero count is empty' },
   { fn: 'repeat', args: ['', 5], note: 'empty receiver stays empty' },
   { fn: 'repeat', args: ['-', 1], note: 'single repetition' },
+  // Optional-argument twins (spec/js-undefined-value.md, §4 "Runtime helper
+  // code to audit"): the argument omitted (as the compiler lowers it), an
+  // explicit `undefined` and an explicit `null`. JS applies the default only
+  // to the first two; `null` is coerced like any other value.
+  { fn: 'repeat', args: ['ab', 0], note: 'count omitted: the compiler passes the default 0' },
+  { fn: 'repeat', args: ['ab', undefined], note: 'count undefined coerces to 0' },
+  { fn: 'repeat', args: ['ab', null], note: 'count null coerces to 0' },
 
   { fn: 'pad_start', args: ['5', 3, '0'], note: 'zero-padding numbers' },
   { fn: 'pad_start', args: ['hi', 4], note: 'pad defaults to a single space' },
@@ -483,6 +511,20 @@ export const cases: HelperCase[] = [
   { fn: 'pad_end', args: ['hi', 4], note: 'pad defaults to a single space' },
   { fn: 'pad_end', args: ['a', 4, 'xyz'], note: 'pad truncates to fill exactly' },
   { fn: 'pad_end', args: ['abc', 2, '0'], note: 'target below length returns receiver' },
+  // Optional-argument twins (spec/js-undefined-value.md, §4 "Runtime helper
+  // code to audit"): the argument omitted (as the compiler lowers it), an
+  // explicit `undefined` and an explicit `null`. JS applies the default only
+  // to the first two; `null` is coerced like any other value.
+  { fn: 'pad_start', args: ['abc', 5, undefined], note: 'pad undefined defaults to a single space' },
+  { fn: 'pad_start', args: ['abc', 5, null], note: 'pad null coerces to the string "null"' },
+  { fn: 'pad_end', args: ['abc', 5, undefined], note: 'pad undefined defaults to a single space' },
+  { fn: 'pad_end', args: ['abc', 5, null], note: 'pad null coerces to the string "null"' },
+  { fn: 'pad_start', args: ['abc', 0], note: 'target omitted: the compiler passes the default 0' },
+  { fn: 'pad_start', args: ['abc', undefined], note: 'target undefined coerces to 0' },
+  { fn: 'pad_start', args: ['abc', null], note: 'target null coerces to 0' },
+  { fn: 'pad_end', args: ['abc', 0], note: 'target omitted: the compiler passes the default 0' },
+  { fn: 'pad_end', args: ['abc', undefined], note: 'target undefined coerces to 0' },
+  { fn: 'pad_end', args: ['abc', null], note: 'target null coerces to 0' },
 
   { fn: 'split', args: ['a,b,c', ','], note: 'basic comma split' },
   { fn: 'split', args: ['a,', ','], note: 'trailing empty field is kept' },
@@ -492,6 +534,15 @@ export const cases: HelperCase[] = [
   { fn: 'split', args: ['', ','], note: 'empty receiver yields one empty field' },
   { fn: 'split', args: ['', ''], note: 'empty receiver with empty separator yields []' },
   { fn: 'split', args: ['a,b,c', ',', 0], note: 'zero limit yields []' },
+  // Optional-argument twins (spec/js-undefined-value.md, §4 "Runtime helper
+  // code to audit"): the argument omitted (as the compiler lowers it), an
+  // explicit `undefined` and an explicit `null`. JS applies the default only
+  // to the first two; `null` is coerced like any other value.
+  { fn: 'split', args: ['a,b,c', ',', undefined], note: 'limit undefined does not cap' },
+  { fn: 'split', args: ['a,b,c', ',', null], note: 'limit null coerces to 0 and yields []' },
+  { fn: 'split', args: ['anullb'], note: 'separator omitted yields the whole string' },
+  { fn: 'split', args: ['anullb', undefined], note: 'separator undefined yields the whole string' },
+  { fn: 'split', args: ['anullb', null], note: 'separator null splits on the string "null"' },
 
   { fn: 'len', args: [[10, 20, 30]], note: 'array element count' },
   { fn: 'len', args: [[]], note: 'empty array' },
@@ -500,9 +551,16 @@ export const cases: HelperCase[] = [
 
   { fn: 'at', args: [[10, 20, 30], 1], note: 'positive index' },
   { fn: 'at', args: [[10, 20, 30], -1], note: 'negative index counts from the end' },
-  { fn: 'at', args: [[10, 20, 30], 5], note: 'out of range yields undefined ≡ null' },
-  { fn: 'at', args: [[10, 20, 30], -5], note: 'negative out of range yields undefined ≡ null' },
-  { fn: 'at', args: [[], 0], note: 'empty array yields undefined ≡ null' },
+  { fn: 'at', args: [[10, 20, 30], 5], note: 'out of range yields undefined' },
+  { fn: 'at', args: [[10, 20, 30], -5], note: 'negative out of range yields undefined' },
+  { fn: 'at', args: [[], 0], note: 'empty array yields undefined' },
+  // Optional-argument twins (spec/js-undefined-value.md, §4 "Runtime helper
+  // code to audit"): the argument omitted (as the compiler lowers it), an
+  // explicit `undefined` and an explicit `null`. JS applies the default only
+  // to the first two; `null` is coerced like any other value.
+  { fn: 'at', args: [[10, 20, 30], 0], note: 'index omitted: the compiler passes the default 0' },
+  { fn: 'at', args: [[10, 20, 30], undefined], note: 'index undefined coerces to 0' },
+  { fn: 'at', args: [[10, 20, 30], null], note: 'index null coerces to 0' },
   // String receiver (#3613): indexed in UTF-16 code units, like every
   // string position below. No case lands on half of a surrogate pair — JS
   // yields a lone surrogate there, which the UTF-8 backends replace with
@@ -510,7 +568,7 @@ export const cases: HelperCase[] = [
   { fn: 'at', args: ['日本語', -1], note: 'string: negative index on BMP characters' },
   { fn: 'at', args: ['a😀b', -1], note: 'string: negative index after an astral character' },
   { fn: 'at', args: ['a😀b', 3], note: 'string: an astral character spans two units' },
-  { fn: 'at', args: ['abc', 3], note: 'string: out of range yields undefined ≡ null' },
+  { fn: 'at', args: ['abc', 3], note: 'string: out of range yields undefined' },
 
   { fn: 'includes', args: [[1, 2, 3], 2], note: 'array contains number' },
   { fn: 'includes', args: [[1, 2, 3], 5], note: 'array missing number' },
@@ -542,6 +600,15 @@ export const cases: HelperCase[] = [
   { fn: 'slice', args: [[1, 2, 3, 4], 0, -1], note: 'negative end drops the tail' },
   { fn: 'slice', args: [[1, 2, 3, 4], 2, 1], note: 'start past end yields []' },
   { fn: 'slice', args: [[1, 2, 3, 4], 0, 99], note: 'end clamps to length' },
+  // Optional-argument twins (spec/js-undefined-value.md, §4 "Runtime helper
+  // code to audit"): the argument omitted (as the compiler lowers it), an
+  // explicit `undefined` and an explicit `null`. JS applies the default only
+  // to the first two; `null` is coerced like any other value.
+  { fn: 'slice', args: [[1, 2, 3, 4], 1, undefined], note: 'end undefined runs to the end' },
+  { fn: 'slice', args: [[1, 2, 3, 4], 1, null], note: 'end null coerces to 0 and yields []' },
+  { fn: 'slice', args: [[1, 2, 3, 4], 0], note: 'start omitted: the compiler passes the default 0' },
+  { fn: 'slice', args: [[1, 2, 3, 4], undefined], note: 'start undefined coerces to 0' },
+  { fn: 'slice', args: [[1, 2, 3, 4], null], note: 'start null coerces to 0' },
 
   // String receiver (the `string-slice` divergence, #2182): the adapter
   // can't disambiguate a string from an array at compile time, so the
@@ -552,6 +619,8 @@ export const cases: HelperCase[] = [
   { fn: 'slice', args: ['barefootjs', 4], note: 'string: start only runs to the end' },
   { fn: 'slice', args: ['barefootjs', 5, 2], note: 'string: start past end yields empty string' },
   { fn: 'slice', args: ['héllo', 0, 2], note: 'string: multi-byte characters count as one unit each' },
+  { fn: 'slice', args: ['barefootjs', 4, undefined], note: 'string: end undefined runs to the end' },
+  { fn: 'slice', args: ['barefootjs', 4, null], note: 'string: end null coerces to 0 and yields empty string' },
 
   { fn: 'reverse', args: [[1, 2, 3]], note: 'basic reversal' },
   { fn: 'reverse', args: [[]], note: 'empty array' },
@@ -576,6 +645,14 @@ export const cases: HelperCase[] = [
   { fn: 'join', args: [[], ','], note: 'empty array joins to empty string' },
   { fn: 'join', args: [[1, null, 2], ','], note: 'null elements render as empty' },
   { fn: 'join', args: [['solo'], ','], note: 'single element has no separator' },
+  // Optional-argument twins (spec/js-undefined-value.md, §4 "Runtime helper
+  // code to audit"): the argument omitted (as the compiler lowers it), an
+  // explicit `undefined` and an explicit `null`. JS applies the default only
+  // to the first two; `null` is coerced like any other value.
+  { fn: 'join', args: [['a', 'b'], ','], note: 'separator omitted: the compiler passes the default ","' },
+  { fn: 'join', args: [['a', 'b'], undefined], note: 'separator undefined is the default ","' },
+  { fn: 'join', args: [['a', 'b'], null], note: 'separator null coerces to the string "null"' },
+  { fn: 'join', args: [['a', undefined, 'b'], '-'], note: 'an undefined element renders as empty' },
 
   { fn: 'arr', args: [1, 'x'], note: 'variadic elements in order' },
   { fn: 'arr', args: [], note: 'empty literal' },
@@ -757,7 +834,7 @@ export const cases: HelperCase[] = [
     args: [[{ id: 1, v: 'x' }, { id: 2, v: 'y' }], 'id', 2],
     note: 'returns the first matching element',
   },
-  { fn: 'find', args: [[{ id: 1 }], 'id', 9], note: 'no match yields undefined ≡ null' },
+  { fn: 'find', args: [[{ id: 1 }], 'id', 9], note: 'no match yields undefined' },
   {
     fn: 'find_index',
     args: [[{ id: 1 }, { id: 2 }, { id: 2 }], 'id', 2],

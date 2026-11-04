@@ -31,6 +31,7 @@ import unittest
 
 from barefootjs import BarefootJS
 from barefootjs.backend_jinja import default_json_encoder
+from tests.vector_undefined import VECTOR_UNDEFINED_ARG, is_runtime_undefined, is_undef_sentinel
 
 VECTORS_PATH = os.path.join(
     os.path.dirname(__file__), "..", "..", "..", "adapter-tests", "vectors", "vectors.json"
@@ -96,6 +97,8 @@ def _materialize_arg(v):
     just its ISO-string branch) is exercised. Recurses through lists/dicts
     the same shape the Perl port's `normalize_arg` walks, since a vector's
     `args` may nest the sentinel inside a higher-order projection payload."""
+    if is_undef_sentinel(v):
+        return VECTOR_UNDEFINED_ARG
     if isinstance(v, list):
         return [_materialize_arg(x) for x in v]
     if isinstance(v, dict) and list(v) == ["$date"]:
@@ -210,7 +213,10 @@ UNSUPPORTED = _divergences_doc["unsupported"]
 def _match(got, expect):
     """Spec value-compat comparison against a JSON-decoded expect --
     sentinel hashes, booleans by truthiness, numbers numerically,
-    arrays/hashes recursively."""
+    arrays/hashes recursively. A `$undef` expect matches only the runtime's
+    undefined (vector_undefined.py)."""
+    if is_undef_sentinel(expect):
+        return is_runtime_undefined(got)
     if expect is None:
         return got is None
     if isinstance(expect, dict) and "$num" in expect:

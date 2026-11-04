@@ -67,9 +67,12 @@ var vectorBindings = map[string]func(args []any) any{
 	"min":    func(args []any) any { return Min(args[0], args[1]) },
 	"max":    func(args []any) any { return Max(args[0], args[1]) },
 	"abs":    func(args []any) any { return Abs(args[0]) },
+	// An argument the runtime helper takes as `any` is passed through as
+	// decoded, as a template passes it, so a nil (JS `null` / `undefined`)
+	// reaches the helper instead of failing a cast in the harness.
 	"to_fixed": func(args []any) any {
 		if len(args) > 1 {
-			return ToFixed(args[0], args[1].(int))
+			return ToFixed(args[0], args[1])
 		}
 		return ToFixed(args[0], 0)
 	},
@@ -80,48 +83,52 @@ var vectorBindings = map[string]func(args []any) any{
 	"trim_end":   func(args []any) any { return TrimEnd(args[0].(string)) },
 	"starts_with": func(args []any) any {
 		if len(args) > 2 {
-			return StartsWith(args[0].(string), args[1].(string), args[2].(int))
+			return StartsWith(args[0].(string), args[1].(string), args[2])
 		}
 		return StartsWith(args[0].(string), args[1].(string))
 	},
 	"ends_with": func(args []any) any {
 		if len(args) > 2 {
-			return EndsWith(args[0].(string), args[1].(string), args[2].(int))
+			return EndsWith(args[0].(string), args[1].(string), args[2])
 		}
 		return EndsWith(args[0].(string), args[1].(string))
 	},
 	"replace":     func(args []any) any { return Replace(args[0].(string), args[1].(string), args[2].(string)) },
 	"replace_all": func(args []any) any { return ReplaceAll(args[0].(string), args[1].(string), args[2].(string)) },
-	"repeat":      func(args []any) any { return Repeat(args[0].(string), args[1].(int)) },
+	"repeat":      func(args []any) any { return Repeat(args[0].(string), args[1]) },
 	"pad_start": func(args []any) any {
 		if len(args) > 2 {
-			return PadStart(args[0].(string), args[1].(int), args[2].(string))
+			return PadStart(args[0].(string), args[1], args[2].(string))
 		}
-		return PadStart(args[0].(string), args[1].(int))
+		return PadStart(args[0].(string), args[1])
 	},
 	"pad_end": func(args []any) any {
 		if len(args) > 2 {
-			return PadEnd(args[0].(string), args[1].(int), args[2].(string))
+			return PadEnd(args[0].(string), args[1], args[2].(string))
 		}
-		return PadEnd(args[0].(string), args[1].(int))
+		return PadEnd(args[0].(string), args[1])
 	},
 	"split": func(args []any) any {
+		// A separator-less `.split()` is `bf_arr recv` in the adapter.
+		if len(args) == 1 {
+			return Arr(args[0])
+		}
 		if len(args) > 2 {
-			return Split(args[0].(string), args[1].(string), args[2].(int))
+			return Split(args[0].(string), args[1].(string), args[2])
 		}
 		return Split(args[0].(string), args[1].(string))
 	},
 	"len":           func(args []any) any { return Len(args[0]) },
-	"at":            func(args []any) any { return At(args[0], args[1].(int)) },
+	"at":            func(args []any) any { return At(args[0], args[1]) },
 	"includes":      func(args []any) any { return Includes(args[0], args[1]) },
 	"index_of":      func(args []any) any { return IndexOf(args[0], args[1]) },
 	"last_index_of": func(args []any) any { return LastIndexOf(args[0], args[1]) },
 	"concat":        func(args []any) any { return Concat(args[0], args[1]) },
 	"slice": func(args []any) any {
 		if len(args) > 2 {
-			return Slice(args[0], args[1].(int), args[2].(int))
+			return Slice(args[0], args[1], args[2])
 		}
-		return Slice(args[0], args[1].(int))
+		return Slice(args[0], args[1])
 	},
 	"reverse":       func(args []any) any { return Reverse(args[0]) },
 	"flat":          func(args []any) any { return Flat(args[0], args[1].(int)) },
@@ -240,7 +247,7 @@ func TestHelperVectors(t *testing.T) {
 			}
 			args := make([]any, len(c.Args))
 			for j, raw := range c.Args {
-				v, err := decodeVectorValue(raw)
+				v, err := decodeVectorArg(raw)
 				if err != nil {
 					t.Fatalf("case %d: decode arg %d: %v", i, j, err)
 				}
@@ -250,15 +257,24 @@ func TestHelperVectors(t *testing.T) {
 			if err != nil {
 				t.Fatalf("case %d: decode expect: %v", i, err)
 			}
-			got := bind(args)
+			got, panicked := callVectorBinding(bind, args)
 			if d, ok := divFile.Divergences[key]; ok {
 				declared[key] = true
+				if d.Throws {
+					// A `throws: true` pin: the call panics (a typed helper
+					// handed an argument it cannot take, as a template call
+					// with that argument fails at render time).
+					if panicked == nil {
+						t.Errorf("stale throws divergence for %q — the call now returns %v; update or remove it", key, got)
+					}
+					return
+				}
+				if panicked != nil {
+					t.Fatalf("%s panicked: %v", key, panicked)
+				}
 				if vectorEqual(got, expect) {
 					t.Errorf("stale divergence declaration for %q — the backend now matches JS (%v); remove it", key, got)
 					return
-				}
-				if d.Throws {
-					t.Fatalf("throws divergences are not supported by the Go harness — bindings return values")
 				}
 				if d.Expect == nil {
 					t.Fatalf("malformed divergence declaration for %q: missing expect", key)
@@ -271,6 +287,9 @@ func TestHelperVectors(t *testing.T) {
 					t.Errorf("divergence drift for %q: got %v (%T), pinned %v (%s)", key, got, got, pinned, d.Reason)
 				}
 				return
+			}
+			if panicked != nil {
+				t.Fatalf("%s(%s) panicked: %v", c.Fn, string(mustJoinRaw(c.Args)), panicked)
 			}
 			if !vectorEqual(got, expect) {
 				t.Errorf("%s(%s) = %v (%T), want %v (%T)", c.Fn, string(mustJoinRaw(c.Args)), got, got, expect, expect)
@@ -286,12 +305,75 @@ func TestHelperVectors(t *testing.T) {
 	}
 }
 
+// callVectorBinding calls a binding, returning the recovered panic value
+// (nil when the call returned).
+func callVectorBinding(bind func([]any) any, args []any) (got any, panicked any) {
+	defer func() { panicked = recover() }()
+	return bind(args), nil
+}
+
 func mustJoinRaw(raws []json.RawMessage) []byte {
 	parts := make([][]byte, len(raws))
 	for i, r := range raws {
 		parts[i] = []byte(r)
 	}
 	return bytes.Join(parts, []byte(", "))
+}
+
+// The `{"$undef": true}` sentinel (spec/js-undefined-value.md, "JSON
+// encoding for vectors") stands for JS `undefined`. The Go runtime has no
+// undefined value yet (rollout step U8 adds `bf.Undefined`), so for now:
+//
+//   - in `args` and the evaluator `env` it decodes to vectorUndefinedArg, the
+//     host nil a template receives for `undefined` today;
+//   - in an `expect` it decodes to vectorUndefinedExpect, which matches only
+//     a value isRuntimeUndefined accepts. None exists yet, so it never
+//     matches, also inside nested arrays and objects, and every such case
+//     is listed in an expected-failure ledger or pinned as a divergence.
+//
+// U8 flips both in one place: vectorUndefinedArg becomes `Undefined` and
+// isRuntimeUndefined compares against it.
+var vectorUndefinedArg any = nil
+
+// undefinedExpect is the type of vectorUndefinedExpect; nothing else has it.
+type undefinedExpect struct{}
+
+var vectorUndefinedExpect any = undefinedExpect{}
+
+// isRuntimeUndefined reports whether `got` is the runtime's own undefined
+// value. The Go runtime has none yet (U8).
+func isRuntimeUndefined(got any) bool { return false }
+
+// isUndefSentinel reports whether a decoded JSON object is `{"$undef": true}`.
+func isUndefSentinel(x map[string]any) bool {
+	b, ok := x["$undef"].(bool)
+	return len(x) == 1 && ok && b
+}
+
+// decodeVectorArg decodes an `args` / `env` value: decodeVectorValue with
+// every `$undef` replaced by vectorUndefinedArg.
+func decodeVectorArg(raw json.RawMessage) (any, error) {
+	v, err := decodeVectorValue(raw)
+	if err != nil {
+		return nil, err
+	}
+	return undefinedToArg(v), nil
+}
+
+func undefinedToArg(v any) any {
+	switch x := v.(type) {
+	case undefinedExpect:
+		return vectorUndefinedArg
+	case []any:
+		for i := range x {
+			x[i] = undefinedToArg(x[i])
+		}
+	case map[string]any:
+		for k := range x {
+			x[k] = undefinedToArg(x[k])
+		}
+	}
+	return v
 }
 
 // decodeVectorValue decodes a JSON value with integral numbers mapped
@@ -324,6 +406,9 @@ func normalizeVectorValue(v any) any {
 		}
 		return x
 	case map[string]any:
+		if isUndefSentinel(x) {
+			return vectorUndefinedExpect
+		}
 		// Reserved non-finite sentinel (spec/template-helpers.md):
 		// {"$num": "NaN" | "Infinity" | "-Infinity"}.
 		if len(x) == 1 {
@@ -362,6 +447,9 @@ func normalizeVectorValue(v any) any {
 // compare numerically regardless of Go type (int 3 == float64 3),
 // everything else compares structurally.
 func vectorEqual(got, expect any) bool {
+	if _, ok := expect.(undefinedExpect); ok {
+		return isRuntimeUndefined(got)
+	}
 	if expect == nil {
 		return got == nil
 	}

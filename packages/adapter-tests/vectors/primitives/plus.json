@@ -244,6 +244,74 @@
     {
       "fn": "plus",
       "args": [
+        {
+          "$undef": true
+        },
+        1
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "domain": "nil",
+      "note": "undefined against a number adds as NaN"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        {
+          "$undef": true
+        },
+        "x"
+      ],
+      "expect": "undefinedx",
+      "domain": "nil",
+      "note": "undefined against a string prints as \"undefined\""
+    },
+    {
+      "fn": "plus",
+      "args": [
+        "x",
+        {
+          "$undef": true
+        }
+      ],
+      "expect": "xundefined",
+      "domain": "nil",
+      "note": "a string against undefined"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        {
+          "$undef": true
+        },
+        null
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "domain": "nil",
+      "note": "undefined plus null is NaN"
+    },
+    {
+      "fn": "plus",
+      "args": [
+        {
+          "$undef": true
+        },
+        {
+          "$undef": true
+        }
+      ],
+      "expect": {
+        "$num": "NaN"
+      },
+      "domain": "nil",
+      "note": "two undefined operands add as NaN"
+    },
+    {
+      "fn": "plus",
+      "args": [
         [
           1,
           2

@@ -3,12 +3,16 @@
 require 'minitest/autorun'
 require 'json'
 require 'barefoot_js/evaluator'
+require_relative 'vector_undefined'
 
 # Golden ParsedExpr-evaluator vectors (issue #2018, spec/compiler.md
 # "ParsedExpr Evaluator Semantics"), generated from the JS reference
 # evaluator and shared with the Go and Perl evaluators. The file lives in
 # packages/adapter-tests (a monorepo-only path) -- skip everywhere else.
 VECTORS_PATH = File.expand_path('../../adapter-tests/vectors/eval-vectors.json', __dir__)
+# The shrink-only expected-failure ledger of the eval vectors
+# (spec/js-undefined-value.md, section 6), keyed by note.
+EVAL_LEDGER_PATH = File.expand_path('../../adapter-tests/vectors/eval-expected-failures.json', __dir__)
 
 class EvalVectorsTest < Minitest::Test
   def self.load_vectors
@@ -26,13 +30,31 @@ class EvalVectorsTest < Minitest::Test
       skip 'eval vectors not available outside the monorepo checkout'
     end
   else
+    EXPECTED = VectorUndefined.load_expected_failures(EVAL_LEDGER_PATH).freeze
+
     VECTORS.each_with_index do |vector_case, i|
       define_method("test_#{i}_#{vector_case[:note].gsub(/\W+/, '_')}") do
-        env = vector_case[:env] || {}
-        got = BarefootJS::Evaluator.evaluate(vector_case[:expr], env)
-        assert value_match?(got, vector_case[:expect]),
-               "#{vector_case[:note]}: got #{explain(got)}, want #{explain(vector_case[:expect])}"
+        note = vector_case[:note]
+        env = VectorUndefined.to_arg(vector_case[:env] || {})
+        begin
+          got = BarefootJS::Evaluator.evaluate(vector_case[:expr], env)
+          ok = value_match?(got, vector_case[:expect])
+          detail = "got #{explain(got)}, want #{explain(vector_case[:expect])}"
+        rescue StandardError => e
+          ok = false
+          detail = "raised #{e.class}: #{e.message}"
+        end
+        if EXPECTED.key?(note)
+          refute ok, "ledger entry '#{note}' now passes; remove it from the ledger (step #{EXPECTED[note]['step']})"
+        else
+          assert ok, "UNEXPECTED-FAIL #{note}: #{detail}"
+        end
       end
+    end
+
+    def test_zzz_every_ledger_entry_matches_a_case
+      notes = VECTORS.map { |c| c[:note] }
+      EXPECTED.each_key { |note| assert_includes notes, note, "ledger entry '#{note}' matches no eval case -- renamed note?" }
     end
   end
 
@@ -45,6 +67,7 @@ class EvalVectorsTest < Minitest::Test
   # type distinctions (unlike Perl's blurred numeric-string scalars) let this
   # stay a straightforward type + value check.
   def value_match?(got, expect)
+    return VectorUndefined.runtime_undefined?(got) if VectorUndefined.sentinel?(expect)
     return got.nil? if expect.nil?
     if expect.is_a?(Hash) && expect.key?(:$num)
       kind = expect[:$num]
