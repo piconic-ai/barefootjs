@@ -17445,6 +17445,19 @@
       }
     }
   ],
+  "style-object-nil-property": [
+    {
+      "name": "gen:n:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:u:union:1",
+      "props": {
+        "n": null,
+        "u": null
+      }
+    }
+  ],
   "style-object-shorthand": [
     {
       "name": "gen:color:empty",
@@ -18078,6 +18091,302 @@
       "props": {
         "n": 5,
         "m": 1234567890
+      }
+    }
+  ],
+  "undef-null-array-search": [
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "items": [],
+        "n": null
+      }
+    },
+    {
+      "name": "gen:n:absent",
+      "props": {
+        "items": [
+          "a",
+          null
+        ]
+      }
+    },
+    {
+      "name": "gen:u:union:1",
+      "props": {
+        "items": [
+          "a",
+          null
+        ],
+        "n": null,
+        "u": null
+      }
+    }
+  ],
+  "undef-null-destructure-default": [
+    {
+      "name": "gen:n:absent",
+      "props": {}
+    }
+  ],
+  "undef-null-json-stringify": [
+    {
+      "name": "gen:n:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:u:union:1",
+      "props": {
+        "n": null,
+        "u": null
+      }
+    }
+  ],
+  "undef-null-non-diverging-positions": [
+    {
+      "name": "gen:n:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:u:union:1",
+      "props": {
+        "n": null,
+        "u": null
+      }
+    }
+  ],
+  "undef-null-number-coercion": [
+    {
+      "name": "gen:n:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:u:union:1",
+      "props": {
+        "n": null,
+        "u": null
+      }
+    }
+  ],
+  "undef-null-number-coercion-typed": [
+    {
+      "name": "gen:u:zero",
+      "props": {
+        "n": null,
+        "u": 0
+      }
+    },
+    {
+      "name": "gen:u:negative",
+      "props": {
+        "n": null,
+        "u": -7
+      }
+    },
+    {
+      "name": "gen:u:large",
+      "props": {
+        "n": null,
+        "u": 1234567890
+      }
+    }
+  ],
+  "undef-null-optional-chain-result": [
+    {
+      "name": "gen:n:absent",
+      "props": {
+        "e": {},
+        "z": {
+          "k": null
+        }
+      }
+    },
+    {
+      "name": "gen:u:union:1",
+      "props": {
+        "n": null,
+        "e": {},
+        "z": {
+          "k": null
+        },
+        "u": null
+      }
+    }
+  ],
+  "undef-null-optional-method-args": [
+    {
+      "name": "gen:nums:empty",
+      "props": {
+        "nums": [],
+        "s": "abc",
+        "n": null,
+        "sn": null
+      }
+    },
+    {
+      "name": "gen:s:empty",
+      "props": {
+        "nums": [
+          1,
+          2
+        ],
+        "s": "",
+        "n": null,
+        "sn": null
+      }
+    },
+    {
+      "name": "gen:s:markup",
+      "props": {
+        "nums": [
+          1,
+          2
+        ],
+        "s": "<b>&\"'</b>",
+        "n": null,
+        "sn": null
+      }
+    },
+    {
+      "name": "gen:s:multibyte",
+      "props": {
+        "nums": [
+          1,
+          2
+        ],
+        "s": "日本語",
+        "n": null,
+        "sn": null
+      }
+    },
+    {
+      "name": "gen:n:absent",
+      "props": {
+        "nums": [
+          1,
+          2
+        ],
+        "s": "abc",
+        "sn": null
+      }
+    },
+    {
+      "name": "gen:u:union:1",
+      "props": {
+        "nums": [
+          1,
+          2
+        ],
+        "s": "abc",
+        "n": null,
+        "sn": null,
+        "u": null
+      }
+    },
+    {
+      "name": "gen:sn:absent",
+      "props": {
+        "nums": [
+          1,
+          2
+        ],
+        "s": "abc",
+        "n": null
+      }
+    },
+    {
+      "name": "gen:su:union:1",
+      "props": {
+        "nums": [
+          1,
+          2
+        ],
+        "s": "abc",
+        "n": null,
+        "sn": null,
+        "su": null
+      }
+    }
+  ],
+  "undef-null-relational": [
+    {
+      "name": "gen:n:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:u:union:1",
+      "props": {
+        "n": null,
+        "u": null
+      }
+    }
+  ],
+  "undef-null-row-field-coercion": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
+  "undef-null-sort": [
+    {
+      "name": "gen:nums:empty",
+      "props": {
+        "nums": [],
+        "rows": [
+          {
+            "v": 3
+          },
+          {},
+          {
+            "v": 1
+          },
+          {
+            "v": null
+          },
+          {
+            "v": 2
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "nums": [
+          3,
+          null,
+          1,
+          2
+        ],
+        "rows": []
+      }
+    }
+  ],
+  "undef-null-strict-equality": [
+    {
+      "name": "gen:n:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:u:union:1",
+      "props": {
+        "n": null,
+        "u": null
+      }
+    }
+  ],
+  "undef-null-string-coercion": [
+    {
+      "name": "gen:n:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:u:union:1",
+      "props": {
+        "n": null,
+        "u": null
       }
     }
   ],

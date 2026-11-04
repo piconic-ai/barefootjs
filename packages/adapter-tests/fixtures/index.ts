@@ -306,6 +306,21 @@ import { fixture as nilReadingConcreteZeroRowField } from './nil-reading-concret
 import { fixture as plusBooleanBranchOperand } from './plus-boolean-branch-operand'
 // Shapes that keep today's output until the runtimes carry `undefined` (#3848).
 import { fixture as awaitsUndefinedPlusShapes } from './awaits-undefined-plus-shapes'
+import { fixture as styleObjectNilProperty } from './style-object-nil-property'
+import { fixture as undefNullArraySearch } from './undef-null-array-search'
+import { fixture as undefNullDestructureDefault } from './undef-null-destructure-default'
+import { fixture as undefNullJsonStringify } from './undef-null-json-stringify'
+import { fixture as undefNullJsonStringifyObjectMember } from './undef-null-json-stringify-object-member'
+import { fixture as undefNullNonDivergingPositions } from './undef-null-non-diverging-positions'
+import { fixture as undefNullNumberCoercion } from './undef-null-number-coercion'
+import { fixture as undefNullNumberCoercionTyped } from './undef-null-number-coercion-typed'
+import { fixture as undefNullOptionalChainResult } from './undef-null-optional-chain-result'
+import { fixture as undefNullOptionalMethodArgs } from './undef-null-optional-method-args'
+import { fixture as undefNullRelational } from './undef-null-relational'
+import { fixture as undefNullRowFieldCoercion } from './undef-null-row-field-coercion'
+import { fixture as undefNullSort } from './undef-null-sort'
+import { fixture as undefNullStrictEquality } from './undef-null-strict-equality'
+import { fixture as undefNullStringCoercion } from './undef-null-string-coercion'
 import { fixture as indexReadExactKey } from './index-read-exact-key'
 import { fixture as indexReadCapitalisedKeyOnly } from './index-read-capitalised-key-only'
 import { fixture as remainderNegativeZeroString } from './remainder-negative-zero-string'
@@ -1584,6 +1599,21 @@ export const jsxFixtures: JSXFixture[] = [
   nilReadingConcreteZeroRowField,
   plusBooleanBranchOperand,
   awaitsUndefinedPlusShapes,
+  styleObjectNilProperty,
+  undefNullArraySearch,
+  undefNullDestructureDefault,
+  undefNullJsonStringify,
+  undefNullJsonStringifyObjectMember,
+  undefNullNonDivergingPositions,
+  undefNullNumberCoercion,
+  undefNullNumberCoercionTyped,
+  undefNullOptionalChainResult,
+  undefNullOptionalMethodArgs,
+  undefNullRelational,
+  undefNullRowFieldCoercion,
+  undefNullSort,
+  undefNullStrictEquality,
+  undefNullStringCoercion,
   indexReadExactKey,
   indexReadCapitalisedKeyOnly,
   remainderNegativeZeroString,

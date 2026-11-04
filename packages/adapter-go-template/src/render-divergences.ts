@@ -315,6 +315,24 @@ export const renderDivergences: RenderDivergences = {
   // (an `either` string, a dynamic `+`, an untyped part) keeps today's
   // output until the runtime carries `undefined` (#3848).
   'awaits-undefined-plus-shapes': { limitation: 'awaits-undefined-value' },
+  // An operation that tells `undefined` from `null` (spec/js-undefined-value.md
+  // §1): the runtime holds both as one nil, so it renders the answer for
+  // one in place of the other (or fails to render) until it carries
+  // `undefined` (#3848 U0; graduated per target by U2..U8).
+  'undef-null-array-search': { limitation: 'host-nil-collapses-undefined-and-null' },
+  'undef-null-destructure-default': { limitation: 'host-nil-collapses-undefined-and-null' },
+  'undef-null-json-stringify': { limitation: 'host-nil-collapses-undefined-and-null' },
+  'undef-null-json-stringify-object-member': { limitation: 'host-nil-collapses-undefined-and-null' },
+  'undef-null-number-coercion-typed': { limitation: 'host-nil-collapses-undefined-and-null' },
+  'undef-null-optional-chain-result': { limitation: 'host-nil-collapses-undefined-and-null' },
+  'undef-null-optional-method-args': { limitation: 'host-nil-collapses-undefined-and-null' },
+  'undef-null-row-field-coercion': { limitation: 'host-nil-collapses-undefined-and-null' },
+  'undef-null-sort': { limitation: 'host-nil-collapses-undefined-and-null' },
+  'undef-null-strict-equality': { limitation: 'host-nil-collapses-undefined-and-null' },
+  'undef-null-string-coercion': { limitation: 'host-nil-collapses-undefined-and-null' },
+  // A `null` / `undefined` `style` object property renders `color:` with
+  // an empty value instead of being dropped.
+  'style-object-nil-property': { limitation: 'style-object-nil-property' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches
