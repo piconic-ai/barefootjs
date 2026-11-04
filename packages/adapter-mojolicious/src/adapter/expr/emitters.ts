@@ -86,6 +86,9 @@ export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Mojo',
  * own listed there.
  */
 export const NATIVE_SAFE: NativeSafeTable = {
+  // The runtime does not carry JS `undefined` apart from `null` yet
+  // (spec/js-undefined-value.md); rollout step U5 flips it.
+  carriesUndefined: false,
   // Perl's own truthiness reads the string "0" as false and NaN as true
   // (#3823), so a test is native only on a proven boolean (#3824 step 1).
   'to-boolean': ['boolean'],

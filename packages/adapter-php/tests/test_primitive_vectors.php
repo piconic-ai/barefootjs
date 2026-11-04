@@ -17,6 +17,7 @@ declare(strict_types=1);
  */
 
 require_once __DIR__ . '/_harness.php';
+require_once __DIR__ . '/_vector_undefined.php';
 bf_require_runtime();
 bf_reset();
 
@@ -113,6 +114,9 @@ function bfp_decode($v)
  * and a zero compares by sign. */
 function bfp_match($got, $expect): bool
 {
+    if (bf_is_undef_sentinel($expect)) {
+        return bf_is_runtime_undefined($got);
+    }
     if ($expect === null || is_bool($expect) || is_string($expect)) {
         return $got === $expect;
     }
@@ -161,7 +165,7 @@ function bfp_run(array $bindings, \stdClass $case): array
         return [false, "no PHP binding for '{$case->fn}' -- add it to \$BINDINGS"];
     }
     try {
-        $got = $bind(...array_map('bfp_decode', $case->args));
+        $got = $bind(...array_map(fn ($a) => bf_undefined_to_arg(bfp_decode($a)), $case->args));
     } catch (\Throwable $e) {
         return [false, 'threw ' . get_class($e) . ': ' . $e->getMessage()];
     }

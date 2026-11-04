@@ -805,6 +805,35 @@
       "note": "numeric-string operand routes through number coercion"
     },
     {
+      "fn": "to_fixed",
+      "args": [
+        1.5,
+        0
+      ],
+      "expect": "2",
+      "note": "digits omitted: the compiler passes the default 0"
+    },
+    {
+      "fn": "to_fixed",
+      "args": [
+        1.5,
+        {
+          "$undef": true
+        }
+      ],
+      "expect": "2",
+      "note": "digits undefined is the default 0"
+    },
+    {
+      "fn": "to_fixed",
+      "args": [
+        1.5,
+        null
+      ],
+      "expect": "2",
+      "note": "digits null coerces to 0"
+    },
+    {
       "fn": "lower",
       "args": [
         "HeLLo"
@@ -1042,6 +1071,37 @@
       "note": "position counts an astral character as two units"
     },
     {
+      "fn": "starts_with",
+      "args": [
+        "abc",
+        "a"
+      ],
+      "expect": true,
+      "note": "position omitted tests from 0"
+    },
+    {
+      "fn": "starts_with",
+      "args": [
+        "abc",
+        "a",
+        {
+          "$undef": true
+        }
+      ],
+      "expect": true,
+      "note": "position undefined tests from 0"
+    },
+    {
+      "fn": "starts_with",
+      "args": [
+        "abc",
+        "a",
+        null
+      ],
+      "expect": true,
+      "note": "position null coerces to 0"
+    },
+    {
       "fn": "ends_with",
       "args": [
         "hello",
@@ -1116,6 +1176,37 @@
       ],
       "expect": true,
       "note": "endPosition counts an astral character as two units"
+    },
+    {
+      "fn": "ends_with",
+      "args": [
+        "abc",
+        "c"
+      ],
+      "expect": true,
+      "note": "endPosition omitted is the length"
+    },
+    {
+      "fn": "ends_with",
+      "args": [
+        "abc",
+        "c",
+        {
+          "$undef": true
+        }
+      ],
+      "expect": true,
+      "note": "endPosition undefined is the length"
+    },
+    {
+      "fn": "ends_with",
+      "args": [
+        "abc",
+        "c",
+        null
+      ],
+      "expect": false,
+      "note": "endPosition null coerces to 0"
     },
     {
       "fn": "replace",
@@ -1254,6 +1345,35 @@
       "note": "single repetition"
     },
     {
+      "fn": "repeat",
+      "args": [
+        "ab",
+        0
+      ],
+      "expect": "",
+      "note": "count omitted: the compiler passes the default 0"
+    },
+    {
+      "fn": "repeat",
+      "args": [
+        "ab",
+        {
+          "$undef": true
+        }
+      ],
+      "expect": "",
+      "note": "count undefined coerces to 0"
+    },
+    {
+      "fn": "repeat",
+      "args": [
+        "ab",
+        null
+      ],
+      "expect": "",
+      "note": "count null coerces to 0"
+    },
+    {
       "fn": "pad_start",
       "args": [
         "5",
@@ -1352,6 +1472,108 @@
       "note": "target below length returns receiver"
     },
     {
+      "fn": "pad_start",
+      "args": [
+        "abc",
+        5,
+        {
+          "$undef": true
+        }
+      ],
+      "expect": "  abc",
+      "note": "pad undefined defaults to a single space"
+    },
+    {
+      "fn": "pad_start",
+      "args": [
+        "abc",
+        5,
+        null
+      ],
+      "expect": "nuabc",
+      "note": "pad null coerces to the string \"null\""
+    },
+    {
+      "fn": "pad_end",
+      "args": [
+        "abc",
+        5,
+        {
+          "$undef": true
+        }
+      ],
+      "expect": "abc  ",
+      "note": "pad undefined defaults to a single space"
+    },
+    {
+      "fn": "pad_end",
+      "args": [
+        "abc",
+        5,
+        null
+      ],
+      "expect": "abcnu",
+      "note": "pad null coerces to the string \"null\""
+    },
+    {
+      "fn": "pad_start",
+      "args": [
+        "abc",
+        0
+      ],
+      "expect": "abc",
+      "note": "target omitted: the compiler passes the default 0"
+    },
+    {
+      "fn": "pad_start",
+      "args": [
+        "abc",
+        {
+          "$undef": true
+        }
+      ],
+      "expect": "abc",
+      "note": "target undefined coerces to 0"
+    },
+    {
+      "fn": "pad_start",
+      "args": [
+        "abc",
+        null
+      ],
+      "expect": "abc",
+      "note": "target null coerces to 0"
+    },
+    {
+      "fn": "pad_end",
+      "args": [
+        "abc",
+        0
+      ],
+      "expect": "abc",
+      "note": "target omitted: the compiler passes the default 0"
+    },
+    {
+      "fn": "pad_end",
+      "args": [
+        "abc",
+        {
+          "$undef": true
+        }
+      ],
+      "expect": "abc",
+      "note": "target undefined coerces to 0"
+    },
+    {
+      "fn": "pad_end",
+      "args": [
+        "abc",
+        null
+      ],
+      "expect": "abc",
+      "note": "target null coerces to 0"
+    },
+    {
       "fn": "split",
       "args": [
         "a,b,c",
@@ -1444,6 +1666,67 @@
       "note": "zero limit yields []"
     },
     {
+      "fn": "split",
+      "args": [
+        "a,b,c",
+        ",",
+        {
+          "$undef": true
+        }
+      ],
+      "expect": [
+        "a",
+        "b",
+        "c"
+      ],
+      "note": "limit undefined does not cap"
+    },
+    {
+      "fn": "split",
+      "args": [
+        "a,b,c",
+        ",",
+        null
+      ],
+      "expect": [],
+      "note": "limit null coerces to 0 and yields []"
+    },
+    {
+      "fn": "split",
+      "args": [
+        "anullb"
+      ],
+      "expect": [
+        "anullb"
+      ],
+      "note": "separator omitted yields the whole string"
+    },
+    {
+      "fn": "split",
+      "args": [
+        "anullb",
+        {
+          "$undef": true
+        }
+      ],
+      "expect": [
+        "anullb"
+      ],
+      "note": "separator undefined yields the whole string"
+    },
+    {
+      "fn": "split",
+      "args": [
+        "anullb",
+        null
+      ],
+      "expect": [
+        "a",
+        "b"
+      ],
+      "note": "separator null splits on the string \"null\""
+    },
+    {
       "fn": "len",
       "args": [
         [
@@ -1515,8 +1798,10 @@
         ],
         5
       ],
-      "expect": null,
-      "note": "out of range yields undefined ≡ null"
+      "expect": {
+        "$undef": true
+      },
+      "note": "out of range yields undefined"
     },
     {
       "fn": "at",
@@ -1528,8 +1813,10 @@
         ],
         -5
       ],
-      "expect": null,
-      "note": "negative out of range yields undefined ≡ null"
+      "expect": {
+        "$undef": true
+      },
+      "note": "negative out of range yields undefined"
     },
     {
       "fn": "at",
@@ -1537,8 +1824,51 @@
         [],
         0
       ],
-      "expect": null,
-      "note": "empty array yields undefined ≡ null"
+      "expect": {
+        "$undef": true
+      },
+      "note": "empty array yields undefined"
+    },
+    {
+      "fn": "at",
+      "args": [
+        [
+          10,
+          20,
+          30
+        ],
+        0
+      ],
+      "expect": 10,
+      "note": "index omitted: the compiler passes the default 0"
+    },
+    {
+      "fn": "at",
+      "args": [
+        [
+          10,
+          20,
+          30
+        ],
+        {
+          "$undef": true
+        }
+      ],
+      "expect": 10,
+      "note": "index undefined coerces to 0"
+    },
+    {
+      "fn": "at",
+      "args": [
+        [
+          10,
+          20,
+          30
+        ],
+        null
+      ],
+      "expect": 10,
+      "note": "index null coerces to 0"
     },
     {
       "fn": "at",
@@ -1573,8 +1903,10 @@
         "abc",
         3
       ],
-      "expect": null,
-      "note": "string: out of range yields undefined ≡ null"
+      "expect": {
+        "$undef": true
+      },
+      "note": "string: out of range yields undefined"
     },
     {
       "fn": "includes",
@@ -1922,6 +2254,101 @@
     {
       "fn": "slice",
       "args": [
+        [
+          1,
+          2,
+          3,
+          4
+        ],
+        1,
+        {
+          "$undef": true
+        }
+      ],
+      "expect": [
+        2,
+        3,
+        4
+      ],
+      "note": "end undefined runs to the end"
+    },
+    {
+      "fn": "slice",
+      "args": [
+        [
+          1,
+          2,
+          3,
+          4
+        ],
+        1,
+        null
+      ],
+      "expect": [],
+      "note": "end null coerces to 0 and yields []"
+    },
+    {
+      "fn": "slice",
+      "args": [
+        [
+          1,
+          2,
+          3,
+          4
+        ],
+        0
+      ],
+      "expect": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "note": "start omitted: the compiler passes the default 0"
+    },
+    {
+      "fn": "slice",
+      "args": [
+        [
+          1,
+          2,
+          3,
+          4
+        ],
+        {
+          "$undef": true
+        }
+      ],
+      "expect": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "note": "start undefined coerces to 0"
+    },
+    {
+      "fn": "slice",
+      "args": [
+        [
+          1,
+          2,
+          3,
+          4
+        ],
+        null
+      ],
+      "expect": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "note": "start null coerces to 0"
+    },
+    {
+      "fn": "slice",
+      "args": [
         "barefootjs",
         0,
         4
@@ -1966,6 +2393,28 @@
       ],
       "expect": "hé",
       "note": "string: multi-byte characters count as one unit each"
+    },
+    {
+      "fn": "slice",
+      "args": [
+        "barefootjs",
+        4,
+        {
+          "$undef": true
+        }
+      ],
+      "expect": "footjs",
+      "note": "string: end undefined runs to the end"
+    },
+    {
+      "fn": "slice",
+      "args": [
+        "barefootjs",
+        4,
+        null
+      ],
+      "expect": "",
+      "note": "string: end null coerces to 0 and yields empty string"
     },
     {
       "fn": "reverse",
@@ -2294,6 +2743,59 @@
       ],
       "expect": "solo",
       "note": "single element has no separator"
+    },
+    {
+      "fn": "join",
+      "args": [
+        [
+          "a",
+          "b"
+        ],
+        ","
+      ],
+      "expect": "a,b",
+      "note": "separator omitted: the compiler passes the default \",\""
+    },
+    {
+      "fn": "join",
+      "args": [
+        [
+          "a",
+          "b"
+        ],
+        {
+          "$undef": true
+        }
+      ],
+      "expect": "a,b",
+      "note": "separator undefined is the default \",\""
+    },
+    {
+      "fn": "join",
+      "args": [
+        [
+          "a",
+          "b"
+        ],
+        null
+      ],
+      "expect": "anullb",
+      "note": "separator null coerces to the string \"null\""
+    },
+    {
+      "fn": "join",
+      "args": [
+        [
+          "a",
+          {
+            "$undef": true
+          },
+          "b"
+        ],
+        "-"
+      ],
+      "expect": "a--b",
+      "note": "an undefined element renders as empty"
     },
     {
       "fn": "arr",
@@ -3937,8 +4439,10 @@
         "id",
         9
       ],
-      "expect": null,
-      "note": "no match yields undefined ≡ null"
+      "expect": {
+        "$undef": true
+      },
+      "note": "no match yields undefined"
     },
     {
       "fn": "find_index",

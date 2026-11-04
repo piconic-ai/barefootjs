@@ -29,6 +29,7 @@ when a committed file drifts from its case definitions.
 | `eval-cases.ts` + `eval-reference.ts` | `eval-generate.ts` | `eval-vectors.json` |
 | `primitives/<op>.ts` (listed in `primitives/index.ts`) | `primitives/generate.ts` | `primitives/<op>.json` |
 | — (hand-maintained) | — | `primitives-expected-failures.json` (see "Primitive vectors" below) |
+| — (hand-maintained) | — | `eval-expected-failures.json` (see "The undefined rollout's eval ledger" below) |
 | the adapters' `NATIVE_SAFE` tables | `primitives/native-safe.ts` | `primitives-native-safe.json` (see "Primitive vectors" below) |
 | — (hand-maintained) | — | `<backend package>/vector-divergences.json` (see "Divergence declarations" below) |
 
@@ -63,8 +64,28 @@ bun run generate:primitive-vectors
   native-receiver branch, not just its ISO-string branch. Its
   `expect` is identical to the equivalent plain-ISO-string case,
   since both receiver shapes dispatch against the same instant.
-- JS `undefined` in an `expect` value encodes as `null` (backends have
-  a single absent value).
+- JS `undefined` uses the reserved one-key sentinel `{"$undef": true}`
+  (`spec/js-undefined-value.md`, "JSON encoding for vectors") in all
+  three corpora, in `args`, `expect` and the evaluator's `env`. Inside
+  an object, a member whose value is the sentinel is a present key
+  holding `undefined`, distinct from a missing key; an array hole is
+  an element holding `undefined`. The generators refuse data with a
+  `$num` or `$undef` key of its own.
+- Until a runtime carries `undefined` (its U step of the rollout,
+  `spec/js-undefined-value.md` §6), every harness decodes the sentinel
+  by one rule, kept in one small helper per runtime
+  (`vector_undefined.py`, `vector_undefined.rb`, `t/lib/VectorUndefined.pm`,
+  `_vector_undefined.php`, `VectorUndefined.java` with `JsonDecode.UNDEFINED`,
+  `tests/vector_undefined/mod.rs`, and `vectorUndefinedArg` /
+  `isRuntimeUndefined` in Go's `vectors_test.go`): in `args` / `env` it is
+  the host nil the runtime receives for `undefined` today; in an `expect`
+  it matches only the runtime's own undefined value, which does not exist
+  yet, so it never matches (also nested). The cases that therefore fail
+  are listed in the expected-failure ledgers (primitive, eval) or pinned in
+  `vector-divergences.json` (helper). A native binding is the exception:
+  where the host engine has its own undefined (Jinja's `Undefined`,
+  MiniJinja's `UNDEFINED`), a native read that yields it matches a
+  `$undef` expect, since that is what the template position sees.
 - `args` (and the evaluator's `env`) must stay finite — non-finite
   inputs are refused loudly by the generator until a composition case
   needs otherwise.
@@ -96,6 +117,8 @@ The two corpora hold backends to different strictness:
   or JSON boolean compares by truthiness. They allow no
   `vector-divergences.json` declarations; the only allowance is the
   step-0 ledger described below.
+- The evaluator vectors' only allowance, for the life of the
+  undefined rollout, is `eval-expected-failures.json` (below).
 
 ## Divergence declarations
 
@@ -217,6 +240,13 @@ removes it:
 { "runtimes": { "go": { "neg/0 negates to -0": { "step": 6 } } } }
 ```
 
+A `step` is a #3824 rollout step number, which must be the step of the
+case's operation, or a U-step id of the undefined rollout
+(`spec/js-undefined-value.md` §6), which must be the U step that owns the
+runtime: `python` `"U2"`, `rust` `"U3"`, `ruby` `"U4"`, `perl` `"U5"`,
+`php` `"U6"`, `java` `"U7"`, `go` `"U8"` (`vectors/undefined-rollout.ts`).
+The `$undef` cases (an `undefined` operand or result) take the U step.
+
 It may only shrink. Each harness fails on
 
 1. a failing case the ledger does not list (`UNEXPECTED-FAIL <key>`),
@@ -225,24 +255,47 @@ It may only shrink. Each harness fails on
 
 `src/__tests__/primitive-vectors.test.ts` checks that the ledger names
 exactly the seven runtimes, that every key is a real case, and that
-every entry names the step that owns its operation (`step` in the op
-file). A rollout step corrects the evaluator primitive (and with it the
+every entry names the step that owns it: its operation's step (`step` in
+the op file) for a number, its runtime's U step for a string. A rollout step corrects the evaluator primitive (and with it the
 helper), deletes its entries, and the file goes away once every runtime
 is empty. It is not a divergence declaration: nothing pins the wrong
 value, and nothing may be added to it except by a new case that a later
 step owns.
 
+### The undefined rollout's eval ledger
+
+`eval-expected-failures.json` is the same scaffold for `eval-vectors.json`
+(`spec/js-undefined-value.md` §6): for each runtime, the eval cases that
+fail until its U step lands, keyed by the case `note`, each naming that
+step (`{ "step": "U2" }`). The same three rules apply: every eval runner
+fails on an unlisted failure (`UNEXPECTED-FAIL <note>`), on a listed case
+that now passes, and on a listed note that names no case.
+`src/__tests__/eval-vectors.test.ts` checks that it names exactly the
+seven runtimes, that every key is a real note and that every entry names
+its runtime's U step. Each U step empties its runtime; the file is
+deleted in U9 with the primitives ledger's U entries.
+
+`primitives-native-safe.json` also mirrors each runtime's
+`carriesUndefined` (the `NativeSafeTable` field every adapter declares,
+`false` everywhere until its U step; generation refuses two adapters of
+one runtime that disagree). Nothing reads it for planning before U1.
+
+The helper vectors (`vectors.json`) keep their divergence declarations:
+a helper case a runtime cannot match until its U step is pinned in its
+`vector-divergences.json` with today's value and a `reason` naming that
+step.
+
 ## Current runners
 
-| Backend | Helper runner | Declarations | Primitive runner (ledger key) |
-|---|---|---|---|
-| Go | `packages/adapter-go-template/runtime/vectors_test.go` | `packages/adapter-go-template/runtime/testdata/vector-divergences.json` | `packages/adapter-go-template/runtime/primitive_vectors_test.go` (`go`) |
-| Perl (Mojolicious, Xslate) | `packages/adapter-perl/t/helper_vectors.t` | `packages/adapter-perl/t/vector-divergences.json` | `packages/adapter-perl/t/primitive_vectors.t` (`perl`) |
-| Python (Jinja) | `packages/adapter-jinja/python/tests/test_helper_vectors.py` | `packages/adapter-jinja/python/tests/vector-divergences.json` | `packages/adapter-jinja/python/tests/test_primitive_vectors.py` (`python`) |
-| Ruby (ERB) | `packages/adapter-erb/test/helper_vectors_test.rb` | `packages/adapter-erb/test/vector-divergences.json` | `packages/adapter-erb/test/primitive_vectors_test.rb` (`ruby`) |
-| PHP (Twig, Blade) | `packages/adapter-php/tests/test_helper_vectors.php` | `packages/adapter-php/tests/vector-divergences.json` | `packages/adapter-php/tests/test_primitive_vectors.php` (`php`) |
-| Java (Pebble) | `packages/adapter-pebble/java/src/test/java/dev/barefootjs/pebble/HelperVectorsTest.java` | `packages/adapter-pebble/java/src/test/resources/vector-divergences.json` | `packages/adapter-pebble/java/src/test/java/dev/barefootjs/pebble/PrimitiveVectorsTest.java` (`java`) |
-| Rust (MiniJinja) | `packages/adapter-rust/runtime/tests/helper_vectors.rs` | `packages/adapter-rust/runtime/tests/vector-divergences.json` | `packages/adapter-rust/runtime/tests/primitive_vectors.rs` (`rust`) |
+| Backend | Helper runner | Declarations | Primitive runner (ledger key) | Eval runner |
+|---|---|---|---|---|
+| Go | `packages/adapter-go-template/runtime/vectors_test.go` | `packages/adapter-go-template/runtime/testdata/vector-divergences.json` | `packages/adapter-go-template/runtime/primitive_vectors_test.go` (`go`) | `packages/adapter-go-template/runtime/eval_vectors_test.go` |
+| Perl (Mojolicious, Xslate) | `packages/adapter-perl/t/helper_vectors.t` | `packages/adapter-perl/t/vector-divergences.json` | `packages/adapter-perl/t/primitive_vectors.t` (`perl`) | `packages/adapter-perl/t/eval_vectors.t` |
+| Python (Jinja) | `packages/adapter-jinja/python/tests/test_helper_vectors.py` | `packages/adapter-jinja/python/tests/vector-divergences.json` | `packages/adapter-jinja/python/tests/test_primitive_vectors.py` (`python`) | `packages/adapter-jinja/python/tests/test_eval_vectors.py` |
+| Ruby (ERB) | `packages/adapter-erb/test/helper_vectors_test.rb` | `packages/adapter-erb/test/vector-divergences.json` | `packages/adapter-erb/test/primitive_vectors_test.rb` (`ruby`) | `packages/adapter-erb/test/eval_vectors_test.rb` |
+| PHP (Twig, Blade) | `packages/adapter-php/tests/test_helper_vectors.php` | `packages/adapter-php/tests/vector-divergences.json` | `packages/adapter-php/tests/test_primitive_vectors.php` (`php`) | `packages/adapter-php/tests/test_eval_vectors.php` |
+| Java (Pebble) | `packages/adapter-pebble/java/src/test/java/dev/barefootjs/pebble/HelperVectorsTest.java` | `packages/adapter-pebble/java/src/test/resources/vector-divergences.json` | `packages/adapter-pebble/java/src/test/java/dev/barefootjs/pebble/PrimitiveVectorsTest.java` (`java`) | `packages/adapter-pebble/java/src/test/java/dev/barefootjs/pebble/EvalVectorsTest.java` |
+| Rust (MiniJinja) | `packages/adapter-rust/runtime/tests/helper_vectors.rs` | `packages/adapter-rust/runtime/tests/vector-divergences.json` | `packages/adapter-rust/runtime/tests/primitive_vectors.rs` (`rust`) | `packages/adapter-rust/runtime/tests/eval_vectors.rs` |
 
 The JS reference is the generator itself (`cases.ts` / `generate.ts`,
 `eval-cases.ts` / `eval-reference.ts` / `eval-generate.ts`) — there is
@@ -261,7 +314,8 @@ corpus is plain JSON. The runner must:
    value-compat (see above).
 2. Read `eval-vectors.json` and run each case's `ParsedExpr` tree
    through the backend's evaluator, matching the reference exactly
-   (no divergence allowance).
+   (no divergence allowance), and add the backend's key to
+   `eval-expected-failures.json` while that file exists.
 3. Read every `primitives/*.json`, bind each op to the backend's
    helper (delegating to its evaluator primitive), and add the
    backend's key to `primitives-expected-failures.json` (see "Primitive

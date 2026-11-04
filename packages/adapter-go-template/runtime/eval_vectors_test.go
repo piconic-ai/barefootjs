@@ -2,6 +2,7 @@ package bf
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"testing"
 )
@@ -12,6 +13,12 @@ import (
 // evaluator. The file only exists in the monorepo checkout — consumers
 // of the published Go module don't receive it, so the test skips there.
 const evalVectorsPath = "../../adapter-tests/vectors/eval-vectors.json"
+
+// evalLedgerPath is the expected-failure ledger of the eval vectors
+// (spec/js-undefined-value.md, §6): the cases that fail on each runtime
+// until its U step lands, keyed by note. Shrink-only, like the primitives
+// ledger.
+const evalLedgerPath = "../../adapter-tests/vectors/eval-expected-failures.json"
 
 type evalVector struct {
 	Src    string          `json:"src"`
@@ -32,7 +39,10 @@ type evalVectorFile struct {
 // the JS-computed expected value. There are no Go-side divergences — the
 // evaluator's coercion is JS-faithful by contract (unlike the bf->string /
 // Number helpers, whose SSR-survival divergences are pinned in
-// vectorDivergences for the helper vectors).
+// vectorDivergences for the helper vectors). The only allowance is the
+// shrink-only ledger at evalLedgerPath: a failing case it does not list
+// fails, a listed case that passes fails, and a listed note that names no
+// case fails.
 func TestEvalVectors(t *testing.T) {
 	data, err := os.ReadFile(evalVectorsPath)
 	if os.IsNotExist(err) {
@@ -50,7 +60,11 @@ func TestEvalVectors(t *testing.T) {
 		t.Fatal("eval-vectors.json contains no cases")
 	}
 
+	expected := loadExpectedFailures(t, evalLedgerPath)
+	seen := map[string]bool{}
 	for _, c := range file.Cases {
+		seen[c.Note] = true
+		step, listed := expected[c.Note]
 		t.Run(c.Note, func(t *testing.T) {
 			// The expr tree is a decoded ParsedExpr (map nodes keyed by
 			// "kind"); standard unmarshal is fine since EvalNode coerces
@@ -62,7 +76,7 @@ func TestEvalVectors(t *testing.T) {
 			// The environment uses the same int-preserving decode as the
 			// helper-vector args, so the evaluator exercises the int-typed
 			// data templates actually pass.
-			envAny, err := decodeVectorValue(c.Env)
+			envAny, err := decodeVectorArg(c.Env)
 			if err != nil {
 				t.Fatalf("decode env: %v", err)
 			}
@@ -72,10 +86,29 @@ func TestEvalVectors(t *testing.T) {
 				t.Fatalf("decode expect: %v", err)
 			}
 
-			got := EvalNode(exprNode, env)
-			if !vectorEqual(got, expect) {
-				t.Errorf("eval(%s) = %v (%T), want %v (%T)", c.Src, got, got, expect, expect)
+			got, ok := evalVectorCase(exprNode, env, expect)
+			switch {
+			case ok && listed:
+				t.Errorf("ledger entry %q now passes; remove it from %s (step %s)", c.Note, evalLedgerPath, step)
+			case !ok && !listed:
+				t.Errorf("UNEXPECTED-FAIL eval(%s) = %v (%T), want %v (%T)", c.Src, got, got, expect, expect)
 			}
 		})
 	}
+	for note := range expected {
+		if !seen[note] {
+			t.Errorf("ledger entry %q in %s matches no eval case — renamed note?", note, evalLedgerPath)
+		}
+	}
+}
+
+// evalVectorCase runs one case; a panic counts as a failure.
+func evalVectorCase(exprNode any, env map[string]any, expect any) (got any, ok bool) {
+	defer func() {
+		if r := recover(); r != nil {
+			got, ok = fmt.Sprintf("panicked: %v", r), false
+		}
+	}()
+	got = EvalNode(exprNode, env)
+	return got, vectorEqual(got, expect)
 }

@@ -21,10 +21,9 @@
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseExpression } from '@barefootjs/jsx'
-import { assertEncodable, encodeExpect } from './generate'
+import { encodeExpect, encodeInput } from './generate'
 import { evalCases } from './eval-cases'
 import { evaluate } from './eval-reference'
-import type { EvalEnv } from './eval-reference'
 import type { ParsedExpr } from '@barefootjs/jsx'
 
 export const EVAL_VECTORS_PATH = join(dirname(fileURLToPath(import.meta.url)), 'eval-vectors.json')
@@ -33,7 +32,8 @@ export interface EvalVectorFile {
   version: number
   generator: string
   spec: string
-  cases: Array<{ src: string; expr: ParsedExpr; env: EvalEnv; expect: unknown; note: string }>
+  /** `env` is JSON-encoded: an `undefined` value is the `{"$undef": true}` sentinel. */
+  cases: Array<{ src: string; expr: ParsedExpr; env: unknown; expect: unknown; note: string }>
 }
 
 export function buildEvalVectors(): EvalVectorFile {
@@ -47,11 +47,11 @@ export function buildEvalVectors(): EvalVectorFile {
       if (expr.kind === 'unsupported') {
         throw new Error(`${context}: parseExpression refused the source (${expr.reason})`)
       }
-      // The environment is plain JSON input — hold it to the same
-      // encodable-value rule as helper-vector args.
-      assertEncodable(c.env, `${context} → env`)
+      // The environment is JSON input — hold it to the same encoding rule
+      // as helper-vector args (finite numbers; `undefined` → `$undef`).
+      const env = encodeInput(c.env, `${context} → env`)
       const expect = encodeExpect(evaluate(expr, c.env), `${context} → expect`)
-      return { src: c.src, expr, env: c.env, expect, note: c.note }
+      return { src: c.src, expr, env, expect, note: c.note }
     }),
   }
 }

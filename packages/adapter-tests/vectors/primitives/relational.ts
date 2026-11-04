@@ -3,7 +3,7 @@
  * `ge` — JS Abstract Relational Comparison (spec/js-primitive-semantics.md,
  * "Relational"). Two strings compare by UTF-16 code unit; any other pair
  * goes through ToNumber, and a `NaN` makes the result false. `null < 1` is
- * true. Each operator file runs every pair, so the four files differ only
+ * true; `undefined` is `NaN`, so every comparison with it is false. Each operator file runs every pair, so the four files differ only
  * in the reference.
  */
 import { type PrimitiveCase, type PrimitiveOp, pairDomain } from './types'
@@ -38,6 +38,9 @@ const pairs: Array<[unknown, unknown, string]> = [
   [1, null, 'a number against nil'],
   [null, null, 'nil against nil'],
   [null, -1, 'nil against a negative number'],
+  [null, 0, 'nil against 0: null is 0'],
+  [undefined, 1, 'undefined against a number is NaN'],
+  [undefined, 0, 'undefined against 0 is NaN, unlike null'],
 ]
 
 export function relationalOp(fn: string, reference: (a: never, b: never) => boolean): PrimitiveOp {

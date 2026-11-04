@@ -32,6 +32,23 @@ final class JsonDecode {
 
   private JsonDecode() {}
 
+  /**
+   * What the `{"$undef": true}` sentinel (`spec/js-undefined-value.md`, "JSON
+   * encoding for vectors") decodes to: the host nil a template receives for
+   * JS `undefined` today. The runtime has no undefined value yet; rollout
+   * step U7 replaces this with it.
+   */
+  static final Object UNDEFINED = null;
+
+  /** Whether a JSON object is the `{"$undef": true}` sentinel. */
+  static boolean isUndefSentinel(JsonObject obj) {
+    if (obj.size() != 1 || !obj.has("$undef")) {
+      return false;
+    }
+    JsonElement v = obj.get("$undef");
+    return v.isJsonPrimitive() && v.getAsJsonPrimitive().isBoolean() && v.getAsBoolean();
+  }
+
   static Object materialize(JsonElement el) {
     if (el == null || el.isJsonNull()) {
       return null;
@@ -54,6 +71,9 @@ final class JsonDecode {
       return out;
     }
     JsonObject obj = el.getAsJsonObject();
+    if (isUndefSentinel(obj)) {
+      return UNDEFINED;
+    }
     if (obj.size() == 1 && obj.has("$num")) {
       switch (obj.get("$num").getAsString()) {
         case "NaN":

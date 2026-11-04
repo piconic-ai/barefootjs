@@ -222,6 +222,44 @@
       "expect": false,
       "domain": "nil",
       "note": "false never equals nil"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        {
+          "$undef": true
+        },
+        {
+          "$undef": true
+        }
+      ],
+      "expect": true,
+      "domain": "nil",
+      "note": "undefined equals undefined"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        {
+          "$undef": true
+        },
+        null
+      ],
+      "expect": false,
+      "domain": "nil",
+      "note": "undefined never equals null"
+    },
+    {
+      "fn": "strict_eq",
+      "args": [
+        {
+          "$undef": true
+        },
+        0
+      ],
+      "expect": false,
+      "domain": "nil",
+      "note": "undefined never equals 0"
     }
   ]
 }

@@ -10,7 +10,7 @@
  */
 import { describe, test, expect } from 'bun:test'
 import { readFileSync } from 'node:fs'
-import { buildVectors, serializeVectors, VECTORS_PATH } from '../../vectors/generate'
+import { buildVectors, encodeExpect, encodeInput, serializeVectors, VECTORS_PATH } from '../../vectors/generate'
 import { reference } from '../../vectors/cases'
 
 describe('helper golden vectors', () => {
@@ -31,5 +31,14 @@ describe('helper golden vectors', () => {
       expect(seen.has(key)).toBe(false)
       seen.add(key)
     }
+  })
+
+  test('an input array hole encodes as $undef, like an expect hole', () => {
+    // The hole is the case under test.
+    const sparse = [, 1]
+    const undef = { $undef: true }
+    expect(encodeInput(sparse, 'probe')).toEqual([undef, 1])
+    expect(encodeInput({ a: sparse }, 'probe')).toEqual({ a: [undef, 1] })
+    expect(encodeExpect(sparse, 'probe')).toEqual([undef, 1])
   })
 })

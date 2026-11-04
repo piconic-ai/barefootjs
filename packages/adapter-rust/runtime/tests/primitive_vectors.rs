@@ -14,6 +14,8 @@ use serde_json::Value as JsonValue;
 use std::collections::HashSet;
 use std::path::PathBuf;
 
+mod vector_undefined;
+
 fn vectors_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../adapter-tests/vectors")
 }
@@ -41,7 +43,8 @@ fn call_binding(fn_name: &str, a: &[JsValue]) -> Option<JsValue> {
 /// One binding per op the MiniJinja adapter can spell natively, to the
 /// native MiniJinja operator, over the values a template receives
 /// (`js_to_mj`): a test is MiniJinja's own `{% if %}` / `not`; an index read
-/// is MiniJinja's own `[]` (an undefined result reads as null); a number
+/// is MiniJinja's own `[]` (a missing element is MiniJinja's own undefined,
+/// handed back as the decoded `$undef` sentinel, see `matches_native`); a number
 /// literal is a MiniJinja literal; a relational operator is MiniJinja's own
 /// `<` / `<=` / `>` / `>=`; a unary `+` over a number is the operand itself.
 /// It runs over
@@ -61,7 +64,12 @@ fn call_native_binding(fn_name: &str, a: &[JsValue]) -> Option<JsValue> {
             let env = minijinja::Environment::new();
             let expr = env.compile_expression("recv[key]").expect("compile the native index read");
             let ctx = minijinja::context! { recv => runtime::js_to_mj(&a[0]), key => runtime::js_to_mj(&a[1]) };
-            runtime::mj_to_js(&expr.eval(ctx).expect("evaluate the native index read"))
+            let got = expr.eval(ctx).expect("evaluate the native index read");
+            if got.is_undefined() {
+                vector_undefined::sentinel_value()
+            } else {
+                runtime::mj_to_js(&got)
+            }
         }
         "number" => {
             let env = minijinja::Environment::new();
@@ -132,8 +140,12 @@ fn decode(v: &JsonValue) -> JsValue {
 }
 
 /// The primitives contract: types are strict, numbers compare as doubles and
-/// a zero compares by sign.
+/// a zero compares by sign. A `$undef` expect matches only the runtime's
+/// undefined (`vector_undefined`).
 fn matches(got: &JsValue, expect: &JsValue) -> bool {
+    if vector_undefined::is_sentinel_value(expect) {
+        return vector_undefined::is_runtime_undefined(got);
+    }
     match (got, expect) {
         (JsValue::Null, JsValue::Null) => true,
         (JsValue::Bool(g), JsValue::Bool(e)) => g == e,
@@ -155,6 +167,17 @@ fn matches(got: &JsValue, expect: &JsValue) -> bool {
     }
 }
 
+/// A native MiniJinja operator yields MiniJinja's own undefined for JS
+/// `undefined` (a missing element), which the native binding hands back as
+/// the sentinel object, so the native binding matches a `$undef` expect by
+/// it, unlike the helper binding.
+fn matches_native(got: &JsValue, expect: &JsValue) -> bool {
+    if vector_undefined::is_sentinel_value(expect) {
+        return vector_undefined::is_sentinel_value(got);
+    }
+    matches(got, expect)
+}
+
 #[test]
 fn primitive_vectors_match_js_reference_or_ledger() {
     let dir = vectors_dir().join("primitives");
@@ -168,9 +191,7 @@ fn primitive_vectors_match_js_reference_or_ledger() {
     files.sort();
     assert!(!files.is_empty(), "no primitives/*.json under {dir:?}");
 
-    let ledger_path = vectors_dir().join("primitives-expected-failures.json");
-    let ledger: JsonValue = serde_json::from_str(&std::fs::read_to_string(&ledger_path).unwrap()).unwrap();
-    let expected = ledger["runtimes"]["rust"].as_object().expect("ledger has no \"rust\" runtime");
+    let expected = vector_undefined::load_expected_failures(&vectors_dir().join("primitives-expected-failures.json"));
 
     let mut problems = Vec::new();
     let mut seen = HashSet::new();
@@ -182,7 +203,7 @@ fn primitive_vectors_match_js_reference_or_ledger() {
             let key = format!("{fn_name}/{}", case["note"].as_str().unwrap());
             seen.insert(key.clone());
             total += 1;
-            let args: Vec<JsValue> = case["args"].as_array().unwrap().iter().map(decode).collect();
+            let args: Vec<JsValue> = case["args"].as_array().unwrap().iter().map(|a| vector_undefined::to_arg(decode(a))).collect();
             let expect = decode(&case["expect"]);
             let failure = match call_binding(fn_name, &args) {
                 None => Some(format!("no Rust binding for '{fn_name}' -- add it to call_binding")),
@@ -231,12 +252,12 @@ fn native_claims_match_js_reference() {
                 continue;
             }
             ran += 1;
-            let args: Vec<JsValue> = case["args"].as_array().unwrap().iter().map(decode).collect();
+            let args: Vec<JsValue> = case["args"].as_array().unwrap().iter().map(|a| vector_undefined::to_arg(decode(a))).collect();
             let expect = decode(&case["expect"]);
             let note = case["note"].as_str().unwrap();
             match call_native_binding(fn_name, &args) {
                 None => problems.push(format!("no native MiniJinja binding for '{fn_name}' -- add it to call_native_binding")),
-                Some(got) if matches(&got, &expect) => {}
+                Some(got) if matches_native(&got, &expect) => {}
                 Some(got) => problems.push(format!("NATIVE-FAIL {fn_name}/{note}: got {got:?}, want {expect:?}")),
             }
         }

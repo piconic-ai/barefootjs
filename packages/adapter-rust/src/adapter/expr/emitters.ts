@@ -115,6 +115,9 @@ export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'MiniJi
  * own listed there.
  */
 export const NATIVE_SAFE: NativeSafeTable = {
+  // The runtime does not carry JS `undefined` apart from `null` yet
+  // (spec/js-undefined-value.md); rollout step U3 flips it.
+  carriesUndefined: false,
   'to-boolean': ['boolean'],
   // A unary `+` is native only over a proven number, `to_number` otherwise
   // (#3824 step 3). `unproven` describes binary `-` / `*` over operands Phase 1

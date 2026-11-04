@@ -3,12 +3,649 @@
   "spec": "spec/js-primitive-semantics.md",
   "about": "Step-0 scaffold: every (runtime, case) of primitives/*.json that fails today, each naming the rollout step expected to remove it. Shrink-only: a harness fails on an unexpected failure and on a listed case that now passes. Each rollout step empties its entries; the file goes away when every runtime is empty.",
   "runtimes": {
-    "go": {},
-    "java": {},
-    "perl": {},
-    "php": {},
-    "python": {},
-    "ruby": {},
-    "rust": {}
+    "go": {
+      "ge/undefined against 0 is NaN, unlike null": {
+        "step": "U8"
+      },
+      "get/a boolean key reads the \"true\" property": {
+        "step": "U8"
+      },
+      "get/a fraction spelling is not an array index": {
+        "step": "U8"
+      },
+      "get/a fractional index reads undefined": {
+        "step": "U8"
+      },
+      "get/a leading zero is not an array index": {
+        "step": "U8"
+      },
+      "get/a missing object key reads undefined": {
+        "step": "U8"
+      },
+      "get/a negative index reads undefined (no wrap-around)": {
+        "step": "U8"
+      },
+      "get/a negative string index reads undefined": {
+        "step": "U8"
+      },
+      "get/a nil key reads the \"null\" property": {
+        "step": "U8"
+      },
+      "get/a number key past the 64-bit range reads undefined": {
+        "step": "U8"
+      },
+      "get/a padded key is not an array index": {
+        "step": "U8"
+      },
+      "get/a string index key past the 64-bit range reads undefined": {
+        "step": "U8"
+      },
+      "get/a string index past the end reads undefined": {
+        "step": "U8"
+      },
+      "get/an exponent spelling is not an array index": {
+        "step": "U8"
+      },
+      "get/an index key past the 64-bit range reads undefined": {
+        "step": "U8"
+      },
+      "get/an index past the end reads undefined": {
+        "step": "U8"
+      },
+      "get/an object key matches exactly (no case variant)": {
+        "step": "U8"
+      },
+      "get/the string \"-0\" is not an array index": {
+        "step": "U8"
+      },
+      "le/undefined against 0 is NaN, unlike null": {
+        "step": "U8"
+      },
+      "le/undefined against a number is NaN": {
+        "step": "U8"
+      },
+      "lt/undefined against a number is NaN": {
+        "step": "U8"
+      },
+      "neg/undefined negates to NaN": {
+        "step": "U8"
+      },
+      "plus/a string against undefined": {
+        "step": "U8"
+      },
+      "plus/two undefined operands add as NaN": {
+        "step": "U8"
+      },
+      "plus/undefined against a number adds as NaN": {
+        "step": "U8"
+      },
+      "plus/undefined against a string prints as \"undefined\"": {
+        "step": "U8"
+      },
+      "plus/undefined plus null is NaN": {
+        "step": "U8"
+      },
+      "strict_eq/undefined never equals null": {
+        "step": "U8"
+      },
+      "to_number/undefined is NaN": {
+        "step": "U8"
+      },
+      "to_string/undefined prints as \"undefined\"": {
+        "step": "U8"
+      }
+    },
+    "java": {
+      "ge/undefined against 0 is NaN, unlike null": {
+        "step": "U7"
+      },
+      "get/a boolean key reads the \"true\" property": {
+        "step": "U7"
+      },
+      "get/a fraction spelling is not an array index": {
+        "step": "U7"
+      },
+      "get/a fractional index reads undefined": {
+        "step": "U7"
+      },
+      "get/a leading zero is not an array index": {
+        "step": "U7"
+      },
+      "get/a missing object key reads undefined": {
+        "step": "U7"
+      },
+      "get/a negative index reads undefined (no wrap-around)": {
+        "step": "U7"
+      },
+      "get/a negative string index reads undefined": {
+        "step": "U7"
+      },
+      "get/a nil key reads the \"null\" property": {
+        "step": "U7"
+      },
+      "get/a number key past the 64-bit range reads undefined": {
+        "step": "U7"
+      },
+      "get/a padded key is not an array index": {
+        "step": "U7"
+      },
+      "get/a string index key past the 64-bit range reads undefined": {
+        "step": "U7"
+      },
+      "get/a string index past the end reads undefined": {
+        "step": "U7"
+      },
+      "get/an exponent spelling is not an array index": {
+        "step": "U7"
+      },
+      "get/an index key past the 64-bit range reads undefined": {
+        "step": "U7"
+      },
+      "get/an index past the end reads undefined": {
+        "step": "U7"
+      },
+      "get/an object key matches exactly (no case variant)": {
+        "step": "U7"
+      },
+      "get/the string \"-0\" is not an array index": {
+        "step": "U7"
+      },
+      "le/undefined against 0 is NaN, unlike null": {
+        "step": "U7"
+      },
+      "le/undefined against a number is NaN": {
+        "step": "U7"
+      },
+      "lt/undefined against a number is NaN": {
+        "step": "U7"
+      },
+      "neg/undefined negates to NaN": {
+        "step": "U7"
+      },
+      "plus/a string against undefined": {
+        "step": "U7"
+      },
+      "plus/two undefined operands add as NaN": {
+        "step": "U7"
+      },
+      "plus/undefined against a number adds as NaN": {
+        "step": "U7"
+      },
+      "plus/undefined against a string prints as \"undefined\"": {
+        "step": "U7"
+      },
+      "plus/undefined plus null is NaN": {
+        "step": "U7"
+      },
+      "strict_eq/undefined never equals null": {
+        "step": "U7"
+      },
+      "to_number/undefined is NaN": {
+        "step": "U7"
+      },
+      "to_string/undefined prints as \"undefined\"": {
+        "step": "U7"
+      }
+    },
+    "perl": {
+      "ge/undefined against 0 is NaN, unlike null": {
+        "step": "U5"
+      },
+      "get/a boolean key reads the \"true\" property": {
+        "step": "U5"
+      },
+      "get/a fraction spelling is not an array index": {
+        "step": "U5"
+      },
+      "get/a fractional index reads undefined": {
+        "step": "U5"
+      },
+      "get/a leading zero is not an array index": {
+        "step": "U5"
+      },
+      "get/a missing object key reads undefined": {
+        "step": "U5"
+      },
+      "get/a negative index reads undefined (no wrap-around)": {
+        "step": "U5"
+      },
+      "get/a negative string index reads undefined": {
+        "step": "U5"
+      },
+      "get/a nil key reads the \"null\" property": {
+        "step": "U5"
+      },
+      "get/a number key past the 64-bit range reads undefined": {
+        "step": "U5"
+      },
+      "get/a padded key is not an array index": {
+        "step": "U5"
+      },
+      "get/a string index key past the 64-bit range reads undefined": {
+        "step": "U5"
+      },
+      "get/a string index past the end reads undefined": {
+        "step": "U5"
+      },
+      "get/an exponent spelling is not an array index": {
+        "step": "U5"
+      },
+      "get/an index key past the 64-bit range reads undefined": {
+        "step": "U5"
+      },
+      "get/an index past the end reads undefined": {
+        "step": "U5"
+      },
+      "get/an object key matches exactly (no case variant)": {
+        "step": "U5"
+      },
+      "get/the string \"-0\" is not an array index": {
+        "step": "U5"
+      },
+      "le/undefined against 0 is NaN, unlike null": {
+        "step": "U5"
+      },
+      "le/undefined against a number is NaN": {
+        "step": "U5"
+      },
+      "lt/undefined against a number is NaN": {
+        "step": "U5"
+      },
+      "neg/undefined negates to NaN": {
+        "step": "U5"
+      },
+      "plus/a string against undefined": {
+        "step": "U5"
+      },
+      "plus/two undefined operands add as NaN": {
+        "step": "U5"
+      },
+      "plus/undefined against a number adds as NaN": {
+        "step": "U5"
+      },
+      "plus/undefined against a string prints as \"undefined\"": {
+        "step": "U5"
+      },
+      "plus/undefined plus null is NaN": {
+        "step": "U5"
+      },
+      "strict_eq/undefined never equals null": {
+        "step": "U5"
+      },
+      "to_number/undefined is NaN": {
+        "step": "U5"
+      },
+      "to_string/undefined prints as \"undefined\"": {
+        "step": "U5"
+      }
+    },
+    "php": {
+      "ge/undefined against 0 is NaN, unlike null": {
+        "step": "U6"
+      },
+      "get/a boolean key reads the \"true\" property": {
+        "step": "U6"
+      },
+      "get/a fraction spelling is not an array index": {
+        "step": "U6"
+      },
+      "get/a fractional index reads undefined": {
+        "step": "U6"
+      },
+      "get/a leading zero is not an array index": {
+        "step": "U6"
+      },
+      "get/a missing object key reads undefined": {
+        "step": "U6"
+      },
+      "get/a negative index reads undefined (no wrap-around)": {
+        "step": "U6"
+      },
+      "get/a negative string index reads undefined": {
+        "step": "U6"
+      },
+      "get/a nil key reads the \"null\" property": {
+        "step": "U6"
+      },
+      "get/a number key past the 64-bit range reads undefined": {
+        "step": "U6"
+      },
+      "get/a padded key is not an array index": {
+        "step": "U6"
+      },
+      "get/a string index key past the 64-bit range reads undefined": {
+        "step": "U6"
+      },
+      "get/a string index past the end reads undefined": {
+        "step": "U6"
+      },
+      "get/an exponent spelling is not an array index": {
+        "step": "U6"
+      },
+      "get/an index key past the 64-bit range reads undefined": {
+        "step": "U6"
+      },
+      "get/an index past the end reads undefined": {
+        "step": "U6"
+      },
+      "get/an object key matches exactly (no case variant)": {
+        "step": "U6"
+      },
+      "get/the string \"-0\" is not an array index": {
+        "step": "U6"
+      },
+      "le/undefined against 0 is NaN, unlike null": {
+        "step": "U6"
+      },
+      "le/undefined against a number is NaN": {
+        "step": "U6"
+      },
+      "lt/undefined against a number is NaN": {
+        "step": "U6"
+      },
+      "neg/undefined negates to NaN": {
+        "step": "U6"
+      },
+      "plus/a string against undefined": {
+        "step": "U6"
+      },
+      "plus/two undefined operands add as NaN": {
+        "step": "U6"
+      },
+      "plus/undefined against a number adds as NaN": {
+        "step": "U6"
+      },
+      "plus/undefined against a string prints as \"undefined\"": {
+        "step": "U6"
+      },
+      "plus/undefined plus null is NaN": {
+        "step": "U6"
+      },
+      "strict_eq/undefined never equals null": {
+        "step": "U6"
+      },
+      "to_number/undefined is NaN": {
+        "step": "U6"
+      },
+      "to_string/undefined prints as \"undefined\"": {
+        "step": "U6"
+      }
+    },
+    "python": {
+      "ge/undefined against 0 is NaN, unlike null": {
+        "step": "U2"
+      },
+      "get/a boolean key reads the \"true\" property": {
+        "step": "U2"
+      },
+      "get/a fraction spelling is not an array index": {
+        "step": "U2"
+      },
+      "get/a fractional index reads undefined": {
+        "step": "U2"
+      },
+      "get/a leading zero is not an array index": {
+        "step": "U2"
+      },
+      "get/a missing object key reads undefined": {
+        "step": "U2"
+      },
+      "get/a negative index reads undefined (no wrap-around)": {
+        "step": "U2"
+      },
+      "get/a negative string index reads undefined": {
+        "step": "U2"
+      },
+      "get/a nil key reads the \"null\" property": {
+        "step": "U2"
+      },
+      "get/a number key past the 64-bit range reads undefined": {
+        "step": "U2"
+      },
+      "get/a padded key is not an array index": {
+        "step": "U2"
+      },
+      "get/a string index key past the 64-bit range reads undefined": {
+        "step": "U2"
+      },
+      "get/a string index past the end reads undefined": {
+        "step": "U2"
+      },
+      "get/an exponent spelling is not an array index": {
+        "step": "U2"
+      },
+      "get/an index key past the 64-bit range reads undefined": {
+        "step": "U2"
+      },
+      "get/an index past the end reads undefined": {
+        "step": "U2"
+      },
+      "get/an object key matches exactly (no case variant)": {
+        "step": "U2"
+      },
+      "get/the string \"-0\" is not an array index": {
+        "step": "U2"
+      },
+      "le/undefined against 0 is NaN, unlike null": {
+        "step": "U2"
+      },
+      "le/undefined against a number is NaN": {
+        "step": "U2"
+      },
+      "lt/undefined against a number is NaN": {
+        "step": "U2"
+      },
+      "neg/undefined negates to NaN": {
+        "step": "U2"
+      },
+      "plus/a string against undefined": {
+        "step": "U2"
+      },
+      "plus/two undefined operands add as NaN": {
+        "step": "U2"
+      },
+      "plus/undefined against a number adds as NaN": {
+        "step": "U2"
+      },
+      "plus/undefined against a string prints as \"undefined\"": {
+        "step": "U2"
+      },
+      "plus/undefined plus null is NaN": {
+        "step": "U2"
+      },
+      "strict_eq/undefined never equals null": {
+        "step": "U2"
+      },
+      "to_number/undefined is NaN": {
+        "step": "U2"
+      },
+      "to_string/undefined prints as \"undefined\"": {
+        "step": "U2"
+      }
+    },
+    "ruby": {
+      "ge/undefined against 0 is NaN, unlike null": {
+        "step": "U4"
+      },
+      "get/a boolean key reads the \"true\" property": {
+        "step": "U4"
+      },
+      "get/a fraction spelling is not an array index": {
+        "step": "U4"
+      },
+      "get/a fractional index reads undefined": {
+        "step": "U4"
+      },
+      "get/a leading zero is not an array index": {
+        "step": "U4"
+      },
+      "get/a missing object key reads undefined": {
+        "step": "U4"
+      },
+      "get/a negative index reads undefined (no wrap-around)": {
+        "step": "U4"
+      },
+      "get/a negative string index reads undefined": {
+        "step": "U4"
+      },
+      "get/a nil key reads the \"null\" property": {
+        "step": "U4"
+      },
+      "get/a number key past the 64-bit range reads undefined": {
+        "step": "U4"
+      },
+      "get/a padded key is not an array index": {
+        "step": "U4"
+      },
+      "get/a string index key past the 64-bit range reads undefined": {
+        "step": "U4"
+      },
+      "get/a string index past the end reads undefined": {
+        "step": "U4"
+      },
+      "get/an exponent spelling is not an array index": {
+        "step": "U4"
+      },
+      "get/an index key past the 64-bit range reads undefined": {
+        "step": "U4"
+      },
+      "get/an index past the end reads undefined": {
+        "step": "U4"
+      },
+      "get/an object key matches exactly (no case variant)": {
+        "step": "U4"
+      },
+      "get/the string \"-0\" is not an array index": {
+        "step": "U4"
+      },
+      "le/undefined against 0 is NaN, unlike null": {
+        "step": "U4"
+      },
+      "le/undefined against a number is NaN": {
+        "step": "U4"
+      },
+      "lt/undefined against a number is NaN": {
+        "step": "U4"
+      },
+      "neg/undefined negates to NaN": {
+        "step": "U4"
+      },
+      "plus/a string against undefined": {
+        "step": "U4"
+      },
+      "plus/two undefined operands add as NaN": {
+        "step": "U4"
+      },
+      "plus/undefined against a number adds as NaN": {
+        "step": "U4"
+      },
+      "plus/undefined against a string prints as \"undefined\"": {
+        "step": "U4"
+      },
+      "plus/undefined plus null is NaN": {
+        "step": "U4"
+      },
+      "strict_eq/undefined never equals null": {
+        "step": "U4"
+      },
+      "to_number/undefined is NaN": {
+        "step": "U4"
+      },
+      "to_string/undefined prints as \"undefined\"": {
+        "step": "U4"
+      }
+    },
+    "rust": {
+      "ge/undefined against 0 is NaN, unlike null": {
+        "step": "U3"
+      },
+      "get/a boolean key reads the \"true\" property": {
+        "step": "U3"
+      },
+      "get/a fraction spelling is not an array index": {
+        "step": "U3"
+      },
+      "get/a fractional index reads undefined": {
+        "step": "U3"
+      },
+      "get/a leading zero is not an array index": {
+        "step": "U3"
+      },
+      "get/a missing object key reads undefined": {
+        "step": "U3"
+      },
+      "get/a negative index reads undefined (no wrap-around)": {
+        "step": "U3"
+      },
+      "get/a negative string index reads undefined": {
+        "step": "U3"
+      },
+      "get/a nil key reads the \"null\" property": {
+        "step": "U3"
+      },
+      "get/a number key past the 64-bit range reads undefined": {
+        "step": "U3"
+      },
+      "get/a padded key is not an array index": {
+        "step": "U3"
+      },
+      "get/a string index key past the 64-bit range reads undefined": {
+        "step": "U3"
+      },
+      "get/a string index past the end reads undefined": {
+        "step": "U3"
+      },
+      "get/an exponent spelling is not an array index": {
+        "step": "U3"
+      },
+      "get/an index key past the 64-bit range reads undefined": {
+        "step": "U3"
+      },
+      "get/an index past the end reads undefined": {
+        "step": "U3"
+      },
+      "get/an object key matches exactly (no case variant)": {
+        "step": "U3"
+      },
+      "get/the string \"-0\" is not an array index": {
+        "step": "U3"
+      },
+      "le/undefined against 0 is NaN, unlike null": {
+        "step": "U3"
+      },
+      "le/undefined against a number is NaN": {
+        "step": "U3"
+      },
+      "lt/undefined against a number is NaN": {
+        "step": "U3"
+      },
+      "neg/undefined negates to NaN": {
+        "step": "U3"
+      },
+      "plus/a string against undefined": {
+        "step": "U3"
+      },
+      "plus/two undefined operands add as NaN": {
+        "step": "U3"
+      },
+      "plus/undefined against a number adds as NaN": {
+        "step": "U3"
+      },
+      "plus/undefined against a string prints as \"undefined\"": {
+        "step": "U3"
+      },
+      "plus/undefined plus null is NaN": {
+        "step": "U3"
+      },
+      "strict_eq/undefined never equals null": {
+        "step": "U3"
+      },
+      "to_number/undefined is NaN": {
+        "step": "U3"
+      },
+      "to_string/undefined prints as \"undefined\"": {
+        "step": "U3"
+      }
+    }
   }
 }

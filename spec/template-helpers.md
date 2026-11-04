@@ -65,8 +65,13 @@ committed, consumed by one thin harness per backend.
   declarations (the harnesses fail loudly on unknown keys).
 - `args` / `expect` are plain JSON. Non-finite numbers in `expect`
   use the reserved sentinel `{"$num": "NaN" | "Infinity" |
-  "-Infinity"}`; a JS `undefined` expect encodes as `null` (backends
-  have a single absent value). Args must stay finite.
+  "-Infinity"}`. JS `undefined`, in `args` or `expect`, is the
+  reserved sentinel `{"$undef": true}`; inside an object it is a
+  present key holding `undefined`, distinct from a missing key
+  (`spec/js-undefined-value.md`, "JSON encoding for vectors"). A
+  backend whose runtime does not carry `undefined` yet decodes an
+  `args` sentinel to its host nil and pins the cases whose `expect`
+  it cannot match. Args must stay finite.
 
 Regenerate with `cd packages/adapter-tests && bun run
 generate:helper-vectors`; the freshness test in

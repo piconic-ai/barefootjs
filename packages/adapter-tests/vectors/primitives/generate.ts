@@ -17,10 +17,12 @@
  * well as in `expect`, because these operations are defined on exactly
  * those values (`truthy(NaN)`, `neg(0)`), and `-0` is spelled by the
  * sentinel because JSON cannot carry the sign of zero. Harnesses compare a
- * zero by sign.
+ * zero by sign. JS `undefined` is `{"$undef": true}` in both positions, as
+ * in the other two corpora.
  */
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { UNDEF_SENTINEL } from '../generate'
 import { primitiveOps } from './index'
 import { DOMAINS, type PrimitiveOp } from './types'
 
@@ -44,20 +46,21 @@ function encodeNumber(n: number): unknown {
 }
 
 /**
- * Encode one value. `undefined` becomes `null` in an expect (the runtimes
- * have one nil) and is refused in an argument, where it would be ambiguous.
+ * Encode one value. `undefined` becomes the `{"$undef": true}` sentinel
+ * (spec/js-undefined-value.md, "JSON encoding for vectors") in an argument
+ * and in an expect alike; inside an object it is a present key holding
+ * `undefined`.
  */
-export function encodePrimitiveValue(value: unknown, context: string, isArg: boolean): unknown {
-  if (value === undefined) {
-    if (isArg) throw new Error(`${context}: undefined is not encodable as an argument`)
-    return null
-  }
+export function encodePrimitiveValue(value: unknown, context: string): unknown {
+  if (value === undefined) return UNDEF_SENTINEL
   if (typeof value === 'number') return encodeNumber(value)
-  if (Array.isArray(value)) return value.map((v, i) => encodePrimitiveValue(v, `${context}[${i}]`, isArg))
+  if (Array.isArray(value)) return Array.from(value, (v, i) => encodePrimitiveValue(v, `${context}[${i}]`))
   if (value !== null && typeof value === 'object') {
-    if ('$num' in value) throw new Error(`${context}: the "$num" key is reserved for the sentinel`)
+    for (const key of ['$num', '$undef']) {
+      if (key in value) throw new Error(`${context}: the "${key}" key is reserved for the sentinel`)
+    }
     return Object.fromEntries(
-      Object.entries(value).map(([k, v]) => [k, encodePrimitiveValue(v, `${context}.${k}`, isArg)]),
+      Object.entries(value).map(([k, v]) => [k, encodePrimitiveValue(v, `${context}.${k}`)]),
     )
   }
   return value
@@ -77,9 +80,9 @@ export function buildPrimitiveFile(op: PrimitiveOp): PrimitiveVectorFile {
       if (seen.has(key)) throw new Error(`${key}: duplicate case key`)
       if (!DOMAINS.has(c.domain)) throw new Error(`${key}: unknown domain "${c.domain}"`)
       seen.add(key)
-      const args = c.args.map((a, i) => encodePrimitiveValue(a, `${key} → args[${i}]`, true))
+      const args = c.args.map((a, i) => encodePrimitiveValue(a, `${key} → args[${i}]`))
       const result = (op.reference as (...args: unknown[]) => unknown)(...c.args)
-      const expect = encodePrimitiveValue(result, `${key} → expect`, false)
+      const expect = encodePrimitiveValue(result, `${key} → expect`)
       return { fn: c.fn, args, expect, domain: c.domain, note: c.note }
     }),
   }

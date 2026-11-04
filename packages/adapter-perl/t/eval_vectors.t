@@ -7,8 +7,9 @@ use JSON::PP ();
 use B ();
 use Scalar::Util qw(looks_like_number);
 
-use lib "$FindBin::Bin/../lib";
+use lib "$FindBin::Bin/../lib", "$FindBin::Bin/lib";
 use BarefootJS::Evaluator;
+use VectorUndefined ();
 
 # eval-vectors.json is UTF-8 (non-ASCII `.length` cases, #2196). Route TAP
 # through a UTF-8 layer so a wide test name/diagnostic doesn't trigger
@@ -44,19 +45,42 @@ die "eval-vectors.json contains no cases" unless @{ $doc->{cases} || [] };
 # divergences here (unlike the bf->string / number helper vectors). Each
 # case's real ParsedExpr tree, evaluated against its environment, must
 # reproduce the JS-computed expect exactly — same input → same output as Go.
+# The only allowance is the shrink-only expected-failure ledger of the
+# undefined rollout (spec/js-undefined-value.md, section 6), keyed by note:
+# an unlisted failure fails, and so do a listed case that now passes and a
+# listed note that names no case.
+my $ledger_path = File::Spec->catfile($FindBin::Bin, '..', '..', 'adapter-tests', 'vectors', 'eval-expected-failures.json');
+my %expected = do {
+    open my $fh, '<:raw', $ledger_path or die "open $ledger_path: $!";
+    local $/;
+    %{ JSON::PP->new->utf8->decode(scalar <$fh>)->{runtimes}{perl} // die "ledger has no \"perl\" runtime" };
+};
+my %seen;
 for my $case (@{ $doc->{cases} }) {
     my $note   = $case->{note};
     my $expr   = $case->{expr};
-    my $env    = $case->{env};
+    my $env    = VectorUndefined::to_arg($case->{env});
     my $expect = $case->{expect};
+    $seen{$note} = 1;
 
+    my ($ok, $detail);
     my $got = eval { BarefootJS::Evaluator::evaluate($expr, $env) };
     if (my $err = $@) {
-        fail("$note died: $err");
-        next;
+        ($ok, $detail) = (0, "died: $err");
+    } else {
+        $ok = _match($got, $expect) ? 1 : 0;
+        $detail = 'got ' . explain_value($got) . ', want ' . explain_value($expect);
     }
-    ok(_match($got, $expect), $note)
-        or diag('got ' . explain_value($got) . ', want ' . explain_value($expect));
+    if ($ok && $expected{$note}) {
+        fail("ledger entry '$note' now passes; remove it from the ledger (step $expected{$note}{step})");
+    } elsif (!$ok && !$expected{$note}) {
+        fail("UNEXPECTED-FAIL $note: $detail");
+    } else {
+        pass($note . ($ok ? '' : " (expected failure, step $expected{$note}{step})"));
+    }
+}
+for my $note (sort keys %expected) {
+    fail("ledger entry '$note' matches no eval case — renamed note?") unless $seen{$note};
 }
 
 done_testing;
@@ -77,6 +101,7 @@ sub _is_real_number {
 # numbers numerically, arrays/hashes recursively, strings by eq.
 sub _match {
     my ($got, $expect) = @_;
+    return VectorUndefined::runtime_undefined($got) if VectorUndefined::is_sentinel($expect);
     return !defined $got if !defined $expect;
     if (ref $expect eq 'HASH' && exists $expect->{'$num'}) {
         my $kind = $expect->{'$num'};

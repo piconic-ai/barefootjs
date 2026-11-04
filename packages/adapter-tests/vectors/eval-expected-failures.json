@@ -1,0 +1,201 @@
+{
+  "version": 1,
+  "spec": "spec/js-undefined-value.md",
+  "about": "Every (runtime, case) of eval-vectors.json that fails until the runtime's U step of the undefined rollout (spec/js-undefined-value.md, §6) lands, keyed by the case note and naming that step. Shrink-only: a harness fails on an unexpected failure, on a listed case that now passes and on a listed note that names no case. Each U step empties its runtime; the file is deleted in U9.",
+  "runtimes": {
+    "go": {
+      ".includes tells undefined from null (SameValueZero)": {
+        "step": "U8"
+      },
+      "a missing field adds as NaN": {
+        "step": "U8"
+      },
+      "a missing field concatenates as \"undefined\"": {
+        "step": "U8"
+      },
+      "a missing field is not === null": {
+        "step": "U8"
+      },
+      "a missing field reads as undefined": {
+        "step": "U8"
+      },
+      "an object-literal member may hold undefined": {
+        "step": "U8"
+      },
+      "out-of-range index reads as undefined": {
+        "step": "U8"
+      },
+      "the unbound undefined identifier is the constant": {
+        "step": "U8"
+      }
+    },
+    "java": {
+      ".includes tells undefined from null (SameValueZero)": {
+        "step": "U7"
+      },
+      "a missing field adds as NaN": {
+        "step": "U7"
+      },
+      "a missing field concatenates as \"undefined\"": {
+        "step": "U7"
+      },
+      "a missing field is === undefined": {
+        "step": "U7"
+      },
+      "a missing field is not === null": {
+        "step": "U7"
+      },
+      "a missing field reads as undefined": {
+        "step": "U7"
+      },
+      "a present key holding undefined is === undefined": {
+        "step": "U7"
+      },
+      "an object-literal member may hold undefined": {
+        "step": "U7"
+      },
+      "out-of-range index reads as undefined": {
+        "step": "U7"
+      },
+      "the unbound undefined identifier is the constant": {
+        "step": "U7"
+      }
+    },
+    "perl": {
+      ".includes tells undefined from null (SameValueZero)": {
+        "step": "U5"
+      },
+      "a missing field adds as NaN": {
+        "step": "U5"
+      },
+      "a missing field concatenates as \"undefined\"": {
+        "step": "U5"
+      },
+      "a missing field is not === null": {
+        "step": "U5"
+      },
+      "a missing field reads as undefined": {
+        "step": "U5"
+      },
+      "an object-literal member may hold undefined": {
+        "step": "U5"
+      },
+      "out-of-range index reads as undefined": {
+        "step": "U5"
+      },
+      "the unbound undefined identifier is the constant": {
+        "step": "U5"
+      }
+    },
+    "php": {
+      ".includes tells undefined from null (SameValueZero)": {
+        "step": "U6"
+      },
+      "a missing field adds as NaN": {
+        "step": "U6"
+      },
+      "a missing field concatenates as \"undefined\"": {
+        "step": "U6"
+      },
+      "a missing field is not === null": {
+        "step": "U6"
+      },
+      "a missing field reads as undefined": {
+        "step": "U6"
+      },
+      "an object-literal member may hold undefined": {
+        "step": "U6"
+      },
+      "out-of-range index reads as undefined": {
+        "step": "U6"
+      },
+      "the unbound undefined identifier is the constant": {
+        "step": "U6"
+      }
+    },
+    "python": {
+      ".includes tells undefined from null (SameValueZero)": {
+        "step": "U2"
+      },
+      "a missing field adds as NaN": {
+        "step": "U2"
+      },
+      "a missing field concatenates as \"undefined\"": {
+        "step": "U2"
+      },
+      "a missing field is not === null": {
+        "step": "U2"
+      },
+      "a missing field reads as undefined": {
+        "step": "U2"
+      },
+      "an object-literal member may hold undefined": {
+        "step": "U2"
+      },
+      "out-of-range index reads as undefined": {
+        "step": "U2"
+      },
+      "the unbound undefined identifier is the constant": {
+        "step": "U2"
+      }
+    },
+    "ruby": {
+      ".includes tells undefined from null (SameValueZero)": {
+        "step": "U4"
+      },
+      "a missing field adds as NaN": {
+        "step": "U4"
+      },
+      "a missing field concatenates as \"undefined\"": {
+        "step": "U4"
+      },
+      "a missing field is === undefined": {
+        "step": "U4"
+      },
+      "a missing field is not === null": {
+        "step": "U4"
+      },
+      "a missing field reads as undefined": {
+        "step": "U4"
+      },
+      "a present key holding undefined is === undefined": {
+        "step": "U4"
+      },
+      "an object-literal member may hold undefined": {
+        "step": "U4"
+      },
+      "out-of-range index reads as undefined": {
+        "step": "U4"
+      },
+      "the unbound undefined identifier is the constant": {
+        "step": "U4"
+      }
+    },
+    "rust": {
+      ".includes tells undefined from null (SameValueZero)": {
+        "step": "U3"
+      },
+      "a missing field adds as NaN": {
+        "step": "U3"
+      },
+      "a missing field concatenates as \"undefined\"": {
+        "step": "U3"
+      },
+      "a missing field is not === null": {
+        "step": "U3"
+      },
+      "a missing field reads as undefined": {
+        "step": "U3"
+      },
+      "an object-literal member may hold undefined": {
+        "step": "U3"
+      },
+      "out-of-range index reads as undefined": {
+        "step": "U3"
+      },
+      "the unbound undefined identifier is the constant": {
+        "step": "U3"
+      }
+    }
+  }
+}

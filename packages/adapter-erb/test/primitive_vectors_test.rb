@@ -3,6 +3,7 @@
 require 'minitest/autorun'
 require 'json'
 require 'barefoot_js'
+require_relative 'vector_undefined'
 
 # JS primitive-operation vector conformance (spec/js-primitive-semantics.md,
 # "Conformance"): every packages/adapter-tests/vectors/primitives/<op>.json
@@ -85,6 +86,8 @@ class PrimitiveVectorsTest < Minitest::Test
   # Numeric for a number, a String for a string), numbers compare as doubles
   # and a zero compares by sign.
   def self.match?(got, expect)
+    return VectorUndefined.runtime_undefined?(got) if VectorUndefined.sentinel?(expect)
+
     case expect
     when nil then got.nil?
     when true, false then got == expect
@@ -114,7 +117,7 @@ class PrimitiveVectorsTest < Minitest::Test
     return [false, "no Ruby binding for '#{c[:fn]}' -- add it to BINDINGS"] unless bind
 
     begin
-      got = bind.call(*c[:args].map { |a| decode(a) })
+      got = bind.call(*c[:args].map { |a| VectorUndefined.to_arg(decode(a)) })
     rescue StandardError => e
       return [false, "raised #{e.class}: #{e.message}"]
     end
@@ -126,7 +129,7 @@ class PrimitiveVectorsTest < Minitest::Test
     skip 'primitive vectors not available outside the monorepo checkout' if PRIMITIVE_FILES.empty?
 
     ledger_path = File.join(PRIMITIVES_VECTORS_DIR, 'primitives-expected-failures.json')
-    expected = JSON.parse(File.read(ledger_path, encoding: Encoding::UTF_8))['runtimes'].fetch('ruby')
+    expected = VectorUndefined.load_expected_failures(ledger_path)
     problems = []
     seen = {}
     total = passed = 0

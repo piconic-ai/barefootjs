@@ -3,8 +3,9 @@
  * part apply (spec/js-primitive-semantics.md, "ToString and boolean
  * values"). Numbers print as `Number::toString` (shortest round trip,
  * decimal in [1e-6, 1e21), `-0` → `"0"`); booleans as `"true"` / `"false"`;
- * a nil argument reads as `null` (→ `"null"`); an array joins its elements
- * with `,`, nil elements printing as `""`.
+ * a host-nil argument is `null` (→ `"null"`) and `undefined` is
+ * `"undefined"`; an array joins its elements with `,`, `null` and
+ * `undefined` elements printing as `""`.
  */
 import { type PrimitiveCase, type PrimitiveOp, unaryDomain } from './types'
 
@@ -34,6 +35,8 @@ export const to_string: PrimitiveOp = {
     c(true, 'true'),
     c(false, 'false'),
     c(null, 'nil reads as null'),
+    c(undefined, 'undefined prints as "undefined"'),
+    c(['a', undefined], 'an undefined element prints as the empty string'),
     c([], 'an empty array is the empty string'),
     c([1, 2], 'an array joins with a comma'),
     c(['a', null, true], 'a nil element prints as the empty string'),

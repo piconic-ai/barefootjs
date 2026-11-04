@@ -229,6 +229,11 @@ class HelperVectorsTest {
   // ---------------------------------------------------------------------
 
   private static Object materialize(JsonElement el) {
+    return materialize(el, VectorUndefined.ARG);
+  }
+
+  /** {@code undefined} replaces a `$undef` sentinel ({@link VectorUndefined#ARG} or {@link VectorUndefined#EXPECT}). */
+  private static Object materialize(JsonElement el, Object undefined) {
     if (el.isJsonNull()) {
       return null;
     }
@@ -245,17 +250,20 @@ class HelperVectorsTest {
     if (el.isJsonArray()) {
       List<Object> out = new ArrayList<>();
       for (JsonElement e : el.getAsJsonArray()) {
-        out.add(materialize(e));
+        out.add(materialize(e, undefined));
       }
       return out;
     }
     JsonObject obj = el.getAsJsonObject();
+    if (VectorUndefined.isSentinel(obj)) {
+      return undefined;
+    }
     if (obj.size() == 1 && obj.has("$date")) {
       return Instant.parse(obj.get("$date").getAsString());
     }
     Map<String, Object> out = new LinkedHashMap<>();
     for (Map.Entry<String, JsonElement> e : obj.entrySet()) {
-      out.put(e.getKey(), materialize(e.getValue()));
+      out.put(e.getKey(), materialize(e.getValue(), undefined));
     }
     return out;
   }
@@ -275,12 +283,15 @@ class HelperVectorsTest {
         }
       }
     }
-    return materialize(el);
+    return materialize(el, VectorUndefined.EXPECT);
   }
 
   /** Value-compat comparison (spec/template-helpers.md): numeric by value, else structural. */
   @SuppressWarnings("unchecked")
   private static boolean valueMatch(Object got, Object expect) {
+    if (expect == VectorUndefined.EXPECT) {
+      return VectorUndefined.isRuntimeUndefined(got);
+    }
     if (expect == null) {
       return got == null;
     }

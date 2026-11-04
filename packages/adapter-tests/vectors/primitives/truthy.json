@@ -149,6 +149,17 @@
     {
       "fn": "truthy",
       "args": [
+        {
+          "$undef": true
+        }
+      ],
+      "expect": false,
+      "domain": "nil",
+      "note": "undefined is falsy"
+    },
+    {
+      "fn": "truthy",
+      "args": [
         []
       ],
       "expect": true,
