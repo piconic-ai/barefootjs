@@ -11122,6 +11122,28 @@
         "attribute"
       ]
     },
+    "nullish-value-chains": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string",
+        "logical:&&",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "number-addition-text-formatting": {
       "kinds": [
         "binary",
