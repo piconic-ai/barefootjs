@@ -17722,6 +17722,25 @@
         "text"
       ]
     },
+    "undef-null-string-includes": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:includes",
+        "array-method:indexOf",
+        "array-method:startsWith",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "undefined-alternate-ternary-attr-test-question-mark": {
       "kinds": [
         "binary",

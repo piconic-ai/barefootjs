@@ -122,6 +122,7 @@ export const renderDivergences: RenderDivergences = {
   'undef-null-sort': { limitation: 'host-nil-collapses-undefined-and-null' },
   'undef-null-strict-equality': { limitation: 'host-nil-collapses-undefined-and-null' },
   'undef-null-string-coercion': { limitation: 'host-nil-collapses-undefined-and-null' },
+  'undef-null-string-includes': { limitation: 'host-nil-collapses-undefined-and-null' },
   // A `null` / `undefined` `style` object property renders `color:` with
   // an empty value instead of being dropped.
   'style-object-nil-property': { limitation: 'style-object-nil-property' },

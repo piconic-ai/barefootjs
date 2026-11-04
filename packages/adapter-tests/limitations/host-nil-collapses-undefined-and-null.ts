@@ -4,7 +4,7 @@ export default defineLimitation({
   kind: 'silent',
   title: 'One host nil standing for both `undefined` and `null`',
   given:
-    'an operation whose JS result differs between `undefined` and `null` (`String` / template literal / `+`, `Number` / arithmetic, `===` against either, `JSON.stringify`, a destructure default, `includes` / `indexOf`, a numeric sort, an optional method argument, a `?.` result), over an omitted prop, an explicit `null` prop, a forwarded `undefined`, a literal `null` / `undefined`, or a missing row or object field',
+    'an operation whose JS result differs between `undefined` and `null` (`String` / template literal / `+`, `Number` / arithmetic, `===` against either, `JSON.stringify`, a destructure default, `includes` / `indexOf` on an array or a string, a numeric sort, an optional method argument, a `?.` result), over an omitted prop, an explicit `null` prop, a forwarded `undefined`, a literal `null` / `undefined`, or a missing row or object field',
   expected:
     '`undefined` and `null` are distinct values, so each renders its own JS result (`"undefined"` / `"null"`, `NaN` / `0`, a dropped member or no string / `null`, the default / `null`, the argument default / the coerced `null`)',
   actual:
@@ -21,5 +21,6 @@ export default defineLimitation({
     'undef-null-sort',
     'undef-null-strict-equality',
     'undef-null-string-coercion',
+    'undef-null-string-includes',
   ],
 })

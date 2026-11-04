@@ -321,6 +321,7 @@ import { fixture as undefNullRowFieldCoercion } from './undef-null-row-field-coe
 import { fixture as undefNullSort } from './undef-null-sort'
 import { fixture as undefNullStrictEquality } from './undef-null-strict-equality'
 import { fixture as undefNullStringCoercion } from './undef-null-string-coercion'
+import { fixture as undefNullStringIncludes } from './undef-null-string-includes'
 import { fixture as indexReadExactKey } from './index-read-exact-key'
 import { fixture as indexReadCapitalisedKeyOnly } from './index-read-capitalised-key-only'
 import { fixture as remainderNegativeZeroString } from './remainder-negative-zero-string'
@@ -1614,6 +1615,7 @@ export const jsxFixtures: JSXFixture[] = [
   undefNullSort,
   undefNullStrictEquality,
   undefNullStringCoercion,
+  undefNullStringIncludes,
   indexReadExactKey,
   indexReadCapitalisedKeyOnly,
   remainderNegativeZeroString,

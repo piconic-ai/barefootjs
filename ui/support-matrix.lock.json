@@ -1719,6 +1719,12 @@
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -1816,6 +1822,12 @@
             },
             {
               "fixture": "undef-null-sort",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -1949,6 +1961,12 @@
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -2052,6 +2070,12 @@
             },
             {
               "fixture": "undef-null-sort",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -2161,6 +2185,12 @@
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -2261,6 +2291,12 @@
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -2358,6 +2394,12 @@
             },
             {
               "fixture": "undef-null-sort",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -2467,6 +2509,12 @@
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -2564,6 +2612,12 @@
             },
             {
               "fixture": "undef-null-sort",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -9880,6 +9934,12 @@
               ]
             },
             {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -10353,6 +10413,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -11106,6 +11172,12 @@
               ]
             },
             {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -11609,6 +11681,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -12122,6 +12200,12 @@
               ]
             },
             {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -12607,6 +12691,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -13103,6 +13193,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -13622,6 +13718,12 @@
               ]
             },
             {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -14119,6 +14221,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -14715,6 +14823,12 @@
               ]
             },
             {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -15080,6 +15194,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -15665,6 +15785,12 @@
               ]
             },
             {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -16041,6 +16167,12 @@
               ]
             },
             {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -16412,6 +16544,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -16799,6 +16937,12 @@
               ]
             },
             {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -17158,6 +17302,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -17534,6 +17684,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -17916,6 +18072,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -18835,6 +18997,12 @@
               ]
             },
             {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -19176,6 +19344,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -19767,6 +19941,12 @@
               ]
             },
             {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -20138,6 +20318,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -20519,6 +20705,12 @@
               ]
             },
             {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -20872,6 +21064,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -21242,6 +21440,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -21629,6 +21833,12 @@
               ]
             },
             {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -21994,6 +22204,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -24628,6 +24844,12 @@
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -24635,6 +24857,12 @@
           "gaps": [
             {
               "fixture": "undef-null-array-search",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -24648,6 +24876,12 @@
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -24655,6 +24889,12 @@
           "gaps": [
             {
               "fixture": "undef-null-array-search",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -24668,6 +24908,12 @@
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -24675,6 +24921,12 @@
           "gaps": [
             {
               "fixture": "undef-null-array-search",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -24688,6 +24940,12 @@
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -24698,6 +24956,12 @@
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -24705,6 +24969,12 @@
           "gaps": [
             {
               "fixture": "undef-null-array-search",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -24734,6 +25004,12 @@
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -24741,6 +25017,12 @@
           "gaps": [
             {
               "fixture": "undef-null-array-search",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -24754,6 +25036,12 @@
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -24761,6 +25049,12 @@
           "gaps": [
             {
               "fixture": "undef-null-array-search",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -24774,6 +25068,12 @@
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -24781,6 +25081,12 @@
           "gaps": [
             {
               "fixture": "undef-null-array-search",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -24794,6 +25100,12 @@
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -24804,6 +25116,12 @@
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -24811,6 +25129,12 @@
           "gaps": [
             {
               "fixture": "undef-null-array-search",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -25933,6 +26257,12 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -25942,6 +26272,12 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -25959,6 +26295,12 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -25974,6 +26316,12 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -25991,6 +26339,12 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -26000,6 +26354,12 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -26017,6 +26377,12 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -26033,6 +26399,12 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -26042,6 +26414,12 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -30130,6 +30508,12 @@
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -30233,6 +30617,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -30360,6 +30750,12 @@
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -30466,6 +30862,12 @@
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -30569,6 +30971,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -30684,6 +31092,12 @@
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
             }
           ]
         },
@@ -30781,6 +31195,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -30887,6 +31307,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -30999,6 +31425,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -33115,6 +33547,12 @@
               ]
             },
             {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -33372,6 +33810,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -33813,6 +34257,12 @@
               ]
             },
             {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -34081,6 +34531,12 @@
               ]
             },
             {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -34344,6 +34800,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -34623,6 +35085,12 @@
               ]
             },
             {
+              "fixture": "undef-null-string-includes",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -34880,6 +35348,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -35148,6 +35622,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -35422,6 +35902,12 @@
             },
             {
               "fixture": "undef-null-string-coercion",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]

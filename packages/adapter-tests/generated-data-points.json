@@ -18390,6 +18390,107 @@
       }
     }
   ],
+  "undef-null-string-includes": [
+    {
+      "name": "gen:su:empty",
+      "props": {
+        "su": "",
+        "sn": "anullb",
+        "s0": "ab",
+        "n": null
+      }
+    },
+    {
+      "name": "gen:su:markup",
+      "props": {
+        "su": "<b>&\"'</b>",
+        "sn": "anullb",
+        "s0": "ab",
+        "n": null
+      }
+    },
+    {
+      "name": "gen:su:multibyte",
+      "props": {
+        "su": "日本語",
+        "sn": "anullb",
+        "s0": "ab",
+        "n": null
+      }
+    },
+    {
+      "name": "gen:sn:empty",
+      "props": {
+        "su": "aundefinedb",
+        "sn": "",
+        "s0": "ab",
+        "n": null
+      }
+    },
+    {
+      "name": "gen:sn:markup",
+      "props": {
+        "su": "aundefinedb",
+        "sn": "<b>&\"'</b>",
+        "s0": "ab",
+        "n": null
+      }
+    },
+    {
+      "name": "gen:sn:multibyte",
+      "props": {
+        "su": "aundefinedb",
+        "sn": "日本語",
+        "s0": "ab",
+        "n": null
+      }
+    },
+    {
+      "name": "gen:s0:empty",
+      "props": {
+        "su": "aundefinedb",
+        "sn": "anullb",
+        "s0": "",
+        "n": null
+      }
+    },
+    {
+      "name": "gen:s0:markup",
+      "props": {
+        "su": "aundefinedb",
+        "sn": "anullb",
+        "s0": "<b>&\"'</b>",
+        "n": null
+      }
+    },
+    {
+      "name": "gen:s0:multibyte",
+      "props": {
+        "su": "aundefinedb",
+        "sn": "anullb",
+        "s0": "日本語",
+        "n": null
+      }
+    },
+    {
+      "name": "gen:n:absent",
+      "props": {
+        "su": "aundefinedb",
+        "sn": "anullb",
+        "s0": "ab"
+      }
+    },
+    {
+      "name": "gen:u:union:1",
+      "props": {
+        "su": "aundefinedb",
+        "sn": "anullb",
+        "s0": "ab",
+        "n": null,
+        "u": null
+      }
+    }
+  ],
   "undefined-alternate-ternary-attr-test-question-mark": [
     {
       "name": "gen:item:absent",
