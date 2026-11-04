@@ -75,7 +75,8 @@ export function encodeInput(value: unknown, context: string): unknown {
 
 function encodeUndefined(value: unknown): unknown {
   if (value === undefined) return UNDEF_SENTINEL
-  if (Array.isArray(value)) return value.map(encodeUndefined)
+  // Dense iteration: a hole reads as `undefined`, like an explicit element.
+  if (Array.isArray(value)) return Array.from(value, encodeUndefined)
   if (value !== null && typeof value === 'object') {
     return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, encodeUndefined(v)]))
   }
