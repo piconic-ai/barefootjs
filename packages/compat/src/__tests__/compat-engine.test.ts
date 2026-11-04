@@ -73,6 +73,7 @@ describe('compileForCompat', () => {
           'module-scope-helper-call',
           'nested-callback-in-filter-predicate',
           'object-equality-by-contents',
+          'object-spread-onto-child-component',
           'off-subset-callback-body',
           'omitted-optional-nullable-number-arithmetic',
           'omitted-optional-nullable-scalar-relational',

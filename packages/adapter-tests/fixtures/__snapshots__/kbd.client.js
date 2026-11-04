@@ -1,4 +1,4 @@
-import { $, $c, applyRestAttrs, createComponent, createEffect, escapeAttr, escapeText, forwardProps, hydrate, initChild, markupOrEmpty, renderChild } from '@barefootjs/client/runtime'
+import { $, $c, applyRestAttrs, createComponent, createEffect, escapeAttr, escapeText, forwardProps, hydrate, initChild, markupOrEmpty, renderChild, spreadChildProps } from '@barefootjs/client/runtime'
 
 var isValidElement = isValidElement ?? function(element) {
   return !!(element && typeof element === 'object' && 'tag' in element && 'props' in element)
@@ -27,10 +27,10 @@ export function initSlot(__scope, _p = {}) {
   }) }
 
   // Initialize child components with props
-  initChild('Tag', _s0, forwardProps(_p, { get className() { return ([_p.className, (((children.props).className) || '')].filter(Boolean).join(' ')) } }, ["className"]))
+  initChild('Tag', _s0, spreadChildProps(() => ((children.props)), forwardProps(_p, {}, ["children","className"]), { get className() { return ([_p.className, (((children.props).className) || '')].filter(Boolean).join(' ')) } }))
 }
 
-hydrate('Slot', { init: initSlot, template: (_p) => `${_p.children && isValidElement(_p.children) ? `${renderChild('Tag', {className: ([_p.className, (((_p.children.props).className) || '')].filter(Boolean).join(' ')), children: `${escapeText((_p.children.props).children)}`}, undefined, 's0')}` : `${markupOrEmpty(_p.children)}`}` })
+hydrate('Slot', { init: initSlot, template: (_p) => `${_p.children && isValidElement(_p.children) ? `${renderChild('Tag', {...(_p.children.props), className: ([_p.className, (((_p.children.props).className) || '')].filter(Boolean).join(' ')), children: `${escapeText((_p.children.props).children)}`}, undefined, 's0')}` : `${markupOrEmpty(_p.children)}`}` })
 export function Slot(_p, __bfKey) { return createComponent('Slot', _p, __bfKey) }
 export function initKbd(__scope, _p = {}) {
   if (!__scope) return
