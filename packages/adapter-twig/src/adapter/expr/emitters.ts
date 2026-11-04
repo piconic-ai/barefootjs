@@ -187,12 +187,31 @@ export function truthyTest(plan: PrimitivePlan | null, rendered: string): string
  * them would grow exponentially; here each operand is rendered and evaluated
  * once. Filters rather than `bf` methods: Twig takes an arrow as a method
  * argument only since 3.15. A filter binds tighter than any operator, hence
- * the parentheses around `l`; Twig has no zero-parameter arrow, hence the
- * unused `__bf_lazy`.
+ * the parentheses around `l`; the arrow comes from `lazyOperand`.
  */
 function spellLogical(op: '&&' | '||', plan: PrimitivePlan | null, l: string, r: string): string {
   if (truthyTest(plan, l) === l) return op === '&&' ? `(${l} ? ${r} : false)` : `(${l} ? true : ${r})`
-  return `((${l})|bf_js_${op === '&&' ? 'and' : 'or'}((__bf_lazy) => ${r}))`
+  return `((${l})|bf_js_${op === '&&' ? 'and' : 'or'}(${lazyOperand(r)}))`
+}
+
+/**
+ * The right operand `r` (already Twig) as the arrow function a lazy filter
+ * (`bf_js_or`, `bf_js_and`, `bf_js_nullish`) calls only when JS evaluates
+ * `r`. Twig has no zero-parameter arrow, so the arrow takes one unused
+ * parameter, and Twig binds that parameter over the context inside the body:
+ * a parameter that shares a name with a variable `r` reads (a prop named
+ * `__bf_lazy`) would replace it (#3839). The parameter is therefore the
+ * first of `__bf_lazy`, `__bf_lazy_1`, … that does not occur anywhere in the
+ * text of `r`. Every context variable the adapter's Twig reads is spelled
+ * by its name in that text (it never builds a variable name at render
+ * time), so a name absent from the text cannot be one `r` reads. The text is
+ * the right thing to test rather than the source expression: a renamed
+ * binding (`{ __bf_lazy: v }`) is written under its prop name.
+ */
+function lazyOperand(r: string): string {
+  let param = '__bf_lazy'
+  for (let i = 1; r.includes(param); i++) param = `__bf_lazy_${i}`
+  return `(${param}) => ${r}`
 }
 
 /**
@@ -283,7 +302,7 @@ function nullishCoalesce(left: ParsedExpr, l: string, r: string): string {
     left.kind === 'conditional' ||
     left.kind === 'logical'
   ) {
-    return `((${l})|bf_js_nullish((__bf_lazy) => ${r}))`
+    return `((${l})|bf_js_nullish(${lazyOperand(r)}))`
   }
   return `(${l} ?? ${r})`
 }

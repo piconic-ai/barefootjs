@@ -6865,6 +6865,24 @@
         "text"
       ]
     },
+    "lazy-fallback-name-collision": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:null",
+        "logical:&&",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "lazy-row-index-reorder": {
       "kinds": [
         "array-literal",

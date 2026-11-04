@@ -320,6 +320,7 @@ import { fixture as nullishOptionalRowField } from './nullish-optional-row-field
 import { fixture as nullishMixedTypeZeroFallback } from './nullish-mixed-type-zero-fallback'
 import { fixture as logicalValueChains } from './logical-value-chains'
 import { fixture as nullishValueChains } from './nullish-value-chains'
+import { fixture as lazyFallbackNameCollision } from './lazy-fallback-name-collision'
 import { fixture as jsonStringifyComparedStringProp } from './json-stringify-compared-string-prop'
 import { fixture as numberDivisionZeroDivisor } from './number-division-zero-divisor'
 import { fixture as memoDivisionZeroDivisor } from './memo-division-zero-divisor'
@@ -1593,6 +1594,7 @@ export const jsxFixtures: JSXFixture[] = [
   nullishMixedTypeZeroFallback,
   logicalValueChains,
   nullishValueChains,
+  lazyFallbackNameCollision,
   jsonStringifyComparedStringProp,
   numberDivisionZeroDivisor,
   memoDivisionZeroDivisor,

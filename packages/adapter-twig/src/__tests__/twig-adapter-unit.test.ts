@@ -49,6 +49,24 @@ function compileAndGenerate(source: string) {
 // Twig-Specific Tests
 // =============================================================================
 
+describe('TwigAdapter - lazy fallback parameter (#3839)', () => {
+  // The lazy filters take `r` in an arrow whose parameter Twig binds over the
+  // context, so the parameter must not be a name `r` reads.
+  test('skips a parameter name the fallback reads', () => {
+    const { template } = compileAndGenerate(`
+export function C(props: { a?: string | null; b?: string | null; n: number; __bf_lazy: string; __bf_lazy_1: string }) {
+  return <p>{(props.a ?? props.b) ?? props.__bf_lazy}|{props.n || props.__bf_lazy_1}|{props.n || props.a}|{(props.a ?? props.b) ?? (props.__bf_lazy || props.__bf_lazy_1)}</p>
+}
+`)
+    expect(template).toContain('|bf_js_nullish((__bf_lazy_1) => __bf_lazy)')
+    expect(template).toContain('|bf_js_or((__bf_lazy_2) => __bf_lazy_1)')
+    expect(template).toContain('|bf_js_or((__bf_lazy) => a)')
+    // The inner `||` takes its own parameter, and the outer one avoids both
+    // the props and that parameter.
+    expect(template).toContain('|bf_js_nullish((__bf_lazy_3) => ((__bf_lazy)|bf_js_or((__bf_lazy_2) => __bf_lazy_1)))')
+  })
+})
+
 describe('TwigAdapter - optional-chained .length (#3332)', () => {
   // `x?.length` yields `null` for an absent receiver. Twig's native `??`
   // wraps its left side in a `defined` test that rejects a conditional, so

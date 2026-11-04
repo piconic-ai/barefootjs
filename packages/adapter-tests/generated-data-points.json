@@ -7132,6 +7132,76 @@
       }
     }
   ],
+  "lazy-fallback-name-collision": [
+    {
+      "name": "gen:a:absent",
+      "props": {
+        "b": null,
+        "zero": 0,
+        "label": "x",
+        "__bf_lazy": "fallback"
+      }
+    },
+    {
+      "name": "gen:b:absent",
+      "props": {
+        "a": null,
+        "zero": 0,
+        "label": "x",
+        "__bf_lazy": "fallback"
+      }
+    },
+    {
+      "name": "gen:zero:negative",
+      "props": {
+        "a": null,
+        "b": null,
+        "zero": -7,
+        "label": "x",
+        "__bf_lazy": "fallback"
+      }
+    },
+    {
+      "name": "gen:zero:large",
+      "props": {
+        "a": null,
+        "b": null,
+        "zero": 1234567890,
+        "label": "x",
+        "__bf_lazy": "fallback"
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "a": null,
+        "b": null,
+        "zero": 0,
+        "label": "",
+        "__bf_lazy": "fallback"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "a": null,
+        "b": null,
+        "zero": 0,
+        "label": "<b>&\"'</b>",
+        "__bf_lazy": "fallback"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "a": null,
+        "b": null,
+        "zero": 0,
+        "label": "日本語",
+        "__bf_lazy": "fallback"
+      }
+    }
+  ],
   "local-const-literal-index": [
     {
       "name": "gen:on:true",
