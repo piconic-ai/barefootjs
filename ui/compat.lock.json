@@ -9699,6 +9699,56 @@
           ]
         }
       },
+      "style-object-nil-property": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "style-object-nil-property"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "style-object-nil-property"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "style-object-nil-property"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "style-object-nil-property"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "style-object-nil-property"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "style-object-nil-property"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "style-object-nil-property"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "style-object-nil-property"
+          ]
+        }
+      },
       "tag-cloud": {
         "blade": {
           "kind": "refusal",
@@ -9823,6 +9873,916 @@
           "kind": "render",
           "limitations": [
             "brace-delimiter-in-contextual-escape"
+          ]
+        }
+      },
+      "undef-null-array-search": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        }
+      },
+      "undef-null-destructure-default": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        }
+      },
+      "undef-null-json-stringify": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        }
+      },
+      "undef-null-json-stringify-object-member": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        }
+      },
+      "undef-null-number-coercion": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-arithmetic"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-arithmetic"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-arithmetic"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-arithmetic"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-arithmetic"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-arithmetic"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-arithmetic"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-arithmetic"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-arithmetic"
+          }
+        }
+      },
+      "undef-null-number-coercion-typed": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        }
+      },
+      "undef-null-optional-chain-result": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        }
+      },
+      "undef-null-optional-method-args": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        }
+      },
+      "undef-null-relational": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-relational"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-relational"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-relational"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-relational"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-relational"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-relational"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-relational"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-relational"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "omitted-optional-nullable-number-arithmetic"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "omitted-optional-number-relational"
+          }
+        }
+      },
+      "undef-null-row-field-coercion": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        }
+      },
+      "undef-null-sort": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        }
+      },
+      "undef-null-strict-equality": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        }
+      },
+      "undef-null-string-coercion": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        }
+      },
+      "undef-null-string-includes": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
           ]
         }
       },
@@ -10522,6 +11482,10 @@
         "description": "`.at(i)` on half of a surrogate pair keeps the lone surrogate: halves compare different and rejoin…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/string-at-lone-surrogate.ts"
       },
+      "style-object-nil-property": {
+        "description": "A null or undefined style object property is dropped",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/style-object-nil-property.ts"
+      },
       "tag-cloud": {
         "description": "flatMap block-body tag list — hydration adoption, in-place leaf patch, add, and remove",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/tag-cloud.ts"
@@ -10529,6 +11493,62 @@
       "template-delimiter-contextual-escape": {
         "description": "A tag-opening brace in a template-literal URL attribute and in style element text prints as written",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/template-delimiter-contextual-escape.ts"
+      },
+      "undef-null-array-search": {
+        "description": "includes / indexOf tell an undefined needle or element from a null one",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-array-search.ts"
+      },
+      "undef-null-destructure-default": {
+        "description": "A destructure default applies to an omitted or undefined prop, not to an explicit null",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-destructure-default.ts"
+      },
+      "undef-null-json-stringify": {
+        "description": "JSON.stringify writes an undefined array element as null and gives nothing for a top-level undefined",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-json-stringify.ts"
+      },
+      "undef-null-json-stringify-object-member": {
+        "description": "JSON.stringify drops an undefined object member and writes a null one",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-json-stringify-object-member.ts"
+      },
+      "undef-null-number-coercion": {
+        "description": "Number() / unary + / arithmetic / Math read null as 0 and undefined as NaN",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-number-coercion.ts"
+      },
+      "undef-null-number-coercion-typed": {
+        "description": "Number() / unary + / arithmetic / Math / < over a number typed with one nil read null as 0 and…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-number-coercion-typed.ts"
+      },
+      "undef-null-optional-chain-result": {
+        "description": "?. over a nullish receiver yields undefined, never null",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-optional-chain-result.ts"
+      },
+      "undef-null-optional-method-args": {
+        "description": "slice / join / padStart take the default for an undefined argument and coerce a null one",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-optional-method-args.ts"
+      },
+      "undef-null-relational": {
+        "description": "< / <= compare null as 0 and undefined as NaN",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-relational.ts"
+      },
+      "undef-null-row-field-coercion": {
+        "description": "An omitted row field reads undefined and a null one reads null under String / template literal /…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-row-field-coercion.ts"
+      },
+      "undef-null-sort": {
+        "description": "A numeric sort puts null as 0 and undefined elements last",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-sort.ts"
+      },
+      "undef-null-strict-equality": {
+        "description": "=== undefined / === null tell null and undefined apart; == null does not",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-strict-equality.ts"
+      },
+      "undef-null-string-coercion": {
+        "description": "String() / template literal / + render null and undefined as \"null\" and \"undefined\"",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-string-coercion.ts"
+      },
+      "undef-null-string-includes": {
+        "description": "includes / indexOf / startsWith on a string ToString an undefined or null needle",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-string-includes.ts"
       },
       "unlowered-global-call": {
         "description": "A zero-arg call on a JavaScript global refuses (BF101) instead of rendering a member read (#3505)",
@@ -11236,6 +12256,39 @@
         "BF029"
       ]
     },
+    "host-nil-collapses-undefined-and-null": {
+      "title": "One host nil standing for both `undefined` and `null`",
+      "kind": "silent",
+      "given": "an operation whose JS result differs between `undefined` and `null` (`String` / template literal / `+`, `Number` / arithmetic, `===` against either, `JSON.stringify`, a destructure default, `includes` / `indexOf` on an array or a string, a numeric sort, an optional method argument, a `?.` result), over an omitted prop, an explicit `null` prop, a forwarded `undefined`, a literal `null` / `undefined`, or a missing row or object field",
+      "expected": "`undefined` and `null` are distinct values, so each renders its own JS result (`\"undefined\"` / `\"null\"`, `NaN` / `0`, a dropped member or no string / `null`, the default / `null`, the argument default / the coerced `null`)",
+      "actual": "renders the result for one of them in place of the other, or fails to render, since the host nil stands for both; graduates per target as its runtime carries `undefined` (`spec/js-undefined-value.md`)",
+      "fixtures": [
+        "undef-null-array-search",
+        "undef-null-destructure-default",
+        "undef-null-json-stringify",
+        "undef-null-json-stringify-object-member",
+        "undef-null-number-coercion-typed",
+        "undef-null-optional-chain-result",
+        "undef-null-optional-method-args",
+        "undef-null-row-field-coercion",
+        "undef-null-sort",
+        "undef-null-strict-equality",
+        "undef-null-string-coercion",
+        "undef-null-string-includes"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
     "index-read-capitalised-key-only": {
       "title": "Lowercase index key on an object holding only the capitalised key",
       "kind": "silent",
@@ -11625,7 +12678,9 @@
         "omitted-optional-nullable-number-arithmetic",
         "omitted-optional-nullable-number-arithmetic-destructured",
         "omitted-optional-nullable-number-relational",
-        "omitted-optional-nullable-number-unary-plus"
+        "omitted-optional-nullable-number-unary-plus",
+        "undef-null-number-coercion",
+        "undef-null-relational"
       ],
       "adapters": [
         "blade",
@@ -11963,6 +13018,28 @@
         "jinja",
         "minijinja",
         "mojolicious",
+        "twig",
+        "xslate"
+      ]
+    },
+    "style-object-nil-property": {
+      "title": "A nil value in a `style` object property",
+      "kind": "silent",
+      "given": "a `style={{ color: x }}` object whose property value is `null` or `undefined` (an explicit `null` prop, an omitted prop, a literal)",
+      "expected": "the property is dropped, leaving `style=\"\"`",
+      "actual": "renders the property with an empty value (`style=\"color:\"`), or omits the `style` attribute itself",
+      "fixtures": [
+        "style-object-nil-property"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
         "twig",
         "xslate"
       ]

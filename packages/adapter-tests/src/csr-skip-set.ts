@@ -227,4 +227,10 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // to the receiving component.
   'jsx-prop-nested-component-conditional': { limitation: 'nested-component-in-jsx-prop-conditional-arm' },
   'jsx-prop-nested-component-forwarded': { limitation: 'nested-component-in-jsx-prop-forwarded' },
+  // A destructure default given an explicit `null`: the CSR template applies
+  // the default, as for an omitted prop, where JS keeps the `null`.
+  'undef-null-destructure-default': { limitation: 'host-nil-collapses-undefined-and-null' },
+  // A `null` / `undefined` `style` object property: the CSR template omits
+  // the `style` attribute where the reference keeps `style=""`.
+  'style-object-nil-property': { limitation: 'style-object-nil-property' },
 }

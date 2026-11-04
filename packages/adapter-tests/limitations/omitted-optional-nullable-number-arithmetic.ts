@@ -11,5 +11,7 @@ export default defineLimitation({
     'omitted-optional-nullable-number-arithmetic-destructured',
     'omitted-optional-nullable-number-relational',
     'omitted-optional-nullable-number-unary-plus',
+    'undef-null-number-coercion',
+    'undef-null-relational',
   ],
 })

@@ -16788,6 +16788,20 @@
         "attribute"
       ]
     },
+    "style-object-nil-property": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:null"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "style-object-shorthand": {
       "kinds": [
         "identifier",
@@ -17433,6 +17447,296 @@
       ],
       "contexts": [
         "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "undef-null-array-search": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:includes",
+        "array-method:indexOf",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "undef-null-destructure-default": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "undef-null-json-stringify": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:null",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "undef-null-json-stringify-object-member": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:null"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "undef-null-non-diverging-positions": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string",
+        "logical:??",
+        "logical:||",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "undef-null-number-coercion": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:null",
+        "literal:number",
+        "unary:+",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "undef-null-number-coercion-typed": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "unary"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:<",
+        "binary:<=",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "unary:+",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "undef-null-optional-chain-result": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:null",
+        "literal:string",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "undef-null-optional-method-args": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "array-method:padStart",
+        "array-method:slice",
+        "literal:null",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "undef-null-relational": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:<",
+        "binary:<=",
+        "literal:null",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "undef-null-row-field-coercion": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member",
+        "template-literal"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "undef-null-sort": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "array-method:slice",
+        "binary:-"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "undef-null-strict-equality": {
+      "kinds": [
+        "binary",
+        "conditional",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:!=",
+        "binary:!==",
+        "binary:==",
+        "binary:===",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "undef-null-string-coercion": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "undef-null-string-includes": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:includes",
+        "array-method:indexOf",
+        "array-method:startsWith",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
         "condition",
         "text"
       ]
