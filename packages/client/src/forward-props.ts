@@ -6,8 +6,6 @@
  * components with {...rest} spread on child components.
  */
 
-import { untrack } from '@barefootjs/client/reactive'
-
 /**
  * Create a props object that merges explicit overrides with forwarded source props.
  * Preserves getter-based reactivity from both overrides and source.
@@ -64,21 +62,34 @@ export type ChildPropsPart = Record<string, unknown> | (() => unknown)
  * Merge a child component call's props in source order, as the JSX call
  * does: a later part overrides an earlier one, key by key.
  *
- * An object part is copied with its property descriptors, so an explicit
- * prop's getter stays a getter. A function part is a spread of an arbitrary
- * object (`<Chip {...row} />`). Its keys are taken from the value it
- * returns, and each key reads the thunk again through a getter, so the
- * child sees a later value of the spread object (a loop row accessor, a
- * prop that holds an object) the way it sees an explicit prop.
+ * An object part holds the call's explicit props; its getters stay getters.
+ * A function part is a spread of an arbitrary object (`<Chip {...row} />`),
+ * read again on every access, so the child sees a later value of the
+ * spread object (a loop row accessor, a prop that holds an object) the way
+ * it sees an explicit prop.
  *
- * The merge runs on the first read of the result, not when this is called.
- * A call site evaluates its props object even when the child does not exist:
- * `initChild` with a null scope (the component took another early-return
- * branch), or a dynamic tag (`<Tag {...children.props} />`) that never
- * registers. Calling a spread thunk there evaluated an expression the
- * source only evaluates inside its branch, such as `children.props` with
- * no `children` at hydration, and the throw stopped the parent's init.
- * The first read is untracked, so taking the keys subscribes no effect.
+ * Every read resolves live, from the last part to the first:
+ * - an object part owns each of its own keys;
+ * - a function part owns a key only while its current value is non-null
+ *   and has that key as an own enumerable property (what `{...value}`
+ *   copies). A key present with the value `undefined` still overrides.
+ *
+ * So when a spread drops a key, an earlier explicit prop for it shows
+ * again (`<Chip tone="base" {...row()} />` with `row()` going from
+ * `{ tone: 'red' }` to `{}` reads `'base'`), and a key the spread gains
+ * later reaches the child. `ownKeys` and `in` are live in the same way.
+ * Reads inside an effect track the spread thunks they call, as an
+ * explicit prop's getter tracks its signals.
+ *
+ * Nothing runs when this is called. A call site evaluates its props object
+ * even when the child does not exist: `initChild` with a null scope (the
+ * component took another early-return branch), or a dynamic tag
+ * (`<Tag {...children.props} />`) that never registers. Calling a spread
+ * thunk there evaluated an expression the source only evaluates inside its
+ * branch, such as `children.props` with no `children` at hydration.
+ *
+ * A write to the result (`set`, `defineProperty`, `delete`) goes to a layer
+ * above every part.
  *
  * Not an authoring API: emitted by the compiler.
  *
@@ -91,42 +102,44 @@ export type ChildPropsPart = Record<string, unknown> | (() => unknown)
  * @internal
  */
 export function spreadChildProps(...parts: ChildPropsPart[]): Record<string, unknown> {
-  let merged: Record<string, unknown> | undefined
-  const resolve = (): Record<string, unknown> => (merged ??= untrack(() => mergeChildPropsParts(parts)))
+  // Writes made through the result: the top layer.
+  const own: Record<PropertyKey, unknown> = {}
+  const layers = (): Record<PropertyKey, unknown>[] => [own, ...currentLayers(parts)]
+  const owner = (key: PropertyKey) => layers().find(layer => ownsKey(layer, key))
   return new Proxy({} as Record<string, unknown>, {
-    get: (_, key) => resolve()[key as string],
-    set: (_, key, value) => Reflect.set(resolve(), key, value),
-    has: (_, key) => key in resolve(),
-    ownKeys: () => Reflect.ownKeys(resolve()),
-    getOwnPropertyDescriptor: (_, key) => Reflect.getOwnPropertyDescriptor(resolve(), key),
-    defineProperty: (_, key, desc) => Reflect.defineProperty(resolve(), key, { ...desc, configurable: true }),
-    deleteProperty: (_, key) => Reflect.deleteProperty(resolve(), key),
+    get: (_, key) => owner(key)?.[key as string],
+    has: (_, key) => owner(key) !== undefined,
+    ownKeys: () => mergedKeys(layers()),
+    getOwnPropertyDescriptor: (_, key) => owner(key) === undefined
+      ? undefined
+      : { get: () => owner(key)?.[key as string], enumerable: true, configurable: true },
+    set: (_, key, value) => Reflect.set(own, key, value),
+    defineProperty: (_, key, desc) => Reflect.defineProperty(own, key, { ...desc, configurable: true }),
+    deleteProperty: (_, key) => Reflect.deleteProperty(own, key),
   })
 }
 
-/** The eager merge behind {@link spreadChildProps}. */
-function mergeChildPropsParts(parts: readonly ChildPropsPart[]): Record<string, unknown> {
-  const result: Record<string, unknown> = {}
-  for (const part of parts) {
-    if (typeof part === 'function') {
-      const value = part()
-      if (value === null || value === undefined) continue
-      for (const key of Object.keys(Object(value))) {
-        Object.defineProperty(result, key, {
-          get: () => {
-            const current = part()
-            return current === null || current === undefined ? undefined : (Object(current) as Record<string, unknown>)[key]
-          },
-          enumerable: true,
-          configurable: true,
-        })
-      }
-      continue
-    }
-    const descs = Object.getOwnPropertyDescriptors(part)
-    for (const key of Object.keys(descs)) {
-      Object.defineProperty(result, key, { ...descs[key], enumerable: true, configurable: true })
-    }
+/** The parts' current objects, last part first; a null spread is skipped. */
+function currentLayers(parts: readonly ChildPropsPart[]): Record<PropertyKey, unknown>[] {
+  const layers: Record<PropertyKey, unknown>[] = []
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const part = parts[i]!
+    const value = typeof part === 'function' ? part() : part
+    if (value !== null && value !== undefined) layers.push(Object(value) as Record<PropertyKey, unknown>)
   }
-  return result
+  return layers
+}
+
+/** Whether `layer` supplies `key`: an own enumerable property, as a spread copies. */
+function ownsKey(layer: Record<PropertyKey, unknown>, key: PropertyKey): boolean {
+  return Object.prototype.propertyIsEnumerable.call(layer, key)
+}
+
+/** The merged string keys in source order (first part first), each once. */
+function mergedKeys(layers: readonly Record<PropertyKey, unknown>[]): string[] {
+  const keys = new Set<string>()
+  for (let i = layers.length - 1; i >= 0; i--) {
+    for (const key of Object.keys(layers[i]!)) keys.add(key)
+  }
+  return [...keys]
 }

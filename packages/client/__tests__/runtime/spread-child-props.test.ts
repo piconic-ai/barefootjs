@@ -55,15 +55,52 @@ describe('spreadChildProps is lazy', () => {
     expect(Object.keys(props)).toEqual(['a', 'b'])
     expect('b' in props).toBe(true)
     expect(Object.getOwnPropertyDescriptor(props, 'b')?.enumerable).toBe(true)
-    expect({ ...Object.getOwnPropertyDescriptors(props) }.a?.value).toBe(1)
+    expect(Object.getOwnPropertyDescriptors(props).a?.get?.()).toBe(1)
   })
 
-  test('taking the keys inside an effect subscribes it to nothing', () => {
-    const [row, setRow] = createSignal({ label: 'Alpha' })
-    const props = spreadChildProps(() => row())
-    let runs = 0
-    createEffect(() => { runs++; void Object.keys(props) })
-    setRow({ label: 'Alpha+' })
-    expect(runs).toBe(1)
+  test('keys and `in` follow the spread value', () => {
+    const [row, setRow] = createSignal<Record<string, unknown>>({ b: 2 })
+    const props = spreadChildProps({ a: 1 }, () => row())
+    setRow({ c: 3 })
+    expect(Object.keys(props)).toEqual(['a', 'c'])
+    expect('b' in props).toBe(false)
+    expect('c' in props).toBe(true)
+  })
+})
+
+describe('spreadChildProps resolves each key against the parts that currently have it', () => {
+  test('a key the spread drops falls back to the earlier explicit prop', () => {
+    const [row, setRow] = createSignal<{ tone?: string }>({ tone: 'red' })
+    const props = spreadChildProps({ tone: 'base' }, () => row())
+    const seen: unknown[] = []
+    createEffect(() => { seen.push(props.tone) })
+    setRow({})
+    expect(seen).toEqual(['red', 'base'])
+  })
+
+  test('a key the spread gains later overrides the earlier explicit prop', () => {
+    const [row, setRow] = createSignal<{ tone?: string }>({})
+    const props = spreadChildProps({ tone: 'base' }, () => row())
+    expect(props.tone).toBe('base')
+    setRow({ tone: 'red' })
+    expect(props.tone).toBe('red')
+  })
+
+  test('a key present with the value undefined still overrides; an absent key does not', () => {
+    const [row, setRow] = createSignal<{ tone?: string }>({ tone: undefined })
+    const props = spreadChildProps({ tone: 'base' }, () => row())
+    expect(props.tone).toBeUndefined()
+    setRow({})
+    expect(props.tone).toBe('base')
+  })
+
+  test('a later explicit prop wins over a spread that has the key', () => {
+    const props = spreadChildProps(() => ({ id: 'row' }), { id: 'fixed' })
+    expect(props.id).toBe('fixed')
+  })
+
+  test('an inherited key is not spread, as in JS', () => {
+    const props = spreadChildProps({ tone: 'base' }, () => Object.create({ tone: 'proto' }))
+    expect(props.tone).toBe('base')
   })
 })

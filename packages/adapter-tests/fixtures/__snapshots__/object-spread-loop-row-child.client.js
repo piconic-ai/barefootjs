@@ -60,9 +60,11 @@ export function initObjectSpreadLoopRowChild(__scope, _p = {}) {
     if (__val !== undefined) setRows(__val)
   })
 
-  const [_s2, _s1] = $(__scope, 's2', 's1')
+  const [_s2, _s3, _s4, _s1] = $(__scope, 's2', 's3', 's4', 's1')
 
   if (_s2) _s2.addEventListener('click', () => setRows(rows().map(r => ({ ...r, label: r.label + '+' }))))
+  if (_s3) _s3.addEventListener('click', () => setRows(rows().map(r => ({ ...r, tone: 'red' }))))
+  if (_s4) _s4.addEventListener('click', () => setRows(rows().map(r => ({ id: r.id, label: r.label, size: r.size }))))
   mapArray(() => rows(), _s1, (r) => String(r.id), (r, __idx, __existing) => {
     if (__existing) { initChild('Chip__82d53e9d', __existing, spreadChildProps({ get tone() { return "base" } }, () => (r()))); return __existing }
     return createComponent('Chip__82d53e9d', spreadChildProps({ get tone() { return "base" } }, () => (r())), r().id)
@@ -70,5 +72,5 @@ export function initObjectSpreadLoopRowChild(__scope, _p = {}) {
 
 }
 
-hydrate('ObjectSpreadLoopRowChild', { init: initObjectSpreadLoopRowChild, template: (_p) => `<div><section bf="s1"><!--bf-loop:l0-->${(_p.rows ?? undefined).map((r) => `${renderChild('Chip__82d53e9d', {tone: "base", ...r}, r.id, 's0', true)}`).join('')}<!--bf-/loop:l0--></section><a bf="s2">rename</a></div>` })
+hydrate('ObjectSpreadLoopRowChild', { init: initObjectSpreadLoopRowChild, template: (_p) => `<div><section bf="s1"><!--bf-loop:l0-->${(_p.rows ?? undefined).map((r) => `${renderChild('Chip__82d53e9d', {tone: "base", ...r}, r.id, 's0', true)}`).join('')}<!--bf-/loop:l0--></section><a bf="s2">rename</a><b bf="s3">paint</b><i bf="s4">unpaint</i></div>` })
 export function ObjectSpreadLoopRowChild(_p, __bfKey) { return createComponent('ObjectSpreadLoopRowChild', _p, __bfKey) }
