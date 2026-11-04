@@ -215,7 +215,7 @@ jobs:
         run: cd site/core && bunx playwright test
 
       - name: Upload Playwright report (site/core)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: playwright-report-site-core
@@ -267,7 +267,7 @@ jobs:
       # is where `trace: 'retain-on-failure'` actually writes a failure's
       # trace zip.
       - name: Upload Playwright traces (fixture-hydrate)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: playwright-traces-fixture-hydrate
@@ -323,7 +323,7 @@ jobs:
         run: cd site/ui && bunx playwright test --shard=${{ matrix.shard }}/4
 
       - name: Upload Playwright report (site/ui)
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() }}
         with:
           name: playwright-report-site-ui-shard-${{ matrix.shard }}
