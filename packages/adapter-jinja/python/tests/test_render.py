@@ -142,6 +142,38 @@ class RenderTest(unittest.TestCase):
         self.assertIn("<!--bf-scope:Widget_test_s2|h=Widget_test|m=s2-->", out)
         self.assertIn("<!--bf-/scope:Widget_test_s2-->", out)
 
+    def test_keep_nonnil_spells_js_nullish_coalescing(self):
+        """A value-position JS `l ?? r` renders as
+        `(bf.keep_nonnil(l) or [r])[0]` (#3839): only `None` and Jinja's
+        `Undefined` (an unset var or a missing key) fall through; `0`, `''`
+        and `False` are kept; `r` is evaluated only when `l` is absent."""
+        coalesce = lambda l, r: f"(bf.keep_nonnil({l}) or [{r}])[0]"
+        chain = "nil"
+        for nxt in ["missing", "row['gone']", "nil", "missing"] * 4 + ["s"]:
+            chain = coalesce(chain, nxt)
+        cases = {
+            "zero": (coalesce("zero", "s"), "0"),
+            "empty": (coalesce("empty", "s"), ""),
+            "no": (coalesce("no", "s"), "False"),
+            "nil": (coalesce("nil", "s"), "s"),
+            "unset_var": (coalesce("missing", "s"), "s"),
+            "missing_key": (coalesce("row['gone']", "s"), "s"),
+            "short_circuit": (coalesce("s", "boom()"), "s"),
+            "chain17": (chain, "s"),
+        }
+        def boom():
+            raise AssertionError("the right operand of ?? ran")
+
+        template_dir = Path(self._tmpdir.name)
+        for name, (expr, want) in cases.items():
+            (template_dir / f"nullish_{name}.jinja").write_text("{{ " + expr + " }}", encoding="utf-8")
+            got = self.backend.env.get_template(f"nullish_{name}.jinja").render(
+                bf=self.bf, zero=0, empty="", no=False, nil=None, s="s", row={}, boom=boom
+            )
+            self.assertEqual(got, want, name)
+        self.assertTrue(self.backend.is_undefined(self.backend.env.undefined(name="x")))
+        self.assertFalse(self.backend.is_undefined(None))
+
 
 if __name__ == "__main__":
     unittest.main()

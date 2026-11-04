@@ -4,13 +4,14 @@ Jinja2 rendering backend for the `barefootjs` runtime.
 
 The engine-agnostic runtime logic (the JS-compat value helpers, array/string
 methods, hydration markers, child rendering) lives in `runtime.BarefootJS`.
-This backend supplies the four engine-specific operations the runtime
+This backend supplies the five engine-specific operations the runtime
 delegates to, targeting Jinja2 syntax:
 
     encode_json(data)            -> JSON string (injectable encoder)
     mark_raw(str)                -> a value Jinja emits verbatim (no re-escaping)
     materialize(value)           -> resolve a captured-children value to a string
     render_named(name, bf, vars) -> render `<name>.jinja` with `bf` + vars bound
+    is_undefined(value)          -> whether `value` is Jinja's `Undefined` sentinel
 
 Pair it with the `@barefootjs/jinja` compile-time adapter, which emits Jinja2
 `.jinja` templates that call the runtime as a `bf` object: `{{ bf.scope_attr()
@@ -31,7 +32,7 @@ import json as _json
 import math
 from typing import Any, Callable, Optional, Sequence
 
-from jinja2 import ChainableUndefined, Environment, FileSystemLoader
+from jinja2 import ChainableUndefined, Environment, FileSystemLoader, Undefined
 from markupsafe import Markup
 
 from .runtime import jinja_ident
@@ -120,6 +121,13 @@ class JinjaBackend:
 
     def encode_json(self, data: Any) -> str:
         return self._json_encoder(data)
+
+    def is_undefined(self, value: Any) -> bool:
+        """Whether `value` is Jinja's `Undefined` sentinel (any subclass,
+        `ChainableUndefined` included): a var or key that was never set, which
+        JS reads as `undefined`. `bf.keep_nonnil` (a JS `??`, #3839) treats
+        it as absent, as it does `None`."""
+        return isinstance(value, Undefined)
 
     def mark_raw(self, s: Any) -> Markup:
         """Mark a string as already-safe so Jinja emits it verbatim (no

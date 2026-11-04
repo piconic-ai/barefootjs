@@ -608,6 +608,14 @@ module BarefootJS
       Evaluator.truthy?(value) ? nil : [value]
     end
 
+    # The box for a value-position JS `l ?? r` (#3839): the adapter spells it
+    # as `(bf.keep_nonnil(l) || [r])[0]`, so each operand appears once and a
+    # chain grows linearly (`l.nil? ? r : l` rendered `l` twice). Only nil is
+    # absent; `0`, `''` and `false` are kept, as in JS.
+    def keep_nonnil(value)
+      value.nil? ? nil : [value]
+    end
+
     # JS primitive helpers (spec/js-primitive-semantics.md, "Operation
     # table"): ToNumber, ToString, `===`, the relational operators, binary
     # `+` and unary `-`. Each delegates to the shared evaluator's primitive

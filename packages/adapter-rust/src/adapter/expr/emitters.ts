@@ -146,7 +146,11 @@ export const NATIVE_SAFE: NativeSafeTable = {
   // `neg(0)` (#3824 step 6, pinned by the `primitives/number` vectors).
   neg: [],
   'number-literal': ['safe-integer'],
-  nullish: ['non-nil', 'unproven'],
+  // Always the runtime's `keep_nonnil` box (#3839), which renders each
+  // operand of a chain once. A `non-nil` proof does not fold `l ?? r` to `l`
+  // here: a host that leaves a typed value unset (a dependent destructure
+  // default over an omitted prop) still reaches the template as nil.
+  nullish: [],
   // Native `[]` only for a proven array read by a proven non-negative
   // integer (a loop index): MiniJinja's `[]` reads a string key as a mapping key
   // and wraps a negative index, so every other read takes `bf.get` (#3824
@@ -197,6 +201,21 @@ function spellLogical(op: '&&' | '||', plan: PrimitivePlan | null, l: string, r:
   if (truthyTest(plan, l) === l) return `(${l} ${op === '&&' ? 'and' : 'or'} ${r})`
   const keep = op === '&&' ? 'keep_falsy' : 'keep_truthy'
   return `(bf.${keep}(${l}) or [${r}])[0]`
+}
+
+/**
+ * JS `l ?? r` in a value position (#3839), boxed the way `spellLogical` boxes
+ * `&&` / `||`: `keep_nonnil(l)` is the one-element list `[l]` when `l` is
+ * neither none nor undefined (a var or key that was never set, which JS reads
+ * as `undefined`) and `[]` otherwise, so minijinja's `or` stops at `l`'s box
+ * exactly when JS returns `l` and builds `[r]` only otherwise (the short
+ * circuit). `0`, `''` and `false` are present, as in JS. Each operand is
+ * rendered once, so a chain `a ?? b ?? c …` grows linearly; the
+ * `l if (l is defined and l is not none) else r` spelling rendered `l` three
+ * times, and a 16-operand chain 3^15 times.
+ */
+function spellNullish(l: string, r: string): string {
+  return `(bf.keep_nonnil(${l}) or [${r}])[0]`
 }
 
 /**
@@ -396,17 +415,7 @@ export class JinjaFilterEmitter implements ParsedExprEmitter {
     const r = emit(right)
     // JS `&&` / `||` yield an operand, each rendered once (`spellLogical`).
     if (op !== '??') return spellLogical(op, plan, l, r)
-    // `l is not none` alone is NOT equivalent to JS `??`'s null-or-undefined
-    // check: a context var that was never seeded at all (not merely set to
-    // `None`) resolves to Jinja's `ChainableUndefined` sentinel under
-    // `undefined=ChainableUndefined`, and `Undefined is not none` is TRUE
-    // (it's a distinct object, not the `None` singleton) — so the coalesce
-    // would silently return the Undefined sentinel itself instead of `r`.
-    // Guard with `is defined` too, mirroring the same pair this file's
-    // `minijinja-adapter.ts` already uses for nullable-optional-prop attribute
-    // omission (see that file's header, divergence 5, and the `is defined
-    // and is not none` call sites).
-    return `(${l} if (${l} is defined and ${l} is not none) else ${r})`
+    return spellNullish(l, r)
   }
 
   callbackMethod(
@@ -712,11 +721,7 @@ export class JinjaTopLevelEmitter implements ParsedExprEmitter {
     const r = emit(right)
     // JS `&&` / `||` yield an operand, each rendered once (`spellLogical`).
     if (op !== '??') return spellLogical(op, plan, l, r)
-    // See `JinjaFilterEmitter.logical`'s comment above (same file, same
-    // fix): guard with `is defined` too, so a context var that was never
-    // seeded (Jinja's `ChainableUndefined`, not Python `None`) still
-    // coalesces to `r` instead of leaking the Undefined sentinel through.
-    return `(${l} if (${l} is defined and ${l} is not none) else ${r})`
+    return spellNullish(l, r)
   }
 
   callbackMethod(

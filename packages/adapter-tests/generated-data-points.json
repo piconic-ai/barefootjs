@@ -7132,6 +7132,76 @@
       }
     }
   ],
+  "lazy-fallback-name-collision": [
+    {
+      "name": "gen:a:absent",
+      "props": {
+        "b": null,
+        "zero": 0,
+        "label": "x",
+        "__bf_lazy": "fallback"
+      }
+    },
+    {
+      "name": "gen:b:absent",
+      "props": {
+        "a": null,
+        "zero": 0,
+        "label": "x",
+        "__bf_lazy": "fallback"
+      }
+    },
+    {
+      "name": "gen:zero:negative",
+      "props": {
+        "a": null,
+        "b": null,
+        "zero": -7,
+        "label": "x",
+        "__bf_lazy": "fallback"
+      }
+    },
+    {
+      "name": "gen:zero:large",
+      "props": {
+        "a": null,
+        "b": null,
+        "zero": 1234567890,
+        "label": "x",
+        "__bf_lazy": "fallback"
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "a": null,
+        "b": null,
+        "zero": 0,
+        "label": "",
+        "__bf_lazy": "fallback"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "a": null,
+        "b": null,
+        "zero": 0,
+        "label": "<b>&\"'</b>",
+        "__bf_lazy": "fallback"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "a": null,
+        "b": null,
+        "zero": 0,
+        "label": "日本語",
+        "__bf_lazy": "fallback"
+      }
+    }
+  ],
   "local-const-literal-index": [
     {
       "name": "gen:on:true",
@@ -10996,6 +11066,430 @@
       "name": "gen:rows:empty",
       "props": {
         "rows": []
+      }
+    }
+  ],
+  "nullish-value-chains": [
+    {
+      "name": "gen:zero:negative",
+      "props": {
+        "zero": -7,
+        "empty": "",
+        "no": false,
+        "nil": null,
+        "s": "s",
+        "rows": [
+          {
+            "k": "none"
+          },
+          {
+            "k": "a-nil",
+            "a": null,
+            "b": 0
+          },
+          {
+            "k": "b-empty",
+            "b": ""
+          },
+          {
+            "k": "c",
+            "a": null,
+            "b": null,
+            "c": "c"
+          },
+          {
+            "k": "a",
+            "a": "a",
+            "b": "b"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:zero:large",
+      "props": {
+        "zero": 1234567890,
+        "empty": "",
+        "no": false,
+        "nil": null,
+        "s": "s",
+        "rows": [
+          {
+            "k": "none"
+          },
+          {
+            "k": "a-nil",
+            "a": null,
+            "b": 0
+          },
+          {
+            "k": "b-empty",
+            "b": ""
+          },
+          {
+            "k": "c",
+            "a": null,
+            "b": null,
+            "c": "c"
+          },
+          {
+            "k": "a",
+            "a": "a",
+            "b": "b"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:empty:markup",
+      "props": {
+        "zero": 0,
+        "empty": "<b>&\"'</b>",
+        "no": false,
+        "nil": null,
+        "s": "s",
+        "rows": [
+          {
+            "k": "none"
+          },
+          {
+            "k": "a-nil",
+            "a": null,
+            "b": 0
+          },
+          {
+            "k": "b-empty",
+            "b": ""
+          },
+          {
+            "k": "c",
+            "a": null,
+            "b": null,
+            "c": "c"
+          },
+          {
+            "k": "a",
+            "a": "a",
+            "b": "b"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:empty:multibyte",
+      "props": {
+        "zero": 0,
+        "empty": "日本語",
+        "no": false,
+        "nil": null,
+        "s": "s",
+        "rows": [
+          {
+            "k": "none"
+          },
+          {
+            "k": "a-nil",
+            "a": null,
+            "b": 0
+          },
+          {
+            "k": "b-empty",
+            "b": ""
+          },
+          {
+            "k": "c",
+            "a": null,
+            "b": null,
+            "c": "c"
+          },
+          {
+            "k": "a",
+            "a": "a",
+            "b": "b"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:no:true",
+      "props": {
+        "zero": 0,
+        "empty": "",
+        "no": true,
+        "nil": null,
+        "s": "s",
+        "rows": [
+          {
+            "k": "none"
+          },
+          {
+            "k": "a-nil",
+            "a": null,
+            "b": 0
+          },
+          {
+            "k": "b-empty",
+            "b": ""
+          },
+          {
+            "k": "c",
+            "a": null,
+            "b": null,
+            "c": "c"
+          },
+          {
+            "k": "a",
+            "a": "a",
+            "b": "b"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:nil:absent",
+      "props": {
+        "zero": 0,
+        "empty": "",
+        "no": false,
+        "s": "s",
+        "rows": [
+          {
+            "k": "none"
+          },
+          {
+            "k": "a-nil",
+            "a": null,
+            "b": 0
+          },
+          {
+            "k": "b-empty",
+            "b": ""
+          },
+          {
+            "k": "c",
+            "a": null,
+            "b": null,
+            "c": "c"
+          },
+          {
+            "k": "a",
+            "a": "a",
+            "b": "b"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:omitted:empty",
+      "props": {
+        "zero": 0,
+        "empty": "",
+        "no": false,
+        "nil": null,
+        "s": "s",
+        "rows": [
+          {
+            "k": "none"
+          },
+          {
+            "k": "a-nil",
+            "a": null,
+            "b": 0
+          },
+          {
+            "k": "b-empty",
+            "b": ""
+          },
+          {
+            "k": "c",
+            "a": null,
+            "b": null,
+            "c": "c"
+          },
+          {
+            "k": "a",
+            "a": "a",
+            "b": "b"
+          }
+        ],
+        "omitted": ""
+      }
+    },
+    {
+      "name": "gen:omitted:markup",
+      "props": {
+        "zero": 0,
+        "empty": "",
+        "no": false,
+        "nil": null,
+        "s": "s",
+        "rows": [
+          {
+            "k": "none"
+          },
+          {
+            "k": "a-nil",
+            "a": null,
+            "b": 0
+          },
+          {
+            "k": "b-empty",
+            "b": ""
+          },
+          {
+            "k": "c",
+            "a": null,
+            "b": null,
+            "c": "c"
+          },
+          {
+            "k": "a",
+            "a": "a",
+            "b": "b"
+          }
+        ],
+        "omitted": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:omitted:multibyte",
+      "props": {
+        "zero": 0,
+        "empty": "",
+        "no": false,
+        "nil": null,
+        "s": "s",
+        "rows": [
+          {
+            "k": "none"
+          },
+          {
+            "k": "a-nil",
+            "a": null,
+            "b": 0
+          },
+          {
+            "k": "b-empty",
+            "b": ""
+          },
+          {
+            "k": "c",
+            "a": null,
+            "b": null,
+            "c": "c"
+          },
+          {
+            "k": "a",
+            "a": "a",
+            "b": "b"
+          }
+        ],
+        "omitted": "日本語"
+      }
+    },
+    {
+      "name": "gen:s:empty",
+      "props": {
+        "zero": 0,
+        "empty": "",
+        "no": false,
+        "nil": null,
+        "s": "",
+        "rows": [
+          {
+            "k": "none"
+          },
+          {
+            "k": "a-nil",
+            "a": null,
+            "b": 0
+          },
+          {
+            "k": "b-empty",
+            "b": ""
+          },
+          {
+            "k": "c",
+            "a": null,
+            "b": null,
+            "c": "c"
+          },
+          {
+            "k": "a",
+            "a": "a",
+            "b": "b"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:s:markup",
+      "props": {
+        "zero": 0,
+        "empty": "",
+        "no": false,
+        "nil": null,
+        "s": "<b>&\"'</b>",
+        "rows": [
+          {
+            "k": "none"
+          },
+          {
+            "k": "a-nil",
+            "a": null,
+            "b": 0
+          },
+          {
+            "k": "b-empty",
+            "b": ""
+          },
+          {
+            "k": "c",
+            "a": null,
+            "b": null,
+            "c": "c"
+          },
+          {
+            "k": "a",
+            "a": "a",
+            "b": "b"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:s:multibyte",
+      "props": {
+        "zero": 0,
+        "empty": "",
+        "no": false,
+        "nil": null,
+        "s": "日本語",
+        "rows": [
+          {
+            "k": "none"
+          },
+          {
+            "k": "a-nil",
+            "a": null,
+            "b": 0
+          },
+          {
+            "k": "b-empty",
+            "b": ""
+          },
+          {
+            "k": "c",
+            "a": null,
+            "b": null,
+            "c": "c"
+          },
+          {
+            "k": "a",
+            "a": "a",
+            "b": "b"
+          }
+        ]
       }
     }
   ],

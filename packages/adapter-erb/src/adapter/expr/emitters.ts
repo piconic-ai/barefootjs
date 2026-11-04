@@ -135,7 +135,11 @@ export const NATIVE_SAFE: NativeSafeTable = {
   // `neg(0)` (#3824 step 6, pinned by the `primitives/number` vectors).
   neg: [],
   'number-literal': ['safe-integer'],
-  nullish: ['non-nil', 'unproven'],
+  // Always the runtime's `keep_nonnil` box (#3839), which renders each
+  // operand of a chain once. A `non-nil` proof does not fold `l ?? r` to `l`
+  // here: a host that leaves a typed value unset (a dependent destructure
+  // default over an omitted prop) still reaches the template as nil.
+  nullish: [],
   get: [],
   // A comparison, `!` and a boolean literal are host booleans already (#3824 step 5).
   'boolean-value': ['boolean'],
@@ -167,6 +171,19 @@ function spellLogical(op: '&&' | '||', plan: PrimitivePlan | null, l: string, r:
   if (truthyTest(plan, l) === l) return `(${l} ${op} ${r})`
   const keep = op === '&&' ? 'keep_falsy' : 'keep_truthy'
   return `(bf.${keep}(${l}) || [${r}])[0]`
+}
+
+/**
+ * JS `l ?? r` in a value position (#3839), boxed the way `spellLogical` boxes
+ * `&&` / `||`: `keep_nonnil(l)` is the one-element array `[l]` unless `l` is
+ * nil, so Ruby's `||` stops at `l`'s box exactly when JS returns `l` and
+ * builds `[r]` only otherwise (the short circuit). `0`, `''` and `false` are
+ * present, as in JS. Each operand is rendered once, so a chain
+ * `a ?? b ?? c …` grows linearly; `l.nil? ? r : l` rendered `l` twice, and a
+ * 16-operand chain 2^15 times.
+ */
+function spellNullish(l: string, r: string): string {
+  return `(bf.keep_nonnil(${l}) || [${r}])[0]`
 }
 
 // Predicate-shaped higher-order methods (filter/every/some land here through
@@ -433,9 +450,9 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     // JS `&&`/`||` are operand-returning under JS truthiness, which
     // diverges from Ruby's own `&&`/`||` (Ruby only treats nil/false as
     // falsy) — see file docstring. `??` only ever needs a null check, which
-    // Ruby and JS agree on.
+    // Ruby and JS agree on (`spellNullish`).
     if (op !== '??') return spellLogical(op, plan, l, r)
-    return `((${l}).nil? ? ${r} : ${l})`
+    return spellNullish(l, r)
   }
 
   callbackMethod(
@@ -799,7 +816,7 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     const r = emit(right)
     // JS `&&` / `||` yield an operand, each rendered once (`spellLogical`).
     if (op !== '??') return spellLogical(op, plan, l, r)
-    return `((${l}).nil? ? ${r} : ${l})`
+    return spellNullish(l, r)
   }
 
   callbackMethod(

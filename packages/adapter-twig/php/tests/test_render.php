@@ -132,6 +132,32 @@ bf_test('bf_js_or / bf_js_and filters: operand values, short circuit, chains', f
     }
 });
 
+// A JS `l ?? r` whose left operand Twig's `??` rejects (a nested `??`, a
+// conditional; #3839), spelled as the adapter emits it:
+// `(l)|bf_js_nullish((__bf_lazy) => r)`. Only null falls through; `0`, `''`
+// and `false` are kept, and `r` is left unevaluated when `l` is kept.
+bf_test('bf_js_nullish filter: operand values, short circuit, chains', function () use ($tmpDir) {
+    $nullish = fn(string $l, string $r): string => "(({$l})|bf_js_nullish((__bf_lazy) => {$r}))";
+    $chain = '(nil ?? nil)';
+    foreach (['nil', 'nil', 'nil', 'nil', 'nil', 'nil', 'nil', 'nil', 'nil', 'nil', 'nil', 'nil', 'nil', 's'] as $next) {
+        $chain = $nullish($chain, $next);
+    }
+    $cases = [
+        'keeps_zero' => [$nullish('(nil ?? zero)', 's'), '0'],
+        'keeps_empty' => [$nullish('(nil ?? empty)', 's'), ''],
+        'keeps_false' => [$nullish('(no ? no : no)', 's') . ' ? "t" : "f"', 'f'],
+        'falls_through' => [$nullish('(nil ?? nil)', 's'), 's'],
+        'short_circuit' => [$nullish('(nil ?? s)', 'nil.k'), 's'],
+        'chain16' => [$chain, 's'],
+    ];
+    $backend = new TwigBackend(['paths' => [$tmpDir], 'environment_options' => ['strict_variables' => true]]);
+    foreach ($cases as $name => [$expr, $want]) {
+        file_put_contents("{$tmpDir}/nullish_{$name}.twig", "{{ {$expr} }}");
+        $got = $backend->env()->render("nullish_{$name}.twig", ['zero' => 0, 'empty' => '', 'no' => false, 'nil' => null, 's' => 's']);
+        bf_assert($got === $want, "{$name}: expected '{$want}', got '{$got}'");
+    }
+});
+
 bf_test('backend unit operations', function () use ($backend) {
     bf_assert_eq($backend->materialize('plain'), 'plain');
     bf_assert_eq($backend->materialize(fn () => 'lazy'), 'lazy');

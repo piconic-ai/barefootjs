@@ -22,14 +22,18 @@ import { describe, test, expect } from 'bun:test'
 import { compileFixtureJSX } from '../harness-program'
 import { DSL_ADAPTERS, helperCallsAt, type DslAdapterCase } from '../dsl-helper-calls'
 
-/** How each adapter spells the `null` reading's `x ?? 0`. */
+/**
+ * How each adapter spells the `null` reading's `x ?? 0`. ERB, Jinja and
+ * MiniJinja box `x` by its nil test, `(bf.keep_nonnil(x) || [0])[0]` /
+ * `(bf.keep_nonnil(x) or [0])[0]`, so `x` is rendered once (#3839).
+ */
 const NULL_AS_ZERO: Readonly<Record<string, RegExp | null>> = {
   blade: / \?\? 0\)/g,
-  erb: /\.nil\? \? 0 : /g,
-  jinja: / else 0\)/g,
+  erb: / \|\| \[0\]\)\[0\]/g,
+  jinja: / or \[0\]\)\[0\]/g,
   mojolicious: / \/\/ 0\)/g,
   pebble: /bf\.coalesce\([^,]+, 0\)/g,
-  rust: / else 0\)/g,
+  rust: / or \[0\]\)\[0\]/g,
   twig: / \?\? 0\)/g,
   xslate: / \/\/ 0\)/g,
 }

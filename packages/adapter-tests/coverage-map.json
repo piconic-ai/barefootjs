@@ -6865,6 +6865,24 @@
         "text"
       ]
     },
+    "lazy-fallback-name-collision": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:null",
+        "logical:&&",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "lazy-row-index-reorder": {
       "kinds": [
         "array-literal",
@@ -11120,6 +11138,28 @@
       ],
       "contexts": [
         "attribute"
+      ]
+    },
+    "nullish-value-chains": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string",
+        "logical:&&",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
       ]
     },
     "number-addition-text-formatting": {

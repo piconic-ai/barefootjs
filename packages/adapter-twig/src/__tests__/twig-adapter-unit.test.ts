@@ -49,11 +49,29 @@ function compileAndGenerate(source: string) {
 // Twig-Specific Tests
 // =============================================================================
 
+describe('TwigAdapter - lazy fallback parameter (#3839)', () => {
+  // The lazy filters take `r` in an arrow whose parameter Twig binds over the
+  // context, so the parameter must not be a name `r` reads.
+  test('skips a parameter name the fallback reads', () => {
+    const { template } = compileAndGenerate(`
+export function C(props: { a?: string | null; b?: string | null; n: number; __bf_lazy: string; __bf_lazy_1: string }) {
+  return <p>{(props.a ?? props.b) ?? props.__bf_lazy}|{props.n || props.__bf_lazy_1}|{props.n || props.a}|{(props.a ?? props.b) ?? (props.__bf_lazy || props.__bf_lazy_1)}</p>
+}
+`)
+    expect(template).toContain('|bf_js_nullish((__bf_lazy_1) => __bf_lazy)')
+    expect(template).toContain('|bf_js_or((__bf_lazy_2) => __bf_lazy_1)')
+    expect(template).toContain('|bf_js_or((__bf_lazy) => a)')
+    // The inner `||` takes its own parameter, and the outer one avoids both
+    // the props and that parameter.
+    expect(template).toContain('|bf_js_nullish((__bf_lazy_3) => ((__bf_lazy)|bf_js_or((__bf_lazy_2) => __bf_lazy_1)))')
+  })
+})
+
 describe('TwigAdapter - optional-chained .length (#3332)', () => {
   // `x?.length` yields `null` for an absent receiver. Twig's native `??`
   // wraps its left side in a `defined` test that rejects a conditional, so
   // a `??` over the guard tests it with `is null` instead.
-  test('guards the read and coalesces with `is null`', () => {
+  test('guards the read and coalesces through `bf_js_nullish`', () => {
     const { template } = compileAndGenerate(`
 export function C(props: { items?: number[] }) {
   return <p>{props.items?.length}|{props.items?.length ?? 0}</p>
@@ -61,7 +79,8 @@ export function C(props: { items?: number[] }) {
 `)
     const guard = '((items ?? null) is null ? null : bf.length(items))'
     expect(template).toContain(`bf.string(${guard})`)
-    expect(template).toContain(`bf.string((${guard} is null ? 0 : ${guard}))`)
+    // Twig's `??` rejects a non-variable left operand; the filter renders it once (#3839).
+    expect(template).toContain(`bf.string(((${guard})|bf_js_nullish((__bf_lazy) => 0)))`)
     expect(template).not.toContain(`${guard} ??`)
   })
 

@@ -233,7 +233,7 @@ export function SortStatus() {
 }
 `)
     expect(template).toContain(
-      "v[:sort] = ((v[:search_params].get('sort')).nil? ? 'date' : v[:search_params].get('sort'))",
+      "v[:sort] = (bf.keep_nonnil(v[:search_params].get('sort')) || ['date'])[0]",
     )
   })
 
@@ -253,7 +253,7 @@ export function TaggedList(props: { items: { title: string; tags: string[] }[] }
 }
 `)
     expect(template).toContain(
-      "v[:tag] = ((v[:search_params].get('tag')).nil? ? '' : v[:search_params].get('tag'))",
+      "v[:tag] = (bf.keep_nonnil(v[:search_params].get('tag')) || [''])[0]",
     )
     expect(template).toMatch(/v\[:visible\] = v\[:items\]\.select \{ \|p\|/)
   })
@@ -303,7 +303,7 @@ export function Item(props: { defaultOn?: boolean }) {
   return <button>{on() ? 'ON' : 'OFF'}</button>
 }
 `)
-    expect(template).toMatch(/v\[:on\]\s*=\s*\(\(v\[:defaultOn\]\)\.nil\?/)
+    expect(template).toMatch(/v\[:on\]\s*=\s*\(bf\.keep_nonnil\(v\[:defaultOn\]\)/)
   })
 
   test('emits data_key_attr on the component root', () => {
