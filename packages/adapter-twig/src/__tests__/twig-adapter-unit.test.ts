@@ -53,7 +53,7 @@ describe('TwigAdapter - optional-chained .length (#3332)', () => {
   // `x?.length` yields `null` for an absent receiver. Twig's native `??`
   // wraps its left side in a `defined` test that rejects a conditional, so
   // a `??` over the guard tests it with `is null` instead.
-  test('guards the read and coalesces with `is null`', () => {
+  test('guards the read and coalesces through `bf_js_nullish`', () => {
     const { template } = compileAndGenerate(`
 export function C(props: { items?: number[] }) {
   return <p>{props.items?.length}|{props.items?.length ?? 0}</p>
@@ -61,7 +61,8 @@ export function C(props: { items?: number[] }) {
 `)
     const guard = '((items ?? null) is null ? null : bf.length(items))'
     expect(template).toContain(`bf.string(${guard})`)
-    expect(template).toContain(`bf.string((${guard} is null ? 0 : ${guard}))`)
+    // Twig's `??` rejects a non-variable left operand; the filter renders it once (#3839).
+    expect(template).toContain(`bf.string(((${guard})|bf_js_nullish((__bf_lazy) => 0)))`)
     expect(template).not.toContain(`${guard} ??`)
   })
 

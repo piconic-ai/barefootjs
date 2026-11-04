@@ -1563,6 +1563,18 @@ impl Object for BfInstance {
             return Ok(MjValue::from(if keep { vec![value] } else { Vec::new() }));
         }
 
+        // The box for a value-position JS `l ?? r` (#3839): the adapter
+        // spells it as `(bf.keep_nonnil(l) or [r])[0]`, so each operand
+        // appears once and a chain grows linearly. `l` is absent when it is
+        // none or undefined (a var or key that was never set, which JS reads
+        // as `undefined`); `0`, `''` and `false` are present. The box holds
+        // the original value, as `keep_truthy` does.
+        if method == "keep_nonnil" {
+            let value = args.first().cloned().unwrap_or_else(|| MjValue::from(()));
+            let present = !value.is_undefined() && !value.is_none();
+            return Ok(MjValue::from(if present { vec![value] } else { Vec::new() }));
+        }
+
         let js_args: Vec<JsValue> = args.iter().map(mj_to_js).collect();
         let a = |i: usize| arg(&js_args, i);
 

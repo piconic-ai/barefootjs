@@ -75,6 +75,8 @@ const GO_NAMES: Partial<Record<PrimitiveHelper, readonly string[]>> = {
   coalesce: ['nullish', 'keep_nonnil'],
   truthy: TRUTHY_NAMES,
 }
+// Jinja, MiniJinja and ERB box an unproven `??` left operand the same way (#3839).
+const DSL_NAMES = { truthy: TRUTHY_NAMES, coalesce: ['keep_nonnil'] }
 const PERL_NAMES = { sub: ['subtract'], mul: ['multiply'], div: ['divide'], truthy: TRUTHY_NAMES }
 const PHP_NAMES = { get: ['index'], strict_eq: ['eq', 'neq'], truthy: TRUTHY_NAMES }
 
@@ -86,8 +88,8 @@ const TARGETS: readonly Target[] = [
     call: (helper) => new RegExp(`\\bbf_(?:${(GO_NAMES[helper] ?? [helper]).join('|')})\\b`),
   },
   { name: 'blade', make: () => new BladeAdapter(), table: BLADE, call: dslCall('$bf->', PHP_NAMES) },
-  { name: 'erb', make: () => new ErbAdapter(), table: ERB, call: dslCall('bf.', { truthy: ['truthy?', 'keep_truthy', 'keep_falsy'] }) },
-  { name: 'jinja', make: () => new JinjaAdapter(), table: JINJA, call: dslCall('bf.', { truthy: TRUTHY_NAMES }) },
+  { name: 'erb', make: () => new ErbAdapter(), table: ERB, call: dslCall('bf.', { truthy: ['truthy?', 'keep_truthy', 'keep_falsy'], coalesce: ['keep_nonnil'] }) },
+  { name: 'jinja', make: () => new JinjaAdapter(), table: JINJA, call: dslCall('bf.', DSL_NAMES) },
   { name: 'mojolicious', make: () => new MojoAdapter(), table: MOJO, call: dslCall('bf->', PERL_NAMES) },
   {
     name: 'pebble',
@@ -98,7 +100,7 @@ const TARGETS: readonly Target[] = [
     call: (helper) =>
       helper === 'truthy' ? /(?<![\w$])bf\.truthy\(|\|\||&&/ : dslCall('bf.', { strict_eq: ['eq', 'neq'] })(helper),
   },
-  { name: 'rust', make: () => new MinijinjaAdapter(), table: MINIJINJA, call: dslCall('bf.', { truthy: TRUTHY_NAMES }) },
+  { name: 'rust', make: () => new MinijinjaAdapter(), table: MINIJINJA, call: dslCall('bf.', DSL_NAMES) },
   {
     name: 'twig',
     make: () => new TwigAdapter(),

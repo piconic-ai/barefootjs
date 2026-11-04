@@ -10,11 +10,14 @@
  * within a small multiple of the 4-operand one. The `logical-value-chains`
  * conformance fixture holds the rendered values.
  *
- * A `??` chain is held to the same bound on the adapters that render its
- * left operand once (Go since #3824 step 7; `nullish-positions` holds the
- * values). Jinja and MiniJinja (three times), ERB (twice) and Twig's
- * `is null` form for a logical left operand (twice) still repeat it
- * (#3839), so a 16-operand chain would not compile there in useful time.
+ * A `??` chain is held to the same bound on every adapter (Go since #3824
+ * step 7, the rest since #3839; `nullish-positions` and
+ * `nullish-value-chains` hold the values). Jinja and MiniJinja rendered the
+ * left operand three times (`l if (l is defined and l is not none) else r`),
+ * ERB twice (`l.nil? ? r : l`) and Twig's `is null` form for a logical left
+ * operand twice, so a 16-operand chain did not compile there in useful time.
+ * The template must also hold one copy of each operand, which a constant
+ * factor per link (the size bound alone) would not show.
  */
 import { describe, test, expect } from 'bun:test'
 import type { TemplateAdapter } from '@barefootjs/jsx'
@@ -81,14 +84,41 @@ function templateSize(n: number, make: () => TemplateAdapter, src: (n: number) =
     .reduce((a, b) => a + b, 0)
 }
 
-const NULLISH_LINEAR = new Set(['go', 'blade', 'mojolicious', 'pebble', 'xslate'])
+/** The marked templates of a compile, concatenated. */
+function templateText(src: string, make: () => TemplateAdapter): string {
+  const result = compileFixtureJSX(src, 'chain.tsx', { adapter: make() })
+  const errors = result.errors.filter((e) => e.severity === 'error').map((e) => `${e.code} ${e.message}`)
+  expect(errors).toEqual([])
+  return result.files.filter((f) => f.type === 'markedTemplate').map((f) => f.content).join('\n')
+}
 
-describe('a value-position ?? chain grows its template linearly (#3824 step 7)', () => {
-  for (const [name, make] of TARGETS.filter(([n]) => NULLISH_LINEAR.has(n))) {
+/** Occurrences of `needle` in `text`. */
+function count(text: string, needle: string): number {
+  return text.split(needle).length - 1
+}
+
+describe('a value-position ?? chain grows its template linearly (#3824 step 7, #3839)', () => {
+  for (const [name, make] of TARGETS) {
     test(name, () => {
       const [s4, s8, s16] = [4, 8, 16].map((n) => templateSize(n, make, nullishSource))
       expect(s16).toBeLessThan(s4 * 4)
       expect(s16 - s8).toBeLessThan((s8 - s4) * 3)
+    }, 60_000)
+
+    test(`${name}: each operand of a ?? chain is rendered once`, () => {
+      // Eight distinct operands, read nowhere else: a spelling that repeats
+      // the left operand renders the first one 2^7 or 3^7 times.
+      const fields = Array.from({ length: 8 }, (_, i) => `f${i}`)
+      const src = `
+'use client'
+export function Chain(props: { ${fields.map((f) => `${f}?: string | null`).join('; ')} }) {
+  return <p>{${fields.map((f) => `props.${f}`).join(' ?? ')}}</p>
+}
+`
+      const text = templateText(src, make)
+      // The first operand: once in the text child, plus the props the
+      // template header lists. Bounded by a small constant, never by 2^7.
+      expect(count(text, 'f0')).toBeLessThanOrEqual(count(text, 'f7') + 1)
     }, 60_000)
   }
 })

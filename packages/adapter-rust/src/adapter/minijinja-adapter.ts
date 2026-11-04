@@ -26,7 +26,7 @@
  *   Kolon `: my $x = e;`              → Jinja `{% set x = e %}`
  *   Kolon `{ k => v }` hashref        → Jinja `{'k': v}` dict literal (ALWAYS quoted key — see `lib/minijinja-naming.ts`)
  *   Kolon `~` concat                  → Jinja `~` concat
- *   Kolon `//` defined-or             → `(l if (l is defined and l is not none) else r)` inline (Jinja has no `//`; the `is defined` guard also treats a context var that was never seeded — Jinja's `ChainableUndefined`/minijinja's `UndefinedBehavior::Chainable` — as nullish, matching JS `??`'s null-OR-undefined check — see `expr/emitters.ts`'s `logical` for the full rationale)
+ *   Kolon `//` defined-or             → `(bf.keep_nonnil(l) or [r])[0]` (Jinja has no `//`; `keep_nonnil` boxes `l` unless it is none or undefined — a context var that was never seeded, Jinja's `ChainableUndefined`/minijinja's `UndefinedBehavior::Chainable`, reads as JS `undefined` — so each operand is rendered once and a chain grows linearly, #3839 — see `expr/emitters.ts`'s `spellNullish`)
  *   Kolon macro children capture      → Jinja `{% set NAME %}…{% endset %}` set-block (see "Children capture" below)
  *
  * The `minijinja::Environment` this adapter's output assumes (constructed in

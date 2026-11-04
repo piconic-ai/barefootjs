@@ -21,6 +21,10 @@ use Twig\TwigFilter;
  * accepts an arrow function as a filter argument since 3.x but as a method
  * argument only since 3.15, and `composer.json` allows `^3.10`. Twig has no
  * zero-parameter arrow, hence the unused `__bf_lazy`.
+ *
+ * `bf_js_nullish` spells a JS `l ?? r` whose left operand Twig's own `??`
+ * rejects (a nested `??`, a conditional, an optional `.length`; #3839) the
+ * same way: `l` evaluated once, `r` called only when `l` is null.
  */
 final class BarefootExtension extends AbstractExtension
 {
@@ -30,6 +34,7 @@ final class BarefootExtension extends AbstractExtension
         return [
             new TwigFilter('bf_js_or', [self::class, 'jsOr']),
             new TwigFilter('bf_js_and', [self::class, 'jsAnd']),
+            new TwigFilter('bf_js_nullish', [self::class, 'jsNullish']),
         ];
     }
 
@@ -41,5 +46,10 @@ final class BarefootExtension extends AbstractExtension
     public static function jsAnd($left, callable $right): mixed
     {
         return Evaluator::truthy($left) ? $right(null) : $left;
+    }
+
+    public static function jsNullish($left, callable $right): mixed
+    {
+        return $left ?? $right(null);
     }
 }

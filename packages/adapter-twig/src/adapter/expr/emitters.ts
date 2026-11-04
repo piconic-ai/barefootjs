@@ -271,8 +271,11 @@ const TWIG_VARIABLE_PATH = /^[A-Za-z_]\w*(?:\.[A-Za-z_]\w*|\[[^\[\]]*\])*$/
  * test, which only accepts a variable, attribute or call — an
  * optional-chained `.length` guard and a conditional (which is how an
  * optional-chained method call `x?.m()` reaches the emitter, #3435) and a
- * nested logical (a chained `(a ?? b) ?? c`) are tested with `is null`
- * instead (none is ever an undefined variable).
+ * nested logical (a chained `(a ?? b) ?? c`) take the runtime's
+ * `bf_js_nullish` filter instead (none is ever an undefined variable). The
+ * filter receives `l` evaluated once and `r` as a closure it calls only when
+ * `l` is null, as `bf_js_or` does for `||` (`spellLogical`); `l is null ? r :
+ * l` rendered `l` twice, so a chain grew exponentially (#3839).
  */
 function nullishCoalesce(left: ParsedExpr, l: string, r: string): string {
   if (
@@ -280,7 +283,7 @@ function nullishCoalesce(left: ParsedExpr, l: string, r: string): string {
     left.kind === 'conditional' ||
     left.kind === 'logical'
   ) {
-    return `(${l} is null ? ${r} : ${l})`
+    return `((${l})|bf_js_nullish((__bf_lazy) => ${r}))`
   }
   return `(${l} ?? ${r})`
 }

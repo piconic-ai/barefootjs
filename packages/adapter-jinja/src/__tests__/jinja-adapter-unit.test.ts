@@ -121,7 +121,7 @@ export function Item(props: { defaultOn?: boolean }) {
   return <button>{on() ? 'ON' : 'OFF'}</button>
 }
 `)
-    expect(template).toContain('{% set on = (defaultOn if (defaultOn is defined and defaultOn is not none) else false) %}')
+    expect(template).toContain('{% set on = (bf.keep_nonnil(defaultOn) or [false])[0] %}')
   })
 
   // Divergence from the Kolon port: Jinja's `{% set x = x + 1 %}` safely
@@ -138,7 +138,7 @@ export function C(props: { x?: number }) {
   return <span>{x()}</span>
 }
 `)
-    expect(template).toContain('{% set x = (x if (x is defined and x is not none) else 7) %}')
+    expect(template).toContain('{% set x = (bf.keep_nonnil(x) or [7])[0] %}')
   })
 
   test('emits data_key_attr on the component root', () => {
@@ -321,7 +321,7 @@ export function SortStatus() {
 }
 `)
     expect(template).toContain(
-      "{% set sort = (searchParams.get('sort') if (searchParams.get('sort') is defined and searchParams.get('sort') is not none) else 'date') %}",
+      "{% set sort = (bf.keep_nonnil(searchParams.get('sort')) or ['date'])[0] %}",
     )
   })
 
@@ -344,7 +344,7 @@ export function TaggedList(props: { items: { title: string; tags: string[] }[] }
 }
 `)
     expect(template).toContain(
-      "{% set tag = (searchParams.get('tag') if (searchParams.get('tag') is defined and searchParams.get('tag') is not none) else '') %}",
+      "{% set tag = (bf.keep_nonnil(searchParams.get('tag')) or [''])[0] %}",
     )
     expect(template).toContain('{% set visible = bf.filter_eval(items,')
     expect(template).toContain("{'tag': tag}")

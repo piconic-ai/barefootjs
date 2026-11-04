@@ -1077,6 +1077,15 @@ class BarefootJS:
     def keep_falsy(self, value: Any) -> list[Any]:
         return [] if js_truthy(value) else [value]
 
+    # The box for a value-position JS `l ?? r` (#3839): the adapter spells it
+    # as `(bf.keep_nonnil(l) or [r])[0]`, so each operand appears once and a
+    # chain grows linearly. `l` is absent when it is `None` or the template
+    # engine's undefined sentinel (a var or key that was never set, which JS
+    # reads as `undefined`). This module does not import the engine, so the
+    # backend answers which values are its sentinel (`is_undefined`).
+    def keep_nonnil(self, value: Any) -> list[Any]:
+        return [] if value is None or self.backend.is_undefined(value) else [value]
+
     # JS primitive helpers (spec/js-primitive-semantics.md, "Operation
     # table"): ToNumber, ToString, `===`, the relational operators, binary
     # `+` and unary `-`. Each delegates to the callback evaluator's primitive
