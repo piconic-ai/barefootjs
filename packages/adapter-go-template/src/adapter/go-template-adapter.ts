@@ -54,7 +54,7 @@ import {
   type SupportResult,
   collectNullableSignalGetters,
   arithmeticCoercionOrRefuse,
-  arithmeticOperandCoercion,
+  targetArithmeticCoercion,
   refuseAmbiguousNilArithmetic,
   refuseAmbiguousNilMemoArithmetic,
   refuseNonPrimitiveStrictEquality,
@@ -892,7 +892,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     ir = this.primeCompileState(ir)
     // Memo bodies seed at construction through several paths that never
     // reach the operand coercion; refuse their ambiguous-nil arithmetic once.
-    refuseAmbiguousNilMemoArithmetic(ir.metadata.memos ?? [], this.state.nullishAttrCtx, this.state)
+    refuseAmbiguousNilMemoArithmetic(ir.metadata.memos ?? [], this.state.nullishAttrCtx, this.state, GO_NATIVE_SAFE)
     // `===` / `!==` over an object or array (#3774, #3824 step 8).
     refuseNonPrimitiveStrictEquality(ir, this.state.operandTyping, this.state)
     // A spread of an arbitrary object onto a child component (#3861).
@@ -5379,7 +5379,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * a BF101 for an operand whose nil the declared type cannot classify.
    */
   private arithmeticCoercion(op: string, operand: ParsedExpr, other: ParsedExpr | undefined): ArithmeticCoercion {
-    return arithmeticCoercionOrRefuse(op, operand, other, this.state.nullishAttrCtx, n => this.scope.isBound(n), this.state)
+    return arithmeticCoercionOrRefuse(op, operand, other, this.state.nullishAttrCtx, n => this.scope.isBound(n), this.state, GO_NATIVE_SAFE)
   }
 
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
@@ -7211,13 +7211,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     makeLoc: () => this.makeLoc(),
     hasScopeBinding: (name) => Boolean(this.scope.lookup(name)),
     refuseAmbiguousNilArithmetic: (expr, params) =>
-      refuseAmbiguousNilArithmetic(expr, this.state.nullishAttrCtx, this.scope.enterCallback(params), this.state),
+      refuseAmbiguousNilArithmetic(expr, this.state.nullishAttrCtx, this.scope.enterCallback(params), this.state, GO_NATIVE_SAFE),
     operandCoercion: (op, operand, other, params) => {
       const scope = params ? this.scope.enterCallback(params) : this.scope
-      return arithmeticOperandCoercion(op, operand, other, this.state.nullishAttrCtx, n => scope.isBound(n))
+      return targetArithmeticCoercion(op, operand, other, this.state.nullishAttrCtx, n => scope.isBound(n), GO_NATIVE_SAFE)
     },
     rewriteNilReadings: (expr, params) =>
-      rewriteNilReadings(expr, this.state.operandTyping.at(params ? this.scope.enterCallback(params) : this.scope)),
+      rewriteNilReadings(expr, this.state.operandTyping.at(params ? this.scope.enterCallback(params) : this.scope), GO_NATIVE_SAFE),
     filterCaptureAlias: (name) => this.filterCaptureAliases.get(name),
     lookupDestructureBinding: (name) => this.lookupDestructureBinding(name),
     noteWrapperRowRead: (name, rendered) => this.noteWrapperRowRead(name, rendered),

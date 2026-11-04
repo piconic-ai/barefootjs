@@ -219,6 +219,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
   }
 
   protected readonly loopChildDiagnosticName = 'Xslate'
+  protected readonly nativeSafe = NATIVE_SAFE
 
   /**
    * Names (signal getters + props) whose value is a string. In the Mojo

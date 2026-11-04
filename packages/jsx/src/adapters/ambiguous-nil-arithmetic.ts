@@ -9,6 +9,7 @@ import {
 } from '../nullable-signal-attr.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
 import type { CompilerError, MemoInfo } from '../types.ts'
+import { collapsesNil, type NativeSafeTable } from './primitive-plan.ts'
 
 /**
  * Where a template adapter records the refusal of an arithmetic operand
@@ -30,6 +31,11 @@ export interface AmbiguousNilArithmeticSink {
  * or boolean prop declared `?: string | null` / `?: boolean | null` (#3824
  * step 3). Asked at the emission site so the operand is classified in the
  * scope it is read in (`isShadowed`). One error per operand text per compile.
+ *
+ * The refusal exists only because the target holds both nils as one: on a
+ * target that carries `undefined` (`collapsesNil`, rollout step U1) the
+ * operand is not refused, and is left to the runtime's helper
+ * ({@link targetArithmeticCoercion}).
  */
 export function arithmeticCoercionOrRefuse(
   op: string,
@@ -38,9 +44,32 @@ export function arithmeticCoercionOrRefuse(
   ctx: NullishAttrContext,
   isShadowed: (name: string) => boolean,
   sink: AmbiguousNilArithmeticSink,
+  target: NativeSafeTable,
 ): ArithmeticCoercion {
-  const family = ambiguousNilFamily(op, operand, other, ctx, isShadowed)
-  if (family !== null) recordAmbiguousNilArithmetic(exprToString(operand), family, sink)
+  if (collapsesNil(target)) {
+    const family = ambiguousNilFamily(op, operand, other, ctx, isShadowed)
+    if (family !== null) recordAmbiguousNilArithmetic(exprToString(operand), family, sink)
+  }
+  return targetArithmeticCoercion(op, operand, other, ctx, isShadowed, target)
+}
+
+/**
+ * `arithmeticOperandCoercion` on `target`: the static coercion of an operand
+ * whose nil the declared type reads. An operand whose nil it cannot read
+ * (`ambiguousNilFamily`) keeps the `null` reading on a target that collapses
+ * `undefined` into its nil, where it is refused anyway, and is left as it is
+ * on one that carries `undefined`: the runtime's helper reads its value,
+ * `null` or `UNDEF`, exactly.
+ */
+export function targetArithmeticCoercion(
+  op: string,
+  operand: ParsedExpr | undefined,
+  other: ParsedExpr | undefined,
+  ctx: NullishAttrContext,
+  isShadowed: (name: string) => boolean,
+  target: NativeSafeTable,
+): ArithmeticCoercion {
+  if (!collapsesNil(target) && ambiguousNilFamily(op, operand, other, ctx, isShadowed) !== null) return null
   return arithmeticOperandCoercion(op, operand, other, ctx, isShadowed)
 }
 
@@ -49,14 +78,17 @@ export function arithmeticCoercionOrRefuse(
  * template adapter lowers without asking {@link arithmeticCoercionOrRefuse}
  * per operator: a `.filter()` predicate, an expression the runtime evaluator
  * runs, a condition lowered by its own renderer (`ambiguousNilArithmeticOperands`).
- * `scope` is the scope the expression is read in.
+ * `scope` is the scope the expression is read in. Nothing is refused on a
+ * target that carries `undefined` ({@link arithmeticCoercionOrRefuse}).
  */
 export function refuseAmbiguousNilArithmetic(
   expr: ParsedExpr,
   ctx: NullishAttrContext,
   scope: BindingScope,
   sink: AmbiguousNilArithmeticSink,
+  target: NativeSafeTable,
 ): void {
+  if (!collapsesNil(target)) return
   for (const { operand, family } of ambiguousNilOperands(expr, ctx, scope)) {
     recordAmbiguousNilArithmetic(exprToString(operand), family, sink)
   }
@@ -73,9 +105,10 @@ export function refuseAmbiguousNilMemoArithmetic(
   memos: readonly MemoInfo[],
   ctx: NullishAttrContext,
   sink: AmbiguousNilArithmeticSink,
+  target: NativeSafeTable,
 ): void {
   for (const memo of memos) {
-    if (memo.parsed) refuseAmbiguousNilArithmetic(memo.parsed, ctx, BindingScope.EMPTY, sink)
+    if (memo.parsed) refuseAmbiguousNilArithmetic(memo.parsed, ctx, BindingScope.EMPTY, sink, target)
   }
 }
 

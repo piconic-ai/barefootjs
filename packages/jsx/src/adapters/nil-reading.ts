@@ -36,13 +36,15 @@
  *   runtimes carry `undefined` (#3848).
  * - A string operand whose nil may be either (`c?: string | null`): it keeps
  *   today's display reading, the empty string, until the runtimes carry
- *   `undefined` (#3848).
+ *   `undefined` (#3848). On a target that carries it ({@link collapsesNil})
+ *   the operand is left alone: the runtime's `to_string` / `plus` read the
+ *   value, `null` or `UNDEF`, exactly.
  * - A nil Phase 1 cannot type (an index read, an untyped value): the
  *   runtime's helpers read it as `null`.
  */
 
 import type { ParsedExpr, TemplatePart } from '../expression-parser.ts'
-import { operandFacts } from './primitive-plan.ts'
+import { collapsesNil, operandFacts, type NativeSafeTable } from './primitive-plan.ts'
 import type { NilReading, OperandFacts, ScopedOperandTyping } from './operand-typing.ts'
 
 const NUMERIC_BINARY_OPS: ReadonlySet<string> = new Set(['-', '*', '/', '%', '**', '<', '<=', '>', '>='])
@@ -100,12 +102,15 @@ function numericOperand(operand: ParsedExpr, facts: OperandFacts): ParsedExpr {
 
 /**
  * An operand of a string consumer: its nil as `'null'` / `'undefined'`, and
- * an `either` nil as today's display reading, the empty string (#3848).
+ * an `either` nil as today's display reading, the empty string (#3848), on a
+ * target that collapses `undefined` into its nil; on one that carries it, an
+ * `either` operand is left to the runtime's helper.
  */
-function stringOperand(operand: ParsedExpr, facts: OperandFacts): ParsedExpr {
+function stringOperand(operand: ParsedExpr, facts: OperandFacts, target: NativeSafeTable): ParsedExpr {
   const reading = readingOf(facts)
   if (reading === null) return operand
-  return coalesce(operand, facts, stringLiteral(reading === 'either' ? '' : reading))
+  if (reading !== 'either') return coalesce(operand, facts, stringLiteral(reading))
+  return collapsesNil(target) ? coalesce(operand, facts, stringLiteral('')) : operand
 }
 
 const PRIMITIVE_TYPES: ReadonlySet<string> = new Set(['number', 'string', 'boolean'])
@@ -121,14 +126,14 @@ function isExactly(facts: OperandFacts, type: string): boolean {
  * split, for a string operand) when the other is a proven number and this
  * one is a primitive; left alone otherwise.
  */
-function plusOperand(operand: ParsedExpr, facts: OperandFacts, other: OperandFacts): ParsedExpr {
-  if (isExactly(other, 'string')) return stringOperand(operand, facts)
+function plusOperand(operand: ParsedExpr, facts: OperandFacts, other: OperandFacts, target: NativeSafeTable): ParsedExpr {
+  if (isExactly(other, 'string')) return stringOperand(operand, facts, target)
   if (!isExactly(other, 'number')) return operand
   const present = presentTypes(facts)
   return [...present].every(t => PRIMITIVE_TYPES.has(t)) ? numericOperand(operand, facts) : operand
 }
 
-function rewriteBinary(expr: Extract<ParsedExpr, { kind: 'binary' }>, typing: ScopedOperandTyping): ParsedExpr {
+function rewriteBinary(expr: Extract<ParsedExpr, { kind: 'binary' }>, typing: ScopedOperandTyping, target: NativeSafeTable): ParsedExpr {
   const lf = operandFacts(expr.left, typing)
   const rf = operandFacts(expr.right, typing)
   let left = expr.left
@@ -137,17 +142,21 @@ function rewriteBinary(expr: Extract<ParsedExpr, { kind: 'binary' }>, typing: Sc
     left = numericOperand(expr.left, lf)
     right = numericOperand(expr.right, rf)
   } else if (expr.op === '+') {
-    left = plusOperand(expr.left, lf, rf)
-    right = plusOperand(expr.right, rf, lf)
+    left = plusOperand(expr.left, lf, rf, target)
+    right = plusOperand(expr.right, rf, lf, target)
   }
   return left === expr.left && right === expr.right ? expr : { ...expr, left, right }
 }
 
-function rewriteTemplateLiteral(expr: Extract<ParsedExpr, { kind: 'template-literal' }>, typing: ScopedOperandTyping): ParsedExpr {
+function rewriteTemplateLiteral(
+  expr: Extract<ParsedExpr, { kind: 'template-literal' }>,
+  typing: ScopedOperandTyping,
+  target: NativeSafeTable,
+): ParsedExpr {
   let changed = false
   const parts: TemplatePart[] = expr.parts.map(part => {
     if (part.type !== 'expression') return part
-    const rewritten = stringOperand(part.expr, operandFacts(part.expr, typing))
+    const rewritten = stringOperand(part.expr, operandFacts(part.expr, typing), target)
     if (rewritten === part.expr) return part
     changed = true
     return { ...part, expr: rewritten }
@@ -157,21 +166,21 @@ function rewriteTemplateLiteral(expr: Extract<ParsedExpr, { kind: 'template-lite
 
 /**
  * `expr` with the operands of its own coercion rewritten by their nil
- * reading in `typing`'s scope; `expr` itself when nothing changes. Shallow:
+ * reading in `typing`'s scope on `target`; `expr` itself when nothing changes. Shallow:
  * only `expr`'s direct operands are rewritten, as `emitParsedExpr` calls it
  * at every node it dispatches. Idempotent: a rewritten operand is never nil.
  */
-export function rewriteNilReadings(expr: ParsedExpr, typing: ScopedOperandTyping): ParsedExpr {
+export function rewriteNilReadings(expr: ParsedExpr, typing: ScopedOperandTyping, target: NativeSafeTable): ParsedExpr {
   switch (expr.kind) {
     case 'binary':
-      return rewriteBinary(expr, typing)
+      return rewriteBinary(expr, typing, target)
     case 'unary': {
       if (expr.op !== '-' && expr.op !== '+') return expr
       const argument = numericOperand(expr.argument, operandFacts(expr.argument, typing))
       return argument === expr.argument ? expr : { ...expr, argument }
     }
     case 'template-literal':
-      return rewriteTemplateLiteral(expr, typing)
+      return rewriteTemplateLiteral(expr, typing, target)
     default:
       return expr
   }
@@ -183,13 +192,13 @@ export function rewriteNilReadings(expr: ParsedExpr, typing: ScopedOperandTyping
  * walker instead of `emitParsedExpr` (a callback body, a memo body). An
  * arrow's params shadow outer names within its body.
  */
-export function rewriteNilReadingsDeep(expr: ParsedExpr, typing: ScopedOperandTyping): ParsedExpr {
+export function rewriteNilReadingsDeep(expr: ParsedExpr, typing: ScopedOperandTyping, target: NativeSafeTable): ParsedExpr {
   const walk = (e: ParsedExpr, at: ScopedOperandTyping): ParsedExpr => {
     if (e.kind === 'arrow') {
       const body = walk(e.body, at.enterCallback(e.params))
       return body === e.body ? e : { ...e, body }
     }
-    return rewriteNilReadings(mapChildren(e, child => walk(child, at)), at)
+    return rewriteNilReadings(mapChildren(e, child => walk(child, at)), at, target)
   }
   return walk(expr, typing)
 }

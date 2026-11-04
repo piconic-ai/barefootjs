@@ -393,6 +393,7 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
   }
 
   protected readonly loopChildDiagnosticName = 'Blade'
+  protected readonly nativeSafe = NATIVE_SAFE
   // Two source names that Blade's renaming of reserved names turns into one
   // template variable would read the same value (#3408).
   protected override readonly templateIdentifierSpelling = { ident: bladeIdent, label: 'Blade' }

@@ -4,7 +4,7 @@
  * Pure free functions — none read adapter instance state.
  */
 
-import type { ArithmeticCoercion, SortComparator, SupportResult, ParsedExpr, ScopedOperandTyping } from '@barefootjs/jsx'
+import type { ArithmeticCoercion, NilReadingSite, SortComparator, SupportResult, ParsedExpr, ScopedOperandTyping } from '@barefootjs/jsx'
 import { arithmeticHelper, BindingScope, EMPTY_OPERAND_TYPING, escapeBraceDelimiters, evalBody, isExactly, isNativeToNumber, numberLiteralSpelling, operandFacts, plusSpelling, spellTest, strictEqSpelling, type CallbackCapture, type NativeSafeTable, type PrimitivePlan } from '@barefootjs/jsx'
 
 import { capitalize } from "./go-naming.ts"
@@ -95,6 +95,11 @@ export const GO_NATIVE_SAFE: NativeSafeTable = {
   get: [],
   // A comparison, `!` and a boolean literal are host booleans already (#3824 step 5).
   'boolean-value': ['boolean'],
+}
+
+/** An evaluator body's nil-reading site on Go (`evalBody`), when the caller has the scope's typing. */
+export function goNilReadingSite(typing: ScopedOperandTyping | undefined): NilReadingSite | undefined {
+  return typing ? { typing, target: GO_NATIVE_SAFE } : undefined
 }
 
 /**
@@ -458,7 +463,7 @@ export function emitSortEval(
   if (params.length < 2) return null
   const paramA = params[0]
   const paramB = params[1]
-  const evaluable = evalBody(body, new Set([paramA, paramB]), propsObject, typing)
+  const evaluable = evalBody(body, new Set([paramA, paramB]), propsObject, goNilReadingSite(typing))
   if (evaluable === null) return null
   const env = emitEvalEnvArg(evaluable.captured, emit)
   return `bf_sort_eval ${wrapIfMultiToken(recv)} "${escapeGoString(evaluable.json)}" "${paramA}" "${paramB}" ${env}`
@@ -498,7 +503,7 @@ export function emitReduceEval(
   } else {
     return null
   }
-  const evaluable = evalBody(body, new Set([paramAcc, paramItem]), propsObject, typing)
+  const evaluable = evalBody(body, new Set([paramAcc, paramItem]), propsObject, goNilReadingSite(typing))
   if (evaluable === null) return null
   const env = emitEvalEnvArg(evaluable.captured, emit)
   return `bf_reduce_eval ${wrapIfMultiToken(recv)} "${escapeGoString(evaluable.json)}" "${paramAcc}" "${paramItem}" ${initGo} "${direction}" ${env}`
@@ -530,7 +535,7 @@ export function emitPredicateEval(
   extraArgs: string[] = [],
   typing?: ScopedOperandTyping,
 ): string | null {
-  const evaluable = evalBody(predicate, new Set([param]), propsObject, typing)
+  const evaluable = evalBody(predicate, new Set([param]), propsObject, goNilReadingSite(typing))
   if (evaluable === null) return null
   const env = emitEvalEnvArg(evaluable.captured, emit)
   const extra = extraArgs.length > 0 ? ` ${extraArgs.join(' ')}` : ''
@@ -551,7 +556,7 @@ export function emitFlatMapEval(
   propsObject: string,
   typing?: ScopedOperandTyping,
 ): string | null {
-  const evaluable = evalBody(body, new Set([param]), propsObject, typing)
+  const evaluable = evalBody(body, new Set([param]), propsObject, goNilReadingSite(typing))
   if (evaluable === null) return null
   const env = emitEvalEnvArg(evaluable.captured, emit)
   return `bf_flat_map_eval ${wrapIfMultiToken(recv)} "${escapeGoString(evaluable.json)}" "${param}" ${env}`
@@ -573,7 +578,7 @@ export function emitMapEval(
   propsObject: string,
   typing?: ScopedOperandTyping,
 ): string | null {
-  const evaluable = evalBody(body, new Set([param]), propsObject, typing)
+  const evaluable = evalBody(body, new Set([param]), propsObject, goNilReadingSite(typing))
   if (evaluable === null) return null
   const env = emitEvalEnvArg(evaluable.captured, emit)
   return `bf_map_eval ${wrapIfMultiToken(recv)} "${escapeGoString(evaluable.json)}" "${param}" ${env}`

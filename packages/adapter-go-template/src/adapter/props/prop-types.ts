@@ -25,7 +25,7 @@ import {
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { propsObjectKeyRead, resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
-import { applyGoFallback } from '../lib/go-emit.ts'
+import { applyGoFallback, GO_NATIVE_SAFE } from '../lib/go-emit.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { collapseLiteralUnion, literalNumberValue, typeInfoToGo } from '../type/type-codegen.ts'
 import { evalExprGo, evaluatedAsGoType } from '../memo/memo-compute.ts'
@@ -603,7 +603,7 @@ export function collectArithmeticAbsentPropNames(ctx: GoEmitContext, ir: Compone
     if (propName !== null && optionalParams.has(propName)) names.add(propName)
   }
   const addNilReadings = (node: ParsedExpr): void => {
-    const rewritten = rewriteNilReadings(node, typing)
+    const rewritten = rewriteNilReadings(node, typing, GO_NATIVE_SAFE)
     if (rewritten === node) return
     if (node.kind === 'binary' && rewritten.kind === 'binary') {
       addRewritten(node.left, rewritten.left)

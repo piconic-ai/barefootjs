@@ -18,6 +18,9 @@ import {
   foldNegatedNumberLiteral,
   mayHoldObject,
   numberLiteralSpelling,
+  collapsesNil,
+  refuseUnspelledNilTest,
+  strictEqSpelling,
   type IRMetadata,
   type NativeSafeTable,
   type OperandFacts,
@@ -300,6 +303,77 @@ describe('planPrimitive', () => {
     const empty = EMPTY_OPERAND_TYPING.at(BindingScope.EMPTY)
     expect(plan('!props.on', PROVEN_ONLY, empty)).toBe('helper to-boolean truthy unproven')
     expect(plan('!(a < b)', PROVEN_ONLY, empty)).toBe('native to-boolean boolean')
+  })
+})
+
+/** A target's table with its `carriesUndefined` flag flipped on (no real adapter declares it yet, rollout step U1). */
+const carrying = (table: NativeSafeTable): NativeSafeTable => ({ ...table, carriesUndefined: true })
+
+describe('carriesUndefined (spec/js-undefined-value.md, rollout step U1)', () => {
+  test('the flag is the one decision the plan reads it through', () => {
+    expect(collapsesNil(ALL)).toBe(true)
+    expect(collapsesNil(carrying(ALL))).toBe(false)
+  })
+
+  test('an operand Phase 1 does not prove takes the helper on a target that carries undefined', () => {
+    expect(plan('!props.s', carrying(ALL))).toBe('helper to-boolean truthy unproven')
+    expect(plan('props.n - props.maybe', carrying(ALL))).toBe('helper to-number sub unproven')
+    expect(plan('props.n <= props.maybe', carrying(ALL))).toBe('helper relational le unproven')
+    expect(plan('props.maybe ?? 0', carrying(ALL))).toBe('helper nullish coalesce unproven')
+    expect(plan('-props.n', carrying(ALL))).toBe('helper neg neg unproven')
+    expect(plan('props.rows[props.n]', carrying(ALL))).toBe('helper get get unproven')
+    // A dynamic `+` (neither side a proven number pair or a proven string).
+    expect(plan('props.maybe + props.n', carrying(ALL))).toBe('helper plus plus unproven')
+    // Collapsed: today's native claim over the unproven operand stands.
+    expect(plan('props.n - props.maybe', ALL)).toBe('native to-number unproven')
+    expect(plan('props.maybe + props.n', ALL)).toBe('native plus unproven')
+  })
+
+  test('a proven operand keeps its native claim whichever the flag', () => {
+    for (const src of ['!props.on', 'props.n < count()', 'props.n - 1', 'props.n + 1', "props.n + 'x'", "props.s === 'a'", "props.s ?? 'x'", '42']) {
+      expect(plan(src, carrying(PROVEN_ONLY))).toBe(plan(src, PROVEN_ONLY))
+    }
+    expect(plan("props.n === 'a'", carrying(ALL))).toBe('const strict-eq false')
+  })
+
+  test('a numeric either operand is planned, not refused, by planPrimitive under either flag', () => {
+    // The BF101 of #3700 is the template adapters' (`arithmeticCoercionOrRefuse`),
+    // gated by the same flag; the plan itself only names the helper.
+    expect(plan('props.either * 2', PROVEN_ONLY)).toBe('helper to-number mul unproven')
+    expect(plan('props.either * 2', carrying(ALL))).toBe('helper to-number mul unproven')
+    expect(plan('props.either * 2', ALL)).toBe('native to-number unproven')
+  })
+
+  test('a nullish test keeps its nil-test lowering (no plan) on a collapsing target', () => {
+    for (const src of ['props.maybe === null', 'props.maybe !== undefined', 'props.maybe == null', 'undefined != props.maybe']) {
+      expect(plan(src, ALL)).toBe('none')
+    }
+  })
+
+  test('on a target that carries undefined, `=== null` / `=== undefined` are strict and `== null` is nullish', () => {
+    const target = carrying(PROVEN_ONLY)
+    expect(plan('props.maybe === null', target)).toBe('helper nil-test is_null unproven')
+    expect(plan('props.maybe !== null', target)).toBe('helper nil-test is_null unproven')
+    expect(plan('props.maybe === undefined', target)).toBe('helper nil-test is_undefined unproven')
+    expect(plan('undefined !== props.maybe', target)).toBe('helper nil-test is_undefined unproven')
+    expect(plan('null === props.maybe', target)).toBe('helper nil-test is_null unproven')
+    expect(plan('props.maybe == null', target)).toBe('helper nil-test is_nullish unproven')
+    expect(plan('props.maybe != undefined', target)).toBe('helper nil-test is_nullish unproven')
+    // Both sides nil literals: the right one names the test.
+    expect(plan('null === undefined', target)).toBe('helper nil-test is_undefined unproven')
+    // A bound `undefined` is a name, not the nil literal.
+    const shadowed = collectOperandTyping(COMPONENT).at(BindingScope.forComponent('props').enterCallback(['undefined']))
+    expect(plan('props.n === undefined', target, shadowed)).toBe('helper strict-eq strict_eq unproven')
+    // Loose equality against anything but a nil literal stays unplanned.
+    expect(plan('props.n == 1', target)).toBe('none')
+  })
+
+  test('an emitter that receives a nil test refuses loudly', () => {
+    const p = planPrimitive(parseExpression('props.maybe === null'), typing, carrying(PROVEN_ONLY))
+    expect(() => refuseUnspelledNilTest(p)).toThrow('`is_null` nil test')
+    expect(() => strictEqSpelling('===', parseExpression('props.maybe'), parseExpression('null'), p)).toThrow('no spelling')
+    expect(() => refuseUnspelledNilTest(planPrimitive(parseExpression('props.n === 1'), typing, PROVEN_ONLY))).not.toThrow()
+    expect(strictEqSpelling('===', parseExpression('props.maybe'), parseExpression('null'), null)).toEqual({ kind: 'nullish' })
   })
 })
 

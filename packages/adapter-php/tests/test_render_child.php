@@ -147,4 +147,18 @@ bf_test('passed reads the caller keys', function () {
     bf_assert_eq($root->passed('tone', true), false);
 });
 
+bf_test('a manifest entry without value seeds null, as value null did', function () {
+    // `extractSsrDefaults` writes no `value` for a prop without a default
+    // (spec/js-undefined-value.md, rollout step U1).
+    $missing = ['n' => ['propName' => 'n'], 'rest' => ['isRestProps' => true]];
+    $explicit = ['n' => ['propName' => 'n', 'value' => null], 'rest' => ['isRestProps' => true, 'value' => null]];
+    foreach ([[], ['n' => null], ['n' => 3], ['rest' => ['a' => 1]]] as $props) {
+        bf_assert_eq(BarefootJS::deriveStashFromDefaults($missing, $props), BarefootJS::deriveStashFromDefaults($explicit, $props));
+    }
+    bf_assert_eq(BarefootJS::deriveStashFromDefaults($missing, []), ['n' => null, 'rest' => null]);
+    // Decoded from the manifest's JSON text (`stdClass` entries).
+    $decoded = json_decode('{"n":{"propName":"n"}}');
+    bf_assert_eq(BarefootJS::deriveStashFromDefaults($decoded, []), ['n' => null]);
+});
+
 return bf_finish();

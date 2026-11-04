@@ -240,6 +240,7 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
   }
 
   protected readonly loopChildDiagnosticName = 'Jinja'
+  protected readonly nativeSafe = NATIVE_SAFE
   // Two source names that Jinja's renaming of reserved names turns into one
   // template variable would read the same value (#3404).
   protected override readonly templateIdentifierSpelling = { ident: jinjaIdent, label: 'Jinja' }

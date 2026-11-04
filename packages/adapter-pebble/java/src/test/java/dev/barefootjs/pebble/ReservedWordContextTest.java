@@ -59,6 +59,35 @@ class ReservedWordContextTest {
     assertEquals(Map.of("filter_", "all", "count", 0.0), vars);
   }
 
+  /**
+   * `extractSsrDefaults` writes no `value` for a prop without a default
+   * (spec/js-undefined-value.md, rollout step U1): such an entry seeds
+   * `null`, exactly as `"value": null` did, and its key is still set.
+   */
+  @Test
+  void deriveSeedsAnEntryWithoutValueAsNull() {
+    Map<String, Object> missing = new LinkedHashMap<>();
+    missing.put("n", new LinkedHashMap<>(Map.of("propName", "n")));
+    missing.put("rest", new LinkedHashMap<>(Map.of("isRestProps", true)));
+    Map<String, Object> explicit = new LinkedHashMap<>();
+    Map<String, Object> n = new LinkedHashMap<>(Map.of("propName", "n"));
+    n.put("value", null);
+    Map<String, Object> rest = new LinkedHashMap<>(Map.of("isRestProps", true));
+    rest.put("value", null);
+    explicit.put("n", n);
+    explicit.put("rest", rest);
+    Map<String, Object> nullN = new LinkedHashMap<>();
+    nullN.put("n", null);
+    for (Map<String, Object> props : List.<Map<String, Object>>of(Map.of(), nullN, Map.of("n", 3.0), Map.of("rest", Map.of("a", 1.0)))) {
+      assertEquals(DeriveStashFromDefaults.derive(explicit, props), DeriveStashFromDefaults.derive(missing, props));
+    }
+    Map<String, Object> seeded = DeriveStashFromDefaults.derive(missing, Map.of());
+    Map<String, Object> want = new LinkedHashMap<>();
+    want.put("n", null);
+    want.put("rest", null);
+    assertEquals(want, seeded);
+  }
+
   @Test
   void deriveLooksUpAReservedWordPropByItsMangledName() {
     Map<String, Object> d = new LinkedHashMap<>();

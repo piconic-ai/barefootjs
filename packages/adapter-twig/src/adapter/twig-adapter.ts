@@ -294,6 +294,7 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
   }
 
   protected readonly loopChildDiagnosticName = 'Twig'
+  protected readonly nativeSafe = NATIVE_SAFE
   // Two source names that Twig's renaming of reserved names turns into one
   // template variable would read the same value (#3404).
   protected override readonly templateIdentifierSpelling = { ident: twigIdent, label: 'Twig' }

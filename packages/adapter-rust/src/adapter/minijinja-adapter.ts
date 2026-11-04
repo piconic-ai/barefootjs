@@ -287,6 +287,7 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
   }
 
   protected readonly loopChildDiagnosticName = 'Jinja'
+  protected readonly nativeSafe = NATIVE_SAFE
   // Two source names that MiniJinja's renaming of reserved names turns into one
   // template variable would read the same value (#3404).
   protected override readonly templateIdentifierSpelling = { ident: minijinjaIdent, label: 'MiniJinja' }

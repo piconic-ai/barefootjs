@@ -340,6 +340,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
   }
 
   protected readonly loopChildDiagnosticName = 'Pebble'
+  protected readonly nativeSafe = NATIVE_SAFE
   // Two source names that Pebble's renaming of reserved names turns into one
   // template variable would read the same value (#3404).
   protected override readonly templateIdentifierSpelling = { ident: pebbleIdent, label: 'Pebble' }

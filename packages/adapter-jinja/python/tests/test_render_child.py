@@ -119,5 +119,19 @@ class RenderChildTest(unittest.TestCase):
         self.assertFalse(root.passed("tone", True))
 
 
+
+class TestDeriveStashFromDefaults(unittest.TestCase):
+    def test_entry_without_value_seeds_none_like_value_none(self):
+        # `extractSsrDefaults` writes no `value` for a prop without a default
+        # (spec/js-undefined-value.md, rollout step U1).
+        from barefootjs.runtime import _derive_stash_from_defaults
+
+        missing = {"n": {"propName": "n"}, "rest": {"isRestProps": True}}
+        explicit = {"n": {"propName": "n", "value": None}, "rest": {"isRestProps": True, "value": None}}
+        for props in ({}, {"n": None}, {"n": 3}, {"rest": {"a": 1}}):
+            self.assertEqual(_derive_stash_from_defaults(missing, props), _derive_stash_from_defaults(explicit, props))
+        self.assertEqual(_derive_stash_from_defaults(missing, {}), {"n": None, "rest": None})
+
+
 if __name__ == "__main__":
     unittest.main()

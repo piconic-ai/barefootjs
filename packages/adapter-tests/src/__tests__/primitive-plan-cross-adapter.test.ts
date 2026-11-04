@@ -126,6 +126,7 @@ const OP_HELPERS: Readonly<Record<PrimitiveOp, readonly PrimitiveHelper[]>> = {
   neg: ['neg'],
   'number-literal': ['number'],
   nullish: ['coalesce'],
+  'nil-test': ['is_null', 'is_undefined', 'is_nullish'],
 }
 
 /** Where a variant sits: the scope its plan is read in. */
@@ -280,7 +281,7 @@ const CASES: readonly Case[] = [
     // `'undefined'`), the runtime's `to_string` otherwise.
     id: 'to-string',
     plan: (node, typing, table) => {
-      const literal = rewriteNilReadings({ kind: 'template-literal', parts: [{ type: 'expression', expr: node }] }, typing)
+      const literal = rewriteNilReadings({ kind: 'template-literal', parts: [{ type: 'expression', expr: node }] }, typing, table)
       const part = literal.kind === 'template-literal' ? literal.parts[0] : undefined
       return part?.type === 'expression' ? planToString(part.expr, typing, table) : null
     },
@@ -483,7 +484,7 @@ describe('every template adapter spells the primitive plan its NativeSafeTable n
           variants.forEach((v, i) => {
             const scoped = typing.at(scopeFor(v.scope, metadata.propsObjectName))
             // The emitters plan the node after the nil-reading rewrite (#3824 step 4).
-            const node = rewriteNilReadings(parseExpression(v.node), scoped)
+            const node = rewriteNilReadings(parseExpression(v.node), scoped, target.table)
             const plan = planOf ? planOf(node, scoped, target.table) : planPrimitive(node, scoped, target.table)
             const want = expected(plan)
             const got = observed(parts[i]!, plan!, target)
@@ -501,4 +502,59 @@ describe('every template adapter spells the primitive plan its NativeSafeTable n
   test('every listed disagreement names a case this test compiles', () => {
     expect(Object.keys(DISAGREEMENTS).filter((key) => !seen.has(key))).toEqual([])
   })
+})
+
+/**
+ * `carriesUndefined` (`spec/js-undefined-value.md`, rollout step U1) over
+ * every adapter's table: with the flag off (every target today) the plan is
+ * the one the emissions above spell, and a nullish test is left to the
+ * target's nil test; with it on, the same table loses only its `unproven`
+ * native claims (the operand may be `UNDEF`, which only the helper reads),
+ * and `=== null` / `=== undefined` / `== null` plan as the strict and loose
+ * nil tests. No adapter flips the flag in U1, so this is a plan-only check.
+ */
+describe('the plan over every adapter table, carriesUndefined false and true (U1)', () => {
+  const NIL_TESTS: Readonly<Record<string, PrimitiveHelper>> = {
+    'props.maybe === null': 'is_null',
+    'props.maybe !== null': 'is_null',
+    'props.maybe === undefined': 'is_undefined',
+    'undefined !== props.ms': 'is_undefined',
+    'props.maybe == null': 'is_nullish',
+    'props.ms != undefined': 'is_nullish',
+  }
+  const metadata = buildMetadata(analyzeComponent(source([]), 'primitives.tsx'))
+  const typing = collectOperandTyping(metadata)
+  // Every component-scope variant node of the cases above that `planPrimitive` plans itself.
+  const nodes = CASES.filter((c) => !c.plan)
+    .flatMap((c) => Object.values(c.positions).flat())
+    .filter((v) => v.scope === 'component')
+    .map((v) => v.node)
+  const planOn = (src: string, table: NativeSafeTable): PrimitivePlan | null => {
+    const scoped = typing.at(scopeFor('component', metadata.propsObjectName))
+    return planPrimitive(rewriteNilReadings(parseExpression(src), scoped, table), scoped, table)
+  }
+
+  for (const target of TARGETS) {
+    test(target.name, () => {
+      const collapsing: NativeSafeTable = { ...target.table, carriesUndefined: false }
+      const carrying: NativeSafeTable = { ...target.table, carriesUndefined: true }
+      const wrong: string[] = []
+      for (const src of nodes) {
+        const off = planOn(src, collapsing)
+        const on = planOn(src, carrying)
+        if (on?.mode === 'native' && on.proof === 'unproven') wrong.push(`${src}: native over unproven with the flag on`)
+        const unprovenNative = off?.mode === 'native' && off.proof === 'unproven'
+        const want = unprovenNative ? { mode: 'helper', op: off.op, proof: 'unproven' } : off
+        if (unprovenNative ? !(on?.mode === 'helper' && on.op === off.op && on.proof === 'unproven') : JSON.stringify(on) !== JSON.stringify(off)) {
+          wrong.push(`${src}: flag on ${JSON.stringify(on)}, want ${JSON.stringify(want)}`)
+        }
+      }
+      for (const [src, helper] of Object.entries(NIL_TESTS)) {
+        if (planOn(src, collapsing) !== null) wrong.push(`${src}: planned with the flag off`)
+        const on = planOn(src, carrying)
+        if (!(on?.mode === 'helper' && on.op === 'nil-test' && on.helper === helper)) wrong.push(`${src}: ${JSON.stringify(on)}, want ${helper}`)
+      }
+      expect(wrong).toEqual([])
+    })
+  }
 })

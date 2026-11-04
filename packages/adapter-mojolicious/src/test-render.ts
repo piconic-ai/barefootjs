@@ -873,7 +873,8 @@ function perlSingleQuote(s: string): string {
  * destructured prop's caller-facing key is silently dropped.
  */
 function ssrDefaultEntryToPerl(d: SsrDefault): string {
-  const parts: string[] = [`value => ${toPerlLiteral(d.value)}`]
+  // A prop with no default has no `value`; the runtime reads it as undef.
+  const parts: string[] = 'value' in d ? [`value => ${toPerlLiteral(d.value)}`] : []
   if (d.propName !== undefined) parts.push(`propName => ${perlSingleQuote(d.propName)}`)
   if (d.isRestProps) parts.push(`isRestProps => 1`)
   return `{${parts.join(', ')}}`
