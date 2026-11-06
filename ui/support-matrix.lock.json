@@ -31,6 +31,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -194,6 +206,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -405,6 +429,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -613,6 +649,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -758,6 +806,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -927,6 +987,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -1090,6 +1162,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -1259,6 +1343,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -1422,6 +1518,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -3739,6 +3847,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3962,6 +4076,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -4212,6 +4332,12 @@
               "fixture": "destructure-default-body-renamed-callback-signal",
               "limitations": [
                 "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -4483,6 +4609,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4616,6 +4748,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -4839,6 +4977,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5044,6 +5188,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -5258,6 +5408,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -5484,6 +5640,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -5789,6 +5951,18 @@
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -6132,6 +6306,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6499,6 +6685,18 @@
               "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -6914,6 +7112,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7209,6 +7419,18 @@
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -7552,6 +7774,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7871,6 +8105,18 @@
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -8205,6 +8451,18 @@
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -8545,6 +8803,18 @@
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -9376,9 +9646,27 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -9902,9 +10190,27 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -10470,6 +10776,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
@@ -10491,6 +10803,18 @@
               "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -11146,6 +11470,24 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -11546,9 +11888,27 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -12066,9 +12426,27 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -12568,9 +12946,27 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -13076,9 +13472,27 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -13602,9 +14016,27 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -14289,9 +14721,27 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -14677,9 +15127,27 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -15137,6 +15605,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
@@ -15158,6 +15632,18 @@
               "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -15645,6 +16131,24 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -15925,9 +16429,27 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -16313,9 +16835,27 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -16707,9 +17247,27 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -17083,9 +17641,27 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -17471,9 +18047,27 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -17839,6 +18433,24 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -17878,6 +18490,24 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -17985,6 +18615,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
@@ -18000,6 +18636,18 @@
               "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -18061,6 +18709,24 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -18094,6 +18760,24 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -18135,6 +18819,24 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -18174,6 +18876,24 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -18215,6 +18935,24 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -18254,6 +18992,24 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -18412,6 +19168,24 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -18800,6 +19574,24 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -19221,6 +20013,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
@@ -19236,6 +20034,18 @@
               "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -19741,6 +20551,24 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -20018,6 +20846,24 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -20403,6 +21249,24 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -20764,6 +21628,24 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -21140,6 +22022,24 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -21528,6 +22428,24 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -29411,6 +30329,111 @@
         "code": "props.missing >= ''"
       }
     },
+    "binary:unknown": {
+      "cells": {
+        "hono": {},
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            }
+          ]
+        },
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            }
+          ]
+        },
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            }
+          ]
+        }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 156,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
+      },
+      "example": {
+        "fixture": "destructure-default-earlier-assignment",
+        "description": "A destructure default reading an earlier binding kept as a local reads that local (earlier-assignment)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-earlier-assignment.ts"
+      }
+    },
     "literal:boolean": {
       "cells": {
         "hono": {
@@ -30798,6 +31821,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -30985,6 +32014,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -31193,6 +32228,12 @@
               "fixture": "destructure-default-body-renamed-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -31434,6 +32475,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -31567,6 +32614,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -31757,6 +32810,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -31962,6 +33021,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -32143,6 +33208,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -32333,6 +33404,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -32590,6 +33667,18 @@
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -32870,6 +33959,18 @@
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -33231,6 +34332,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -33583,6 +34696,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -33776,6 +34901,18 @@
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -34056,6 +35193,18 @@
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -34345,6 +35494,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -34616,6 +35777,18 @@
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -34896,6 +36069,18 @@
               "fixture": "destructure-default-null-hydrate",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -35165,6 +36350,18 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -35174,6 +36371,18 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -35185,6 +36394,18 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -35194,6 +36415,18 @@
         },
         "jinja": {
           "gaps": [
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -35205,6 +36438,18 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -35214,6 +36459,18 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -35225,6 +36482,18 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -35235,6 +36504,18 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -35244,6 +36525,18 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -35270,6 +36563,24 @@
         "hono": {},
         "blade": {
           "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "module-const-default-hydrate",
               "limitations": [
@@ -35298,6 +36609,24 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "module-const-default-hydrate",
               "limitations": [
@@ -35393,6 +36722,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
@@ -35408,6 +36743,18 @@
               "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -35457,6 +36804,24 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -35484,6 +36849,24 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "module-const-default-hydrate",
               "limitations": [
@@ -35513,6 +36896,24 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -35540,6 +36941,24 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "module-const-default-hydrate",
               "limitations": [
@@ -35569,6 +36988,24 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -35596,6 +37033,24 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "module-const-default-hydrate",
               "limitations": [

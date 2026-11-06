@@ -34,6 +34,12 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // loop; SSR refuses it on the template adapters and the CSR template has
   // no value for it either.
   'computed-const-read-unlowerable',
+  // A value an init-time mutation computes (`const n = a.push('x') &&
+  // b.length` over `let { a = [], b = a } = props`): the CSR template has no
+  // init to run, and the template adapters refuse the call. The real-browser
+  // fixture-hydrate and oracle suites check the client.
+  'destructure-default-shared-array',
+  'destructure-default-shared-array-renamed',
   // #1247: prop-derived static loops materialize children at init time, not
   // template-eval — CSR shape covered by `static-loop-csr-materialize.test.ts`.
   'static-array-from-props',
@@ -230,4 +236,7 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // A `null` / `undefined` `style` object property: the CSR template omits
   // the `style` attribute where the reference keeps `style=""`.
   'style-object-nil-property': { limitation: 'style-object-nil-property' },
+  // A default assigning an earlier binding (`b = (a = 2)`): the CSR template
+  // reads `c` as `_p.c ?? _p.a`, so the assignment never runs.
+  'destructure-default-earlier-assignment': { limitation: 'destructure-default-assigns-earlier-binding' },
 }

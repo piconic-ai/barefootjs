@@ -4609,6 +4609,23 @@
         "text"
       ]
     },
+    "destructure-default-earlier-assignment": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:unknown",
+        "literal:number",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "destructure-default-explicit-falsy": {
       "kinds": [
         "binary",
@@ -4795,6 +4812,42 @@
         "attribute",
         "condition",
         "loop",
+        "text"
+      ]
+    },
+    "destructure-default-shared-array": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:&&",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-shared-array-renamed": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:&&",
+        "logical:??"
+      ],
+      "contexts": [
         "text"
       ]
     },
