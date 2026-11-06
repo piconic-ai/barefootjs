@@ -611,7 +611,11 @@ fn call_builtin(name: &str, args: &[JsValue]) -> JsValue {
         "Math.floor" => JsValue::Number(num::js_floor(to_number(&arg(0)))),
         "Math.ceil" => JsValue::Number(num::js_ceil(to_number(&arg(0)))),
         "Math.round" => JsValue::Number(num::js_round(to_number(&arg(0)))),
+        // `String()` / `Number()` with no argument are `""` / `0`; an explicit
+        // `undefined` argument is `"undefined"` / NaN.
+        "String" if args.is_empty() => JsValue::String(String::new()),
         "String" => JsValue::String(to_string(&arg(0))),
+        "Number" if args.is_empty() => JsValue::Number(0.0),
         "Number" => JsValue::Number(to_number(&arg(0))),
         "Boolean" => JsValue::Bool(truthy(&arg(0))),
         // Any other callee is outside the subset (refused upstream).

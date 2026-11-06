@@ -705,10 +705,12 @@ def _call_builtin(name: str, args: list) -> Any:
         return _safe_ceil(_to_number(arg(0)))
     if name == "Math.round":
         return _math_round(_to_number(arg(0)))
+    # `String()` / `Number()` with no argument are "" / 0; an explicit
+    # `undefined` argument is "undefined" / NaN.
     if name == "String":
-        return _to_string(arg(0))
+        return _to_string(arg(0)) if args else ""
     if name == "Number":
-        return _to_number(arg(0))
+        return _to_number(arg(0)) if args else 0
     if name == "Boolean":
         return _bool(_truthy(arg(0)))
     # Any other callee is outside the subset (refused upstream).

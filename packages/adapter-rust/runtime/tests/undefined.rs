@@ -239,6 +239,21 @@ fn evaluator_reads() {
     assert_eq!(evaluator::evaluate(&coalesce, &with(obj(vec![("x", N)]))), s("d"));
 }
 
+/// `String()` / `Number()` with no argument are `""` / `0`, while an explicit
+/// `undefined` argument is `"undefined"` / NaN.
+#[test]
+fn string_and_number_with_no_argument() {
+    let env = evaluator::Env::new();
+    let call = |name: &str, args: serde_json::Value| {
+        evaluator::evaluate(&json!({"kind": "call", "callee": {"kind": "identifier", "name": name}, "args": args}), &env)
+    };
+    let undef_arg = json!([{"kind": "identifier", "name": "undefined"}]);
+    assert_eq!(call("Number", json!([])), n(0.0));
+    assert_eq!(call("String", json!([])), s(""));
+    assert!(matches!(call("Number", undef_arg.clone()), JsValue::Number(v) if v.is_nan()));
+    assert_eq!(call("String", undef_arg), s("undefined"));
+}
+
 /// `render_child` seeds the child's vars the way
 /// `derive_stash_from_defaults` does (decision 6): an absent or `undefined`
 /// prop takes its default, or undefined without one; a present `none` keeps
