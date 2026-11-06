@@ -4,6 +4,7 @@ lib/BarefootJS.pm
 lib/BarefootJS/DevReload.pm
 lib/BarefootJS/Evaluator.pm
 lib/BarefootJS/SearchParams.pm
+lib/BarefootJS/Undefined.pm
 LICENSE
 CONTRIBUTING.md
 SECURITY.md
@@ -30,3 +31,4 @@ t/scope_id_suffix.t
 t/search_params.t
 t/spread_attrs.t
 t/template_primitives.t
+t/undefined.t

@@ -22,9 +22,11 @@ import type {
   CallbackEvalSpelling,
 } from '@barefootjs/jsx'
 
-const helperCall = prefixedArrayMethodSpelling('bf->', 'undef')
+// The undefined literal is the `slice` end the source left out: the runtime's
+// `UNDEF` (`bf->undefined`), which `bf->slice` reads as "to the length";
+// `undef` would be a `null` end, which JS coerces to 0.
+const helperCall = prefixedArrayMethodSpelling('bf->', 'bf->undefined')
 
-// The undefined literal is the `slice` end the source left out; Perl reads `undef`.
 // Perl's native `lc` / `uc` need no runtime helper.
 const ARRAY_METHOD_SPELLING: ArrayMethodSpelling = {
   ...helperCall,

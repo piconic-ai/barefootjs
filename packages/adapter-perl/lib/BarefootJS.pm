@@ -10,8 +10,32 @@ use B ();
 use JSON::PP ();
 use POSIX ();
 use Time::Local ();
-use Scalar::Util qw(looks_like_number weaken);
+use Scalar::Util qw(looks_like_number refaddr weaken);
+use BarefootJS::Undefined ();
 use BarefootJS::Evaluator ();
+
+# JS `undefined` (BarefootJS/Undefined.pm); Perl's `undef` is JS `null`. A
+# props hashref has JS's four states for a prop: the key left out (absent),
+# `$BarefootJS::UNDEF` (present `undefined`), `undef` (`null`) and a value.
+# `UNDEF` is `defined` in Perl's sense and `//` keeps it, so every nullish
+# test in this runtime goes through `_nullish` (`is_nullish`), never
+# `defined` / `//`.
+our $UNDEF = $BarefootJS::Undefined::UNDEF;
+sub _undef_p { BarefootJS::Undefined::is_undefined($_[0]) }
+sub _nullish { BarefootJS::Undefined::is_nullish($_[0]) }
+
+# The default of a helper's optional argument: the call passed none. JS
+# reads an omitted argument as `undefined`, so `_omitted` accepts `UNDEF`
+# too; an explicit `undef` is JS `null`, which each helper coerces like any
+# other value (`[1, 2].slice(0, null)` is `[]`).
+my $OMITTED = \'omitted';
+sub _omitted { return (ref $_[0] && refaddr($_[0]) == refaddr($OMITTED)) || _undef_p($_[0]) ? 1 : 0 }
+
+# JS ToString / ToNumber for a helper argument (a needle, a separator, a
+# count), which spell `null` / `undefined` as JS does (`"null"` / 0,
+# `"undefined"` / NaN); `string` / `number` are the display helpers.
+sub _js_string { BarefootJS::Evaluator::_to_string($_[0]) }
+sub _js_number { BarefootJS::Evaluator::_to_number($_[0]) }
 
 # NOTE: This runtime is template-engine-agnostic AND framework-agnostic by
 # design, so it can ship as a standalone CPAN distribution. It depends only on
@@ -164,7 +188,7 @@ sub hydration_attrs ($self) {
 # does (`string`): a JSON boolean row is `true` / `false`, not `1` / `0`.
 sub data_key_attr ($self) {
     my $k = $self->_data_key;
-    return '' unless defined $k;
+    return '' if _nullish($k);
     $k = $self->string($k);
     $k =~ s/&/&amp;/g;
     $k =~ s/"/&quot;/g;
@@ -180,7 +204,7 @@ sub props_attr ($self) {
     # value (e.g. a blog paragraph) terminates the single-quoted attribute
     # and truncates the hydration payload. The browser entity-decodes the
     # attribute value, so the client's JSON.parse sees the original text.
-    my $json = _html_escape($self->backend->encode_json($props));
+    my $json = _html_escape($self->backend->encode_json(_json_ready($props)));
     return qq{ bf-p='$json'};
 }
 
@@ -217,7 +241,7 @@ sub revoke_context ($self, $name) {
     return '';
 }
 
-sub use_context ($self, $name, $default = undef) {
+sub use_context ($self, $name, $default = $UNDEF) {
     my $stack = $CONTEXT_STACKS{$name};
     return $default unless $stack && @$stack;
     return $stack->[-1];
@@ -295,7 +319,7 @@ sub scope_comment ($self) {
     }
     my $props_json = '';
     if ($self->_props && %{$self->_props}) {
-        $props_json = '|' . $self->backend->encode_json($self->_props);
+        $props_json = '|' . $self->backend->encode_json(_json_ready($self->_props));
     }
     return "<!--bf-scope:$scope_id$host_segment$props_json-->";
 }
@@ -385,13 +409,14 @@ sub register_child_renderer ($self, $name, $renderer) {
 # outside one, i.e. while the root renders.
 our $CALLER_KEYS;
 
-# Whether this component's caller passed the prop `$name`, even as undef:
-# JS's `name in props`, which a template can't ask of its stash (every
-# declared prop is seeded, so an omitted one and an undef one read the same).
-# A `{...props}` spread onto a child carries a param only when this is true.
-# The keys are those `render_child` recorded for a child and `_props` for the
-# root; with neither recorded (a root rendered without `_props`), `$fallback`,
-# the template's own "not nil" test, decides.
+# Whether this component's caller passed the prop `$name`, even as undef
+# (`null`) or `UNDEF`: JS's `name in props`, which a template can't ask of its
+# stash (every declared prop is seeded, so an omitted one reads as its default
+# or `UNDEF`, as a present `undefined` one does). A `{...props}` spread onto a
+# child carries a param only when this is true. The keys are those
+# `render_child` recorded for a child and `_props` for the root; with neither
+# recorded (a root rendered without `_props`), `$fallback`, the template's own
+# "not undefined" test, decides.
 sub passed ($self, $name, $fallback = undef) {
     return exists $CALLER_KEYS->{$name} ? 1 : 0 if $CALLER_KEYS;
     my $props = $self->_props;
@@ -569,7 +594,7 @@ sub _register_manifest_child ($self, $slot_key, $marked, $signal_init, $manifest
         # JSX `key` (a reserved prop) → data-key on the child's scope root
         # for keyed-loop reconciliation (see `data_key_attr`).
         my $data_key = delete $props->{key};
-        $child_bf->_data_key($data_key) if defined $data_key;
+        $child_bf->_data_key($data_key) unless _nullish($data_key);
         $child_bf->_scope_id(
             $slot_id ? $host_scope . '_' . $slot_id
                      : $template_name . '_' . scope_id_suffix()
@@ -620,9 +645,12 @@ sub _register_manifest_child ($self, $slot_key, $marked, $signal_init, $manifest
 #   { value => <static-fallback>, propName => <prop>, isRestProps => bool }
 # For `isRestProps`, the rest bag passes through unchanged (or the
 # static `{}` if the caller didn't supply one). For ordinary entries
-# the caller's `$props->{propName}` wins when defined, otherwise the
-# static `value` does. `propName`-less entries (signal / memo locals)
-# always use the static value — the caller cannot override them.
+# the caller's `$props->{propName}` wins when present -- `undef` (JS `null`)
+# included -- and an absent or `UNDEF` prop takes the static `value`, or
+# `UNDEF` when the entry has none (the manifest writes `value` only for a
+# prop with a default; spec/js-undefined-value.md, decision 6).
+# `propName`-less entries (signal / memo locals) always use the static
+# value — the caller cannot override them.
 sub _derive_stash_from_defaults ($defaults, $props) {
     my %extra;
     for my $name (keys %$defaults) {
@@ -632,17 +660,23 @@ sub _derive_stash_from_defaults ($defaults, $props) {
             next;
         }
         if ($d->{isRestProps}) {
-            $extra{$name} = exists $props->{$name} ? $props->{$name} : $d->{value};
+            $extra{$name} = exists $props->{$name} ? $props->{$name} : _static_fallback($d);
             next;
         }
         my $prop_name = $d->{propName};
-        if (defined $prop_name && exists $props->{$prop_name} && defined $props->{$prop_name}) {
+        if (defined $prop_name && exists $props->{$prop_name} && !_undef_p($props->{$prop_name})) {
             $extra{$name} = $props->{$prop_name};
         } else {
-            $extra{$name} = $d->{value};
+            $extra{$name} = _static_fallback($d);
         }
     }
     return %extra;
+}
+
+# An `ssrDefaults` entry's seed when the caller's prop is absent or `UNDEF`:
+# its `value`, or `UNDEF` when it has none.
+sub _static_fallback ($d) {
+    return exists $d->{value} ? $d->{value} : $UNDEF;
 }
 
 # ---------------------------------------------------------------------------
@@ -701,13 +735,11 @@ sub async_resolve ($self, $id, $content_html) {
 # ---------------------------------------------------------------------------
 
 sub json ($self, $value) {
-    # Documented divergence from JS: JS distinguishes `null` (renders as
-    # "null") from `undefined` (`JSON.stringify(undefined)` returns the
-    # JS value `undefined`, not a string). Perl has no such distinction
-    # — both map to `undef`. We choose the `null` rendering for SSR
-    # ergonomics: an unset prop becomes the string "null" rather than
-    # the literal text "undefined" or an empty attribute. Matches the
-    # `null` case of JS exactly; diverges from the `undefined` case.
+    # `JSON.stringify`: `null` (`undef`) is "null"; `undefined` (`UNDEF`)
+    # gives no string at the top level -- the result is `UNDEF` itself,
+    # which prints nothing and omits an attribute -- an object member
+    # holding it is skipped, and an array element holding it is written as
+    # `null`.
     #
     # A number is written as JS writes it (`_format_number`): shortest
     # round-trip digits, `-0` as `0`, an unpadded exponent (`-4e-8`,
@@ -718,12 +750,13 @@ sub json ($self, $value) {
     # strings and other leaves go through the backend's encoder (Mojo's
     # `to_json` returns a character string, suitable for embedding in HTML
     # output via Mojo::ByteStream / `<%==`).
+    return $value if _undef_p($value);
     my $ref = ref $value;
-    return '[' . CORE::join(',', map { $self->json($_) } @$value) . ']' if $ref eq 'ARRAY';
+    return '[' . CORE::join(',', map { _undef_p($_) ? 'null' : $self->json($_) } @$value) . ']' if $ref eq 'ARRAY';
     if ($ref eq 'HASH') {
         return '{' . CORE::join(',', map {
             $self->backend->encode_json("$_") . ':' . $self->json($value->{$_})
-        } sort keys %$value) . '}';
+        } grep { !_undef_p($value->{$_}) } sort keys %$value) . '}';
     }
     if (_json_is_number($value)) {
         my $n = BarefootJS::Evaluator::_double($value + 0);
@@ -740,6 +773,22 @@ sub json ($self, $value) {
 # prop keeps its quotes whatever the template compared it with. A number
 # that was only stringified keeps the private flag alone (Perl 5.36+) and
 # stays a number.
+# `$value` as `JSON.stringify` sees it, for a host encoder: a member holding
+# `undefined` is dropped and an `undefined` element is `null`, at any depth.
+# The encoder (JSON::PP dies on `UNDEF`, Mojo::JSON writes `""`) never
+# receives `UNDEF`. A JSON boolean and any other leaf pass through.
+sub _json_ready ($value) {
+    my $ref = ref $value;
+    if ($ref eq 'HASH') {
+        return { map { ($_ => _json_ready($value->{$_})) } grep { !_undef_p($value->{$_}) } keys %$value };
+    }
+    if ($ref eq 'ARRAY') {
+        return [ map { _undef_p($_) ? undef : _json_ready($_) } @$value ];
+    }
+    return undef if _undef_p($value);
+    return $value;
+}
+
 sub _json_is_number ($value) {
     return 0 if !defined $value || ref $value;
     my $flags = B::svref_2object(\$value)->FLAGS;
@@ -748,11 +797,11 @@ sub _json_is_number ($value) {
 }
 
 sub string ($self, $value) {
-    # JS `String(v)` mirror. `undef` renders as the empty string here so
-    # an unset prop doesn't surface as a literal "undefined" / "null"
-    # in user-facing HTML — same divergence the Go adapter documents
-    # for `bf_string`.
-    return '' unless defined $value;
+    # JS `String(v)` mirror for a display sink. `undef` (`null`) and `UNDEF`
+    # (`undefined`) render as the empty string here, as JSX renders them in a
+    # text or attribute position -- same divergence the Go adapter documents
+    # for `bf_string`. JS ToString itself is `to_string`.
+    return '' if _nullish($value);
     # JS `Array.prototype.toString` is `this.join(',')`, applied
     # recursively — a bare `"$value"` interpolation would otherwise
     # stringify an ARRAY ref as its Perl memory address
@@ -798,7 +847,7 @@ sub number ($self, $value) {
     # "NaN" would conflate the user-passing-the-string-"NaN" case
     # with the parse-failure case, and break NaN detection in
     # downstream helpers.
-    return 0 + 'nan' unless defined $value;
+    return 0 + 'nan' if _nullish($value);
     return $value + 0 if looks_like_number($value);
     return 0 + 'nan';
 }
@@ -807,41 +856,39 @@ sub number ($self, $value) {
 # instead of Perl's native operators so the result is the IEEE double JS
 # computes: a 64-bit IV sum past 2**53 rounds as a double, a perl with a
 # wider NV (-Duselongdouble / -Dusequadmath) rounds to the double JS has,
-# and division by zero yields +/-Infinity or NaN instead of dying. Operand
-# coercion stays Perl's (`undef` is 0), as with the native operator.
+# and division by zero yields +/-Infinity or NaN instead of dying. Each
+# operand goes through JS ToNumber (`_num`): `undef` (`null`) is 0, `UNDEF`
+# (`undefined`) NaN, a string its JS numeric value.
 sub _as_double { unpack('d', pack('d', $_[0])) }
+sub _num { _as_double(_js_number($_[0])) }
 
 sub add ($self, $l, $r) {
-    no warnings qw(numeric uninitialized);
-    return _as_double(_as_double($l) + _as_double($r));
+    return _as_double(_num($l) + _num($r));
 }
 
 sub subtract ($self, $l, $r) {
-    no warnings qw(numeric uninitialized);
-    return _as_double(_as_double($l) - _as_double($r));
+    return _as_double(_num($l) - _num($r));
 }
 
 sub multiply ($self, $l, $r) {
-    no warnings qw(numeric uninitialized);
-    return _as_double(_as_double($l) * _as_double($r));
+    return _as_double(_num($l) * _num($r));
 }
 
 sub divide ($self, $l, $r) {
-    no warnings qw(numeric uninitialized);
-    return BarefootJS::Evaluator::_divide(_as_double($l), _as_double($r));
+    return BarefootJS::Evaluator::_divide(_num($l), _num($r));
 }
 
 # JS `%` (#3474): the truncated remainder, which takes the dividend's sign
 # (`-7 % 2` is -1) and keeps a fraction. Perl's native `%` floors (`-7 % 2`
-# is 1) and converts both operands to integers (`NaN % 2` is 0). A nil
-# operand reads as 0, as with the native operator.
+# is 1) and converts both operands to integers (`NaN % 2` is 0).
 sub mod ($self, $l, $r) {
-    no warnings qw(numeric);
-    return BarefootJS::Evaluator::_remainder(_as_double($l // 0), _as_double($r // 0));
+    return BarefootJS::Evaluator::_remainder(_num($l), _num($r));
 }
 
 # NaN is the only float for which `$x != $x` holds. Used as the
-# portable sentinel check in floor/ceil/round.
+# portable sentinel check in floor/ceil/round. The `Math` helpers coerce
+# through JS ToNumber (`null` is 0, `undefined` NaN), as `Math.floor(null)`
+# is 0.
 sub _is_nan { my $n = shift; return $n != $n }
 
 # True for +/-Infinity. `9**9**9` is Perl's portable infinity literal; a
@@ -849,19 +896,19 @@ sub _is_nan { my $n = shift; return $n != $n }
 sub _is_inf { my $n = shift; return $n == 9**9**9 || $n == -9**9**9 }
 
 sub floor ($self, $value) {
-    my $n = $self->number($value);
+    my $n = _js_number($value);
     return $n if _is_nan($n);
     return POSIX::floor($n);
 }
 
 sub ceil ($self, $value) {
-    my $n = $self->number($value);
+    my $n = _js_number($value);
     return $n if _is_nan($n);
     return POSIX::ceil($n);
 }
 
 sub round ($self, $value) {
-    my $n = $self->number($value);
+    my $n = _js_number($value);
     return $n if _is_nan($n);
     # POSIX has no `round`. JS `Math.round` rounds half toward
     # +Infinity (so `Math.round(-1.5) === -1`, not -2). `floor(n
@@ -872,16 +919,16 @@ sub round ($self, $value) {
 # `Math.min(a, b)` / `Math.max(a, b)` -- two-arg forms only (#2168
 # math-methods). JS returns NaN if either operand is NaN.
 sub min ($self, $a, $b) {
-    my $x = $self->number($a);
-    my $y = $self->number($b);
+    my $x = _js_number($a);
+    my $y = _js_number($b);
     return $x if _is_nan($x);
     return $y if _is_nan($y);
     return $x < $y ? $x : $y;
 }
 
 sub max ($self, $a, $b) {
-    my $x = $self->number($a);
-    my $y = $self->number($b);
+    my $x = _js_number($a);
+    my $y = _js_number($b);
     return $x if _is_nan($x);
     return $y if _is_nan($y);
     return $x > $y ? $x : $y;
@@ -890,7 +937,7 @@ sub max ($self, $a, $b) {
 # `Math.abs()` (#2168 math-methods). `CORE::abs` avoids Perl's
 # ambiguous-call warning against this package's own `abs` sub.
 sub abs ($self, $value) {
-    my $n = $self->number($value);
+    my $n = _js_number($value);
     return $n if _is_nan($n);
     return CORE::abs($n);
 }
@@ -1109,9 +1156,9 @@ sub _format_date_zone_offset ($tz, $ms) {
 #                 `.includes`, so both positions agree. This used to be a
 #                 stringy `eq` scan, which coerced numbers to strings
 #                 (`[2].includes("2")` was true) and diverged from JS.
-#   - scalar:     `index($recv, $sub) != -1`, with both args
-#                 coerced through `// ''` so an undef receiver /
-#                 needle doesn't trip Perl's substr warning.
+#   - scalar:     `index($recv, $sub) != -1`, the needle JS ToString'd
+#                 (`null` searches for "null", `undefined` for
+#                 "undefined").
 # Anything else (HASH ref, code ref) returns false — matches the
 # JS semantic where `.includes` is only defined on Array /
 # TypedArray / String.
@@ -1120,7 +1167,8 @@ sub _format_date_zone_offset ($tz, $ms) {
 # numeric `==` reads two different non-numeric strings as `0 == 0`, and `eq`
 # reads `1` and `1.0` as different, so the comparison goes by the operands'
 # JS types: numbers by value, strings by content, booleans by truth value,
-# `undef` only to `undef`, an object or array only to the same reference,
+# `undef` (`null`) only to `undef`, `UNDEF` (`undefined`) only to `UNDEF`, an
+# object or array only to the same reference,
 # and values of different types never equal. The
 # result is a Perl boolean, the same value the native operators yield.
 sub strict_eq ($self, $l, $r) {
@@ -1132,8 +1180,9 @@ sub strict_eq ($self, $l, $r) {
 # unary `-`. Each delegates to the callback evaluator's primitive of the same
 # operation, so a template helper call and a callback body share one
 # implementation. A boolean result is a Perl boolean, as `strict_eq`'s is.
-# Unlike `number` and `string` (display helpers: `undef` -> NaN / ''), an
-# `undef` operand reads as JS null here (0 / 'null').
+# Unlike `number` and `string` (display helpers: `undef` / `UNDEF` -> NaN /
+# ''), an `undef` operand reads as JS null here (0 / 'null') and `UNDEF` as JS
+# undefined (NaN / 'undefined').
 sub truthy ($self, $v) {
     return BarefootJS::Evaluator::_truthy($v) ? !!1 : !!0;
 }
@@ -1151,6 +1200,14 @@ sub keep_truthy ($self, $v) {
 
 sub keep_falsy ($self, $v) {
     return BarefootJS::Evaluator::_truthy($v) ? undef : [$v];
+}
+
+# The box for a value-position JS `l ?? r`: the adapters spell it as
+# `(keep_nonnil(l) || [r])->[0]`, so each operand appears once. Only the two
+# nils (`null`, `undefined`) are absent; `0`, `''` and `false` are kept, as
+# in JS. Perl's `//` would keep `UNDEF`.
+sub keep_nonnil ($self, $v) {
+    return _nullish($v) ? undef : [$v];
 }
 
 sub to_number ($self, $v) { return BarefootJS::Evaluator::_to_number($v) }
@@ -1174,7 +1231,8 @@ sub includes ($self, $recv, $elem) {
         return 0;
     }
     return 0 if ref($recv);
-    return index($recv // '', $elem // '') != -1 ? 1 : 0;
+    # The needle is JS ToString'd (`"anullb".includes(null)` is true).
+    return index($self->string($recv), _js_string($elem)) != -1 ? 1 : 0;
 }
 
 # `Array.prototype.filter(fn)` / `.every(fn)` / `.some(fn)`. The Xslate adapter
@@ -1203,12 +1261,12 @@ sub some ($self, $recv, $pred) {
 # `Array.prototype.find(fn)` / `.findIndex(fn)` / `.findLast(fn)` /
 # `.findLastIndex(fn)` — same Kolon-lambda predicate mechanism as filter. The
 # camelCase JS names lower to these snake_case methods (like index_of /
-# last_index_of). `find` / `find_last` return the matching element (or undef →
-# JS `undefined`); the index forms return the 0-based position (or -1).
+# last_index_of). `find` / `find_last` return the matching element (or JS
+# `undefined`, `UNDEF`); the index forms return the 0-based position (or -1).
 sub find ($self, $recv, $pred) {
-    return undef unless ref($recv) eq 'ARRAY';
+    return $UNDEF unless ref($recv) eq 'ARRAY';
     for my $item (@$recv) { return $item if $pred->($item) }
-    return undef;
+    return $UNDEF;
 }
 
 sub find_index ($self, $recv, $pred) {
@@ -1218,9 +1276,9 @@ sub find_index ($self, $recv, $pred) {
 }
 
 sub find_last ($self, $recv, $pred) {
-    return undef unless ref($recv) eq 'ARRAY';
+    return $UNDEF unless ref($recv) eq 'ARRAY';
     for my $i (reverse 0 .. $#$recv) { return $recv->[$i] if $pred->($recv->[$i]) }
-    return undef;
+    return $UNDEF;
 }
 
 sub find_last_index ($self, $recv, $pred) {
@@ -1233,16 +1291,17 @@ sub find_last_index ($self, $recv, $pred) {
 # `.join` array method (so the adapter uses that directly) but no builtin
 # `lc` / `uc`, so these live on the runtime object. `CORE::` avoids recursing
 # into these methods.
-sub lc ($self, $s) { return defined $s ? CORE::lc($s) : '' }
-sub uc ($self, $s) { return defined $s ? CORE::uc($s) : '' }
+sub lc ($self, $s) { return CORE::lc($self->string($s)) }
+sub uc ($self, $s) { return CORE::uc($self->string($s)) }
 
-# `Array.prototype.join(sep)` with JS semantics: separator defaults to ",",
-# and undefined / null elements render as empty (`[1,,2].join(",")` → "1,,2").
+# `Array.prototype.join(sep)` with JS semantics: an omitted or `undefined`
+# separator is ",", any other one is ToString'd (`null` joins with "null");
+# undefined / null elements render as empty (`[1,,2].join(",")` → "1,,2").
 # Kolon has a builtin `.join`, but routing through the runtime keeps the
 # JS-compat element handling in one place. `CORE::join` avoids recursing.
-sub join ($self, $recv, $sep = undef) {
+sub join ($self, $recv, $sep = $OMITTED) {
     return '' unless ref($recv) eq 'ARRAY';
-    $sep //= ',';
+    $sep = _omitted($sep) ? ',' : _js_string($sep);
     # Each element routes through `string()` (JS `String(v)`), not a bare
     # defined-check, so a nested-array element (e.g. `.flat(0)`'s shallow
     # copy, #2262) gets the recursive JS comma-join instead of stringifying
@@ -1257,12 +1316,12 @@ sub join ($self, $recv, $sep = undef) {
 # count. A codepoint outside the Basic Multilingual Plane (astral,
 # U+10000-U+10FFFF — e.g. '👍') is a surrogate PAIR in UTF-16, so it counts
 # as 2, not 1; '日本語' is 3 either way (BMP-only). An object's `.length` is
-# its own `length` property (`{ length: 3 }`), undef when it has none — the
-# same read the evaluator's `_read_property` does.
+# its own `length` property (`{ length: 3 }`), `undefined` when it has none — the
+# same read the evaluator's `_read_index` does (`UNDEF` when it has none).
 sub length ($self, $recv) {
     return scalar @$recv if ref($recv) eq 'ARRAY';
-    return $recv->{length} if ref($recv) eq 'HASH';
-    return 0 if ref($recv);
+    return BarefootJS::Evaluator::_read_index($recv, 'length') if ref($recv) eq 'HASH';
+    return 0 if ref($recv) || _nullish($recv);
     my $n = 0;
     $n += ord($_) > 0xFFFF ? 2 : 1 for split //, ($recv // '');
     return $n;
@@ -1279,6 +1338,27 @@ sub length ($self, $recv) {
 sub get ($self, $collection, $key) {
     return BarefootJS::Evaluator::_read_index($collection, $key);
 }
+
+# JS `o?.k`: `undefined` over a nullish receiver, the read of `k` (`get`)
+# otherwise.
+sub get_opt ($self, $collection, $key) {
+    return $UNDEF if _nullish($collection);
+    return BarefootJS::Evaluator::_read_index($collection, $key);
+}
+
+# JS `undefined` as a template spells it (`bf->undefined` / `$bf.undefined()`):
+# the `undefined` identifier, an omitted method argument's default, the
+# result of a `?.` over a nullish receiver.
+sub undefined ($self) { return $UNDEF }
+
+# The nil tests (spec/js-undefined-value.md, decisions 3 and 7): JS
+# `x === undefined`, `x === null` and the loose `x == null`. A template
+# spells a nil-test plan, an attribute omission and a `??` through them;
+# Perl's `defined` / `//` see `UNDEF` as a value. A boolean result is a Perl
+# boolean, as `strict_eq`'s is.
+sub is_undefined ($self, $v) { return _undef_p($v) ? !!1 : !!0 }
+sub is_null      ($self, $v) { return defined($v) ? !!0 : !!1 }
+sub is_nullish   ($self, $v) { return _nullish($v) ? !!1 : !!0 }
 
 # `isValidElement(x)` -- the framework "is this a renderable element (not
 # plain text)?" predicate `Slot`'s `asChild` pattern uses (#2266). Mirrors
@@ -1312,11 +1392,13 @@ sub _array_index_of ($recv, $elem, $reverse) {
     my @indices = $reverse ? (reverse 0 .. $#{$recv}) : (0 .. $#{$recv});
     for my $i (@indices) {
         my $item = $recv->[$i];
-        if (!defined $item) {
-            return $i if !defined $elem;
+        # Strict equality tells the nils apart: `null` matches only `null`,
+        # `undefined` only `undefined`.
+        if (_nullish($item) || _nullish($elem)) {
+            return $i if (!defined $item && !defined $elem) || (_undef_p($item) && _undef_p($elem));
             next;
         }
-        return $i if defined $elem && $item eq $elem;
+        return $i if $item eq $elem;
     }
     return -1;
 }
@@ -1326,7 +1408,7 @@ sub _array_index_of ($recv, $elem, $reverse) {
 # caller's range check treats it as out of range (a bare `int()` keeps
 # NaN, which then indexes element 0 with a warning).
 sub _to_integer_or_infinity ($self, $value) {
-    my $n = $self->number($value);
+    my $n = _js_number($value);
     return 0 if _is_nan($n);
     return 2**53 if $n >= 2**53;
     return -(2**53) if $n <= -(2**53);
@@ -1360,7 +1442,8 @@ sub _utf16_has_at ($hay, $needle, $at) {
 
 sub _utf16_index_of ($self, $recv, $elem, $reverse) {
     my $hay    = _utf16_units("$recv");
-    my $needle = _utf16_units($self->string($elem));
+    # The needle is JS ToString'd (`'anullb'.indexOf(null)` is 1).
+    my $needle = _utf16_units(_js_string($elem));
     my $last   = @$hay - @$needle;
     my @indices = $reverse ? (reverse 0 .. $last) : (0 .. $last);
     for my $i (@indices) {
@@ -1380,8 +1463,8 @@ sub last_index_of ($self, $recv, $elem) {
 }
 
 # `Array.prototype.at(i)` — supports negative indices (`.at(-1)` is
-# the last element); out-of-bounds returns undef (which Mojo's
-# auto-escape renders as the empty string, matching JS's `undefined`).
+# the last element); out-of-bounds returns JS `undefined` (`UNDEF`, which
+# renders as the empty string).
 # Matches the Go `bf_at` arithmetic (`length + i` for i < 0) so adapter
 # output stays symmetric. A plain-scalar (string) receiver is
 # `String.prototype.at`, indexed in UTF-16 code units (#3613). Half of a
@@ -1390,25 +1473,30 @@ sub last_index_of ($self, $recv, $elem) {
 # stay two characters (they never rejoin into the astral one) and encode
 # to invalid UTF-8 on output, so the helper keeps its result valid text
 # instead (limitation `string-at-lone-surrogate`). Other references
-# return undef.
+# return `undefined`.
 
-sub at ($self, $recv, $i) {
+sub at ($self, $recv, $i = $OMITTED) {
+    # The index is ToIntegerOrInfinity'd, so an omitted, `undefined` or
+    # `null` one reads element 0.
+    $i = $UNDEF if _omitted($i);
     if (defined $recv && !ref($recv)) {
-        return undef if !defined $i;
         my $units = _utf16_units("$recv");
-        my $idx = $self->_to_integer_or_infinity($i);
-        $idx += @$units if $idx < 0;
-        return undef if $idx < 0 || $idx >= @$units;
+        my $idx = $self->_relative_index($i, scalar @$units);
+        return $UNDEF unless defined $idx;
         my $u = $units->[$idx];
         return $u >= 0xD800 && $u <= 0xDFFF ? "\x{FFFD}" : chr($u);
     }
-    return undef unless ref($recv) eq 'ARRAY';
-    return undef if !defined $i;
-    my $len = scalar @$recv;
-    return undef if $len == 0;
-    my $idx = $i < 0 ? $len + $i : $i;
-    return undef if $idx < 0 || $idx >= $len;
-    return $recv->[$idx];
+    return $UNDEF unless ref($recv) eq 'ARRAY';
+    my $idx = $self->_relative_index($i, scalar @$recv);
+    return defined $idx ? $recv->[$idx] : $UNDEF;
+}
+
+# `Array.prototype.at`'s index: ToIntegerOrInfinity, counted from the end
+# when negative; undef when it falls outside `[0, length)`.
+sub _relative_index ($self, $value, $len) {
+    my $idx = $self->_to_integer_or_infinity($value);
+    $idx += $len if $idx < 0;
+    return ($idx >= 0 && $idx < $len) ? $idx : undef;
 }
 
 # `Array.prototype.concat(other)` — merges two arrays in order
@@ -1436,14 +1524,15 @@ sub concat ($self, $a, $b) {
 #   - start < 0 after clamp → 0
 #   - end > length       → length
 #   - start >= end       → empty
-#   - end undef          → "to length"
-# String length/positions are characters (`use utf8` is active), not
+#   - end omitted / `undefined` → "to length"; `null` is 0
+# Both bounds are ToIntegerOrInfinity'd (`null` and `undefined` are 0 as a
+# start). String length/positions are characters (`use utf8` is active), not
 # bytes. Any other receiver returns an empty ARRAY ref.
 
-sub slice ($self, $recv, $start, $end) {
+sub slice ($self, $recv, $start = $OMITTED, $end = $OMITTED) {
     if (!ref($recv) && defined $recv) {
         my $len = CORE::length($recv);
-        my ($s, $e) = _clamp_slice_range($len, $start, $end);
+        my ($s, $e) = $self->_clamp_slice_range($len, $start, $end);
         return '' if $s >= $e;
         return substr($recv, $s, $e - $s);
     }
@@ -1451,19 +1540,19 @@ sub slice ($self, $recv, $start, $end) {
     my $len = scalar @$recv;
     return [] if $len == 0;
 
-    my ($s, $e) = _clamp_slice_range($len, $start, $end);
+    my ($s, $e) = $self->_clamp_slice_range($len, $start, $end);
     return [] if $s >= $e;
     return [ @{$recv}[$s .. $e - 1] ];
 }
 
 # Shared bounds arithmetic for both `slice` branches above.
-sub _clamp_slice_range ($len, $start, $end) {
-    my $s = $start // 0;
+sub _clamp_slice_range ($self, $len, $start, $end) {
+    my $s = _omitted($start) ? 0 : $self->_to_integer_or_infinity($start);
     $s = $len + $s if $s < 0;
     $s = 0    if $s < 0;
     $s = $len if $s > $len;
 
-    my $e = defined $end ? $end : $len;
+    my $e = _omitted($end) ? $len : $self->_to_integer_or_infinity($end);
     $e = $len + $e if $e < 0;
     $e = 0    if $e < 0;
     $e = $len if $e > $len;
@@ -1519,6 +1608,8 @@ sub flat ($self, $recv, $depth = 1) {
 # it's in — so the two stay separate. Mirrors Go's `FlatDynamicDepth` /
 # `coerceFlatDepth` in bf.go.
 sub flat_dynamic ($self, $recv, $depth) {
+    # An `undefined` depth is the default, 1; `null` coerces to 0.
+    return $self->flat($recv, 1) if _omitted($depth);
     return $self->flat($recv, _coerce_flat_depth($depth));
 }
 
@@ -1566,10 +1657,10 @@ sub flat_map ($self, $recv, $key_kind, $key) {
     my @projected;
     for my $el (@$recv) {
         if ($key_kind eq 'field') {
-            # JS `i => i.field` on a non-object yields `undefined`, not the
-            # element itself — push `undef` so a scalar element doesn't leak
-            # into the output (matches Go's `getFieldValue` returning nil).
-            push @projected, ref($el) eq 'HASH' ? $el->{$key} : undef;
+            # JS `i => i.field` on a non-object, or a missing field, yields
+            # `undefined`, not the element itself — so a scalar element
+            # doesn't leak into the output.
+            push @projected, _field_value($el, $key);
         }
         else {
             push @projected, $el;
@@ -1583,8 +1674,8 @@ sub flat_map ($self, $recv, $key_kind, $key) {
 # (['self', ''] or ['field', 'a']). For each element, every leaf's value
 # is appended in order. flat(1) removes only the literal wrapper, so an
 # array-valued leaf is appended verbatim (no spread) — i.e. just append
-# each leaf. A non-HASH element under a `field` leaf yields undef (JS
-# `i.field` on a non-object). Non-ARRAY receiver → [].
+# each leaf. A non-HASH element under a `field` leaf, or a missing field,
+# yields `undefined` (JS `i.field`). Non-ARRAY receiver → [].
 sub flat_map_tuple ($self, $recv, @specs) {
     return [] unless ref($recv) eq 'ARRAY';
     my @out;
@@ -1592,7 +1683,7 @@ sub flat_map_tuple ($self, $recv, @specs) {
         for my $spec (@specs) {
             my ($kind, $key) = @$spec;
             if ($kind eq 'field') {
-                push @out, ref($el) eq 'HASH' ? $el->{$key} : undef;
+                push @out, _field_value($el, $key);
             }
             else {
                 push @out, $el;
@@ -1613,7 +1704,7 @@ sub flat_map_tuple ($self, $recv, @specs) {
 # already document for `bf->string(undef) === ""`).
 
 sub trim ($self, $recv) {
-    return '' unless defined $recv;
+    return '' if _nullish($recv);
     return '' if ref($recv);
     my $s = "$recv";
     $s =~ s/^\s+|\s+$//gu;
@@ -1625,7 +1716,7 @@ sub trim ($self, $recv) {
 # semantics restricted to one side.
 
 sub trim_start ($self, $recv) {
-    return '' unless defined $recv;
+    return '' if _nullish($recv);
     return '' if ref($recv);
     my $s = "$recv";
     $s =~ s/^\s+//u;
@@ -1633,7 +1724,7 @@ sub trim_start ($self, $recv) {
 }
 
 sub trim_end ($self, $recv) {
-    return '' unless defined $recv;
+    return '' if _nullish($recv);
     return '' if ref($recv);
     my $s = "$recv";
     $s =~ s/\s+$//u;
@@ -1648,14 +1739,17 @@ sub trim_end ($self, $recv) {
 # `round` helper uses), then format the exact multiple. A negative
 # `digits` clamps to 0, mirroring how the adapters default an omitted
 # argument.
-sub to_fixed ($self, $value, $digits = 0) {
+sub to_fixed ($self, $value, $digits = $OMITTED) {
     my $n = $self->number($value);
     # JS toFixed returns the STRINGS "NaN" / "Infinity" / "-Infinity" for
     # non-finite inputs; the numeric values would stringify per-platform
     # ("nan"/"inf"/...) and diverge.
     return 'NaN' if _is_nan($n);
     return $n < 0 ? '-Infinity' : 'Infinity' if _is_inf($n);
-    $digits = 0 if !defined $digits || $digits < 0;
+    # An omitted or `undefined` digit count is 0, as ToIntegerOrInfinity
+    # makes `null` too.
+    $digits = _omitted($digits) ? 0 : $self->_to_integer_or_infinity($digits);
+    $digits = 0 if $digits < 0;
     my $factor  = 10 ** $digits;
     # Scaled as doubles, so `(1.005).toFixed(2)` sees JS's 100.49999… on a
     # perl whose NV is wider than a double (#3454).
@@ -1681,16 +1775,17 @@ sub to_fixed ($self, $value, $digits = 0) {
 # Undef receiver renders as the single-element `['']` — the same
 # "missing prop → empty string" convention `bf->trim` uses.
 
-sub split ($self, $recv, $sep = undef, $limit = undef) {
+sub split ($self, $recv, $sep = $OMITTED, $limit = $OMITTED) {
     my $s = defined $recv && !ref($recv) ? "$recv" : '';
 
     my @parts;
-    if (!defined $sep) {
+    if (_omitted($sep)) {
         # No separator → the whole string in a single-element array
-        # (matches JS `"x".split()` / `.split(undefined)`).
+        # (matches JS `"x".split()` / `.split(undefined)`). Any other one is
+        # ToString'd (`null` splits on "null").
         @parts = ($s);
     }
-    elsif ("$sep" eq '') {
+    elsif (($sep = _js_string($sep)) eq '') {
         # Empty separator → individual characters. No `-1` limit here:
         # on an empty pattern Perl's `split` with `-1` appends a spurious
         # trailing empty field ("abc" → 'a','b','c',''), which JS/Go don't.
@@ -1710,13 +1805,13 @@ sub split ($self, $recv, $sep = undef, $limit = undef) {
         @parts = split /$q/, $s, -1;
     }
 
-    # Optional `limit` caps the number of pieces (JS `split(sep, limit)`).
-    # 0 → empty; a negative limit keeps all (JS ToUint32 wrap makes it
-    # effectively unbounded) — both match Go's `bf_split`.
-    if (defined $limit) {
-        my $n = int($limit);
-        if ($n == 0) { @parts = () }
-        elsif ($n > 0 && $n < scalar @parts) { @parts = @parts[0 .. $n - 1] }
+    # Optional `limit` caps the number of pieces (JS `split(sep, limit)`):
+    # an omitted or `undefined` one is unbounded, any other one ToUint32'd
+    # (`null` and NaN are 0 → empty; a negative limit wraps to a large one,
+    # effectively unbounded).
+    unless (_omitted($limit)) {
+        my $n = _to_uint32($limit);
+        @parts = @parts[0 .. $n - 1] if $n < scalar @parts;
     }
 
     return [@parts];
@@ -1729,10 +1824,11 @@ sub split ($self, $recv, $sep = undef, $limit = undef) {
 # optional `position` re-anchors the test (UTF-16 code units, clamped to
 # `[0, length]`), matching JS `"abc".startsWith("b", 1)`.
 
-sub starts_with ($self, $recv, $prefix, $position = undef) {
+sub starts_with ($self, $recv, $prefix, $position = $OMITTED) {
     my $s = defined $recv && !ref($recv) ? "$recv" : '';
-    my $p = defined $prefix ? "$prefix" : '';
-    if (defined $position) {
+    my $p = _js_string($prefix);
+    # An omitted or `undefined` position is 0; `null` is 0 too.
+    unless (_omitted($position)) {
         # `position` counts UTF-16 code units, like JS (#3613).
         my $units = _utf16_units($s);
         my $n = $self->_to_integer_or_infinity($position);
@@ -1752,10 +1848,11 @@ sub starts_with ($self, $recv, $prefix, $position = undef) {
 # code units long (clamped to `[0, length]`), matching JS
 # `"abc".endsWith("b", 2)`.
 
-sub ends_with ($self, $recv, $suffix, $end_position = undef) {
+sub ends_with ($self, $recv, $suffix, $end_position = $OMITTED) {
     my $s = defined $recv && !ref($recv) ? "$recv" : '';
-    my $x = defined $suffix ? "$suffix" : '';
-    if (defined $end_position) {
+    my $x = _js_string($suffix);
+    # An omitted or `undefined` endPosition is the length; `null` is 0.
+    unless (_omitted($end_position)) {
         # `endPosition` counts UTF-16 code units, like JS (#3613).
         my $units  = _utf16_units($s);
         my $needle = _utf16_units($x);
@@ -1782,8 +1879,9 @@ sub ends_with ($self, $recv, $suffix, $end_position = undef) {
 
 sub replace ($self, $recv, $pattern, $replacement) {
     my $s = defined $recv && !ref($recv) ? "$recv" : '';
-    my $o = defined $pattern ? "$pattern" : '';
-    my $n = defined $replacement ? "$replacement" : '';
+    # The pattern and the replacement are JS ToString'd.
+    my $o = _js_string($pattern);
+    my $n = _js_string($replacement);
     return $n . $s if $o eq '';
     my $i = index($s, $o);
     return $s if $i < 0;
@@ -1801,8 +1899,9 @@ sub replace ($self, $recv, $pattern, $replacement) {
 
 sub replace_all ($self, $recv, $pattern, $replacement) {
     my $s = defined $recv && !ref($recv) ? "$recv" : '';
-    my $o = defined $pattern ? "$pattern" : '';
-    my $n = defined $replacement ? "$replacement" : '';
+    # The pattern and the replacement are JS ToString'd.
+    my $o = _js_string($pattern);
+    my $n = _js_string($replacement);
     return CORE::join($n, '', split(//, $s), '') if $o eq '';
     my $out = '';
     my $pos = 0;
@@ -1871,9 +1970,10 @@ sub query ($self, $base, @triples) {
 # applies the same clamp). The count is truncated toward zero
 # (`int`), matching JS's ToIntegerOrInfinity on `"a".repeat(3.7)`.
 
-sub repeat ($self, $recv, $count) {
+sub repeat ($self, $recv, $count = $OMITTED) {
     my $s = defined $recv && !ref($recv) ? "$recv" : '';
-    my $n = defined $count ? int($count) : 0;
+    # ToIntegerOrInfinity: an omitted, `undefined` or `null` count is 0.
+    my $n = $self->_to_integer_or_infinity(_omitted($count) ? $UNDEF : $count);
     return $n <= 0 ? '' : $s x $n;
 }
 
@@ -1886,12 +1986,13 @@ sub repeat ($self, $recv, $count) {
 # returns the receiver unchanged (JS parity). The `$target` is
 # truncated toward zero (JS ToLength on the first arg).
 
-sub _pad ($s, $target, $pad, $at_start) {
-    $pad = ' ' unless defined $pad;
-    $pad = "$pad";
+sub _pad ($self, $s, $target, $pad, $at_start) {
+    # An omitted or `undefined` pad string is a space; any other one is
+    # ToString'd (`null` pads with "null"). The target is ToIntegerOrInfinity'd.
+    $pad = _omitted($pad) ? ' ' : _js_string($pad);
     return $s if $pad eq '';
     my $len = CORE::length $s;
-    my $t   = int($target // 0);
+    my $t   = $self->_to_integer_or_infinity(_omitted($target) ? $UNDEF : $target);
     return $s if $len >= $t;
     my $need = $t - $len;
     # Repeat enough copies to cover $need, then trim to exactly $need.
@@ -1899,14 +2000,31 @@ sub _pad ($s, $target, $pad, $at_start) {
     return $at_start ? $fill . $s : $s . $fill;
 }
 
-sub pad_start ($self, $recv, $target, $pad = undef) {
+sub pad_start ($self, $recv, $target = $OMITTED, $pad = $OMITTED) {
     my $s = defined $recv && !ref($recv) ? "$recv" : '';
-    return _pad($s, $target, $pad, 1);
+    return $self->_pad($s, $target, $pad, 1);
 }
 
-sub pad_end ($self, $recv, $target, $pad = undef) {
+sub pad_end ($self, $recv, $target = $OMITTED, $pad = $OMITTED) {
     my $s = defined $recv && !ref($recv) ? "$recv" : '';
-    return _pad($s, $target, $pad, 0);
+    return $self->_pad($s, $target, $pad, 0);
+}
+
+# JS `ToUint32` (`split`'s limit): NaN and the infinities are 0.
+sub _to_uint32 ($value) {
+    my $n = _js_number($value);
+    return 0 if $n != $n || $n == 9**9**9 || $n == -(9**9**9);
+    my $t = $n < 0 ? POSIX::ceil($n) : POSIX::floor($n);
+    $t = POSIX::fmod($t, 4294967296);
+    $t += 4294967296 if $t < 0;
+    return $t;
+}
+
+# A row field's value: JS `item.key`, `undefined` when the row has no such
+# field (or is no object).
+sub _field_value ($item, $key) {
+    return $UNDEF unless ref($item) eq 'HASH';
+    return exists $item->{$key} ? $item->{$key} : $UNDEF;
 }
 
 # `Array.prototype.sort(cmp)` / `Array.prototype.toSorted(cmp)`
@@ -2007,16 +2125,20 @@ sub sort ($self, $recv, $opts = {}) {
     } @{ $opts->{keys} // [] };
     return [ @$recv ] unless @spec;
 
+    # JS moves every `undefined` element to the end without handing it to
+    # the comparator.
+    my @tail = grep { _undef_p($_) } @$recv;
+
     # Schwartzian transform: project each item to all its sort keys
     # once, then compare projected keys. Cheaper than re-resolving the
     # field accessors inside every comparison for non-trivial arrays.
     my @keyed = map {
         my $item = $_;
         my @ks = map {
-            $_->{key_kind} eq 'field' && ref($item) eq 'HASH' ? $item->{ $_->{key} } : $item;
+            $_->{key_kind} eq 'field' ? _field_value($item, $_->{key}) : $item;
         } @spec;
         [ \@ks, $item ];
-    } @$recv;
+    } grep { !_undef_p($_) } @$recv;
 
     my $cmp = sub {
         for my $i (0 .. $#spec) {
@@ -2029,23 +2151,28 @@ sub sort ($self, $recv, $opts = {}) {
     };
 
     my @sorted = sort $cmp @keyed;
-    return [ map { $_->[1] } @sorted ];
+    return [ (map { $_->[1] } @sorted), @tail ];
 }
 
 # Compare two projected keys, ascending orientation (-1 / 0 / 1); the
 # caller negates for 'desc'. 'auto' compares numerically when both
 # keys look like numbers, else lexically (matches Go's `bf_sort`).
-# undef coalesces to '' / 0 so the order stays total without warnings.
+# A nil key (`null` / `undefined`) reads as '' lexically and `null` as 0
+# numerically, so the order stays total without warnings; a numeric
+# `a.f - b.f` over an `undefined` key is NaN, which the sort reads as
+# "equal".
 sub _compare_sort_key ($av, $bv, $compare_type) {
+    my $str = sub ($v) { _nullish($v) ? '' : $v };
     if ($compare_type eq 'string') {
-        return ($av // '') cmp ($bv // '');
+        return $str->($av) cmp $str->($bv);
     }
     if ($compare_type eq 'auto') {
-        if (looks_like_number($av // '') && looks_like_number($bv // '')) {
+        if (!_undef_p($av) && !_undef_p($bv) && looks_like_number($av // '') && looks_like_number($bv // '')) {
             return ($av // 0) <=> ($bv // 0);
         }
-        return ($av // '') cmp ($bv // '');
+        return $str->($av) cmp $str->($bv);
     }
+    return 0 if _undef_p($av) || _undef_p($bv);
     return ($av // 0) <=> ($bv // 0);    # numeric
 }
 
@@ -2087,6 +2214,8 @@ sub reduce ($self, $recv, $opts = {}) {
     my $project = sub ($item) {
         $key_kind eq 'field' && ref($item) eq 'HASH' ? $item->{$key} : $item;
     };
+    # The catalogue folds read a nil (`null` / `undefined`) item as '' / 0
+    # (`string` / the numeric guard below), as they always have.
 
     if ($type eq 'string') {
         my $acc = $opts->{init} // '';
@@ -2100,7 +2229,7 @@ sub reduce ($self, $recv, $opts = {}) {
         # Guard `defined` before `looks_like_number` so a missing field
         # (undef) folds as 0 without an "uninitialized value" warning
         # under `use warnings` — matching the `$av // ''` style `sort` uses.
-        $n = 0 unless defined $n && looks_like_number($n);
+        $n = 0 if _nullish($n) || !looks_like_number($n);
         $op eq '*' ? ($acc *= $n) : ($acc += $n);
     }
     return $acc;
@@ -2207,7 +2336,7 @@ sub _html_escape ($value) {
 }
 
 sub _style_to_css ($value) {
-    return undef unless defined $value;
+    return undef if _nullish($value);
     # Non-hashref values pass through stringified — matches the JS
     # `typeof value !== 'object'` branch in `styleToCss`.
     if (ref($value) ne 'HASH') {
@@ -2217,7 +2346,7 @@ sub _style_to_css ($value) {
     my @parts;
     for my $key (sort keys %$value) {
         my $v = $value->{$key};
-        next unless defined $v;
+        next if _nullish($v);
         my $prop = $key;
         $prop =~ s/([A-Z])/-\L$1/g;
         push @parts, "$prop:$v";
@@ -2328,8 +2457,8 @@ sub spread_attrs ($self, $bag) {
         }
         next if $key eq 'children';
         my $val = $bag->{$key};
-        # null / undef → drop.
-        next unless defined $val;
+        # null / undefined → drop.
+        next if _nullish($val);
         # Boolean values arrive as Mojo::JSON sentinel objects
         # (`Mojo::JSON::true` / `false`) — both from JSON-deserialised
         # props and from the test harness's `toPerlLiteral`

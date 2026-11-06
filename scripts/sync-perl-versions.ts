@@ -43,6 +43,7 @@ const PACKAGES: PerlPackage[] = [
       'lib/BarefootJS/DevReload.pm',
       'lib/BarefootJS/Evaluator.pm',
       'lib/BarefootJS/SearchParams.pm',
+      'lib/BarefootJS/Undefined.pm',
     ],
   },
   {

@@ -29,7 +29,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 export const renderDivergences: RenderDivergences = {
   // A props object parameter not named `props` (`function C(p)`): its
   // members are not typed as the component's props, so `p.label + p.n`
-  // does not concatenate (or the boolean `p.on` prints as `1`).
+  // does not concatenate (or the boolean `p.on` prints as `1`). Since the
+  // runtime carries `undefined` (#3848 U5) an unproven `+` takes the
+  // runtime's JS `plus`, so the concatenations render like Hono; the boolean
+  // still prints as Perl's `1`.
   'props-object-non-props-name-operand-typing': { limitation: 'props-object-non-props-name-operand-typing' },
   // A prop the child does not declare, spread onto its root through
   // `{...props}`, is missing from the element.
@@ -103,32 +106,20 @@ export const renderDivergences: RenderDivergences = {
   // it renders like Hono.
   'module-const-destructure-default': { limitation: 'module-const-destructure-default' },
   'module-const-default-hydrate': { limitation: 'module-const-destructure-default' },
-  // A `+` or template literal over a nil Phase 1 cannot read as `undefined`
-  // (an `either` string, a dynamic `+`, an untyped part) keeps today's
-  // output until the runtime carries `undefined` (#3848).
-  'awaits-undefined-plus-shapes': { limitation: 'awaits-undefined-value' },
-  // An operation that tells `undefined` from `null` (spec/js-undefined-value.md
-  // §1): the runtime holds both as one nil, so it renders the answer for
-  // one in place of the other (or fails to render) until it carries
-  // `undefined` (#3848 U0; graduated per target by U2..U8).
-  'undef-null-array-search': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'undef-null-destructure-default': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'destructure-default-null-hydrate': { limitation: 'host-nil-collapses-undefined-and-null' },
+  // `awaits-undefined-plus-shapes`, `destructure-default-null-hydrate` and
+  // the `undef-null-*` fixtures used to sit here: the runtime held
+  // `undefined` and `null` as one nil. It now carries `$BarefootJS::UNDEF`
+  // apart from `undef` (#3848 U5), so each renders like Hono.
   // A default assigning an earlier binding (`b = (a = 2)`) never runs.
   'destructure-default-earlier-assignment': { limitation: 'destructure-default-assigns-earlier-binding' },
-  'undef-null-json-stringify': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'undef-null-json-stringify-object-member': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'undef-null-number-coercion-typed': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'undef-null-optional-chain-result': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'undef-null-optional-method-args': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'undef-null-row-field-coercion': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'undef-null-sort': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'undef-null-strict-equality': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'undef-null-string-coercion': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'undef-null-string-includes': { limitation: 'host-nil-collapses-undefined-and-null' },
   // A `null` / `undefined` `style` object property renders `color:` with
   // an empty value instead of being dropped.
   'style-object-nil-property': { limitation: 'style-object-nil-property' },
+  // A signal seeded from an object literal with an `undefined` member: the
+  // static seed (`extractSsrDefaults`, shared by every target's manifest)
+  // writes the member as `null`, so `JSON.stringify` keeps it as `null`
+  // where JS drops it. The runtime's JSON walk drops an `UNDEF` member.
+  'undef-null-json-stringify-object-member': { limitation: 'host-nil-collapses-undefined-and-null' },
 }
 
 /**
@@ -140,7 +131,7 @@ export const renderDivergences: RenderDivergences = {
  * `@barefootjs/go-template`'s `dataPointDivergences`.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
-  // The template reads `null` as absent, so the destructure default applies
-  // and the `??` / `||` fallback never does.
-  'signal-array-prop-fallback-seed-default:items-null': { limitation: 'defaulted-array-prop-explicit-null' },
+  // `signal-array-prop-fallback-seed-default:items-null` used to sit here:
+  // the seed applied a destructure default to an explicit `null`. It now
+  // applies only to an absent or `undefined` prop (#3848 U5).
 }

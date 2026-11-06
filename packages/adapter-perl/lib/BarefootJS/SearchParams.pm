@@ -17,13 +17,14 @@ no warnings 'experimental::signatures';
 # matching the rest of BarefootJS.pm, so it can ship in the standalone
 # @barefootjs/perl distribution.
 #
-# Semantics mirror the browser's URLSearchParams.get exactly under the
-# adapters' `?? → //` lowering: get() returns the first value for a key, or
-# `undef` when the key is absent. Perl's `//` (defined-or) coalesces only
-# `undef`, so an absent key falls back to the author's default while a
-# present-but-empty value (`?sort=`) keeps the empty string — the same
-# distinction JS `??` draws between `null` and `''`. (This is a closer match
-# than the Go adapter, whose `or` lowering also coalesces the empty string.)
+# Semantics mirror the browser's URLSearchParams.get exactly: get() returns
+# the first value for a key, or `undef` — JS `null`, not `undefined`
+# (`$BarefootJS::UNDEF`) — when the key is absent. The adapters' `??`
+# lowering (`keep_nonnil`) coalesces it, so an absent key falls back to the
+# author's default while a present-but-empty value (`?sort=`) keeps the empty
+# string — the same distinction JS `??` draws between `null` and `''`. (This
+# is a closer match than the Go adapter, whose `or` lowering also coalesces
+# the empty string.)
 
 # new($class, $query = '')
 #
@@ -47,9 +48,8 @@ sub new ($class, $query = '') {
 
 # get($self, $key)
 #
-# First value for $key, or `undef` when the key is absent (see the package
-# docstring for why `undef` — not '' — is the right "missing" sentinel under
-# the `//` lowering). A present-but-empty value returns ''.
+# First value for $key, or `undef` (JS `null`) when the key is absent (see
+# the package docstring). A present-but-empty value returns ''.
 sub get ($self, $key) {
     my $vals = $self->{values}{$key};
     return undef unless $vals && @$vals;

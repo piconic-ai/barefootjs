@@ -22,7 +22,8 @@ import type { XslateMemoContext } from '../emit-context.ts'
 /** Kolon literal for a context-consumer's `createContext` default. */
 export function contextDefaultKolon(c: ContextConsumer): string {
   const d = c.defaultValue
-  if (d === null || d === undefined) return 'nil'
+  if (d === undefined) return '$bf.undefined()'
+  if (d === null) return 'nil'
   if (typeof d === 'string') return `'${d.replace(/[\\']/g, m => `\\${m}`)}'`
   // A JS boolean value, held as a JSON boolean (#3824 step 5).
   if (typeof d === 'boolean') return d ? '$bf.boolean(1)' : '$bf.boolean(0)'

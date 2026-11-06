@@ -2102,8 +2102,6 @@
               "nested-callback-in-filter-predicate",
               "object-equality-by-contents",
               "off-subset-callback-body",
-              "omitted-optional-nullable-number-arithmetic",
-              "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
               "record-const-index-unknown-keys",
               "unlowerable-loop-filter-predicate",
@@ -2190,8 +2188,6 @@
               "nested-callback-in-filter-predicate",
               "object-equality-by-contents",
               "off-subset-callback-body",
-              "omitted-optional-nullable-number-arithmetic",
-              "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
               "record-const-index-unknown-keys",
               "unlowerable-loop-filter-predicate",
@@ -2218,12 +2214,6 @@
             "awaits-undefined-value"
           ]
         },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "awaits-undefined-value"
-          ]
-        },
         "pebble": {
           "kind": "render",
           "limitations": [
@@ -2231,12 +2221,6 @@
           ]
         },
         "twig": {
-          "kind": "render",
-          "limitations": [
-            "awaits-undefined-value"
-          ]
-        },
-        "xslate": {
           "kind": "render",
           "limitations": [
             "awaits-undefined-value"
@@ -3551,12 +3535,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "pebble": {
           "kind": "render",
           "limitations": [
@@ -3564,12 +3542,6 @@
           ]
         },
         "twig": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "xslate": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -7002,19 +6974,6 @@
             "twin": "omitted-optional-number-arithmetic"
           }
         },
-        "mojolicious": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic"
-          }
-        },
         "pebble": {
           "kind": "refusal",
           "codes": [
@@ -7029,19 +6988,6 @@
           }
         },
         "twig": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic"
-          }
-        },
-        "xslate": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -7082,19 +7028,6 @@
             "twin": "omitted-optional-number-arithmetic-destructured"
           }
         },
-        "mojolicious": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic-destructured"
-          }
-        },
         "pebble": {
           "kind": "refusal",
           "codes": [
@@ -7109,19 +7042,6 @@
           }
         },
         "twig": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic-destructured"
-          }
-        },
-        "xslate": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -7162,19 +7082,6 @@
             "twin": "omitted-optional-number-relational"
           }
         },
-        "mojolicious": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-relational"
-          }
-        },
         "pebble": {
           "kind": "refusal",
           "codes": [
@@ -7189,19 +7096,6 @@
           }
         },
         "twig": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-relational"
-          }
-        },
-        "xslate": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -7242,19 +7136,6 @@
             "twin": "omitted-optional-number-unary-plus"
           }
         },
-        "mojolicious": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-unary-plus"
-          }
-        },
         "pebble": {
           "kind": "refusal",
           "codes": [
@@ -7269,19 +7150,6 @@
           }
         },
         "twig": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-unary-plus"
-          }
-        },
-        "xslate": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -7322,19 +7190,6 @@
             "twin": "omitted-optional-string-relational"
           }
         },
-        "mojolicious": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-scalar-relational"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-string-relational"
-          }
-        },
         "pebble": {
           "kind": "refusal",
           "codes": [
@@ -7349,19 +7204,6 @@
           }
         },
         "twig": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-scalar-relational"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-string-relational"
-          }
-        },
-        "xslate": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -9984,12 +9826,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "pebble": {
           "kind": "render",
           "limitations": [
@@ -9997,12 +9833,6 @@
           ]
         },
         "twig": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "xslate": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10022,12 +9852,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "pebble": {
           "kind": "render",
           "limitations": [
@@ -10035,12 +9859,6 @@
           ]
         },
         "twig": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "xslate": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10060,12 +9878,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "pebble": {
           "kind": "render",
           "limitations": [
@@ -10073,12 +9885,6 @@
           ]
         },
         "twig": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "xslate": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10168,19 +9974,6 @@
             "twin": "omitted-optional-number-arithmetic"
           }
         },
-        "mojolicious": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic"
-          }
-        },
         "pebble": {
           "kind": "refusal",
           "codes": [
@@ -10195,19 +9988,6 @@
           }
         },
         "twig": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic"
-          }
-        },
-        "xslate": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -10234,12 +10014,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "pebble": {
           "kind": "render",
           "limitations": [
@@ -10247,12 +10021,6 @@
           ]
         },
         "twig": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "xslate": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10272,12 +10040,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "pebble": {
           "kind": "render",
           "limitations": [
@@ -10285,12 +10047,6 @@
           ]
         },
         "twig": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "xslate": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10310,12 +10066,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "pebble": {
           "kind": "render",
           "limitations": [
@@ -10323,12 +10073,6 @@
           ]
         },
         "twig": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "xslate": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10362,19 +10106,6 @@
             "twin": "omitted-optional-number-relational"
           }
         },
-        "mojolicious": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-relational"
-          }
-        },
         "pebble": {
           "kind": "refusal",
           "codes": [
@@ -10389,19 +10120,6 @@
           }
         },
         "twig": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-relational"
-          }
-        },
-        "xslate": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -10428,12 +10146,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "pebble": {
           "kind": "render",
           "limitations": [
@@ -10441,12 +10153,6 @@
           ]
         },
         "twig": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "xslate": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10466,12 +10172,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "pebble": {
           "kind": "render",
           "limitations": [
@@ -10479,12 +10179,6 @@
           ]
         },
         "twig": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "xslate": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10504,12 +10198,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "pebble": {
           "kind": "render",
           "limitations": [
@@ -10517,12 +10205,6 @@
           ]
         },
         "twig": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "xslate": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10542,12 +10224,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "pebble": {
           "kind": "render",
           "limitations": [
@@ -10555,12 +10231,6 @@
           ]
         },
         "twig": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "xslate": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10580,12 +10250,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "pebble": {
           "kind": "render",
           "limitations": [
@@ -10593,12 +10257,6 @@
           ]
         },
         "twig": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "xslate": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -11731,10 +11389,8 @@
       "adapters": [
         "blade",
         "go-template",
-        "mojolicious",
         "pebble",
-        "twig",
-        "xslate"
+        "twig"
       ]
     },
     "body-destructure-without-const-form": {
@@ -12010,10 +11666,8 @@
       "adapters": [
         "blade",
         "go-template",
-        "mojolicious",
         "pebble",
-        "twig",
-        "xslate"
+        "twig"
       ]
     },
     "derived-object-literal-signal": {
@@ -12544,10 +12198,8 @@
       "adapters": [
         "blade",
         "go-template",
-        "mojolicious",
         "pebble",
-        "twig",
-        "xslate"
+        "twig"
       ],
       "diagnostics": [
         "BF101"
@@ -12565,10 +12217,8 @@
       "adapters": [
         "blade",
         "go-template",
-        "mojolicious",
         "pebble",
-        "twig",
-        "xslate"
+        "twig"
       ],
       "diagnostics": [
         "BF101"

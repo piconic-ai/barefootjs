@@ -143,7 +143,12 @@ sub register ($self, $app, $config = {}) {
         if (ref($defaults) eq 'HASH') {
             my %extra = BarefootJS::_derive_stash_from_defaults($defaults, $c->stash);
             for my $name (keys %extra) {
-                next if exists $c->stash->{$name};
+                # A stash value the caller set wins -- `undef` (JS `null`)
+                # included -- unless it is JS `undefined`, which takes the
+                # seed (its default, or `undefined`; decision 6 of
+                # spec/js-undefined-value.md).
+                next if exists $c->stash->{$name}
+                    && !BarefootJS::Undefined::is_undefined($c->stash->{$name});
                 $c->stash->{$name} = $extra{$name};
             }
         }

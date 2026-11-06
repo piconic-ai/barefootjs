@@ -25,8 +25,10 @@ import type {
   CallbackEvalSpelling,
 } from '@barefootjs/jsx'
 
-// The undefined literal is the `slice` end the source left out; Kolon reads `nil`.
-const ARRAY_METHOD_SPELLING = prefixedArrayMethodSpelling('$bf.', 'nil')
+// The undefined literal is the `slice` end the source left out: the runtime's
+// `UNDEF` (`$bf.undefined()`), which `$bf.slice` reads as "to the length";
+// `nil` would be a `null` end, which JS coerces to 0.
+const ARRAY_METHOD_SPELLING = prefixedArrayMethodSpelling('$bf.', '$bf.undefined()')
 
 /**
  * Lower `object.method(...args)` through the shared catalogue

@@ -177,7 +177,7 @@ function SortLabel() {
   return <p>{searchParams().get('sort') ?? 'none'}</p>
 }
 `)
-    expect(template).toContain("($searchParams->get('sort') // 'none')")
+    expect(template).toContain("(bf->keep_nonnil($searchParams->get('sort')) || [scalar('none')])->[0]")
     expect(template).not.toContain('$searchParams->{get}')
   })
 
@@ -192,7 +192,7 @@ function SortLabel() {
   return <p>{sp().get('sort') ?? 'none'}</p>
 }
 `)
-    expect(template).toContain("($searchParams->get('sort') // 'none')")
+    expect(template).toContain("(bf->keep_nonnil($searchParams->get('sort')) || [scalar('none')])->[0]")
   })
 })
 
@@ -440,9 +440,10 @@ function Box({ size }: { size?: string }) {
 describe('MojoAdapter - props-object inherited-attribute enumeration (#checkbox)', () => {
   // A SolidJS props-object component reads inherited attributes (`props.id`)
   // not enumerated in `propsParams`. The bare optional attribute must be
-  // guarded with Perl `defined` so it's omitted when unset (Hono parity),
-  // even though `id` isn't a declared param.
-  test('guards a props-object bare optional attr (props.id) with defined', () => {
+  // guarded with the runtime's `is_nullish` so it's omitted when unset (Hono
+  // parity), even though `id` isn't a declared param. Perl's `defined` would
+  // keep an unset (`undefined`) one.
+  test('guards a props-object bare optional attr (props.id) with is_nullish', () => {
     const { template } = compileAndGenerate(`
 "use client"
 interface P { tone?: string }
@@ -450,7 +451,7 @@ export function Widget(props: P) {
   return <button id={props.id}>x</button>
 }
 `)
-    expect(template).toContain('<% if (defined $id) { %>id="<%= $id %>"<% } %>')
+    expect(template).toContain('<% if (!bf->is_nullish($id)) { %>id="<%= $id %>"<% } %>')
   })
 })
 
@@ -474,19 +475,19 @@ export function Host() {
 })
 
 describe('MojoAdapter - nullish optional-attribute omission (textarea rows)', () => {
-  // A no-destructure-default, nillable-typed prop is `undef` when the
-  // caller omits it; guard its bare-reference attribute with Perl
-  // `defined` so it DROPS instead of rendering `attr=""` — matching
+  // A no-destructure-default, nillable-typed prop is `undefined` when the
+  // caller omits it; guard its bare-reference attribute with the runtime's
+  // `is_nullish` so it DROPS instead of rendering `attr=""` — matching
   // Hono's nullish-attribute omission. Concrete/defaulted props are
-  // never `undef` and stay unconditional.
-  test('guards a no-default nillable attr with a Perl defined check', () => {
+  // never nil and stay unconditional.
+  test('guards a no-default nillable attr with an is_nullish check', () => {
     const { template } = compileAndGenerate(`
 function C({ rows }: { rows?: number }) {
   return <textarea rows={rows} />
 }
 `)
     // A number prints through `bf->string`, as JS stringifies it (#3783).
-    expect(template).toContain('<% if (defined $rows) { %>rows="<%= bf->string($rows) %>"<% } %>')
+    expect(template).toContain('<% if (!bf->is_nullish($rows)) { %>rows="<%= bf->string($rows) %>"<% } %>')
     // Must NOT emit the bare unconditional form.
     expect(template).not.toMatch(/(?<!\{ %>)rows="<%= bf->string\(\$rows\) %>"/)
   })
@@ -580,7 +581,7 @@ export function Item(props: { defaultOn?: boolean }) {
 }
 `)
     // The `false` fallback is stored as a JSON boolean (#3824 step 5).
-    expect(template).toContain('% my $on = ($defaultOn // bf->boolean(0));')
+    expect(template).toContain('% my $on = (bf->keep_nonnil($defaultOn) || [scalar(bf->boolean(0))])->[0];')
   })
 
   // An object/array-valued signal can't lower to Perl and must NOT be seeded
@@ -720,7 +721,7 @@ export function LoopItemConditional() {
 `)
     // The row field is untyped (a literal-seeded signal), so the plan names
     // the runtime's JS `===`.
-    expect(result.template).toContain('bf->strict_eq($sel, $t->{id})')
+    expect(result.template).toContain("bf->strict_eq($sel, bf->get($t, 'id'))")
     expect(result.template).not.toContain('$sel == $t->{id}')
   })
 
@@ -736,7 +737,7 @@ export function L() {
   return <ul>{items().map(t => sel() === t.n && <li key={t.n}>{t.n}</li>)}</ul>
 }
 `)
-    expect(result.template).toContain('bf->strict_eq($sel, $t->{n})')
+    expect(result.template).toContain("bf->strict_eq($sel, bf->get($t, 'n'))")
     expect(result.template).not.toContain('$sel eq $t->{n}')
   })
 
@@ -797,7 +798,7 @@ export function FilterPredicateRenamedProp(props: { fallbackLabel: string }) {
 `)
     // A filter predicate's param proves nothing, so the plan names the
     // runtime's JS `===`.
-    expect(result.template).toContain('!bf->strict_eq($t->{label}, $skipLabel)')
+    expect(result.template).toContain("!bf->strict_eq(bf->get($t, 'label'), $skipLabel)")
     expect(result.template).not.toContain('$t->{label} != $skipLabel')
   })
 
@@ -951,7 +952,7 @@ export function C() {
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
     // The inner `t` is its own lexical; the outer filter param already reads
     // as the row variable `$t`, so the inner one is renamed (#3542).
-    expect(template).toContain('bf->length([grep { my $_bf_t = $_; bf->truthy($_bf_t->{active}) } @{$t->{tags}}])')
+    expect(template).toContain("bf->length([grep { my $_bf_t = $_; bf->truthy(bf->get($_bf_t, 'active')) } @{bf->get($t, 'tags')}])")
   })
 
   test('lowers nested .some(...) in filter predicate to an inline grep — no BF101 (#2038)', () => {
@@ -1288,7 +1289,7 @@ export { A }`, 'A.tsx', { adapter })
     expect(template).not.toContain('$bf->slice')
   })
 
-  test('lowers .slice(start) (1-arg) via bf->slice with end=undef', () => {
+  test('lowers .slice(start) (1-arg) via bf->slice with end=bf->undefined', () => {
     // 1-arg form. The Perl helper treats undef `end` as
     // "to length", matching the Go variadic-arg-absent case.
     const adapter = new MojoAdapter()
@@ -1298,7 +1299,7 @@ export { A }`, 'A.tsx', { adapter })
 export { A }`, 'A.tsx', { adapter })
     expect(result.errors?.filter(e => e.code === 'BF101') ?? []).toEqual([])
     const template = result.files.find(f => f.path.endsWith('.html.ep'))?.content ?? ''
-    expect(template).toContain("bf->join(bf->slice($items, 2, undef), ' ')")
+    expect(template).toContain("bf->join(bf->slice($items, 2, bf->undefined), ' ')")
   })
 
   test('lowers .concat(other).join(\' \') via bf->concat + join (#1448 Tier A)', () => {
@@ -1392,14 +1393,14 @@ export function Foo(props: { v: number }) {
     expect(roundResult.template).toContain('bf->round($v)')
   })
 
-  test('String(props.x) and Number(props.x) emit bf->string / bf->number', () => {
+  test('String(props.x) and Number(props.x) emit bf->to_string / bf->to_number', () => {
     const stringResult = compileAndGenerate(`
 'use client'
 export function Foo(props: { v: number }) {
   return <div data-x={String(props.v)}>hi</div>
 }
 `)
-    expect(stringResult.template).toContain('bf->string($v)')
+    expect(stringResult.template).toContain('bf->to_string($v)')
 
     const numberResult = compileAndGenerate(`
 'use client'
@@ -1407,7 +1408,7 @@ export function Foo(props: { v: string }) {
   return <div data-x={Number(props.v)}>hi</div>
 }
 `)
-    expect(numberResult.template).toContain('bf->number($v)')
+    expect(numberResult.template).toContain('bf->to_number($v)')
   })
 
   test('nested primitive call (Math.floor(Number(props.x))) chains correctly', () => {
@@ -1417,7 +1418,7 @@ export function Foo(props: { v: string }) {
   return <div data-x={Math.floor(Number(props.v))}>hi</div>
 }
 `)
-    expect(result.template).toContain('bf->floor(bf->number($v))')
+    expect(result.template).toContain('bf->floor(bf->to_number($v))')
   })
 
   test('registry exposes the V1 callee surface', () => {
@@ -1575,7 +1576,7 @@ describe('MojoAdapter - #1448 Tier A/B fixture-driven lowering pins', () => {
     { fixture: arrayConcatFixture,      expect: 'bf->concat($left, $right)' },
     { fixture: arraySliceFixture,       expect: 'bf->slice($items, 1, 3)' },
     // #1448 full-arity — zero-arg defaults.
-    { fixture: arraySliceCopyFixture,   expect: 'bf->slice($items, 0, undef)' },
+    { fixture: arraySliceCopyFixture,   expect: 'bf->slice($items, 0, bf->undefined)' },
     { fixture: arrayJoinDefaultFixture, expect: `bf->join($items, ',')` },
     // `.at()` → index 0; `.concat()` → the receiver (shallow copy).
     { fixture: arrayAtDefaultFixture,   expect: 'bf->at($items, 0)' },
@@ -1705,7 +1706,7 @@ export function SortStatus() {
   return <p>sort: {sort()}</p>
 }
 `)
-    expect(template).toContain("% my $sort = ($searchParams->get('sort') // 'date');")
+    expect(template).toContain("% my $sort = (bf->keep_nonnil($searchParams->get('sort')) || [scalar('date')])->[0];")
   })
 
   // A list-filter memo chained off the derived memo seeds too: the inline
@@ -1723,7 +1724,7 @@ export function TaggedList(props: { items: { title: string; tags: string[] }[] }
   return <ul>{visible().map((p) => <li key={p.title}>{p.title}</li>)}</ul>
 }
 `)
-    expect(template).toContain("% my $tag = ($searchParams->get('tag') // '');")
+    expect(template).toContain("% my $tag = (bf->keep_nonnil($searchParams->get('tag')) || [scalar('')])->[0];")
     expect(template).toMatch(/% my \$visible = \[grep/)
   })
 
@@ -2396,5 +2397,57 @@ export function C({ ${params} }: { ${types} }) {
 
   test('an undefined default does not', () => {
     expect(emit('on = undefined', 'on?: boolean')).not.toContain('bool_str')
+  })
+})
+
+describe('MojoAdapter - JS undefined apart from null (spec/js-undefined-value.md, U5)', () => {
+  test('a nil test spells the runtime’s strict and loose tests, never `defined`', () => {
+    const { template } = compileAndGenerate(`
+export function C(props: { v?: string | null }) {
+  return <p data-a={String(props.v === null)} data-b={String(props.v !== undefined)} data-c={String(props.v == null)}>x</p>
+}
+`)
+    expect(template).toContain('bf->is_null($v)')
+    expect(template).toContain('!bf->is_undefined($v)')
+    expect(template).toContain('bf->is_nullish($v)')
+    expect(template).not.toMatch(/\bdefined\(/)
+  })
+
+  test('`undefined`, an omitted slice end, `??` and a `?.` over a nullish receiver spell the runtime’s undefined', () => {
+    const { template } = compileAndGenerate(`
+export function C(props: { items?: string[]; s: string; user?: { name: string }; t?: string }) {
+  return <p data-u={JSON.stringify([undefined, null])} data-s={props.s.slice(1)} data-l={props.items?.length} data-n={props.user?.name} data-t={props.t ?? 'd'}>x</p>
+}
+`)
+    expect(template).toContain('bf->json([bf->undefined, undef])')
+    expect(template).toContain('bf->slice($s, 1, bf->undefined)')
+    expect(template).toContain('(bf->is_nullish($items) ? bf->undefined : bf->length($items))')
+    expect(template).toContain("bf->get_opt($user, 'name')")
+    expect(template).toContain("(bf->keep_nonnil($t) || [scalar('d')])->[0]")
+    expect(template).not.toMatch(/ \/\/ /)
+  })
+
+  test('a field read reads natively only when the type proves it present', () => {
+    const { template } = compileAndGenerate(`
+type Row = { id: number; note?: string }
+export function C(props: { rows: Row[]; o: { a?: string } }) {
+  return <ul data-a={props.o.a}>{props.rows.map(r => <li key={r.id}>{r.note}</li>)}</ul>
+}
+`)
+    expect(template).toContain('$r->{id}')
+    expect(template).toContain("bf->get($r, 'note')")
+    expect(template).toContain("bf->get($o, 'a')")
+  })
+
+  test('String() / Number() are JS ToString / ToNumber; an omitted attribute tests both nils', () => {
+    const { template } = compileAndGenerate(`
+export function C(props: { v?: number | null; title?: string }) {
+  return <p data-s={String(props.v)} data-n={Number(props.v)} title={props.title}>x</p>
+}
+`)
+    expect(template).toContain('bf->to_string($v)')
+    expect(template).toContain('bf->to_number($v)')
+    expect(template).toContain('!bf->is_nullish(')
+    expect(template).not.toContain('defined ')
   })
 })

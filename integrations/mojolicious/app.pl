@@ -589,7 +589,7 @@ sub _register_blog_child ($c, $parent_bf, $slot, $component, $extra_seed = {}) {
         my $child = BarefootJS->new($c, { backend => $parent_bf->backend });
         my $slot_id  = delete $props->{_bf_slot};
         my $data_key = delete $props->{key};
-        $child->_data_key($data_key) if defined $data_key;
+        $child->_data_key($data_key) unless BarefootJS::Undefined::is_nullish($data_key);
         $child->_scope_id($slot_id ? $host_scope . '_' . $slot_id : $component . '_' . BarefootJS::scope_id_suffix());
         $child->_is_child(1);
         if ($slot_id) { $child->_bf_parent($host_scope); $child->_bf_mount($slot_id) }

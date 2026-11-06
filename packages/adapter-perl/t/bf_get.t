@@ -24,27 +24,35 @@ use BarefootJS::Evaluator ();
 
 my $bf = bless { c => undef, config => {}, backend => PureBackend->new }, 'BarefootJS';
 
+# A miss reads as JS `undefined` (`$BarefootJS::UNDEF`), not Perl's `undef`,
+# which is JS `null` (spec/js-undefined-value.md).
+sub is_js_undefined ($$) {
+    my ($got, $name) = @_;
+    ok(BarefootJS::Undefined::is_undefined($got), $name);
+}
+
 subtest 'hash receiver — string key' => sub {
     my $row = { id => 1, a => 'row1-a', b => 'row1-b' };
     is $bf->get($row, 'a'),  'row1-a', 'string key resolves';
     is $bf->get($row, 'id'), 1,        'string key resolves (numeric value)';
-    is $bf->get($row, 'missing'), undef, 'missing key -> undef';
+    is_js_undefined $bf->get($row, 'missing'), 'missing key -> undefined';
 };
 
 subtest 'array receiver — numeric index' => sub {
     my $arr = ['row0', 'row1', 'row2'];
     is $bf->get($arr, 1),   'row1', 'integer index resolves';
     is $bf->get($arr, '2'), 'row2', 'numeric-string index resolves';
-    is $bf->get($arr, 5),   undef,  'out-of-range index -> undef';
-    is $bf->get($arr, -1),  undef,  'negative index -> undef (JS semantics, not Perl wraparound)';
+    is_js_undefined $bf->get($arr, 5), 'out-of-range index -> undefined';
+    is_js_undefined $bf->get($arr, -1), 'negative index -> undefined (JS semantics, not Perl wraparound)';
 };
 
 subtest 'edge cases' => sub {
-    is $bf->get(undef, 'a'),        undef, 'nil collection -> undef';
-    is $bf->get({ a => 1 }, undef), undef, 'nil key -> undef';
-    is $bf->get('not a ref', 'a'),  undef, 'scalar receiver -> undef';
+    is_js_undefined $bf->get(undef, 'a'), 'nil collection -> undefined';
+    is_js_undefined $bf->get({ a => 1 }, undef), 'nil key reads the "null" property -> undefined';
+    is $bf->get({ null => 1 }, undef), 1, 'nil key reads the "null" property';
+    is_js_undefined $bf->get('not a ref', 'a'), 'scalar receiver -> undefined';
     my $arr = ['x'];
-    is $bf->get($arr, 'not-numeric'), undef, 'non-numeric key against array -> undef';
+    is_js_undefined $bf->get($arr, 'not-numeric'), 'non-numeric key against array -> undefined';
 };
 
 # A string receiver reads one UTF-16 code unit whether or not the scalar
@@ -61,10 +69,10 @@ subtest 'string receiver — flagged and unflagged UTF-8' => sub {
             { s => $s },
         );
     };
-    my $unit = sub { my ($r) = @_; defined $r ? sprintf('U+%04X', ord $r) : 'undef' };
+    my $unit = sub { my ($r) = @_; BarefootJS::Undefined::is_undefined($r) ? 'undefined' : sprintf('U+%04X', ord $r) };
     my %cases = (
-        'BMP character'            => ["\xc3\xa9x", ['U+00E9', 'U+0078', 'undef']],
-        'astral character + ASCII' => ["\xf0\x9f\x98\x80x", ['U+FFFD', 'U+FFFD', 'U+0078', 'undef']],
+        'BMP character'            => ["\xc3\xa9x", ['U+00E9', 'U+0078', 'undefined']],
+        'astral character + ASCII' => ["\xf0\x9f\x98\x80x", ['U+FFFD', 'U+FFFD', 'U+0078', 'undefined']],
     );
     for my $name (sort keys %cases) {
         my ($bytes, $want) = @{ $cases{$name} };

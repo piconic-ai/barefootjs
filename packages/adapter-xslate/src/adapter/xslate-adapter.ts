@@ -151,12 +151,7 @@ import type { XslateAdapterOptions } from './lib/types.ts'
 function kolonSegmentAccessor(base: string, segments: readonly LoopBindingPathSegment[]): string {
   let expr = base
   for (const seg of segments) {
-    expr +=
-      seg.kind === 'field'
-        ? seg.isIdent
-          ? `.${seg.key}`
-          : `[${kolonHashKey(seg.key)}]`
-        : `[${seg.index}]`
+    expr = `$bf.get(${expr}, ${seg.kind === 'field' ? kolonStringLiteral(seg.key) : seg.index})`
   }
   return expr
 }
@@ -165,7 +160,7 @@ function kolonSegmentAccessor(base: string, segments: readonly LoopBindingPathSe
 /** How a lowered loop destructure binding reads off the row item. */
 const DESTRUCTURE_SPELLING: DestructureSpelling = {
   accessor: kolonSegmentAccessor,
-  slice: (parent, from) => `$bf.slice(${parent}, ${from}, nil)`,
+  slice: (parent, from) => `$bf.slice(${parent}, ${from}, $bf.undefined())`,
   omit: (parent, keys) => `$bf.omit(${parent}, [${keys.map(kolonStringLiteral).join(', ')}])`,
 }
 
@@ -188,6 +183,21 @@ const LOOP_REFUSALS: LoopRefusalSpelling = {
  * @since 0.9.1
  * @stability alpha
  */
+
+/**
+ * `stringifyBooleanBranches` for an attribute value, keeping a `??` whose
+ * boolean left operand the rewrite folds away (`(a > b) ?? 'x'` is `a > b`):
+ * this target spells every `??` through its `keep_nonnil` box
+ * (`NATIVE_SAFE.nullish` claims no proof, #3848 U5), so the node stays for
+ * the emitter to box as the plan names, its left operand printed as JS does.
+ * The output is the same; the plan and the template agree.
+ */
+function stringifyBranchesKeepingNullish(expr: ParsedExpr): ParsedExpr {
+  const rewritten = stringifyBooleanBranches(expr)
+  if (expr.kind !== 'logical' || expr.op !== '??') return rewritten
+  if (rewritten.kind === 'logical' && rewritten.op === '??') return rewritten
+  return { ...expr, left: rewritten, right: stringifyBooleanBranches(expr.right) }
+}
 export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<XslateRenderCtx> {
   name = 'xslate'
   extension = '.tx'
@@ -896,7 +906,9 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
         const text = `{ ${seg.parts.join(', ')} }`
         acc = acc === null ? text : `${acc}.merge(${text})`
       } else {
-        const text = `(${seg.expr} // {})`
+        // `{...x}` of a nullish `x` is a no-op: `{}` for `null` and
+        // `undefined` alike (Kolon's `//` would keep `UNDEF`).
+        const text = `($bf.keep_nonnil(${seg.expr}) || [{}])[0]`
         acc = acc === null ? text : `${acc}.merge(${text})`
       }
     }
@@ -940,8 +952,11 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
         }
       },
       spread: (value) => this.convertExpressionToKolon(value.expr),
+      // The fallback (no caller keys recorded) is JS `name in props` read
+      // off the value: present unless `undefined`, so an explicit `nil`
+      // (`null`) counts as passed. Not `defined`, which `UNDEF` passes.
       presentParam: (name) =>
-        `($bf.passed(${kolonStringLiteral(name)}, (defined $${name})) ? { ${name} => $${name} } : {})`,
+        `($bf.passed(${kolonStringLiteral(name)}, !$bf.is_undefined($${name})) ? { ${name} => $${name} } : {})`,
     })
     const hashEntries = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
     return `${captures.join('')}<: $bf.render_child('${tplName}'${hashEntries}) | mark_raw :>`
@@ -1058,7 +1073,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
         case 'omit-nullable': {
           // A bare read here, so it doubles as the guard test and the value.
           const v = this.convertExpressionToKolon(value.expr)
-          return `\n: if (defined ${v}) {\n${attr(v, plan.boolStr, valueParsed)}\n: }\n`
+          return `\n: if (!$bf.is_nullish(${v})) {\n${attr(v, plan.boolStr, valueParsed)}\n: }\n`
         }
         case 'boolean-attr':
           return `<: ${this.kolonTest(value.expr, this.convertExpressionToKolon(value.expr, value.parsed), value.parsed)} ? '${name}' : '' :>`
@@ -1081,7 +1096,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
         case 'plain': {
           // A ternary with a boolean and a string branch renders its boolean
           // as JS does, unless the whole value goes through `bool_str`.
-          const mixedParsed = valueParsed && !plan.boolStr ? stringifyBooleanBranches(valueParsed) : value.parsed
+          const mixedParsed = valueParsed && !plan.boolStr ? stringifyBranchesKeepingNullish(valueParsed) : value.parsed
           const v = this.convertExpressionToKolon(value.expr, mixedParsed)
           // A literal is never nil, and Text::Xslate folds `defined` of a
           // local bound to a string literal to false, which would drop the
@@ -1090,7 +1105,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
             return attr(v, plan.boolStr, mixedParsed)
           }
           const tmp = `$bf_pu${this.presenceVarCounter++}`
-          return `\n: my ${tmp} = ${v};\n: if (defined ${tmp}) {\n${attr(tmp, plan.boolStr, mixedParsed)}\n: }\n`
+          return `\n: my ${tmp} = ${v};\n: if (!$bf.is_nullish(${tmp})) {\n${attr(tmp, plan.boolStr, mixedParsed)}\n: }\n`
         }
       }
     },
@@ -1242,7 +1257,9 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
         // `${MAP[KEY]}` against a Record<T, string> literal — emit a Kolon
         // hash literal with an immediate `{ ... }[$key]` lookup. Kolon's `//`
         // turns a miss into an empty string, matching the go-template
-        // adapter's "empty when no case matches" semantics.
+        // adapter's "empty when no case matches" semantics. The table holds
+        // only string literals and is read natively, so a miss is `nil`, never
+        // `UNDEF`: `//` is exact here (#3848 U5).
         const keyExpr = this.convertExpressionToKolon(part.key)
         const entries = Object.entries(part.cases)
           .map(([k, v]) => `${kolonStringLiteral(k)} => ${kolonStringLiteral(v)}`)

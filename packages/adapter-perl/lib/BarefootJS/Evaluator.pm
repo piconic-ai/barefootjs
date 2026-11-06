@@ -10,6 +10,12 @@ use B ();
 use POSIX ();
 use JSON::PP ();
 use Scalar::Util qw(looks_like_number refaddr);
+use BarefootJS::Undefined ();
+
+# JS `undefined` (BarefootJS/Undefined.pm). Perl's `undef` is JS `null`.
+my $UNDEF = $BarefootJS::Undefined::UNDEF;
+sub _is_undef   { BarefootJS::Undefined::is_undefined($_[0]) }
+sub _is_nullish { BarefootJS::Undefined::is_nullish($_[0]) }
 
 # Lightweight evaluator for the pure `ParsedExpr` subset, scoped to
 # higher-order callback bodies (reduce / sort / map / filter / find
@@ -33,13 +39,18 @@ use Scalar::Util qw(looks_like_number refaddr);
 # equality) and deliberately distinct from the divergent bf->string / number
 # helpers in BarefootJS.pm, so the contract is unambiguous and the two
 # template adapters stay byte-equal with each other and with Go.
+#
+# JS `undefined` is `$BarefootJS::UNDEF` and Perl's `undef` is JS `null`. A
+# missing field, an out-of-range or non-canonical index, the unbound
+# `undefined` identifier, an omitted builtin argument and a `find` with no
+# result read as `UNDEF` (spec/js-undefined-value.md, section 2).
 
 # evaluate($node, $env)
 #
 # Evaluate a decoded ParsedExpr node (a hashref keyed by `kind`) against the
 # environment hashref ($env), returning a Perl value (number, string,
-# JSON::PP::Boolean, undef for null, arrayref, hashref). The matching JSON
-# entry point is eval_json() below.
+# JSON::PP::Boolean, undef for null, `UNDEF` for undefined, arrayref,
+# hashref). The matching JSON entry point is eval_json() below.
 sub evaluate ($node, $env) {
     return undef unless ref $node eq 'HASH';
     my $kind = $node->{kind} // '';
@@ -48,7 +59,10 @@ sub evaluate ($node, $env) {
         return $node->{value};
     }
     if ($kind eq 'identifier') {
-        return $env->{ $node->{name} };
+        my $name = $node->{name};
+        # The unshadowed `undefined` identifier is the constant.
+        return $UNDEF if $name eq 'undefined' && !exists $env->{$name};
+        return $env->{$name};
     }
     if ($kind eq 'binary') {
         return _binary($node->{op},
@@ -66,8 +80,8 @@ sub evaluate ($node, $env) {
         if ($op eq '||') {
             return _truthy($left) ? $left : evaluate($node->{right}, $env);
         }
-        # `??`
-        return defined $left ? $left : evaluate($node->{right}, $env);
+        # `??` coalesces both nils.
+        return _is_nullish($left) ? evaluate($node->{right}, $env) : $left;
     }
     if ($kind eq 'conditional') {
         return _truthy(evaluate($node->{test}, $env))
@@ -167,9 +181,12 @@ sub evaluate ($node, $env) {
         # semantics: default separator is `,`; a `null`/`undefined`
         # element joins as `''` (NOT the string "null"). Mirrors the Go
         # evaluator's evalJoin.
+        # An omitted or `undefined` separator is ","; a `null` one is
+        # ToString'd ("null").
         my $obj  = evaluate($node->{object}, $env);
         my $args = $node->{args} // [];
-        my $sep  = @$args == 1 ? _to_string(evaluate($args->[0], $env)) : ',';
+        my $sep_value = @$args == 1 ? evaluate($args->[0], $env) : $UNDEF;
+        my $sep = _is_undef($sep_value) ? ',' : _to_string($sep_value);
         return _join_array($obj, $sep);
     }
 
@@ -247,13 +264,14 @@ sub _array_callback ($method, $object_node, $arrow_node, $env) {
 
 # _join_array($obj, $sep): `Array.prototype.join` semantics — non-ARRAY
 # receiver -> '' (the evaluator's degrade-rather-than-die convention,
-# matching `.includes` above); a `null`/`undefined` (Perl `undef`) element
-# joins as '' (not the string "null"); every other element goes through
+# matching `.includes` above); a `null` (Perl `undef`) or `undefined`
+# (`UNDEF`) element joins as '' (not the string "null"); every other element
+# goes through
 # `_to_string` (JS `String(x)` — a JS boolean stringifies "true"/"false", a
 # number "42"/"NaN"/"Infinity", etc.). Mirrors Go's evalJoin.
 sub _join_array ($obj, $sep) {
     return '' unless ref $obj eq 'ARRAY';
-    return join($sep, map { defined $_ ? _to_string($_) : '' } @$obj);
+    return join($sep, map { _is_nullish($_) ? '' : _to_string($_) } @$obj);
 }
 
 # eval_json($json, $env): decode a ParsedExpr JSON string and evaluate it.
@@ -317,6 +335,7 @@ sub _double ($n) { WIDE_NV ? unpack('d', pack('d', $n)) : $n }
 
 sub _to_number ($v) {
     return 0 if !defined $v;
+    return _nan() if _is_undef($v);
     if (ref $v eq 'JSON::PP::Boolean') { return $v ? 1 : 0 }
     return _nan() if ref $v;
     return _string_to_number($v) if _is_string($v);
@@ -391,11 +410,12 @@ sub _string_to_number ($s) {
 
 sub _to_string ($v) {
     return 'null' if !defined $v;
+    return 'undefined' if _is_undef($v);
     if (ref $v eq 'JSON::PP::Boolean') { return $v ? 'true' : 'false' }
-    # Array.prototype.toString is join(","): a nil element prints as "", and
-    # a nested array flattens through its own join. A plain object prints as
-    # "[object Object]".
-    return join(',', map { defined $_ ? _to_string($_) : '' } @$v) if ref $v eq 'ARRAY';
+    # Array.prototype.toString is join(","): a nil element (`null` or
+    # `undefined`) prints as "", and a nested array flattens through its own
+    # join. A plain object prints as "[object Object]".
+    return join(',', map { _is_nullish($_) ? '' : _to_string($_) } @$v) if ref $v eq 'ARRAY';
     return '[object Object]' if ref $v eq 'HASH';
     return _format_number($v + 0) if _is_number($v);
     return "$v";
@@ -461,7 +481,7 @@ sub _js_notation ($shortest) {
 }
 
 sub _truthy ($v) {
-    return 0 if !defined $v;
+    return 0 if _is_nullish($v);
     if (ref $v eq 'JSON::PP::Boolean') { return $v ? 1 : 0 }
     return 1 if ref $v;    # arrays / objects are always truthy in JS
     if (_is_string($v)) { return $v ne '' ? 1 : 0 }    # incl. the truthy "0"
@@ -584,8 +604,10 @@ sub _strict_eq ($l, $r) {
         return $lf == $rf ? 1 : 0;
     }
     return 0 if $ln != $rn;    # one numeric, one not
+    # `null` is only itself and `undefined` only itself.
     if (!defined $l) { return !defined $r ? 1 : 0 }
     return 0 if !defined $r;
+    return (_is_undef($l) && _is_undef($r)) ? 1 : 0 if _is_undef($l) || _is_undef($r);
     my $lb = ref $l eq 'JSON::PP::Boolean';
     my $rb = ref $r eq 'JSON::PP::Boolean';
     if ($lb || $rb) {
@@ -651,6 +673,8 @@ sub _math_round ($n) {
 }
 
 sub _call_builtin ($name, $args) {
+    # An omitted argument is JS `undefined`.
+    my $arg = sub ($i) { $i < @$args ? $args->[$i] : $UNDEF };
     if ($name eq 'Math.max') {
         my $m = -(9**9**9);    # JS Math.max() with no args is -Infinity
         for my $a (@$args) {
@@ -669,13 +693,15 @@ sub _call_builtin ($name, $args) {
         }
         return $m;
     }
-    return abs(_to_number($args->[0]))          if $name eq 'Math.abs';
-    return POSIX::floor(_to_number($args->[0])) if $name eq 'Math.floor';
-    return POSIX::ceil(_to_number($args->[0]))  if $name eq 'Math.ceil';
-    return _math_round(_to_number($args->[0]))  if $name eq 'Math.round';
-    return _to_string($args->[0])              if $name eq 'String';
-    return _to_number($args->[0])              if $name eq 'Number';
-    return _bool(_truthy($args->[0]))          if $name eq 'Boolean';
+    return abs(_to_number($arg->(0)))          if $name eq 'Math.abs';
+    return POSIX::floor(_to_number($arg->(0))) if $name eq 'Math.floor';
+    return POSIX::ceil(_to_number($arg->(0)))  if $name eq 'Math.ceil';
+    return _math_round(_to_number($arg->(0)))  if $name eq 'Math.round';
+    # `String()` / `Number()` with no argument are "" / 0; `String(undefined)`
+    # is "undefined" and `Number(undefined)` NaN.
+    return @$args ? _to_string($args->[0]) : '' if $name eq 'String';
+    return @$args ? _to_number($args->[0]) : 0  if $name eq 'Number';
+    return _bool(_truthy($arg->(0)))           if $name eq 'Boolean';
     # Any other callee is outside the subset (refused upstream).
     return undef;
 }
@@ -684,21 +710,23 @@ sub _call_builtin ($name, $args) {
 # Member / index access
 # ---------------------------------------------------------------------------
 
+# _read_property: JS `obj.key`. A key the object does not have, and any read
+# of a receiver with no such property (a nil, a number), is `undefined`.
 sub _read_property ($obj, $key) {
-    return undef unless defined $obj;
+    return $UNDEF if _is_nullish($obj);
     if (ref $obj eq 'HASH') {
-        return exists $obj->{$key} ? $obj->{$key} : undef;
+        return exists $obj->{$key} ? $obj->{$key} : $UNDEF;
     }
     if (ref $obj eq 'ARRAY') {
-        return $key eq 'length' ? scalar(@$obj) : undef;
+        return $key eq 'length' ? scalar(@$obj) : $UNDEF;
     }
-    return undef if ref $obj;
+    return $UNDEF if ref $obj;
     # `.length` is a string property only — a numeric scalar (123) has no
-    # `.length` in the subset (JS `(123).length` is undefined → null), so
-    # guard on _is_string rather than coercing the number to a string.
-    # Matches the Go evaluator (numbers fall through to nil there).
+    # `.length` in the subset (JS `(123).length` is undefined), so guard on
+    # _is_string rather than coercing the number to a string. Matches the
+    # Go evaluator (numbers fall through to nil there).
     return _codepoint_length($obj) if $key eq 'length' && _is_string($obj);
-    return undef;
+    return $UNDEF;
 }
 
 # _read_index: JS `obj[index]`, and the template helper `BarefootJS::get`
@@ -709,23 +737,24 @@ sub _read_property ($obj, $key) {
 # index: "1" reads element 1, while "01", "1e0", "-0", "1.1" and "-1" are
 # ordinary property names and read `undef`. A string reads one UTF-16 code
 # unit. A hash reads its own key (spec/js-primitive-semantics.md,
-# "ToPropertyKey and index read").
+# "ToPropertyKey and index read"). A key the receiver does not have, and any
+# read of a receiver with no properties, is `undefined` (`UNDEF`).
 sub _read_index ($obj, $index) {
-    return undef unless defined $obj;
+    return $UNDEF if _is_nullish($obj);
     my $key = _to_string($index);
     if (ref $obj eq 'HASH') {
-        return exists $obj->{$key} ? $obj->{$key} : undef;
+        return exists $obj->{$key} ? $obj->{$key} : $UNDEF;
     }
-    return undef unless $key =~ /\A(?:0|[1-9][0-9]*)\z/;
+    return $UNDEF unless $key =~ /\A(?:0|[1-9][0-9]*)\z/;
     if (ref $obj eq 'ARRAY') {
-        return $key < @$obj ? $obj->[$key] : undef;
+        return $key < @$obj ? $obj->[$key] : $UNDEF;
     }
-    return undef if ref $obj || !_is_string($obj);
+    return $UNDEF if ref $obj || !_is_string($obj);
     return _utf16_unit_at($obj, $key);
 }
 
 # _utf16_unit_at: the UTF-16 code unit of string $s at index $i, as a
-# one-character string, or `undef` past the end. A unit that is one half of
+# one-character string, or `undefined` past the end. A unit that is one half of
 # a surrogate pair reads as U+FFFD: a lone surrogate cannot be written out
 # as UTF-8 (spec/js-primitive-semantics.md, "Out of scope"). A string
 # without Perl's UTF8 flag holds UTF-8 bytes, so a decoded copy is iterated
@@ -743,7 +772,7 @@ sub _utf16_unit_at ($s, $i) {
         }
         $pos += $width;
     }
-    return undef;
+    return $UNDEF;
 }
 
 # ---------------------------------------------------------------------------
@@ -782,6 +811,8 @@ sub fold ($items, $body, $acc_name, $item_name, $init, $direction = 'left', $bas
 # $base_env to a number (negative / zero / positive, like a JS comparator).
 # Generalizes bf_sort — any comparator body. $base_env is optional. Stable
 # and non-mutating. Mirrors Go's SortEval.
+# JS moves every `undefined` element to the end without handing it to the
+# comparator.
 sub sort_by ($items, $cmp, $param_a, $param_b, $base_env = undef) {
     # Non-array receiver → empty arrayref, matching the nil-tolerant
     # BarefootJS->sort helper convention (and avoiding an undef-deref footgun
@@ -793,7 +824,9 @@ sub sort_by ($items, $cmp, $param_a, $param_b, $base_env = undef) {
     # the comparator returns 0, so stability is explicit and independent of
     # the `sort` pragma / build (portable to the declared minimum Perl, and
     # matching Go's sort.SliceStable).
-    my @decorated = map { [ $_, $items->[$_] ] } 0 .. $#$items;
+    my @defined = grep { !_is_undef($_) } @$items;
+    my @tail    = grep { _is_undef($_) } @$items;
+    my @decorated = map { [ $_, $defined[$_] ] } 0 .. $#defined;
     my @sorted = sort {
         $env{$param_a} = $a->[1];
         $env{$param_b} = $b->[1];
@@ -805,7 +838,7 @@ sub sort_by ($items, $cmp, $param_a, $param_b, $base_env = undef) {
         # original-index tie-break then preserves input order for equal keys.
         ($c < 0 ? -1 : $c > 0 ? 1 : 0) || ($a->[0] <=> $b->[0])
     } @decorated;
-    return [ map { $_->[1] } @sorted ];
+    return [ (map { $_->[1] } @sorted), @tail ];
 }
 
 # JSON entry points for the adapters: decode the callback body once, then fold /
@@ -867,8 +900,8 @@ sub some ($items, $pred, $param, $base_env = undef) {
     return 0;
 }
 
-# find — first matching element, or undef. $forward false searches from the end
-# (findLast).
+# find — first matching element, or `undefined`. $forward false searches from
+# the end (findLast).
 sub find ($items, $pred, $param, $forward = 1, $base_env = undef) {
     my @arr = ref $items eq 'ARRAY' ? @$items : ();
     @arr = reverse @arr unless $forward;
@@ -877,7 +910,7 @@ sub find ($items, $pred, $param, $forward = 1, $base_env = undef) {
         $env{$param} = $item;
         return $item if _truthy(evaluate($pred, \%env));
     }
-    return undef;
+    return $UNDEF;
 }
 
 # find_index — index of the first matching element, or -1. $forward false →

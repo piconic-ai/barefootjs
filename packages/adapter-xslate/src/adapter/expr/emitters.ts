@@ -59,6 +59,10 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   numberLiteralSpelling,
   plusSpelling,
   needsToString,
+  operandFacts,
+  isNeverNil,
+  type NilTestHelper,
+  type ScopedOperandTyping,
 } from '@barefootjs/jsx'
 
 import type { XslateEmitContext } from '../emit-context.ts'
@@ -83,9 +87,13 @@ export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Xslate
  * own listed there.
  */
 export const NATIVE_SAFE: NativeSafeTable = {
-  // The runtime does not carry JS `undefined` apart from `null` yet
-  // (spec/js-undefined-value.md); rollout step U5 flips it.
-  carriesUndefined: false,
+  // The runtime carries JS `undefined` (`$BarefootJS::UNDEF`) apart from
+  // `null` (Perl `undef`), spec/js-undefined-value.md rollout step U5. `UNDEF`
+  // is falsy under Kolon's own `if` but `defined` (and not `== nil`), so no
+  // emission tests a JS value with `defined` / `//` / `== nil`: a nil test, a
+  // `??` and an attribute omission go through `$bf.is_nullish` / `is_null` /
+  // `is_undefined`.
+  carriesUndefined: true,
   // Perl's own truthiness reads the string "0" as false and NaN as true
   // (#3823), so a test is native only on a proven boolean (#3824 step 1).
   'to-boolean': ['boolean'],
@@ -116,7 +124,12 @@ export const NATIVE_SAFE: NativeSafeTable = {
   // `neg(0)` (#3824 step 6, pinned by the `primitives/number` vectors).
   neg: [],
   'number-literal': ['safe-integer'],
-  nullish: ['non-nil', 'unproven'],
+  // Always the runtime's `keep_nonnil` box (#3839), which renders each
+  // operand of a chain once. A `non-nil` proof does not fold `l ?? r` to `l`
+  // here: a host that leaves a typed value unset (a dependent destructure
+  // default over an omitted prop) still reaches the template as `UNDEF`,
+  // which Perl's `//` would keep too.
+  nullish: [],
   get: [],
   // Perl has no boolean type: a boolean that leaves the expression is
   // materialized with the runtime's `boolean` (#3824 step 5).
@@ -243,15 +256,65 @@ function spellPerlPlus(
 }
 
 /**
+ * JS `undefined` in a template: the runtime's `$BarefootJS::UNDEF`, which the
+ * `$bf` object exposes as `$bf.undefined()` (spec/js-undefined-value.md,
+ * rollout step U5). Kolon's `nil` is JS `null`.
+ */
+export const XSLATE_UNDEFINED = '$bf.undefined()'
+
+/**
+ * Spell a nil-test plan (`x === null` / `x === undefined` / `x == null`,
+ * `spec/js-undefined-value.md` "Decisions" (7)) through the runtime's
+ * `is_null` / `is_undefined` / `is_nullish`. Never Kolon's own `== nil` or
+ * `defined`, which read `UNDEF` as a value.
+ */
+function spellNilTest(helper: NilTestHelper, negated: boolean, operand: string): string {
+  const test = `$bf.${helper}(${operand})`
+  return negated ? `!${test}` : test
+}
+
+/**
+ * JS `l ?? r` in a value position, boxed the way `spellLogical` boxes `&&` /
+ * `||`: `keep_nonnil(l)` is the one-element array `[l]` unless `l` is `null`
+ * or `undefined`, so Kolon's `||` stops at `l`'s box exactly when JS returns
+ * `l` and builds `[r]` only otherwise (the short circuit); `[0]` unboxes
+ * the operand. `0`, `''` and `false` are present, as in JS. Kolon's `//`
+ * would keep `UNDEF`.
+ */
+function spellNullish(l: string, r: string): string {
+  return `($bf.keep_nonnil(${l}) || [${r}])[0]`
+}
+
+/**
+ * A non-computed member read `obj.k` (#3848 U5). JS reads a key the object
+ * does not have as `undefined`, Kolon's `.k` as `nil` (JS `null`), so a
+ * field Phase 1 does not prove present (optional, nullable or untyped) reads
+ * through the runtime's `$bf.get`, which gives `UNDEF` on a miss. A field the
+ * declared type proves present and non-nil keeps the native `.k` read. A
+ * `?.`-written read is `$bf.get_opt`, `undefined` over a nullish receiver.
+ */
+function memberRead(
+  object: ParsedExpr,
+  property: string,
+  optional: boolean,
+  receiver: string,
+  typing: ScopedOperandTyping,
+): string {
+  const key = kolonStringLiteral(property)
+  if (optional) return `$bf.get_opt(${receiver}, ${key})`
+  const facts = operandFacts({ kind: 'member', object, property, computed: false, optional: false }, typing)
+  return isNeverNil(facts) ? `${receiver}.${property}` : `$bf.get(${receiver}, ${key})`
+}
+
+/**
  * `x.length` through `$bf.length`. An optional-chained `x?.length` yields
- * `nil` — JS's `undefined` — for an absent receiver instead of
- * `$bf.length`'s `0`, so a bare read renders empty and a `//` fallback
- * takes over (#3332). Kolon's `== nil` compares definedness, so `0`, `''`
- * and `[]` receivers still read their length.
+ * JS's `undefined` (`$bf.undefined()`) for a nullish receiver instead of
+ * `$bf.length`'s `0`, so a bare read renders empty and a `??` fallback
+ * takes over (#3332). `0`, `''` and `[]` receivers still read their length.
  */
 function optionalLength(receiver: string, optional: boolean): string {
   const read = `$bf.length(${receiver})`
-  return optional ? `(${receiver} == nil ? nil : ${read})` : read
+  return optional ? `($bf.is_nullish(${receiver}) ? ${XSLATE_UNDEFINED} : ${read})` : read
 }
 
 export class XslateFilterEmitter implements ParsedExprEmitter {
@@ -335,6 +398,8 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     if (name === this.param) return kolonVar(this.paramLocal, this.onRead)
     const signal = this.localVarMap.get(name)
     if (signal) return kolonVar(signal, this.onRead)
+    // The unbound `undefined` identifier is the constant.
+    if (name === 'undefined' && !this.isOuterBound(name)) return XSLATE_UNDEFINED
     return kolonVar(this.rowLocalName(name), this.onRead)
   }
 
@@ -354,9 +419,10 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
     // count and string char count, JS-compatibly). Kolon's builtin `.size()`
     // is array-only and faults on a string.
     if (property === 'length') return optionalLength(emit(object), optional)
-    // Hash field access — Kolon dot works on hash refs.
+    // Hash field access — Kolon dot works on hash refs; a field not proven
+    // present reads through `$bf.get` (`memberRead`).
     if (computed) return this.indexAccess(object, literalMemberIndex(property), emit, _plan)
-    return `${emit(object)}.${property}`
+    return memberRead(object, property, optional, emit(object), this.primitives.typing())
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
@@ -431,8 +497,12 @@ export class XslateFilterEmitter implements ParsedExprEmitter {
   logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
-    if (op === '??') return `(${l} // ${r})`
+    if (op === '??') return spellNullish(l, r)
     return spellLogical(op, plan, l, r)
+  }
+
+  nilTest(helper: NilTestHelper, negated: boolean, operand: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    return spellNilTest(helper, negated, emit(operand))
   }
 
   callbackMethod(
@@ -575,9 +645,10 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
   }
 
   identifier(name: string): string {
-    // `undefined` / `null` nested inside a larger expression tree —
-    // Kolon `nil` (#1897).
-    if (name === 'undefined' || name === 'null') return 'nil'
+    // `undefined` nested inside a larger expression tree is the runtime's
+    // `UNDEF`, a `null` identifier Kolon's `nil` (#1897).
+    if (name === 'undefined') return XSLATE_UNDEFINED
+    if (name === 'null') return 'nil'
     // Inline a module-scope pure-string const (`const x = 'literal'`) — it
     // never reaches the per-render stash, so a bare `$x` would render empty.
     const inlined = this.ctx._resolveModuleStringConst(name)
@@ -615,9 +686,10 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     // `.length` → `$bf.length` (array count or string char count, JS-compat);
     // Kolon's builtin `.size()` is array-only and faults on a string.
     if (property === 'length') return optionalLength(obj, optional)
-    // Kolon dot access works for hash refs.
+    // Kolon dot access works for hash refs; a field not proven present reads
+    // through `$bf.get` (`memberRead`).
     if (computed) return this.indexAccess(object, literalMemberIndex(property), emit, _plan)
-    return `${obj}.${property}`
+    return memberRead(object, property, optional, obj, this.primitives.typing())
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
@@ -657,7 +729,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     const path = identifierPath(callee)
     const spec = path ? XSLATE_TEMPLATE_PRIMITIVES[path] : undefined
     if (path && spec) {
-      if (path === 'String' && args.length === 1) return stringifyTerm(args[0], emit, this.isBooleanName)
+      if (path === 'String' && args.length === 1) return toStringTerm(args[0], emit, this.isBooleanName)
       // A boolean's JSON text is its `String()` text (`true` / `false`).
       if (path === 'JSON.stringify' && args.length === 1 && isBooleanResultParsed(args[0], this.isBooleanName)) return stringifyTerm(args[0], emit, this.isBooleanName)
       if (args.length === spec.arity) {
@@ -728,7 +800,7 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
    */
   private coerceUndefinedOperand(op: string, expr: ParsedExpr, other: ParsedExpr | undefined, operand: string): string {
     const coercion = this.ctx._arithmeticCoercion(op, expr, other)
-    if (coercion === 'undefined-keep') return `(${operand} // $bf.number('NaN'))`
+    if (coercion === 'undefined-keep') return `($bf.is_nullish(${operand}) ? $bf.number('NaN') : ${operand})`
     return coercion === 'undefined' ? `$bf.number(${operand})` : operand
   }
 
@@ -778,8 +850,12 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
   logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
-    if (op === '??') return `(${l} // ${r})`
+    if (op === '??') return spellNullish(l, r)
     return spellLogical(op, plan, l, r)
+  }
+
+  nilTest(helper: NilTestHelper, negated: boolean, operand: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    return spellNilTest(helper, negated, emit(operand))
   }
 
   callbackMethod(

@@ -6,23 +6,18 @@ use warnings;
 # encoding for vectors"): the one-key `{"$undef": true}` sentinel, shared by
 # the primitive, helper and eval vector harnesses of both Perl adapters.
 #
-# The Perl runtime has no undefined value yet (rollout step U5 adds it), so
-# for now:
-#
 # - in `args` and the evaluator `env` the sentinel decodes to `arg()`, the
-#   host nil (undef) a template receives for `undefined` today;
-# - in an `expect` it matches only a value `runtime_undefined` accepts. None
-#   exists yet, so it never matches, also inside nested arrays and hashes,
-#   and every such case is listed in an expected-failure ledger or pinned as
-#   a divergence.
-#
-# U5 flips both here: `arg()` returns the runtime's undefined and
-# `runtime_undefined` recognizes it.
+#   runtime's undefined (`$BarefootJS::UNDEF`);
+# - in an `expect` it matches only a value `runtime_undefined` accepts, also
+#   inside nested arrays and hashes. A Perl `undef` is JS `null` and never
+#   matches it.
 
-sub arg { return undef }
+use BarefootJS::Undefined ();
 
-# Whether `$got` is the runtime's own undefined value (none yet: U5).
-sub runtime_undefined { return 0 }
+sub arg { return $BarefootJS::Undefined::UNDEF }
+
+# Whether `$got` is the runtime's own undefined value.
+sub runtime_undefined { return BarefootJS::Undefined::is_undefined($_[0]) }
 
 # Whether a JSON-decoded value is `{"$undef": true}`.
 sub is_sentinel {

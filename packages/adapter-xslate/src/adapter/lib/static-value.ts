@@ -18,7 +18,9 @@
 import { kolonHashKey, kolonStringLiteral } from './kolon-naming.ts'
 
 export function staticValueToKolon(value: unknown): string | null {
-  if (value === null || value === undefined) return 'nil'
+  // JS `undefined` is the runtime's `UNDEF` (`$bf.undefined()`), `null` Kolon's `nil`.
+  if (value === undefined) return '$bf.undefined()'
+  if (value === null) return 'nil'
   if (typeof value === 'boolean') return null
   if (typeof value === 'number') return String(value)
   if (typeof value === 'string') return kolonStringLiteral(value)

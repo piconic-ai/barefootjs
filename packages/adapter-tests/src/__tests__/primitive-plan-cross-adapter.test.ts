@@ -76,9 +76,10 @@ const GO_NAMES: Partial<Record<PrimitiveHelper, readonly string[]>> = {
   coalesce: ['nullish', 'keep_nonnil'],
   truthy: TRUTHY_NAMES,
 }
-// Jinja, MiniJinja and ERB box an unproven `??` left operand the same way (#3839).
+// Jinja, MiniJinja, ERB and the Perl adapters box an unproven `??` left
+// operand the same way (#3839).
 const DSL_NAMES = { truthy: TRUTHY_NAMES, coalesce: ['keep_nonnil'] }
-const PERL_NAMES = { sub: ['subtract'], mul: ['multiply'], div: ['divide'], truthy: TRUTHY_NAMES }
+const PERL_NAMES = { sub: ['subtract'], mul: ['multiply'], div: ['divide'], truthy: TRUTHY_NAMES, coalesce: ['keep_nonnil'] }
 const PHP_NAMES = { get: ['index'], strict_eq: ['eq', 'neq'], truthy: TRUTHY_NAMES }
 
 const TARGETS: readonly Target[] = [

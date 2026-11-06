@@ -155,9 +155,10 @@ function Box({ size }: { size?: string }) {
 describe('XslateAdapter - props-object inherited-attribute enumeration (#checkbox)', () => {
   // A SolidJS props-object component reads inherited attributes (`props.id`)
   // not enumerated in `propsParams`. The bare optional attribute must be guarded
-  // with Kolon `defined` so it's omitted when unset (Hono parity), even though
-  // `id` isn't a declared param.
-  test('guards a props-object bare optional attr (props.id) with defined', () => {
+  // with the runtime's `is_nullish` so it's omitted when unset (Hono parity),
+  // even though `id` isn't a declared param. Kolon's `defined` would keep an
+  // unset (`undefined`) one.
+  test('guards a props-object bare optional attr (props.id) with is_nullish', () => {
     const { template } = compileAndGenerate(`
 "use client"
 interface P { tone?: string }
@@ -165,7 +166,7 @@ export function Widget(props: P) {
   return <button id={props.id}>x</button>
 }
 `)
-    expect(template).toContain(': if (defined $id) {')
+    expect(template).toContain(': if (!$bf.is_nullish($id)) {')
     expect(template).toContain('id="<: $id :>"')
   })
 })
@@ -190,18 +191,18 @@ export function Host() {
 })
 
 describe('XslateAdapter - nullish optional-attribute omission (textarea rows)', () => {
-  // A no-destructure-default, nillable-typed prop is `undef` when the caller
-  // omits it; guard its bare-reference attribute with Kolon `defined` so it
-  // DROPS instead of rendering `attr=""` — matching Hono's nullish-attribute
-  // omission. Concrete/defaulted props are never `undef` and stay
-  // unconditional.
-  test('guards a no-default nillable attr with a Kolon defined check', () => {
+  // A no-destructure-default, nillable-typed prop is `undefined` when the
+  // caller omits it; guard its bare-reference attribute with the runtime's
+  // `is_nullish` so it DROPS instead of rendering `attr=""` — matching Hono's
+  // nullish-attribute omission. Concrete/defaulted props are never nil and
+  // stay unconditional.
+  test('guards a no-default nillable attr with an is_nullish check', () => {
     const { template } = compileAndGenerate(`
 function C({ rows }: { rows?: number }) {
   return <textarea rows={rows} />
 }
 `)
-    expect(template).toContain(': if (defined $rows) {')
+    expect(template).toContain(': if (!$bf.is_nullish($rows)) {')
     // A number prints through `$bf.string`, as JS stringifies it (#3783).
     expect(template).toContain('rows="<: $bf.string($rows) :>"')
   })

@@ -61,32 +61,7 @@
         "step": "U7"
       }
     },
-    "perl": {
-      ".includes tells undefined from null (SameValueZero)": {
-        "step": "U5"
-      },
-      "a missing field adds as NaN": {
-        "step": "U5"
-      },
-      "a missing field concatenates as \"undefined\"": {
-        "step": "U5"
-      },
-      "a missing field is not === null": {
-        "step": "U5"
-      },
-      "a missing field reads as undefined": {
-        "step": "U5"
-      },
-      "an object-literal member may hold undefined": {
-        "step": "U5"
-      },
-      "out-of-range index reads as undefined": {
-        "step": "U5"
-      },
-      "the unbound undefined identifier is the constant": {
-        "step": "U5"
-      }
-    },
+    "perl": {},
     "php": {
       ".includes tells undefined from null (SameValueZero)": {
         "step": "U6"

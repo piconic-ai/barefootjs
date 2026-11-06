@@ -61,6 +61,10 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   numberLiteralSpelling,
   plusSpelling,
   needsToString,
+  operandFacts,
+  isNeverNil,
+  type NilTestHelper,
+  type ScopedOperandTyping,
 } from '@barefootjs/jsx'
 
 import type { MojoEmitContext } from '../emit-context.ts'
@@ -86,9 +90,12 @@ export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Mojo',
  * own listed there.
  */
 export const NATIVE_SAFE: NativeSafeTable = {
-  // The runtime does not carry JS `undefined` apart from `null` yet
-  // (spec/js-undefined-value.md); rollout step U5 flips it.
-  carriesUndefined: false,
+  // The runtime carries JS `undefined` (`$BarefootJS::UNDEF`) apart from
+  // `null` (Perl `undef`), spec/js-undefined-value.md rollout step U5. `UNDEF`
+  // is falsy under Perl's own `if` but `defined`, so no emission tests a JS
+  // value with `defined` / `//`: a nil test, a `??` and an attribute
+  // omission go through `bf->is_nullish` / `is_null` / `is_undefined`.
+  carriesUndefined: true,
   // Perl's own truthiness reads the string "0" as false and NaN as true
   // (#3823), so a test is native only on a proven boolean (#3824 step 1).
   'to-boolean': ['boolean'],
@@ -118,7 +125,12 @@ export const NATIVE_SAFE: NativeSafeTable = {
   // `neg(0)` (#3824 step 6, pinned by the `primitives/number` vectors).
   neg: [],
   'number-literal': ['safe-integer'],
-  nullish: ['non-nil', 'unproven'],
+  // Always the runtime's `keep_nonnil` box (#3839), which renders each
+  // operand of a chain once. A `non-nil` proof does not fold `l ?? r` to `l`
+  // here: a host that leaves a typed value unset (a dependent destructure
+  // default over an omitted prop) still reaches the template as `UNDEF`,
+  // which Perl's `//` would keep too.
+  nullish: [],
   get: [],
   // Perl has no boolean type: a boolean that leaves the expression is
   // materialized with the runtime's `boolean` (#3824 step 5).
@@ -207,29 +219,80 @@ function flattenPropsMember(
 }
 
 
-/** JS `x === null` / `x === undefined` (and the loose forms) is a
- * nullish test. Perl's numeric `$x == undef` coerces both sides to 0, so a
- * present `0` (or `''`) would read as absent — the guard an optional-chained
- * method call `x?.m()` lowers to (#3435) must keep them distinct. */
+/**
+ * JS `undefined` in a template: the runtime's `$BarefootJS::UNDEF`, which the
+ * `bf` helper exposes as `bf->undefined` (spec/js-undefined-value.md, rollout
+ * step U5). Perl's `undef` is JS `null`.
+ */
+export const MOJO_UNDEFINED = 'bf->undefined'
+
+/**
+ * Spell a nil-test plan (`x === null` / `x === undefined` / `x == null`,
+ * `spec/js-undefined-value.md` "Decisions" (7)) through the runtime's
+ * `is_null` / `is_undefined` / `is_nullish`. Never Perl's own `defined`,
+ * which `UNDEF` passes, nor a numeric `== undef`, which reads a present `0`
+ * as absent (#3435).
+ */
+function spellNilTest(helper: NilTestHelper, negated: boolean, operand: string): string {
+  const test = `bf->${helper}(${operand})`
+  return negated ? `!${test}` : test
+}
+
+/**
+ * A `===` / `!==` / `==` / `!=` against a nil literal that reached the
+ * emitter without a nil-test plan: spelled as the plan would, strict against
+ * `null` / `undefined` and nullish for the loose forms.
+ */
 function emitNullishEquality(
   op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string,
 ): string | null {
   if (op !== '===' && op !== '!==' && op !== '==' && op !== '!=') return null
   const isNullish = (expr: ParsedExpr) => (expr.kind === 'literal' && expr.literalType === 'null') ||
     (expr.kind === 'identifier' && expr.name === 'undefined')
-  const operand = isNullish(right) ? left : isNullish(left) ? right : null
-  if (operand === null) return null
-  const defined = `defined(${emit(operand)})`
-  return op === '===' || op === '==' ? `!${defined}` : defined
+  const literal = isNullish(right) ? right : isNullish(left) ? left : null
+  if (literal === null) return null
+  const operand = literal === right ? left : right
+  const helper: NilTestHelper = op === '==' || op === '!=' ? 'is_nullish' : literal.kind === 'literal' ? 'is_null' : 'is_undefined'
+  return spellNilTest(helper, op === '!==' || op === '!=', emit(operand))
 }
 
 /**
- * `x?.length` (#3319): Perl dies dereferencing an absent array
- * (`scalar(@{undef})` → "Can't use an undefined value as an ARRAY
- * reference") before a following `// 0` fallback can run. An optional-chained
- * read guards the dereference and yields `undef` when the receiver is absent —
- * JS's `undefined` — so `(x?.length ?? 0)` falls back to `0` and a bare
- * `x?.length` renders empty. A non-optional `.length` is emitted unchanged.
+ * JS `l ?? r` in a value position, boxed the way `spellLogical` boxes `&&` /
+ * `||`: `keep_nonnil(l)` is the one-element arrayref `[l]` unless `l` is
+ * `null` or `undefined`, so Perl's `||` stops at `l`'s box exactly when JS
+ * returns `l` and builds `[r]` only otherwise (the short circuit). `0`, `''`
+ * and `false` are present, as in JS. Perl's `//` would keep `UNDEF`.
+ */
+function spellNullish(l: string, r: string): string {
+  return `(bf->keep_nonnil(${l}) || [scalar(${r})])->[0]`
+}
+
+/**
+ * A non-computed member read `obj.k` (#3848 U5). JS reads a key the object
+ * does not have as `undefined`, Perl's `->{k}` as `undef` (JS `null`), so a
+ * field Phase 1 does not prove present (optional, nullable or untyped) reads
+ * through the runtime's `bf->get`, which gives `UNDEF` on a miss. A field the
+ * declared type proves present and non-nil keeps the native `->{k}` read. A
+ * `?.`-written read is `bf->get_opt`, `undefined` over a nullish receiver.
+ */
+function memberRead(
+  object: ParsedExpr,
+  property: string,
+  optional: boolean,
+  receiver: string,
+  typing: ScopedOperandTyping,
+): string {
+  const key = perlStringLiteral(property)
+  if (optional) return `bf->get_opt(${receiver}, ${key})`
+  const facts = operandFacts({ kind: 'member', object, property, computed: false, optional: false }, typing)
+  return isNeverNil(facts) ? `${receiver}->{${property}}` : `bf->get(${receiver}, ${key})`
+}
+
+/**
+ * `x?.length` (#3319): an optional-chained read yields JS's `undefined`
+ * (`bf->undefined`) when the receiver is nullish, so `(x?.length ?? 0)`
+ * falls back to `0` and a bare `x?.length` renders empty. A non-optional
+ * `.length` is emitted unchanged.
  */
 /**
  * The Perl lexical a callback param is bound to inside its `grep` block:
@@ -298,7 +361,7 @@ function grepPredicate(method: string, paramVar: string, predBody: string, array
 }
 
 function optionalLength(receiver: string, optional: boolean, read: (receiver: string) => string): string {
-  return optional ? `(defined(${receiver}) ? ${read(receiver)} : undef)` : read(receiver)
+  return optional ? `(bf->is_nullish(${receiver}) ? ${MOJO_UNDEFINED} : ${read(receiver)})` : read(receiver)
 }
 
 export class MojoFilterEmitter implements ParsedExprEmitter {
@@ -385,6 +448,8 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
     if (enclosing) return enclosing
     const signal = this.localVarMap.get(name)
     if (signal) return `$${signal}`
+    // The unbound `undefined` identifier is the constant.
+    if (name === 'undefined' && !this.isOuterBound(name)) return MOJO_UNDEFINED
     return `$${name}`
   }
 
@@ -410,7 +475,7 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
       return optionalLength(emit(object), optional, obj => `bf->length(${obj})`)
     }
     if (computed) return this.indexAccess(object, literalMemberIndex(property), emit, _plan)
-    return `${emit(object)}->{${property}}`
+    return memberRead(object, property, optional, emit(object), this.primitives.typing())
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
@@ -487,8 +552,12 @@ export class MojoFilterEmitter implements ParsedExprEmitter {
   logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
-    if (op === '??') return `(${l} // ${r})`
+    if (op === '??') return spellNullish(l, r)
     return spellLogical(op, plan, l, r)
+  }
+
+  nilTest(helper: NilTestHelper, negated: boolean, operand: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    return spellNilTest(helper, negated, emit(operand))
   }
 
   callbackMethod(
@@ -667,10 +736,12 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
   }
 
   identifier(name: string): string {
-    // `undefined` / `null` nested inside a larger expression tree
-    // (#1897, pagination's `props.isActive ? 'page' : undefined`) — the
-    // top-level short-circuits don't see them.
-    if (name === 'undefined' || name === 'null') return 'undef'
+    // `undefined` nested inside a larger expression tree (#1897,
+    // pagination's `props.isActive ? 'page' : undefined`) is the runtime's
+    // `UNDEF`, a `null` identifier Perl's `undef` — the top-level
+    // short-circuits don't see them.
+    if (name === 'undefined') return MOJO_UNDEFINED
+    if (name === 'null') return 'undef'
     // Module pure-string const (e.g. `const baseClasses = '...'` used in a
     // className template literal): inline the literal value rather than emit
     // `$baseClasses` against a stash variable that is never bound.
@@ -717,7 +788,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
       return optionalLength(obj, optional, o => `bf->length(${o})`)
     }
     if (computed) return this.indexAccess(object, literalMemberIndex(property), emit, _plan)
-    return `${obj}->{${property}}`
+    return memberRead(object, property, optional, obj, this.primitives.typing())
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
@@ -759,7 +830,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     const path = identifierPath(callee)
     const spec = path ? MOJO_TEMPLATE_PRIMITIVES[path] : undefined
     if (path && spec) {
-      if (path === 'String' && args.length === 1) return stringifyTerm(args[0], emit, this.isBooleanName)
+      if (path === 'String' && args.length === 1) return toStringTerm(args[0], emit, this.isBooleanName)
       // A boolean's JSON text is its `String()` text (`true` / `false`).
       if (path === 'JSON.stringify' && args.length === 1 && isBooleanResultParsed(args[0], this.isBooleanName)) return stringifyTerm(args[0], emit, this.isBooleanName)
       if (args.length === spec.arity) {
@@ -829,7 +900,7 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
    */
   private coerceUndefinedOperand(op: string, expr: ParsedExpr, other: ParsedExpr | undefined, operand: string): string {
     const coercion = this.ctx._arithmeticCoercion(op, expr, other)
-    if (coercion === 'undefined-keep') return `(${operand} // bf->number('NaN'))`
+    if (coercion === 'undefined-keep') return `(bf->is_nullish(${operand}) ? bf->number('NaN') : ${operand})`
     return coercion === 'undefined' ? `bf->number(${operand})` : operand
   }
 
@@ -887,8 +958,12 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
   logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     const l = emit(left)
     const r = emit(right)
-    if (op === '??') return `(${l} // ${r})`
+    if (op === '??') return spellNullish(l, r)
     return spellLogical(op, plan, l, r)
+  }
+
+  nilTest(helper: NilTestHelper, negated: boolean, operand: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    return spellNilTest(helper, negated, emit(operand))
   }
 
   callbackMethod(

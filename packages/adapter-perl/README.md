@@ -30,6 +30,32 @@ A backend implements four methods:
 
 Inject a backend with `BarefootJS->new($c, { backend => $b })`.
 
+## `null` and `undefined`
+
+Perl's `undef` is JS `null`. JS `undefined` is `$BarefootJS::UNDEF`, a
+singleton (`BarefootJS::Undefined`). A props hash, or a Mojolicious stash,
+already has the four states a JS prop has, so no wrapper type is needed:
+
+| JS | Props hash |
+| --- | --- |
+| prop not passed | key left out |
+| `undefined` passed (`c={props.c}` with `c` unset) | `{ c => $BarefootJS::UNDEF }` |
+| `null` | `{ c => undef }` |
+| a value | `{ c => 'x' }` |
+
+A destructure default applies to the first two only. JSON decoded with
+`JSON::PP` / `Mojo::JSON` gives `undef` for `null` and leaves a missing key
+out, which is what you want; nothing walks decoded data to convert it.
+
+`UNDEF` is false in boolean context, prints as `''` and numifies to NaN, but
+it is `defined` in Perl's sense, and `//` keeps it. Test a value with
+`BarefootJS::Undefined::is_undefined`, `is_null` and `is_nullish` (`== null`)
+instead, or `$bf->is_nullish($v)` in a template.
+
+Migration: a host that passed `undef` to mean "unset" now gets JS `null`
+semantics (`'btn ' + c` renders `btn null`, and a destructure default no
+longer applies). Leave the key out to leave a prop unset.
+
 ## Reference implementation
 
 [`@barefootjs/mojolicious`](../adapter-mojolicious) provides
