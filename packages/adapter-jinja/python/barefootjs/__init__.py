@@ -24,6 +24,12 @@ Package layout (mirrors the Perl distribution's module layering):
     backend_jinja.py  -- the Jinja2 engine backend (port of
                          BarefootJS::Backend::Xslate)
 
+JS `undefined` and `null` are two values (spec/js-undefined-value.md): host
+`None` is JS `null`, and `UNDEF` (a `JsUndefined`, the Environment's
+`undefined`) is JS `undefined`. To leave a prop unset, omit its key; pass
+`UNDEF` for a prop that is present and `undefined`. `is_undefined`,
+`is_null` and `is_nullish` test for them.
+
 Only dependency: `jinja2` (which brings in `markupsafe`). Everything else is
 stdlib.
 
@@ -35,19 +41,24 @@ Run the test suite with:
 `python3 -m unittest discover -s tests`.)
 """
 
-from .backend_jinja import JinjaBackend, default_json_encoder
-from .evaluator import eval_json
+from .backend_jinja import UNDEF, JinjaBackend, JsUndefined, default_json_encoder
+from .evaluator import eval_json, is_null, is_nullish, is_undefined
 from .evaluator import evaluate as evaluate_expr
 from .runtime import BarefootJS, jinja_ident, js_bool_str, js_number, js_string, js_truthy, mangle_ident
 from .search_params import SearchParams
 
 __all__ = [
+    "UNDEF",
     "BarefootJS",
     "JinjaBackend",
+    "JsUndefined",
     "SearchParams",
     "default_json_encoder",
     "eval_json",
     "evaluate_expr",
+    "is_null",
+    "is_nullish",
+    "is_undefined",
     "jinja_ident",
     "mangle_ident",
     "js_bool_str",

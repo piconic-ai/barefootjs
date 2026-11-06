@@ -76,7 +76,7 @@ describe('body-destructured props compile to live reads', () => {
 
     // `items`'s destructure default survives as a live fallback, not a
     // one-time extraction.
-    expect(content).toContain('(_p.items ?? []).length')
+    expect(content).toContain('(_p.items === undefined ? [] : _p.items).length')
   })
 
   test('the CSR template lambda also reads a defaulted body alias live, matching the parameter form (#2934)', () => {
@@ -104,8 +104,8 @@ describe('body-destructured props compile to live reads', () => {
     `
     const { content } = compileClientJs(source, 'Child.tsx')
     expect(content).not.toMatch(/const label = /)
-    expect(content).toContain("escapeAttr((_p.label ?? 'none'))")
-    expect(content).toContain("escapeTextOrMarkup((_p.label ?? 'none'))")
+    expect(content).toContain("escapeAttr((_p.label === undefined ? 'none' : _p.label))")
+    expect(content).toContain("escapeTextOrMarkup((_p.label === undefined ? 'none' : _p.label))")
     // Never the bare, default-dropping form.
     expect(content).not.toMatch(/\(_p\.label\) != null/)
   })
@@ -124,8 +124,8 @@ describe('body-destructured props compile to live reads', () => {
     `
     const { content } = compileClientJs(source, 'Child.tsx')
     expect(content).not.toMatch(/const text = /)
-    expect(content).toContain("escapeAttr((_p.label ?? 'none'))")
-    expect(content).toContain("escapeTextOrMarkup((_p.label ?? 'none'))")
+    expect(content).toContain("escapeAttr((_p.label === undefined ? 'none' : _p.label))")
+    expect(content).toContain("escapeTextOrMarkup((_p.label === undefined ? 'none' : _p.label))")
   })
 
   test('a renamed body-destructured prop (`onPick: pick`) reads the caller-facing key live everywhere', () => {

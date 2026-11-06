@@ -104,6 +104,9 @@ export const renderDivergences: RenderDivergences = {
   // `undefined` (#3848 U0; graduated per target by U2..U8).
   'undef-null-array-search': { limitation: 'host-nil-collapses-undefined-and-null' },
   'undef-null-destructure-default': { limitation: 'host-nil-collapses-undefined-and-null' },
+  'destructure-default-null-hydrate': { limitation: 'host-nil-collapses-undefined-and-null' },
+  // A default assigning an earlier binding (`b = (a = 2)`) never runs.
+  'destructure-default-earlier-assignment': { limitation: 'destructure-default-assigns-earlier-binding' },
   'undef-null-json-stringify': { limitation: 'host-nil-collapses-undefined-and-null' },
   'undef-null-json-stringify-object-member': { limitation: 'host-nil-collapses-undefined-and-null' },
   'undef-null-number-coercion-typed': { limitation: 'host-nil-collapses-undefined-and-null' },

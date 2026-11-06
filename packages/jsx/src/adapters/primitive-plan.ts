@@ -329,8 +329,16 @@ function planNilTest(
   const nilTest = (helper: NilTestHelper): PrimitivePlan => ({ mode: 'helper', op: 'nil-test', helper, proof: 'unproven' })
   if (op === '==' || op === '!=') return nilTest('is_nullish')
   // `isNullishTest` holds, so when `right` is not a nil literal `left` is.
-  const literal = isNilLiteralOperand(right, typing) ? right : left
+  const literal = nilTestOperand(left, right, typing) === left ? right : left
   return nilTest(literal.kind === 'literal' ? 'is_null' : 'is_undefined')
+}
+
+/**
+ * The operand a nil test ({@link planNilTest}) tests: the side that is not
+ * the nil literal, `left` when both are (`null === undefined` tests `null`).
+ */
+export function nilTestOperand(left: ParsedExpr, right: ParsedExpr, typing?: ScopedOperandTyping): ParsedExpr {
+  return isNilLiteralOperand(right, typing) ? left : right
 }
 
 /**

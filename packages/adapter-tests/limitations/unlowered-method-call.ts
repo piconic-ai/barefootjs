@@ -6,5 +6,11 @@ export default defineLimitation({
   given: 'a template expression calling, with arguments, a method outside the array-method catalogue (`s().localeCompare(\'m\')`), or, with none, a method of a JavaScript global (`Date.now()`), outside any higher-order callback, directly or through a computed const it reads (`const keys = Object.keys(labels)`)',
   expected: 'the method runs and its result renders in the server HTML',
   diagnostic: 'BF101',
-  fixtures: ['unlowered-method-call', 'computed-const-read-unlowerable', 'unlowered-global-call'],
+  fixtures: [
+    'unlowered-method-call',
+    'computed-const-read-unlowerable',
+    'unlowered-global-call',
+    'destructure-default-shared-array',
+    'destructure-default-shared-array-renamed',
+  ],
 })

@@ -455,7 +455,14 @@ const EMPTY_SET: ReadonlySet<string> = new Set()
  * never bound a parameter — so callers synthesize one of these instead of a
  * full `ParamInfo` (which would need a fabricated `type`/`optional`).
  */
-export type LivePropReadInfo = Pick<ParamInfo, 'name' | 'sourceName' | 'defaultValue' | 'defaultContainsArrow' | 'defaultParts'>
+export type LivePropReadInfo = Pick<ParamInfo, 'name' | 'sourceName' | 'defaultValue' | 'defaultContainsArrow' | 'defaultParts'> & {
+  /**
+   * The fallback is the author's own `??` (`const label = props.label ??
+   * 'x'`, a body alias), which replaces `null` too, not a destructure
+   * default, which replaces only `undefined`.
+   */
+  readonly coalescesNull?: boolean
+}
 
 /** `_p.<callerKey>` — `_p` is always keyed by the caller-facing name (#2524 CSR half). */
 export function propReadBase(p: LivePropReadInfo): string {
@@ -463,8 +470,8 @@ export function propReadBase(p: LivePropReadInfo): string {
 }
 
 /**
- * The text a destructure default contributes as the right operand of a `??`
- * prop read. An arrow (or function-expression) default needs its own
+ * The text a destructure default contributes to a prop read
+ * ({@link composePropRead}). An arrow (or function-expression) default needs its own
  * parens — `??` binds tighter than an arrow head, so `_p.onInput ?? () =>
  * {}` is a SyntaxError. The one implementation of that decision, shared by
  * `propReadFallback` below (every live `_p.X` read) and `collectConstant`'s
@@ -477,11 +484,24 @@ export function coalesceDefaultText(defaultValue: string, defaultContainsArrow: 
 }
 
 /**
- * The `??` right-hand side for a prop read, or null when the bare read is
- * correct. Precedence:
+ * What a prop read falls back to:
+ *   - `default`: the prop's destructure default, which JS applies to an
+ *     absent or `undefined` prop only, never to `null`
+ *     (`spec/js-undefined-value.md`, "Decisions" (6)).
+ *   - `guard`: a value the compiler supplies for a defaultless prop so the
+ *     read cannot throw (`[]` for a loop array, `{}` for a member read); it
+ *     replaces either nil.
+ */
+export interface PropReadFallback {
+  readonly kind: 'default' | 'guard'
+  readonly text: string
+}
+
+/**
+ * The fallback of a prop read, or null when the bare read is correct.
+ * Precedence:
  *   1. an explicit destructure default (`{ x = 1 }`) — an arrow default gets
- *      an extra paren, since `??` binds tighter than the arrow head and
- *      `_p.onInput ?? () => {}` would be a syntax error.
+ *      an extra paren, since `??` / `?:` bind tighter than the arrow head.
  *   2. `usedAsLoopArray` → `[]`.
  *   3. property/index access → `{}`, UNLESS the prop also guards a
  *      conditional: `{}` is truthy, so that would always render the branch.
@@ -494,26 +514,70 @@ export function propReadFallback(
   p: LivePropReadInfo,
   usage: PropUsage | undefined,
   usedAsCondition: boolean,
-): string | null {
-  const defaultText = propDefaultText(p)
-  if (defaultText) return coalesceDefaultText(defaultText, p.defaultContainsArrow)
-  if (usage?.usedAsLoopArray) return '[]'
-  if (propHasPropertyAccess(usage) && !usedAsCondition) return '{}'
+  retained?: ReadonlySet<string>,
+): PropReadFallback | null {
+  const defaultText = propDefaultText(p, retained)
+  if (defaultText) return { kind: p.coalescesNull ? 'guard' : 'default', text: coalesceDefaultText(defaultText, p.defaultContainsArrow) }
+  if (usage?.usedAsLoopArray) return { kind: 'guard', text: '[]' }
+  if (propHasPropertyAccess(usage) && !usedAsCondition) return { kind: 'guard', text: '{}' }
   return null
+}
+
+/**
+ * A prop read `base` (a plain property read, `_p.x` / `props.x`, so reading
+ * it twice is safe) with its fallback, unparenthesized: a destructure
+ * default as `base === undefined ? default : base`, which keeps an explicit
+ * `null`, as JS does; a guard as `base ?? guard`. The one spelling every
+ * client-JS prop read and the body-destructure expansion share, and the
+ * shape `parsePropReadInitializer` recognizes.
+ */
+export function composePropRead(base: string, fallback: PropReadFallback | null): string {
+  if (fallback === null) return base
+  return fallback.kind === 'default' ? `${base} === undefined ? ${fallback.text} : ${base}` : `${base} ?? ${fallback.text}`
 }
 
 /**
  * A prop's destructure default as client JS. A default that reads an earlier
  * binding of its own pattern (`{ off = false, on = off }`, #3531) renders each
- * read as that prop's own live read (`_p.off ?? false`), since the emitted
- * scope binds no `off`; any other default is its source text. Undefined when
- * the prop has no default.
+ * read as that prop's own live read (`_p.off === undefined ? false :
+ * _p.off`) where the emitted scope binds no `off`; any other default is its
+ * source text. `retained` names the earlier bindings that ARE locals of the
+ * emitted scope (`retainedPropLocals`): a read of one stays a read of that
+ * local, as in JS, so a default sharing an earlier binding's array, or
+ * reading a value a default assigned to it, sees that binding. Undefined
+ * when the prop has no default.
  */
-export function propDefaultText(p: LivePropReadInfo): string | undefined {
+export function propDefaultText(p: LivePropReadInfo, retained: ReadonlySet<string> = EMPTY_SET): string | undefined {
   if (!p.defaultParts) return p.defaultValue
   return p.defaultParts
-    .map(part => (part.kind === 'text' ? part.text : livePropReadExpr(part.param, undefined, false)))
+    .map(part => {
+      if (part.kind === 'text') return part.text
+      return retained.has(part.param.name) ? part.param.name : livePropReadExpr(part.param, undefined, false, retained)
+    })
     .join('')
+}
+
+/**
+ * The destructured prop bindings the init body keeps as locals, by local
+ * name: a written or mutated parameter (`let start = …`, `emitPropsExtraction`)
+ * and a body destructure of the props object that does not keep its declared
+ * value (`let { a } = props`, or one mutated later). Every other destructured
+ * binding is read live (`keepsDeclaredValue`). A default reading one of these
+ * reads the local ({@link propDefaultText}).
+ */
+export function retainedPropLocals(b: {
+  propsObjectName: string | null
+  propsParams: readonly ParamInfo[]
+  localConstants: readonly ConstantInfo[]
+}): ReadonlySet<string> {
+  const names = new Set<string>()
+  if (b.propsObjectName === null) {
+    for (const p of b.propsParams) if (!p.isRest && !keepsDeclaredValue(p)) names.add(p.name)
+  }
+  for (const c of b.localConstants) {
+    if (c.propsDestructure && !c.isModule && !keepsDeclaredValue(c)) names.add(c.name)
+  }
+  return names
 }
 
 /**
@@ -536,10 +600,11 @@ export function livePropReadExpr(
   p: LivePropReadInfo,
   usage: PropUsage | undefined,
   usedAsCondition: boolean,
+  retained?: ReadonlySet<string>,
 ): string {
   const base = propReadBase(p)
-  const fallback = propReadFallback(p, usage, usedAsCondition)
-  return fallback === null ? base : `(${base} ?? ${fallback})`
+  const fallback = propReadFallback(p, usage, usedAsCondition, retained)
+  return fallback === null ? base : `(${composePropRead(base, fallback)})`
 }
 
 /**

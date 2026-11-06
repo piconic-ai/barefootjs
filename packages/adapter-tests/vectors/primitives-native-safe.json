@@ -8,7 +8,7 @@
     "java": false,
     "perl": false,
     "php": false,
-    "python": false,
+    "python": true,
     "ruby": false,
     "rust": false
   },

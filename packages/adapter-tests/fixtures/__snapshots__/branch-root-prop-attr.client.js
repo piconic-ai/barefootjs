@@ -11,7 +11,7 @@ export function initVariantTag(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s1) {
-      { const __x = `${({"a": "cls-a", "b": "cls-b"})[(_p.variant ?? 'a')]}`
+      { const __x = `${({"a": "cls-a", "b": "cls-b"})[(_p.variant === undefined ? 'a' : _p.variant)]}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s1.setAttribute('class', String(__v)); else _s1.removeAttribute('class') }
       }
@@ -22,7 +22,7 @@ export function initVariantTag(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `${({"a": "cls-a", "b": "cls-b"})[(_p.variant ?? 'a')]}`
+      { const __x = `${({"a": "cls-a", "b": "cls-b"})[(_p.variant === undefined ? 'a' : _p.variant)]}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -32,7 +32,7 @@ export function initVariantTag(__scope, _p = {}) {
 
 }
 
-hydrate('VariantTag', { init: initVariantTag, template: (_p) => `${(_p.asChild ?? false) ? `<em data-slot="alt" ${(`${({"a": "cls-a", "b": "cls-b"})[(_p.variant ?? 'a')]}`) != null ? 'class="' + escapeAttr(`${({"a": "cls-a", "b": "cls-b"})[(_p.variant ?? 'a')]}`) + '"' : ''} bf="s1">alt</em>` : `<span data-slot="tag" ${(`${({"a": "cls-a", "b": "cls-b"})[(_p.variant ?? 'a')]}`) != null ? 'class="' + escapeAttr(`${({"a": "cls-a", "b": "cls-b"})[(_p.variant ?? 'a')]}`) + '"' : ''} bf="s0">tag</span>`}` })
+hydrate('VariantTag', { init: initVariantTag, template: (_p) => `${(_p.asChild === undefined ? false : _p.asChild) ? `<em data-slot="alt" ${(`${({"a": "cls-a", "b": "cls-b"})[(_p.variant === undefined ? 'a' : _p.variant)]}`) != null ? 'class="' + escapeAttr(`${({"a": "cls-a", "b": "cls-b"})[(_p.variant === undefined ? 'a' : _p.variant)]}`) + '"' : ''} bf="s1">alt</em>` : `<span data-slot="tag" ${(`${({"a": "cls-a", "b": "cls-b"})[(_p.variant === undefined ? 'a' : _p.variant)]}`) != null ? 'class="' + escapeAttr(`${({"a": "cls-a", "b": "cls-b"})[(_p.variant === undefined ? 'a' : _p.variant)]}`) + '"' : ''} bf="s0">tag</span>`}` })
 export function VariantTag(_p, __bfKey) { return createComponent('VariantTag', _p, __bfKey) }
 export function initBranchRootPropAttr(__scope, _p = {}) {
   if (!__scope) return

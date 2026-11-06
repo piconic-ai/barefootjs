@@ -10,6 +10,7 @@ export default defineLimitation({
   actual:
     'renders the result for one of them in place of the other, or fails to render, since the host nil stands for both; graduates per target as its runtime carries `undefined` (`spec/js-undefined-value.md`)',
   fixtures: [
+    'destructure-default-null-hydrate',
     'undef-null-array-search',
     'undef-null-destructure-default',
     'undef-null-json-stringify',

@@ -16,7 +16,7 @@ export function initTabs(__scope, _p = {}) {
         { const __v = __x; if (__v != null) _s0.setAttribute('data-value', String(__v)); else _s0.removeAttribute('data-value') }
       }
       __l[0] = __x }
-      { const __x = `${tabsClasses} ${(_p.className ?? '')}`
+      { const __x = `${tabsClasses} ${(_p.className === undefined ? '' : _p.className)}`
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -28,7 +28,7 @@ export function initTabs(__scope, _p = {}) {
 
 }
 
-hydrate('Tabs', { init: initTabs, template: (_p) => `<div data-slot="tabs" ${(_p.value || _p.defaultValue) != null ? 'data-value="' + escapeAttr(_p.value || _p.defaultValue) + '"' : ''} ${(`${('flex flex-col gap-2 w-full')} ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`${('flex flex-col gap-2 w-full')} ${(_p.className ?? '')}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
+hydrate('Tabs', { init: initTabs, template: (_p) => `<div data-slot="tabs" ${(_p.value || _p.defaultValue) != null ? 'data-value="' + escapeAttr(_p.value || _p.defaultValue) + '"' : ''} ${(`${('flex flex-col gap-2 w-full')} ${(_p.className === undefined ? '' : _p.className)}`) != null ? 'class="' + escapeAttr(`${('flex flex-col gap-2 w-full')} ${(_p.className === undefined ? '' : _p.className)}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function Tabs(_p, __bfKey) { return createComponent('Tabs', _p, __bfKey) }
 export function initTabsList(__scope, _p = {}) {
   if (!__scope) return
@@ -41,7 +41,7 @@ export function initTabsList(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `${tabsListClasses} ${(_p.className ?? '')}`
+      { const __x = `${tabsListClasses} ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -53,7 +53,7 @@ export function initTabsList(__scope, _p = {}) {
 
 }
 
-hydrate('TabsList', { init: initTabsList, template: (_p) => `<div data-slot="tabs-list" role="tablist" ${(`${('bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]')} ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`${('bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]')} ${(_p.className ?? '')}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
+hydrate('TabsList', { init: initTabsList, template: (_p) => `<div data-slot="tabs-list" role="tablist" ${(`${('bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]')} ${(_p.className === undefined ? '' : _p.className)}`) != null ? 'class="' + escapeAttr(`${('bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]')} ${(_p.className === undefined ? '' : _p.className)}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</div>` })
 export function TabsList(_p, __bfKey) { return createComponent('TabsList', _p, __bfKey) }
 export function initTabsTrigger(__scope, _p = {}) {
   if (!__scope) return

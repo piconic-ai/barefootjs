@@ -113,32 +113,7 @@
         "step": "U6"
       }
     },
-    "python": {
-      ".includes tells undefined from null (SameValueZero)": {
-        "step": "U2"
-      },
-      "a missing field adds as NaN": {
-        "step": "U2"
-      },
-      "a missing field concatenates as \"undefined\"": {
-        "step": "U2"
-      },
-      "a missing field is not === null": {
-        "step": "U2"
-      },
-      "a missing field reads as undefined": {
-        "step": "U2"
-      },
-      "an object-literal member may hold undefined": {
-        "step": "U2"
-      },
-      "out-of-range index reads as undefined": {
-        "step": "U2"
-      },
-      "the unbound undefined identifier is the constant": {
-        "step": "U2"
-      }
-    },
+    "python": {},
     "ruby": {
       ".includes tells undefined from null (SameValueZero)": {
         "step": "U4"

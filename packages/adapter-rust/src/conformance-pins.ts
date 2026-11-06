@@ -102,6 +102,11 @@ export const conformancePins: ConformancePins = {
   ],
   // A method call no template lowers, outside a callback, refuses rather
   // than rendering a read of the method name (#3493).
+  // A const initializer pushing onto a destructured binding (`const n =
+  // a.push('x') && b.length`): the call has no template lowering. Escaped by
+  // the `/* @client */` twins (`destructure-default-shared-array*-client`).
+  'destructure-default-shared-array': [{ code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' }],
+  'destructure-default-shared-array-renamed': [{ code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' }],
   'unlowered-method-call': [
     { code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' },
   ],

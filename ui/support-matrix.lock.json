@@ -31,6 +31,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -194,6 +206,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -405,6 +429,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -613,6 +649,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -739,25 +787,7 @@
               ]
             },
             {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -776,6 +806,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -945,6 +987,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -1108,6 +1162,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -1277,6 +1343,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -1440,6 +1518,18 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -2054,30 +2144,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -3157,12 +3223,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -3787,6 +3847,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4010,6 +4076,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -4260,6 +4332,12 @@
               "fixture": "destructure-default-body-renamed-callback-signal",
               "limitations": [
                 "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -4531,9 +4609,9 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
+              "fixture": "destructure-default-earlier-assignment",
               "limitations": [
-                "awaits-undefined-value"
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -4603,45 +4681,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-string-relational",
-              "limitations": [
-                "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -4697,54 +4739,6 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -4754,6 +4748,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -4977,6 +4977,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5182,6 +5188,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -5396,6 +5408,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -5622,6 +5640,12 @@
               "fixture": "awaits-undefined-plus-shapes",
               "limitations": [
                 "awaits-undefined-value"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -5921,6 +5945,24 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -6258,6 +6300,24 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6610,6 +6670,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-renamed-callback",
               "limitations": [
                 "destructure-default-callback-unseeded"
@@ -6619,6 +6685,18 @@
               "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -7034,6 +7112,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7262,49 +7352,7 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-row-field-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -7365,6 +7413,24 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -7702,6 +7768,24 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8015,6 +8099,24 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -8343,6 +8445,24 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -8677,6 +8797,24 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -9139,12 +9277,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -9511,6 +9643,30 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -10031,6 +10187,30 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -10596,6 +10776,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
@@ -10611,6 +10803,18 @@
               "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -11194,12 +11398,6 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -11269,6 +11467,24 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -11446,36 +11662,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-string-relational",
-              "limitations": [
-                "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -11485,12 +11671,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -11608,85 +11788,7 @@
               ]
             },
             {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-destructure-default",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-row-field-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -11783,6 +11885,30 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -12300,6 +12426,30 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12793,6 +12943,30 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -13295,6 +13469,30 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -13815,6 +14013,30 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -14499,6 +14721,30 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -14878,6 +15124,30 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -15335,6 +15605,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
@@ -15350,6 +15632,18 @@
               "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -15801,12 +16095,6 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -15840,6 +16128,24 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -15963,36 +16269,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-string-relational",
-              "limitations": [
-                "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -16002,12 +16278,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -16101,73 +16371,7 @@
               ]
             },
             {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-destructure-default",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -16222,6 +16426,30 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -16604,6 +16832,30 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -16995,6 +17247,30 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -17362,6 +17638,30 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -17744,6 +18044,30 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -18109,6 +18433,24 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -18148,6 +18490,24 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -18255,6 +18615,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
@@ -18270,6 +18636,18 @@
               "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -18331,6 +18709,24 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -18349,12 +18745,6 @@
               ]
             },
             {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -18370,6 +18760,24 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -18411,6 +18819,24 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -18450,6 +18876,24 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -18491,6 +18935,24 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -18530,6 +18992,24 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -18688,6 +19168,24 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -19076,6 +19574,24 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -19497,6 +20013,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
@@ -19512,6 +20034,18 @@
               "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -19963,12 +20497,6 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -20020,6 +20548,24 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -20143,39 +20689,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-string-relational",
-              "limitations": [
-                "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -20251,79 +20767,7 @@
               ]
             },
             {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-row-field-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -20402,6 +20846,24 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -20787,6 +21249,24 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -21148,6 +21628,24 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -21524,6 +22022,24 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -21912,6 +22428,24 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -23191,12 +23725,6 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -23230,24 +23758,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-row-field-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -23687,27 +24197,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -24885,22 +25377,7 @@
             }
           ]
         },
-        "jinja": {
-          "gaps": [
-            {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "jinja": {},
         "minijinja": {
           "gaps": [
             {
@@ -25045,22 +25522,7 @@
             }
           ]
         },
-        "jinja": {
-          "gaps": [
-            {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "jinja": {},
         "minijinja": {
           "gaps": [
             {
@@ -25403,12 +25865,6 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -25817,16 +26273,7 @@
             }
           ]
         },
-        "jinja": {
-          "gaps": [
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "jinja": {},
         "minijinja": {
           "gaps": [
             {
@@ -26078,18 +26525,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -26316,12 +26751,6 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -26786,16 +27215,7 @@
             }
           ]
         },
-        "jinja": {
-          "gaps": [
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "jinja": {},
         "minijinja": {
           "gaps": [
             {
@@ -27005,12 +27425,6 @@
               "fixture": "strict-equality-same-reference",
               "limitations": [
                 "array-self-equality"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -27280,34 +27694,7 @@
             }
           ]
         },
-        "jinja": {
-          "gaps": [
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "jinja": {},
         "minijinja": {
           "gaps": [
             {
@@ -27725,33 +28112,9 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -27764,30 +28127,6 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -28194,16 +28533,7 @@
             }
           ]
         },
-        "jinja": {
-          "gaps": [
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "jinja": {},
         "minijinja": {
           "gaps": [
             {
@@ -28370,28 +28700,7 @@
             }
           ]
         },
-        "jinja": {
-          "gaps": [
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            }
-          ]
-        },
+        "jinja": {},
         "minijinja": {
           "gaps": [
             {
@@ -28566,22 +28875,7 @@
             }
           ]
         },
-        "jinja": {
-          "gaps": [
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            }
-          ]
-        },
+        "jinja": {},
         "minijinja": {
           "gaps": [
             {
@@ -28708,16 +29002,7 @@
             }
           ]
         },
-        "jinja": {
-          "gaps": [
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "jinja": {},
         "minijinja": {
           "gaps": [
             {
@@ -29180,18 +29465,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -29962,22 +30235,7 @@
             }
           ]
         },
-        "jinja": {
-          "gaps": [
-            {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-string-relational",
-              "limitations": [
-                "omitted-optional-nullable-scalar-relational"
-              ]
-            }
-          ]
-        },
+        "jinja": {},
         "minijinja": {
           "gaps": [
             {
@@ -30069,6 +30327,111 @@
         "description": "A comparison over an omitted optional prop typed string | null (undefined → NaN → false)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-nullable-string-relational.ts",
         "code": "props.missing >= ''"
+      }
+    },
+    "binary:unknown": {
+      "cells": {
+        "hono": {},
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            }
+          ]
+        },
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            }
+          ]
+        },
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            }
+          ]
+        }
+      },
+      "source": {
+        "file": "packages/adapter-tests/src/coverage-map.ts",
+        "line": 156,
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
+      },
+      "example": {
+        "fixture": "destructure-default-earlier-assignment",
+        "description": "A destructure default reading an earlier binding kept as a local reads that local (earlier-assignment)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-earlier-assignment.ts"
       }
     },
     "literal:boolean": {
@@ -30414,6 +30777,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -30523,6 +30892,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -30647,6 +31022,12 @@
               "fixture": "conditional-nested-loop-static-reactivity",
               "limitations": [
                 "conditional-nested-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -30798,73 +31179,7 @@
               ]
             },
             {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-destructure-default",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -30877,6 +31192,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -30989,6 +31310,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -31110,6 +31437,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -31213,6 +31546,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -31325,6 +31664,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -31473,6 +31818,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -31663,6 +32014,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -31871,6 +32228,12 @@
               "fixture": "destructure-default-body-renamed-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -32112,6 +32475,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -32178,30 +32547,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -32254,36 +32599,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
             }
           ]
         },
@@ -32299,6 +32614,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -32489,6 +32810,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -32694,6 +33021,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -32875,6 +33208,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -33065,6 +33404,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
               ]
             },
             {
@@ -33314,6 +33659,24 @@
             },
             {
               "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
               ]
@@ -33588,6 +33951,24 @@
             },
             {
               "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
               ]
@@ -33933,6 +34314,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-renamed-callback",
               "limitations": [
                 "destructure-default-callback-unseeded"
@@ -33942,6 +34329,18 @@
               "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -34273,12 +34672,6 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -34298,6 +34691,18 @@
             },
             {
               "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
               ]
@@ -34387,33 +34792,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-string-relational",
-              "limitations": [
-                "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -34477,66 +34858,6 @@
               ]
             },
             {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-destructure-default",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -34572,6 +34893,24 @@
             },
             {
               "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
               ]
@@ -34846,6 +35185,24 @@
             },
             {
               "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
               ]
@@ -35131,6 +35488,24 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -35394,6 +35769,24 @@
             },
             {
               "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
               ]
@@ -35668,6 +36061,24 @@
             },
             {
               "fixture": "computed-const-read-unlowerable",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
               ]
@@ -35939,6 +36350,18 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -35948,6 +36371,18 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -35959,6 +36394,18 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -35968,6 +36415,18 @@
         },
         "jinja": {
           "gaps": [
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -35979,6 +36438,18 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -35988,6 +36459,18 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -35999,6 +36482,18 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -36009,6 +36504,18 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
@@ -36018,6 +36525,18 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "filter-native-nested-index",
               "limitations": [
@@ -36044,6 +36563,24 @@
         "hono": {},
         "blade": {
           "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "module-const-default-hydrate",
               "limitations": [
@@ -36072,6 +36609,24 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "module-const-default-hydrate",
               "limitations": [
@@ -36167,6 +36722,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
@@ -36182,6 +36743,18 @@
               "fixture": "destructure-default-param-renamed-callback-memo",
               "limitations": [
                 "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
               ]
             },
             {
@@ -36231,6 +36804,24 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -36258,6 +36849,24 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "module-const-default-hydrate",
               "limitations": [
@@ -36287,6 +36896,24 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -36314,6 +36941,24 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "module-const-default-hydrate",
               "limitations": [
@@ -36343,6 +36988,24 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -36370,6 +37033,24 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "destructure-default-earlier-assignment",
+              "limitations": [
+                "destructure-default-assigns-earlier-binding"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-shared-array-renamed",
+              "limitations": [
+                "unlowered-method-call"
+              ]
+            },
             {
               "fixture": "module-const-default-hydrate",
               "limitations": [
@@ -36441,16 +37122,7 @@
             }
           ]
         },
-        "jinja": {
-          "gaps": [
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
-              ]
-            }
-          ]
-        },
+        "jinja": {},
         "minijinja": {
           "gaps": [
             {
@@ -36652,12 +37324,6 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
@@ -36797,16 +37463,7 @@
             }
           ]
         },
-        "jinja": {
-          "gaps": [
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "jinja": {},
         "minijinja": {
           "gaps": [
             {
@@ -37279,28 +37936,7 @@
             }
           ]
         },
-        "jinja": {
-          "gaps": [
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "jinja": {},
         "minijinja": {
           "gaps": [
             {
@@ -37475,22 +38111,7 @@
             }
           ]
         },
-        "jinja": {
-          "gaps": [
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "jinja": {},
         "minijinja": {
           "gaps": [
             {

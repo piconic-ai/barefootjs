@@ -82,7 +82,7 @@ from typing import Any, Callable, Optional
 from markupsafe import Markup
 
 from . import evaluator as _evaluator
-from .evaluator import looks_like_number, parse_number_literal
+from .evaluator import is_null, is_nullish, is_undefined, looks_like_number, parse_number_literal, undefined
 from .search_params import SearchParams
 
 _caller_keys = threading.local()
@@ -96,6 +96,46 @@ def _caller_keys_stack() -> list:
         stack = []
         _caller_keys.stack = stack
     return stack
+
+# ---------------------------------------------------------------------------
+# JS `undefined` (spec/js-undefined-value.md). `UNDEF` is the backend's
+# `JsUndefined` singleton; this module stays engine-free and reads it through
+# `evaluator.undefined()` / `is_undefined` (a class marker). Host `None` is JS
+# `null`.
+# ---------------------------------------------------------------------------
+
+
+class _Omitted:
+    """The default of a helper's optional argument: the call passed none.
+    JS reads an omitted argument as `undefined`, so `_is_omitted` accepts
+    `UNDEF` too; an explicit `None` is JS `null`, which each helper coerces
+    like any other value."""
+
+    __slots__ = ()
+
+    def __repr__(self) -> str:
+        return "<omitted>"
+
+
+_OMITTED = _Omitted()
+
+
+def _is_omitted(value: Any) -> bool:
+    """Whether an optional argument takes its JS default: omitted or
+    `undefined`, never `null`."""
+    return value is _OMITTED or is_undefined(value)
+
+
+def _json_ready(value: Any) -> Any:
+    """`value` as `JSON.stringify` sees it: a member holding `undefined` is
+    dropped and an `undefined` element is `null`, at any depth. A host's
+    `encode_json` never receives `UNDEF`."""
+    if isinstance(value, dict):
+        return {k: _json_ready(v) for k, v in value.items() if not is_undefined(v)}
+    if isinstance(value, (list, tuple)):
+        return [None if is_undefined(v) else _json_ready(v) for v in value]
+    return value
+
 
 # ---------------------------------------------------------------------------
 # Keyword mangling (Python/Jinja adapter plan, "Reserved words" divergence
@@ -193,8 +233,8 @@ def js_string(value: Any) -> str:
     """JS `String(v)` mirror, with the SAME `undef` divergence the Perl
     runtime documents: `None` renders as the empty string (not "null") so an
     unset prop doesn't surface as a literal "null"/"undefined" in
-    user-facing HTML."""
-    if value is None:
+    user-facing HTML. `undefined` renders as the empty string too."""
+    if is_nullish(value):
         return ""
     if isinstance(value, bool):
         return "true" if value else "false"
@@ -210,7 +250,7 @@ def js_string(value: Any) -> str:
         # JS `Array.prototype.toString` == `.join(',')`; never exercised by
         # the golden vectors (they stay scalar-domain) but a reasonable,
         # JS-faithful fallback rather than a Python repr.
-        return ",".join("" if v is None else js_string(v) for v in value)
+        return ",".join("" if is_nullish(v) else js_string(v) for v in value)
     if isinstance(value, dict):
         return "[object Object]"
     return str(value)
@@ -456,7 +496,7 @@ def _has_unsafe_style_value(value: str) -> bool:
 
 
 def _style_to_css(value: Any) -> Optional[str]:
-    if value is None:
+    if is_nullish(value):
         return None
     if not isinstance(value, dict):
         # Non-dict values pass through stringified -- matches the JS
@@ -466,7 +506,7 @@ def _style_to_css(value: Any) -> Optional[str]:
     parts = []
     for key in sorted(value.keys()):
         v = value[key]
-        if v is None:
+        if is_nullish(v):
             continue
         prop = _CAMEL_TO_KEBAB_RE.sub(lambda m: "-" + m.group(1).lower(), key)
         parts.append(f"{prop}:{js_string(v)}")
@@ -489,7 +529,10 @@ def _compare_sort_key(av: Any, bv: Any, compare_type: str) -> int:
         a = js_string(av) if av is not None else ""
         b = js_string(bv) if bv is not None else ""
         return -1 if a < b else (1 if a > b else 0)
-    # numeric
+    # numeric: `a - b` over an `undefined` key is NaN, which the sort reads
+    # as "equal".
+    if is_undefined(av) or is_undefined(bv):
+        return 0
     an = _numeric_value(av) if av is not None else 0.0
     bn = _numeric_value(bv) if bv is not None else 0.0
     return -1 if an < bn else (1 if an > bn else 0)
@@ -551,11 +594,20 @@ def _derive_stash_from_defaults(defaults: dict, props: dict) -> dict:
             continue
         prop_name = d.get("propName")
         mangled_prop_name = jinja_ident(prop_name) if prop_name is not None else None
-        if mangled_prop_name is not None and props.get(mangled_prop_name) is not None:
+        if mangled_prop_name is not None and mangled_prop_name in props and not is_undefined(props[mangled_prop_name]):
+            # A present prop keeps its value; host `None` is JS `null`.
             extra[key] = props[mangled_prop_name]
         else:
-            extra[key] = d.get("value")
+            extra[key] = _static_fallback(d)
     return extra
+
+
+def _static_fallback(d: dict) -> Any:
+    """An `ssrDefaults` entry's seed when the caller's prop is absent or
+    `undefined`: its default, or `UNDEF` when the prop has none (the
+    manifest writes no `value` then). A signal / memo entry always carries
+    its `value`."""
+    return d["value"] if "value" in d else undefined()
 
 
 _STRIPPED_TEMPLATE_SUFFIXES = (".html.ep", ".tx", ".jinja")
@@ -646,7 +698,7 @@ class BarefootJS:
     def data_key_attr(self) -> str:
         """Emits ` data-key="<key>"` for a keyed loop item, else ''."""
         k = self._data_key()
-        if k is None:
+        if is_nullish(k):
             return ""
         k_str = js_string(k).replace("&", "&amp;").replace('"', "&quot;")
         return f' data-key="{k_str}"'
@@ -672,7 +724,7 @@ class BarefootJS:
         # (e.g. a blog paragraph) terminates the single-quoted attribute and
         # truncates the hydration payload. The browser entity-decodes the
         # attribute value, so the client's JSON.parse sees the original text.
-        j = _html_escape(self.backend.encode_json(client_props))
+        j = _html_escape(self.backend.encode_json(_json_ready(client_props)))
         return f" bf-p='{j}'"
 
     # -----------------------------------------------------------------
@@ -748,7 +800,7 @@ class BarefootJS:
         props_json = ""
         props = self._props()
         if props:
-            props_json = "|" + self.backend.encode_json(props)
+            props_json = "|" + self.backend.encode_json(_json_ready(props))
         return f"<!--bf-scope:{scope_id}{host_segment}{props_json}-->"
 
     def scope_comment_end(self) -> str:
@@ -872,8 +924,8 @@ class BarefootJS:
     def passed(self, name: str, fallback: Any) -> bool:
         """Whether this component's caller passed the prop `name`, even as
         None: JS's `name in props`, which a template can't ask of its vars
-        (every declared prop is seeded, so an omitted one and a None one read
-        the same). A `{...props}` spread onto a child carries a param only
+        (every declared prop is seeded, so an omitted one reads as its
+        default or `UNDEF`, as a present `undefined` one does). A `{...props}` spread onto a child carries a param only
         when this is true. The keys are those `render_child` recorded for a
         child and `_props` for the root; with neither recorded (a root
         rendered without `_props`), `fallback`, the template's own "not
@@ -944,7 +996,7 @@ class BarefootJS:
                     # JSX `key` (a reserved prop) -> data-key on the child's
                     # scope root for keyed-loop reconciliation.
                     data_key = props.pop("key", None)
-                    if data_key is not None:
+                    if not is_nullish(data_key):
                         child_bf._data_key(data_key)
                     if slot_id:
                         child_bf._scope_id(f"{host_scope}_{slot_id}")
@@ -1041,14 +1093,19 @@ class BarefootJS:
         `null`, at any depth (#3787); `json.dumps` would write `-2.0` /
         `-4e-08`. Lists and dicts are walked here with sorted keys, as the
         default encoder does; strings and other leaves go through the
-        backend's encoder."""
+        backend's encoder. `undefined` follows `JSON.stringify` too: a member
+        holding it is skipped, an element is written as `null`, and at the
+        top level the result is `UNDEF` itself (no string), which prints
+        nothing and omits an attribute."""
+        if is_undefined(value):
+            return value
         if _evaluator._is_number(value):
             n = float(value)
             return "null" if math.isnan(n) or math.isinf(n) else _format_js_number(n)
         if isinstance(value, (list, tuple)):
-            return "[" + ",".join(self.json(v) for v in value) + "]"
+            return "[" + ",".join("null" if is_undefined(v) else self.json(v) for v in value) + "]"
         if isinstance(value, dict):
-            members = sorted(((str(k), v) for k, v in value.items()), key=lambda kv: kv[0])
+            members = sorted(((str(k), v) for k, v in value.items() if not is_undefined(v)), key=lambda kv: kv[0])
             return "{" + ",".join(
                 self.backend.encode_json(k) + ":" + self.json(v) for k, v in members
             ) + "}"
@@ -1084,7 +1141,41 @@ class BarefootJS:
     # reads as `undefined`). This module does not import the engine, so the
     # backend answers which values are its sentinel (`is_undefined`).
     def keep_nonnil(self, value: Any) -> list[Any]:
-        return [] if value is None or self.backend.is_undefined(value) else [value]
+        return [] if self.is_nullish(value) else [value]
+
+    @property
+    def undefined(self) -> Any:
+        """JS `undefined`, the runtime's `UNDEF`: how a template spells the
+        `undefined` identifier, an omitted method argument's default and a
+        `?.` over a nullish receiver (`bf.undefined`)."""
+        return undefined()
+
+    # The nil tests (spec/js-undefined-value.md, "Decisions" (3)): JS
+    # `x === undefined`, `x === null` and the loose `x == null`. A template
+    # spells a nil-test plan through them. `undefined` is `UNDEF` or any
+    # other Jinja `Undefined` the backend reports (a host Environment built
+    # with another `undefined` class); `null` is host `None`.
+    def is_undefined(self, value: Any) -> bool:
+        return is_undefined(value) or self._backend_undefined(value)
+
+    def is_null(self, value: Any) -> bool:
+        return is_null(value)
+
+    def is_nullish(self, value: Any) -> bool:
+        return value is None or self.is_undefined(value)
+
+    def _backend_undefined(self, value: Any) -> bool:
+        test = getattr(self.backend, "is_undefined", None)
+        return bool(test(value)) if test is not None else False
+
+    def sub(self, a: Any, b: Any) -> float:
+        """JS binary `-`: ToNumber of both operands (`undefined` is NaN,
+        `null` is 0)."""
+        return _evaluator._binary("-", a, b)
+
+    def mul(self, a: Any, b: Any) -> float:
+        """JS binary `*`: ToNumber of both operands."""
+        return _evaluator._binary("*", a, b)
 
     # JS primitive helpers (spec/js-primitive-semantics.md, "Operation
     # table"): ToNumber, ToString, `===`, the relational operators, binary
@@ -1126,7 +1217,7 @@ class BarefootJS:
         the zero's included (`1 / -0` is -Infinity, and the int
         `NEGATIVE_ZERO` converts to -0.0), where Python's `/` raises
         `ZeroDivisionError`."""
-        an, bn = js_number(a), js_number(b)
+        an, bn = _evaluator._to_number(a), _evaluator._to_number(b)
         if bn == 0:
             if an == 0 or an != an:
                 return float("nan")
@@ -1147,26 +1238,26 @@ class BarefootJS:
             if r == 0 and (a < 0 or isinstance(a, _NegativeZero)):
                 return NEGATIVE_ZERO
             return -r if a < 0 else r
-        an, bn = js_number(a), js_number(b)
+        an, bn = _evaluator._to_number(a), _evaluator._to_number(b)
         try:
             return math.fmod(an, bn)
         except (ValueError, OverflowError):
             return float("nan")
 
     def floor(self, value: Any) -> float:
-        n = js_number(value)
+        n = _evaluator._to_number(value)
         if _is_nan(n) or _is_inf(n):
             return n
         return float(math.floor(n))
 
     def ceil(self, value: Any) -> float:
-        n = js_number(value)
+        n = _evaluator._to_number(value)
         if _is_nan(n) or _is_inf(n):
             return n
         return float(math.ceil(n))
 
     def round(self, value: Any) -> float:
-        n = js_number(value)
+        n = _evaluator._to_number(value)
         if _is_nan(n) or _is_inf(n):
             return n
         # JS `Math.round` rounds half toward +Infinity (`Math.round(-1.5)`
@@ -1176,7 +1267,7 @@ class BarefootJS:
     def min(self, a: Any, b: Any) -> float:
         """`Math.min(a, b)` -- two-arg form only (#2168 math-methods).
         JS returns NaN if either operand is NaN."""
-        x, y = js_number(a), js_number(b)
+        x, y = _evaluator._to_number(a), _evaluator._to_number(b)
         if _is_nan(x):
             return x
         if _is_nan(y):
@@ -1184,7 +1275,7 @@ class BarefootJS:
         return x if x < y else y
 
     def max(self, a: Any, b: Any) -> float:
-        x, y = js_number(a), js_number(b)
+        x, y = _evaluator._to_number(a), _evaluator._to_number(b)
         if _is_nan(x):
             return x
         if _is_nan(y):
@@ -1193,7 +1284,7 @@ class BarefootJS:
 
     def abs(self, value: Any) -> float:
         """`Math.abs()` (#2168 math-methods)."""
-        n = js_number(value)
+        n = _evaluator._to_number(value)
         return n if _is_nan(n) else abs(n)
 
     def date(self, recv: Any, op: str) -> Any:
@@ -1432,7 +1523,7 @@ class BarefootJS:
         if isinstance(recv, dict):
             return False
         s = js_string(recv)
-        e = js_string(elem)
+        e = _evaluator._to_string(elem)
         return e in s
 
     def filter(self, recv: Any, pred: Callable[[Any], Any]) -> list:
@@ -1452,11 +1543,11 @@ class BarefootJS:
 
     def find(self, recv: Any, pred: Callable[[Any], Any]) -> Any:
         if not isinstance(recv, list):
-            return None
+            return undefined()
         for item in recv:
             if pred(item):
                 return item
-        return None
+        return undefined()
 
     def find_index(self, recv: Any, pred: Callable[[Any], Any]) -> int:
         if not isinstance(recv, list):
@@ -1468,11 +1559,11 @@ class BarefootJS:
 
     def find_last(self, recv: Any, pred: Callable[[Any], Any]) -> Any:
         if not isinstance(recv, list):
-            return None
+            return undefined()
         for item in reversed(recv):
             if pred(item):
                 return item
-        return None
+        return undefined()
 
     def find_last_index(self, recv: Any, pred: Callable[[Any], Any]) -> int:
         if not isinstance(recv, list):
@@ -1534,11 +1625,14 @@ class BarefootJS:
     def uc(self, s: Any) -> str:
         return js_string(s).upper()
 
-    def join(self, recv: Any, sep: Optional[str] = None) -> str:
+    def join(self, recv: Any, sep: Any = _OMITTED) -> str:
+        # An omitted or `undefined` separator is `,`; any other one is
+        # ToString'd, so `null` joins with `"null"`. A nil element joins as
+        # `""`.
         if not isinstance(recv, list):
             return ""
-        sep = "," if sep is None else sep
-        return sep.join(js_string(x) for x in recv)
+        sep_s = "," if _is_omitted(sep) else _evaluator._to_string(sep)
+        return sep_s.join(js_string(x) for x in recv)
 
     def get(self, recv: Any, key: Any) -> Any:
         return _evaluator._read_index(recv, key)
@@ -1547,9 +1641,9 @@ class BarefootJS:
         if isinstance(recv, list):
             return len(recv)
         # An object's `.length` is its own `length` property
-        # (`{ length: 3 }`), None when it has none (#3449).
+        # (`{ length: 3 }`), `undefined` when it has none (#3449).
         if isinstance(recv, dict):
-            return recv.get("length")
+            return recv["length"] if "length" in recv else undefined()
         # JS `String.prototype.length` counts UTF-16 CODE UNITS, not
         # Python's codepoint-counting `len(str)` (#2255). A codepoint
         # outside the Basic Multilingual Plane (astral, U+10000-U+10FFFF —
@@ -1561,15 +1655,15 @@ class BarefootJS:
         # A string receiver is `String.prototype.indexOf`, counted in
         # UTF-16 code units like JS (#3613).
         if isinstance(recv, str):
-            return _utf16_index_of(recv, js_string(elem), reverse=False)
+            return _utf16_index_of(recv, _evaluator._to_string(elem), reverse=False)
         return _array_index_of(recv, elem, reverse=False)
 
     def last_index_of(self, recv: Any, elem: Any) -> int:
         if isinstance(recv, str):
-            return _utf16_index_of(recv, js_string(elem), reverse=True)
+            return _utf16_index_of(recv, _evaluator._to_string(elem), reverse=True)
         return _array_index_of(recv, elem, reverse=True)
 
-    def at(self, recv: Any, i: Any) -> Any:
+    def at(self, recv: Any, i: Any = _OMITTED) -> Any:
         # A string receiver is `String.prototype.at`, indexed in UTF-16
         # code units (#3613). Half of a surrogate pair comes back as
         # U+FFFD, not the lone surrogate JS returns: a Python str could
@@ -1577,24 +1671,19 @@ class BarefootJS:
         # never rejoin into the astral character) and fail UTF-8 output
         # encoding, so the helper keeps its result valid text instead
         # (limitation `string-at-lone-surrogate`).
-        if isinstance(recv, str) and i is not None:
+        # The index is ToIntegerOrInfinity'd, so an omitted, `undefined` or
+        # `null` one reads element 0; a miss is `undefined`.
+        if isinstance(recv, str):
             units = _utf16_units(recv)
-            idx = _to_integer_or_infinity(i)
-            if idx < 0:
-                idx += len(units)
-            if idx < 0 or idx >= len(units):
-                return None
+            idx = _relative_index(i, len(units))
+            if idx is None:
+                return undefined()
             u = units[idx]
             return "\ufffd" if 0xD800 <= u <= 0xDFFF else chr(u)
-        if not isinstance(recv, list) or i is None:
-            return None
-        length = len(recv)
-        if length == 0:
-            return None
-        idx = length + i if i < 0 else i
-        if idx < 0 or idx >= length:
-            return None
-        return recv[idx]
+        if not isinstance(recv, list):
+            return undefined()
+        idx = _relative_index(i, len(recv))
+        return undefined() if idx is None else recv[idx]
 
     def concat(self, a: Any, b: Any) -> list:
         out: list = []
@@ -1604,7 +1693,7 @@ class BarefootJS:
             out.extend(b)
         return out
 
-    def slice(self, recv: Any, start: Any, end: Any) -> Any:
+    def slice(self, recv: Any, start: Any = _OMITTED, end: Any = _OMITTED) -> Any:
         # `Array.prototype.slice(start, end?)` AND `String.prototype.slice`
         # (the `string-slice` divergence, #2182) -- the adapter emits the
         # same `bf.slice(recv, start, end)` call for both receiver shapes
@@ -1615,19 +1704,13 @@ class BarefootJS:
         # is by Unicode code point already, matching JS except for
         # astral-plane input (the same divergence boundary every other
         # adapter's pad/trim helpers already accept).
+        # Both bounds are ToIntegerOrInfinity'd (`null` is 0); an omitted or
+        # `undefined` end is the length.
         if not isinstance(recv, (list, str)):
             return []
         length = len(recv)
-        s = start if start is not None else 0
-        if s < 0:
-            s = length + s
-        s = max(s, 0)
-        s = min(s, length)
-        e = end if end is not None else length
-        if e < 0:
-            e = length + e
-        e = max(e, 0)
-        e = min(e, length)
+        s = _clamp_relative(_to_integer_or_infinity(start), length)
+        e = length if _is_omitted(end) else _clamp_relative(_to_integer_or_infinity(end), length)
         if s >= e:
             return recv[0:0]
         return recv[s:e] if isinstance(recv, str) else list(recv[s:e])
@@ -1671,7 +1754,7 @@ class BarefootJS:
         projected = []
         for el in recv:
             if key_kind == "field":
-                projected.append(el.get(key) if isinstance(el, dict) else None)
+                projected.append(_evaluator._read_property(el, key))
             else:
                 projected.append(el)
         return self.flat(projected, 1)
@@ -1683,75 +1766,77 @@ class BarefootJS:
         for el in recv:
             for kind, key in specs:
                 if kind == "field":
-                    out.append(el.get(key) if isinstance(el, dict) else None)
+                    out.append(_evaluator._read_property(el, key))
                 else:
                     out.append(el)
         return out
 
     def trim(self, recv: Any) -> str:
-        if recv is None or isinstance(recv, (list, dict)):
+        if is_nullish(recv) or isinstance(recv, (list, dict)):
             return ""
         return js_string(recv).strip()
 
     def trim_start(self, recv: Any) -> str:
         """`String.prototype.trimStart()` -- the one-sided sibling of `trim`
         above (#2183 follow-up)."""
-        if recv is None or isinstance(recv, (list, dict)):
+        if is_nullish(recv) or isinstance(recv, (list, dict)):
             return ""
         return js_string(recv).lstrip()
 
     def trim_end(self, recv: Any) -> str:
         """`String.prototype.trimEnd()` -- the one-sided sibling of `trim`
         above (#2183 follow-up)."""
-        if recv is None or isinstance(recv, (list, dict)):
+        if is_nullish(recv) or isinstance(recv, (list, dict)):
             return ""
         return js_string(recv).rstrip()
 
-    def to_fixed(self, value: Any, digits: int = 0) -> str:
+    def to_fixed(self, value: Any, digits: Any = _OMITTED) -> str:
         n = self.number(value)
         if _is_nan(n):
             return "NaN"
         if _is_inf(n):
             return "-Infinity" if n < 0 else "Infinity"
-        if digits is None or digits < 0:
-            digits = 0
-        digits = int(digits)
+        # An omitted or `undefined` digit count is 0, as ToIntegerOrInfinity
+        # makes `null` too.
+        digits = max(_to_integer_or_infinity(digits), 0)
         factor = 10**digits
         rounded = math.floor(n * factor + 0.5)
         return f"{rounded / factor:.{digits}f}"
 
-    def split(self, recv: Any, sep: Optional[Any] = None, limit: Optional[int] = None) -> list:
+    def split(self, recv: Any, sep: Any = _OMITTED, limit: Any = _OMITTED) -> list:
+        # An omitted or `undefined` separator yields `[s]`; any other one is
+        # ToString'd (`null` splits on `"null"`). An omitted or `undefined`
+        # limit is unbounded; any other one is ToUint32'd (`null` is 0).
         s = _scalar_or_empty(recv)
-        if sep is None:
+        if _is_omitted(sep):
             parts = [s]
-        elif js_string(sep) == "":
-            parts = list(s)
-        elif s == "":
-            parts = [""]
         else:
-            parts = s.split(js_string(sep))
-        if limit is not None:
-            n = int(limit)
-            if n == 0:
-                parts = []
-            elif n > 0 and n < len(parts):
-                parts = parts[:n]
+            sep_s = _evaluator._to_string(sep)
+            if sep_s == "":
+                parts = list(s)
+            elif s == "":
+                parts = [""]
+            else:
+                parts = s.split(sep_s)
+        if not _is_omitted(limit):
+            parts = parts[: _to_uint32(limit)]
         return parts
 
-    def starts_with(self, recv: Any, prefix: Any, position: Optional[Any] = None) -> bool:
+    def starts_with(self, recv: Any, prefix: Any, position: Any = _OMITTED) -> bool:
         s = _scalar_or_empty(recv)
-        p = js_string(prefix)
-        if position is not None:
+        p = _evaluator._to_string(prefix)
+        if not _is_omitted(position):
             # `position` counts UTF-16 code units, like JS (#3613).
             units = _utf16_units(s)
             n = max(0, min(_to_integer_or_infinity(position), len(units)))
             return _utf16_has_at(units, _utf16_units(p), n)
         return s.startswith(p)
 
-    def ends_with(self, recv: Any, suffix: Any, end_position: Optional[Any] = None) -> bool:
+    def ends_with(self, recv: Any, suffix: Any, end_position: Any = _OMITTED) -> bool:
+        # An omitted or `undefined` endPosition is the length; `null` is 0.
         s = _scalar_or_empty(recv)
-        x = js_string(suffix)
-        if end_position is not None:
+        x = _evaluator._to_string(suffix)
+        if not _is_omitted(end_position):
             # `endPosition` counts UTF-16 code units, like JS (#3613).
             units = _utf16_units(s)
             e = max(0, min(_to_integer_or_infinity(end_position), len(units)))
@@ -1765,8 +1850,8 @@ class BarefootJS:
 
     def replace(self, recv: Any, pattern: Any, replacement: Any) -> str:
         s = _scalar_or_empty(recv)
-        o = js_string(pattern)
-        n = js_string(replacement)
+        o = _evaluator._to_string(pattern)
+        n = _evaluator._to_string(replacement)
         if o == "":
             return n + s
         i = s.find(o)
@@ -1783,8 +1868,8 @@ class BarefootJS:
         so it needs no hand-rolled loop the way the other runtimes' first-
         occurrence-only native replace does."""
         s = _scalar_or_empty(recv)
-        o = js_string(pattern)
-        n = js_string(replacement)
+        o = _evaluator._to_string(pattern)
+        n = _evaluator._to_string(replacement)
         return s.replace(o, n)
 
     def query(self, base: Any, *triples: Any) -> str:
@@ -1823,15 +1908,15 @@ class BarefootJS:
             return b
         return b + "?" + "&".join(f"{_form_escape(k)}={_form_escape(v)}" for k, v in pairs)
 
-    def repeat(self, recv: Any, count: Any) -> str:
+    def repeat(self, recv: Any, count: Any = _OMITTED) -> str:
         s = _scalar_or_empty(recv)
-        n = int(count) if count is not None else 0
+        n = _to_integer_or_infinity(count)
         return s * n if n > 0 else ""
 
-    def pad_start(self, recv: Any, target: Any, pad: Optional[Any] = None) -> str:
+    def pad_start(self, recv: Any, target: Any = _OMITTED, pad: Any = _OMITTED) -> str:
         return _pad(_scalar_or_empty(recv), target, pad, at_start=True)
 
-    def pad_end(self, recv: Any, target: Any, pad: Optional[Any] = None) -> str:
+    def pad_end(self, recv: Any, target: Any = _OMITTED, pad: Any = _OMITTED) -> str:
         return _pad(_scalar_or_empty(recv), target, pad, at_start=False)
 
     # -----------------------------------------------------------------
@@ -1854,15 +1939,20 @@ class BarefootJS:
             }
             for k in (opts.get("keys") or [])
         ]
+        # JS moves every `undefined` element to the end without handing it
+        # to the comparator.
+        tail = [item for item in recv if is_undefined(item)]
         if not spec:
             return list(recv)
 
         keyed = []
         for item in recv:
+            if is_undefined(item):
+                continue
             ks = []
             for s in spec:
                 if s["key_kind"] == "field" and isinstance(item, dict):
-                    ks.append(item.get(s["key"]))
+                    ks.append(_evaluator._read_property(item, s["key"]))
                 else:
                     ks.append(item)
             keyed.append((ks, item))
@@ -1876,7 +1966,7 @@ class BarefootJS:
             return 0
 
         ordered = sorted(keyed, key=functools.cmp_to_key(cmp))
-        return [item for _, item in ordered]
+        return [item for _, item in ordered] + tail
 
     def reduce(self, recv: Any, opts: Optional[dict] = None) -> Any:
         """Fold via the arithmetic-fold catalogue (#1448 Tier C). Mirrors
@@ -1929,7 +2019,7 @@ class BarefootJS:
             if key == "children":
                 continue
             val = bag.get(key)
-            if val is None:
+            if is_nullish(val):
                 continue
             if isinstance(val, bool):
                 if val:
@@ -2023,8 +2113,10 @@ def _to_integer_or_infinity(value: Any) -> int:
     """JS `ToIntegerOrInfinity` for a string position or index (#3613):
     NaN -> 0, truncation toward zero, and +/-Infinity clamped to +/-2**53
     so the caller's range check treats it as out of range instead of
-    `int()` raising."""
-    n = js_number(value)
+    `int()` raising. An omitted argument is `undefined`, NaN, so 0."""
+    if _is_omitted(value):
+        return 0
+    n = _evaluator._to_number(value)
     if math.isnan(n):
         return 0
     if n >= _MAX_SAFE_INDEX:
@@ -2032,6 +2124,31 @@ def _to_integer_or_infinity(value: Any) -> int:
     if n <= -_MAX_SAFE_INDEX:
         return -_MAX_SAFE_INDEX
     return int(n)
+
+
+def _relative_index(value: Any, length: int) -> Optional[int]:
+    """`Array.prototype.at`'s index: ToIntegerOrInfinity, counted from the
+    end when negative; None when it falls outside `[0, length)`."""
+    idx = _to_integer_or_infinity(value)
+    if idx < 0:
+        idx += length
+    return idx if 0 <= idx < length else None
+
+
+def _clamp_relative(idx: int, length: int) -> int:
+    """A `slice` bound: counted from the end when negative, clamped to
+    `[0, length]`."""
+    if idx < 0:
+        idx += length
+    return max(0, min(idx, length))
+
+
+def _to_uint32(value: Any) -> int:
+    """JS `ToUint32` (`split`'s limit): NaN and the infinities are 0."""
+    n = _evaluator._to_number(value)
+    if math.isnan(n) or math.isinf(n):
+        return 0
+    return int(math.trunc(n)) % 2**32
 
 
 def _utf16_units(s: str) -> list:
@@ -2075,21 +2192,25 @@ def _array_index_of(recv: Any, elem: Any, reverse: bool) -> int:
     idxs = range(len(recv) - 1, -1, -1) if reverse else range(len(recv))
     for i in idxs:
         item = recv[i]
-        if item is None:
-            if elem is None:
+        # Strict equality tells the nils apart: `null` matches only `null`,
+        # `undefined` only `undefined`.
+        if is_nullish(item) or is_nullish(elem):
+            if (item is None and elem is None) or (is_undefined(item) and is_undefined(elem)):
                 return i
             continue
-        if elem is not None and item == elem:
+        if item == elem:
             return i
     return -1
 
 
-def _pad(s: str, target: Any, pad: Optional[Any], at_start: bool) -> str:
-    p = " " if pad is None else js_string(pad)
+def _pad(s: str, target: Any, pad: Any, at_start: bool) -> str:
+    # An omitted or `undefined` pad string is a space; any other one is
+    # ToString'd (`null` pads with `"null"`).
+    p = " " if _is_omitted(pad) else _evaluator._to_string(pad)
     if p == "":
         return s
     length = len(s)
-    t = int(target) if target is not None else 0
+    t = _to_integer_or_infinity(target)
     if length >= t:
         return s
     need = t - length

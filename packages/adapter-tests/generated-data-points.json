@@ -4888,6 +4888,71 @@
       }
     }
   ],
+  "destructure-default-earlier-assignment": [
+    {
+      "name": "gen:a:zero",
+      "props": {
+        "__instanceId": "DestructureDefaultEarlierAssignment_test",
+        "a": 0
+      }
+    },
+    {
+      "name": "gen:a:negative",
+      "props": {
+        "__instanceId": "DestructureDefaultEarlierAssignment_test",
+        "a": -7
+      }
+    },
+    {
+      "name": "gen:a:large",
+      "props": {
+        "__instanceId": "DestructureDefaultEarlierAssignment_test",
+        "a": 1234567890
+      }
+    },
+    {
+      "name": "gen:b:zero",
+      "props": {
+        "__instanceId": "DestructureDefaultEarlierAssignment_test",
+        "b": 0
+      }
+    },
+    {
+      "name": "gen:b:negative",
+      "props": {
+        "__instanceId": "DestructureDefaultEarlierAssignment_test",
+        "b": -7
+      }
+    },
+    {
+      "name": "gen:b:large",
+      "props": {
+        "__instanceId": "DestructureDefaultEarlierAssignment_test",
+        "b": 1234567890
+      }
+    },
+    {
+      "name": "gen:c:zero",
+      "props": {
+        "__instanceId": "DestructureDefaultEarlierAssignment_test",
+        "c": 0
+      }
+    },
+    {
+      "name": "gen:c:negative",
+      "props": {
+        "__instanceId": "DestructureDefaultEarlierAssignment_test",
+        "c": -7
+      }
+    },
+    {
+      "name": "gen:c:large",
+      "props": {
+        "__instanceId": "DestructureDefaultEarlierAssignment_test",
+        "c": 1234567890
+      }
+    }
+  ],
   "destructure-default-explicit-falsy": [
     {
       "name": "gen:tag:absent",
@@ -5254,6 +5319,66 @@
       "props": {
         "off": true,
         "rows": []
+      }
+    }
+  ],
+  "destructure-default-shared-array": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "__instanceId": "DestructureDefaultSharedArray_test",
+        "a": []
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "__instanceId": "DestructureDefaultSharedArray_test",
+        "b": []
+      }
+    }
+  ],
+  "destructure-default-shared-array-client": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": []
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
+      }
+    }
+  ],
+  "destructure-default-shared-array-renamed": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "__instanceId": "DestructureDefaultSharedArrayRenamed_test",
+        "a": []
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "__instanceId": "DestructureDefaultSharedArrayRenamed_test",
+        "b": []
+      }
+    }
+  ],
+  "destructure-default-shared-array-renamed-client": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": []
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
       }
     }
   ],

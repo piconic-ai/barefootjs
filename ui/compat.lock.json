@@ -2049,8 +2049,6 @@
               "nested-callback-in-filter-predicate",
               "object-equality-by-contents",
               "off-subset-callback-body",
-              "omitted-optional-nullable-number-arithmetic",
-              "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
               "record-const-index-unknown-keys",
               "unlowerable-loop-filter-predicate",
@@ -2225,12 +2223,6 @@
           ]
         },
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "awaits-undefined-value"
-          ]
-        },
-        "jinja": {
           "kind": "render",
           "limitations": [
             "awaits-undefined-value"
@@ -3506,6 +3498,112 @@
           }
         }
       },
+      "destructure-default-earlier-assignment": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-assigns-earlier-binding"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-assigns-earlier-binding"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-assigns-earlier-binding"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-assigns-earlier-binding"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-assigns-earlier-binding"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-assigns-earlier-binding"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-assigns-earlier-binding"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-assigns-earlier-binding"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "destructure-default-assigns-earlier-binding"
+          ]
+        }
+      },
+      "destructure-default-null-hydrate": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        }
+      },
       "destructure-default-param-computed-array": {
         "go-template": {
           "kind": "refusal",
@@ -3534,6 +3632,244 @@
           "limitations": [
             "destructure-default-callback-unseeded"
           ]
+        }
+      },
+      "destructure-default-shared-array": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-client"
+          }
+        }
+      },
+      "destructure-default-shared-array-renamed": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-renamed-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-renamed-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-renamed-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-renamed-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-renamed-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-renamed-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-renamed-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-renamed-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "unlowered-method-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-renamed-client"
+          }
         }
       },
       "embedded-prop-member-signal-seed": {
@@ -6707,19 +7043,6 @@
             "twin": "omitted-optional-number-arithmetic"
           }
         },
-        "jinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic"
-          }
-        },
         "minijinja": {
           "kind": "refusal",
           "codes": [
@@ -6814,19 +7137,6 @@
           }
         },
         "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic-destructured"
-          }
-        },
-        "jinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -6945,19 +7255,6 @@
             "twin": "omitted-optional-number-relational"
           }
         },
-        "jinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-relational"
-          }
-        },
         "minijinja": {
           "kind": "refusal",
           "codes": [
@@ -7064,19 +7361,6 @@
             "twin": "omitted-optional-number-unary-plus"
           }
         },
-        "jinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-unary-plus"
-          }
-        },
         "minijinja": {
           "kind": "refusal",
           "codes": [
@@ -7171,19 +7455,6 @@
           }
         },
         "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-scalar-relational"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-string-relational"
-          }
-        },
-        "jinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -7570,12 +7841,6 @@
           ]
         },
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "props-object-non-props-name-operand-typing"
-          ]
-        },
-        "jinja": {
           "kind": "render",
           "limitations": [
             "props-object-non-props-name-operand-typing"
@@ -9895,12 +10160,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "minijinja": {
           "kind": "render",
           "limitations": [
@@ -9951,12 +10210,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "minijinja": {
           "kind": "render",
           "limitations": [
@@ -10002,12 +10255,6 @@
           ]
         },
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "jinja": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10140,19 +10387,6 @@
             "twin": "omitted-optional-number-arithmetic"
           }
         },
-        "jinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic"
-          }
-        },
         "minijinja": {
           "kind": "refusal",
           "codes": [
@@ -10238,12 +10472,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "minijinja": {
           "kind": "render",
           "limitations": [
@@ -10294,12 +10522,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "minijinja": {
           "kind": "render",
           "limitations": [
@@ -10345,12 +10567,6 @@
           ]
         },
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "jinja": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10415,19 +10631,6 @@
           }
         },
         "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-relational"
-          }
-        },
-        "jinja": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -10525,12 +10728,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "minijinja": {
           "kind": "render",
           "limitations": [
@@ -10576,12 +10773,6 @@
           ]
         },
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "jinja": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10637,12 +10828,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "minijinja": {
           "kind": "render",
           "limitations": [
@@ -10693,12 +10878,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "minijinja": {
           "kind": "render",
           "limitations": [
@@ -10744,12 +10923,6 @@
           ]
         },
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "jinja": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -11134,6 +11307,14 @@
         "description": "A renamed body destructure default computing an array from an earlier binding takes the computed…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-computed-array.ts"
       },
+      "destructure-default-earlier-assignment": {
+        "description": "A destructure default reading an earlier binding kept as a local reads that local…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-earlier-assignment.ts"
+      },
+      "destructure-default-null-hydrate": {
+        "description": "A destructure default applies to an omitted or undefined prop, not to null, at SSR, on hydration…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-null-hydrate.ts"
+      },
       "destructure-default-param-computed-array": {
         "description": "A parameter destructure default computing an array from an earlier binding takes the computed array",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-computed-array.ts"
@@ -11145,6 +11326,14 @@
       "destructure-default-param-renamed-callback-memo": {
         "description": "A renamed parameter destructure default holding a callback, read through a memo, renders its value",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-renamed-callback-memo.ts"
+      },
+      "destructure-default-shared-array": {
+        "description": "A destructure default reading an earlier binding kept as a local reads that local (shared-array)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-shared-array.ts"
+      },
+      "destructure-default-shared-array-renamed": {
+        "description": "A destructure default reading an earlier binding kept as a local reads that local…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-shared-array-renamed.ts"
       },
       "embedded-prop-member-signal-seed": {
         "description": "a signal seeded from an expression over an object prop member renders the computed seed at SSR",
@@ -11574,6 +11763,14 @@
         "description": "precomputed escape for conditional nested const loops retains reactive row bindings",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-nested-loop-precomputed-reactivity.ts"
       },
+      "destructure-default-shared-array-client": {
+        "description": "A destructure default reading an earlier binding kept as a local, deferred to the client via /*…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-shared-array-client.ts"
+      },
+      "destructure-default-shared-array-renamed-client": {
+        "description": "A destructure default reading an earlier binding kept as a local, deferred to the client via /*…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-shared-array-renamed-client.ts"
+      },
       "every-typeof-predicate-client": {
         "description": "Off-subset `.every()` predicate deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/every-typeof-predicate-client.ts"
@@ -11889,7 +12086,6 @@
         "blade",
         "erb",
         "go-template",
-        "jinja",
         "minijinja",
         "mojolicious",
         "pebble",
@@ -12171,7 +12367,6 @@
         "blade",
         "erb",
         "go-template",
-        "jinja",
         "minijinja",
         "mojolicious",
         "pebble",
@@ -12193,6 +12388,28 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "destructure-default-assigns-earlier-binding": {
+      "title": "A destructure default that assigns an earlier binding of its pattern",
+      "kind": "silent",
+      "given": "a destructure whose default assigns an earlier binding of the same pattern (`let { a = 1, b = (a = 2), c = a } = props`), rendered with the props omitted",
+      "expected": "the assignment runs, so a later default reading the earlier binding sees it (`c` renders `2`)",
+      "actual": "renders `c` empty or `1`: the server render and the client template read each binding as its prop with its own default, so the assignment never runs",
+      "fixtures": [
+        "destructure-default-earlier-assignment"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "destructure-default-callback-unseeded": {
@@ -12263,6 +12480,7 @@
       "expected": "`undefined` and `null` are distinct values, so each renders its own JS result (`\"undefined\"` / `\"null\"`, `NaN` / `0`, a dropped member or no string / `null`, the default / `null`, the argument default / the coerced `null`)",
       "actual": "renders the result for one of them in place of the other, or fails to render, since the host nil stands for both; graduates per target as its runtime carries `undefined` (`spec/js-undefined-value.md`)",
       "fixtures": [
+        "destructure-default-null-hydrate",
         "undef-null-array-search",
         "undef-null-destructure-default",
         "undef-null-json-stringify",
@@ -12277,7 +12495,6 @@
         "undef-null-string-includes"
       ],
       "adapters": [
-        "hono",
         "blade",
         "erb",
         "go-template",
@@ -12686,7 +12903,6 @@
         "blade",
         "erb",
         "go-template",
-        "jinja",
         "minijinja",
         "mojolicious",
         "pebble",
@@ -12710,7 +12926,6 @@
         "blade",
         "erb",
         "go-template",
-        "jinja",
         "minijinja",
         "mojolicious",
         "pebble",
@@ -12807,7 +13022,6 @@
         "blade",
         "erb",
         "go-template",
-        "jinja",
         "minijinja",
         "mojolicious",
         "pebble",
@@ -13076,6 +13290,8 @@
       "actual": "the compiler refuses with BF101",
       "fixtures": [
         "computed-const-read-unlowerable",
+        "destructure-default-shared-array",
+        "destructure-default-shared-array-renamed",
         "unlowered-global-call",
         "unlowered-method-call"
       ],

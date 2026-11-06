@@ -40,7 +40,7 @@ export function initCheckIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -62,7 +62,7 @@ hydrate('CheckIcon', { init: initCheckIcon, template: (_p) => `<svg ${spreadAttr
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -148,7 +148,7 @@ export function initChevronDownIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -170,7 +170,7 @@ hydrate('ChevronDownIcon', { init: initChevronDownIcon, template: (_p) => `<svg 
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -256,7 +256,7 @@ export function initChevronUpIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -278,7 +278,7 @@ hydrate('ChevronUpIcon', { init: initChevronUpIcon, template: (_p) => `<svg ${sp
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -364,7 +364,7 @@ export function initChevronLeftIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -386,7 +386,7 @@ hydrate('ChevronLeftIcon', { init: initChevronLeftIcon, template: (_p) => `<svg 
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -472,7 +472,7 @@ export function initChevronRightIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -494,7 +494,7 @@ hydrate('ChevronRightIcon', { init: initChevronRightIcon, template: (_p) => `<sv
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -580,7 +580,7 @@ export function initXIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -602,7 +602,7 @@ hydrate('XIcon', { init: initXIcon, template: (_p) => `<svg ${spreadAttrs({"xmln
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -688,7 +688,7 @@ export function initPlusIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -710,7 +710,7 @@ hydrate('PlusIcon', { init: initPlusIcon, template: (_p) => `<svg ${spreadAttrs(
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "butt", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "butt", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -796,7 +796,7 @@ export function initMinusIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -818,7 +818,7 @@ hydrate('MinusIcon', { init: initMinusIcon, template: (_p) => `<svg ${spreadAttr
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "butt", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "butt", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -904,7 +904,7 @@ export function initSunIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -926,7 +926,7 @@ hydrate('SunIcon', { init: initSunIcon, template: (_p) => `<svg ${spreadAttrs({"
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1012,7 +1012,7 @@ export function initMoonIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -1034,7 +1034,7 @@ hydrate('MoonIcon', { init: initMoonIcon, template: (_p) => `<svg ${spreadAttrs(
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1120,7 +1120,7 @@ export function initMonitorIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -1142,7 +1142,7 @@ hydrate('MonitorIcon', { init: initMonitorIcon, template: (_p) => `<svg ${spread
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1228,7 +1228,7 @@ export function initCopyIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -1250,7 +1250,7 @@ hydrate('CopyIcon', { init: initCopyIcon, template: (_p) => `<svg ${spreadAttrs(
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1336,7 +1336,7 @@ export function initClipboardIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -1358,7 +1358,7 @@ hydrate('ClipboardIcon', { init: initClipboardIcon, template: (_p) => `<svg ${sp
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1444,7 +1444,7 @@ export function initClipboardCheckIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -1466,7 +1466,7 @@ hydrate('ClipboardCheckIcon', { init: initClipboardCheckIcon, template: (_p) => 
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1552,7 +1552,7 @@ export function initMenuIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -1574,7 +1574,7 @@ hydrate('MenuIcon', { init: initMenuIcon, template: (_p) => `<svg ${spreadAttrs(
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1660,7 +1660,7 @@ export function initArrowLeftIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -1682,7 +1682,7 @@ hydrate('ArrowLeftIcon', { init: initArrowLeftIcon, template: (_p) => `<svg ${sp
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1768,7 +1768,7 @@ export function initArrowRightIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -1790,7 +1790,7 @@ hydrate('ArrowRightIcon', { init: initArrowRightIcon, template: (_p) => `<svg ${
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1876,7 +1876,7 @@ export function initArrowUpDownIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -1898,7 +1898,7 @@ hydrate('ArrowUpDownIcon', { init: initArrowUpDownIcon, template: (_p) => `<svg 
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -1961,7 +1961,7 @@ export function initEllipsisIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -1983,7 +1983,7 @@ hydrate('EllipsisIcon', { init: initEllipsisIcon, template: (_p) => `<svg ${spre
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle><circle cx="5" cy="12" r="1"></circle></svg>` })
 export function EllipsisIcon(_p, __bfKey) { return createComponent('EllipsisIcon', _p, __bfKey) }
 export function initGitHubIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2002,7 +2002,7 @@ export function initGitHubIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -2024,7 +2024,7 @@ hydrate('GitHubIcon', { init: initGitHubIcon, template: (_p) => `<svg ${spreadAt
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "currentColor", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"></path></svg>` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "currentColor", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"></path></svg>` })
 export function GitHubIcon(_p, __bfKey) { return createComponent('GitHubIcon', _p, __bfKey) }
 export function initSettingsIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2043,7 +2043,7 @@ export function initSettingsIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -2065,7 +2065,7 @@ hydrate('SettingsIcon', { init: initSettingsIcon, template: (_p) => `<svg ${spre
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"></path><circle cx="12" cy="12" r="3"></circle></svg>` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915"></path><circle cx="12" cy="12" r="3"></circle></svg>` })
 export function SettingsIcon(_p, __bfKey) { return createComponent('SettingsIcon', _p, __bfKey) }
 export function initGlobeIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2084,7 +2084,7 @@ export function initGlobeIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -2106,7 +2106,7 @@ hydrate('GlobeIcon', { init: initGlobeIcon, template: (_p) => `<svg ${spreadAttr
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg>` })
 export function GlobeIcon(_p, __bfKey) { return createComponent('GlobeIcon', _p, __bfKey) }
 export function initLogOutIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2125,7 +2125,7 @@ export function initLogOutIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -2147,7 +2147,7 @@ hydrate('LogOutIcon', { init: initLogOutIcon, template: (_p) => `<svg ${spreadAt
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path></svg>` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="m16 17 5-5-5-5"></path><path d="M21 12H9"></path><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path></svg>` })
 export function LogOutIcon(_p, __bfKey) { return createComponent('LogOutIcon', _p, __bfKey) }
 export function initCircleHelpIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2166,7 +2166,7 @@ export function initCircleHelpIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -2188,7 +2188,7 @@ hydrate('CircleHelpIcon', { init: initCircleHelpIcon, template: (_p) => `<svg ${
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><path d="M12 17h.01"></path></svg>` })
 export function CircleHelpIcon(_p, __bfKey) { return createComponent('CircleHelpIcon', _p, __bfKey) }
 export function initSearchIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2207,7 +2207,7 @@ export function initSearchIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -2229,7 +2229,7 @@ hydrate('SearchIcon', { init: initSearchIcon, template: (_p) => `<svg ${spreadAt
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.35-4.35"></path></svg>` })
 export function SearchIcon(_p, __bfKey) { return createComponent('SearchIcon', _p, __bfKey) }
 export function initCircleCheckIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2248,7 +2248,7 @@ export function initCircleCheckIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -2270,7 +2270,7 @@ hydrate('CircleCheckIcon', { init: initCircleCheckIcon, template: (_p) => `<svg 
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="m9 12 2 2 4-4"></path></svg>` })
 export function CircleCheckIcon(_p, __bfKey) { return createComponent('CircleCheckIcon', _p, __bfKey) }
 export function initCircleXIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2289,7 +2289,7 @@ export function initCircleXIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -2311,7 +2311,7 @@ hydrate('CircleXIcon', { init: initCircleXIcon, template: (_p) => `<svg ${spread
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="m15 9-6 6"></path><path d="m9 9 6 6"></path></svg>` })
 export function CircleXIcon(_p, __bfKey) { return createComponent('CircleXIcon', _p, __bfKey) }
 export function initTriangleAlertIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2330,7 +2330,7 @@ export function initTriangleAlertIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -2352,7 +2352,7 @@ hydrate('TriangleAlertIcon', { init: initTriangleAlertIcon, template: (_p) => `<
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>` })
 export function TriangleAlertIcon(_p, __bfKey) { return createComponent('TriangleAlertIcon', _p, __bfKey) }
 export function initInfoIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2371,7 +2371,7 @@ export function initInfoIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -2393,7 +2393,7 @@ hydrate('InfoIcon', { init: initInfoIcon, template: (_p) => `<svg ${spreadAttrs(
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4"></path><path d="M12 8h.01"></path></svg>` })
 export function InfoIcon(_p, __bfKey) { return createComponent('InfoIcon', _p, __bfKey) }
 export function initCalendarIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2412,7 +2412,7 @@ export function initCalendarIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -2434,7 +2434,7 @@ hydrate('CalendarIcon', { init: initCalendarIcon, template: (_p) => `<svg ${spre
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>` })
 export function CalendarIcon(_p, __bfKey) { return createComponent('CalendarIcon', _p, __bfKey) }
 export function initGripVerticalIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2453,7 +2453,7 @@ export function initGripVerticalIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -2475,7 +2475,7 @@ hydrate('GripVerticalIcon', { init: initGripVerticalIcon, template: (_p) => `<sv
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><circle cx="9" cy="12" r="1"></circle><circle cx="9" cy="5" r="1"></circle><circle cx="9" cy="19" r="1"></circle><circle cx="15" cy="12" r="1"></circle><circle cx="15" cy="5" r="1"></circle><circle cx="15" cy="19" r="1"></circle></svg>` })
 export function GripVerticalIcon(_p, __bfKey) { return createComponent('GripVerticalIcon', _p, __bfKey) }
 export function initLoaderCircleIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2517,7 +2517,7 @@ export function initLoaderCircleIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -2539,7 +2539,7 @@ hydrate('LoaderCircleIcon', { init: initLoaderCircleIcon, template: (_p) => `<sv
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><path ${(({
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><path ${(({
   'check': 'M20 6 9 17l-5-5',
   'chevron-down': 'm6 9 6 6 6-6',
   'chevron-up': 'm18 15-6-6-6 6',
@@ -2602,7 +2602,7 @@ export function initPanelLeftIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -2624,7 +2624,7 @@ hydrate('PanelLeftIcon', { init: initPanelLeftIcon, template: (_p) => `<svg ${sp
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className ?? '')}`, "aria-hidden": "true"})} bf="s0"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M9 3v18"></path></svg>` })
+})[_p.size] } : {})), "viewBox": "0 0 24 24", "fill": "none", "stroke": "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round", "class": `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`, "aria-hidden": "true"})} bf="s0"><rect width="18" height="18" x="3" y="3" rx="2"></rect><path d="M9 3v18"></path></svg>` })
 export function PanelLeftIcon(_p, __bfKey) { return createComponent('PanelLeftIcon', _p, __bfKey) }
 export function initIcon(__scope, _p = {}) {
   if (!__scope) return
@@ -2660,7 +2660,7 @@ export function initIcon(__scope, _p = {}) {
   'loader-circle': 'M21 12a9 9 0 1 1-6.219-8.56',
 }
   const buttLinecapIcons = ['plus', 'minus']
-  const s = sizeMap[(_p.size ?? 'md')]
+  const s = sizeMap[(_p.size === undefined ? 'md' : _p.size)]
   const path = strokePaths[_p.name]
   const linecap = (buttLinecapIcons).includes(_p.name) ? 'butt' : 'round'
 
@@ -2674,12 +2674,12 @@ export function initIcon(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s1) {
-      { const __x = sizeMap[(_p.size ?? 'md')]
+      { const __x = sizeMap[(_p.size === undefined ? 'md' : _p.size)]
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s1.setAttribute('width', String(__v)); else _s1.removeAttribute('width') }
       }
       __l[0] = __x }
-      { const __x = sizeMap[(_p.size ?? 'md')]
+      { const __x = sizeMap[(_p.size === undefined ? 'md' : _p.size)]
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
         { const __v = __x; if (__v != null) _s1.setAttribute('height', String(__v)); else _s1.removeAttribute('height') }
       }
@@ -2689,7 +2689,7 @@ export function initIcon(__scope, _p = {}) {
         { const __v = __x; if (__v != null) _s1.setAttribute('stroke-linecap', String(__v)); else _s1.removeAttribute('stroke-linecap') }
       }
       __l[2] = __x }
-      { const __x = `shrink-0 ${(_p.className ?? '')}`
+      { const __x = `shrink-0 ${(_p.className === undefined ? '' : _p.className)}`
       if (!(3 in __l) || !Object.is(__l[3], __x)) {
         { const __v = __x; if (__v != null) _s1.setAttribute('class', String(__v)); else _s1.removeAttribute('class') }
       }
@@ -2716,12 +2716,12 @@ export function initIcon(__scope, _p = {}) {
   createEffect(() => {
     const [__GitHubIcon_s11El] = $c(__scope, 's11')
     if (__GitHubIcon_s11El) {
-      { const __x = (_p.size ?? 'md')
+      { const __x = (_p.size === undefined ? 'md' : _p.size)
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         if (__m[0] ??= __GitHubIcon_s11El.hasAttribute('size')) { const __v = __x; if (__v != null) __GitHubIcon_s11El.setAttribute('size', String(__v)); else __GitHubIcon_s11El.removeAttribute('size') }
       }
       __l[0] = __x }
-      { const __x = (_p.className ?? '')
+      { const __x = (_p.className === undefined ? '' : _p.className)
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
         { const __v = __x; if (__v != null) __GitHubIcon_s11El.setAttribute('class', String(__v)); else __GitHubIcon_s11El.removeAttribute('class') }
       }
@@ -2729,12 +2729,12 @@ export function initIcon(__scope, _p = {}) {
     }
     const [__SearchIcon_s10El] = $c(__scope, 's10')
     if (__SearchIcon_s10El) {
-      { const __x = (_p.size ?? 'md')
+      { const __x = (_p.size === undefined ? 'md' : _p.size)
       if (!(2 in __l) || !Object.is(__l[2], __x)) {
         if (__m[2] ??= __SearchIcon_s10El.hasAttribute('size')) { const __v = __x; if (__v != null) __SearchIcon_s10El.setAttribute('size', String(__v)); else __SearchIcon_s10El.removeAttribute('size') }
       }
       __l[2] = __x }
-      { const __x = (_p.className ?? '')
+      { const __x = (_p.className === undefined ? '' : _p.className)
       if (!(3 in __l) || !Object.is(__l[3], __x)) {
         { const __v = __x; if (__v != null) __SearchIcon_s10El.setAttribute('class', String(__v)); else __SearchIcon_s10El.removeAttribute('class') }
       }
@@ -2742,12 +2742,12 @@ export function initIcon(__scope, _p = {}) {
     }
     const [__SettingsIcon_s9El] = $c(__scope, 's9')
     if (__SettingsIcon_s9El) {
-      { const __x = (_p.size ?? 'md')
+      { const __x = (_p.size === undefined ? 'md' : _p.size)
       if (!(4 in __l) || !Object.is(__l[4], __x)) {
         if (__m[4] ??= __SettingsIcon_s9El.hasAttribute('size')) { const __v = __x; if (__v != null) __SettingsIcon_s9El.setAttribute('size', String(__v)); else __SettingsIcon_s9El.removeAttribute('size') }
       }
       __l[4] = __x }
-      { const __x = (_p.className ?? '')
+      { const __x = (_p.className === undefined ? '' : _p.className)
       if (!(5 in __l) || !Object.is(__l[5], __x)) {
         { const __v = __x; if (__v != null) __SettingsIcon_s9El.setAttribute('class', String(__v)); else __SettingsIcon_s9El.removeAttribute('class') }
       }
@@ -2755,12 +2755,12 @@ export function initIcon(__scope, _p = {}) {
     }
     const [__GlobeIcon_s8El] = $c(__scope, 's8')
     if (__GlobeIcon_s8El) {
-      { const __x = (_p.size ?? 'md')
+      { const __x = (_p.size === undefined ? 'md' : _p.size)
       if (!(6 in __l) || !Object.is(__l[6], __x)) {
         if (__m[6] ??= __GlobeIcon_s8El.hasAttribute('size')) { const __v = __x; if (__v != null) __GlobeIcon_s8El.setAttribute('size', String(__v)); else __GlobeIcon_s8El.removeAttribute('size') }
       }
       __l[6] = __x }
-      { const __x = (_p.className ?? '')
+      { const __x = (_p.className === undefined ? '' : _p.className)
       if (!(7 in __l) || !Object.is(__l[7], __x)) {
         { const __v = __x; if (__v != null) __GlobeIcon_s8El.setAttribute('class', String(__v)); else __GlobeIcon_s8El.removeAttribute('class') }
       }
@@ -2768,12 +2768,12 @@ export function initIcon(__scope, _p = {}) {
     }
     const [__LogOutIcon_s7El] = $c(__scope, 's7')
     if (__LogOutIcon_s7El) {
-      { const __x = (_p.size ?? 'md')
+      { const __x = (_p.size === undefined ? 'md' : _p.size)
       if (!(8 in __l) || !Object.is(__l[8], __x)) {
         if (__m[8] ??= __LogOutIcon_s7El.hasAttribute('size')) { const __v = __x; if (__v != null) __LogOutIcon_s7El.setAttribute('size', String(__v)); else __LogOutIcon_s7El.removeAttribute('size') }
       }
       __l[8] = __x }
-      { const __x = (_p.className ?? '')
+      { const __x = (_p.className === undefined ? '' : _p.className)
       if (!(9 in __l) || !Object.is(__l[9], __x)) {
         { const __v = __x; if (__v != null) __LogOutIcon_s7El.setAttribute('class', String(__v)); else __LogOutIcon_s7El.removeAttribute('class') }
       }
@@ -2781,12 +2781,12 @@ export function initIcon(__scope, _p = {}) {
     }
     const [__CircleHelpIcon_s6El] = $c(__scope, 's6')
     if (__CircleHelpIcon_s6El) {
-      { const __x = (_p.size ?? 'md')
+      { const __x = (_p.size === undefined ? 'md' : _p.size)
       if (!(10 in __l) || !Object.is(__l[10], __x)) {
         if (__m[10] ??= __CircleHelpIcon_s6El.hasAttribute('size')) { const __v = __x; if (__v != null) __CircleHelpIcon_s6El.setAttribute('size', String(__v)); else __CircleHelpIcon_s6El.removeAttribute('size') }
       }
       __l[10] = __x }
-      { const __x = (_p.className ?? '')
+      { const __x = (_p.className === undefined ? '' : _p.className)
       if (!(11 in __l) || !Object.is(__l[11], __x)) {
         { const __v = __x; if (__v != null) __CircleHelpIcon_s6El.setAttribute('class', String(__v)); else __CircleHelpIcon_s6El.removeAttribute('class') }
       }
@@ -2794,12 +2794,12 @@ export function initIcon(__scope, _p = {}) {
     }
     const [__CalendarIcon_s5El] = $c(__scope, 's5')
     if (__CalendarIcon_s5El) {
-      { const __x = (_p.size ?? 'md')
+      { const __x = (_p.size === undefined ? 'md' : _p.size)
       if (!(12 in __l) || !Object.is(__l[12], __x)) {
         if (__m[12] ??= __CalendarIcon_s5El.hasAttribute('size')) { const __v = __x; if (__v != null) __CalendarIcon_s5El.setAttribute('size', String(__v)); else __CalendarIcon_s5El.removeAttribute('size') }
       }
       __l[12] = __x }
-      { const __x = (_p.className ?? '')
+      { const __x = (_p.className === undefined ? '' : _p.className)
       if (!(13 in __l) || !Object.is(__l[13], __x)) {
         { const __v = __x; if (__v != null) __CalendarIcon_s5El.setAttribute('class', String(__v)); else __CalendarIcon_s5El.removeAttribute('class') }
       }
@@ -2807,12 +2807,12 @@ export function initIcon(__scope, _p = {}) {
     }
     const [__GripVerticalIcon_s4El] = $c(__scope, 's4')
     if (__GripVerticalIcon_s4El) {
-      { const __x = (_p.size ?? 'md')
+      { const __x = (_p.size === undefined ? 'md' : _p.size)
       if (!(14 in __l) || !Object.is(__l[14], __x)) {
         if (__m[14] ??= __GripVerticalIcon_s4El.hasAttribute('size')) { const __v = __x; if (__v != null) __GripVerticalIcon_s4El.setAttribute('size', String(__v)); else __GripVerticalIcon_s4El.removeAttribute('size') }
       }
       __l[14] = __x }
-      { const __x = (_p.className ?? '')
+      { const __x = (_p.className === undefined ? '' : _p.className)
       if (!(15 in __l) || !Object.is(__l[15], __x)) {
         { const __v = __x; if (__v != null) __GripVerticalIcon_s4El.setAttribute('class', String(__v)); else __GripVerticalIcon_s4El.removeAttribute('class') }
       }
@@ -2820,12 +2820,12 @@ export function initIcon(__scope, _p = {}) {
     }
     const [__LoaderCircleIcon_s3El] = $c(__scope, 's3')
     if (__LoaderCircleIcon_s3El) {
-      { const __x = (_p.size ?? 'md')
+      { const __x = (_p.size === undefined ? 'md' : _p.size)
       if (!(16 in __l) || !Object.is(__l[16], __x)) {
         if (__m[16] ??= __LoaderCircleIcon_s3El.hasAttribute('size')) { const __v = __x; if (__v != null) __LoaderCircleIcon_s3El.setAttribute('size', String(__v)); else __LoaderCircleIcon_s3El.removeAttribute('size') }
       }
       __l[16] = __x }
-      { const __x = (_p.className ?? '')
+      { const __x = (_p.className === undefined ? '' : _p.className)
       if (!(17 in __l) || !Object.is(__l[17], __x)) {
         { const __v = __x; if (__v != null) __LoaderCircleIcon_s3El.setAttribute('class', String(__v)); else __LoaderCircleIcon_s3El.removeAttribute('class') }
       }
@@ -2833,12 +2833,12 @@ export function initIcon(__scope, _p = {}) {
     }
     const [__PanelLeftIcon_s2El] = $c(__scope, 's2')
     if (__PanelLeftIcon_s2El) {
-      { const __x = (_p.size ?? 'md')
+      { const __x = (_p.size === undefined ? 'md' : _p.size)
       if (!(18 in __l) || !Object.is(__l[18], __x)) {
         if (__m[18] ??= __PanelLeftIcon_s2El.hasAttribute('size')) { const __v = __x; if (__v != null) __PanelLeftIcon_s2El.setAttribute('size', String(__v)); else __PanelLeftIcon_s2El.removeAttribute('size') }
       }
       __l[18] = __x }
-      { const __x = (_p.className ?? '')
+      { const __x = (_p.className === undefined ? '' : _p.className)
       if (!(19 in __l) || !Object.is(__l[19], __x)) {
         { const __v = __x; if (__v != null) __PanelLeftIcon_s2El.setAttribute('class', String(__v)); else __PanelLeftIcon_s2El.removeAttribute('class') }
       }
@@ -2847,19 +2847,19 @@ export function initIcon(__scope, _p = {}) {
   }) }
 
   // Initialize child components with props
-  initChild('GitHubIcon', _s11, forwardProps(_p, { get size() { return (_p.size ?? 'md') }, get className() { return (_p.className ?? '') } }, ["size","className"]))
-  initChild('SearchIcon', _s10, forwardProps(_p, { get size() { return (_p.size ?? 'md') }, get className() { return (_p.className ?? '') } }, ["size","className"]))
-  initChild('SettingsIcon', _s9, forwardProps(_p, { get size() { return (_p.size ?? 'md') }, get className() { return (_p.className ?? '') } }, ["size","className"]))
-  initChild('GlobeIcon', _s8, forwardProps(_p, { get size() { return (_p.size ?? 'md') }, get className() { return (_p.className ?? '') } }, ["size","className"]))
-  initChild('LogOutIcon', _s7, forwardProps(_p, { get size() { return (_p.size ?? 'md') }, get className() { return (_p.className ?? '') } }, ["size","className"]))
-  initChild('CircleHelpIcon', _s6, forwardProps(_p, { get size() { return (_p.size ?? 'md') }, get className() { return (_p.className ?? '') } }, ["size","className"]))
-  initChild('CalendarIcon', _s5, forwardProps(_p, { get size() { return (_p.size ?? 'md') }, get className() { return (_p.className ?? '') } }, ["size","className"]))
-  initChild('GripVerticalIcon', _s4, forwardProps(_p, { get size() { return (_p.size ?? 'md') }, get className() { return (_p.className ?? '') } }, ["size","className"]))
-  initChild('LoaderCircleIcon', _s3, forwardProps(_p, { get size() { return (_p.size ?? 'md') }, get className() { return (_p.className ?? '') } }, ["size","className"]))
-  initChild('PanelLeftIcon', _s2, forwardProps(_p, { get size() { return (_p.size ?? 'md') }, get className() { return (_p.className ?? '') } }, ["size","className"]))
+  initChild('GitHubIcon', _s11, forwardProps(_p, { get size() { return (_p.size === undefined ? 'md' : _p.size) }, get className() { return (_p.className === undefined ? '' : _p.className) } }, ["size","className"]))
+  initChild('SearchIcon', _s10, forwardProps(_p, { get size() { return (_p.size === undefined ? 'md' : _p.size) }, get className() { return (_p.className === undefined ? '' : _p.className) } }, ["size","className"]))
+  initChild('SettingsIcon', _s9, forwardProps(_p, { get size() { return (_p.size === undefined ? 'md' : _p.size) }, get className() { return (_p.className === undefined ? '' : _p.className) } }, ["size","className"]))
+  initChild('GlobeIcon', _s8, forwardProps(_p, { get size() { return (_p.size === undefined ? 'md' : _p.size) }, get className() { return (_p.className === undefined ? '' : _p.className) } }, ["size","className"]))
+  initChild('LogOutIcon', _s7, forwardProps(_p, { get size() { return (_p.size === undefined ? 'md' : _p.size) }, get className() { return (_p.className === undefined ? '' : _p.className) } }, ["size","className"]))
+  initChild('CircleHelpIcon', _s6, forwardProps(_p, { get size() { return (_p.size === undefined ? 'md' : _p.size) }, get className() { return (_p.className === undefined ? '' : _p.className) } }, ["size","className"]))
+  initChild('CalendarIcon', _s5, forwardProps(_p, { get size() { return (_p.size === undefined ? 'md' : _p.size) }, get className() { return (_p.className === undefined ? '' : _p.className) } }, ["size","className"]))
+  initChild('GripVerticalIcon', _s4, forwardProps(_p, { get size() { return (_p.size === undefined ? 'md' : _p.size) }, get className() { return (_p.className === undefined ? '' : _p.className) } }, ["size","className"]))
+  initChild('LoaderCircleIcon', _s3, forwardProps(_p, { get size() { return (_p.size === undefined ? 'md' : _p.size) }, get className() { return (_p.className === undefined ? '' : _p.className) } }, ["size","className"]))
+  initChild('PanelLeftIcon', _s2, forwardProps(_p, { get size() { return (_p.size === undefined ? 'md' : _p.size) }, get className() { return (_p.className === undefined ? '' : _p.className) } }, ["size","className"]))
 }
 
-hydrate('Icon', { init: initIcon, template: (_p) => `${_p.name === 'github' ? `${renderChild('GitHubIcon', {size: (_p.size ?? 'md'), className: (_p.className ?? '')}, undefined, 's11')}` : `${_p.name === 'search' ? `${renderChild('SearchIcon', {size: (_p.size ?? 'md'), className: (_p.className ?? '')}, undefined, 's10')}` : `${_p.name === 'settings' ? `${renderChild('SettingsIcon', {size: (_p.size ?? 'md'), className: (_p.className ?? '')}, undefined, 's9')}` : `${_p.name === 'globe' ? `${renderChild('GlobeIcon', {size: (_p.size ?? 'md'), className: (_p.className ?? '')}, undefined, 's8')}` : `${_p.name === 'log-out' ? `${renderChild('LogOutIcon', {size: (_p.size ?? 'md'), className: (_p.className ?? '')}, undefined, 's7')}` : `${_p.name === 'circle-help' ? `${renderChild('CircleHelpIcon', {size: (_p.size ?? 'md'), className: (_p.className ?? '')}, undefined, 's6')}` : `${_p.name === 'calendar' ? `${renderChild('CalendarIcon', {size: (_p.size ?? 'md'), className: (_p.className ?? '')}, undefined, 's5')}` : `${_p.name === 'grip-vertical' ? `${renderChild('GripVerticalIcon', {size: (_p.size ?? 'md'), className: (_p.className ?? '')}, undefined, 's4')}` : `${_p.name === 'loader-circle' ? `${renderChild('LoaderCircleIcon', {size: (_p.size ?? 'md'), className: (_p.className ?? '')}, undefined, 's3')}` : `${_p.name === 'panel-left' ? `${renderChild('PanelLeftIcon', {size: (_p.size ?? 'md'), className: (_p.className ?? '')}, undefined, 's2')}` : `<svg xmlns="http://www.w3.org/2000/svg" ${((({
+hydrate('Icon', { init: initIcon, template: (_p) => `${_p.name === 'github' ? `${renderChild('GitHubIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className)}, undefined, 's11')}` : `${_p.name === 'search' ? `${renderChild('SearchIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className)}, undefined, 's10')}` : `${_p.name === 'settings' ? `${renderChild('SettingsIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className)}, undefined, 's9')}` : `${_p.name === 'globe' ? `${renderChild('GlobeIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className)}, undefined, 's8')}` : `${_p.name === 'log-out' ? `${renderChild('LogOutIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className)}, undefined, 's7')}` : `${_p.name === 'circle-help' ? `${renderChild('CircleHelpIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className)}, undefined, 's6')}` : `${_p.name === 'calendar' ? `${renderChild('CalendarIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className)}, undefined, 's5')}` : `${_p.name === 'grip-vertical' ? `${renderChild('GripVerticalIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className)}, undefined, 's4')}` : `${_p.name === 'loader-circle' ? `${renderChild('LoaderCircleIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className)}, undefined, 's3')}` : `${_p.name === 'panel-left' ? `${renderChild('PanelLeftIcon', {size: (_p.size === undefined ? 'md' : _p.size), className: (_p.className === undefined ? '' : _p.className)}, undefined, 's2')}` : `<svg xmlns="http://www.w3.org/2000/svg" ${((({
   sm: 16,
   md: 20,
   lg: 24,
@@ -2879,7 +2879,7 @@ hydrate('Icon', { init: initIcon, template: (_p) => `${_p.name === 'github' ? `$
   md: 20,
   lg: 24,
   xl: 32,
-})[_p.size])) + '"' : ''} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ${(undefined) != null ? 'stroke-linecap="' + escapeAttr(undefined) + '"' : ''} stroke-linejoin="round" ${(`shrink-0 ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`shrink-0 ${(_p.className ?? '')}`) + '"' : ''} aria-hidden="true" bf="s1"><path ${(`${({"check": "M20 6 9 17l-5-5", "chevron-down": "m6 9 6 6 6-6", "chevron-up": "m18 15-6-6-6 6", "chevron-left": "m15 18-6-6 6-6", "chevron-right": "m9 18 6-6-6-6", "x": "M18 6 6 18M6 6l12 12", "plus": "M5 12h14M12 5v14", "minus": "M5 12h14", "sun": "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41", "moon": "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z", "monitor": "M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4", "copy": "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z", "clipboard": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2", "clipboard-check": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4", "menu": "M4 6h16M4 12h16M4 18h16", "arrow-left": "m12 19-7-7 7-7M19 12H5", "arrow-right": "M5 12h14m-7-7 7 7-7 7", "ellipsis": "M5 12h.01M12 12h.01M19 12h.01", "arrow-up-down": "m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16", "panel-left": "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18", "loader-circle": "M21 12a9 9 0 1 1-6.219-8.56"})[_p.name]}`) != null ? 'd="' + escapeAttr(`${({"check": "M20 6 9 17l-5-5", "chevron-down": "m6 9 6 6 6-6", "chevron-up": "m18 15-6-6-6 6", "chevron-left": "m15 18-6-6 6-6", "chevron-right": "m9 18 6-6-6-6", "x": "M18 6 6 18M6 6l12 12", "plus": "M5 12h14M12 5v14", "minus": "M5 12h14", "sun": "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41", "moon": "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z", "monitor": "M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4", "copy": "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z", "clipboard": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2", "clipboard-check": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4", "menu": "M4 6h16M4 12h16M4 18h16", "arrow-left": "m12 19-7-7 7-7M19 12H5", "arrow-right": "M5 12h14m-7-7 7 7-7 7", "ellipsis": "M5 12h.01M12 12h.01M19 12h.01", "arrow-up-down": "m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16", "panel-left": "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18", "loader-circle": "M21 12a9 9 0 1 1-6.219-8.56"})[_p.name]}`) + '"' : ''} bf="s0"></path></svg>`}`}`}`}`}`}`}`}`}`}` })
+})[_p.size])) + '"' : ''} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ${(undefined) != null ? 'stroke-linecap="' + escapeAttr(undefined) + '"' : ''} stroke-linejoin="round" ${(`shrink-0 ${(_p.className === undefined ? '' : _p.className)}`) != null ? 'class="' + escapeAttr(`shrink-0 ${(_p.className === undefined ? '' : _p.className)}`) + '"' : ''} aria-hidden="true" bf="s1"><path ${(`${({"check": "M20 6 9 17l-5-5", "chevron-down": "m6 9 6 6 6-6", "chevron-up": "m18 15-6-6-6 6", "chevron-left": "m15 18-6-6 6-6", "chevron-right": "m9 18 6-6-6-6", "x": "M18 6 6 18M6 6l12 12", "plus": "M5 12h14M12 5v14", "minus": "M5 12h14", "sun": "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41", "moon": "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z", "monitor": "M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4", "copy": "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z", "clipboard": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2", "clipboard-check": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4", "menu": "M4 6h16M4 12h16M4 18h16", "arrow-left": "m12 19-7-7 7-7M19 12H5", "arrow-right": "M5 12h14m-7-7 7 7-7 7", "ellipsis": "M5 12h.01M12 12h.01M19 12h.01", "arrow-up-down": "m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16", "panel-left": "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18", "loader-circle": "M21 12a9 9 0 1 1-6.219-8.56"})[_p.name]}`) != null ? 'd="' + escapeAttr(`${({"check": "M20 6 9 17l-5-5", "chevron-down": "m6 9 6 6 6-6", "chevron-up": "m18 15-6-6-6 6", "chevron-left": "m15 18-6-6 6-6", "chevron-right": "m9 18 6-6-6-6", "x": "M18 6 6 18M6 6l12 12", "plus": "M5 12h14M12 5v14", "minus": "M5 12h14", "sun": "M12 16a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41", "moon": "M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z", "monitor": "M20 3H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8 21h8M12 17v4", "copy": "M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2M8 8h12a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V10a2 2 0 0 1 2-2z", "clipboard": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2", "clipboard-check": "M9 2h6a1 1 0 0 1 1 1v1H8V3a1 1 0 0 1 1-1zM16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M9 14l2 2 4-4", "menu": "M4 6h16M4 12h16M4 18h16", "arrow-left": "m12 19-7-7 7-7M19 12H5", "arrow-right": "M5 12h14m-7-7 7 7-7 7", "ellipsis": "M5 12h.01M12 12h.01M19 12h.01", "arrow-up-down": "m21 16-4 4-4-4M17 20V4M3 8l4-4 4 4M7 4v16", "panel-left": "M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M3 3h12v18H3zM9 3v18", "loader-circle": "M21 12a9 9 0 1 1-6.219-8.56"})[_p.name]}`) + '"' : ''} bf="s0"></path></svg>`}`}`}`}`}`}`}`}`}`}` })
 export function Icon(_p, __bfKey) { return createComponent('Icon', _p, __bfKey) }
 var ComboboxContext = ComboboxContext ?? createContext()
 var documentOrder = documentOrder ?? function(a, b) {
@@ -3589,7 +3589,7 @@ export function initComboboxSeparator(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `${separatorClasses} ${(_p.className ?? '')}`
+      { const __x = `${separatorClasses} ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -3601,7 +3601,7 @@ export function initComboboxSeparator(__scope, _p = {}) {
 
 }
 
-hydrate('ComboboxSeparator', { init: initComboboxSeparator, template: (_p) => `<div data-slot="combobox-separator" role="separator" ${(`${('-mx-1 my-1 h-px bg-border')} ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`${('-mx-1 my-1 h-px bg-border')} ${(_p.className ?? '')}`) + '"' : ''} bf="s0"></div>` })
+hydrate('ComboboxSeparator', { init: initComboboxSeparator, template: (_p) => `<div data-slot="combobox-separator" role="separator" ${(`${('-mx-1 my-1 h-px bg-border')} ${(_p.className === undefined ? '' : _p.className)}`) != null ? 'class="' + escapeAttr(`${('-mx-1 my-1 h-px bg-border')} ${(_p.className === undefined ? '' : _p.className)}`) + '"' : ''} bf="s0"></div>` })
 export function ComboboxSeparator(_p, __bfKey) { return createComponent('ComboboxSeparator', _p, __bfKey) }
 export function initComboboxBasicDemo(__scope, _p = {}) {
   if (!__scope) return

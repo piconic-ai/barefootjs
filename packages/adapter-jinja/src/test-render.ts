@@ -16,7 +16,7 @@
  * generated render script (Python, not Perl) and its literal syntax differ.
  */
 
-import { extractSsrDefaults, deriveStashFromDefaults, importsSearchParams } from '@barefootjs/jsx'
+import { extractSsrDefaults, importsSearchParams } from '@barefootjs/jsx'
 import { compileFixtureJSX } from '@barefootjs/adapter-tests/harness-program'
 import type { ComponentIR, SsrDefault } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
@@ -251,7 +251,7 @@ sys.path.insert(0, ${pyStr(PYTHON_DIR)})
 
 import uuid
 
-from barefootjs import BarefootJS, SearchParams
+from barefootjs import UNDEF, BarefootJS, SearchParams
 from barefootjs.backend_jinja import JinjaBackend
 from barefootjs.runtime import jinja_ident, _derive_stash_from_defaults
 
@@ -262,7 +262,7 @@ bf = BarefootJS(None, {'backend': backend})
 # scope ids Hono / Go emit; default to 'test'.
 bf._scope_id(${pyStr(rootScopeIdRaw)})
 
-props = ${propsPy}
+${propsPy}
 # Mirrors production's \`props_attr\` contract (see runtime.py's \`_props\`
 # dual-accessor and its Ruby/Perl siblings): the caller is expected to
 # seed \`_props\` before rendering the root component, so this harness
@@ -504,43 +504,42 @@ function toSnakeCase(name: string): string {
 }
 
 /**
- * Build a Python dict literal from props (+ signal / memo seeds).
+ * Build the Python statements that bind `props`, the root template's vars,
+ * from the fixture props (+ signal / memo seeds).
  *
- * Returns the full internal vars-hash Python literal (`props`, what the
- * compiled template renders against) AND `userPropsPy` — the exact raw
- * fixture props (no defaults, no null-fill, no signal/memo seeding),
- * mirroring production's route-handler call `bf._props(props)` verbatim.
- * `userPropsPy` is for `bf._props(...)` (bf-p hydration payload) only —
- * these must NOT be the same value, and `userPropsPy` must NOT be
- * derived from `entries` or the defaulted stash: production's own bf-p
- * carries only what the caller actually passed in, unmodified.
+ * Returns `propsPy` (statements ending in a `props = {...}` binding, the
+ * internal vars hash the compiled template renders against) AND
+ * `userPropsPy` — the exact raw fixture props (no defaults, no signal/memo
+ * seeding), mirroring production's route-handler call `bf._props(props)`
+ * verbatim. `userPropsPy` is for `bf._props(...)` (bf-p hydration payload)
+ * only — these must NOT be the same value: production's own bf-p carries
+ * only what the caller actually passed in, unmodified.
+ *
+ * Every declared prop, signal and memo is seeded at render time by the
+ * production `_derive_stash_from_defaults` (`barefootjs.runtime`, the same
+ * function the child renderers below and `register_components_from_manifest`
+ * call), over the caller's props keyword-mangled the way `render_child` does.
+ * An omitted declared prop is left out of the caller's props, never
+ * null-filled, so the runtime's seed decides
+ * (`spec/js-undefined-value.md`, "Shared: the seed and the default"): its
+ * default when it has one, `UNDEF` otherwise; a fixture's explicit `null`
+ * is a real `None`, and a fixture's `undefined` is `UNDEF`.
  */
 function buildPythonProps(
   _componentName: string,
   props: Record<string, unknown> | undefined,
   ir: ComponentIR,
 ): { propsPy: string; userPropsPy: string } {
-  // The full internal vars hash (local-template-var-name keyed, e.g.
-  // `count` for `{ n: count }`) that the compiled template renders
-  // against.
-  const entries: string[] = []
+  // The caller-facing props for `bf._props` and the template vars, internal
+  // harness keys like `__instanceId` excluded. The seed reads every key, as
+  // a prop may itself be named with a leading `__` (`__bf_root_value`).
+  const callerProps = Object.entries(props ?? {}).filter(([key]) => !key.startsWith('__'))
+  const pyDict = (pairs: ReadonlyArray<[string, unknown]>) =>
+    `{${pairs.map(([key, value]) => `${pyStr(key)}: ${toPyLiteral(value)}`).join(', ')}}`
+  const userPropsPy = pyDict(callerProps)
 
-  // Prop params with defaults (before signals, so signals can reference them).
-  // Seeded through the shared `deriveStashFromDefaults` (the TS twin of the
-  // production `_derive_stash_from_defaults` this harness ALSO calls at
-  // render time for child components) so an aliased destructured prop's
-  // CALLER-facing key (`propName`, e.g. `n` for `{ n: count }`) is honoured,
-  // not just the local template var name (#2524 SSR half). `props` is keyed
-  // by the caller-facing name, exactly what `propName` resolves against.
-  const rootSsrDefaults = extractSsrDefaults(ir.metadata) ?? {}
-  const derivedProps = deriveStashFromDefaults(rootSsrDefaults, props ?? {})
-  for (const param of ir.metadata.propsParams) {
-    if (param.isRest) continue
-    // No default + no caller value: pass `None` so Jinja's var lookup for
-    // an optional prop doesn't fault before its falsy branch elides.
-    const value = derivedProps[param.name] ?? null
-    entries.push(`${pyStr(param.name)}: ${toPyLiteral(value)}`)
-  }
+  // Vars bound ahead of the seed, which overrides them.
+  const entries: string[] = []
 
   // Route undeclared props into the rest bag (`bf.spread_attrs($<rest>)`).
   const restPropsName = ir.metadata.restPropsName
@@ -550,9 +549,8 @@ function buildPythonProps(
   // swept into the rest bag as an undeclared extra (#2524).
   const declaredParams = new Set(ir.metadata.propsParams.map(p => p.sourceName ?? p.name))
   const restBagEntries: Array<[string, unknown]> = []
-  if (restPropsName && props) {
-    for (const [key, value] of Object.entries(props)) {
-      if (key.startsWith('__')) continue
+  if (restPropsName) {
+    for (const [key, value] of callerProps) {
       if (key === restPropsName || declaredParams.has(key)) continue
       restBagEntries.push([key, value])
     }
@@ -564,87 +562,21 @@ function buildPythonProps(
   }
 
   // User props. Skip a key that's already a declared param's LOCAL template
-  // var name — `derivedProps` above already resolved that var correctly
-  // (through `propName`, for an aliased prop); re-pushing the raw `props[key]`
-  // here would silently clobber it with an UNRELATED value whenever a caller
-  // happens to also pass a same-spelled-as-local-name prop that isn't this
-  // param's actual `propName` (#2524 — surfaced by the aliased-destructured-prop
-  // generated data points, which pass both `n` (the real propName) and an
-  // incidental `count` key).
+  // var name — the seed resolves that var (through `propName`, for an
+  // aliased prop); the raw `props[key]` here would otherwise clobber it with
+  // an UNRELATED value whenever a caller also passes a same-spelled-as-local-
+  // name prop that isn't this param's actual `propName` (#2524 — surfaced by
+  // the aliased-destructured-prop generated data points, which pass both `n`
+  // (the real propName) and an incidental `count` key). A function value
+  // has no template form.
   const localParamNames = new Set(ir.metadata.propsParams.map(p => p.name))
-  if (props) {
-    for (const [key, value] of Object.entries(props)) {
-      if (key.startsWith('__')) continue
-      if (routedKeys.has(key)) continue
-      if (localParamNames.has(key)) continue
-      if (typeof value === 'string') {
-        entries.push(`${pyStr(key)}: ${pyStr(value)}`)
-      } else if (typeof value === 'number') {
-        entries.push(`${pyStr(key)}: ${pyNumber(value)}`)
-      } else if (typeof value === 'boolean') {
-        entries.push(`${pyStr(key)}: ${value ? 'True' : 'False'}`)
-      } else if (Array.isArray(value) || (value && typeof value === 'object')) {
-        entries.push(`${pyStr(key)}: ${toPyLiteral(value)}`)
-      }
-    }
+  for (const [key, value] of callerProps) {
+    if (routedKeys.has(key) || localParamNames.has(key) || typeof value === 'function') continue
+    entries.push(`${pyStr(key)}: ${toPyLiteral(value)}`)
   }
-
-  // `bf._props(...)` payload (bf-p hydration): mirrors production's
-  // route-handler call `bf._props(props)` verbatim — the caller's raw
-  // props dict, unmodified. No default-filling, no signal/memo seeding,
-  // no rest-bag nesting: a real Flask route handler never rearranges
-  // the dict it received before handing it to `_props`. Excludes
-  // internal harness-only keys (`__instanceId` etc.), which are never a
-  // real caller-facing prop.
-  const userEntries: string[] = []
-  if (props) {
-    for (const [key, value] of Object.entries(props)) {
-      if (key.startsWith('__')) continue
-      userEntries.push(`${pyStr(key)}: ${toPyLiteral(value)}`)
-    }
-  }
-  const userPropsPy = `{${userEntries.join(', ')}}`
 
   const explicitScope = typeof props?.__instanceId === 'string' ? props.__instanceId : 'test'
-  const fullEntries = [...entries, `${pyStr('scope_id')}: ${pyStr(explicitScope)}`]
-
-  // No initializer re-evaluation against raw props — production's
-  // before_render seeds only from `deriveStashFromDefaults` (#2696).
-  for (const signal of ir.metadata.signals) {
-    // Env signals (#2057) are bound below via `SearchParams('')`, not from a
-    // static initial value.
-    if (signal.envReader) continue
-    if (Object.prototype.hasOwnProperty.call(derivedProps, signal.getter)) {
-      fullEntries.push(`${pyStr(signal.getter)}: ${toPyLiteral(derivedProps[signal.getter])}`)
-    }
-  }
-
-  // No `?? 0` for entries the manifest lacks — production seeds nothing there (#2696).
-  for (const memo of ir.metadata.memos) {
-    if (Object.prototype.hasOwnProperty.call(derivedProps, memo.name)) {
-      fullEntries.push(`${pyStr(memo.name)}: ${toPyLiteral(derivedProps[memo.name])}`)
-    }
-  }
-
-  // #2813: `extractSsrDefaults` can seed an entry under a name that is
-  // none of `propsParams` / `signals` / `memos` above — a bare local-const
-  // alias of a signal/memo getter (`const items__alias = items`,
-  // `ssr-defaults.ts`) seeds `items__alias` alongside `items`. Production
-  // hands the whole manifest-derived stash straight through
-  // (`deriveStashFromDefaults` IS the production seeding mechanism here,
-  // not a harness stand-in), so any leftover `derivedProps` key must be
-  // pushed too, or this harness would silently omit what production
-  // actually provides, mismeasuring this conformance case.
-  const seededNames = new Set<string>([
-    ...ir.metadata.propsParams.filter(p => !p.isRest).map(p => p.name),
-    ...(restPropsName ? [restPropsName] : []),
-    ...ir.metadata.signals.filter(s => !s.envReader).map(s => s.getter),
-    ...ir.metadata.memos.map(m => m.name),
-  ])
-  for (const [name, value] of Object.entries(derivedProps)) {
-    if (seededNames.has(name)) continue
-    fullEntries.push(`${pyStr(name)}: ${toPyLiteral(value)}`)
-  }
+  entries.push(`${pyStr('scope_id')}: ${pyStr(explicitScope)}`)
 
   // (#1922) Request-scoped `searchParams()`: bind `searchParams` to an
   // empty-query reader (so the render script needn't build one from a real
@@ -652,11 +584,20 @@ function buildPythonProps(
   // production Flask integration builds this from the request's query), so
   // `.get(k)` resolves to `None` and the author's `?? default` renders. Only
   // when the component imports `searchParams`.
-  if (importsSearchParams(ir.metadata)) {
-    fullEntries.push(`${pyStr('searchParams')}: SearchParams('')`)
-  }
+  const after = importsSearchParams(ir.metadata) ? `${pyStr('searchParams')}: SearchParams('')` : ''
 
-  return { propsPy: `{${fullEntries.join(', ')}}`, userPropsPy }
+  // The statically-derived ssrDefaults (prop defaults + signal / memo
+  // initial values, #2696: production seeds nothing else), serialised
+  // VERBATIM for the production seed. The rest bag is routed above, so the
+  // seed's rest entry is dropped.
+  const rootSsrDefaults = extractSsrDefaults(ir.metadata) ?? {}
+  const lines = [
+    `_root_defaults = ${ssrDefaultsToPy(rootSsrDefaults)}`,
+    `_root_seed = _derive_stash_from_defaults(_root_defaults, {jinja_ident(k): v for k, v in ${pyDict(Object.entries(props ?? {}))}.items()})`,
+  ]
+  if (restPropsName) lines.push(`_root_seed.pop(jinja_ident(${pyStr(restPropsName)}), None)`)
+  lines.push(`props = {${[...entries, '**_root_seed', ...(after ? [after] : [])].join(', ')}}`)
+  return { propsPy: lines.join('\n'), userPropsPy }
 }
 
 
@@ -702,6 +643,8 @@ function toPyLiteral(value: unknown): string {
     }
     return `{${entries.join(', ')}}`
   }
-  return 'None'
+  // A fixture's `undefined` (a present key holding it) is the runtime's
+  // `UNDEF`; `null` is `None`.
+  return value === undefined ? 'UNDEF' : 'None'
 }
 

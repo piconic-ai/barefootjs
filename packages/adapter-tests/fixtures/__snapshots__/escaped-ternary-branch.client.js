@@ -55,7 +55,7 @@ export function initEscapedTernaryBranch(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s13) {
-      { const __x = `${(_p.on ?? true) ? 'a\nb' : 'c'}`
+      { const __x = `${(_p.on === undefined ? true : _p.on) ? 'a\nb' : 'c'}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s13.setAttribute('data-a', String(__v)); else _s13.removeAttribute('data-a') }
       }
@@ -71,7 +71,7 @@ export function initEscapedTernaryBranch(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s1) {
-      { const __x = `k ${(_p.on ?? true) ? 'q\'y	x' : 'tab'}`
+      { const __x = `k ${(_p.on === undefined ? true : _p.on) ? 'q\'y	x' : 'tab'}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s1.setAttribute('data-t', String(__v)); else _s1.removeAttribute('data-t') }
       }
@@ -84,7 +84,7 @@ export function initEscapedTernaryBranch(__scope, _p = {}) {
     }
   }) }
 
-  insert(__scope, 's0', () => (_p.on ?? true), {
+  insert(__scope, 's0', () => (_p.on === undefined ? true : _p.on), {
     template: () => { const __slots = []; return { html: `<!--bf-cond-start:s0-->${__bfSlot('l\nm', __slots)}<!--bf-cond-end:s0-->`, slots: __slots } },
     bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
     }
@@ -104,7 +104,7 @@ export function initEscapedTernaryBranch(__scope, _p = {}) {
     }
   })
 
-  insert(__scope, 's4', () => (_p.on ?? true), {
+  insert(__scope, 's4', () => (_p.on === undefined ? true : _p.on), {
     template: () => { const __slots = []; return { html: `<!--bf-cond-start:s4-->${__bfSlot('quote\'s \\ end', __slots)}<!--bf-cond-end:s4-->`, slots: __slots } },
     bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
     }
@@ -121,7 +121,7 @@ export function initEscapedTernaryBranch(__scope, _p = {}) {
   createEffect(() => {
     const [__EscapedTernaryLabel_s8El] = $c(__scope, 's8')
     if (__EscapedTernaryLabel_s8El) {
-      { const __x = (_p.on ?? true)
+      { const __x = (_p.on === undefined ? true : _p.on)
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         if (__m[0] ??= __EscapedTernaryLabel_s8El.hasAttribute('on')) { const __v = __x; if (__v != null) __EscapedTernaryLabel_s8El.setAttribute('on', String(__v)); else __EscapedTernaryLabel_s8El.removeAttribute('on') }
       }
@@ -135,13 +135,13 @@ export function initEscapedTernaryBranch(__scope, _p = {}) {
   }) }
 
   // Initialize child components with props
-  initChild('EscapedTernaryLabel', _s8, { get on() { return (_p.on ?? true) }, get text() { return `${open() ? 'p\nq' : 'r\'s'}` } })
+  initChild('EscapedTernaryLabel', _s8, { get on() { return (_p.on === undefined ? true : _p.on) }, get text() { return `${open() ? 'p\nq' : 'r\'s'}` } })
   const __tpl_l0 = document.createElement('template')
   __tpl_l0.innerHTML = `<li data-key="" bf="s10"><!--bf:s9--><!--/--></li>`
   const __lzp_l0 = [[0]]
   const __lzs_l0 = [{ id: 's9', kind: 'text', path: [] }]
   const __lzsc_l0 = [{ id: 's9', kind: 'text', path: __lzp_l0[0] }]
-  mapArrayLazy(() => (_p.items ?? []), _s11, (item) => String(item), {
+  mapArrayLazy(() => (_p.items === undefined ? [] : _p.items), _s11, (item) => String(item), {
     createRow: (__e, __idx) => {
       const item = () => __e.item
       const __el = __tpl_l0.content.firstElementChild.cloneNode(true)
@@ -155,7 +155,7 @@ export function initEscapedTernaryBranch(__scope, _p = {}) {
       } }
       { const __t = __r[0]
       if (__t) {
-        { const __x = `${(_p.on ?? true) ? 's\n1' : 's2'}`
+        { const __x = `${(_p.on === undefined ? true : _p.on) ? 's\n1' : 's2'}`
         { const __v = __x; if (__v != null) __t.setAttribute('data-s', String(__v)); else __t.removeAttribute('data-s') }
         __l[1] = __x }
       } }
@@ -189,7 +189,7 @@ export function initEscapedTernaryBranch(__scope, _p = {}) {
         } }
         { const __t = 0 in __r ? __r[0] : (__r[0] = qsa(__e.primaryEl, '[bf="s10"]'))
         if (__t) {
-          { const __x = `${(_p.on ?? true) ? 's\n1' : 's2'}`
+          { const __x = `${(_p.on === undefined ? true : _p.on) ? 's\n1' : 's2'}`
           if (__seed ? (__t.getAttribute('data-s') !== (__x != null ? String(__x) : null)) : (!(1 in __l) || !Object.is(__l[1], __x))) {
             { const __v = __x; if (__v != null) __t.setAttribute('data-s', String(__v)); else __t.removeAttribute('data-s') }
           }
@@ -201,5 +201,5 @@ export function initEscapedTernaryBranch(__scope, _p = {}) {
 
 }
 
-hydrate('EscapedTernaryBranch', { init: initEscapedTernaryBranch, template: (_p) => `<div ${(`${(_p.on ?? true) ? 'a\nb' : 'c'}`) != null ? 'data-a="' + escapeAttr(`${(_p.on ?? true) ? 'a\nb' : 'c'}`) + '"' : ''} ${(`${(false) ? 'it\'s' : 'back\\slash'}`) != null ? 'data-q="' + escapeAttr(`${(false) ? 'it\'s' : 'back\\slash'}`) + '"' : ''} bf="s13"><p ${(`k ${(_p.on ?? true) ? 'q\'y	x' : 'tab'}`) != null ? 'data-t="' + escapeAttr(`k ${(_p.on ?? true) ? 'q\'y	x' : 'tab'}`) + '"' : ''} ${(`v ${(false) ? 'w\\z' : 'w"z'}`) != null ? 'data-u="' + escapeAttr(`v ${(false) ? 'w\\z' : 'w"z'}`) + '"' : ''} bf="s1">${(_p.on ?? true) ? `<!--bf-cond-start:s0-->${escapeText('l\nm')}<!--bf-cond-end:s0-->` : `<!--bf-cond-start:s0-->${escapeText('n')}<!--bf-cond-end:s0-->`}</p><span data-slot="text" bf="s3">${(false) ? `<!--bf-cond-start:s2-->${escapeText('o\'n')}<!--bf-cond-end:s2-->` : `<!--bf-cond-start:s2-->${escapeText('of\\f')}<!--bf-cond-end:s2-->`}</span><span data-slot="and" bf="s5">${(_p.on ?? true) ? `<!--bf-cond-start:s4-->${escapeText('quote\'s \\ end')}<!--bf-cond-end:s4-->` : `<!--bf-cond-start:s4--><!--bf-cond-end:s4-->`}</span><span data-slot="memo" bf="s7"><!--bf:s6-->${escapeTextOrMarkup((((false) ? 'm\\n' : 'o\'p')))}<!--/--></span>${renderChild('EscapedTernaryLabel', {on: (_p.on ?? true), text: `${(false) ? 'p\nq' : 'r\'s'}`}, undefined, 's8')}<ul bf="s11"><!--bf-loop:l0-->${(_p.items ?? []).map((item) => `<li data-key="${escapeAttr(item)}" ${(`${(false) ? 'r\'1' : 'r\\2'}`) != null ? 'data-row="' + escapeAttr(`${(false) ? 'r\'1' : 'r\\2'}`) + '"' : ''} ${(`${(_p.on ?? true) ? 's\n1' : 's2'}`) != null ? 'data-s="' + escapeAttr(`${(_p.on ?? true) ? 's\n1' : 's2'}`) + '"' : ''} bf="s10"><!--bf:s9-->${escapeText(item)}<!--/--></li>`).join('')}<!--bf-/loop:l0--></ul><button bf="s12">toggle</button></div>` })
+hydrate('EscapedTernaryBranch', { init: initEscapedTernaryBranch, template: (_p) => `<div ${(`${(_p.on === undefined ? true : _p.on) ? 'a\nb' : 'c'}`) != null ? 'data-a="' + escapeAttr(`${(_p.on === undefined ? true : _p.on) ? 'a\nb' : 'c'}`) + '"' : ''} ${(`${(false) ? 'it\'s' : 'back\\slash'}`) != null ? 'data-q="' + escapeAttr(`${(false) ? 'it\'s' : 'back\\slash'}`) + '"' : ''} bf="s13"><p ${(`k ${(_p.on === undefined ? true : _p.on) ? 'q\'y	x' : 'tab'}`) != null ? 'data-t="' + escapeAttr(`k ${(_p.on === undefined ? true : _p.on) ? 'q\'y	x' : 'tab'}`) + '"' : ''} ${(`v ${(false) ? 'w\\z' : 'w"z'}`) != null ? 'data-u="' + escapeAttr(`v ${(false) ? 'w\\z' : 'w"z'}`) + '"' : ''} bf="s1">${(_p.on === undefined ? true : _p.on) ? `<!--bf-cond-start:s0-->${escapeText('l\nm')}<!--bf-cond-end:s0-->` : `<!--bf-cond-start:s0-->${escapeText('n')}<!--bf-cond-end:s0-->`}</p><span data-slot="text" bf="s3">${(false) ? `<!--bf-cond-start:s2-->${escapeText('o\'n')}<!--bf-cond-end:s2-->` : `<!--bf-cond-start:s2-->${escapeText('of\\f')}<!--bf-cond-end:s2-->`}</span><span data-slot="and" bf="s5">${(_p.on === undefined ? true : _p.on) ? `<!--bf-cond-start:s4-->${escapeText('quote\'s \\ end')}<!--bf-cond-end:s4-->` : `<!--bf-cond-start:s4--><!--bf-cond-end:s4-->`}</span><span data-slot="memo" bf="s7"><!--bf:s6-->${escapeTextOrMarkup((((false) ? 'm\\n' : 'o\'p')))}<!--/--></span>${renderChild('EscapedTernaryLabel', {on: (_p.on === undefined ? true : _p.on), text: `${(false) ? 'p\nq' : 'r\'s'}`}, undefined, 's8')}<ul bf="s11"><!--bf-loop:l0-->${(_p.items === undefined ? [] : _p.items).map((item) => `<li data-key="${escapeAttr(item)}" ${(`${(false) ? 'r\'1' : 'r\\2'}`) != null ? 'data-row="' + escapeAttr(`${(false) ? 'r\'1' : 'r\\2'}`) + '"' : ''} ${(`${(_p.on === undefined ? true : _p.on) ? 's\n1' : 's2'}`) != null ? 'data-s="' + escapeAttr(`${(_p.on === undefined ? true : _p.on) ? 's\n1' : 's2'}`) + '"' : ''} bf="s10"><!--bf:s9-->${escapeText(item)}<!--/--></li>`).join('')}<!--bf-/loop:l0--></ul><button bf="s12">toggle</button></div>` })
 export function EscapedTernaryBranch(_p, __bfKey) { return createComponent('EscapedTernaryBranch', _p, __bfKey) }

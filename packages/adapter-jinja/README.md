@@ -63,8 +63,14 @@ export default defineConfig({
 `vite build` then emits `.jinja` templates + client JS under `templates` /
 Vite's own `build.outDir`. A
 Python host renders a component by constructing a `jinja2.Environment`
-(with `autoescape=True`, `undefined=jinja2.ChainableUndefined`,
+(with `autoescape=True`, `undefined=barefootjs.JsUndefined`,
 `trim_blocks=True`, `lstrip_blocks=True` — see the adapter header comment
 for why the last two are required) over a `FileSystemLoader` pointed at
 the emitted templates, wiring in `barefootjs.backend_jinja` as the render
-backend.
+backend. `JinjaBackend(paths=[...])` builds exactly that Environment.
+
+JS `undefined` and `null` are two values: host `None` is JS `null`, and
+`barefootjs.UNDEF` (a `JsUndefined`) is JS `undefined`. To leave a prop
+unset, omit its key (an omitted prop takes its destructure default, or
+reads as `undefined`); pass `UNDEF` for a prop that is present and
+`undefined`. A prop passed as `None` is `null`: its default does not apply.

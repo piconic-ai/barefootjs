@@ -11,9 +11,9 @@
 import type { ControlledSignal } from '../init-declarations.ts'
 import type { Declaration } from '../declaration-sort.ts'
 import type { ClientJsContext } from '../types.ts'
-import type { ParamInfo, SignalInfo } from '../../types.ts'
+import type { ConstantInfo, ParamInfo, SignalInfo } from '../../types.ts'
 import { inferDefaultValue, PROPS_PARAM, readsBareProp } from '../utils.ts'
-import { livePropReadExpr, propDefaultText } from '../../props-binding.ts'
+import { coalesceDefaultText, composePropRead, livePropReadExpr, propDefaultText } from '../../props-binding.ts'
 import { signalFactoryInitializer, signalSecondBinding } from '../../signal-initializer.ts'
 import type {
   ControlledSignalEffectPlan,
@@ -54,7 +54,7 @@ export function buildDeclarationEmitPlan(
         kind: 'constant',
         keyword: c.declarationKind ?? 'const',
         name: c.name,
-        valueExpr: c.value !== undefined ? c.value : null,
+        valueExpr: bodyDestructureValue(c, ctx) ?? (c.value !== undefined ? c.value : null),
       }
     }
     case 'signal':
@@ -126,7 +126,7 @@ function buildSignalPlan(
  *      `<it> ?? <inferred default>`, so the signal never starts as
  *      `undefined`.
  *   2. A controlled signal seeded by a bare destructured binding →
- *      `_p.<caller key> ?? <the prop's default>`.
+ *      `_p.<caller key>` with the prop's default (`composePropRead`).
  *   3. Anything else (a `??` / `||` fallback the user wrote, any other
  *      expression) → the initializer as written; `generateInit`'s
  *      `rewritePropsObjectRef` maps its `props.X` reads to `_p.X`.
@@ -138,12 +138,45 @@ function resolveSignalInitialValue(signal: SignalInfo, lookups: DeclarationEmitL
     const controlled = lookups.controlledBySignal.get(signal)
     if (controlled) {
       const prop = lookups.propByName.get(controlled.propName)
-      const defaultVal = (prop && propDefaultText(prop)) ?? inferDefaultValue(signal.type)
-      // `_p` is always keyed by the caller-facing name (#2524 CSR half).
-      return `${PROPS_PARAM}.${prop?.sourceName ?? controlled.propName} ?? ${defaultVal}`
+      const defaultText = prop && propDefaultText(prop)
+      // `_p` is always keyed by the caller-facing name (#2524 CSR half). The
+      // prop's own default applies to an absent or `undefined` prop only;
+      // the inferred one keeps the signal from starting as either nil.
+      const base = `${PROPS_PARAM}.${prop?.sourceName ?? controlled.propName}`
+      return composePropRead(
+        base,
+        defaultText
+          ? { kind: 'default', text: coalesceDefaultText(defaultText, prop.defaultContainsArrow) }
+          : { kind: 'guard', text: inferDefaultValue(signal.type) },
+      )
     }
   }
   return signal.initialValue
+}
+
+/**
+ * The client-JS initializer of a body destructure of the props object with
+ * a default (`const { label = 'x' } = props`): its prop read with the
+ * default applied to an absent or `undefined` prop only
+ * (`composePropRead`). The IR encodes the destructure as `props.label ??
+ * 'x'` (`ConstantInfo.value`), which the SSR seed plans read; built here
+ * from the props param the analyzer overlays the default onto (#2943), not
+ * from that text. The default is the authored expression: a read of an
+ * earlier binding (`{ a = [], b = a }`) stays a read of that local, which
+ * `rewriteBodyAliasReads` turns into a live prop read only where it drops
+ * the local's declaration. Null for any other constant, which keeps its own
+ * value.
+ */
+function bodyDestructureValue(c: ConstantInfo, ctx: ClientJsContext): string | null {
+  const sourceKey = c.propsDestructure?.sourceKey
+  if (sourceKey === undefined || ctx.propsObjectName === null) return null
+  const param = ctx.propsParams.find(p => p.name === c.name && (p.sourceName ?? p.name) === sourceKey)
+  const defaultText = param?.defaultValue
+  if (!param || !defaultText) return null
+  return composePropRead(`${ctx.propsObjectName}.${sourceKey}`, {
+    kind: 'default',
+    text: coalesceDefaultText(defaultText, param.defaultContainsArrow),
+  })
 }
 
 function buildControlledSignalEffect(

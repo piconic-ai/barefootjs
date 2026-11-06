@@ -5,14 +5,14 @@ export function initReassignedPropCounter(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
-  let start = _p.start ?? 0
+  let start = _p.start === undefined ? 0 : _p.start
 
   const [items, setItems] = createSignal([])
   const addPre = () => setItems([...items(), ++start])
   const addStep = () => {
     let laps = 0
     for (let step = 0; step < 2; step++) laps++
-    start += (_p.step ?? 1) * laps
+    start += (_p.step === undefined ? 1 : _p.step) * laps
     setItems([...items(), start])
   }
 
@@ -38,5 +38,5 @@ export function initReassignedPropCounter(__scope, _p = {}) {
         })
 }
 
-hydrate('ReassignedPropCounter', { init: initReassignedPropCounter, template: (_p) => `<div><button class="add-pre" bf="s0">pre</button><button class="add-step" bf="s1">step</button><button class="add-double" bf="s2">double</button><p class="start" bf="s4"><!--bf:s3-->${escapeTextOrMarkup((_p.start ?? 0))}<!--/--></p><p class="items" bf="s6"><!--bf:s5-->${escapeTextOrMarkup(([]).join(','))}<!--/--></p></div>` })
+hydrate('ReassignedPropCounter', { init: initReassignedPropCounter, template: (_p) => `<div><button class="add-pre" bf="s0">pre</button><button class="add-step" bf="s1">step</button><button class="add-double" bf="s2">double</button><p class="start" bf="s4"><!--bf:s3-->${escapeTextOrMarkup((_p.start === undefined ? 0 : _p.start))}<!--/--></p><p class="items" bf="s6"><!--bf:s5-->${escapeTextOrMarkup(([]).join(','))}<!--/--></p></div>` })
 export function ReassignedPropCounter(_p, __bfKey) { return createComponent('ReassignedPropCounter', _p, __bfKey) }

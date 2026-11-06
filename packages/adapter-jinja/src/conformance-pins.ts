@@ -26,15 +26,10 @@ export const conformancePins: ConformancePins = {
   'strict-equality-preamble-reference': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
   'strict-equality-optional-array-element': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
   'strict-equality-nullable-array-element': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
-  // A prop typed both optional and nullable: the engine cannot tell an
-  // omitted one (`NaN` in arithmetic) from a `null` one (`0`).
-  'omitted-optional-nullable-number-arithmetic': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
-  'omitted-optional-nullable-number-arithmetic-destructured': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
-  'omitted-optional-nullable-number-relational': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
-  'omitted-optional-nullable-number-unary-plus': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
-  'undef-null-number-coercion': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
-  'undef-null-relational': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
-  'omitted-optional-nullable-string-relational': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-scalar-relational' }],
+  // The `omitted-optional-nullable-*` and `undef-null-number-coercion` /
+  // `undef-null-relational` BF101 pins used to sit here: the engine could not
+  // tell an omitted prop (`NaN` in arithmetic) from a `null` one (`0`). The
+  // runtime now carries `undefined` (#3848 U2), and its helpers read each.
   'callback-index-param': [{ code: 'BF101', severity: 'error', limitation: 'callback-index-param' }],
   'filter-index-param-loop': [{ code: 'BF021', severity: 'error', limitation: 'callback-index-param' }],
   'sort-opaque-comparator': [{ code: 'BF101', severity: 'error', limitation: 'callback-outside-evaluator' }],
@@ -101,6 +96,11 @@ export const conformancePins: ConformancePins = {
   ],
   // A method call no template lowers, outside a callback, refuses rather
   // than rendering a read of the method name (#3493).
+  // A const initializer pushing onto a destructured binding (`const n =
+  // a.push('x') && b.length`): the call has no template lowering. Escaped by
+  // the `/* @client */` twins (`destructure-default-shared-array*-client`).
+  'destructure-default-shared-array': [{ code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' }],
+  'destructure-default-shared-array-renamed': [{ code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' }],
   'unlowered-method-call': [
     { code: 'BF101', severity: 'error', limitation: 'unlowered-method-call' },
   ],

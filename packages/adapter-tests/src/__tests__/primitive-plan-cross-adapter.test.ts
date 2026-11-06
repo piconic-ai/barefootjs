@@ -24,6 +24,7 @@ import {
   BindingScope,
   booleanValueSites,
   buildMetadata,
+  collapsesNil,
   collectOperandTyping,
   parseExpression,
   planPrimitive,
@@ -513,15 +514,16 @@ describe('every template adapter spells the primitive plan its NativeSafeTable n
  * and `=== null` / `=== undefined` / `== null` plan as the strict and loose
  * nil tests. No adapter flips the flag in U1, so this is a plan-only check.
  */
+const NIL_TESTS: Readonly<Record<string, PrimitiveHelper>> = {
+  'props.maybe === null': 'is_null',
+  'props.maybe !== null': 'is_null',
+  'props.maybe === undefined': 'is_undefined',
+  'undefined !== props.ms': 'is_undefined',
+  'props.maybe == null': 'is_nullish',
+  'props.ms != undefined': 'is_nullish',
+}
+
 describe('the plan over every adapter table, carriesUndefined false and true (U1)', () => {
-  const NIL_TESTS: Readonly<Record<string, PrimitiveHelper>> = {
-    'props.maybe === null': 'is_null',
-    'props.maybe !== null': 'is_null',
-    'props.maybe === undefined': 'is_undefined',
-    'undefined !== props.ms': 'is_undefined',
-    'props.maybe == null': 'is_nullish',
-    'props.ms != undefined': 'is_nullish',
-  }
   const metadata = buildMetadata(analyzeComponent(source([]), 'primitives.tsx'))
   const typing = collectOperandTyping(metadata)
   // Every component-scope variant node of the cases above that `planPrimitive` plans itself.
@@ -556,5 +558,28 @@ describe('the plan over every adapter table, carriesUndefined false and true (U1
       }
       expect(wrong).toEqual([])
     })
+  }
+})
+
+/**
+ * A target that carries `undefined` (`spec/js-undefined-value.md`, rollout
+ * steps U2-U8) spells each nil-test plan through its runtime's `is_null` /
+ * `is_undefined` / `is_nullish`, at a value, an attribute, a condition and
+ * a filter predicate, never through its host nil test.
+ */
+describe('every target that carries undefined spells its nil tests', () => {
+  for (const target of TARGETS.filter((t) => !collapsesNil(t.table))) {
+    test(target.name, () => {
+      const entries = Object.entries(NIL_TESTS)
+      const variants = entries.flatMap(([e, helper]) => [
+        { ...boolText(e, helper), helper },
+        { ...attr(e, helper), helper },
+        { ...ifTest(e, helper), helper },
+        { ...filter(e.replaceAll('props.maybe', 'x'), e, helper), helper },
+      ])
+      const parts = segments(compile(source(variants), target), variants.length)
+      const wrong = variants.flatMap((v, i) => (target.call(v.helper)?.test(parts[i]!) ? [] : [`${v.node} (${v.scope}): ${parts[i]}`]))
+      expect(wrong).toEqual([])
+    }, COMPILE_TIMEOUT_MS)
   }
 })

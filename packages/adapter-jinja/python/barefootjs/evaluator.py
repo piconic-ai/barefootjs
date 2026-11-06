@@ -45,6 +45,86 @@ import re
 from typing import Any
 
 # ---------------------------------------------------------------------------
+# JS `undefined` (spec/js-undefined-value.md). Host `None` is JS `null`; JS
+# `undefined` is one sentinel value, `UNDEF`, created only where JS reads one
+# (a missing field, an out-of-range index, the `undefined` identifier, a
+# `find` with no result, an omitted prop). The Jinja backend's `JsUndefined`
+# (a `ChainableUndefined` subclass registered as the Environment's
+# `undefined`) is that value. This module and `runtime.py` stay engine-free:
+# they recognize it by a class marker, `_bf_js_undefined`, and produce it
+# through `undefined()`, which returns the instance `backend_jinja` registers
+# with `register_undefined` at import. The engine-free `_FallbackUndefined`
+# stands in only before that registration, which `barefootjs/__init__.py`
+# performs before any caller can reach this module.
+# ---------------------------------------------------------------------------
+
+UNDEFINED_MARKER = "_bf_js_undefined"
+
+
+class _FallbackUndefined:
+    """An engine-free `undefined`: falsy, prints as `""`, iterates as
+    empty. Replaced by the backend's own sentinel at import."""
+
+    __slots__ = ()
+    _bf_js_undefined = True
+
+    def __bool__(self) -> bool:
+        return False
+
+    def __str__(self) -> str:
+        return ""
+
+    def __html__(self) -> str:
+        return ""
+
+    def __repr__(self) -> str:
+        return "UNDEF"
+
+    def __iter__(self):
+        return iter(())
+
+    def __len__(self) -> int:
+        return 0
+
+    def __eq__(self, other: Any) -> bool:
+        return is_undefined(other)
+
+    def __hash__(self) -> int:
+        return hash(UNDEFINED_MARKER)
+
+
+_UNDEFINED: list = [_FallbackUndefined()]
+
+
+def register_undefined(value: Any) -> None:
+    """Make `value` (an instance of a class carrying the marker) the
+    `undefined` this module and the runtime produce."""
+    if not is_undefined(value):
+        raise TypeError(f"{value!r} does not carry the {UNDEFINED_MARKER} marker")
+    _UNDEFINED[0] = value
+
+
+def undefined() -> Any:
+    """The JS `undefined` sentinel (`UNDEF`)."""
+    return _UNDEFINED[0]
+
+
+def is_undefined(v: Any) -> bool:
+    """JS `v === undefined`. The marker is read on the class: an Undefined
+    instance answers every attribute read with itself."""
+    return getattr(type(v), UNDEFINED_MARKER, False) is True
+
+
+def is_null(v: Any) -> bool:
+    """JS `v === null`: host `None`."""
+    return v is None
+
+
+def is_nullish(v: Any) -> bool:
+    """JS `v == null`: `null` or `undefined`."""
+    return v is None or is_undefined(v)
+
+# ---------------------------------------------------------------------------
 # JS numeric-string grammar (mirrors Perl's Scalar::Util::looks_like_number).
 # Exposed (not underscore-prefixed) so runtime.py's JS-`Number()`-diverging
 # `number()` helper can reuse the exact same "does this string look like a
@@ -92,7 +172,11 @@ def evaluate(node: Any, env: dict) -> Any:
     if kind == "literal":
         return node.get("value")
     if kind == "identifier":
-        return env.get(node.get("name"))
+        # An unbound name reads as `undefined`: the unshadowed `undefined`
+        # identifier is the constant, and a free variable the env does not
+        # bind is absent (spec/js-undefined-value.md, section 2).
+        name = node.get("name")
+        return env[name] if name in env else undefined()
     if kind == "binary":
         return _binary(
             node.get("op"),
@@ -108,8 +192,8 @@ def evaluate(node: Any, env: dict) -> Any:
             return evaluate(node.get("right"), env) if _truthy(left) else left
         if op == "||":
             return left if _truthy(left) else evaluate(node.get("right"), env)
-        # `??`
-        return left if left is not None else evaluate(node.get("right"), env)
+        # `??` coalesces both nils.
+        return evaluate(node.get("right"), env) if is_nullish(left) else left
     if kind == "conditional":
         return (
             evaluate(node.get("consequent"), env)
@@ -185,17 +269,18 @@ def evaluate(node: Any, env: dict) -> Any:
                 return _bool(False)
         elif method == "join":
             # `.join(sep?)` (#2094): a plain `array-method` node alongside
-            # `includes` above. JS semantics: default separator is `,`; a
-            # `null`/`undefined` element joins as `''` -- NOT the string
-            # "null" that a bare `_to_string(None)` ToString call would
-            # produce (see `_to_string`'s docstring-equivalent note above),
-            # so that special case is applied here, before stringifying,
-            # rather than inside `_to_string` itself.
+            # `includes` above. JS semantics: an omitted or `undefined`
+            # separator is `,`, a `null` one is ToString'd (`"null"`); a
+            # `null`/`undefined` element joins as `''` -- NOT the string a
+            # bare `_to_string` call would produce, so that special case is
+            # applied here, before stringifying, rather than inside
+            # `_to_string` itself.
             args = node.get("args") or []
-            sep = _to_string(evaluate(args[0], env)) if len(args) >= 1 else ","
+            sep_value = evaluate(args[0], env) if len(args) >= 1 else undefined()
+            sep = "," if is_undefined(sep_value) else _to_string(sep_value)
             obj = evaluate(node.get("object"), env)
             arr = obj if isinstance(obj, list) else []
-            return sep.join("" if el is None else _to_string(el) for el in arr)
+            return sep.join("" if is_nullish(el) else _to_string(el) for el in arr)
 
     # arrow-fn / higher-order / unsupported array-method: a callback body
     # containing these is refused upstream (BF101); never reached here.
@@ -233,6 +318,8 @@ def _nan() -> float:
 def _to_number(v: Any) -> float:
     if v is None:
         return 0.0
+    if is_undefined(v):
+        return _nan()
     if isinstance(v, bool):
         return 1.0 if v else 0.0
     if _is_number(v):
@@ -312,6 +399,8 @@ def _js_notation(shortest: str) -> str:
 def _to_string(v: Any) -> str:
     if v is None:
         return "null"
+    if is_undefined(v):
+        return "undefined"
     if isinstance(v, bool):
         return "true" if v else "false"
     if _is_number(v):
@@ -326,7 +415,7 @@ def _to_string(v: Any) -> str:
     if isinstance(v, (list, tuple)):
         # Array.prototype.toString is join(","): a nil element prints as "",
         # and a nested array flattens through its own join.
-        return ",".join("" if el is None else _to_string(el) for el in v)
+        return ",".join("" if is_nullish(el) else _to_string(el) for el in v)
     if isinstance(v, dict):
         return "[object Object]"
     return str(v)
@@ -339,7 +428,7 @@ def _is_object(v: Any) -> bool:
 
 
 def _truthy(v: Any) -> bool:
-    if v is None:
+    if is_nullish(v):
         return False
     if isinstance(v, bool):
         return v
@@ -439,6 +528,9 @@ def _strict_eq(l: Any, r: Any) -> bool:
         return lf == rf
     if ln != rn:  # one numeric, one not
         return False
+    lu, ru = is_undefined(l), is_undefined(r)
+    if lu or ru:  # `undefined` is only itself, never `null`
+        return lu and ru
     if l is None:
         return r is None
     if r is None:
@@ -585,7 +677,7 @@ def _math_round(n: float) -> float:
 
 def _call_builtin(name: str, args: list) -> Any:
     def arg(i: int) -> Any:
-        return args[i] if i < len(args) else None
+        return args[i] if i < len(args) else undefined()
 
     if name == "Math.max":
         m = float("-inf")  # JS Math.max() with no args is -Infinity
@@ -629,18 +721,18 @@ def _call_builtin(name: str, args: list) -> Any:
 
 
 def _read_property(obj: Any, key: Any) -> Any:
-    if obj is None:
-        return None
+    """JS `obj.key`: a missing field, and any property of a value that has
+    none, reads as `undefined` (a nil receiver too, where JS would throw)."""
     if isinstance(obj, dict):
-        return obj.get(key)
+        return obj[key] if key in obj else undefined()
     if isinstance(obj, list):
-        return len(obj) if key == "length" else None
+        return len(obj) if key == "length" else undefined()
     if isinstance(obj, str) and key == "length":
         # `.length` is a string property only -- a numeric scalar (123) has
-        # no `.length` in the subset (JS `(123).length` is undefined ->
-        # null); matches the Go/Perl evaluators (numbers fall through here).
+        # no `.length` in the subset (JS `(123).length` is undefined);
+        # matches the Go/Perl evaluators (numbers fall through here).
         return len(obj)
-    return None
+    return undefined()
 
 
 def _canonical_index(index: Any) -> int | None:
@@ -662,7 +754,7 @@ def _utf16_unit_at(s: str, i: int) -> str | None:
     scope")."""
     units = s.encode("utf-16-le", "surrogatepass")
     if i >= len(units) // 2:
-        return None
+        return undefined()
     unit = int.from_bytes(units[2 * i : 2 * i + 2], "little")
     return "\ufffd" if 0xD800 <= unit <= 0xDFFF else chr(unit)
 
@@ -673,15 +765,16 @@ def _read_index(obj: Any, index: Any) -> Any:
     a string (by UTF-16 code unit), only through a canonical array index
     (spec/js-primitive-semantics.md, "ToPropertyKey and index read")."""
     if isinstance(obj, dict):
-        return obj.get(_to_string(index))
+        key = _to_string(index)
+        return obj[key] if key in obj else undefined()
     if not isinstance(obj, (list, str)):
-        return None
+        return undefined()
     i = _canonical_index(index)
     if i is None:
-        return None
+        return undefined()
     if isinstance(obj, str):
         return _utf16_unit_at(obj, i)
-    return obj[i] if i < len(obj) else None
+    return obj[i] if i < len(obj) else undefined()
 
 
 # ---------------------------------------------------------------------------
@@ -734,6 +827,10 @@ def sort_by(
     if not isinstance(items, list):
         return []
     env = dict(base_env) if base_env else {}
+    # JS `Array.prototype.sort` moves every `undefined` element to the end
+    # without handing it to the comparator.
+    defined = [item for item in items if not is_undefined(item)]
+    tail = [item for item in items if is_undefined(item)]
 
     def cmp_fn(a: Any, b: Any) -> int:
         env[param_a] = a
@@ -745,7 +842,7 @@ def sort_by(
             return 0
         return -1 if c < 0 else (1 if c > 0 else 0)
 
-    return sorted(items, key=functools.cmp_to_key(cmp_fn))
+    return sorted(defined, key=functools.cmp_to_key(cmp_fn)) + tail
 
 
 def fold_json(
@@ -821,7 +918,7 @@ def find(
         env[param] = item
         if _truthy(evaluate(pred, env)):
             return item
-    return None
+    return undefined()
 
 
 def find_index(

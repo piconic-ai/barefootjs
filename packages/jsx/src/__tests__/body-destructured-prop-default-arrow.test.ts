@@ -136,7 +136,7 @@ describe('body-destructured prop with an arrow-function default (#2940)', () => 
     const js = clientJs!.content
 
     expect(parseDiagnosticCount(js)).toBe(0)
-    expect(js).toContain("(_p.fmt ?? ((v) => 'v' + v))(1)")
-    expect(js).not.toContain("(_p.fmt ?? (((v) => 'v' + v)))(1)")
+    expect(js).toContain("(_p.fmt === undefined ? ((v) => 'v' + v) : _p.fmt)(1)")
+    expect(js).not.toContain("(_p.fmt === undefined ? (((v) => 'v' + v)) : _p.fmt)(1)")
   })
 })

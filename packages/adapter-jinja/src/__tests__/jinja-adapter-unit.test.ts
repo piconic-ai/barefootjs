@@ -784,3 +784,41 @@ function Widget(props: { label: string; n: number; nums: number[] }) {
     expect(template).not.toContain("bf.to_string('r=')")
   })
 })
+
+describe('JinjaAdapter - JS undefined apart from null (spec/js-undefined-value.md, U2)', () => {
+  test('a nil test spells the runtime’s strict and loose tests, never the host nil test', () => {
+    const { template } = compileAndGenerate(`
+export function C(props: { v?: string | null }) {
+  return <p data-a={String(props.v === null)} data-b={String(props.v !== undefined)} data-c={String(props.v == null)}>x</p>
+}
+`)
+    expect(template).toContain('bf.is_null(v)')
+    expect(template).toContain('(not bf.is_undefined(v))')
+    expect(template).toContain('bf.is_nullish(v)')
+    expect(template).not.toContain('== none')
+  })
+
+  test('`undefined`, an omitted slice end and a `?.` over a nullish receiver are the runtime’s UNDEF', () => {
+    const { template } = compileAndGenerate(`
+export function C(props: { items?: string[]; s: string }) {
+  return <p data-u={JSON.stringify([undefined, null])} data-s={props.s.slice(1)} data-l={props.items?.length}>x</p>
+}
+`)
+    expect(template).toContain('bf.json([bf.undefined, none])')
+    expect(template).toContain('bf.slice(s, 1, bf.undefined)')
+    expect(template).toContain('else bf.undefined)')
+  })
+
+  test('String() / Number() are JS ToString / ToNumber; unproven `-` / `*` take the helpers', () => {
+    const { template } = compileAndGenerate(`
+export function C(props: { v?: number | null; n: number }) {
+  return <p data-s={String(props.v)} data-n={Number(props.v)} data-d={props.v - 1} data-m={props.v * props.n} data-p={props.n - 1}>x</p>
+}
+`)
+    expect(template).toContain('bf.to_string(v)')
+    expect(template).toContain('bf.to_number(v)')
+    expect(template).toContain('bf.sub(v, 1)')
+    expect(template).toContain('bf.mul(v, n)')
+    expect(template).toContain('n - 1')
+  })
+})

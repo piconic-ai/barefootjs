@@ -114,6 +114,31 @@ function bodyAliasDefaultParts(ctx: ClientJsContext, local: string, key: string)
 }
 
 /**
+ * Drop from `aliases` every body alias whose default reads an earlier
+ * binding the init body keeps as a local (`const { a = [], b = a } = props;
+ * a.push(x)`, or a `let` destructure): JS binds `b` to that local's value
+ * once, so `b` keeps its declaration (`const b = _p.b === undefined ? a :
+ * _p.b`) instead of a live read that would build a fresh `a` default. The
+ * kept locals are the body-destructured constants that are not aliases;
+ * an alias dropped here is kept too, so the walk repeats until it settles.
+ */
+function keepAliasesReadingRetainedLocals(aliases: Map<string, { key: string }>, ctx: ClientJsContext): void {
+  const retained = new Set(
+    ctx.localConstants.filter(c => c.propsDestructure && !c.isModule && !aliases.has(c.name)).map(c => c.name),
+  )
+  for (let changed = true; changed; ) {
+    changed = false
+    for (const [local, alias] of aliases) {
+      const parts = bodyAliasDefaultParts(ctx, local, alias.key).defaultParts ?? []
+      if (!parts.some(part => part.kind === 'param' && retained.has(part.param.name))) continue
+      aliases.delete(local)
+      retained.add(local)
+      changed = true
+    }
+  }
+}
+
+/**
  * Rewrite every bare value-position read of a BODY-destructured (or
  * bare-member-alias) prop local in `code` to a live `_p.<key>` read, for a
  * bare-props-form component (`function Foo(props: Props)`).
@@ -154,6 +179,7 @@ function rewriteBodyAliasReads(code: string, ctx: ClientJsContext): string {
   for (const [local, alias] of aliases) {
     if (alias.key === 'children') aliases.delete(local)
   }
+  keepAliasesReadingRetainedLocals(aliases, ctx)
   if (aliases.size === 0) return code
   // Quick exit when none of the candidate local names appear at all.
   if (![...aliases.keys()].some((name) => identifierPattern(name).test(code))) return code
@@ -161,7 +187,7 @@ function rewriteBodyAliasReads(code: string, ctx: ClientJsContext): string {
   const sourceFile = ts.createSourceFile('init-body.ts', code, ts.ScriptTarget.Latest, /*setParentNodes*/ true, ts.ScriptKind.TS)
 
   const spans: Array<readonly [number, number]> = []
-  const located = new Map<string, Pick<LivePropReadInfo, 'defaultValue' | 'defaultContainsArrow' | 'defaultParts'> & { key: string }>()
+  const located = new Map<string, Pick<LivePropReadInfo, 'defaultValue' | 'defaultContainsArrow' | 'defaultParts' | 'coalescesNull'> & { key: string }>()
   for (const stmt of sourceFile.statements) {
     if (!ts.isFunctionDeclaration(stmt) || !stmt.name?.text.startsWith('init') || !stmt.body) continue
     for (const inner of stmt.body.statements) {
@@ -179,6 +205,9 @@ function rewriteBodyAliasReads(code: string, ctx: ClientJsContext): string {
       located.set(decl.name.text, {
         key: alias.key,
         defaultValue: parsedInit.fallback?.getText(sourceFile),
+        // An author's `props.x ?? d` keeps its `??`; a destructure default
+        // reads `undefined` only (`composePropRead`).
+        coalescesNull: parsedInit.coalescesNull,
         // `alias.defaultContainsArrow` mirrors `c.containsArrow`, computed
         // against the ORIGINAL initializer before #2940's fix wrapped an
         // arrow/function-expression default in its own protective parens
@@ -221,6 +250,7 @@ function rewriteBodyAliasReads(code: string, ctx: ClientJsContext): string {
       sourceName: info.key,
       defaultValue: info.defaultValue,
       defaultContainsArrow: info.defaultContainsArrow,
+      coalescesNull: info.coalescesNull,
       ...(info.defaultParts && { defaultParts: info.defaultParts }),
     }
     return livePropReadExpr(prop, undefined, false)

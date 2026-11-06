@@ -446,7 +446,7 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     this.localConstants = ir.metadata.localConstants ?? []
     this.rootPropAliases = rootPropAliasNames(ir, this.propsParams.map(p => p.name))
     this.scope = BindingScope.forComponent(this.propsObjectName)
-    this.nullableOptionalProps = collectNullableOptionalProps(ir)
+    this.nullableOptionalProps = collectNullableOptionalProps(ir, this.nativeSafe)
     this.nullableSignalGetters = collectNullableSignalGetters(ir)
     this.nullishAttrCtx = collectNullishAttrContext(ir)
     this.stringValueNames = this.stringValueNamesFor(ir)

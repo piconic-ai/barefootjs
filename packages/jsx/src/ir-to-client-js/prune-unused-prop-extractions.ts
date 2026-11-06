@@ -37,7 +37,8 @@ import { collectValueReferencedNames } from '../value-references.ts'
 import { PROPS_PARAM } from './utils.ts'
 
 /**
- * Does `init` read `<objectName>.<key>` or `<objectName>.<key> ?? <fallback>`?
+ * Does `init` read `<objectName>.<key>`, `<objectName>.<key> ?? <fallback>`,
+ * or a defaulted `<objectName>.<key> === undefined ? <default> : <objectName>.<key>`?
  * The one recognizer for "a prop read initializer", shared by
  * `propExtractionName` below (which additionally requires the bound name to
  * equal `key` unless `key` is `children`, and always reads off `_p`), `rewriteBodyAliasReads`
@@ -50,7 +51,9 @@ import { PROPS_PARAM } from './utils.ts'
 export function parsePropReadInitializer(
   init: ts.Expression,
   objectName: string = PROPS_PARAM,
-): { key: string; fallback: ts.Expression | null } | null {
+): { key: string; fallback: ts.Expression | null; coalescesNull: boolean } | null {
+  const defaulted = parseDefaultedPropRead(init, objectName)
+  if (defaulted) return { ...defaulted, coalescesNull: false }
   let core: ts.Expression = init
   let fallback: ts.Expression | null = null
   if (
@@ -60,9 +63,30 @@ export function parsePropReadInitializer(
     fallback = core.right
     core = core.left
   }
-  if (!ts.isPropertyAccessExpression(core)) return null
-  if (!ts.isIdentifier(core.expression) || core.expression.text !== objectName) return null
-  return { key: core.name.text, fallback }
+  const key = propReadKey(core, objectName)
+  // A `??` fallback (`props.x ?? d`, the author's own) replaces `null` too.
+  return key === null ? null : { key, fallback, coalescesNull: fallback !== null }
+}
+
+/** `<objectName>.<key>`'s key, or null for any other expression. */
+function propReadKey(expr: ts.Expression, objectName: string): string | null {
+  if (!ts.isPropertyAccessExpression(expr)) return null
+  if (!ts.isIdentifier(expr.expression) || expr.expression.text !== objectName) return null
+  return expr.name.text
+}
+
+/**
+ * A destructure default as `composePropRead` spells it:
+ * `<objectName>.<key> === undefined ? <default> : <objectName>.<key>`.
+ */
+function parseDefaultedPropRead(init: ts.Expression, objectName: string): { key: string; fallback: ts.Expression } | null {
+  if (!ts.isConditionalExpression(init)) return null
+  const test = init.condition
+  if (!ts.isBinaryExpression(test) || test.operatorToken.kind !== ts.SyntaxKind.EqualsEqualsEqualsToken) return null
+  if (!ts.isIdentifier(test.right) || test.right.text !== 'undefined') return null
+  const key = propReadKey(test.left, objectName)
+  if (key === null || propReadKey(init.whenFalse, objectName) !== key) return null
+  return { key, fallback: init.whenTrue }
 }
 
 /** Is `stmt` a single-declarator `const X = _p.X…` prop extraction whose
@@ -80,7 +104,36 @@ function propExtractionName(stmt: ts.Statement): string | null {
 
   const parsed = parsePropReadInitializer(decl.initializer)
   if (parsed === null || (parsed.key !== decl.name.text && parsed.key !== 'children')) return null
+  // A default that does something when it runs (`{ a = 1, b = (a = 2) }`)
+  // runs whether or not its binding is read, so its declaration stays.
+  if (parsed.fallback !== null && mayHaveSideEffect(parsed.fallback)) return null
   return decl.name.text
+}
+
+/** `=`, `+=`, `??=` and the other compound assignments. */
+function isAssignmentOperator(kind: ts.SyntaxKind): boolean {
+  return kind >= ts.SyntaxKind.FirstAssignment && kind <= ts.SyntaxKind.LastAssignment
+}
+
+/**
+ * Whether evaluating `expr` may do more than produce a value: an
+ * assignment, an update, a call, `new`, `delete`, `await` or `yield`. The
+ * body of a function `expr` creates is not evaluated, so it does not count.
+ */
+function mayHaveSideEffect(expr: ts.Node): boolean {
+  if (ts.isArrowFunction(expr) || ts.isFunctionExpression(expr)) return false
+  if (ts.isBinaryExpression(expr) && isAssignmentOperator(expr.operatorToken.kind)) return true
+  if (ts.isPrefixUnaryExpression(expr) || ts.isPostfixUnaryExpression(expr)) {
+    const op = expr.operator
+    if (op === ts.SyntaxKind.PlusPlusToken || op === ts.SyntaxKind.MinusMinusToken) return true
+  }
+  if (
+    ts.isCallExpression(expr) || ts.isNewExpression(expr) || ts.isDeleteExpression(expr) ||
+    ts.isAwaitExpression(expr) || ts.isYieldExpression(expr) || ts.isTaggedTemplateExpression(expr)
+  ) {
+    return true
+  }
+  return ts.forEachChild(expr, child => (mayHaveSideEffect(child) ? true : undefined)) ?? false
 }
 
 /**

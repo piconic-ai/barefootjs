@@ -14,28 +14,28 @@ export function initTextarea(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input w-full min-w-0 rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive ${(_p.className ?? '')}`
+      { const __x = `placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input w-full min-w-0 rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
       __l[0] = __x }
-      { const __x = (_p.placeholder ?? '')
+      { const __x = (_p.placeholder === undefined ? '' : _p.placeholder)
       if (!(1 in __l) || !Object.is(__l[1], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('placeholder', String(__v)); else _s0.removeAttribute('placeholder') }
       }
       __l[1] = __x }
-      { const __x = (_p.value ?? '')
+      { const __x = (_p.value === undefined ? '' : _p.value)
       if (!(2 in __l) || !Object.is(__l[2], __x)) {
         const __val = String(__x)
         if ('value' in _s0) { if (_s0.value !== __val) { _s0.value = __val; if (_s0.tagName === 'SELECT' && !_s0.multiple && _s0.size <= 1 && _s0.value !== __val) _s0.selectedIndex = 0 } } else { _s0.setAttribute('value', __val) }
       }
       __l[2] = __x }
-      { const __x = (_p.disabled ?? false)
+      { const __x = (_p.disabled === undefined ? false : _p.disabled)
       if (!(3 in __l) || !Object.is(__l[3], __x)) {
         _s0.disabled = !!(__x)
       }
       __l[3] = __x }
-      { const __x = (_p.readonly ?? false)
+      { const __x = (_p.readonly === undefined ? false : _p.readonly)
       if (!(4 in __l) || !Object.is(__l[4], __x)) {
         _s0.readonly = !!(__x)
       }
@@ -45,7 +45,7 @@ export function initTextarea(__scope, _p = {}) {
         { const __v = __x; if (__v != null) _s0.setAttribute('rows', String(__v)); else _s0.removeAttribute('rows') }
       }
       __l[5] = __x }
-      { const __x = (_p.error ?? false)
+      { const __x = (_p.error === undefined ? false : _p.error)
       if (!(6 in __l) || !Object.is(__l[6], __x)) {
         if (__x) _s0.setAttribute('aria-invalid', 'true')
         else _s0.removeAttribute('aria-invalid')
@@ -56,11 +56,11 @@ export function initTextarea(__scope, _p = {}) {
 
   if (_s0) applyRestAttrs(_s0, _p, ["className","placeholder","value","disabled","readonly","error","describedBy","rows","onInput","onChange","onBlur","onFocus","data-slot","class","aria-invalid"])
 
-  if (_s0) _s0.addEventListener('input', (_p.onInput ?? (() => {})))
-  if (_s0) _s0.addEventListener('change', (_p.onChange ?? (() => {})))
-  if (_s0) _s0.addEventListener('blur', (_p.onBlur ?? (() => {})))
-  if (_s0) _s0.addEventListener('focus', (_p.onFocus ?? (() => {})))
+  if (_s0) _s0.addEventListener('input', (_p.onInput === undefined ? (() => {}) : _p.onInput))
+  if (_s0) _s0.addEventListener('change', (_p.onChange === undefined ? (() => {}) : _p.onChange))
+  if (_s0) _s0.addEventListener('blur', (_p.onBlur === undefined ? (() => {}) : _p.onBlur))
+  if (_s0) _s0.addEventListener('focus', (_p.onFocus === undefined ? (() => {}) : _p.onFocus))
 }
 
-hydrate('Textarea', { init: initTextarea, template: (_p) => `<textarea ${spreadAttrs({"data-slot": "textarea", "class": `placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input w-full min-w-0 rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive ${(_p.className ?? '')}`, "placeholder": (_p.placeholder ?? ''), "disabled": (_p.disabled ?? false), "readonly": (_p.readonly ?? false), "rows": _p.rows, "aria-invalid": (_p.error ?? false), ...((_p.describedBy ? { 'aria-describedby': _p.describedBy } : {}))})} bf="s0">${escapeText((_p.value ?? ''))}</textarea>` })
+hydrate('Textarea', { init: initTextarea, template: (_p) => `<textarea ${spreadAttrs({"data-slot": "textarea", "class": `placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input w-full min-w-0 rounded-md border bg-transparent px-3 py-2 text-base shadow-xs transition-[color,box-shadow] outline-none disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-[invalid]:ring-destructive/20 dark:aria-[invalid]:ring-destructive/40 aria-[invalid]:border-destructive ${(_p.className === undefined ? '' : _p.className)}`, "placeholder": (_p.placeholder === undefined ? '' : _p.placeholder), "disabled": (_p.disabled === undefined ? false : _p.disabled), "readonly": (_p.readonly === undefined ? false : _p.readonly), "rows": _p.rows, "aria-invalid": (_p.error === undefined ? false : _p.error), ...((_p.describedBy ? { 'aria-describedby': _p.describedBy } : {}))})} bf="s0">${escapeText((_p.value === undefined ? '' : _p.value))}</textarea>` })
 export function Textarea(_p, __bfKey) { return createComponent('Textarea', _p, __bfKey) }

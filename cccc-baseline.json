@@ -149,9 +149,6 @@
       ]
     },
     "packages/adapter-jinja/src/test-render.ts": {
-      "buildPythonProps": [
-        64
-      ],
       "renderJinjaComponent": [
         48
       ]

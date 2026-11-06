@@ -23,7 +23,8 @@
  *   Kolon macro children capture      → Jinja `{% set NAME %}…{% endset %}` set-block (see "Children capture" below)
  *
  * The render `jinja2.Environment` this adapter's output assumes:
- * `autoescape=True`, `undefined=ChainableUndefined`, `FileSystemLoader`,
+ * `autoescape=True`, `undefined=JsUndefined` (`barefootjs.backend_jinja`'s
+ * `ChainableUndefined` subclass, JS `undefined`), `FileSystemLoader`,
  * PLUS **`trim_blocks=True, lstrip_blocks=True`** — required because this
  * adapter places `{% … %}` control tags on their own source line (mirroring
  * Kolon's line-statement `:` mode, which consumes its own line for free);
@@ -193,7 +194,7 @@ import type { JinjaAdapterOptions } from './lib/types.ts'
 /** How a lowered loop destructure binding reads off the row item. */
 const DESTRUCTURE_SPELLING: DestructureSpelling = {
   accessor: jinjaAccessorFromSegments,
-  slice: (parent, from) => `bf.slice(${parent}, ${from}, none)`,
+  slice: (parent, from) => `bf.slice(${parent}, ${from}, bf.undefined)`,
   omit: (parent, keys) => `bf.omit(${parent}, [${keys.map((k) => jinjaHashKey(k)).join(', ')}])`,
 }
 
@@ -863,11 +864,12 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
         }
       },
       spread: (value) => this.convertExpressionToJinja(value.expr),
-      // `is defined` too, as in the `??` lowering: a never-seeded variable is
-      // `ChainableUndefined`, which `is not none` alone lets through.
+      // The fallback (no caller keys recorded) is JS `name in props` read
+      // off the value: present unless `undefined` (`UNDEF`, or a
+      // never-seeded variable), so an explicit `null` counts as passed.
       presentParam: (name) => {
         const v = jinjaIdent(name)
-        return `({${jinjaHashKey(name)}: ${v}} if bf.passed(${jinjaHashKey(name)}, ${v} is defined and ${v} is not none) else {})`
+        return `({${jinjaHashKey(name)}: ${v}} if bf.passed(${jinjaHashKey(name)}, ${v} is defined) else {})`
       },
     })
     const dict = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`

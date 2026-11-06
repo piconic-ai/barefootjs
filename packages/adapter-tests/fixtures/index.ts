@@ -309,6 +309,16 @@ import { fixture as awaitsUndefinedPlusShapes } from './awaits-undefined-plus-sh
 import { fixture as styleObjectNilProperty } from './style-object-nil-property'
 import { fixture as undefNullArraySearch } from './undef-null-array-search'
 import { fixture as undefNullDestructureDefault } from './undef-null-destructure-default'
+// The same default over a forwarded `null` / `undefined` / omitted prop,
+// hydrated and updated in a real browser (fixture-hydrate, oracle).
+import { fixture as destructureDefaultNullHydrate } from './destructure-default-null-hydrate'
+// A default reading an earlier binding the client keeps as a local
+// (shared array identity, an assignment in an earlier default).
+import { fixture as destructureDefaultSharedArray } from './destructure-default-shared-array'
+import { fixture as destructureDefaultSharedArrayRenamed } from './destructure-default-shared-array-renamed'
+import { fixture as destructureDefaultSharedArrayClient } from './destructure-default-shared-array-client'
+import { fixture as destructureDefaultSharedArrayRenamedClient } from './destructure-default-shared-array-renamed-client'
+import { fixture as destructureDefaultEarlierAssignment } from './destructure-default-earlier-assignment'
 import { fixture as undefNullJsonStringify } from './undef-null-json-stringify'
 import { fixture as undefNullJsonStringifyObjectMember } from './undef-null-json-stringify-object-member'
 import { fixture as undefNullNonDivergingPositions } from './undef-null-non-diverging-positions'
@@ -1603,6 +1613,12 @@ export const jsxFixtures: JSXFixture[] = [
   styleObjectNilProperty,
   undefNullArraySearch,
   undefNullDestructureDefault,
+  destructureDefaultNullHydrate,
+  destructureDefaultSharedArray,
+  destructureDefaultSharedArrayRenamed,
+  destructureDefaultSharedArrayClient,
+  destructureDefaultSharedArrayRenamedClient,
+  destructureDefaultEarlierAssignment,
   undefNullJsonStringify,
   undefNullJsonStringifyObjectMember,
   undefNullNonDivergingPositions,
