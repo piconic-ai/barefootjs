@@ -157,6 +157,7 @@ function bf_require_runtime(): void
     if (class_exists(\Barefoot\BarefootJS::class)) {
         return;
     }
+    require_once __DIR__ . '/../src/Undefined.php';
     require_once __DIR__ . '/../src/Evaluator.php';
     require_once __DIR__ . '/../src/SearchParams.php';
     require_once __DIR__ . '/../src/Json.php';

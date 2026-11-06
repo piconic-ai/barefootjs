@@ -24,19 +24,20 @@ import { DSL_ADAPTERS, helperCallsAt, type DslAdapterCase } from '../dsl-helper-
 
 /**
  * How each adapter spells the `null` reading's `x ?? 0`. ERB, Jinja,
- * MiniJinja, Mojolicious and Xslate box `x` by its nil test,
+ * MiniJinja, Mojolicious, Xslate and Blade box `x` by its nil test,
  * `(bf.keep_nonnil(x) || [0])[0]` / `(bf.keep_nonnil(x) or [0])[0]` /
- * `(bf->keep_nonnil(x) || [scalar(0)])->[0]`, so `x` is rendered once
- * (#3839).
+ * `(bf->keep_nonnil(x) || [scalar(0)])->[0]` /
+ * `($bf->keep_nonnil((x) ?? null) ?: [0])[0]`, and Twig passes it to the
+ * `bf_js_nullish` filter, so `x` is rendered once (#3839).
  */
 const NULL_AS_ZERO: Readonly<Record<string, RegExp | null>> = {
-  blade: / \?\? 0\)/g,
+  blade: / \?: \[0\]\)\[0\]/g,
   erb: / \|\| \[0\]\)\[0\]/g,
   jinja: / or \[0\]\)\[0\]/g,
   mojolicious: / \|\| \[scalar\(0\)\]\)->\[0\]/g,
   pebble: /bf\.coalesce\([^,]+, 0\)/g,
   rust: / or \[0\]\)\[0\]/g,
-  twig: / \?\? 0\)/g,
+  twig: /\|bf_js_nullish\(\(__bf_lazy\) => 0\)\)/g,
   xslate: / \|\| \[0\]\)\[0\]/g,
 }
 

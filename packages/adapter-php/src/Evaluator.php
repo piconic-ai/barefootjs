@@ -164,8 +164,17 @@ final class Evaluator
 
     /**
      * Evaluate a decoded ParsedExpr node against the environment array,
-     * returning a PHP value (float, string, bool, null for JS null/undefined,
-     * list array, stdClass). The matching JSON entry point is evalJson().
+     * returning a PHP value (float, string, bool, null for JS null,
+     * `Undefined` for JS undefined, list array, stdClass). The matching JSON
+     * entry point is evalJson().
+     *
+     * JS `undefined` is `Undefined::value()` and PHP's `null` is JS `null`.
+     * A missing field, an out-of-range or non-canonical index, the unbound
+     * `undefined` identifier, an omitted builtin argument and a `find` with
+     * no result read as `undefined` (spec/js-undefined-value.md, section 2).
+     * `Undefined` is a PHP object, truthy and "set" for `??` / `isset`, so
+     * every nil test here goes through `Undefined::isNullish()` /
+     * `isUndefined()` or `=== null`, never PHP's own truthiness or `??`.
      */
     public static function evaluate($node, array $env)
     {
@@ -178,8 +187,12 @@ final class Evaluator
             return self::get($node, 'value');
         }
         if ($kind === 'identifier') {
-            $name = self::get($node, 'name');
-            return $env[$name] ?? null;
+            $name = (string) self::get($node, 'name');
+            if (array_key_exists($name, $env)) {
+                return $env[$name];
+            }
+            // The unshadowed `undefined` identifier is the constant.
+            return $name === 'undefined' ? Undefined::value() : null;
         }
         if ($kind === 'binary') {
             return self::binary(
@@ -200,8 +213,8 @@ final class Evaluator
             if ($op === '||') {
                 return self::truthy($left) ? $left : self::evaluate(self::get($node, 'right'), $env);
             }
-            // `??`
-            return $left !== null ? $left : self::evaluate(self::get($node, 'right'), $env);
+            // `??` coalesces both nils.
+            return Undefined::isNullish($left) ? self::evaluate(self::get($node, 'right'), $env) : $left;
         }
         if ($kind === 'conditional') {
             return self::truthy(self::evaluate(self::get($node, 'test'), $env))
@@ -275,7 +288,7 @@ final class Evaluator
                     $spread = self::evaluate(self::get($prop, 'expr'), $env);
                     $pairs = is_array($spread)
                         ? $spread
-                        : (is_object($spread) ? get_object_vars($spread) : null);
+                        : ($spread instanceof \stdClass ? get_object_vars($spread) : null);
                     if ($pairs !== null) {
                         foreach ($pairs as $k => $v) {
                             $key = (string) $k;
@@ -316,12 +329,12 @@ final class Evaluator
                 return false;
             }
             if ($method === 'join' && count($argsArr) <= 1) {
-                // `.join(sep?)` (#2094) -- default separator is `,`; a
+                // `.join(sep?)` (#2094) -- an omitted or `undefined`
+                // separator is `,`, a `null` one is ToString'd ("null"); a
                 // `null`/`undefined` element joins as `''`, not the string
                 // "null" (mirrors evalJoin in the Go reference).
-                $sep = count($argsArr) === 1
-                    ? self::toStringJs(self::evaluate($argsArr[0], $env))
-                    : ',';
+                $sepValue = count($argsArr) === 1 ? self::evaluate($argsArr[0], $env) : Undefined::value();
+                $sep = Undefined::isUndefined($sepValue) ? ',' : self::toStringJs($sepValue);
                 $obj = self::evaluate(self::get($node, 'object'), $env);
                 return self::evalJoin($obj, $sep);
             }
@@ -418,8 +431,8 @@ final class Evaluator
         return $out;
     }
 
-    /** `Array.prototype.join(sep?)` -- default separator `,`; a `null`
-     * element joins as `''`, not the string "null" (#2094). */
+    /** `Array.prototype.join(sep?)` -- default separator `,`; a `null` or
+     * `undefined` element joins as `''`, not the string "null" (#2094). */
     private static function evalJoin($obj, string $sep): string
     {
         if (!self::isJsArray($obj)) {
@@ -427,7 +440,7 @@ final class Evaluator
         }
         $parts = [];
         foreach ($obj as $el) {
-            $parts[] = $el === null ? '' : self::toStringJs($el);
+            $parts[] = Undefined::isNullish($el) ? '' : self::toStringJs($el);
         }
         return implode($sep, $parts);
     }
@@ -447,6 +460,9 @@ final class Evaluator
     {
         if ($v === null) {
             return 0.0;
+        }
+        if ($v instanceof Undefined) {
+            return NAN;
         }
         if (is_bool($v)) {
             return $v ? 1.0 : 0.0;
@@ -542,6 +558,9 @@ final class Evaluator
         if ($v === null) {
             return 'null';
         }
+        if ($v instanceof Undefined) {
+            return 'undefined';
+        }
         if (is_bool($v)) {
             return $v ? 'true' : 'false';
         }
@@ -561,27 +580,29 @@ final class Evaluator
         if (is_string($v)) {
             return $v;
         }
-        // Array.prototype.toString is join(","): a nil element prints as "",
-        // and a nested array flattens through its own join. A plain object
-        // (an associative array or a decoded stdClass) prints as
-        // "[object Object]".
+        // Array.prototype.toString is join(","): a nil element (`null` or
+        // `undefined`) prints as "", and a nested array flattens through its
+        // own join. A plain object (an associative array or a decoded
+        // stdClass) prints as "[object Object]".
         if (is_array($v) && array_is_list($v)) {
-            return implode(',', array_map(static fn ($el) => $el === null ? '' : self::toStringJs($el), $v));
+            return implode(',', array_map(static fn ($el) => Undefined::isNullish($el) ? '' : self::toStringJs($el), $v));
         }
         return '[object Object]';
     }
 
-    /** An array or object: ToPrimitive gives its ToString, so `+` over it concatenates. */
+    /** An array or object: ToPrimitive gives its ToString, so `+` over it
+     * concatenates. `undefined` is a primitive, though PHP holds it as an
+     * object (`u + 1` is NaN). */
     private static function isObjectValue($v): bool
     {
-        return is_array($v) || is_object($v);
+        return is_array($v) || (is_object($v) && !($v instanceof Undefined));
     }
 
     /** Public JS truthiness -- shared by BarefootJS::truthy() so both the
      * evaluator and the runtime helper agree on one implementation. */
     public static function truthy($v): bool
     {
-        if ($v === null || $v === false) {
+        if ($v === null || $v === false || $v instanceof Undefined) {
             return false;
         }
         if ($v === true) {
@@ -711,11 +732,15 @@ final class Evaluator
         if ($ln !== $rn) {
             return false; // one numeric, one not
         }
+        // `null` is only itself and `undefined` only itself.
         if ($l === null) {
             return $r === null;
         }
         if ($r === null) {
             return false;
+        }
+        if ($l instanceof Undefined || $r instanceof Undefined) {
+            return $l instanceof Undefined && $r instanceof Undefined;
         }
         $lb = is_bool($l);
         $rb = is_bool($r);
@@ -805,7 +830,8 @@ final class Evaluator
 
     private static function callBuiltin(string $name, array $args)
     {
-        $arg = fn (int $i) => $args[$i] ?? null;
+        // An omitted argument is JS `undefined`.
+        $arg = fn (int $i) => array_key_exists($i, $args) ? $args[$i] : Undefined::value();
 
         if ($name === 'Math.max') {
             $m = -INF; // JS Math.max() with no args is -Infinity
@@ -845,11 +871,13 @@ final class Evaluator
         if ($name === 'Math.round') {
             return self::mathRound(self::toNumber($arg(0)));
         }
+        // `String()` / `Number()` with no argument are "" / 0;
+        // `String(undefined)` is "undefined" and `Number(undefined)` NaN.
         if ($name === 'String') {
-            return self::toStringJs($arg(0));
+            return $args === [] ? '' : self::toStringJs($arg(0));
         }
         if ($name === 'Number') {
-            return self::toNumber($arg(0));
+            return $args === [] ? 0.0 : self::toNumber($arg(0));
         }
         if ($name === 'Boolean') {
             return self::truthy($arg(0));
@@ -864,20 +892,23 @@ final class Evaluator
 
     /** Read a property from a JS-shaped value. Per the canonical value
      * convention, an "object" is a stdClass OR a non-list (associative)
-     * PHP array -- both are treated as objects for member access. */
+     * PHP array -- both are treated as objects for member access. A key the
+     * object does not have, and any read of a receiver with no such
+     * property (a nil, a number), is `undefined`. */
     private static function readProperty($obj, $key)
     {
-        if ($obj === null) {
-            return null;
+        $undef = Undefined::value();
+        if (Undefined::isNullish($obj)) {
+            return $undef;
         }
         if ($obj instanceof \stdClass) {
-            return property_exists($obj, $key) ? $obj->$key : null;
+            return property_exists($obj, (string) $key) ? $obj->$key : $undef;
         }
         if (is_array($obj)) {
             if (array_is_list($obj)) {
-                return $key === 'length' ? count($obj) : null;
+                return $key === 'length' ? count($obj) : $undef;
             }
-            return array_key_exists($key, $obj) ? $obj[$key] : null;
+            return array_key_exists($key, $obj) ? $obj[$key] : $undef;
         }
         if (is_string($obj) && $key === 'length') {
             // `.length` is a string property only -- a numeric scalar has
@@ -885,7 +916,7 @@ final class Evaluator
             // evaluators). Code-point length (mirrors BarefootJS::length()).
             return mb_strlen($obj, 'UTF-8');
         }
-        return null;
+        return $undef;
     }
 
     /** JS `target[key]`: a single-level read of the target's own key or
@@ -900,28 +931,31 @@ final class Evaluator
      * turned into the property name JS reads (`propertyKey`), and a list
      * holds only its canonical index names: `1` and `"1"` name element 1,
      * while `"01"`, `"-0"` and `"1e0"` are other names no list holds. A nil
-     * key is the name `"null"`. A string target reads one UTF-16 code unit
-     * by a canonical index. A missing key or a nil target gives `null`. */
+     * key is the name `"null"`, an `undefined` key `"undefined"`. A string
+     * target reads one UTF-16 code unit by a canonical index. A missing key,
+     * a nil target (`null` or `undefined`) and a target with no properties
+     * give `undefined`. */
     public static function index($target, $key)
     {
-        if ($target === null) {
-            return null;
+        $undef = Undefined::value();
+        if (Undefined::isNullish($target)) {
+            return $undef;
         }
         $k = self::propertyKey($key);
         if (is_string($target)) {
             return self::utf16UnitAt($target, $k);
         }
         if (is_array($target)) {
-            return array_key_exists($k, $target) ? $target[$k] : null;
+            return array_key_exists($k, $target) ? $target[$k] : $undef;
         }
         if ($target instanceof \ArrayAccess) {
-            return $target->offsetExists($k) ? $target[$k] : null;
+            return $target->offsetExists($k) ? $target[$k] : $undef;
         }
         if (is_object($target)) {
             $name = (string) $k;
-            return property_exists($target, $name) || isset($target->{$name}) ? $target->{$name} : null;
+            return property_exists($target, $name) || isset($target->{$name}) ? $target->{$name} : $undef;
         }
-        return null;
+        return $undef;
     }
 
     /** The property name JS reads for a key (`ToPropertyKey`): an integral
@@ -942,20 +976,20 @@ final class Evaluator
     }
 
     /** JS `s[k]` on a string: the UTF-16 code unit at a canonical index, or
-     * `null` past the end or for any other key. One half of a surrogate pair
-     * reads as U+FFFD: a lone surrogate cannot be written out as UTF-8
+     * `undefined` past the end or for any other key. One half of a surrogate
+     * pair reads as U+FFFD: a lone surrogate cannot be written out as UTF-8
      * (spec/js-primitive-semantics.md, "Out of scope"). */
-    private static function utf16UnitAt(string $s, int|string $k): ?string
+    private static function utf16UnitAt(string $s, int|string $k): string|Undefined
     {
         if (is_string($k)) {
             if (preg_match('/\A(?:0|[1-9][0-9]*)\z/', $k) !== 1) {
-                return null;
+                return Undefined::value();
             }
             $k = (int) $k;
         }
         $units = mb_convert_encoding($s, 'UTF-16LE', 'UTF-8');
         if ($k < 0 || 2 * $k >= strlen($units)) {
-            return null;
+            return Undefined::value();
         }
         $unit = unpack('v', $units, 2 * $k)[1];
         return $unit >= 0xD800 && $unit <= 0xDFFF ? "\u{FFFD}" : mb_chr($unit, 'UTF-8');
@@ -987,7 +1021,8 @@ final class Evaluator
     /** Return a new array ordered by a ParsedExpr comparator. Non-mutating,
      * stable (PHP's usort() is a stable sort as of PHP 8.0; an original-index
      * tie-break is decorated in anyway for defensiveness/portability,
-     * mirroring the Perl port). */
+     * mirroring the Perl port). JS moves every `undefined` element to the
+     * end without handing it to the comparator. */
     public static function sortBy($items, $cmp, string $paramA, string $paramB, array $baseEnv = []): array
     {
         if (!self::isJsArray($items)) {
@@ -995,8 +1030,13 @@ final class Evaluator
         }
         $env = $baseEnv;
         $decorated = [];
-        foreach (array_values($items) as $i => $v) {
-            $decorated[] = [$i, $v];
+        $tail = [];
+        foreach ($items as $v) {
+            if ($v instanceof Undefined) {
+                $tail[] = $v;
+            } else {
+                $decorated[] = [count($decorated), $v];
+            }
         }
         usort($decorated, function ($a, $b) use ($cmp, $paramA, $paramB, &$env) {
             $env[$paramA] = $a[1];
@@ -1008,7 +1048,7 @@ final class Evaluator
             $sign = $c <=> 0.0;
             return $sign !== 0 ? $sign : ($a[0] <=> $b[0]);
         });
-        return array_map(fn ($d) => $d[1], $decorated);
+        return array_merge(array_map(fn ($d) => $d[1], $decorated), $tail);
     }
 
     public static function filter($items, $pred, string $param, array $baseEnv = []): array
@@ -1066,7 +1106,7 @@ final class Evaluator
                 return $item;
             }
         }
-        return null;
+        return Undefined::value();
     }
 
     public static function findIndex($items, $pred, string $param, bool $forward = true, array $baseEnv = []): int

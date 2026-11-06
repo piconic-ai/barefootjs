@@ -31,12 +31,14 @@
  *      TEST uses `bf.truthy`. The runtime's `bf_js_or` / `bf_js_and` filters
  *      take the right operand as an arrow function (see `spellLogical`), so
  *      each operand is rendered and evaluated once (#3824).
- *   3. **`??` is Twig-native**, covering undefined (`strict_variables:
- *      false`) AND null in ONE operator — no `is defined and is not null`
- *      dance needed here (unlike Jinja's `ChainableUndefined` workaround).
- *      Verified empirically against Twig 3.x: `{{ missing ?? 'fb' }}` on an
- *      unset var, and `{{ x ?? 'fb' }}` with `x` bound to `null`, both yield
- *      `'fb'`.
+ *   3. **`??` is the runtime's `bf_js_nullish` filter, never Twig's own
+ *      `??`.** JS `undefined` is the runtime's `Barefoot\Undefined` object
+ *      (`bf.undefined()`, #3848 U6), which Twig's `??` (an `isset` test)
+ *      treats as set, so `l ?? r` is `(l)|bf_js_nullish((__bf_lazy) => r)`:
+ *      `l` evaluated once, `r` called only when `l` is `null` or
+ *      `undefined` (`nullishCoalesce`). Every other nil test a template makes
+ *      goes through `bf.is_nullish` / `bf.is_null` / `bf.is_undefined`, never
+ *      Twig's `is null` / `is defined` / `??`.
  *   4. **`===`/`!==` route through `bf.eq`/`bf.neq`, never Twig's own
  *      `==`/`!=`.** Twig's `==` compiles to PHP's loose `==` (`'1' == 1` is
  *      `true` — wrong for JS strict equality), and Twig's `is same as` test
@@ -97,6 +99,10 @@ import {
   unloweredCallRefusal,
   type CallbackLoweringOptions,
   type StringNameTest,
+  type NilTestHelper,
+  type ScopedOperandTyping,
+  operandFacts,
+  isNeverNil,
   isNativePlan,
   relationalHelper,
   strictEqSpelling,
@@ -128,9 +134,15 @@ export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Twig' 
  * own listed there.
  */
 export const NATIVE_SAFE: NativeSafeTable = {
-  // The runtime does not carry JS `undefined` apart from `null` yet
-  // (spec/js-undefined-value.md); rollout step U6 flips it.
-  carriesUndefined: false,
+  // The runtime carries JS `undefined` (`Barefoot\Undefined`,
+  // `bf.undefined()`) apart from `null` (PHP `null`),
+  // spec/js-undefined-value.md rollout step U6. `Undefined` is a PHP object:
+  // truthy under Twig's own `if` and "set" for Twig's `??` / `is null` /
+  // `is defined`, so no emission tests a JS value natively: a test goes
+  // through `bf.truthy` unless the operand is a proven boolean, and a nil
+  // test, a `??` and an attribute omission through `bf.is_nullish` /
+  // `is_null` / `is_undefined`.
+  carriesUndefined: true,
   'to-boolean': ['boolean'],
   // A unary `+` is native only over a proven number, `to_number` otherwise
   // (#3824 step 3). `unproven` describes binary `-` / `*` over operands Phase 1
@@ -160,7 +172,11 @@ export const NATIVE_SAFE: NativeSafeTable = {
   // `neg(0)` (#3824 step 6, pinned by the `primitives/number` vectors).
   neg: [],
   'number-literal': ['safe-integer'],
-  nullish: ['non-nil', 'unproven'],
+  // Always the runtime's `bf_js_nullish` filter (#3839), which renders each
+  // operand of a chain once. A `non-nil` proof does not fold `l ?? r` to `l`
+  // here: a host that leaves a typed value unset (a dependent destructure
+  // default over an omitted prop) still reaches the template as `UNDEF`.
+  nullish: [],
   get: [],
   // A comparison, `!` and a boolean literal are host booleans already (#3824 step 5).
   'boolean-value': ['boolean'],
@@ -269,45 +285,78 @@ function spellPlus(plan: PrimitivePlan | null, l: string, r: string): string {
 }
 
 /**
+ * JS `undefined` in a template: the runtime's `Barefoot\Undefined`, which
+ * the `bf` object exposes as `bf.undefined()` (spec/js-undefined-value.md,
+ * rollout step U6). Twig's `null` is JS `null`.
+ */
+export const TWIG_UNDEFINED = 'bf.undefined()'
+
+/**
+ * Spell a nil-test plan (`x === null` / `x === undefined` / `x == null`,
+ * `spec/js-undefined-value.md` "Decisions" (7)) through the runtime's
+ * `is_null` / `is_undefined` / `is_nullish`. Never Twig's own `is null` /
+ * `is defined`, which read `UNDEF` as a value.
+ */
+function spellNilTest(helper: NilTestHelper, negated: boolean, operand: string): string {
+  const test = `bf.${helper}(${operand})`
+  return negated ? `not ${test}` : test
+}
+
+/**
+ * Spell a binary `-` / `*` plan: Twig's own operator when the plan is native
+ * (two proven numbers), the runtime's JS ToNumber arithmetic (`bf.sub` /
+ * `bf.mul`) when it names the helper, as it does for an operand that may be
+ * `UNDEF` (PHP's `-` throws on an object) or `null`. Null for any other
+ * operator.
+ */
+function spellNumericBinary(op: string, plan: PrimitivePlan | null, l: string, r: string): string | null {
+  if (op !== '-' && op !== '*') return null
+  if (plan?.mode === 'helper' && (plan.helper === 'sub' || plan.helper === 'mul')) return `bf.${plan.helper}(${l}, ${r})`
+  return `${l} ${op} ${r}`
+}
+
+/**
+ * A non-computed member read `obj.k` (#3848 U6). JS reads a key the object
+ * does not have as `undefined`, Twig's `.k` as `null` (JS `null`), so a
+ * field Phase 1 does not prove present (optional, nullable or untyped) reads
+ * through the runtime's `bf.index`, which gives `UNDEF` on a miss. A field
+ * the declared type proves present and non-nil keeps the native `.k` read. A
+ * `?.`-written read is `bf.get_opt`, `undefined` over a nullish receiver.
+ */
+function memberRead(
+  object: ParsedExpr,
+  property: string,
+  optional: boolean,
+  receiver: string,
+  typing: ScopedOperandTyping,
+): string {
+  const key = `'${escapeTwigSingleQuoted(property)}'`
+  if (optional) return `bf.get_opt(${receiver}, ${key})`
+  const facts = operandFacts({ kind: 'member', object, property, computed: false, optional: false }, typing)
+  return isNeverNil(facts) ? `${receiver}.${property}` : `bf.index(${receiver}, ${key})`
+}
+
+/**
  * `x.length` through `bf.length`. An optional-chained `x?.length` yields
- * `null` — JS's `undefined` — for an absent receiver instead of
+ * JS's `undefined` (`bf.undefined()`) for a nullish receiver instead of
  * `bf.length`'s `0`, so a bare read renders empty and a `??` fallback takes
- * over (#3332). A variable path is tested with `(x ?? null) is null`, the
- * way the `??` lowering does, so an unset variable is safe even under
- * `strict_variables`. Any other receiver (`(c ? a : b)`, `(a ?? b)`) is
- * tested with `is null` directly: Twig's `??` wraps its left side in a
- * `defined` test, which rejects such an expression at compile time.
+ * over (#3332). `0`, `''` and `[]` receivers still read their length.
  */
 function optionalLength(receiver: string, optional: boolean): string {
   const read = `bf.length(${receiver})`
-  if (!optional) return read
-  const test = TWIG_VARIABLE_PATH.test(receiver) ? `(${receiver} ?? null)` : receiver
-  return `(${test} is null ? null : ${read})`
+  return optional ? `(bf.is_nullish(${receiver}) ? ${TWIG_UNDEFINED} : ${read})` : read
 }
 
-/** A bare Twig variable path (`items`, `user.tags`, `rows[0]`), which `??` accepts. */
-const TWIG_VARIABLE_PATH = /^[A-Za-z_]\w*(?:\.[A-Za-z_]\w*|\[[^\[\]]*\])*$/
-
 /**
- * JS `l ?? r`. Twig's native `??` wraps its left operand in a `defined`
- * test, which only accepts a variable, attribute or call — an
- * optional-chained `.length` guard and a conditional (which is how an
- * optional-chained method call `x?.m()` reaches the emitter, #3435) and a
- * nested logical (a chained `(a ?? b) ?? c`) take the runtime's
- * `bf_js_nullish` filter instead (none is ever an undefined variable). The
- * filter receives `l` evaluated once and `r` as a closure it calls only when
- * `l` is null, as `bf_js_or` does for `||` (`spellLogical`); `l is null ? r :
- * l` rendered `l` twice, so a chain grew exponentially (#3839).
+ * JS `l ?? r`: the runtime's `bf_js_nullish` filter, which receives `l`
+ * evaluated once and `r` as a closure it calls only when `l` is `null` or
+ * `undefined`, as `bf_js_or` does for `||` (`spellLogical`). Twig's own `??`
+ * is an `isset` test, which keeps `UNDEF` (#3848 U6), and `l is null ? r :
+ * l` rendered `l` twice, so a chain grew exponentially (#3839). A filter
+ * binds tighter than any operator, hence the parentheses around `l`.
  */
-function nullishCoalesce(left: ParsedExpr, l: string, r: string): string {
-  if (
-    (left.kind === 'member' && left.optional && left.property === 'length') ||
-    left.kind === 'conditional' ||
-    left.kind === 'logical'
-  ) {
-    return `((${l})|bf_js_nullish(${lazyOperand(r)}))`
-  }
-  return `(${l} ?? ${r})`
+function nullishCoalesce(l: string, r: string): string {
+  return `((${l})|bf_js_nullish(${lazyOperand(r)}))`
 }
 
 export class TwigFilterEmitter implements ParsedExprEmitter {
@@ -367,6 +416,8 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
     if (name === this.param) return twigIdent(this.param)
     const signal = this.localVarMap.get(name)
     if (signal) return twigIdent(signal)
+    // The unbound `undefined` identifier is the constant.
+    if (name === 'undefined' && !this.isOuterBound(name)) return TWIG_UNDEFINED
     return twigIdent(name)
   }
 
@@ -389,9 +440,10 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
     // input shape, so route through the runtime uniformly.
     if (property === 'length') return optionalLength(emit(object), optional)
     // Attribute / hash-key access — Twig `.` resolves array keys, object
-    // properties, and getter methods transparently.
+    // properties, and getter methods transparently; a field not proven
+    // present reads through `bf.index` (`memberRead`).
     if (computed) return this.indexAccess(object, literalMemberIndex(property), emit, _plan)
-    return `${emit(object)}.${property}`
+    return memberRead(object, property, optional, emit(object), this.primitives.typing())
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
@@ -455,11 +507,16 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
     // JS Abstract Relational Comparison otherwise (#3824 step 3).
     const relational = relationalHelper(op, plan)
     if (relational) return `bf.${relational}(${l}, ${r})`
+    const numeric = spellNumericBinary(op, plan, l, r)
+    if (numeric !== null) return numeric
     const opMap: Record<string, string> = {
       '>': '>', '<': '<', '>=': '>=', '<=': '<=',
-      '+': '+', '-': '-', '*': '*',
     }
     return `${l} ${opMap[op] ?? op} ${r}`
+  }
+
+  nilTest(helper: NilTestHelper, negated: boolean, operand: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    return spellNilTest(helper, negated, emit(operand))
   }
 
   logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
@@ -467,9 +524,8 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
     const r = emit(right)
     // JS `&&` / `||` yield an operand, each rendered once (`spellLogical`).
     if (op !== '??') return spellLogical(op, plan, l, r)
-    // See the file header, divergence 3: Twig's `??` is native and covers
-    // both undefined and null in one operator.
-    return nullishCoalesce(left, l, r)
+    // See the file header, divergence 3: the runtime's `bf_js_nullish`.
+    return nullishCoalesce(l, r)
   }
 
   callbackMethod(
@@ -593,9 +649,10 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
   }
 
   identifier(name: string): string {
-    // `undefined` / `null` nested inside a larger expression tree — Twig
-    // `null` (#1897).
-    if (name === 'undefined' || name === 'null') return 'null'
+    // `undefined` nested inside a larger expression tree is the runtime's
+    // `UNDEF`, a `null` identifier Twig's `null` (#1897).
+    if (name === 'undefined') return TWIG_UNDEFINED
+    if (name === 'null') return 'null'
     // Inline a module-scope pure-string const (`const x = 'literal'`) — it
     // never reaches the per-render context, so a bare reference would
     // resolve to Undefined.
@@ -633,9 +690,10 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     const obj = emit(object)
     // `.length` → `bf.length` (array count or string char count, JS-compat).
     if (property === 'length') return optionalLength(obj, optional)
-    // Twig `.` access works for arrays, objects, and getter methods.
+    // Twig `.` access works for arrays, objects, and getter methods; a field
+    // not proven present reads through `bf.index` (`memberRead`).
     if (computed) return this.indexAccess(object, literalMemberIndex(property), emit, _plan)
-    return `${obj}.${property}`
+    return memberRead(object, property, optional, obj, this.primitives.typing())
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
@@ -753,7 +811,7 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
    */
   private coerceUndefinedOperand(op: string, expr: ParsedExpr, other: ParsedExpr | undefined, operand: string): string {
     const coercion = this.ctx._arithmeticCoercion(op, expr, other)
-    if (coercion === 'undefined-keep') return `(${operand} ?? bf.number('NaN'))`
+    if (coercion === 'undefined-keep') return `(bf.is_nullish(${operand}) ? bf.number('NaN') : ${operand})`
     return coercion === 'undefined' ? `bf.number(${operand})` : operand
   }
 
@@ -779,11 +837,16 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     // JS Abstract Relational Comparison otherwise (#3824 step 3).
     const relational = relationalHelper(op, plan)
     if (relational) return `bf.${relational}(${l}, ${r})`
+    const numeric = spellNumericBinary(op, plan, l, r)
+    if (numeric !== null) return numeric
     const opMap: Record<string, string> = {
       '>': '>', '<': '<', '>=': '>=', '<=': '<=',
-      '+': '+', '-': '-', '*': '*',
     }
     return `${l} ${opMap[op] ?? op} ${r}`
+  }
+
+  nilTest(helper: NilTestHelper, negated: boolean, operand: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    return spellNilTest(helper, negated, emit(operand))
   }
 
   logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
@@ -791,8 +854,8 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     const r = emit(right)
     // JS `&&` / `||` yield an operand, each rendered once (`spellLogical`).
     if (op !== '??') return spellLogical(op, plan, l, r)
-    // See the file header, divergence 3: Twig's `??` is native.
-    return nullishCoalesce(left, l, r)
+    // See the file header, divergence 3: the runtime's `bf_js_nullish`.
+    return nullishCoalesce(l, r)
   }
 
   callbackMethod(

@@ -344,7 +344,7 @@ import type { BladeAdapterOptions } from './lib/types.ts'
 /** How a lowered loop destructure binding reads off the row item. */
 const DESTRUCTURE_SPELLING: DestructureSpelling = {
   accessor: bladeLoopBindingAccessor,
-  slice: (parent, from) => `$bf->slice(${parent}, ${from}, null)`,
+  slice: (parent, from) => `$bf->slice(${parent}, ${from}, $bf->undefined())`,
   omit: (parent, keys) => `$bf->omit(${parent}, [${keys.map((k) => bladeStringLiteral(k)).join(', ')}])`,
 }
 
@@ -871,6 +871,8 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     // shadowed by this callback so the enclosing row continues with its value.
     // A literal constant is inlined and never assigned, so read it with `??`:
     // an undefined variable warns, and Laravel turns the warning into an error.
+    // The `??` only stands in for a missing variable here: a bound one keeps
+    // its value, JS `undefined` (`UNDEF`) included (#3848 U6).
     for (const { name, temporary } of savedBindings) {
       lines.push(`@php(${bladeVar(temporary)} = ${bladeVar(name)} ?? null)`)
     }
@@ -881,7 +883,11 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     lines.push(`{!! $bf->comment("loop:${loop.markerId}") !!}`)
     // See this file's header, divergence 2: raw PHP `foreach` over a
     // null/undefined array raises, unlike Twig's `strict_variables: false`
-    // tolerance — the `?? []` guard restores that same tolerance uniformly.
+    // tolerance — `$bf->iterable` restores that same tolerance uniformly: `[]`
+    // for `null` and JS `undefined` (`UNDEF`, an object `foreach` would walk
+    // as its properties; PHP's `?? []` would keep it, #3848 U6), the source
+    // itself otherwise. The inner `?? null` silences an undefined variable.
+    // The object-iteration helpers below reject a non-object themselves.
     //
     // `objectIteration` (#2168 object-entries-map): PHP's native `foreach`
     // CAN iterate a `stdClass` object's public properties directly (unlike
@@ -897,7 +903,7 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
         ? `@foreach($bf->keys(${array} ?? []) as ${bladeVar(param)})`
         : loop.objectIteration === 'values'
           ? `@foreach($bf->values(${array} ?? []) as ${bladeVar(param)})`
-          : `@foreach((${array} ?? []) as ${bladeVar(loopVar)})`
+          : `@foreach($bf->iterable((${array}) ?? null) as ${bladeVar(loopVar)})`
     lines.push(forHeader)
     for (const il of indexLocalLines) lines.push(il)
 
@@ -1046,10 +1052,12 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
         }
       },
       spread: (value) => `$bf->omit(${this.convertExpressionToBlade(value.expr)}, [])`,
-      // `isset` is false for an unset variable and for `null` alike, so it
-      // is only the fallback for a render that recorded no caller keys.
+      // The fallback (no caller keys recorded) is JS `name in props` read
+      // off the value: present unless `undefined`, so an explicit `null`
+      // counts as passed. Not `isset`, which `UNDEF` passes and `null` fails
+      // (#3848 U6); `?? null` silences an undefined variable.
       presentParam: (name) =>
-        `($bf->passed(${bladeHashKey(name)}, isset(${bladeVar(name)})) ? [${bladeHashKey(name)} => ${bladeVar(name)}] : [])`,
+        `($bf->passed(${bladeHashKey(name)}, !$bf->is_undefined(${bladeVar(name)} ?? null)) ? [${bladeHashKey(name)} => ${bladeVar(name)}] : [])`,
     })
     const dict = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
     return `${captures.join('')}{!! $bf->render_child('${tplName}'${dict}) !!}`
@@ -1158,12 +1166,13 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
       switch (plan.kind) {
         case 'omit-nullable': {
           // A bare read here, so it doubles as the guard test and the value.
-          // A rest-expanded key lowers to a `data_get($rest, 'tag')` call, and
-          // `isset()` on a call result is a PHP fatal error ("Cannot use
-          // isset() on the result of an expression"), so it tests `!== null`.
+          // `isset` / `!== null` would keep JS `undefined` (`UNDEF`, #3848
+          // U6), so the runtime's `is_nullish` tests it; `?? null` silences
+          // an undefined variable, and works on a rest-expanded key's
+          // `data_get($rest, 'tag')` call too, where `isset()` is a fatal
+          // error.
           const v = this.convertExpressionToBlade(value.expr)
-          const test = plan.restKey ? `(${v}) !== null` : `isset(${v})`
-          return `\n@if(${test})\n${attr(v, plan.boolStr)}\n@endif\n`
+          return `\n@if(!$bf->is_nullish((${v}) ?? null))\n${attr(v, plan.boolStr)}\n@endif\n`
         }
         case 'boolean-attr': {
           const v = this.convertExpressionToBlade(value.expr, value.parsed)
@@ -1183,7 +1192,7 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
         case 'omit-nil': {
           const v = this.convertExpressionToBlade(value.expr, value.parsed)
           const tmp = bladeVar(`bf_pu${this.presenceVarCounter++}`)
-          return `\n@php(${tmp} = ${v})\n@if(${tmp} !== null)\n${attr(tmp, plan.boolStr)}\n@endif\n`
+          return `\n@php(${tmp} = ${v})\n@if(!$bf->is_nullish(${tmp}))\n${attr(tmp, plan.boolStr)}\n@endif\n`
         }
         case 'plain':
           return attr(this.convertExpressionToBlade(value.expr, value.parsed), plan.boolStr)
@@ -1333,18 +1342,17 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
         )
       } else if (part.type === 'lookup') {
         // `${MAP[KEY]}` against a Record<T, string> literal — emit a PHP
-        // array literal with an immediate bracket lookup, coalesced with
-        // PHP's native `??` (this file's header, divergence 3): a missing
-        // key raises no warning under `??`, verified empirically (`(['a' =>
-        // 1]['missing']) ?? 'fallback'` → `'fallback'`, no notice) — same
-        // "empty when no case matches" default the Twig port's own
-        // divergence 9 (`.get(key, default)` has no Twig-hash equivalent
-        // either) needed `??` for.
+        // array literal read through the runtime's `$bf->index` (JS
+        // `MAP[KEY]`), whose miss is `undefined`, which `$bf->string` prints
+        // as the same "empty when no case matches" default the Twig port's
+        // own divergence 9 (`.get(key, default)` has no Twig-hash equivalent
+        // either) needs. PHP's own `[KEY] ?? ''` throws on an `UNDEF` key (an
+        // object is no array offset; #3848 U6).
         const keyExpr = this.convertExpressionToBlade(part.key)
         const entries = Object.entries(part.cases)
           .map(([k, v]) => `${bladeHashKey(k)} => ${bladeStringLiteral(v)}`)
           .join(', ')
-        parts.push(`$bf->string(([${entries}][${keyExpr}]) ?? '')`)
+        parts.push(`$bf->string($bf->index([${entries}], ${keyExpr}))`)
       }
     }
     // Join with PHP string concatenation (`.`). Every term is already a

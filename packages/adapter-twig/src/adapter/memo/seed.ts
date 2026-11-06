@@ -37,7 +37,8 @@ import { twigIdent, escapeTwigSingleQuoted } from '../lib/twig-naming.ts'
 /** Twig literal for a context-consumer's `createContext` default. */
 export function contextDefaultTwig(c: ContextConsumer): string {
   const d = c.defaultValue
-  if (d === null || d === undefined) return 'null'
+  if (d === undefined) return 'bf.undefined()'
+  if (d === null) return 'null'
   if (typeof d === 'string') return `'${escapeTwigSingleQuoted(d)}'`
   if (typeof d === 'boolean') return d ? 'true' : 'false'
   return String(d)

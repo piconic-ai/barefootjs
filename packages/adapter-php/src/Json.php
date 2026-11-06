@@ -22,12 +22,51 @@ final class Json
      */
     public static function canonicalEncode($data): string
     {
-        $prepared = self::prepareForJson($data);
+        $prepared = self::prepareForJson(self::ready($data));
         $json = json_encode($prepared, JSON_UNESCAPED_SLASHES);
         if ($json === false) {
             throw new \RuntimeException('encode_json failed: ' . json_last_error_msg());
         }
         return $json;
+    }
+
+    /**
+     * `$value` as `JSON.stringify` sees it, for any encoder (the canonical
+     * one above, or a host's `json_encoder`): an object member holding JS
+     * `undefined` (`Undefined`) is dropped, an `undefined` array element is
+     * `null`, at any depth, and a top-level `undefined` is `null` (an
+     * encoder must return a string; `BarefootJS::json` answers a top-level
+     * `undefined` itself). The encoder never receives `Undefined`, whose
+     * `jsonSerialize()` would keep the member as `null`. An object that
+     * loses every member stays an object (`{}`), not an empty list.
+     */
+    public static function ready($value)
+    {
+        if ($value instanceof Undefined) {
+            return null;
+        }
+        if ($value instanceof \stdClass) {
+            $out = new \stdClass();
+            foreach (get_object_vars($value) as $k => $v) {
+                if (!($v instanceof Undefined)) {
+                    $out->$k = self::ready($v);
+                }
+            }
+            return $out;
+        }
+        if (is_array($value)) {
+            if (array_is_list($value)) {
+                return array_map([self::class, 'ready'], $value);
+            }
+            $out = [];
+            foreach ($value as $k => $v) {
+                if (!($v instanceof Undefined)) {
+                    $out[$k] = self::ready($v);
+                }
+            }
+            return $out === [] ? new \stdClass() : $out;
+        }
+        return $value;
     }
 
     /**

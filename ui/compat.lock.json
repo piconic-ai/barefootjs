@@ -1988,8 +1988,6 @@
               "nested-callback-in-filter-predicate",
               "object-equality-by-contents",
               "off-subset-callback-body",
-              "omitted-optional-nullable-number-arithmetic",
-              "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
               "record-const-index-unknown-keys",
               "unlowerable-loop-filter-predicate",
@@ -2158,8 +2156,6 @@
               "nested-callback-in-filter-predicate",
               "object-equality-by-contents",
               "off-subset-callback-body",
-              "omitted-optional-nullable-number-arithmetic",
-              "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
               "record-const-index-unknown-keys",
               "unlowerable-loop-filter-predicate",
@@ -2202,12 +2198,6 @@
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
     "fixtures": {
       "awaits-undefined-plus-shapes": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "awaits-undefined-value"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -2215,12 +2205,6 @@
           ]
         },
         "pebble": {
-          "kind": "render",
-          "limitations": [
-            "awaits-undefined-value"
-          ]
-        },
-        "twig": {
           "kind": "render",
           "limitations": [
             "awaits-undefined-value"
@@ -3523,12 +3507,6 @@
         }
       },
       "destructure-default-null-hydrate": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -3536,12 +3514,6 @@
           ]
         },
         "pebble": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "twig": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -6948,19 +6920,6 @@
         }
       },
       "omitted-optional-nullable-number-arithmetic": {
-        "blade": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic"
-          }
-        },
         "go-template": {
           "kind": "refusal",
           "codes": [
@@ -6975,19 +6934,6 @@
           }
         },
         "pebble": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic"
-          }
-        },
-        "twig": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -7002,19 +6948,6 @@
         }
       },
       "omitted-optional-nullable-number-arithmetic-destructured": {
-        "blade": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic-destructured"
-          }
-        },
         "go-template": {
           "kind": "refusal",
           "codes": [
@@ -7029,19 +6962,6 @@
           }
         },
         "pebble": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic-destructured"
-          }
-        },
-        "twig": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -7056,19 +6976,6 @@
         }
       },
       "omitted-optional-nullable-number-relational": {
-        "blade": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-relational"
-          }
-        },
         "go-template": {
           "kind": "refusal",
           "codes": [
@@ -7083,19 +6990,6 @@
           }
         },
         "pebble": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-relational"
-          }
-        },
-        "twig": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -7110,19 +7004,6 @@
         }
       },
       "omitted-optional-nullable-number-unary-plus": {
-        "blade": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-unary-plus"
-          }
-        },
         "go-template": {
           "kind": "refusal",
           "codes": [
@@ -7137,19 +7018,6 @@
           }
         },
         "pebble": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-unary-plus"
-          }
-        },
-        "twig": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -7164,19 +7032,6 @@
         }
       },
       "omitted-optional-nullable-string-relational": {
-        "blade": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-scalar-relational"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-string-relational"
-          }
-        },
         "go-template": {
           "kind": "refusal",
           "codes": [
@@ -7191,19 +7046,6 @@
           }
         },
         "pebble": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-scalar-relational"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-string-relational"
-          }
-        },
-        "twig": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -7512,12 +7354,6 @@
         }
       },
       "props-object-non-props-name-operand-typing": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "props-object-non-props-name-operand-typing"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -7531,12 +7367,6 @@
           ]
         },
         "pebble": {
-          "kind": "render",
-          "limitations": [
-            "props-object-non-props-name-operand-typing"
-          ]
-        },
-        "twig": {
           "kind": "render",
           "limitations": [
             "props-object-non-props-name-operand-typing"
@@ -9814,12 +9644,6 @@
         }
       },
       "undef-null-array-search": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -9827,12 +9651,6 @@
           ]
         },
         "pebble": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "twig": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -9840,12 +9658,6 @@
         }
       },
       "undef-null-destructure-default": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -9853,12 +9665,6 @@
           ]
         },
         "pebble": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "twig": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -9866,12 +9672,6 @@
         }
       },
       "undef-null-json-stringify": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -9879,12 +9679,6 @@
           ]
         },
         "pebble": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "twig": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -9948,19 +9742,6 @@
         }
       },
       "undef-null-number-coercion": {
-        "blade": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic"
-          }
-        },
         "go-template": {
           "kind": "refusal",
           "codes": [
@@ -9975,19 +9756,6 @@
           }
         },
         "pebble": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic"
-          }
-        },
-        "twig": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -10002,12 +9770,6 @@
         }
       },
       "undef-null-number-coercion-typed": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -10015,12 +9777,6 @@
           ]
         },
         "pebble": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "twig": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10028,12 +9784,6 @@
         }
       },
       "undef-null-optional-chain-result": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -10041,12 +9791,6 @@
           ]
         },
         "pebble": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "twig": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10054,12 +9798,6 @@
         }
       },
       "undef-null-optional-method-args": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -10067,12 +9805,6 @@
           ]
         },
         "pebble": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "twig": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10080,19 +9812,6 @@
         }
       },
       "undef-null-relational": {
-        "blade": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-relational"
-          }
-        },
         "go-template": {
           "kind": "refusal",
           "codes": [
@@ -10107,19 +9826,6 @@
           }
         },
         "pebble": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-relational"
-          }
-        },
-        "twig": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -10134,12 +9840,6 @@
         }
       },
       "undef-null-row-field-coercion": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -10147,12 +9847,6 @@
           ]
         },
         "pebble": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "twig": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10160,12 +9854,6 @@
         }
       },
       "undef-null-sort": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -10173,12 +9861,6 @@
           ]
         },
         "pebble": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "twig": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10186,12 +9868,6 @@
         }
       },
       "undef-null-strict-equality": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -10199,12 +9875,6 @@
           ]
         },
         "pebble": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "twig": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10212,12 +9882,6 @@
         }
       },
       "undef-null-string-coercion": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -10225,12 +9889,6 @@
           ]
         },
         "pebble": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "twig": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10238,12 +9896,6 @@
         }
       },
       "undef-null-string-includes": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -10251,12 +9903,6 @@
           ]
         },
         "pebble": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "twig": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -11387,10 +11033,8 @@
         "awaits-undefined-plus-shapes"
       ],
       "adapters": [
-        "blade",
         "go-template",
-        "pebble",
-        "twig"
+        "pebble"
       ]
     },
     "body-destructure-without-const-form": {
@@ -11664,10 +11308,8 @@
         "signal-array-prop-fallback-seed-default"
       ],
       "adapters": [
-        "blade",
         "go-template",
-        "pebble",
-        "twig"
+        "pebble"
       ]
     },
     "derived-object-literal-signal": {
@@ -12196,10 +11838,8 @@
         "undef-null-relational"
       ],
       "adapters": [
-        "blade",
         "go-template",
-        "pebble",
-        "twig"
+        "pebble"
       ],
       "diagnostics": [
         "BF101"
@@ -12215,10 +11855,8 @@
         "omitted-optional-nullable-string-relational"
       ],
       "adapters": [
-        "blade",
         "go-template",
-        "pebble",
-        "twig"
+        "pebble"
       ],
       "diagnostics": [
         "BF101"
@@ -12307,11 +11945,9 @@
         "props-object-non-props-name-operand-typing"
       ],
       "adapters": [
-        "blade",
         "go-template",
         "mojolicious",
         "pebble",
-        "twig",
         "xslate"
       ]
     },

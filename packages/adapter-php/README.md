@@ -31,6 +31,36 @@ A backend implements five methods:
 
 Inject a backend with `new BarefootJS($c, ['backend' => $backend])`.
 
+## `null` and `undefined`
+
+PHP's `null` is JS `null`. JS `undefined` is `Barefoot\Undefined::value()`,
+a singleton (`bf.undefined()` / `$bf->undefined()` in a template). A props
+array already has the four states a JS prop has, so no wrapper type is
+needed:
+
+| JS | Props array |
+| --- | --- |
+| prop not passed | key left out |
+| `undefined` passed (`c={props.c}` with `c` unset) | `['c' => Undefined::value()]` |
+| `null` | `['c' => null]` |
+| a value | `['c' => 'x']` |
+
+A destructure default applies to the first two only. `json_decode` gives
+`null` for JSON `null` and leaves a missing key out, which is what you want;
+nothing walks decoded data to convert it.
+
+`Undefined` prints as `''` and `jsonSerialize()`s to `null`, but it is a PHP
+object: truthy for PHP's own `if`, and `??` / `isset` treat it as set. Test a
+value with `Barefoot\Undefined::isUndefined()`, `isNull()` and `isNullish()`
+(`== null`) instead, or `bf.is_nullish(v)` / `$bf->is_nullish($v)` in a
+template. `Barefoot\Json::ready()` turns a value into what `JSON.stringify`
+sees (an `undefined` member dropped, an `undefined` element `null`); the
+runtime runs it before any backend encoder.
+
+Migration: a host that passed `null` to mean "unset" now gets JS `null`
+semantics (`'btn ' + c` renders `btn null`, and a destructure default no
+longer applies). Leave the key out to leave a prop unset.
+
 ## Reference implementation
 
 [`@barefootjs/twig`](../adapter-twig) provides `Barefoot\TwigBackend`

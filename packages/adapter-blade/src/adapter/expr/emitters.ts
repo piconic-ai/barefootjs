@@ -42,13 +42,15 @@
  *      TEST uses `$bf->truthy`. The left operand is boxed by its JS
  *      test (`$bf->keep_truthy` / `$bf->keep_falsy`, see `spellLogical`),
  *      so each operand is rendered once (#3824).
- *   5. **`??` is PHP-native**, covering undefined AND null in ONE operator —
- *      PHP's `??` silences BOTH an undefined-variable/index notice and a
- *      real `null` (`$missing ?? 'fb'` and `$x ?? 'fb'` with `$x = null`
- *      both yield `'fb'`) — verified empirically, same as Twig's own native
- *      `??` (this REPLACES Twig's `strict_variables: false` forgiveness with
- *      a uniform per-use-site policy, since raw PHP has no engine-wide
- *      "never warn on unset var" switch).
+ *   5. **`??` is the runtime's `keep_nonnil` box, never PHP's own `??`.**
+ *      JS `undefined` is the runtime's `Barefoot\Undefined` object
+ *      (`$bf->undefined()`, #3848 U6), which PHP's `??` (an `isset` test)
+ *      treats as set, so `l ?? r` is `($bf->keep_nonnil((l) ?? null) ?: [r])[0]`
+ *      (`spellNullish`). The inner `?? null` keeps only PHP's silencing of an
+ *      undefined-variable/index notice (raw PHP has no engine-wide "never
+ *      warn on unset var" switch); `keep_nonnil` reads both nils. Every other
+ *      nil test a template makes goes through `$bf->is_nullish` /
+ *      `is_null` / `is_undefined`, never `isset` / `=== null` / `??`.
  *   6. **`!` (bang), not `not`.** Blade/PHP's unary logical-not is `!`, not
  *      Twig's word-form `not` — `unary`'s `op === '!'` branch emits
  *      `!${truthyTest(...)}`; `truthyTest` already wraps its operand in a
@@ -119,6 +121,10 @@ import {
   unloweredCallRefusal,
   type CallbackLoweringOptions,
   type StringNameTest,
+  type NilTestHelper,
+  type ScopedOperandTyping,
+  operandFacts,
+  isNeverNil,
   isNativePlan,
   relationalHelper,
   strictEqSpelling,
@@ -150,9 +156,15 @@ export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Blade'
  * own listed there.
  */
 export const NATIVE_SAFE: NativeSafeTable = {
-  // The runtime does not carry JS `undefined` apart from `null` yet
-  // (spec/js-undefined-value.md); rollout step U6 flips it.
-  carriesUndefined: false,
+  // The runtime carries JS `undefined` (`Barefoot\Undefined`,
+  // `$bf->undefined()`) apart from `null` (PHP `null`),
+  // spec/js-undefined-value.md rollout step U6. `Undefined` is a PHP object:
+  // truthy under PHP's own `if` and "set" for `??` / `isset`, so no emission
+  // tests a JS value natively: a test goes through `$bf->truthy` unless the
+  // operand is a proven boolean, and a nil test, a `??`, an attribute
+  // omission and a loop source through `$bf->is_nullish` / `is_null` /
+  // `is_undefined` / `keep_nonnil` / `iterable`.
+  carriesUndefined: true,
   'to-boolean': ['boolean'],
   // A unary `+` is native only over a proven number, `to_number` otherwise
   // (#3824 step 3). `unproven` describes binary `-` / `*` over operands Phase 1
@@ -182,7 +194,12 @@ export const NATIVE_SAFE: NativeSafeTable = {
   // `neg(0)` (#3824 step 6, pinned by the `primitives/number` vectors).
   neg: [],
   'number-literal': ['safe-integer'],
-  nullish: ['non-nil', 'unproven'],
+  // Always the runtime's `keep_nonnil` box (#3839), which renders each
+  // operand of a chain once. A `non-nil` proof does not fold `l ?? r` to `l`
+  // here: a host that leaves a typed value unset (a dependent destructure
+  // default over an omitted prop) still reaches the template as `UNDEF`,
+  // which PHP's `??` would keep too.
+  nullish: [],
   get: [],
   // A comparison, `!` and a boolean literal are host booleans already (#3824 step 5).
   'boolean-value': ['boolean'],
@@ -267,24 +284,83 @@ function spellPlus(plan: PrimitivePlan | null, l: string, r: string): string {
 }
 
 /**
+ * JS `undefined` in a template: the runtime's `Barefoot\Undefined`, which
+ * the `$bf` object exposes as `$bf->undefined()` (spec/js-undefined-value.md,
+ * rollout step U6). PHP's `null` is JS `null`.
+ */
+export const BLADE_UNDEFINED = '$bf->undefined()'
+
+/**
+ * Spell a nil-test plan (`x === null` / `x === undefined` / `x == null`,
+ * `spec/js-undefined-value.md` "Decisions" (7)) through the runtime's
+ * `is_null` / `is_undefined` / `is_nullish`. Never PHP's own `=== null` /
+ * `isset`, which read `UNDEF` as a value.
+ */
+function spellNilTest(helper: NilTestHelper, negated: boolean, operand: string): string {
+  const test = `$bf->${helper}(${operand})`
+  return negated ? `!${test}` : test
+}
+
+/**
+ * JS `l ?? r` in a value position, boxed the way `spellLogical` boxes `&&` /
+ * `||`: `keep_nonnil(l)` is the one-element array `[l]` unless `l` is `null`
+ * or `undefined`, so PHP's `?:` stops at `l`'s box exactly when JS returns
+ * `l` and builds `[r]` only otherwise (the short circuit); `[0]` unboxes the
+ * operand. `0`, `''` and `false` are present, as in JS. The inner `?? null`
+ * only silences an undefined variable or index, as the native `??` did (it
+ * leaves `UNDEF` and every other value unchanged). Each operand is rendered
+ * once, so a chain grows linearly.
+ */
+function spellNullish(l: string, r: string): string {
+  return `($bf->keep_nonnil((${l}) ?? null) ?: [${r}])[0]`
+}
+
+/**
+ * Spell a binary `-` / `*` plan: PHP's own operator when the plan is native
+ * (two proven numbers), the runtime's JS ToNumber arithmetic (`$bf->sub` /
+ * `$bf->mul`) when it names the helper, as it does for an operand that may
+ * be `UNDEF` (PHP's `-` throws on an object) or `null`. Null for any other
+ * operator.
+ */
+function spellNumericBinary(op: string, plan: PrimitivePlan | null, l: string, r: string): string | null {
+  if (op !== '-' && op !== '*') return null
+  if (plan?.mode === 'helper' && (plan.helper === 'sub' || plan.helper === 'mul')) return `$bf->${plan.helper}(${l}, ${r})`
+  return `${l} ${op} ${r}`
+}
+
+/**
  * `x.length` through `$bf->length`. An optional-chained `x?.length` yields
- * `null` — JS's `undefined` — for an absent receiver instead of
+ * JS's `undefined` (`$bf->undefined()`) for a nullish receiver instead of
  * `$bf->length`'s `0`, so a bare read renders empty and a `??` fallback
- * takes over (#3332). `(x ?? null) === null` tests the receiver the way the
- * `??` lowering does, without an undefined-variable warning.
+ * takes over (#3332). `x ?? null` reads the receiver without an
+ * undefined-variable warning.
  */
 function optionalLength(receiver: string, optional: boolean): string {
   const read = `$bf->length(${receiver})`
-  return optional ? `((${receiver} ?? null) === null ? null : ${read})` : read
+  return optional ? `($bf->is_nullish((${receiver}) ?? null) ? ${BLADE_UNDEFINED} : ${read})` : read
 }
 
 /**
  * A member read: a literal key (`obj['a.b']`, `rows[0]`, `obj['id']`) is the
  * primitive plan's `get` (#3824 step 2), `$bf->index`, the runtime's JS
- * `obj[key]`; a dot read keeps `data_get`.
+ * `obj[key]`. A dot read keeps `data_get` only for a field the declared type
+ * proves present and non-nil: JS reads a key the object does not have as
+ * `undefined`, `data_get` as `null` (JS `null`), so any other field reads
+ * through `$bf->index`, which gives `UNDEF` on a miss (#3848 U6). A
+ * `?.`-written read is `$bf->get_opt`, `undefined` over a nullish receiver.
  */
-function bladeKeyedRead(objectExpr: string, property: string, computed: boolean): string {
-  return computed ? bladeIndexAccess(objectExpr, bladeStringLiteral(property)) : bladeMemberAccess(objectExpr, property)
+function bladeKeyedRead(
+  object: ParsedExpr,
+  objectExpr: string,
+  property: string,
+  computed: boolean,
+  optional: boolean,
+  typing: ScopedOperandTyping,
+): string {
+  if (computed) return bladeIndexAccess(objectExpr, bladeStringLiteral(property))
+  if (optional) return `$bf->get_opt(${objectExpr}, ${bladeStringLiteral(property)})`
+  const facts = operandFacts({ kind: 'member', object, property, computed: false, optional: false }, typing)
+  return isNeverNil(facts) ? bladeMemberAccess(objectExpr, property) : bladeIndexAccess(objectExpr, bladeStringLiteral(property))
 }
 
 export class BladeFilterEmitter implements ParsedExprEmitter {
@@ -344,6 +420,8 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
     if (name === this.param) return bladeVar(this.param)
     const signal = this.localVarMap.get(name)
     if (signal) return bladeVar(signal)
+    // The unbound `undefined` identifier is the constant.
+    if (name === 'undefined' && !this.isOuterBound(name)) return BLADE_UNDEFINED
     return bladeVar(name)
   }
 
@@ -365,8 +443,9 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
     if (property === 'length') return optionalLength(emit(object), optional)
     // Attribute / hash-key access — `data_get` resolves array keys and
     // object properties transparently, null-safe. See the file header,
-    // divergence 2. A literal key is a JS index read (`get`).
-    return bladeKeyedRead(emit(object), property, computed)
+    // divergence 2. A literal key is a JS index read (`get`), and so is a
+    // field not proven present (`bladeKeyedRead`).
+    return bladeKeyedRead(object, emit(object), property, computed, optional, this.primitives.typing())
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
@@ -415,11 +494,16 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
     // JS Abstract Relational Comparison otherwise (#3824 step 3).
     const relational = relationalHelper(op, plan)
     if (relational) return `$bf->${relational}(${l}, ${r})`
+    const numeric = spellNumericBinary(op, plan, l, r)
+    if (numeric !== null) return numeric
     const opMap: Record<string, string> = {
       '>': '>', '<': '<', '>=': '>=', '<=': '<=',
-      '+': '+', '-': '-', '*': '*',
     }
     return `${l} ${opMap[op] ?? op} ${r}`
+  }
+
+  nilTest(helper: NilTestHelper, negated: boolean, operand: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    return spellNilTest(helper, negated, emit(operand))
   }
 
   logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
@@ -427,9 +511,8 @@ export class BladeFilterEmitter implements ParsedExprEmitter {
     const r = emit(right)
     // JS `&&` / `||` yield an operand, each rendered once (`spellLogical`).
     if (op !== '??') return spellLogical(op, plan, l, r)
-    // See the file header, divergence 5: PHP's `??` is native and covers
-    // both undefined and null in one operator.
-    return `(${l} ?? ${r})`
+    // See the file header, divergence 5: the runtime's `keep_nonnil` box.
+    return spellNullish(l, r)
   }
 
   callbackMethod(
@@ -552,9 +635,10 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
   }
 
   identifier(name: string): string {
-    // `undefined` / `null` nested inside a larger expression tree — PHP
-    // `null` (#1897).
-    if (name === 'undefined' || name === 'null') return 'null'
+    // `undefined` nested inside a larger expression tree is the runtime's
+    // `UNDEF`, a `null` identifier PHP's `null` (#1897).
+    if (name === 'undefined') return BLADE_UNDEFINED
+    if (name === 'null') return 'null'
     // Inline a module-scope pure-string const (`const x = 'literal'`) — it
     // never reaches the per-render context, so a bare reference would
     // resolve to an undefined variable.
@@ -593,8 +677,9 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     // `.length` → `$bf->length` (array count or string char count, JS-compat).
     if (property === 'length') return optionalLength(obj, optional)
     // See the file header, divergence 2: uniform `data_get`, null-safe over
-    // stdClass/array/null. A literal key is a JS index read (`get`).
-    return bladeKeyedRead(obj, property, computed)
+    // stdClass/array/null. A literal key is a JS index read (`get`), and so
+    // is a field not proven present (`bladeKeyedRead`).
+    return bladeKeyedRead(object, obj, property, computed, optional, this.primitives.typing())
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
@@ -703,7 +788,7 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
    */
   private coerceUndefinedOperand(op: string, expr: ParsedExpr, other: ParsedExpr | undefined, operand: string): string {
     const coercion = this.ctx._arithmeticCoercion(op, expr, other)
-    if (coercion === 'undefined-keep') return `(${operand} ?? $bf->number('NaN'))`
+    if (coercion === 'undefined-keep') return `($bf->is_nullish(${operand}) ? $bf->number('NaN') : ${operand})`
     return coercion === 'undefined' ? `$bf->number(${operand})` : operand
   }
 
@@ -729,11 +814,16 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     // JS Abstract Relational Comparison otherwise (#3824 step 3).
     const relational = relationalHelper(op, plan)
     if (relational) return `$bf->${relational}(${l}, ${r})`
+    const numeric = spellNumericBinary(op, plan, l, r)
+    if (numeric !== null) return numeric
     const opMap: Record<string, string> = {
       '>': '>', '<': '<', '>=': '>=', '<=': '<=',
-      '+': '+', '-': '-', '*': '*',
     }
     return `${l} ${opMap[op] ?? op} ${r}`
+  }
+
+  nilTest(helper: NilTestHelper, negated: boolean, operand: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    return spellNilTest(helper, negated, emit(operand))
   }
 
   logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
@@ -741,8 +831,8 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     const r = emit(right)
     // JS `&&` / `||` yield an operand, each rendered once (`spellLogical`).
     if (op !== '??') return spellLogical(op, plan, l, r)
-    // See the file header, divergence 5: PHP's `??` is native.
-    return `(${l} ?? ${r})`
+    // See the file header, divergence 5: the runtime's `keep_nonnil` box.
+    return spellNullish(l, r)
   }
 
   callbackMethod(

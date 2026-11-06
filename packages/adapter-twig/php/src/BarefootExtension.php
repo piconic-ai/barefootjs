@@ -24,7 +24,9 @@ use Twig\TwigFilter;
  *
  * `bf_js_nullish` spells a JS `l ?? r` whose left operand Twig's own `??`
  * rejects (a nested `??`, a conditional, an optional `.length`; #3839) the
- * same way: `l` evaluated once, `r` called only when `l` is null.
+ * same way: `l` evaluated once, `r` called only when `l` is `null` or JS
+ * `undefined` (`Barefoot\Undefined`, which PHP's own `??` would keep). The
+ * adapter spells every JS `??` through it (#3848 U6).
  */
 final class BarefootExtension extends AbstractExtension
 {
@@ -50,6 +52,6 @@ final class BarefootExtension extends AbstractExtension
 
     public static function jsNullish($left, callable $right): mixed
     {
-        return $left ?? $right(null);
+        return Undefined::isNullish($left) ? $right(null) : $left;
     }
 }

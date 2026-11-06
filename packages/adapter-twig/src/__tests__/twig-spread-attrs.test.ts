@@ -20,10 +20,9 @@
  *    a bare-identifier-safe prop name like `size`; only that BOTH keys are
  *    correctly quoted (same note as the Jinja port's file header).
  * 2. The Jinja port's `is defined and is not none` null-guard on an
- *    `{% if %}` test becomes Twig's `is defined and is not null` — Twig's
- *    null test is spelled `null` (aliased `none`); this port uses the
- *    canonical `null` spelling to match the design doc's null-literal
- *    mapping (`none` → `null`).
+ *    `{% if %}` test becomes the runtime's `not bf.is_nullish(v)`: JS
+ *    `undefined` is the runtime's `Barefoot\Undefined`, which Twig's own
+ *    `is null` / `is defined` read as a value (#3848 U6).
  */
 
 import { test, expect, describe } from 'bun:test'
@@ -172,7 +171,7 @@ describe('TwigAdapter - props-object inherited-attribute enumeration (#checkbox)
   // not enumerated in `propsParams`. The bare optional attribute must be
   // guarded so it's omitted when unset (Hono parity), even though `id`
   // isn't a declared param.
-  test('guards a props-object bare optional attr (props.id) with is defined and is not null', () => {
+  test('guards a props-object bare optional attr (props.id) with not bf.is_nullish', () => {
     const { template } = compileAndGenerate(`
 "use client"
 interface P { tone?: string }
@@ -180,7 +179,7 @@ export function Widget(props: P) {
   return <button id={props.id}>x</button>
 }
 `)
-    expect(template).toContain('{% if id is defined and id is not null %}')
+    expect(template).toContain('{% if not bf.is_nullish(id) %}')
     expect(template).toContain('id="{{ bf.string(id) }}"')
   })
 })
@@ -205,18 +204,18 @@ export function Host() {
 })
 
 describe('TwigAdapter - nullish optional-attribute omission (textarea rows)', () => {
-  // A no-destructure-default, nillable-typed prop is `null` when the caller
-  // omits it; guard its bare-reference attribute with a Twig
-  // "is defined and is not null" test so it DROPS instead of rendering
+  // A no-destructure-default, nillable-typed prop is `undefined` when the
+  // caller omits it; guard its bare-reference attribute with the runtime's
+  // `is_nullish` test so it DROPS instead of rendering
   // `attr=""` — matching Hono's nullish-attribute omission. Concrete/defaulted
   // props are never `null` and stay unconditional.
-  test('guards a no-default nillable attr with a Twig defined+not-null check', () => {
+  test('guards a no-default nillable attr with an is_nullish check', () => {
     const { template } = compileAndGenerate(`
 function C({ rows }: { rows?: number }) {
   return <textarea rows={rows} />
 }
 `)
-    expect(template).toContain('{% if rows is defined and rows is not null %}')
+    expect(template).toContain('{% if not bf.is_nullish(rows) %}')
     expect(template).toContain('rows="{{ bf.string(rows) }}"')
   })
 

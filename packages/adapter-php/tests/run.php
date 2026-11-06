@@ -34,6 +34,7 @@ $testFiles = [
     'test_props_attr.php',
     'test_render_child.php',
     'test_scope_comment.php',
+    'test_undefined.php',
 ];
 
 $results = [];

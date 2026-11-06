@@ -68,30 +68,30 @@ export function C(props: { a?: string | null; b?: string | null; n: number; __bf
 })
 
 describe('TwigAdapter - optional-chained .length (#3332)', () => {
-  // `x?.length` yields `null` for an absent receiver. Twig's native `??`
-  // wraps its left side in a `defined` test that rejects a conditional, so
-  // a `??` over the guard tests it with `is null` instead.
+  // `x?.length` yields JS `undefined` (`bf.undefined()`) for a nullish
+  // receiver, tested by the runtime's `is_nullish` (#3848 U6); a `??` over
+  // the guard goes through the runtime's `bf_js_nullish` filter.
   test('guards the read and coalesces through `bf_js_nullish`', () => {
     const { template } = compileAndGenerate(`
 export function C(props: { items?: number[] }) {
   return <p>{props.items?.length}|{props.items?.length ?? 0}</p>
 }
 `)
-    const guard = '((items ?? null) is null ? null : bf.length(items))'
+    const guard = '(bf.is_nullish(items) ? bf.undefined() : bf.length(items))'
     expect(template).toContain(`bf.string(${guard})`)
     // Twig's `??` rejects a non-variable left operand; the filter renders it once (#3839).
     expect(template).toContain(`bf.string(((${guard})|bf_js_nullish((__bf_lazy) => 0)))`)
     expect(template).not.toContain(`${guard} ??`)
   })
 
-  test('a composed receiver is tested with `is null`, never `??`', () => {
+  test('a composed receiver is tested with `is_nullish`, never `??`', () => {
     const { template } = compileAndGenerate(`
 export function C(props: { flag: boolean; a?: number[]; b: number[] }) {
   return <p>{(props.flag ? props.a : props.b)?.length}</p>
 }
 `)
     // A required `boolean` prop is a proven boolean, tested natively (#3824).
-    expect(template).toContain('((flag ? a : b) is null ? null : bf.length((flag ? a : b)))')
+    expect(template).toContain('(bf.is_nullish((flag ? a : b)) ? bf.undefined() : bf.length((flag ? a : b)))')
     expect(template).not.toContain('b) ?? null')
   })
 })
@@ -167,7 +167,7 @@ export function Item(props: { defaultOn?: boolean }) {
   return <button>{on() ? 'ON' : 'OFF'}</button>
 }
 `)
-    expect(template).toContain('{% set on = (defaultOn ?? false) %}')
+    expect(template).toContain('{% set on = ((defaultOn)|bf_js_nullish((__bf_lazy) => false)) %}')
   })
 
   // Twig's `{% set x = x + 1 %}` safely resolves the right-hand `x` from the
@@ -183,7 +183,7 @@ export function C(props: { x?: number }) {
   return <span>{x()}</span>
 }
 `)
-    expect(template).toContain('{% set x = (x ?? 7) %}')
+    expect(template).toContain('{% set x = ((x)|bf_js_nullish((__bf_lazy) => 7)) %}')
   })
 
   test('emits data_key_attr on the component root', () => {
@@ -366,7 +366,7 @@ export function SortStatus() {
 }
 `)
     expect(template).toContain(
-      "{% set sort = (searchParams.get('sort') ?? 'date') %}",
+      "{% set sort = ((searchParams.get('sort'))|bf_js_nullish((__bf_lazy) => 'date')) %}",
     )
   })
 
@@ -389,7 +389,7 @@ export function TaggedList(props: { items: { title: string; tags: string[] }[] }
 }
 `)
     expect(template).toContain(
-      "{% set tag = (searchParams.get('tag') ?? '') %}",
+      "{% set tag = ((searchParams.get('tag'))|bf_js_nullish((__bf_lazy) => '')) %}",
     )
     expect(template).toContain('{% set visible = bf.filter_eval(items,')
     expect(template).toContain("{'tag': tag}")

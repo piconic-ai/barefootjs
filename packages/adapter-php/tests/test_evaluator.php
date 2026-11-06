@@ -181,7 +181,7 @@ bf_test('boolean-valued ops return real booleans', function () {
 
     // `.length` is a string/array property only; a numeric scalar has none.
     $length = Evaluator::evaluate(bft_mem(bft_id('n'), 'length'), ['n' => 123]);
-    bf_assert_eq($length, null);
+    bf_assert_eq($length, \Barefoot\Undefined::value());
 });
 
 bf_test('array-method .includes dispatches by receiver type', function () {

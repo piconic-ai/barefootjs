@@ -62,6 +62,17 @@ namespace Barefoot;
  *     (`eq`/`neq` are the NEW helpers the design doc calls out; `truthy` and
  *     `mod` mirror the Python-port additions the Twig TS emitter's lowering
  *     policy needs uniformly for JS-truthiness condition routing and JS `%`).
+ *
+ * JS `undefined` is the singleton `Undefined::value()` (`bf.undefined()` /
+ * `$bf->undefined()` in a template) and PHP's `null` is JS `null`
+ * (spec/js-undefined-value.md). A props array has JS's four states for a
+ * prop: the key left out (absent), `Undefined` (present `undefined`), `null`
+ * and a value. `Undefined` is a PHP object: truthy under PHP's own tests and
+ * "set" for `??` / `isset`, so every nullish test on a JS value in this
+ * runtime goes through `is_nullish` / `is_undefined` / `is_null`
+ * (`Undefined::isNullish()` ...), never `??` / `isset` / `=== null` /
+ * `empty()`. A `??` / `isset` left here reads internal state or an options
+ * array the compiler writes, never a JS value.
  */
 final class BarefootJS
 {
@@ -186,7 +197,7 @@ final class BarefootJS
     public function data_key_attr(): string
     {
         $k = $this->_data_key();
-        if ($k === null) {
+        if (Undefined::isNullish($k)) {
             return '';
         }
         $ks = str_replace(['&', '"'], ['&amp;', '&quot;'], $this->string($k));
@@ -204,7 +215,9 @@ final class BarefootJS
         // truncates the hydration payload. The browser entity-decodes the
         // attribute value, so the client's JSON.parse sees the original text
         // (#2086, same fix as the Perl/Python/Ruby/Rust runtimes).
-        $json = $this->htmlEscape($this->backend->encode_json($props));
+        // `JSON.stringify`: an `undefined` member is dropped, an `undefined`
+        // element is `null` (`Json::ready`), whatever encoder the backend has.
+        $json = $this->htmlEscape($this->backend->encode_json(Json::ready($props)));
         return " bf-p='" . $json . "'";
     }
 
@@ -226,10 +239,12 @@ final class BarefootJS
         return '';
     }
 
+    /** A consumer with no provider reads the context's default, or JS
+     * `undefined` when the call gives none. */
     public function use_context(string $name, $default = null)
     {
         if (empty(self::$contextStacks[$name])) {
-            return $default;
+            return func_num_args() < 2 ? Undefined::value() : $default;
         }
         return end(self::$contextStacks[$name]);
     }
@@ -345,7 +360,7 @@ final class BarefootJS
         $propsJson = '';
         $props = $this->_props();
         if (self::hasEntries($props)) {
-            $propsJson = '|' . $this->backend->encode_json($props);
+            $propsJson = '|' . $this->backend->encode_json(Json::ready($props));
         }
         return "<!--bf-scope:{$scopeId}{$hostSegment}{$propsJson}-->";
     }
@@ -524,13 +539,14 @@ final class BarefootJS
     }
 
     /**
-     * Whether this component's caller passed the prop `$name`, even as null:
-     * JS's `name in props`, which a template can't ask of its variables
-     * (every declared prop is seeded, so an omitted one and a null one read
-     * the same). A `{...props}` spread onto a child carries a param only
-     * when this is true. The keys are those `render_child` recorded for a
-     * child and `_props` for the root; with neither recorded (a root
-     * rendered without `_props`), `$fallback`, the template's own "not nil"
+     * Whether this component's caller passed the prop `$name`, even as
+     * `null` or `undefined`: JS's `name in props`, which a template can't
+     * ask of its variables (every declared prop is seeded, so an omitted one
+     * reads as its default or `undefined`, as a present `undefined` one
+     * does). A `{...props}` spread onto a child carries a param only when
+     * this is true. The keys are those `render_child` recorded for a child
+     * and `_props` for the root; with neither recorded (a root rendered
+     * without `_props`), `$fallback`, the template's own "not undefined"
      * test, decides.
      */
     public function passed(string $name, $fallback = false): bool
@@ -606,9 +622,9 @@ final class BarefootJS
                 unset($props['_bf_slot']);
                 // JSX `key` (a reserved prop) -> data-key on the child's
                 // scope root for keyed-loop reconciliation.
-                $dataKey = $props['key'] ?? null;
+                $dataKey = array_key_exists('key', $props) ? $props['key'] : null;
                 unset($props['key']);
-                if ($dataKey !== null) {
+                if (!Undefined::isNullish($dataKey)) {
                     $childBf->_data_key($dataKey);
                 }
                 if ($slotId) {
@@ -686,9 +702,12 @@ final class BarefootJS
      * section. Each entry shape: `{value, propName, isRestProps}`. For
      * `isRestProps`, the rest bag passes through unchanged (or the static
      * `{}` if the caller didn't supply one). For ordinary entries the
-     * caller's `$props[propName]` wins when present and non-null, otherwise
-     * the static `value` does. `propName`-less entries (signal / memo
-     * locals) always use the static value.
+     * caller's `$props[propName]` wins when present -- `null` (JS `null`)
+     * included -- and an absent or `undefined` prop takes the static
+     * `value`, or `undefined` when the entry has none (the manifest writes
+     * `value` only for a prop with a default; spec/js-undefined-value.md,
+     * decision 6). `propName`-less entries (signal / memo locals) always use
+     * the static value.
      *
      * `$props` arrives ALREADY keyword-mangled -- `render_child` above (and
      * every generated child-renderer closure calling this method directly)
@@ -732,18 +751,25 @@ final class BarefootJS
                 continue;
             }
             if (!empty($dArr['isRestProps'])) {
-                $extra[$key] = array_key_exists($key, $props) ? $props[$key] : ($dArr['value'] ?? null);
+                $extra[$key] = array_key_exists($key, $props) ? $props[$key] : self::staticFallback($dArr);
                 continue;
             }
             $propName = $dArr['propName'] ?? null;
             $mangledPropName = $propName !== null ? $ident((string) $propName) : null;
-            if ($mangledPropName !== null && array_key_exists($mangledPropName, $props) && $props[$mangledPropName] !== null) {
+            if ($mangledPropName !== null && array_key_exists($mangledPropName, $props) && !Undefined::isUndefined($props[$mangledPropName])) {
                 $extra[$key] = $props[$mangledPropName];
             } else {
-                $extra[$key] = $dArr['value'] ?? null;
+                $extra[$key] = self::staticFallback($dArr);
             }
         }
         return $extra;
+    }
+
+    /** An `ssrDefaults` entry's seed when the caller's prop is absent or
+     * `undefined`: its `value`, or `undefined` when it has none. */
+    private static function staticFallback(array $d)
+    {
+        return array_key_exists('value', $d) ? $d['value'] : Undefined::value();
     }
 
     // -----------------------------------------------------------------
@@ -780,21 +806,35 @@ final class BarefootJS
      * are `null`, at any depth (#3698, #3787). `json_encode` would write
      * `-4.0e-8` / `-0.0`. Lists and objects are walked here with sorted
      * keys, as the canonical encoder does; strings and other leaves go
-     * through the backend's encoder. */
-    public function json($value): string
+     * through the backend's encoder.
+     *
+     * `null` is "null"; `undefined` gives no string at the top level -- the
+     * result is `undefined` itself, which prints nothing and omits an
+     * attribute -- an object member holding it is skipped, and an array
+     * element holding it is written as `null`.
+     *
+     * @return string|Undefined
+     */
+    public function json($value)
     {
+        if ($value instanceof Undefined) {
+            return $value;
+        }
         if (is_int($value) || is_float($value)) {
             $n = (float) $value;
             return (is_nan($n) || is_infinite($n)) ? 'null' : Evaluator::formatNumber($n);
         }
         if (is_array($value) && array_is_list($value)) {
-            return '[' . implode(',', array_map(fn ($v) => $this->json($v), $value)) . ']';
+            return '[' . implode(',', array_map(fn ($v) => $v instanceof Undefined ? 'null' : $this->json($v), $value)) . ']';
         }
         if (is_array($value) || $value instanceof \stdClass) {
             $vars = is_array($value) ? $value : get_object_vars($value);
             ksort($vars, SORT_STRING);
             $members = [];
             foreach ($vars as $k => $v) {
+                if ($v instanceof Undefined) {
+                    continue;
+                }
                 $members[] = $this->backend->encode_json((string) $k) . ':' . $this->json($v);
             }
             return '{' . implode(',', $members) . '}';
@@ -802,10 +842,10 @@ final class BarefootJS
         return $this->backend->encode_json($value);
     }
 
-    /** JS `String(v)` mirror: `null` renders as the empty string (not
-     * "null") so an unset prop doesn't surface a literal "null"/"undefined"
-     * in user-facing HTML (documented divergence, matches the Perl/Python
-     * ports).
+    /** JS `String(v)` mirror for a display sink: `null` and `undefined`
+     * render as the empty string (not "null" / "undefined"), as JSX renders
+     * them in a text or attribute position (documented divergence, matches
+     * the Perl/Python ports). JS ToString itself is `to_string`.
      *
      * A per-engine "already-safe markup" wrapper (`\Twig\Markup` for the
      * Twig backend, `\Illuminate\Support\HtmlString` for the Blade backend —
@@ -832,11 +872,13 @@ final class BarefootJS
      */
     public function string($value)
     {
+        // Before the `\Stringable` pass-through: `Undefined` has a
+        // `__toString()` too.
+        if (Undefined::isNullish($value)) {
+            return '';
+        }
         if ($value instanceof \Stringable) {
             return $value;
-        }
-        if ($value === null) {
-            return '';
         }
         if (is_bool($value)) {
             return $value ? 'true' : 'false';
@@ -861,19 +903,20 @@ final class BarefootJS
         }
         if (Evaluator::isJsArray($value)) {
             // JS `Array.prototype.toString` == `.join(',')`.
-            $parts = array_map(fn ($v) => $v === null ? '' : $this->string($v), $value);
+            $parts = array_map(fn ($v) => Undefined::isNullish($v) ? '' : $this->string($v), $value);
             return implode(',', $parts);
         }
         return '[object Object]'; // stdClass or a non-list (assoc) array
     }
 
-    /** JS `Number(v)` mirror. Deliberate divergence (matches the Perl/Python
-     * ports): `null` and non-numeric/empty strings yield real NaN (not 0),
-     * so an unset prop / parse failure can't silently zero downstream
-     * arithmetic. */
+    /** JS `Number(v)` mirror for a display sink. Deliberate divergence
+     * (matches the Perl/Python ports): `null`, `undefined` and
+     * non-numeric/empty strings yield real NaN (not 0), so an unset prop /
+     * parse failure can't silently zero downstream arithmetic. JS ToNumber
+     * itself is `to_number`. */
     public function number($value): float
     {
-        if ($value === null) {
+        if (Undefined::isNullish($value)) {
             return NAN;
         }
         if (is_bool($value)) {
@@ -895,6 +938,65 @@ final class BarefootJS
     public function truthy($value): bool
     {
         return Evaluator::truthy($value);
+    }
+
+    /**
+     * The box for a value-position JS `l ?? r` (#3848 U6): the Blade adapter
+     * spells it as `($bf->keep_nonnil(l ?? null) ?: [r])[0]`, so each operand
+     * appears once. Only the two nils (`null`, `undefined`) are absent; `0`,
+     * `''` and `false` are kept, as in JS. PHP's own `??` would keep
+     * `undefined`.
+     *
+     * @return array<int, mixed>
+     */
+    public function keep_nonnil($value): array
+    {
+        return Undefined::isNullish($value) ? [] : [$value];
+    }
+
+    /**
+     * JS `undefined` as a template spells it (`bf.undefined()` /
+     * `$bf->undefined()`): the `undefined` identifier, an omitted method
+     * argument's default, the result of a `?.` over a nullish receiver.
+     */
+    public function undefined(): Undefined
+    {
+        return Undefined::value();
+    }
+
+    /** JS `x === undefined` (spec/js-undefined-value.md, decision 7). */
+    public function is_undefined($value): bool
+    {
+        return Undefined::isUndefined($value);
+    }
+
+    /** JS `x === null`: PHP's `null` only. */
+    public function is_null($value): bool
+    {
+        return $value === null;
+    }
+
+    /** JS `x == null`: `null` or `undefined`. A template spells a loose nil
+     * test, an attribute omission and a `??` through it; PHP's `??` /
+     * `isset` / `=== null` see `undefined` as a value. */
+    public function is_nullish($value): bool
+    {
+        return Undefined::isNullish($value);
+    }
+
+    /** JS `o?.k`: `undefined` over a nullish receiver, the read of `k`
+     * (`index`) otherwise. */
+    public function get_opt($target, $key)
+    {
+        return Undefined::isNullish($target) ? Undefined::value() : Evaluator::index($target, $key);
+    }
+
+    /** A loop source as PHP's `foreach` iterates it: `[]` for `null` and
+     * `undefined` (an object, which `foreach` would walk as its
+     * properties), the value itself otherwise. */
+    public function iterable($value)
+    {
+        return Undefined::isNullish($value) ? [] : $value;
     }
 
     /**
@@ -920,19 +1022,39 @@ final class BarefootJS
         return Evaluator::truthy($value) ? [] : [$value];
     }
 
+    /** JS binary `-` / `*` over operands Phase 1 does not prove numbers
+     * (#3848 U6): each operand goes through JS ToNumber (`null` is 0,
+     * `undefined` NaN, a string its JS numeric value), where PHP's own
+     * operator throws on an object (`Undefined`) and a non-numeric string.
+     * Two int operands keep PHP's exact int arithmetic, as `div` does. */
+    public function sub($a, $b): int|float
+    {
+        if (is_int($a) && is_int($b)) {
+            return $a - $b;
+        }
+        return Evaluator::toNumber($a) - Evaluator::toNumber($b);
+    }
+
+    public function mul($a, $b): int|float
+    {
+        if (is_int($a) && is_int($b)) {
+            return $a * $b;
+        }
+        return Evaluator::toNumber($a) * Evaluator::toNumber($b);
+    }
+
     /** JS `/` (#3474): IEEE division. The quotient keeps its fraction, and
      * a zero divisor gives `NaN` or an infinity signed by both operands
      * (`1 / -0` is `-Infinity`), where PHP's `/` throws `DivisionByZeroError`.
      * Two int operands and a non-zero divisor keep PHP's own `/`, whose
-     * exact quotient stays an int and so still indexes a list. A nil
-     * operand reads as `0`, as with PHP's `/`: the adapters spell JS's
-     * `null` operand as the nil itself. */
+     * exact quotient stays an int and so still indexes a list. Each operand
+     * goes through JS ToNumber: `null` is `0`, `undefined` NaN. */
     public function div($a, $b): int|float
     {
         if (is_int($a) && is_int($b) && $b !== 0) {
             return $a / $b;
         }
-        return fdiv($this->number($a ?? 0), $this->number($b ?? 0));
+        return fdiv(Evaluator::toNumber($a), Evaluator::toNumber($b));
     }
 
     /** JS `%`: remainder with the dividend's sign. PHP's `fmod` already
@@ -945,18 +1067,19 @@ final class BarefootJS
      * It still prints `"0"`, compares equal to `0`, and indexes a list as
      * `0` through the runtime's `index`.
      *
-     * A nil operand reads as `0`, as with `div`: the adapters spell JS's
-     * `null` operand as the nil itself (`null % 2` is `0`). */
+     * Each operand goes through JS ToNumber, as with `div`: `null % 2` is
+     * `0`, `undefined % 2` NaN. */
     public function mod($a, $b): int|float
     {
-        $r = fmod($this->number($a ?? 0), $this->number($b ?? 0));
+        $r = fmod(Evaluator::toNumber($a), Evaluator::toNumber($b));
         return $r === 0.0 && is_int($a) && is_int($b) && $a >= 0 ? 0 : $r;
     }
 
     /** JS `target[key]`: a single-level read of the target's own key or
-     * element. Delegates to `Evaluator::index()`, the one implementation
-     * the callback evaluator's index read shares, so a template read and
-     * the same read inside a callback give the same answer. */
+     * element, `undefined` on a miss. Delegates to `Evaluator::index()`, the
+     * one implementation the callback evaluator's index read shares, so a
+     * template read and the same read inside a callback give the same
+     * answer. */
     public function index($target, $key)
     {
         return Evaluator::index($target, $key);
@@ -964,13 +1087,13 @@ final class BarefootJS
 
     public function floor($value): float
     {
-        $n = $this->number($value);
+        $n = Evaluator::toNumber($value);
         return (is_nan($n) || is_infinite($n)) ? $n : floor($n);
     }
 
     public function ceil($value): float
     {
-        $n = $this->number($value);
+        $n = Evaluator::toNumber($value);
         return (is_nan($n) || is_infinite($n)) ? $n : ceil($n);
     }
 
@@ -978,16 +1101,18 @@ final class BarefootJS
      * -1, not -2). `floor(n + 0.5)` reproduces that for both signs. */
     public function round($value): float
     {
-        $n = $this->number($value);
+        $n = Evaluator::toNumber($value);
         return (is_nan($n) || is_infinite($n)) ? $n : floor($n + 0.5);
     }
 
     /** `Math.min(a, b)` / `Math.max(a, b)` -- two-arg forms only (#2168
-     * math-methods). JS returns NaN if either operand is NaN. */
+     * math-methods). JS returns NaN if either operand is NaN. The `Math`
+     * helpers coerce through JS ToNumber (`null` is 0, `undefined` NaN), as
+     * `Math.floor(null)` is 0. */
     public function min($a, $b): float
     {
-        $x = $this->number($a);
-        $y = $this->number($b);
+        $x = Evaluator::toNumber($a);
+        $y = Evaluator::toNumber($b);
         if (is_nan($x)) return $x;
         if (is_nan($y)) return $y;
         return $x < $y ? $x : $y;
@@ -995,8 +1120,8 @@ final class BarefootJS
 
     public function max($a, $b): float
     {
-        $x = $this->number($a);
-        $y = $this->number($b);
+        $x = Evaluator::toNumber($a);
+        $y = Evaluator::toNumber($b);
         if (is_nan($x)) return $x;
         if (is_nan($y)) return $y;
         return $x > $y ? $x : $y;
@@ -1005,7 +1130,7 @@ final class BarefootJS
     /** `Math.abs()` (#2168 math-methods). */
     public function abs($value): float
     {
-        $n = $this->number($value);
+        $n = Evaluator::toNumber($value);
         return is_nan($n) ? $n : abs($n);
     }
 
@@ -1203,15 +1328,17 @@ final class BarefootJS
         return $this->string($value);
     }
 
+    /** A row field's value: JS `item.key`, `undefined` when the row has no
+     * such field (or is no object). */
     private function getField($el, string $key)
     {
         if ($el instanceof \stdClass) {
-            return property_exists($el, $key) ? $el->$key : null;
+            return property_exists($el, $key) ? $el->$key : Undefined::value();
         }
         if (is_array($el) && !Evaluator::isJsArray($el)) {
-            return array_key_exists($key, $el) ? $el[$key] : null;
+            return array_key_exists($key, $el) ? $el[$key] : Undefined::value();
         }
-        return null;
+        return Undefined::value();
     }
 
     /** `Array.prototype.includes(x)` / `String.prototype.includes(sub)`
@@ -1233,7 +1360,8 @@ final class BarefootJS
         if (is_array($recv) || $recv instanceof \stdClass) {
             return false; // a plain object is not a JS `.includes` target
         }
-        return str_contains($this->scalarOrEmpty($recv), $this->scalarOrEmpty($elem));
+        // The needle is JS ToString'd (`"anullb".includes(null)` is true).
+        return str_contains($this->scalarOrEmpty($recv), Evaluator::toStringJs($elem));
     }
 
     public function filter($recv, callable $pred): array
@@ -1270,17 +1398,18 @@ final class BarefootJS
         return false;
     }
 
+    /** `find` / `find_last` return the matching element, or JS `undefined`. */
     public function find($recv, callable $pred)
     {
         if (!Evaluator::isJsArray($recv)) {
-            return null;
+            return Undefined::value();
         }
         foreach ($recv as $item) {
             if ($pred($item)) {
                 return $item;
             }
         }
-        return null;
+        return Undefined::value();
     }
 
     public function find_index($recv, callable $pred): int
@@ -1299,7 +1428,7 @@ final class BarefootJS
     public function find_last($recv, callable $pred)
     {
         if (!Evaluator::isJsArray($recv)) {
-            return null;
+            return Undefined::value();
         }
         $arr = array_values($recv);
         for ($i = count($arr) - 1; $i >= 0; $i--) {
@@ -1307,7 +1436,7 @@ final class BarefootJS
                 return $arr[$i];
             }
         }
-        return null;
+        return Undefined::value();
     }
 
     public function find_last_index($recv, callable $pred): int
@@ -1326,24 +1455,35 @@ final class BarefootJS
 
     public function lc($s): string
     {
-        return $s === null ? '' : mb_strtolower($this->string($s), 'UTF-8');
+        return mb_strtolower((string) $this->string($s), 'UTF-8');
     }
 
     public function uc($s): string
     {
-        return $s === null ? '' : mb_strtoupper($this->string($s), 'UTF-8');
+        return mb_strtoupper((string) $this->string($s), 'UTF-8');
     }
 
-    /** `Array.prototype.join(sep)` -- separator defaults to ",", undefined/
+    /** `Array.prototype.join(sep)` -- an omitted or `undefined` separator is
+     * ",", any other one is ToString'd (`null` joins with "null"); undefined/
      * null elements render as empty. */
     public function join($recv, $sep = null): string
     {
         if (!Evaluator::isJsArray($recv)) {
             return '';
         }
-        $sepStr = $sep === null ? ',' : $this->string($sep);
-        $parts = array_map(fn ($x) => $x === null ? '' : $this->string($x), $recv);
+        $sepStr = self::omitted(func_num_args(), 1, $sep) ? ',' : Evaluator::toStringJs($sep);
+        $parts = array_map(fn ($x) => Undefined::isNullish($x) ? '' : $this->string($x), $recv);
         return implode($sepStr, $parts);
+    }
+
+    /** Whether the optional argument at `$position` (0-based, counting the
+     * receiver) was left out: the call passed fewer arguments, or passed JS
+     * `undefined`, which JS reads as an omitted argument. An explicit `null`
+     * is JS `null`, which each helper coerces like any other value
+     * (`[1, 2].slice(0, null)` is `[]`). */
+    private static function omitted(int $argc, int $position, $value): bool
+    {
+        return $argc <= $position || $value instanceof Undefined;
     }
 
     /** `.length` -- JS works on both arrays (element count) and strings.
@@ -1353,17 +1493,14 @@ final class BarefootJS
      * (astral, U+10000-U+10FFFF -- e.g. '👍') is a surrogate PAIR in
      * UTF-16, so it counts as 2, not 1; '日本語' is 3 either way
      * (BMP-only). An object's `.length` is its own `length` property
-     * (`{ length: 3 }`), null when it has none (#3449). */
+     * (`{ length: 3 }`), `undefined` when it has none (#3449). */
     public function length($recv)
     {
         if (Evaluator::isJsArray($recv)) {
             return count($recv);
         }
-        if (is_array($recv)) {
-            return $recv['length'] ?? null;
-        }
-        if ($recv instanceof \stdClass) {
-            return $recv->length ?? null;
+        if (is_array($recv) || $recv instanceof \stdClass) {
+            return Evaluator::index($recv, 'length');
         }
         $s = $this->scalarOrEmpty($recv);
         $n = 0;
@@ -1519,7 +1656,7 @@ final class BarefootJS
      */
     private function toIntegerOrInfinity($value): int
     {
-        $n = $this->number($value);
+        $n = Evaluator::toNumber($value);
         if (is_nan($n)) {
             return 0;
         }
@@ -1545,7 +1682,8 @@ final class BarefootJS
     private function utf16IndexOf(string $recv, $elem, bool $reverse): int
     {
         $hay = self::utf16Units($recv);
-        $needle = self::utf16Units($this->string($elem));
+        // The needle is JS ToString'd (`'anullb'.indexOf(null)` is 1).
+        $needle = self::utf16Units(Evaluator::toStringJs($elem));
         $last = count($hay) - count($needle);
         if ($last < 0) {
             return -1;
@@ -1585,34 +1723,40 @@ final class BarefootJS
      * receiver is indexed in UTF-16 code units (#3613). Half of a
      * surrogate pair, a lone surrogate in JS, comes back as U+FFFD: a
      * UTF-8 PHP string can't hold one, so the halves compare equal and
-     * don't rejoin (limitation `string-at-lone-surrogate`).
+     * don't rejoin (limitation `string-at-lone-surrogate`). The index is
+     * ToIntegerOrInfinity'd, so an omitted, `undefined` or `null` one reads
+     * element 0; a miss is JS `undefined`.
      */
-    public function at($recv, $i)
+    public function at($recv, $i = null)
     {
-        if (is_string($recv) && $i !== null) {
+        if (func_num_args() < 2) {
+            $i = Undefined::value();
+        }
+        if (is_string($recv)) {
             $units = self::utf16Units($recv);
-            $idx = $this->toIntegerOrInfinity($i);
-            if ($idx < 0) {
-                $idx += count($units);
-            }
-            if ($idx < 0 || $idx >= count($units)) {
-                return null;
+            $idx = $this->relativeIndex($i, count($units));
+            if ($idx === null) {
+                return Undefined::value();
             }
             $u = $units[$idx];
             return ($u >= 0xD800 && $u <= 0xDFFF) ? "\u{FFFD}" : mb_chr($u, 'UTF-8');
         }
-        if (!Evaluator::isJsArray($recv) || $i === null) {
-            return null;
+        if (!Evaluator::isJsArray($recv)) {
+            return Undefined::value();
         }
-        $len = count($recv);
-        if ($len === 0) {
-            return null;
+        $idx = $this->relativeIndex($i, count($recv));
+        return $idx === null ? Undefined::value() : $recv[$idx];
+    }
+
+    /** `Array.prototype.at`'s index: ToIntegerOrInfinity, counted from the
+     * end when negative; `null` when it falls outside `[0, length)`. */
+    private function relativeIndex($value, int $len): ?int
+    {
+        $idx = $this->toIntegerOrInfinity($value);
+        if ($idx < 0) {
+            $idx += $len;
         }
-        $idx = $i < 0 ? $len + $i : $i;
-        if ($idx < 0 || $idx >= $len) {
-            return null;
-        }
-        return array_values($recv)[$idx];
+        return ($idx >= 0 && $idx < $len) ? $idx : null;
     }
 
     public function concat($a, $b): array
@@ -1637,9 +1781,14 @@ final class BarefootJS
      * disambiguate string vs. array at compile time), so this dispatches
      * on the receiver's PHP type, mirroring `includes` above. String
      * length/positions use `mb_strlen`/`mb_substr` (UTF-8 code points,
-     * not bytes), matching this runtime's other string helpers. */
-    public function slice($recv, $start, $end)
+     * not bytes), matching this runtime's other string helpers. Both
+     * bounds are ToIntegerOrInfinity'd; an omitted or `undefined` start is
+     * 0 and end "to the length", a `null` one is 0. */
+    public function slice($recv, $start = null, $end = null)
     {
+        $argc = func_num_args();
+        $start = self::omitted($argc, 1, $start) ? 0 : $this->toIntegerOrInfinity($start);
+        $end = self::omitted($argc, 2, $end) ? null : $this->toIntegerOrInfinity($end);
         if (is_string($recv)) {
             $len = mb_strlen($recv, 'UTF-8');
             [$s, $e] = $this->clampSliceRange($len, $start, $end);
@@ -1663,10 +1812,11 @@ final class BarefootJS
         return array_slice($arr, (int) $s, (int) ($e - $s));
     }
 
-    /** Shared bounds arithmetic for both `slice` branches above. */
-    private function clampSliceRange(int $len, $start, $end): array
+    /** Shared bounds arithmetic for both `slice` branches above: `$start`
+     * an integer, `$end` an integer or `null` for "to the length". */
+    private function clampSliceRange(int $len, int $start, ?int $end): array
     {
-        $s = $start ?? 0;
+        $s = $start;
         if ($s < 0) {
             $s += $len;
         }
@@ -1809,6 +1959,10 @@ final class BarefootJS
      */
     public function flat_dynamic($recv, $depth): array
     {
+        // An `undefined` depth is the default, 1; `null` coerces to 0.
+        if ($depth instanceof Undefined) {
+            return $this->flat($recv, 1);
+        }
         return $this->flat($recv, self::coerceFlatDepth($depth));
     }
 
@@ -1849,7 +2003,7 @@ final class BarefootJS
 
     public function trim($recv): string
     {
-        if ($recv === null || is_array($recv) || $recv instanceof \stdClass) {
+        if (Undefined::isNullish($recv) || is_array($recv) || $recv instanceof \stdClass) {
             return '';
         }
         return (string) preg_replace('/^\s+|\s+$/u', '', $this->string($recv));
@@ -1860,7 +2014,7 @@ final class BarefootJS
      * restricted to one side. */
     public function trim_start($recv): string
     {
-        if ($recv === null || is_array($recv) || $recv instanceof \stdClass) {
+        if (Undefined::isNullish($recv) || is_array($recv) || $recv instanceof \stdClass) {
             return '';
         }
         return (string) preg_replace('/^\s+/u', '', $this->string($recv));
@@ -1868,7 +2022,7 @@ final class BarefootJS
 
     public function trim_end($recv): string
     {
-        if ($recv === null || is_array($recv) || $recv instanceof \stdClass) {
+        if (Undefined::isNullish($recv) || is_array($recv) || $recv instanceof \stdClass) {
             return '';
         }
         return (string) preg_replace('/\s+$/u', '', $this->string($recv));
@@ -1886,7 +2040,9 @@ final class BarefootJS
         if (is_infinite($n)) {
             return $n < 0 ? '-Infinity' : 'Infinity';
         }
-        $digits = $digits === null ? 0 : (int) $digits;
+        // An omitted or `undefined` digit count is 0, as ToIntegerOrInfinity
+        // makes `null` too.
+        $digits = self::omitted(func_num_args(), 1, $digits) ? 0 : $this->toIntegerOrInfinity($digits);
         if ($digits < 0) {
             $digits = 0;
         }
@@ -1896,36 +2052,52 @@ final class BarefootJS
     }
 
     /** `String.prototype.split(sep)`. An empty separator splits into
-     * individual (UTF-8) characters; undefined separator -> single-element
-     * array; empty receiver with a non-empty separator -> `['']`. */
+     * individual (UTF-8) characters; an omitted or `undefined` separator ->
+     * single-element array, any other one is ToString'd (`null` splits on
+     * "null"); empty receiver with a non-empty separator -> `['']`. An
+     * omitted or `undefined` limit is unbounded, any other one ToUint32'd
+     * (`null` and NaN are 0 -> empty; a negative limit wraps to a large one). */
     public function split($recv, $sep = null, $limit = null): array
     {
+        $argc = func_num_args();
         $s = $this->scalarOrEmpty($recv);
-        if ($sep === null) {
+        $sepStr = self::omitted($argc, 1, $sep) ? null : Evaluator::toStringJs($sep);
+        if ($sepStr === null) {
             $parts = [$s];
-        } elseif ($this->string($sep) === '') {
+        } elseif ($sepStr === '') {
             $parts = $s === '' ? [] : preg_split('//u', $s, -1, PREG_SPLIT_NO_EMPTY);
         } elseif ($s === '') {
             $parts = [''];
         } else {
-            $parts = explode($this->string($sep), $s);
+            $parts = explode($sepStr, $s);
         }
-        if ($limit !== null) {
-            $n = (int) $limit;
-            if ($n === 0) {
-                $parts = [];
-            } elseif ($n > 0 && $n < count($parts)) {
-                $parts = array_slice($parts, 0, $n);
+        if (!self::omitted($argc, 2, $limit)) {
+            $n = self::toUint32($limit);
+            if ($n < count($parts)) {
+                $parts = array_slice($parts, 0, (int) $n);
             }
         }
         return $parts;
     }
 
+    /** JS `ToUint32` (`split`'s limit): NaN and the infinities are 0. */
+    private static function toUint32($value): float
+    {
+        $n = Evaluator::toNumber($value);
+        if (is_nan($n) || is_infinite($n)) {
+            return 0.0;
+        }
+        $t = fmod($n < 0 ? ceil($n) : floor($n), 4294967296.0);
+        return $t < 0 ? $t + 4294967296.0 : $t;
+    }
+
+    /** The prefix is JS ToString'd; an omitted or `undefined` position is 0,
+     * and `null` is 0 too. */
     public function starts_with($recv, $prefix, $position = null): bool
     {
         $s = $this->scalarOrEmpty($recv);
-        $p = $this->string($prefix);
-        if ($position !== null) {
+        $p = Evaluator::toStringJs($prefix);
+        if (!self::omitted(func_num_args(), 2, $position)) {
             // `position` counts UTF-16 code units, like JS (#3613).
             $units = self::utf16Units($s);
             $n = max(0, min($this->toIntegerOrInfinity($position), count($units)));
@@ -1934,11 +2106,13 @@ final class BarefootJS
         return str_starts_with($s, $p);
     }
 
+    /** The suffix is JS ToString'd; an omitted or `undefined` endPosition is
+     * the length, a `null` one 0. */
     public function ends_with($recv, $suffix, $endPosition = null): bool
     {
         $s = $this->scalarOrEmpty($recv);
-        $x = $this->string($suffix);
-        if ($endPosition !== null) {
+        $x = Evaluator::toStringJs($suffix);
+        if (!self::omitted(func_num_args(), 2, $endPosition)) {
             // `endPosition` counts UTF-16 code units, like JS (#3613).
             $units = self::utf16Units($s);
             $needle = self::utf16Units($x);
@@ -1955,9 +2129,10 @@ final class BarefootJS
      * form only, replacing the FIRST occurrence (literal, not regex). */
     public function replace($recv, $pattern, $replacement): string
     {
+        // The pattern and the replacement are JS ToString'd.
         $s = $this->scalarOrEmpty($recv);
-        $o = $this->string($pattern);
-        $n = $this->string($replacement);
+        $o = Evaluator::toStringJs($pattern);
+        $n = Evaluator::toStringJs($replacement);
         if ($o === '') {
             return $n . $s;
         }
@@ -1981,9 +2156,10 @@ final class BarefootJS
      * runtime's other string helpers). */
     public function replace_all($recv, $pattern, $replacement): string
     {
+        // The pattern and the replacement are JS ToString'd.
         $s = $this->scalarOrEmpty($recv);
-        $o = $this->string($pattern);
-        $n = $this->string($replacement);
+        $o = Evaluator::toStringJs($pattern);
+        $n = Evaluator::toStringJs($replacement);
         if ($o === '') {
             $chars = $s === '' ? [] : mb_str_split($s, 1, 'UTF-8');
             return implode($n, array_merge([''], $chars, ['']));
@@ -2055,23 +2231,26 @@ final class BarefootJS
         return str_replace(' ', '+', $encoded);
     }
 
-    public function repeat($recv, $count): string
+    /** ToIntegerOrInfinity: an omitted, `undefined` or `null` count is 0. */
+    public function repeat($recv, $count = null): string
     {
         $s = $this->scalarOrEmpty($recv);
-        $n = $count !== null ? (int) $count : 0;
+        $n = $this->toIntegerOrInfinity(func_num_args() < 2 ? Undefined::value() : $count);
         return $n > 0 ? str_repeat($s, $n) : '';
     }
 
-    /** Pad `$s` to `$target` (UTF-8) characters with `$pad` (default a
-     * single space) repeated and truncated to fill. */
+    /** Pad `$s` to `$target` (UTF-8) characters with `$pad` repeated and
+     * truncated to fill. An omitted or `undefined` pad string is a single
+     * space; any other one is ToString'd (`null` pads with "null"). The
+     * target is ToIntegerOrInfinity'd. */
     private function pad(string $s, $target, $pad, bool $atStart): string
     {
-        $p = $pad === null ? ' ' : $this->string($pad);
+        $p = $pad instanceof Undefined ? ' ' : Evaluator::toStringJs($pad);
         if ($p === '') {
             return $s;
         }
         $len = mb_strlen($s, 'UTF-8');
-        $t = $target !== null ? (int) $target : 0;
+        $t = $this->toIntegerOrInfinity($target);
         if ($len >= $t) {
             return $s;
         }
@@ -2082,14 +2261,24 @@ final class BarefootJS
         return $atStart ? $fill . $s : $s . $fill;
     }
 
-    public function pad_start($recv, $target, $pad = null): string
+    public function pad_start($recv, $target = null, $pad = null): string
     {
+        [$target, $pad] = self::padArgs(func_num_args(), $target, $pad);
         return $this->pad($this->scalarOrEmpty($recv), $target, $pad, true);
     }
 
-    public function pad_end($recv, $target, $pad = null): string
+    public function pad_end($recv, $target = null, $pad = null): string
     {
+        [$target, $pad] = self::padArgs(func_num_args(), $target, $pad);
         return $this->pad($this->scalarOrEmpty($recv), $target, $pad, false);
+    }
+
+    /** `padStart` / `padEnd`'s arguments with every omitted one read as JS
+     * `undefined`. */
+    private static function padArgs(int $argc, $target, $pad): array
+    {
+        $undef = Undefined::value();
+        return [$argc < 2 ? $undef : $target, $argc < 3 ? $undef : $pad];
     }
 
     // -----------------------------------------------------------------
@@ -2139,7 +2328,10 @@ final class BarefootJS
 
     /** Compare two projected sort keys, ascending orientation (-1/0/1); the
      * caller negates for 'desc'. 'auto' compares numerically when both keys
-     * look like numbers, else lexically. `null` coalesces to '' / 0. */
+     * look like numbers, else lexically. A nil key (`null` / `undefined`)
+     * reads as '' lexically and `null` as 0 numerically; a numeric
+     * `a.f - b.f` over an `undefined` key is NaN, which the sort reads as
+     * "equal". */
     private function compareSortKey($av, $bv, string $compareType): int
     {
         // String comparisons below MUST use strcmp(), not PHP's `<=>`: PHP
@@ -2149,19 +2341,18 @@ final class BarefootJS
         // numeric-looking values -- see the matching note on
         // Evaluator::relational().
         if ($compareType === 'string') {
-            $a = $av === null ? '' : $this->string($av);
-            $b = $bv === null ? '' : $this->string($bv);
-            return strcmp($a, $b) <=> 0;
+            return strcmp((string) $this->string($av), (string) $this->string($bv)) <=> 0;
         }
         if ($compareType === 'auto') {
             if ($this->isNumericLike($av) && $this->isNumericLike($bv)) {
                 return $this->numericValue($av) <=> $this->numericValue($bv);
             }
-            $a = $av === null ? '' : $this->string($av);
-            $b = $bv === null ? '' : $this->string($bv);
-            return strcmp($a, $b) <=> 0;
+            return strcmp((string) $this->string($av), (string) $this->string($bv)) <=> 0;
         }
         // numeric
+        if ($av instanceof Undefined || $bv instanceof Undefined) {
+            return 0;
+        }
         $an = $av === null ? 0.0 : $this->numericValue($av);
         $bn = $bv === null ? 0.0 : $this->numericValue($bv);
         return $an <=> $bn;
@@ -2188,8 +2379,15 @@ final class BarefootJS
             return array_values($recv);
         }
 
+        // JS moves every `undefined` element to the end without handing it
+        // to the comparator.
+        $tail = [];
         $keyed = [];
         foreach ($recv as $item) {
+            if ($item instanceof Undefined) {
+                $tail[] = $item;
+                continue;
+            }
             $ks = [];
             foreach ($spec as $s) {
                 $ks[] = $s['key_kind'] === 'field' ? $this->getField($item, $s['key']) : $item;
@@ -2208,7 +2406,7 @@ final class BarefootJS
             return 0;
         });
 
-        return array_map(fn ($p) => $p[1], $keyed);
+        return array_merge(array_map(fn ($p) => $p[1], $keyed), $tail);
     }
 
     /** Fold an array into a scalar via the arithmetic-fold catalogue
@@ -2240,7 +2438,8 @@ final class BarefootJS
         $acc = $optsArr['init'] ?? 0;
         foreach ($items as $item) {
             $n = $project($item);
-            $numeric = ($n !== null && $this->isNumericLike($n)) ? $this->numericValue($n) : 0;
+            // A nil item (`null` / `undefined`) folds as 0, as it always has.
+            $numeric = (!Undefined::isNullish($n) && $this->isNumericLike($n)) ? $this->numericValue($n) : 0;
             $acc = $op === '*' ? $acc * $numeric : $acc + $numeric;
         }
         return $acc;
@@ -2305,7 +2504,7 @@ final class BarefootJS
 
     private function styleToCss($value): ?string
     {
-        if ($value === null) {
+        if (Undefined::isNullish($value)) {
             return null;
         }
         if (!($value instanceof \stdClass || is_array($value))) {
@@ -2317,7 +2516,7 @@ final class BarefootJS
         ksort($assoc, SORT_STRING);
         $parts = [];
         foreach ($assoc as $key => $v) {
-            if ($v === null) {
+            if (Undefined::isNullish($v)) {
                 continue;
             }
             $prop = preg_replace_callback('/([A-Z])/', fn ($m) => '-' . strtolower($m[1]), (string) $key);
@@ -2431,7 +2630,8 @@ final class BarefootJS
             if ($key === 'children') {
                 continue;
             }
-            if ($val === null) {
+            // null / undefined -> drop.
+            if (Undefined::isNullish($val)) {
                 continue;
             }
             if (is_bool($val)) {
@@ -2516,8 +2716,9 @@ final class BarefootJS
     // unary `-`. Each delegates to the evaluator's primitive of the same
     // operation, as `index` and `eq` already do, so a template helper call
     // and a callback body share one implementation. Unlike `number` and
-    // `string` (display helpers: null -> NAN / ''), null reads as JS null
-    // here (0 / 'null').
+    // `string` (display helpers: null / undefined -> NAN / ''), null reads as
+    // JS null here (0 / 'null') and undefined as JS undefined (NaN /
+    // 'undefined').
 
     public function to_number($v): float
     {

@@ -13,7 +13,9 @@
 import { bladeStringLiteral, bladeHashKey } from './blade-naming.ts'
 
 export function staticValueToBlade(value: unknown): string | null {
-  if (value === null || value === undefined) return 'null'
+  // JS `undefined` is the runtime's `UNDEF` (`$bf->undefined()`), `null` PHP's `null`.
+  if (value === undefined) return '$bf->undefined()'
+  if (value === null) return 'null'
   if (typeof value === 'boolean') return value ? 'true' : 'false'
   if (typeof value === 'number') return String(value)
   if (typeof value === 'string') return bladeStringLiteral(value)

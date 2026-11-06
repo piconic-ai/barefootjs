@@ -13,7 +13,9 @@
 import { escapeTwigSingleQuoted, twigHashKey } from './twig-naming.ts'
 
 export function staticValueToTwig(value: unknown): string | null {
-  if (value === null || value === undefined) return 'null'
+  // JS `undefined` is the runtime's `UNDEF` (`bf.undefined()`), `null` Twig's `null`.
+  if (value === undefined) return 'bf.undefined()'
+  if (value === null) return 'null'
   if (typeof value === 'boolean') return value ? 'true' : 'false'
   if (typeof value === 'number') return String(value)
   if (typeof value === 'string') return `'${escapeTwigSingleQuoted(value)}'`

@@ -121,7 +121,7 @@ export function Item(props: { defaultOn?: boolean }) {
   return <button>{on() ? 'ON' : 'OFF'}</button>
 }
 `)
-    expect(template).toContain('@php($on = ($defaultOn ?? false))')
+    expect(template).toContain('@php($on = ($bf->keep_nonnil(($defaultOn) ?? null) ?: [false])[0])')
   })
 
   // Verified empirically (this package's `php/` smoke tests): a plain PHP
@@ -138,7 +138,7 @@ export function C(props: { x?: number }) {
   return <span>{x()}</span>
 }
 `)
-    expect(template).toContain('@php($x = ($x ?? 7))')
+    expect(template).toContain('@php($x = ($bf->keep_nonnil(($x) ?? null) ?: [7])[0])')
   })
 
   test('emits data_key_attr on the component root', () => {
@@ -323,7 +323,7 @@ export function SortStatus() {
 }
 `)
     expect(template).toContain(
-      "@php($sort = ($searchParams->get('sort') ?? 'date'))",
+      "@php($sort = ($bf->keep_nonnil(($searchParams->get('sort')) ?? null) ?: ['date'])[0])",
     )
   })
 
@@ -346,7 +346,7 @@ export function TaggedList(props: { items: { title: string; tags: string[] }[] }
 }
 `)
     expect(template).toContain(
-      "@php($tag = ($searchParams->get('tag') ?? ''))",
+      "@php($tag = ($bf->keep_nonnil(($searchParams->get('tag')) ?? null) ?: [''])[0])",
     )
     expect(template).toContain('@php($visible = $bf->filter_eval($items,')
     expect(template).toContain("['tag' => $tag]")
@@ -842,7 +842,7 @@ export function C(props: { tags: string[] }) {
 // shared fixtures `computed-index-own-key` and
 // `remainder-negative-zero-quotient`.
 describe('BladeAdapter - index access (#3744)', () => {
-  test('an index and a non-identifier member go through $bf->index, an identifier member through data_get', () => {
+  test('an index, a non-identifier member and an unproven identifier member go through $bf->index', () => {
     const { template } = compileAndGenerate(`
 function Widget({ items, n, obj, k }: { items: string[]; n: number; obj: Record<string, string>; k: string }) {
   return <p>
@@ -858,7 +858,11 @@ function Widget({ items, n, obj, k }: { items: string[]; n: number; obj: Record<
     expect(template).toContain("$bf->index($items, '1')")
     expect(template).toContain('$bf->index($obj, $k)')
     expect(template).toContain("$bf->index($obj, 'a.b')")
-    expect(template).toContain("data_get($obj, 'plain')")
+    // A Record member may be missing, which JS reads as `undefined` and
+    // `data_get` as `null`, so only a field Phase 1 proves present and
+    // non-nil keeps `data_get` (#3848 U6).
+    expect(template).toContain("$bf->index($obj, 'plain')")
+    expect(template).not.toContain("data_get($obj, 'plain')")
     expect(template).not.toContain("data_get($obj, 'a.b')")
   })
 })

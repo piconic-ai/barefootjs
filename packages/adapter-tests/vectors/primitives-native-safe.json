@@ -7,7 +7,7 @@
     "go": false,
     "java": false,
     "perl": true,
-    "php": false,
+    "php": true,
     "python": true,
     "ruby": true,
     "rust": true
