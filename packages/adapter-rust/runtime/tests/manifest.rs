@@ -76,29 +76,46 @@ fn derive_stash_rest_props_prefers_props_own_key() {
     assert_eq!(rest.get("class"), Some(&JsValue::String("x".into())));
 }
 
-/// `extractSsrDefaults` writes no `value` for a prop without a default
-/// (spec/js-undefined-value.md, rollout step U1): such an entry seeds
-/// `Null`, exactly as `"value": null` did, and its key is still set.
+/// The seed (spec/js-undefined-value.md, "Decisions" (6)): a destructure
+/// default applies to an absent or `undefined` prop only; an explicit
+/// `Null` is JS `null` and keeps its value.
 #[test]
-fn derive_stash_missing_value_seeds_null_like_value_null() {
-    let missing = obj(vec![
-        ("n", obj(vec![("propName", JsValue::String("n".into()))])),
-        ("rest", obj(vec![("isRestProps", JsValue::Bool(true))])),
+fn derive_stash_default_applies_to_absent_or_undefined_only() {
+    let defaults = obj(vec![("v", obj(vec![("propName", JsValue::String("v".into())), ("value", JsValue::String("D".into()))]))]);
+    let seed = |props: JsValue| derive_stash_from_defaults(&defaults, &props);
+    assert_eq!(seed(obj(vec![])), obj(vec![("v", JsValue::String("D".into()))]));
+    assert_eq!(seed(obj(vec![("v", JsValue::Undefined)])), obj(vec![("v", JsValue::String("D".into()))]));
+    assert_eq!(seed(obj(vec![("v", JsValue::Null)])), obj(vec![("v", JsValue::Null)]));
+    assert_eq!(seed(obj(vec![("v", JsValue::Number(0.0))])), obj(vec![("v", JsValue::Number(0.0))]));
+}
+
+/// `extractSsrDefaults` writes no `value` for a prop without a default
+/// (rollout step U1); such a prop, absent or `undefined`, seeds
+/// `JsValue::Undefined`, and a present `Null` stays `Null`.
+#[test]
+fn derive_stash_prop_without_a_default_seeds_undefined() {
+    let defaults = obj(vec![("n", obj(vec![("propName", JsValue::String("n".into()))]))]);
+    let seed = |props: JsValue| derive_stash_from_defaults(&defaults, &props);
+    assert_eq!(seed(obj(vec![])), obj(vec![("n", JsValue::Undefined)]));
+    assert_eq!(seed(obj(vec![("n", JsValue::Undefined)])), obj(vec![("n", JsValue::Undefined)]));
+    assert_eq!(seed(obj(vec![("n", JsValue::Null)])), obj(vec![("n", JsValue::Null)]));
+    assert_eq!(seed(obj(vec![("n", JsValue::Number(3.0))])), obj(vec![("n", JsValue::Number(3.0))]));
+}
+
+/// `{ n: count = 1 }` seeds `count` from the caller's `n`; a signal entry
+/// keeps its `value`, and a rest entry prefers the caller's bag.
+#[test]
+fn derive_stash_renamed_signal_and_rest_entries() {
+    let renamed = obj(vec![("count", obj(vec![("propName", JsValue::String("n".into())), ("value", JsValue::Number(1.0))]))]);
+    assert_eq!(derive_stash_from_defaults(&renamed, &obj(vec![])), obj(vec![("count", JsValue::Number(1.0))]));
+    assert_eq!(derive_stash_from_defaults(&renamed, &obj(vec![("n", JsValue::Null)])), obj(vec![("count", JsValue::Null)]));
+    let defaults = obj(vec![
+        ("count", obj(vec![("value", JsValue::Number(0.0))])),
+        ("rest", obj(vec![("isRestProps", JsValue::Bool(true)), ("value", obj(vec![]))])),
     ]);
-    let explicit = obj(vec![
-        ("n", obj(vec![("propName", JsValue::String("n".into())), ("value", JsValue::Null)])),
-        ("rest", obj(vec![("isRestProps", JsValue::Bool(true)), ("value", JsValue::Null)])),
-    ]);
-    for props in [
-        obj(vec![]),
-        obj(vec![("n", JsValue::Null)]),
-        obj(vec![("n", JsValue::Number(3.0))]),
-        obj(vec![("rest", obj(vec![("a", JsValue::Number(1.0))]))]),
-    ] {
-        assert_eq!(derive_stash_from_defaults(&missing, &props), derive_stash_from_defaults(&explicit, &props));
-    }
-    let out = derive_stash_from_defaults(&missing, &obj(vec![]));
-    assert_eq!(out, obj(vec![("n", JsValue::Null), ("rest", JsValue::Null)]));
+    assert_eq!(derive_stash_from_defaults(&defaults, &obj(vec![])), obj(vec![("count", JsValue::Number(0.0)), ("rest", obj(vec![]))]));
+    let bag = obj(vec![("a", JsValue::Number(1.0))]);
+    assert_eq!(derive_stash_from_defaults(&defaults, &obj(vec![("rest", bag.clone())])), obj(vec![("count", JsValue::Number(0.0)), ("rest", bag)]));
 }
 
 #[test]

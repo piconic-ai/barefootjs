@@ -23,12 +23,12 @@
  * `buildVars`, returning a plain JS object (the payload's `vars` field)
  * instead of a Python dict *source string* — no `pyStr`/`toPyLiteral`
  * string-building layer is needed, JSON.stringify does that job, EXCEPT for
- * non-finite numbers (`NaN`/`Infinity`/`-Infinity`), which JSON cannot
- * represent — see `encodeSpecials` below for the `__bf_special` sentinel
- * that closes that gap.
+ * non-finite numbers (`NaN`/`Infinity`/`-Infinity`) and JS `undefined`,
+ * which JSON cannot represent — see `encodeSpecials` below for the
+ * `__bf_special` sentinel that closes that gap.
  */
 
-import { extractSsrDefaults, deriveStashFromDefaults, importsSearchParams } from '@barefootjs/jsx'
+import { extractSsrDefaults, importsSearchParams } from '@barefootjs/jsx'
 import { compileFixtureJSX } from '@barefootjs/adapter-tests/harness-program'
 import type { ComponentIR, SsrDefault } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
@@ -292,7 +292,9 @@ export async function renderMinijinjaComponent(options: RenderOptions): Promise<
 
     // Build the JSON payload's `vars` field (a plain JS object — the JSON
     // equivalent of `buildPythonProps`'s Python dict SOURCE, minus the
-    // string-building layer JSON.stringify now does for us).
+    // string-building layer JSON.stringify now does for us). The declared
+    // props, signals and memos are seeded by `bf-render` itself, through the
+    // runtime's production seed (`root_ssr_defaults` / `seed_props` below).
     const vars = buildVars(props, ir)
 
     // Build the JSON payload's `children` registration array — metadata
@@ -306,6 +308,7 @@ export async function renderMinijinjaComponent(options: RenderOptions): Promise<
       scope_id: rootScopeIdRaw,
       vars,
       children: childrenPayload,
+      ...buildSeedPayload(props, ir),
     }
     // (#1922) Request-scoped `searchParams()`: bind to an empty-query
     // reader only when the component imports `searchParams`, mirroring the
@@ -348,6 +351,26 @@ export async function renderMinijinjaComponent(options: RenderOptions): Promise<
     return stdout
   } finally {
     await rm(tempDir, { recursive: true, force: true }).catch(() => {})
+  }
+}
+
+/**
+ * The payload fields `bf-render` seeds the root's declared props, signals
+ * and memos from, through the runtime's production
+ * `derive_stash_from_defaults`: the statically-derived ssrDefaults (prop
+ * defaults + signal / memo initial values, #2696: production seeds nothing
+ * else), sent VERBATIM, over every prop the caller passed (a prop may itself
+ * be named with a leading `__`). The rest bag is routed into `vars`, so the
+ * seed's rest entry is dropped.
+ */
+function buildSeedPayload(
+  props: Record<string, unknown> | undefined,
+  ir: ComponentIR,
+): { root_ssr_defaults: Record<string, SsrDefault>; seed_props: Record<string, unknown>; rest_props_name: string | null } {
+  return {
+    root_ssr_defaults: extractSsrDefaults(ir.metadata) ?? {},
+    seed_props: props ?? {},
+    rest_props_name: ir.metadata.restPropsName ?? null,
   }
 }
 
@@ -429,45 +452,36 @@ function toSnakeCase(name: string): string {
 }
 
 /**
- * Build the JSON payload's `vars` object (props + signal / memo seeds), a
- * plain JS object — the direct JSON counterpart of adapter-jinja's
- * `buildPythonProps`, minus the Python-dict-SOURCE string-building it did
- * (`pyStr`/`toPyLiteral`); `JSON.stringify` (via `encodeSpecials` for the
- * non-finite-number edge case) does that job here. Unlike
- * `buildPythonProps`, this does NOT include a `scope_id` entry — the
- * payload protocol carries `scope_id` as its own top-level field (see
- * `renderMinijinjaComponent`), so threading a second copy through `vars`
- * would be redundant.
+ * Build the JSON payload's `vars` object (the rest bag and the caller's
+ * undeclared props), a plain JS object — the direct JSON counterpart of
+ * adapter-jinja's `buildPythonProps` entries, minus the Python-dict-SOURCE
+ * string-building it did (`pyStr`/`toPyLiteral`); `JSON.stringify` (via
+ * `encodeSpecials` for the non-finite-number and `undefined` edge cases)
+ * does that job here. Unlike `buildPythonProps`, this does NOT include a
+ * `scope_id` entry — the payload protocol carries `scope_id` as its own
+ * top-level field (see `renderMinijinjaComponent`), so threading a second
+ * copy through `vars` would be redundant.
  *
- * Keys are the RAW (unmangled) prop/signal/memo names — same as
- * `buildPythonProps` — because reserved-word mangling is applied
- * backend-side, in ONE place: the Rust runtime's `render_named` (see
- * `lib/minijinja-naming.ts`'s file header, divergence 5).
+ * Every declared prop, signal and memo is seeded at render time by the
+ * production `derive_stash_from_defaults` (`bf-render`, from the payload's
+ * `root_ssr_defaults` / `seed_props`; the same function `render_child` and
+ * the axum integration call), and the seed overrides these entries. An
+ * omitted declared prop is left out of the caller's props, never
+ * null-filled, so the runtime's seed decides
+ * (`spec/js-undefined-value.md`, "Shared: the seed and the default"): its
+ * default when it has one, `undefined` otherwise; a fixture's explicit
+ * `null` is a real `null`, and a fixture's `undefined` is `undefined`.
+ *
+ * Keys are the RAW (unmangled) prop names — same as `buildPythonProps` —
+ * because reserved-word mangling is applied backend-side, in ONE place: the
+ * Rust runtime's `render_named` (see `lib/minijinja-naming.ts`'s file
+ * header, divergence 5).
  */
 function buildVars(
   props: Record<string, unknown> | undefined,
   ir: ComponentIR,
 ): Record<string, unknown> {
   const vars: Record<string, unknown> = {}
-
-  // Prop params with defaults (before signals, so signals can reference them).
-  // Seeded through the shared `deriveStashFromDefaults` (the TS twin of the
-  // production `derive_stash_from_defaults` the Rust runtime calls at
-  // render time for child components — see `render_child` in
-  // `runtime/src/runtime.rs`) so an aliased destructured prop's
-  // CALLER-facing key (`propName`, e.g. `n` for `{ n: count }`) is
-  // honoured, not just the local template var name (#2524 SSR half).
-  // `props` is keyed by the caller-facing name, exactly what `propName`
-  // resolves against.
-  const rootSsrDefaults = extractSsrDefaults(ir.metadata) ?? {}
-  const derivedProps = deriveStashFromDefaults(rootSsrDefaults, props ?? {})
-  for (const param of ir.metadata.propsParams) {
-    if (param.isRest) continue
-    // No default + no caller value: pass `null` (Rust's `None`/minijinja
-    // Undefined) so a bare reference to an optional prop doesn't fault
-    // before its falsy branch elides.
-    vars[param.name] = derivedProps[param.name] ?? null
-  }
 
   // Route undeclared props into the rest bag (`bf.spread_attrs($<rest>)`).
   const restPropsName = ir.metadata.restPropsName
@@ -491,61 +505,20 @@ function buildVars(
   }
 
   // User props. Skip a key that's already a declared param's LOCAL template
-  // var name — `derivedProps` above already resolved that var correctly
-  // (through `propName`, for an aliased prop); re-assigning the raw
-  // `props[key]` here would silently clobber it with an UNRELATED value
-  // whenever a caller happens to also pass a same-spelled-as-local-name prop
-  // that isn't this param's actual `propName` (#2524 — surfaced by the
-  // aliased-destructured-prop generated data points, which pass both `n`
-  // (the real propName) and an incidental `count` key).
+  // var name — the seed resolves that var (through `propName`, for an
+  // aliased prop); the raw `props[key]` here would otherwise clobber it with
+  // an UNRELATED value whenever a caller also passes a same-spelled-as-local-
+  // name prop that isn't this param's actual `propName` (#2524 — surfaced by
+  // the aliased-destructured-prop generated data points, which pass both `n`
+  // (the real propName) and an incidental `count` key). A function value
+  // has no template form.
   const localParamNames = new Set(ir.metadata.propsParams.map(p => p.name))
   if (props) {
     for (const [key, value] of Object.entries(props)) {
       if (key.startsWith('__')) continue
-      if (routedKeys.has(key)) continue
-      if (localParamNames.has(key)) continue
-      if (
-        typeof value === 'string' ||
-        typeof value === 'number' ||
-        typeof value === 'boolean' ||
-        Array.isArray(value) ||
-        (value && typeof value === 'object')
-      ) {
-        vars[key] = value
-      }
+      if (routedKeys.has(key) || localParamNames.has(key) || typeof value === 'function') continue
+      vars[key] = value
     }
-  }
-
-  // No initializer re-evaluation against raw props — production's
-  // before_render seeds only from `deriveStashFromDefaults` (#2696).
-  for (const signal of ir.metadata.signals) {
-    // Env signals (#2057) are bound below via `search_params`, not from a
-    // static initial value.
-    if (signal.envReader) continue
-    if (Object.prototype.hasOwnProperty.call(derivedProps, signal.getter)) {
-      vars[signal.getter] = derivedProps[signal.getter]
-    }
-  }
-
-  // No `?? 0` for entries the manifest lacks — production seeds nothing there (#2696).
-  for (const memo of ir.metadata.memos) {
-    if (Object.prototype.hasOwnProperty.call(derivedProps, memo.name)) {
-      vars[memo.name] = derivedProps[memo.name]
-    }
-  }
-
-  // #2813: `extractSsrDefaults` can seed an entry under a name that is
-  // none of `propsParams` / `signals` / `memos` above — a bare local-const
-  // alias of a signal/memo getter (`const items__alias = items`,
-  // `ssr-defaults.ts`) seeds `items__alias` alongside `items`. Production
-  // hands the whole manifest-derived stash straight through
-  // (`deriveStashFromDefaults` IS the production seeding mechanism here,
-  // not a harness stand-in), so any leftover `derivedProps` key must be
-  // copied too, or this harness would silently omit what production
-  // actually provides, mismeasuring this conformance case.
-  for (const [name, value] of Object.entries(derivedProps)) {
-    if (Object.prototype.hasOwnProperty.call(vars, name)) continue
-    vars[name] = value
   }
 
   return vars
@@ -563,6 +536,10 @@ function buildVars(
  * uniformly rather than threading the transform through each builder.
  */
 function encodeSpecials(value: unknown): unknown {
+  // A fixture's `undefined` (a present key holding it, or an array
+  // element) is the runtime's `JsValue::Undefined`; `JSON.stringify` would
+  // drop the member (or write the element as `null`).
+  if (value === undefined) return { __bf_special: 'undefined' }
   if (value instanceof Date) {
     // A Date prop crosses the language boundary as its ISO-8601 string —
     // the shared `date()` runtime helper (#2274/#2288) accepts an ISO

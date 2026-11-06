@@ -10,6 +10,7 @@ defaults.
 from __future__ import annotations
 
 import json
+import math
 import unittest
 
 from barefootjs import UNDEF, BarefootJS, JinjaBackend, JsUndefined, is_null, is_nullish, is_undefined
@@ -154,6 +155,15 @@ class UndefinedValueTest(unittest.TestCase):
         coalesce = {"kind": "logical", "op": "??", "left": missing, "right": {"kind": "literal", "value": "d", "literalType": "string"}}
         self.assertEqual(evaluator.evaluate(coalesce, {"o": {}}), "d")
         self.assertEqual(evaluator.evaluate(coalesce, {"o": {"x": None}}), "d")
+
+    def test_string_and_number_with_no_argument(self):
+        def call(name, args):
+            return evaluator.evaluate({"kind": "call", "callee": {"kind": "identifier", "name": name}, "args": args}, {})
+        undef_arg = [{"kind": "identifier", "name": "undefined"}]
+        self.assertEqual(call("Number", []), 0)
+        self.assertEqual(call("String", []), "")
+        self.assertTrue(math.isnan(call("Number", undef_arg)))
+        self.assertEqual(call("String", undef_arg), "undefined")
 
 
 if __name__ == "__main__":

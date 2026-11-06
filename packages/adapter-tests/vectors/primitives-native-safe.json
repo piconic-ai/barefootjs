@@ -10,7 +10,7 @@
     "php": false,
     "python": true,
     "ruby": false,
-    "rust": false
+    "rust": true
   },
   "runtimes": {
     "go": {

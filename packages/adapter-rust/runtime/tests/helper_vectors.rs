@@ -129,27 +129,26 @@ fn bind_flat_map_tuple(recv: &JsValue, flat_args: &[JsValue]) -> JsValue {
 /// through `num::js_div` / `num::js_mod`-backed dispatch since the
 /// minijinja emitter uses `bf.div` / `bf.mod` for JS `/` and `%` (#3474).
 fn call_binding(fn_name: &str, args: &[JsValue]) -> Option<JsValue> {
-    let a = |i: usize| args.get(i).cloned().unwrap_or(JsValue::Null);
+    // An omitted argument is JS `undefined`, as a template's `bf.<helper>`
+    // call receives it.
+    let a = |i: usize| args.get(i).cloned().unwrap_or(JsValue::Undefined);
     Some(match fn_name {
         "add" => JsValue::Number(num::to_f64(&a(0)) + num::to_f64(&a(1))),
         "sub" => JsValue::Number(num::to_f64(&a(0)) - num::to_f64(&a(1))),
         "mul" => JsValue::Number(num::to_f64(&a(0)) * num::to_f64(&a(1))),
-        "div" => JsValue::Number(num::js_div(runtime::js_number(&a(0)), runtime::js_number(&a(1)))),
-        "mod" => JsValue::Number(num::js_mod(runtime::js_number(&a(0)), runtime::js_number(&a(1)))),
+        "div" => JsValue::Number(num::js_div(runtime::js_to_number(&a(0)), runtime::js_to_number(&a(1)))),
+        "mod" => JsValue::Number(num::js_mod(runtime::js_to_number(&a(0)), runtime::js_to_number(&a(1)))),
         "neg" => JsValue::Number(-num::to_f64(&a(0))),
         "string" => JsValue::String(runtime::js_string(&a(0))),
         "json" => JsValue::String(backend_minijinja::encode_json(&a(0))),
         "number" => JsValue::Number(runtime::js_number(&a(0))),
-        "floor" => JsValue::Number(num::js_floor(runtime::js_number(&a(0)))),
-        "ceil" => JsValue::Number(num::js_ceil(runtime::js_number(&a(0)))),
-        "round" => JsValue::Number(num::js_round(runtime::js_number(&a(0)))),
-        "min" => JsValue::Number(num::js_min(runtime::js_number(&a(0)), runtime::js_number(&a(1)))),
-        "max" => JsValue::Number(num::js_max(runtime::js_number(&a(0)), runtime::js_number(&a(1)))),
-        "abs" => JsValue::Number(num::js_abs(runtime::js_number(&a(0)))),
-        "to_fixed" => {
-            let digits = if args.len() > 1 { num::to_f64(&a(1)) as i32 } else { 0 };
-            JsValue::String(num::to_fixed(runtime::js_number(&a(0)), digits))
-        }
+        "floor" => JsValue::Number(num::js_floor(runtime::js_to_number(&a(0)))),
+        "ceil" => JsValue::Number(num::js_ceil(runtime::js_to_number(&a(0)))),
+        "round" => JsValue::Number(num::js_round(runtime::js_to_number(&a(0)))),
+        "min" => JsValue::Number(num::js_min(runtime::js_to_number(&a(0)), runtime::js_to_number(&a(1)))),
+        "max" => JsValue::Number(num::js_max(runtime::js_to_number(&a(0)), runtime::js_to_number(&a(1)))),
+        "abs" => JsValue::Number(num::js_abs(runtime::js_to_number(&a(0)))),
+        "to_fixed" => JsValue::String(runtime::to_fixed(&a(0), &a(1))),
         "date" => date::date(&a(0), a(1).as_str().unwrap_or("")),
         "format_date" => JsValue::String(
             date::format_date(&a(0), a(1).as_str().unwrap_or(""), a(2).as_str().unwrap_or(""), &a(3))
@@ -167,11 +166,7 @@ fn call_binding(fn_name: &str, args: &[JsValue]) -> Option<JsValue> {
         "repeat" => JsValue::String(runtime::repeat(&a(0), &a(1))),
         "pad_start" => JsValue::String(runtime::pad(&runtime::js_string(&a(0)), &a(1), &a(2), true)),
         "pad_end" => JsValue::String(runtime::pad(&runtime::js_string(&a(0)), &a(1), &a(2), false)),
-        "split" => {
-            let sep = if args.len() > 1 { Some(a(1)) } else { None };
-            let limit = if args.len() > 2 && !matches!(a(2), JsValue::Null) { Some(num::to_f64(&a(2)) as i64) } else { None };
-            runtime::split(&a(0), sep.as_ref(), limit)
-        }
+        "split" => runtime::split(&a(0), &a(1), &a(2)),
         "len" => JsValue::Number(runtime::length(&a(0))),
         "at" => runtime::at(&a(0), &a(1)),
         "includes" => JsValue::Bool(runtime::includes(&a(0), &a(1))),
@@ -196,9 +191,9 @@ fn call_binding(fn_name: &str, args: &[JsValue]) -> Option<JsValue> {
         "every" => JsValue::Bool(a(0).as_array().unwrap_or(&[]).iter().all(|item| truthy_pred(item, a(1).as_str().unwrap_or("")))),
         "some" => JsValue::Bool(a(0).as_array().unwrap_or(&[]).iter().any(|item| truthy_pred(item, a(1).as_str().unwrap_or("")))),
         "filter" => JsValue::Array(a(0).as_array().unwrap_or(&[]).iter().filter(|item| field_eq_pred(item, a(1).as_str().unwrap_or(""), &a(2))).cloned().collect()),
-        "find" => a(0).as_array().unwrap_or(&[]).iter().find(|item| field_eq_pred(item, a(1).as_str().unwrap_or(""), &a(2))).cloned().unwrap_or(JsValue::Null),
+        "find" => a(0).as_array().unwrap_or(&[]).iter().find(|item| field_eq_pred(item, a(1).as_str().unwrap_or(""), &a(2))).cloned().unwrap_or(JsValue::Undefined),
         "find_index" => JsValue::Number(a(0).as_array().unwrap_or(&[]).iter().position(|item| field_eq_pred(item, a(1).as_str().unwrap_or(""), &a(2))).map(|i| i as f64).unwrap_or(-1.0)),
-        "find_last" => a(0).as_array().unwrap_or(&[]).iter().rev().find(|item| field_eq_pred(item, a(1).as_str().unwrap_or(""), &a(2))).cloned().unwrap_or(JsValue::Null),
+        "find_last" => a(0).as_array().unwrap_or(&[]).iter().rev().find(|item| field_eq_pred(item, a(1).as_str().unwrap_or(""), &a(2))).cloned().unwrap_or(JsValue::Undefined),
         "find_last_index" => {
             let items = a(0).as_array().unwrap_or(&[]).to_vec();
             let idx = (0..items.len()).rev().find(|&i| field_eq_pred(&items[i], a(1).as_str().unwrap_or(""), &a(2)));
@@ -248,7 +243,7 @@ fn matches(got: &JsValue, expect: &JsonValue) -> bool {
             _ => false,
         };
     }
-    if matches!(got, JsValue::Null | JsValue::Array(_) | JsValue::Object(_)) {
+    if matches!(got, JsValue::Undefined | JsValue::Null | JsValue::Array(_) | JsValue::Object(_)) {
         return false;
     }
     if let Some(n) = expect.as_f64() {
@@ -266,7 +261,7 @@ fn matches(got: &JsValue, expect: &JsonValue) -> bool {
 /// on Python's own (non-JS) `bool()` conversion.
 fn py_truthy(v: &JsValue) -> bool {
     match v {
-        JsValue::Null => false,
+        JsValue::Undefined | JsValue::Null => false,
         JsValue::Bool(b) => *b,
         JsValue::Number(n) => !n.is_nan() && *n != 0.0,
         JsValue::String(s) => !s.is_empty(),

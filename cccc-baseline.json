@@ -173,9 +173,6 @@
       ]
     },
     "packages/adapter-rust/src/test-render.ts": {
-      "buildVars": [
-        48
-      ],
       "renderMinijinjaComponent": [
         55
       ]

@@ -25,8 +25,10 @@ import type {
 } from '@barefootjs/jsx'
 import { escapeMinijinjaSingleQuoted, minijinjaHashKey } from '../lib/minijinja-naming.ts'
 
-// The undefined literal is the `slice` end the source left out; MiniJinja reads `none`.
-const ARRAY_METHOD_SPELLING = prefixedArrayMethodSpelling('bf.', 'none')
+// The undefined literal is the `slice` end the source left out: the
+// runtime's undefined (`bf.undefined`), which `bf.slice` reads as "to the
+// length"; `none` would be a `null` end, which JS coerces to 0.
+const ARRAY_METHOD_SPELLING = prefixedArrayMethodSpelling('bf.', 'bf.undefined')
 
 /**
  * Lower `object.method(...args)` through the shared catalogue

@@ -51,10 +51,52 @@ use minijinja::{Error, ErrorKind, State};
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::sync::{Arc, Mutex};
 
-const NULL_JS: JsValue = JsValue::Null;
+const UNDEFINED_JS: JsValue = JsValue::Undefined;
 
+/// The `i`th helper argument. An omitted one is JS `undefined`, so every
+/// optional argument's default (`is_undefined`) applies to it exactly as it
+/// does to a passed `undefined`; an explicit `null` is coerced like any other
+/// value (spec/js-undefined-value.md, §4 "Runtime helper code to audit").
 fn arg(args: &[JsValue], i: usize) -> &JsValue {
-    args.get(i).unwrap_or(&NULL_JS)
+    args.get(i).unwrap_or(&UNDEFINED_JS)
+}
+
+/// JS `ToIntegerOrInfinity` for a position, index or count argument: NaN
+/// (`undefined`, a non-numeric string) is 0, truncation toward zero, and the
+/// infinities clamp to the `i64` range so a caller's range check treats them
+/// as out of range. `null` is 0 (ToNumber).
+fn to_integer_or_infinity(v: &JsValue) -> i64 {
+    let n = evaluator::to_number(v);
+    if n.is_nan() {
+        return 0;
+    }
+    // `as` saturates at the `i64` bounds (and the infinities with them).
+    n.trunc() as i64
+}
+
+/// `Array.prototype.at`'s index: ToIntegerOrInfinity, counted from the end
+/// when negative; `None` when it falls outside `[0, length)`.
+fn relative_index(i: &JsValue, length: usize) -> Option<usize> {
+    let length = length as i64;
+    let idx = to_integer_or_infinity(i);
+    let idx = if idx < 0 { idx.saturating_add(length) } else { idx };
+    (0..length).contains(&idx).then_some(idx as usize)
+}
+
+/// A `slice` bound: counted from the end when negative, clamped to
+/// `[0, length]`.
+fn clamp_relative(idx: i64, length: i64) -> i64 {
+    let idx = if idx < 0 { idx.saturating_add(length) } else { idx };
+    idx.clamp(0, length)
+}
+
+/// JS `ToUint32` (`split`'s limit): NaN and the infinities are 0.
+fn to_uint32(v: &JsValue) -> u32 {
+    let n = evaluator::to_number(v);
+    if !n.is_finite() {
+        return 0;
+    }
+    n.trunc().rem_euclid(4_294_967_296.0) as u32
 }
 
 // ---------------------------------------------------------------------------
@@ -96,15 +138,16 @@ pub fn mangle_ident(name: &str) -> String {
 // ---------------------------------------------------------------------------
 
 /// JS `String(v)` mirror, with the SAME `null`/`undefined` divergence the
-/// Perl/Python runtimes document: [`JsValue::Null`] (JS `null` AND
-/// `undefined` -- both collapse to `Null` in this domain, see `num.rs`)
-/// renders as the empty string (not `"null"`) so an unset prop doesn't
-/// surface as a literal "null"/"undefined" in user-facing HTML. Contrast
-/// with `evaluator::to_string`, which is JS-faithful (`null` -> `"null"`)
-/// -- see that function's docstring.
+/// Perl/Python runtimes document: [`JsValue::Null`] and
+/// [`JsValue::Undefined`] render as the empty string (not `"null"` /
+/// `"undefined"`) so an unset prop doesn't surface as a literal word in
+/// user-facing HTML. This is the display helper a text or attribute sink
+/// uses; contrast with `evaluator::to_string`, which is JS-faithful (`null`
+/// -> `"null"`, `undefined` -> `"undefined"`) -- see that function's
+/// docstring.
 pub fn js_string(v: &JsValue) -> String {
     match v {
-        JsValue::Null => String::new(),
+        JsValue::Undefined | JsValue::Null => String::new(),
         JsValue::Bool(b) => if *b { "true" } else { "false" }.to_string(),
         JsValue::Number(n) => num::format_js_number(*n),
         JsValue::String(s) => s.clone(),
@@ -113,7 +156,7 @@ pub fn js_string(v: &JsValue) -> String {
         // JS-faithful fallback rather than a Rust `Debug` dump.
         JsValue::Array(items) => items
             .iter()
-            .map(|v| if matches!(v, JsValue::Null) { String::new() } else { js_string(v) })
+            .map(js_string)
             .collect::<Vec<_>>()
             .join(","),
         JsValue::Object(_) => "[object Object]".to_string(),
@@ -131,7 +174,7 @@ pub fn js_string(v: &JsValue) -> String {
 /// / parse failure can't silently zero downstream arithmetic.
 pub fn js_number(v: &JsValue) -> f64 {
     match v {
-        JsValue::Null => f64::NAN,
+        JsValue::Undefined | JsValue::Null => f64::NAN,
         JsValue::Bool(b) => if *b { 1.0 } else { 0.0 },
         JsValue::Number(n) => *n,
         JsValue::String(s) => if num::looks_like_number(s) { num::parse_number_literal(s) } else { f64::NAN },
@@ -148,7 +191,7 @@ pub fn js_number(v: &JsValue) -> f64 {
 /// evaluator's primitive of the same operation, so a template helper call
 /// and a callback body share one implementation. Unlike `js_number` and
 /// `js_string` (display helpers: null -> NaN / ""), null reads as JS null
-/// here (0 / "null").
+/// here (0 / "null") and undefined as JS undefined (NaN / "undefined").
 pub fn js_to_number(v: &JsValue) -> f64 {
     evaluator::to_number(v)
 }
@@ -178,11 +221,27 @@ pub fn js_neg(v: &JsValue) -> JsValue {
     evaluator::unary("-", v)
 }
 
+/// `Number.prototype.toFixed(digits)`: an omitted or `undefined` digit
+/// count is 0, as ToIntegerOrInfinity makes `null` too.
+pub fn to_fixed(v: &JsValue, digits: &JsValue) -> String {
+    num::to_fixed(js_number(v), to_integer_or_infinity(digits).clamp(0, 100) as i32)
+}
+
+/// JS binary `-` / `*`: ToNumber of both operands (`undefined` is NaN,
+/// `null` is 0).
+pub fn js_sub(l: &JsValue, r: &JsValue) -> JsValue {
+    evaluator::binary("-", l, r)
+}
+
+pub fn js_mul(l: &JsValue, r: &JsValue) -> JsValue {
+    evaluator::binary("*", l, r)
+}
+
 /// JS truthiness: `[]` / `{}` are truthy; only `null`/`undefined`, `false`,
 /// `0`, `''`, and `NaN` are falsy.
 pub fn js_truthy(v: &JsValue) -> bool {
     match v {
-        JsValue::Null => false,
+        JsValue::Undefined | JsValue::Null => false,
         JsValue::Bool(b) => *b,
         JsValue::Number(n) => !n.is_nan() && *n != 0.0, // not NaN, not zero
         JsValue::String(s) => !s.is_empty(),          // incl. the JS-truthy "0"
@@ -196,8 +255,8 @@ pub fn js_bool_str(v: bool) -> &'static str {
 }
 
 /// String receivers arriving as an array/object coerce to `''`; anything
-/// else (including `null`) goes through [`js_string`]. Shared by every
-/// string-method helper below.
+/// else (including `null` / `undefined`) goes through [`js_string`]. Shared
+/// by every string-method helper below.
 fn scalar_or_empty(v: &JsValue) -> String {
     match v {
         JsValue::Array(_) | JsValue::Object(_) => String::new(),
@@ -241,18 +300,11 @@ fn char_slice_range(s: &str, start: usize, end: usize) -> String {
 
 /// Clamp JS `.slice(start, end?)` bounds against a receiver of
 /// `length` elements -- shared by `slice`'s array and string branches
-/// below.
+/// below. Both bounds are ToIntegerOrInfinity'd (`null` is 0); an omitted
+/// or `undefined` end is the length.
 fn clamp_slice_range(length: i64, start: &JsValue, end: &JsValue) -> (i64, i64) {
-    let mut s = if matches!(start, JsValue::Null) { 0 } else { num::to_f64(start) as i64 };
-    if s < 0 {
-        s += length;
-    }
-    s = s.clamp(0, length);
-    let mut e = if matches!(end, JsValue::Null) { length } else { num::to_f64(end) as i64 };
-    if e < 0 {
-        e += length;
-    }
-    e = e.clamp(0, length);
+    let s = clamp_relative(to_integer_or_infinity(start), length);
+    let e = if end.is_undefined() { length } else { clamp_relative(to_integer_or_infinity(end), length) };
     (s, e)
 }
 
@@ -339,11 +391,11 @@ fn escape_html_chars(s: &str) -> String {
 
 fn style_to_css(v: &JsValue) -> Option<String> {
     match v {
-        JsValue::Null => None,
+        JsValue::Undefined | JsValue::Null => None,
         JsValue::Object(map) => {
             let mut parts = Vec::new();
             for (key, val) in map {
-                if matches!(val, JsValue::Null) {
+                if val.is_nullish() {
                     continue;
                 }
                 let prop = to_kebab_case(key);
@@ -461,7 +513,7 @@ pub fn spread_attrs(bag: &JsValue) -> String {
         if key == "children" {
             continue;
         }
-        if matches!(val, JsValue::Null) {
+        if val.is_nullish() {
             continue;
         }
         if let JsValue::Bool(b) = val {
@@ -488,7 +540,7 @@ pub fn spread_attrs(bag: &JsValue) -> String {
 
 fn is_numeric_like(v: &JsValue) -> bool {
     match v {
-        JsValue::Null | JsValue::Bool(_) => false,
+        JsValue::Undefined | JsValue::Null | JsValue::Bool(_) => false,
         JsValue::Number(_) => true,
         JsValue::String(s) => num::looks_like_number(s),
         JsValue::Array(_) | JsValue::Object(_) | JsValue::Date(_) => false,
@@ -497,7 +549,7 @@ fn is_numeric_like(v: &JsValue) -> bool {
 
 fn numeric_value(v: &JsValue) -> f64 {
     match v {
-        JsValue::Null | JsValue::Array(_) | JsValue::Object(_) | JsValue::Date(_) => 0.0,
+        JsValue::Undefined | JsValue::Null | JsValue::Array(_) | JsValue::Object(_) | JsValue::Date(_) => 0.0,
         JsValue::Bool(b) => if *b { 1.0 } else { 0.0 },
         JsValue::Number(n) => *n,
         JsValue::String(s) => if num::looks_like_number(s) { num::parse_number_literal(s) } else { 0.0 },
@@ -507,19 +559,20 @@ fn numeric_value(v: &JsValue) -> f64 {
 /// Compare two projected sort keys, ascending orientation; the caller
 /// reverses for `desc`. `"auto"` compares numerically when both keys look
 /// like numbers, else lexically (matches Go/Perl's `bf_sort`). `null`
-/// coalesces to `''` / `0` so the order stays total.
+/// coalesces to `''` / `0` so the order stays total. A numeric compare over
+/// an `undefined` key is `a - b` = NaN, which the sort reads as "equal".
 fn compare_sort_key(a: &JsValue, b: &JsValue, compare_type: &str) -> std::cmp::Ordering {
     use std::cmp::Ordering;
-    let str_of = |v: &JsValue| if matches!(v, JsValue::Null) { String::new() } else { js_string(v) };
     match compare_type {
-        "string" => str_of(a).cmp(&str_of(b)),
+        "string" => js_string(a).cmp(&js_string(b)),
         "auto" => {
             if is_numeric_like(a) && is_numeric_like(b) {
                 numeric_value(a).partial_cmp(&numeric_value(b)).unwrap_or(Ordering::Equal)
             } else {
-                str_of(a).cmp(&str_of(b))
+                js_string(a).cmp(&js_string(b))
             }
         }
+        _ if a.is_undefined() || b.is_undefined() => Ordering::Equal,
         _ => numeric_value(a).partial_cmp(&numeric_value(b)).unwrap_or(Ordering::Equal),
     }
 }
@@ -536,6 +589,9 @@ pub fn sort(recv: &JsValue, opts: &JsValue) -> JsValue {
         Some(a) => a,
         None => return JsValue::Array(Vec::new()),
     };
+    // JS moves every `undefined` element to the end without handing it to
+    // the comparator.
+    let (items, tail): (Vec<JsValue>, Vec<JsValue>) = items.iter().cloned().partition(|v| !v.is_undefined());
     let keys = opts.as_object().and_then(|m| m.get("keys")).and_then(|v| v.as_array()).unwrap_or(&[]);
     let spec: Vec<SortKeySpec> = keys
         .iter()
@@ -550,18 +606,18 @@ pub fn sort(recv: &JsValue, opts: &JsValue) -> JsValue {
         })
         .collect();
     if spec.is_empty() {
-        return JsValue::Array(items.to_vec());
+        return JsValue::Array(recv.as_array().unwrap_or(&[]).to_vec());
     }
 
     let project = |item: &JsValue, s: &SortKeySpec| -> JsValue {
         if s.key_kind == "field" {
-            item.as_object().and_then(|m| m.get(&s.key)).cloned().unwrap_or(JsValue::Null)
+            evaluator::read_property(item, &s.key)
         } else {
             item.clone()
         }
     };
 
-    let mut out = items.to_vec();
+    let mut out = items;
     out.sort_by(|a, b| {
         for s in &spec {
             let mut c = compare_sort_key(&project(a, s), &project(b, s), &s.compare_type);
@@ -574,6 +630,7 @@ pub fn sort(recv: &JsValue, opts: &JsValue) -> JsValue {
         }
         std::cmp::Ordering::Equal
     });
+    out.extend(tail);
     JsValue::Array(out)
 }
 
@@ -594,7 +651,7 @@ pub fn reduce(recv: &JsValue, opts: &JsValue) -> JsValue {
     }
     let project = |item: &JsValue| -> JsValue {
         if key_kind == "field" {
-            item.as_object().and_then(|m| m.get(key)).cloned().unwrap_or(JsValue::Null)
+            evaluator::read_property(item, key)
         } else {
             item.clone()
         }
@@ -602,7 +659,7 @@ pub fn reduce(recv: &JsValue, opts: &JsValue) -> JsValue {
 
     if rtype == "string" {
         let mut acc = match om.and_then(|m| m.get("init")) {
-            Some(JsValue::Null) | None => String::new(),
+            Some(JsValue::Null | JsValue::Undefined) | None => String::new(),
             Some(other) => js_string(other),
         };
         for item in &items {
@@ -612,13 +669,13 @@ pub fn reduce(recv: &JsValue, opts: &JsValue) -> JsValue {
     }
 
     let mut acc: f64 = match om.and_then(|m| m.get("init")) {
-        Some(JsValue::Null) | None => 0.0,
+        Some(JsValue::Null | JsValue::Undefined) | None => 0.0,
         Some(JsValue::Number(n)) => *n,
         Some(other) => js_number(other),
     };
     for item in &items {
         let val = project(item);
-        let n = if !matches!(val, JsValue::Null) && is_numeric_like(&val) { numeric_value(&val) } else { 0.0 };
+        let n = if is_numeric_like(&val) { numeric_value(&val) } else { 0.0 };
         acc = if op == "*" { acc * n } else { acc + n };
     }
     JsValue::Number(acc)
@@ -689,7 +746,7 @@ pub fn flat_map(recv: &JsValue, key_kind: &str, key: &str) -> JsValue {
     };
     let projected: Vec<JsValue> = items
         .iter()
-        .map(|el| if key_kind == "field" { el.as_object().and_then(|m| m.get(key)).cloned().unwrap_or(JsValue::Null) } else { el.clone() })
+        .map(|el| if key_kind == "field" { evaluator::read_property(el, key) } else { el.clone() })
         .collect();
     JsValue::Array(flat(&projected, 1))
 }
@@ -703,7 +760,7 @@ pub fn flat_map_tuple(recv: &JsValue, specs: &[(String, String)]) -> JsValue {
     for el in items {
         for (kind, key) in specs {
             if kind == "field" {
-                out.push(el.as_object().and_then(|m| m.get(key)).cloned().unwrap_or(JsValue::Null));
+                out.push(evaluator::read_property(el, key));
             } else {
                 out.push(el.clone());
             }
@@ -730,14 +787,15 @@ fn utf16_has_at(hay: &[u16], needle: &[u16], at: i64) -> bool {
 /// `Array.prototype.indexOf` / `.lastIndexOf` (`reverse`), dispatching on
 /// the receiver: a string is `String.prototype.indexOf` / `.lastIndexOf`,
 /// counted in UTF-16 code units like JS (#3613) -- `'日本語'.indexOf('本')`
-/// is 1 and `'a😀b'.indexOf('b')` is 3. Anything else goes through
+/// is 1 and `'a😀b'.indexOf('b')` is 3; the needle is JS ToString'd
+/// (`undefined` searches for `"undefined"`). Anything else goes through
 /// `array_index_of`.
 pub fn index_of(recv: &JsValue, elem: &JsValue, reverse: bool) -> i64 {
     let JsValue::String(s) = recv else {
         return array_index_of(recv, elem, reverse);
     };
     let hay = utf16_units(s);
-    let needle = utf16_units(&js_string(elem));
+    let needle = utf16_units(&evaluator::to_string(elem));
     let last = hay.len() as i64 - needle.len() as i64;
     if last < 0 {
         return -1;
@@ -751,30 +809,22 @@ pub fn array_index_of(recv: &JsValue, elem: &JsValue, reverse: bool) -> i64 {
         Some(a) => a,
         None => return -1,
     };
+    // Strict equality tells the nils apart: `null` matches only `null`,
+    // `undefined` only `undefined`.
     let idxs: Vec<usize> = if reverse { (0..items.len()).rev().collect() } else { (0..items.len()).collect() };
-    for i in idxs {
-        let item = &items[i];
-        if matches!(item, JsValue::Null) {
-            if matches!(elem, JsValue::Null) {
-                return i as i64;
-            }
-            continue;
-        }
-        if !matches!(elem, JsValue::Null) && num::strict_eq(item, elem) {
-            return i as i64;
-        }
-    }
-    -1
+    idxs.into_iter().find(|&i| num::strict_eq(&items[i], elem)).map(|i| i as i64).unwrap_or(-1)
 }
 
+/// `padStart` / `padEnd`: an omitted or `undefined` pad string is a space;
+/// any other one is ToString'd (`null` pads with `"null"`). The target
+/// length is ToIntegerOrInfinity'd.
 pub fn pad(s: &str, target: &JsValue, pad_v: &JsValue, at_start: bool) -> String {
-    let p = if matches!(pad_v, JsValue::Null) { " ".to_string() } else { js_string(pad_v) };
+    let p = if pad_v.is_undefined() { " ".to_string() } else { evaluator::to_string(pad_v) };
     if p.is_empty() {
         return s.to_string();
     }
     let length = char_len(s);
-    let t = (if matches!(target, JsValue::Null) { 0.0 } else { num::to_f64(target) }) as i64;
-    let t = t.max(0) as usize;
+    let t = to_integer_or_infinity(target).clamp(0, i64::from(u32::MAX)) as usize;
     if length >= t {
         return s.to_string();
     }
@@ -823,8 +873,8 @@ pub fn some(recv: &JsValue, pred: impl Fn(&JsValue) -> bool) -> bool {
 
 pub fn find(recv: &JsValue, pred: impl Fn(&JsValue) -> bool) -> JsValue {
     match recv.as_array() {
-        Some(items) => items.iter().find(|x| pred(x)).cloned().unwrap_or(JsValue::Null),
-        None => JsValue::Null,
+        Some(items) => items.iter().find(|x| pred(x)).cloned().unwrap_or(JsValue::Undefined),
+        None => JsValue::Undefined,
     }
 }
 
@@ -837,8 +887,8 @@ pub fn find_index(recv: &JsValue, pred: impl Fn(&JsValue) -> bool) -> i64 {
 
 pub fn find_last(recv: &JsValue, pred: impl Fn(&JsValue) -> bool) -> JsValue {
     match recv.as_array() {
-        Some(items) => items.iter().rev().find(|x| pred(x)).cloned().unwrap_or(JsValue::Null),
-        None => JsValue::Null,
+        Some(items) => items.iter().rev().find(|x| pred(x)).cloned().unwrap_or(JsValue::Undefined),
+        None => JsValue::Undefined,
     }
 }
 
@@ -1004,12 +1054,12 @@ impl BfInstance {
 
     /// Whether this component's caller passed the prop `name`, even as
     /// `none`: JS's `name in props`, which a template can't ask of its vars
-    /// (every declared prop is seeded, so an omitted one and a `none` one
-    /// read the same). A `{...props}` spread onto a child carries a param
-    /// only when this is true. The keys are those `render_child` recorded
-    /// for a child and `props` for the root; with neither recorded (a root
-    /// rendered without props), `fallback`, the template's own "not nil"
-    /// test, decides.
+    /// (every declared prop is seeded, so an omitted one reads as its
+    /// default or `undefined`, as a present `undefined` one does). A
+    /// `{...props}` spread onto a child carries a param only when this is
+    /// true. The keys are those `render_child` recorded for a child and
+    /// `props` for the root; with neither recorded (a root rendered without
+    /// props), `fallback`, the template's own `is defined` test, decides.
     fn passed(&self, name: &str, fallback: bool) -> bool {
         if let Some(keys) = &self.caller_keys {
             return keys.contains(name);
@@ -1045,6 +1095,7 @@ impl BfInstance {
     fn data_key_attr(&self) -> String {
         match &self.data_key {
             None => String::new(),
+            Some(k) if k.is_nullish() => String::new(),
             Some(k) => {
                 let k_str = js_string(k).replace('&', "&amp;").replace('"', "&quot;");
                 format!(" data-key=\"{k_str}\"")
@@ -1310,10 +1361,13 @@ impl BfInstance {
 /// child's HTML -- see `render_child`'s docstring). `ssr_defaults` is the
 /// RAW (un-flattened) `{value, propName?, isRestProps?}` shape; `props` is
 /// the caller's ALREADY-mangled prop map. Only the STATIC fallback
-/// (`d.value`, from the manifest/generated payload -- JSX prop values are
-/// never statically evaluable, so they're always `null` there) goes through
-/// [`js_to_mj`]. Returns keys already mangled (matching `props`'s own
-/// convention), ready to merge/overwrite directly.
+/// (`d.value`, from the manifest/generated payload, written only for a prop
+/// with a default) goes through [`js_to_mj`]. Same seed as
+/// [`crate::manifest::derive_stash_from_defaults`]: a present prop keeps its
+/// value (`none` is JS `null`); an absent or undefined one takes its
+/// default, or undefined when it has none (spec/js-undefined-value.md,
+/// "Shared: the seed and the default"). Returns keys already mangled
+/// (matching `props`'s own convention), ready to merge/overwrite directly.
 fn resolve_child_vars(ssr_defaults: &JsValue, props: &BTreeMap<String, MjValue>) -> BTreeMap<String, MjValue> {
     let mut extra = BTreeMap::new();
     let defaults_map = match ssr_defaults.as_object() {
@@ -1331,7 +1385,7 @@ fn resolve_child_vars(ssr_defaults: &JsValue, props: &BTreeMap<String, MjValue>)
                 continue;
             }
         };
-        let fallback = || js_to_mj(&dm.get("value").cloned().unwrap_or(JsValue::Null));
+        let fallback = || js_to_mj(&crate::manifest::static_fallback(dm));
         if matches!(dm.get("isRestProps"), Some(JsValue::Bool(true))) {
             // The rest bag is already assembled (as a real `Value`, member
             // safe flags intact) under its own mangled key by the rest-bag
@@ -1344,7 +1398,8 @@ fn resolve_child_vars(ssr_defaults: &JsValue, props: &BTreeMap<String, MjValue>)
         let prop_name = dm.get("propName").and_then(|v| v.as_str());
         let from_props = prop_name.and_then(|pn| props.get(&mangle_ident(pn)));
         let v = match from_props {
-            Some(pv) if !matches!(pv.kind(), ValueKind::None | ValueKind::Undefined) => pv.clone(),
+            // A present prop keeps its value; host `none` is JS `null`.
+            Some(pv) if !pv.is_undefined() => pv.clone(),
             _ => fallback(),
         };
         extra.insert(key, v);
@@ -1370,7 +1425,10 @@ pub fn mj_to_js(v: &MjValue) -> JsValue {
         return JsValue::Date(d.0);
     }
     match v.kind() {
-        ValueKind::Undefined | ValueKind::None => JsValue::Null,
+        // minijinja's undefined (a var or key that was never set) is JS
+        // `undefined`; its `none` is JS `null`.
+        ValueKind::Undefined => JsValue::Undefined,
+        ValueKind::None => JsValue::Null,
         ValueKind::Bool => JsValue::Bool(v.is_true()),
         // Preserves NaN/Infinity: minijinja's `F64` repr is a bare `f64`
         // with no finiteness constraint (unlike `serde_json::Value`, see
@@ -1433,6 +1491,7 @@ pub fn mj_map_to_btreemap(v: &MjValue) -> BTreeMap<String, MjValue> {
 
 pub fn js_to_mj(v: &JsValue) -> MjValue {
     match v {
+        JsValue::Undefined => MjValue::UNDEFINED,
         JsValue::Null => MjValue::from(()),
         JsValue::Bool(b) => MjValue::from(*b),
         JsValue::Number(n) => MjValue::from(*n),
@@ -1650,18 +1709,34 @@ impl Object for BfInstance {
             // NOTE: "string" is dispatched above (before the generic
             // `js_args` conversion) so a safe input can pass through
             // unchanged -- see that early-return's docstring.
+            // `JSON.stringify`: a top-level `undefined` gives no string, so it
+            // is undefined itself, which prints nothing and omits an
+            // attribute.
+            "json" if a(0).is_undefined() => Ok(MjValue::UNDEFINED),
             "json" => Ok(MjValue::from(backend_minijinja::encode_json(a(0)))),
             "number" => Ok(MjValue::from(js_number(a(0)))),
             "truthy" => Ok(MjValue::from(js_truthy(a(0)))),
-            "div" => Ok(MjValue::from(num::js_div(js_number(a(0)), js_number(a(1))))),
-            "mod" => Ok(MjValue::from(num::js_mod(js_number(a(0)), js_number(a(1))))),
-            "floor" => Ok(MjValue::from(num::js_floor(js_number(a(0))))),
-            "ceil" => Ok(MjValue::from(num::js_ceil(js_number(a(0))))),
-            "round" => Ok(MjValue::from(num::js_round(js_number(a(0))))),
-            "min" => Ok(MjValue::from(num::js_min(js_number(a(0)), js_number(a(1))))),
-            "max" => Ok(MjValue::from(num::js_max(js_number(a(0)), js_number(a(1))))),
-            "abs" => Ok(MjValue::from(num::js_abs(js_number(a(0))))),
-            "to_fixed" => Ok(MjValue::from(num::to_fixed(js_number(a(0)), num::to_f64(a(1)) as i32))),
+            // The nil tests (spec/js-undefined-value.md, "Decisions" (3) and
+            // (7)): JS `x === undefined`, `x === null` and the loose
+            // `x == null`. A template spells a nil-test plan through them.
+            "is_undefined" => Ok(MjValue::from(a(0).is_undefined())),
+            "is_null" => Ok(MjValue::from(a(0).is_null())),
+            "is_nullish" => Ok(MjValue::from(a(0).is_nullish())),
+            // JS arithmetic and `Math` helpers apply JS ToNumber
+            // (`null` is 0, `undefined` NaN).
+            "div" => Ok(MjValue::from(num::js_div(js_to_number(a(0)), js_to_number(a(1))))),
+            "mod" => Ok(MjValue::from(num::js_mod(js_to_number(a(0)), js_to_number(a(1))))),
+            "sub" => Ok(js_to_mj(&js_sub(a(0), a(1)))),
+            "mul" => Ok(js_to_mj(&js_mul(a(0), a(1)))),
+            "floor" => Ok(MjValue::from(num::js_floor(js_to_number(a(0))))),
+            "ceil" => Ok(MjValue::from(num::js_ceil(js_to_number(a(0))))),
+            "round" => Ok(MjValue::from(num::js_round(js_to_number(a(0))))),
+            "min" => Ok(MjValue::from(num::js_min(js_to_number(a(0)), js_to_number(a(1))))),
+            "max" => Ok(MjValue::from(num::js_max(js_to_number(a(0)), js_to_number(a(1))))),
+            "abs" => Ok(MjValue::from(num::js_abs(js_to_number(a(0))))),
+            // An omitted or `undefined` digit count is 0, as
+            // ToIntegerOrInfinity makes `null` too.
+            "to_fixed" => Ok(MjValue::from(to_fixed(a(0), a(1)))),
             // `date(recv, op)` -- zero-arg `Date.prototype` method
             // lowering (spec/template-helpers.md "date", #2274). `recv` is
             // either a `JsDate`-wrapped native receiver (already converted
@@ -1689,9 +1764,9 @@ impl Object for BfInstance {
             "uc" => Ok(MjValue::from(js_string(a(0)).to_uppercase())),
             "join" => Ok(MjValue::from(join(a(0), a(1)))),
             // An object's `.length` is its own `length` property
-            // (`{ length: 3 }`), null when it has none (#3449).
+            // (`{ length: 3 }`), `undefined` when it has none (#3449).
             "length" => match a(0) {
-                JsValue::Object(m) => Ok(js_to_mj(m.get("length").unwrap_or(&JsValue::Null))),
+                JsValue::Object(m) => Ok(js_to_mj(m.get("length").unwrap_or(&JsValue::Undefined))),
                 other => Ok(MjValue::from(length(other))),
             },
             "get" => Ok(js_to_mj(&js_get(a(0), a(1)))),
@@ -1716,7 +1791,7 @@ impl Object for BfInstance {
             "omit" => Ok(js_to_mj(&omit(a(0), a(1)))),
             "reverse" => Ok(js_to_mj(&reverse(a(0)))),
             "flat" => {
-                let depth = if matches!(a(1), JsValue::Null) { 1 } else { num::to_f64(a(1)) as i64 };
+                let depth = if a(1).is_undefined() { 1 } else { num::to_f64(a(1)) as i64 };
                 Ok(js_to_mj(&JsValue::Array(flat(a(0).as_array().unwrap_or(&[]), depth))))
             }
             // Dynamic-depth `.flat(depth)` (#2094) -- `depth` is an arbitrary
@@ -1736,11 +1811,7 @@ impl Object for BfInstance {
             "trim" => Ok(MjValue::from(trim(a(0)))),
             "trim_start" => Ok(MjValue::from(trim_start(a(0)))),
             "trim_end" => Ok(MjValue::from(trim_end(a(0)))),
-            "split" => {
-                let sep = if args.len() > 1 { Some(a(1)) } else { None };
-                let limit = if args.len() > 2 && !matches!(a(2), JsValue::Null) { Some(num::to_f64(a(2)) as i64) } else { None };
-                Ok(js_to_mj(&split(a(0), sep, limit)))
-            }
+            "split" => Ok(js_to_mj(&split(a(0), a(1), a(2)))),
             "starts_with" => Ok(MjValue::from(starts_with(a(0), a(1), a(2)))),
             "ends_with" => Ok(MjValue::from(ends_with(a(0), a(1), a(2)))),
             "replace" => Ok(MjValue::from(replace(a(0), a(1), a(2)))),
@@ -1766,7 +1837,7 @@ impl Object for BfInstance {
             }
             "reduce_eval" => {
                 let base_env = eval_base_env(a(6));
-                let direction = if matches!(a(5), JsValue::Null) { "left".to_string() } else { js_string(a(5)) };
+                let direction = if a(5).is_nullish() { "left".to_string() } else { js_string(a(5)) };
                 let out = evaluator::fold_json(a(0), a(1).as_str().unwrap_or(""), a(2).as_str().unwrap_or(""), a(3).as_str().unwrap_or(""), a(4).clone(), &direction, &base_env)
                     .map_err(eval_json_error)?;
                 Ok(js_to_mj(&out))
@@ -1787,13 +1858,13 @@ impl Object for BfInstance {
                 Ok(MjValue::from(out))
             }
             "find_eval" => {
-                let forward = if matches!(a(3), JsValue::Null) { true } else { js_truthy(a(3)) };
+                let forward = if a(3).is_nullish() { true } else { js_truthy(a(3)) };
                 let base_env = eval_base_env(a(4));
                 let out = evaluator::find_json(a(0), a(1).as_str().unwrap_or(""), a(2).as_str().unwrap_or(""), forward, &base_env).map_err(eval_json_error)?;
                 Ok(js_to_mj(&out))
             }
             "find_index_eval" => {
-                let forward = if matches!(a(3), JsValue::Null) { true } else { js_truthy(a(3)) };
+                let forward = if a(3).is_nullish() { true } else { js_truthy(a(3)) };
                 let base_env = eval_base_env(a(4));
                 let out = evaluator::find_index_json(a(0), a(1).as_str().unwrap_or(""), a(2).as_str().unwrap_or(""), forward, &base_env).map_err(eval_json_error)?;
                 Ok(MjValue::from(out))
@@ -1811,6 +1882,15 @@ impl Object for BfInstance {
 
             _ => Err(Error::from(ErrorKind::UnknownMethod)),
         }
+    }
+
+    /// `bf.undefined` is JS `undefined`, minijinja's own undefined value:
+    /// how a template spells the `undefined` identifier, an omitted method
+    /// argument and a `?.` over a nullish receiver
+    /// (spec/js-undefined-value.md, rollout step U3). minijinja's `none` is
+    /// JS `null`.
+    fn get_value(self: &Arc<Self>, key: &MjValue) -> Option<MjValue> {
+        (key.as_str() == Some("undefined")).then_some(MjValue::UNDEFINED)
     }
 
     fn enumerate(self: &Arc<Self>) -> Enumerator {
@@ -1844,20 +1924,26 @@ requestAnimationFrame(function(){if(window.__bf_hydrate)window.__bf_hydrate()})\
 // mirrors runtime.py's methods, which only use `self` for `self.backend`).
 // ---------------------------------------------------------------------------
 
+/// `Array.prototype.includes` (SameValueZero, which tells `undefined` from
+/// `null`) or `String.prototype.includes`, whose needle is JS ToString'd
+/// (`undefined` searches for `"undefined"`).
 pub fn includes(recv: &JsValue, elem: &JsValue) -> bool {
     match recv {
         JsValue::Array(items) => items.iter().any(|item| num::same_value_zero(item, elem)),
         JsValue::Object(_) => false,
-        other => js_string(other).contains(&js_string(elem)),
+        other => js_string(other).contains(&evaluator::to_string(elem)),
     }
 }
 
+/// `Array.prototype.join`: an omitted or `undefined` separator is `,`; any
+/// other one is ToString'd, so `null` joins with `"null"`. A nil element
+/// joins as `""`.
 pub fn join(recv: &JsValue, sep: &JsValue) -> String {
     let items = match recv.as_array() {
         Some(a) => a,
         None => return String::new(),
     };
-    let sep_s = if matches!(sep, JsValue::Null) { ",".to_string() } else { js_string(sep) };
+    let sep_s = if sep.is_undefined() { ",".to_string() } else { evaluator::to_string(sep) };
     items.iter().map(js_string).collect::<Vec<_>>().join(&sep_s)
 }
 
@@ -1899,40 +1985,26 @@ pub fn is_element(recv: &JsValue) -> bool {
     }
 }
 
-/// `Array.prototype.at(i)` / `String.prototype.at(i)`: negative indices
-/// count from the end, out of range is null. A string is indexed in
-/// UTF-16 code units (#3613). Half of a surrogate pair, a lone surrogate
-/// in JS, comes back as U+FFFD: a Rust `String` can't hold one, so the
-/// halves compare equal and don't rejoin (limitation
-/// `string-at-lone-surrogate`).
+/// `Array.prototype.at(i)` / `String.prototype.at(i)`: the index is
+/// ToIntegerOrInfinity'd (an omitted, `undefined` or `null` one reads
+/// element 0), negative indices count from the end, and a miss is
+/// `undefined`. A string is indexed in UTF-16 code units (#3613). Half of a
+/// surrogate pair, a lone surrogate in JS, comes back as U+FFFD: a Rust
+/// `String` can't hold one, so the halves compare equal and don't rejoin
+/// (limitation `string-at-lone-surrogate`).
 pub fn at(recv: &JsValue, i: &JsValue) -> JsValue {
     if let JsValue::String(s) = recv {
-        if matches!(i, JsValue::Null) {
-            return JsValue::Null;
-        }
         let units = utf16_units(s);
-        let length = units.len() as i64;
-        let idx = num::to_f64(i) as i64;
-        let idx = if idx < 0 { length + idx } else { idx };
-        if idx < 0 || idx >= length {
-            return JsValue::Null;
-        }
-        return JsValue::String(String::from_utf16_lossy(&units[idx as usize..idx as usize + 1]));
+        return match relative_index(i, units.len()) {
+            Some(idx) => JsValue::String(String::from_utf16_lossy(&units[idx..idx + 1])),
+            None => JsValue::Undefined,
+        };
     }
     let items = match recv.as_array() {
         Some(a) => a,
-        None => return JsValue::Null,
+        None => return JsValue::Undefined,
     };
-    if matches!(i, JsValue::Null) {
-        return JsValue::Null;
-    }
-    let length = items.len() as i64;
-    if length == 0 {
-        return JsValue::Null;
-    }
-    let idx = num::to_f64(i) as i64;
-    let idx = if idx < 0 { length + idx } else { idx };
-    if idx < 0 || idx >= length { JsValue::Null } else { items[idx as usize].clone() }
+    relative_index(i, items.len()).map(|idx| items[idx].clone()).unwrap_or(JsValue::Undefined)
 }
 
 pub fn concat(a: &JsValue, b: &JsValue) -> JsValue {
@@ -2012,7 +2084,7 @@ pub fn reverse(recv: &JsValue) -> JsValue {
 
 pub fn trim(recv: &JsValue) -> String {
     match recv {
-        JsValue::Null | JsValue::Array(_) | JsValue::Object(_) => String::new(),
+        JsValue::Undefined | JsValue::Null | JsValue::Array(_) | JsValue::Object(_) => String::new(),
         other => js_string(other).trim().to_string(),
     }
 }
@@ -2021,7 +2093,7 @@ pub fn trim(recv: &JsValue) -> String {
 /// above (#2183 follow-up), via Rust's native `str::trim_start`.
 pub fn trim_start(recv: &JsValue) -> String {
     match recv {
-        JsValue::Null | JsValue::Array(_) | JsValue::Object(_) => String::new(),
+        JsValue::Undefined | JsValue::Null | JsValue::Array(_) | JsValue::Object(_) => String::new(),
         other => js_string(other).trim_start().to_string(),
     }
 }
@@ -2030,59 +2102,59 @@ pub fn trim_start(recv: &JsValue) -> String {
 /// above (#2183 follow-up), via Rust's native `str::trim_end`.
 pub fn trim_end(recv: &JsValue) -> String {
     match recv {
-        JsValue::Null | JsValue::Array(_) | JsValue::Object(_) => String::new(),
+        JsValue::Undefined | JsValue::Null | JsValue::Array(_) | JsValue::Object(_) => String::new(),
         other => js_string(other).trim_end().to_string(),
     }
 }
 
-pub fn split(recv: &JsValue, sep: Option<&JsValue>, limit: Option<i64>) -> JsValue {
+/// `String.prototype.split(sep?, limit?)`: an omitted or `undefined`
+/// separator yields `[s]`; any other one is ToString'd (`null` splits on
+/// `"null"`). An omitted or `undefined` limit is unbounded; any other one is
+/// ToUint32'd (`null` is 0).
+pub fn split(recv: &JsValue, sep: &JsValue, limit: &JsValue) -> JsValue {
     let s = scalar_or_empty(recv);
-    let mut parts: Vec<String> = match sep {
-        None => vec![s],
-        Some(JsValue::Null) => vec![s],
-        Some(sep_v) => {
-            let sep_s = js_string(sep_v);
-            if sep_s.is_empty() {
-                s.chars().map(|c| c.to_string()).collect()
-            } else if s.is_empty() {
-                vec![String::new()]
-            } else {
-                s.split(sep_s.as_str()).map(str::to_string).collect()
-            }
+    let mut parts: Vec<String> = if sep.is_undefined() {
+        vec![s]
+    } else {
+        let sep_s = evaluator::to_string(sep);
+        if sep_s.is_empty() {
+            s.chars().map(|c| c.to_string()).collect()
+        } else if s.is_empty() {
+            vec![String::new()]
+        } else {
+            s.split(sep_s.as_str()).map(str::to_string).collect()
         }
     };
-    if let Some(n) = limit {
-        if n == 0 {
-            parts.clear();
-        } else if n > 0 && (n as usize) < parts.len() {
-            parts.truncate(n as usize);
-        }
+    if !limit.is_undefined() {
+        parts.truncate(to_uint32(limit) as usize);
     }
     JsValue::Array(parts.into_iter().map(JsValue::String).collect())
 }
 
 /// `String.prototype.startsWith(prefix, position?)`; `position` counts
-/// UTF-16 code units, like JS (#3613).
+/// UTF-16 code units, like JS (#3613). An omitted or `undefined` position
+/// is 0; `null` is too (ToIntegerOrInfinity). The prefix is ToString'd.
 pub fn starts_with(recv: &JsValue, prefix: &JsValue, position: &JsValue) -> bool {
     let s = scalar_or_empty(recv);
-    let p = js_string(prefix);
-    if !matches!(position, JsValue::Null) {
+    let p = evaluator::to_string(prefix);
+    if !position.is_undefined() {
         let units = utf16_units(&s);
-        let n = (num::to_f64(position).max(0.0) as usize).min(units.len());
+        let n = (to_integer_or_infinity(position).max(0) as usize).min(units.len());
         return utf16_has_at(&units, &utf16_units(&p), n as i64);
     }
     s.starts_with(&p)
 }
 
 /// `String.prototype.endsWith(suffix, endPosition?)`; `endPosition` counts
-/// UTF-16 code units, like JS (#3613).
+/// UTF-16 code units, like JS (#3613). An omitted or `undefined`
+/// endPosition is the length; `null` is 0. The suffix is ToString'd.
 pub fn ends_with(recv: &JsValue, suffix: &JsValue, end_position: &JsValue) -> bool {
     let s = scalar_or_empty(recv);
-    let x = js_string(suffix);
-    if !matches!(end_position, JsValue::Null) {
+    let x = evaluator::to_string(suffix);
+    if !end_position.is_undefined() {
         let units = utf16_units(&s);
         let needle = utf16_units(&x);
-        let e = (num::to_f64(end_position).max(0.0) as usize).min(units.len());
+        let e = (to_integer_or_infinity(end_position).max(0) as usize).min(units.len());
         return utf16_has_at(&units, &needle, e as i64 - needle.len() as i64);
     }
     if x.is_empty() {
@@ -2097,8 +2169,8 @@ pub fn ends_with(recv: &JsValue, suffix: &JsValue, end_position: &JsValue) -> bo
 
 pub fn replace(recv: &JsValue, pattern: &JsValue, replacement: &JsValue) -> String {
     let s = scalar_or_empty(recv);
-    let o = js_string(pattern);
-    let n = js_string(replacement);
+    let o = evaluator::to_string(pattern);
+    let n = evaluator::to_string(replacement);
     if o.is_empty() {
         return format!("{n}{s}");
     }
@@ -2117,8 +2189,8 @@ pub fn replace(recv: &JsValue, pattern: &JsValue, replacement: &JsValue) -> Stri
 /// backends whose native replace is first-occurrence-only does.
 pub fn replace_all(recv: &JsValue, pattern: &JsValue, replacement: &JsValue) -> String {
     let s = scalar_or_empty(recv);
-    let o = js_string(pattern);
-    let n = js_string(replacement);
+    let o = evaluator::to_string(pattern);
+    let n = evaluator::to_string(replacement);
     s.replace(&o, &n)
 }
 
@@ -2167,9 +2239,11 @@ pub fn query(base: &JsValue, triples: &[JsValue]) -> String {
     format!("{b}?{joined}")
 }
 
+/// `String.prototype.repeat(count)`: the count is ToIntegerOrInfinity'd
+/// (`undefined` and `null` are 0).
 pub fn repeat(recv: &JsValue, count: &JsValue) -> String {
     let s = scalar_or_empty(recv);
-    let n = if matches!(count, JsValue::Null) { 0 } else { num::to_f64(count) as i64 };
+    let n = to_integer_or_infinity(count);
     if n > 0 { s.repeat(n as usize) } else { String::new() }
 }
 

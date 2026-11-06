@@ -96,7 +96,11 @@ pub fn to_template_name(component_name: &str) -> String {
 ///     rest-props bag the caller may have already assembled), else the
 ///     static `value` fallback (normally `{}`).
 ///   * `propName` set -- prefer `props[propName]` when present AND not
-///     `null`/`undefined`, else the static `value` fallback. For an
+///     `undefined` (a present `null` is JS `null` and keeps it: a
+///     destructure default applies to an absent or `undefined` prop only,
+///     spec/js-undefined-value.md "Decisions" (6)), else the static
+///     fallback: the entry's `value` (the manifest writes one only for a
+///     prop with a default), or `undefined` when it has none. For an
 ///     UN-aliased prop `propName` equals the entry's own key; for an
 ///     ALIASED destructured prop (`{ n: count }`, see
 ///     `packages/jsx/src/ssr-defaults.ts`'s `extractSsrDefaults`) the
@@ -124,7 +128,7 @@ pub fn derive_stash_from_defaults(defaults: &JsValue, props: &JsValue) -> JsValu
                 continue;
             }
         };
-        let fallback = || dm.get("value").cloned().unwrap_or(JsValue::Null);
+        let fallback = || static_fallback(dm);
         if matches!(dm.get("isRestProps"), Some(JsValue::Bool(true))) {
             let v = props_map.and_then(|p| p.get(name)).cloned().unwrap_or_else(fallback);
             extra.insert(name.clone(), v);
@@ -133,12 +137,22 @@ pub fn derive_stash_from_defaults(defaults: &JsValue, props: &JsValue) -> JsValu
         let prop_name = dm.get("propName").and_then(|v| v.as_str());
         let from_props = prop_name.and_then(|pn| props_map.and_then(|p| p.get(pn)));
         let v = match from_props {
-            Some(pv) if !matches!(pv, JsValue::Null) => pv.clone(),
+            // A present prop keeps its value; host nil is JS `null`.
+            Some(pv) if !pv.is_undefined() => pv.clone(),
             _ => fallback(),
         };
         extra.insert(name.clone(), v);
     }
     JsValue::Object(extra)
+}
+
+/// An `ssrDefaults` entry's seed when the caller's prop is absent or
+/// `undefined`: its `value` (the prop's default), or `undefined` when the
+/// prop has none (the manifest writes no `value` then). A signal / memo
+/// entry always carries its `value`. Shared with
+/// `runtime::BfInstance::render_child`'s `MjValue`-domain twin.
+pub(crate) fn static_fallback(entry: &BTreeMap<String, JsValue>) -> JsValue {
+    entry.get("value").cloned().unwrap_or(JsValue::Undefined)
 }
 
 /// Strip the manifest's `markedTemplate` value (e.g. `"templates/PostList

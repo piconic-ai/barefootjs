@@ -112,7 +112,11 @@ fn bf_formatter(out: &mut Output, state: &State, value: &MjValue) -> Result<(), 
 /// `JSON.stringify` writes it ([`num::format_js_number`]: `-2`, `-4e-8`,
 /// `-400000000000000000000`, `-4e+21`), where `serde_json` writes a float
 /// beyond `i64` as `-4e+20` (#3787). Strings and dates are written by
-/// `serde_json` as before.
+/// `serde_json` as before. `undefined` follows `JSON.stringify`
+/// (spec/js-undefined-value.md, "JSON re-serialisation"): an object member
+/// holding it is skipped and an array element is written as `null`, at any
+/// depth. A top-level `undefined` gives no string in JS; `bf.json` answers
+/// that case itself (undefined, which prints nothing), so here it is `null`.
 pub fn encode_json(v: &JsValue) -> String {
     let mut out = String::new();
     write_json(v, &mut out);
@@ -128,13 +132,14 @@ fn write_json(v: &JsValue, out: &mut String) {
                 if i > 0 {
                     out.push(',');
                 }
+                // `undefined` falls through to `to_json`'s `null` below.
                 write_json(el, out);
             }
             out.push(']');
         }
         JsValue::Object(o) => {
             out.push('{');
-            for (i, (k, el)) in o.iter().enumerate() {
+            for (i, (k, el)) in o.iter().filter(|(_, el)| !el.is_undefined()).enumerate() {
                 if i > 0 {
                     out.push(',');
                 }
@@ -144,7 +149,8 @@ fn write_json(v: &JsValue, out: &mut String) {
             }
             out.push('}');
         }
-        // Null, booleans, strings, dates and non-finite numbers (`null`).
+        // Null, undefined (`null`), booleans, strings, dates and non-finite
+        // numbers (`null`).
         _ => out.push_str(&v.to_json().to_string()),
     }
 }

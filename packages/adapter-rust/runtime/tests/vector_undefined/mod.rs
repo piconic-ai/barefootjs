@@ -2,18 +2,11 @@
 //! encoding for vectors"): the one-key `{"$undef": true}` sentinel, shared by
 //! the primitive, helper and eval vector harnesses.
 //!
-//! The Rust runtime has no undefined value yet (rollout step U3 adds
-//! `JsValue::Undefined`), so for now:
-//!
-//! - in `args` and the evaluator `env` the sentinel decodes to [`arg`], the
-//!   host nil (`JsValue::Null`) a template receives for `undefined` today;
-//! - in an `expect` it matches only a value [`is_runtime_undefined`] accepts.
-//!   None exists yet, so it never matches, also inside nested arrays and
-//!   objects, and every such case is listed in an expected-failure ledger or
-//!   pinned as a divergence.
-//!
-//! U3 flips both here: [`arg`] returns the runtime's undefined and
-//! [`is_runtime_undefined`] recognizes it.
+//! - In `args` and the evaluator `env` the sentinel decodes to [`arg`], the
+//!   runtime's `JsValue::Undefined` (rollout step U3), which a template
+//!   receives for `undefined`.
+//! - In an `expect` it matches only a value [`is_runtime_undefined`]
+//!   accepts: `JsValue::Undefined`, also inside nested arrays and objects.
 #![allow(dead_code)]
 
 use barefootjs::num::JsValue;
@@ -22,12 +15,12 @@ use std::path::Path;
 
 /// What a `$undef` in `args` / `env` decodes to.
 pub fn arg() -> JsValue {
-    JsValue::Null
+    JsValue::Undefined
 }
 
-/// Whether `got` is the runtime's own undefined value (none yet: U3).
-pub fn is_runtime_undefined(_got: &JsValue) -> bool {
-    false
+/// Whether `got` is the runtime's own undefined value.
+pub fn is_runtime_undefined(got: &JsValue) -> bool {
+    got.is_undefined()
 }
 
 /// Whether a JSON value is `{"$undef": true}`.

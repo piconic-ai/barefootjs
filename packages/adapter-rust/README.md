@@ -110,9 +110,18 @@ array/string helpers, the `*_eval` evaluator helpers, `spread_attrs`,
 `spec/template-helpers.md` for the semantic contract each helper must
 satisfy, and the crate's own tests under `runtime/tests/`.
 
+JS `undefined` and `null` are two values (`spec/js-undefined-value.md`):
+host nil (`JsValue::Null`, minijinja's `none`) is JS `null`, and
+`JsValue::Undefined` (minijinja's undefined) is JS `undefined`. To leave a
+prop unset, omit its key (an omitted prop takes its destructure default, or
+reads as `undefined`); pass `JsValue::Undefined` for a prop that is present
+and `undefined`. A prop passed as `JsValue::Null` is `null`: its default does
+not apply. `barefootjs::Opt<T>` carries the same four presence states for a
+typed host struct (see `runtime/README.md` for the serde recipe).
+
 The crate also ships a `bf-render` binary — a conformance renderer that
 reads a JSON payload (`templates_dir`, `entry`, `scope_id`, `vars`,
-`search_params?`, `children[]`) and writes the rendered HTML to stdout. It
+`root_ssr_defaults`, `seed_props`, `search_params?`, `children[]`) and writes the rendered HTML to stdout. It
 is what `src/test-render.ts` builds (once, memoized — `cargo build
 --manifest-path runtime/Cargo.toml --bin bf-render`) and spawns per
 conformance fixture; a production host would instead link the `barefootjs`

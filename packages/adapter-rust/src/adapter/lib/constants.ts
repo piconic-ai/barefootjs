@@ -21,8 +21,12 @@ import type { PrimitiveSpec } from './types.ts'
  */
 export const JINJA_TEMPLATE_PRIMITIVES: Record<string, PrimitiveSpec> = {
   'JSON.stringify': { arity: 1, emit: (args) => `bf.json(${args[0]})` },
-  'String':         { arity: 1, emit: (args) => `bf.string(${args[0]})` },
-  'Number':         { arity: 1, emit: (args) => `bf.number(${args[0]})` },
+  // `String(x)` / `Number(x)` are JS ToString / ToNumber (`bf.to_string` /
+  // `bf.to_number`), which read `null` and `undefined` apart (`"null"` / 0,
+  // `"undefined"` / NaN); `bf.string` / `bf.number` are the display helpers
+  // a text or attribute sink uses.
+  'String':         { arity: 1, emit: (args) => `bf.to_string(${args[0]})` },
+  'Number':         { arity: 1, emit: (args) => `bf.to_number(${args[0]})` },
   'Math.floor':     { arity: 1, emit: (args) => `bf.floor(${args[0]})` },
   'Math.ceil':      { arity: 1, emit: (args) => `bf.ceil(${args[0]})` },
   'Math.round':     { arity: 1, emit: (args) => `bf.round(${args[0]})` },
