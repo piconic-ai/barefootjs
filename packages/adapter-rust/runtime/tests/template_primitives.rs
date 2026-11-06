@@ -156,8 +156,8 @@ fn string_index_methods_count_utf16_units() {
     assert_eq!(runtime::at(&s("日本語"), &n(-1.0)), s("語"));
     assert_eq!(runtime::at(&s("a😀b"), &n(-1.0)), s("b"));
     assert_eq!(runtime::at(&s("a😀b"), &n(3.0)), s("b"));
-    assert_eq!(runtime::at(&s("abc"), &n(3.0)), JsValue::Null);
-    assert_eq!(runtime::at(&s(""), &n(0.0)), JsValue::Null);
+    assert_eq!(runtime::at(&s("abc"), &n(3.0)), JsValue::Undefined);
+    assert_eq!(runtime::at(&s(""), &n(0.0)), JsValue::Undefined);
     // Half of a surrogate pair: U+FFFD where JS keeps a lone surrogate
     // (pinned divergence, limitation `string-at-lone-surrogate`).
     assert_eq!(runtime::at(&s("a😀b"), &n(1.0)), s("\u{FFFD}"));
@@ -174,8 +174,8 @@ fn string_index_methods_count_utf16_units() {
 #[test]
 fn string_index_methods_non_finite_positions() {
     assert_eq!(runtime::at(&s("abc"), &n(f64::NAN)), s("a"));
-    assert_eq!(runtime::at(&s("abc"), &n(f64::INFINITY)), JsValue::Null);
-    assert_eq!(runtime::at(&s("abc"), &n(f64::NEG_INFINITY)), JsValue::Null);
+    assert_eq!(runtime::at(&s("abc"), &n(f64::INFINITY)), JsValue::Undefined);
+    assert_eq!(runtime::at(&s("abc"), &n(f64::NEG_INFINITY)), JsValue::Undefined);
     assert_eq!(runtime::at(&s("abc"), &n(1.9)), s("b"));
     assert_eq!(runtime::at(&s("abc"), &n(-1.5)), s("c"));
     assert!(runtime::starts_with(&s("abc"), &s("a"), &n(f64::NAN)));
@@ -191,11 +191,11 @@ fn at_helper() {
     assert_eq!(runtime::at(&arr_v, &n(2.0)), s("c"));
     assert_eq!(runtime::at(&arr_v, &n(-1.0)), s("c"));
     assert_eq!(runtime::at(&arr_v, &n(-3.0)), s("a"));
-    assert_eq!(runtime::at(&arr_v, &n(3.0)), JsValue::Null);
-    assert_eq!(runtime::at(&arr_v, &n(-4.0)), JsValue::Null);
-    assert_eq!(runtime::at(&arr(vec![]), &n(0.0)), JsValue::Null);
-    assert_eq!(runtime::at(&JsValue::Null, &n(0.0)), JsValue::Null);
-    assert_eq!(runtime::at(&obj(&[("a", n(1.0))]), &n(0.0)), JsValue::Null);
+    assert_eq!(runtime::at(&arr_v, &n(3.0)), JsValue::Undefined);
+    assert_eq!(runtime::at(&arr_v, &n(-4.0)), JsValue::Undefined);
+    assert_eq!(runtime::at(&arr(vec![]), &n(0.0)), JsValue::Undefined);
+    assert_eq!(runtime::at(&JsValue::Null, &n(0.0)), JsValue::Undefined);
+    assert_eq!(runtime::at(&obj(&[("a", n(1.0))]), &n(0.0)), JsValue::Undefined);
 }
 
 #[test]
@@ -218,12 +218,16 @@ fn concat_mutation_isolation() {
 fn slice_mutation_isolation_and_clamping() {
     let arr_v = arr(vec![s("a"), s("b"), s("c"), s("d"), s("e")]);
     assert_eq!(runtime::slice(&arr_v, &n(1.0), &n(3.0)), arr(vec![s("b"), s("c")]));
-    assert_eq!(runtime::slice(&arr_v, &n(2.0), &JsValue::Null), arr(vec![s("c"), s("d"), s("e")]));
-    assert_eq!(runtime::slice(&arr_v, &n(-2.0), &JsValue::Null), arr(vec![s("d"), s("e")]));
+    assert_eq!(runtime::slice(&arr_v, &n(2.0), &JsValue::Undefined), arr(vec![s("c"), s("d"), s("e")]));
+    assert_eq!(runtime::slice(&arr_v, &n(-2.0), &JsValue::Undefined), arr(vec![s("d"), s("e")]));
+    // An absent end is undefined (the slice runs to the end); a `null` end
+    // is ToIntegerOrInfinity'd to 0, as JS does.
+    assert_eq!(runtime::slice(&arr_v, &n(2.0), &JsValue::Null), arr(vec![]));
+    assert_eq!(runtime::slice(&arr_v, &JsValue::Null, &n(2.0)), arr(vec![s("a"), s("b")]));
     assert_eq!(runtime::slice(&arr_v, &n(0.0), &n(-1.0)), arr(vec![s("a"), s("b"), s("c"), s("d")]));
-    assert_eq!(runtime::slice(&arr_v, &n(100.0), &JsValue::Null), arr(vec![]));
+    assert_eq!(runtime::slice(&arr_v, &n(100.0), &JsValue::Undefined), arr(vec![]));
     assert_eq!(runtime::slice(&arr_v, &n(3.0), &n(1.0)), arr(vec![]));
-    assert_eq!(runtime::slice(&JsValue::Null, &n(0.0), &JsValue::Null), arr(vec![]));
+    assert_eq!(runtime::slice(&JsValue::Null, &n(0.0), &JsValue::Undefined), arr(vec![]));
 
     let src = arr(vec![s("a"), s("b"), s("c")]);
     let mut out = runtime::slice(&src, &n(0.0), &n(2.0));
@@ -240,8 +244,8 @@ fn slice_mutation_isolation_and_clamping() {
 fn slice_string_receiver() {
     let word = s("barefootjs");
     assert_eq!(runtime::slice(&word, &n(0.0), &n(4.0)), s("bare"));
-    assert_eq!(runtime::slice(&word, &n(-4.0), &JsValue::Null), s("otjs"));
-    assert_eq!(runtime::slice(&word, &n(4.0), &JsValue::Null), s("footjs"));
+    assert_eq!(runtime::slice(&word, &n(-4.0), &JsValue::Undefined), s("otjs"));
+    assert_eq!(runtime::slice(&word, &n(4.0), &JsValue::Undefined), s("footjs"));
     assert_eq!(runtime::slice(&word, &n(5.0), &n(2.0)), s(""));
     // Multi-byte: index by character, not byte.
     assert_eq!(runtime::slice(&s("héllo"), &n(0.0), &n(2.0)), s("hé"));
@@ -300,25 +304,29 @@ fn trim_start_and_trim_end_helpers() {
 
 #[test]
 fn split_helper() {
-    assert_eq!(runtime::split(&s("a,b,c"), Some(&s(",")), None), arr(vec![s("a"), s("b"), s("c")]));
-    assert_eq!(runtime::split(&s("a.b.c"), Some(&s(".")), None), arr(vec![s("a"), s("b"), s("c")]));
-    assert_eq!(runtime::split(&s("a,"), Some(&s(",")), None), arr(vec![s("a"), s("")]));
-    assert_eq!(runtime::split(&s(",a"), Some(&s(",")), None), arr(vec![s(""), s("a")]));
-    assert_eq!(runtime::split(&s("abc"), Some(&s("")), None), arr(vec![s("a"), s("b"), s("c")]));
-    assert_eq!(runtime::split(&s(""), Some(&s("")), None), arr(vec![]));
-    assert_eq!(runtime::split(&s("abc"), Some(&s(",")), None), arr(vec![s("abc")]));
-    assert_eq!(runtime::split(&s("a,b,c"), None, None), arr(vec![s("a,b,c")]));
-    assert_eq!(runtime::split(&s("a,b,c,d"), Some(&s(",")), Some(2)), arr(vec![s("a"), s("b")]));
-    assert_eq!(runtime::split(&s("a,b"), Some(&s(",")), Some(0)), arr(vec![]));
-    assert_eq!(runtime::split(&JsValue::Null, Some(&s(",")), None), arr(vec![s("")]));
-    assert_eq!(runtime::split(&n(42.0), Some(&s(",")), None), arr(vec![s("42")]));
+    assert_eq!(runtime::split(&s("a,b,c"), &s(","), &JsValue::Undefined), arr(vec![s("a"), s("b"), s("c")]));
+    assert_eq!(runtime::split(&s("a.b.c"), &s("."), &JsValue::Undefined), arr(vec![s("a"), s("b"), s("c")]));
+    assert_eq!(runtime::split(&s("a,"), &s(","), &JsValue::Undefined), arr(vec![s("a"), s("")]));
+    assert_eq!(runtime::split(&s(",a"), &s(","), &JsValue::Undefined), arr(vec![s(""), s("a")]));
+    assert_eq!(runtime::split(&s("abc"), &s(""), &JsValue::Undefined), arr(vec![s("a"), s("b"), s("c")]));
+    assert_eq!(runtime::split(&s(""), &s(""), &JsValue::Undefined), arr(vec![]));
+    assert_eq!(runtime::split(&s("abc"), &s(","), &JsValue::Undefined), arr(vec![s("abc")]));
+    assert_eq!(runtime::split(&s("a,b,c"), &JsValue::Undefined, &JsValue::Undefined), arr(vec![s("a,b,c")]));
+    assert_eq!(runtime::split(&s("a,b,c,d"), &s(","), &n(2.0)), arr(vec![s("a"), s("b")]));
+    assert_eq!(runtime::split(&s("a,b"), &s(","), &n(0.0)), arr(vec![]));
+    assert_eq!(runtime::split(&JsValue::Null, &s(","), &JsValue::Undefined), arr(vec![s("")]));
+    assert_eq!(runtime::split(&n(42.0), &s(","), &JsValue::Undefined), arr(vec![s("42")]));
 }
 
 #[test]
 fn starts_with_ends_with_positions() {
+    // An omitted position is undefined; a `null` one is ToIntegerOrInfinity'd
+    // to 0, so `endsWith`'s search ends at the start.
+    assert!(runtime::starts_with(&s("hello world"), &s("hello"), &JsValue::Undefined));
+    assert!(runtime::starts_with(&s("anything"), &s(""), &JsValue::Undefined));
+    assert!(runtime::ends_with(&s("hello world"), &s("world"), &JsValue::Undefined));
     assert!(runtime::starts_with(&s("hello world"), &s("hello"), &JsValue::Null));
-    assert!(runtime::starts_with(&s("anything"), &s(""), &JsValue::Null));
-    assert!(runtime::ends_with(&s("hello world"), &s("world"), &JsValue::Null));
+    assert!(!runtime::ends_with(&s("hello world"), &s("world"), &JsValue::Null));
     assert!(runtime::starts_with(&s("abc"), &s("b"), &n(1.0)));
     assert!(!runtime::starts_with(&s("abc"), &s("a"), &n(99.0)));
     assert!(runtime::starts_with(&s("abc"), &s("a"), &n(-5.0)));
@@ -346,7 +354,9 @@ fn repeat_helper() {
 fn pad_start_pad_end() {
     assert_eq!(runtime::pad("42", &n(5.0), &s("0"), true), "00042");
     assert_eq!(runtime::pad("42", &n(5.0), &s("."), false), "42...");
-    assert_eq!(runtime::pad("42", &n(5.0), &JsValue::Null, true), "   42");
+    // An omitted pad string is a space; a `null` one is ToString'd.
+    assert_eq!(runtime::pad("42", &n(5.0), &JsValue::Undefined, true), "   42");
+    assert_eq!(runtime::pad("42", &n(5.0), &JsValue::Null, true), "nul42");
     assert_eq!(runtime::pad("x", &n(5.0), &s("ab"), true), "ababx");
     assert_eq!(runtime::pad("hello", &n(3.0), &s("0"), true), "hello");
     assert_eq!(runtime::pad("42", &n(5.0), &s(""), true), "42");

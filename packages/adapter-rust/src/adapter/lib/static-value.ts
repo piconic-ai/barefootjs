@@ -13,7 +13,8 @@
 import { escapeMinijinjaSingleQuoted, minijinjaHashKey } from './minijinja-naming.ts'
 
 export function staticValueToMinijinja(value: unknown): string | null {
-  if (value === null || value === undefined) return 'none'
+  if (value === undefined) return 'bf.undefined'
+  if (value === null) return 'none'
   if (typeof value === 'boolean') return value ? 'true' : 'false'
   if (typeof value === 'number') return String(value)
   if (typeof value === 'string') return `'${escapeMinijinjaSingleQuoted(value)}'`

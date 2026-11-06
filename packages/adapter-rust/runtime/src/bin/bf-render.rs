@@ -4,11 +4,18 @@
 //! payload protocol" section) verbatim. HTML -> stdout on success; on
 //! error, a message -> stderr and exit 1.
 //!
-//! Non-finite numbers (JSON cannot spell NaN/Infinity) travel as
-//! `{"__bf_special": "nan" | "inf" | "-inf"}` sentinel objects, decoded
-//! recursively AFTER `serde_json` parses the document (the TS side
-//! transforms values recursively BEFORE `JSON.stringify`; this binary is
-//! the mirror-image decode step).
+//! Non-finite numbers (JSON cannot spell NaN/Infinity) and JS `undefined`
+//! travel as `{"__bf_special": "nan" | "inf" | "-inf" | "undefined"}`
+//! sentinel objects, decoded recursively AFTER `serde_json` parses the
+//! document (the TS side transforms values recursively BEFORE
+//! `JSON.stringify`; this binary is the mirror-image decode step).
+//!
+//! The root's template vars are seeded through the production seed
+//! ([`barefootjs::derive_stash_from_defaults`], the one `render_child` and
+//! the integrations call) from the payload's `root_ssr_defaults` and
+//! `seed_props`, so an omitted declared prop takes its default or JS
+//! `undefined` exactly as in production (spec/js-undefined-value.md,
+//! "Shared: the seed and the default").
 
 use barefootjs::backend_minijinja;
 use barefootjs::num::JsValue;
@@ -48,20 +55,34 @@ struct Payload {
     props: JsonValue,
     #[serde(default)]
     children: Vec<ChildPayload>,
+    /// The root component's `ssrDefaults`, VERBATIM (`value` / `propName` /
+    /// `isRestProps` intact), for the production seed.
+    #[serde(default)]
+    root_ssr_defaults: JsonValue,
+    /// Every prop the caller passed, keyed by its caller-facing name: what
+    /// the seed resolves each `propName` against.
+    #[serde(default)]
+    seed_props: JsonValue,
+    /// The root's rest-bag name: the harness routes the bag into `vars`
+    /// itself, so the seed's own rest entry is dropped.
+    #[serde(default)]
+    rest_props_name: Option<String>,
 }
 
 /// Recursively decode a parsed JSON document into the working [`JsValue`]
 /// domain, resolving `{"__bf_special": "nan" | "inf" | "-inf"}` sentinel
-/// objects into real non-finite `f64`s along the way -- these are the ONE
-/// shape `serde_json::Value` cannot carry natively (see `num.rs`'s module
-/// docstring), so decoding happens here rather than via
-/// `JsValue::from_json` (which has no sentinel to look for -- ordinary
-/// JSON documents never need one).
+/// objects into real non-finite `f64`s and `{"__bf_special": "undefined"}`
+/// into [`JsValue::Undefined`] (a fixture prop present and holding JS
+/// `undefined`) along the way -- these are the shapes `serde_json::Value`
+/// cannot carry natively (see `num.rs`'s module docstring), so decoding
+/// happens here rather than via `JsValue::from_json` (which has no
+/// sentinel to look for -- ordinary JSON documents never need one).
 fn decode_value(v: &JsonValue) -> JsValue {
     if let JsonValue::Object(map) = v {
         if map.len() == 1 {
             if let Some(JsonValue::String(kind)) = map.get("__bf_special") {
                 let n = match kind.as_str() {
+                    "undefined" => return JsValue::Undefined,
                     "nan" => f64::NAN,
                     "inf" => f64::INFINITY,
                     "-inf" => f64::NEG_INFINITY,
@@ -119,7 +140,17 @@ fn run(payload_path: &str) -> Result<String, String> {
     if props.as_object().is_some_and(|m| !m.is_empty()) {
         root.props = Some(props);
     }
-    let vars = decode_value(&payload.vars);
+    let mut vars = decode_value(&payload.vars);
+    // The production seed over the caller's props: every declared prop,
+    // signal and memo. It wins over the harness-built entries, as the
+    // Python harness's `{**entries, **seed}` does.
+    let mut seed = barefootjs::derive_stash_from_defaults(&decode_value(&payload.root_ssr_defaults), &decode_value(&payload.seed_props));
+    if let (JsValue::Object(v), JsValue::Object(s)) = (&mut vars, &mut seed) {
+        if let Some(rest) = &payload.rest_props_name {
+            s.remove(rest);
+        }
+        v.append(s);
+    }
 
     let mut extra: Vec<(String, MjValue)> = Vec::new();
     if let Some(query) = &payload.search_params {

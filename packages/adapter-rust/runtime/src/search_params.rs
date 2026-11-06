@@ -10,15 +10,15 @@
 //! templates as a [`minijinja::value::Object`] (implemented below) whose
 //! `.get(key)` method call dispatches to [`SearchParams::get`].
 //!
-//! Semantics mirror the browser's `URLSearchParams.get` exactly under the
-//! adapters' `?? -> or` lowering: `get()` returns the first value for a
-//! key, or `None`/absent when the key is absent. The minijinja lowering of
-//! `??` should coalesce only an absent/none result (a bare `or` would ALSO
-//! coalesce a present-but-empty string, which is wrong), preserving the
-//! distinction JS `??` draws between `null` and `''` -- the `Object` impl
-//! below returns `Value::UNDEFINED` (not `Value::from(())`) for an absent
-//! key so the emitted `(x if (x is defined and x is not none) else d)`
-//! lowering falls through to the default exactly once.
+//! Semantics mirror the browser's `URLSearchParams.get` exactly: `get()`
+//! returns the first value for a key, or JS `null` when the key is absent
+//! (`vectors.json`'s `search_params_get/absent key is null`) -- the `Object`
+//! impl below returns minijinja's `none` (`Value::from(())`), which is JS
+//! `null` (spec/js-undefined-value.md, rollout step U3), never its
+//! undefined. The minijinja lowering of `??` (`bf.keep_nonnil`) coalesces
+//! only a nullish result (a bare `or` would ALSO coalesce a
+//! present-but-empty string, which is wrong), preserving the distinction JS
+//! `??` draws between `null` and `''`.
 
 use minijinja::value::{Enumerator, Object, Value as MjValue};
 use minijinja::{Error, ErrorKind, State};
@@ -113,9 +113,10 @@ impl Object for SearchParams {
             .ok_or_else(|| Error::new(ErrorKind::MissingArgument, "get() requires a key"))?;
         match self.get(key) {
             // Present-but-empty stays a real (empty) string so `?? d` does
-            // NOT fall back to the default -- only an absent key does.
+            // NOT fall back to the default -- only an absent key (JS `null`)
+            // does.
             Some(v) => Ok(MjValue::from(v)),
-            None => Ok(MjValue::UNDEFINED),
+            None => Ok(MjValue::from(())),
         }
     }
 

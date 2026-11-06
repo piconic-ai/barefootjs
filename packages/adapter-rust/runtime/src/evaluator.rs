@@ -44,8 +44,11 @@ pub fn evaluate(node: &JsonValue, env: &Env) -> JsValue {
     match kind {
         "literal" => node.get("value").map(JsValue::from_json).unwrap_or(JsValue::Null),
         "identifier" => {
+            // An unbound name reads as `undefined`: the unshadowed
+            // `undefined` identifier is the constant, and a free variable the
+            // env does not bind is absent (spec/js-undefined-value.md, §2).
             let name = node.get("name").and_then(|v| v.as_str()).unwrap_or("");
-            env.get(name).cloned().unwrap_or(JsValue::Null)
+            env.get(name).cloned().unwrap_or(JsValue::Undefined)
         }
         "binary" => {
             let op = node.get("op").and_then(|v| v.as_str()).unwrap_or("");
@@ -77,8 +80,8 @@ pub fn evaluate(node: &JsonValue, env: &Env) -> JsValue {
                     }
                 }
                 _ => {
-                    // `??`
-                    if !matches!(left, JsValue::Null) {
+                    // `??` coalesces both nils.
+                    if !left.is_nullish() {
                         left
                     } else {
                         evaluate(node.get("right").unwrap_or(&JsonValue::Null), env)
@@ -203,14 +206,14 @@ pub fn evaluate(node: &JsonValue, env: &Env) -> JsValue {
         }
         "array-method" if node.get("method").and_then(|v| v.as_str()) == Some("join") => {
             // `.join(sep?)` (#2094), a plain `array-method` node (not a
-            // `call`): default separator `,`, a `null`/`undefined` element
-            // joins as `''` (NOT the string "null" -- `to_string` below
-            // intentionally renders `Null` as `"null"` for general ToString
-            // purposes, so this special-cases it first). Mirrors Go's
-            // `evalJoin`.
+            // `call`): an omitted or `undefined` separator is `,`, a `null`
+            // one is ToString'd (`"null"`); a `null`/`undefined` element
+            // joins as `''` (NOT the string `to_string` would give, so this
+            // special-cases it first). Mirrors Go's `evalJoin`.
             let obj = evaluate(node.get("object").unwrap_or(&JsonValue::Null), env);
             let args = node.get("args").and_then(|v| v.as_array()).cloned().unwrap_or_default();
-            let sep = if args.is_empty() { ",".to_string() } else { to_string(&evaluate(&args[0], env)) };
+            let sep_value = args.first().map(|a| evaluate(a, env)).unwrap_or(JsValue::Undefined);
+            let sep = if sep_value.is_undefined() { ",".to_string() } else { to_string(&sep_value) };
             eval_join(&obj, &sep)
         }
         // arrow-fn / higher-order / unsupported array-method: a callback
@@ -295,7 +298,7 @@ fn eval_join(obj: &JsValue, sep: &str) -> JsValue {
         Some(a) => a,
         None => return JsValue::String(String::new()),
     };
-    let parts: Vec<String> = arr.iter().map(|el| if matches!(el, JsValue::Null) { String::new() } else { to_string(el) }).collect();
+    let parts: Vec<String> = arr.iter().map(|el| if el.is_nullish() { String::new() } else { to_string(el) }).collect();
     JsValue::String(parts.join(sep))
 }
 
@@ -410,6 +413,7 @@ fn is_decimal_literal(body: &str) -> bool {
 
 pub fn to_number(v: &JsValue) -> f64 {
     match v {
+        JsValue::Undefined => f64::NAN,
         JsValue::Null => 0.0,
         JsValue::Bool(b) => if *b { 1.0 } else { 0.0 },
         JsValue::Number(n) => *n,
@@ -427,11 +431,11 @@ pub fn to_number(v: &JsValue) -> f64 {
 }
 
 /// JS ToString. Diverges from `runtime::js_string` deliberately: `null`
-/// (JS `null`/`undefined`, both collapsed to [`JsValue::Null`] in this
-/// domain) stringifies as the literal `"null"` here, matching real JS
-/// `String(null)` -- `bf.string()`'s "unset prop must not surface as
-/// literal null in HTML" policy is a `runtime.rs`-only divergence, not part
-/// of this JS-faithful evaluator.
+/// stringifies as the literal `"null"` and `undefined` as `"undefined"`
+/// here, matching real JS `String(null)` / `String(undefined)` --
+/// `bf.string()`'s "unset prop must not surface as literal null in HTML"
+/// policy is a `runtime.rs`-only divergence, not part of this JS-faithful
+/// evaluator.
 ///
 /// Array/Object stringification is intentionally MORE JS-faithful than the
 /// Python port's `str(v)` fallback (which prints a Python `repr`, e.g.
@@ -442,13 +446,14 @@ pub fn to_number(v: &JsValue) -> f64 {
 /// (`"[object Object]"`).
 pub fn to_string(v: &JsValue) -> String {
     match v {
+        JsValue::Undefined => "undefined".to_string(),
         JsValue::Null => "null".to_string(),
         JsValue::Bool(b) => if *b { "true".to_string() } else { "false".to_string() },
         JsValue::Number(n) => num::format_js_number(*n),
         JsValue::String(s) => s.clone(),
         JsValue::Array(items) => items
             .iter()
-            .map(|x| if matches!(x, JsValue::Null) { String::new() } else { to_string(x) })
+            .map(|x| if x.is_nullish() { String::new() } else { to_string(x) })
             .collect::<Vec<_>>()
             .join(","),
         JsValue::Object(_) => "[object Object]".to_string(),
@@ -461,7 +466,7 @@ pub fn to_string(v: &JsValue) -> String {
 
 pub fn truthy(v: &JsValue) -> bool {
     match v {
-        JsValue::Null => false,
+        JsValue::Undefined | JsValue::Null => false,
         JsValue::Bool(b) => *b,
         JsValue::Number(n) => !n.is_nan() && *n != 0.0, // nonzero and not NaN
         JsValue::String(s) => !s.is_empty(),          // incl. the truthy "0"
@@ -573,7 +578,8 @@ fn builtin_name(callee: &JsonValue) -> String {
 }
 
 fn call_builtin(name: &str, args: &[JsValue]) -> JsValue {
-    let arg = |i: usize| -> JsValue { args.get(i).cloned().unwrap_or(JsValue::Null) };
+    // An omitted argument is `undefined`.
+    let arg = |i: usize| -> JsValue { args.get(i).cloned().unwrap_or(JsValue::Undefined) };
     match name {
         "Math.max" => {
             let mut m = f64::NEG_INFINITY; // JS Math.max() with no args is -Infinity
@@ -617,29 +623,19 @@ fn call_builtin(name: &str, args: &[JsValue]) -> JsValue {
 // Member / index access
 // ---------------------------------------------------------------------------
 
-fn read_property(obj: &JsValue, key: &str) -> JsValue {
+/// JS `obj.key`: a missing field, and any property of a value that has
+/// none, reads as `undefined` (a nil receiver too, where JS would throw).
+/// Shared with the template helpers that project a row field (`flat_map`,
+/// the structured `sort` / `reduce`).
+pub(crate) fn read_property(obj: &JsValue, key: &str) -> JsValue {
     match obj {
-        JsValue::Null => JsValue::Null,
-        JsValue::Object(map) => map.get(key).cloned().unwrap_or(JsValue::Null),
-        JsValue::Array(a) => {
-            if key == "length" {
-                JsValue::Number(a.len() as f64)
-            } else {
-                JsValue::Null
-            }
-        }
-        JsValue::String(s) => {
-            // `.length` is a string property only -- a numeric scalar
-            // (123) has no `.length` in the subset (JS `(123).length` is
-            // undefined -> null); matches the Go/Perl evaluators (numbers
-            // fall through to the catch-all below).
-            if key == "length" {
-                JsValue::Number(s.chars().count() as f64)
-            } else {
-                JsValue::Null
-            }
-        }
-        _ => JsValue::Null,
+        JsValue::Object(map) => map.get(key).cloned().unwrap_or(JsValue::Undefined),
+        JsValue::Array(a) if key == "length" => JsValue::Number(a.len() as f64),
+        // `.length` is a string property only -- a numeric scalar (123) has
+        // no `.length` in the subset (JS `(123).length` is undefined);
+        // matches the Go/Perl evaluators (numbers fall through below).
+        JsValue::String(s) if key == "length" => JsValue::Number(s.chars().count() as f64),
+        _ => JsValue::Undefined,
     }
 }
 
@@ -654,14 +650,14 @@ pub(crate) fn read_index(obj: &JsValue, index: &JsValue) -> JsValue {
     match obj {
         JsValue::Array(a) => match canonical_index(index) {
             Some(i) if i < a.len() => a[i].clone(),
-            _ => JsValue::Null,
+            _ => JsValue::Undefined,
         },
         JsValue::String(s) => match canonical_index(index) {
             Some(i) => utf16_unit_at(s, i),
-            None => JsValue::Null,
+            None => JsValue::Undefined,
         },
-        JsValue::Object(map) => map.get(&to_string(index)).cloned().unwrap_or(JsValue::Null),
-        _ => JsValue::Null,
+        JsValue::Object(map) => map.get(&to_string(index)).cloned().unwrap_or(JsValue::Undefined),
+        _ => JsValue::Undefined,
     }
 }
 
@@ -675,13 +671,13 @@ fn canonical_index(index: &JsValue) -> Option<usize> {
     }
 }
 
-/// The UTF-16 code unit of `s` at index `i`, or null past the end. One half
+/// The UTF-16 code unit of `s` at index `i`, or `undefined` past the end. One half
 /// of a surrogate pair reads as U+FFFD: a lone surrogate cannot be written
 /// out as UTF-8 (spec/js-primitive-semantics.md, "Out of scope").
 fn utf16_unit_at(s: &str, i: usize) -> JsValue {
     match s.encode_utf16().nth(i) {
         Some(unit) => JsValue::String(char::from_u32(u32::from(unit)).unwrap_or('\u{FFFD}').to_string()),
-        None => JsValue::Null,
+        None => JsValue::Undefined,
     }
 }
 
@@ -722,10 +718,12 @@ pub fn fold(
 /// against `{param_a: a, param_b: b}` plus the captured free vars in
 /// `base_env`, to a number (negative / zero / positive, like a JS
 /// comparator). Non-mutating. Stable: `Vec::sort_by` carries a formal
-/// stability guarantee, matching Python's `sorted`. Mirrors Go's `SortEval`.
+/// stability guarantee, matching Python's `sorted`. Like JS
+/// `Array.prototype.sort`, every `undefined` element moves to the end
+/// without reaching the comparator. Mirrors Go's `SortEval`.
 pub fn sort_by(items: &JsValue, cmp: &JsonValue, param_a: &str, param_b: &str, base_env: &Env) -> Vec<JsValue> {
-    let mut arr: Vec<JsValue> = match items.as_array() {
-        Some(a) => a.to_vec(),
+    let (mut arr, tail): (Vec<JsValue>, Vec<JsValue>) = match items.as_array() {
+        Some(a) => a.iter().cloned().partition(|v| !v.is_undefined()),
         None => return Vec::new(),
     };
     let env = base_env.clone();
@@ -747,6 +745,7 @@ pub fn sort_by(items: &JsValue, cmp: &JsonValue, param_a: &str, param_b: &str, b
             std::cmp::Ordering::Equal
         }
     });
+    arr.extend(tail);
     arr
 }
 
@@ -833,7 +832,7 @@ pub fn find(items: &JsValue, pred: &JsonValue, param: &str, forward: bool, base_
             return item;
         }
     }
-    JsValue::Null
+    JsValue::Undefined
 }
 
 pub fn find_index(items: &JsValue, pred: &JsonValue, param: &str, forward: bool, base_env: &Env) -> i64 {

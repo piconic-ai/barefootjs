@@ -146,31 +146,6 @@
         "step": "U4"
       }
     },
-    "rust": {
-      ".includes tells undefined from null (SameValueZero)": {
-        "step": "U3"
-      },
-      "a missing field adds as NaN": {
-        "step": "U3"
-      },
-      "a missing field concatenates as \"undefined\"": {
-        "step": "U3"
-      },
-      "a missing field is not === null": {
-        "step": "U3"
-      },
-      "a missing field reads as undefined": {
-        "step": "U3"
-      },
-      "an object-literal member may hold undefined": {
-        "step": "U3"
-      },
-      "out-of-range index reads as undefined": {
-        "step": "U3"
-      },
-      "the unbound undefined identifier is the constant": {
-        "step": "U3"
-      }
-    }
+    "rust": {}
   }
 }

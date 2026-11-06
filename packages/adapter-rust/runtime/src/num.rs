@@ -79,6 +79,15 @@ use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum JsValue {
+    /// JS `undefined` (`spec/js-undefined-value.md`): the runtime's `UNDEF`,
+    /// apart from [`JsValue::Null`]. Host nil (`serde_json::Value::Null`,
+    /// minijinja's `none`) is JS `null`; this value is created only where JS
+    /// reads one: a missing key, an out-of-range index, an `at` / `find`
+    /// miss, a `?.` over a nullish receiver, the `undefined` identifier and
+    /// an omitted declared prop. JSON can't spell it, so `from_json` never
+    /// produces one; minijinja's own undefined is this value
+    /// (`runtime::mj_to_js` / `js_to_mj`).
+    Undefined,
     Null,
     Bool(bool),
     /// Always `f64` -- JS has exactly one number type, and unlike
@@ -109,6 +118,26 @@ pub enum JsValue {
 impl JsValue {
     pub const fn null() -> JsValue {
         JsValue::Null
+    }
+
+    /// JS `undefined` ([`JsValue::Undefined`]).
+    pub const fn undefined() -> JsValue {
+        JsValue::Undefined
+    }
+
+    /// JS `v === undefined`.
+    pub fn is_undefined(&self) -> bool {
+        matches!(self, JsValue::Undefined)
+    }
+
+    /// JS `v === null`.
+    pub fn is_null(&self) -> bool {
+        matches!(self, JsValue::Null)
+    }
+
+    /// JS `v == null`: `null` or `undefined`.
+    pub fn is_nullish(&self) -> bool {
+        matches!(self, JsValue::Null | JsValue::Undefined)
     }
 
     pub fn as_str(&self) -> Option<&str> {
@@ -158,16 +187,20 @@ impl JsValue {
     /// Convert to a JSON document. Non-finite numbers become `null`,
     /// recursively, at ANY depth -- this IS `encode_json`'s
     /// `_prepare_for_json` contract (see `backend_minijinja::encode_json`,
-    /// which calls this and then `serde_json::to_string`).
+    /// which calls this and then `serde_json::to_string`). `undefined`
+    /// follows `JSON.stringify`: an object member holding it is dropped and
+    /// an array element is `null`. A top-level `undefined` (which
+    /// `JSON.stringify` turns into no string at all) is `null` here; the
+    /// `bf.json` helper answers it before reaching this.
     pub fn to_json(&self) -> JsonValue {
         match self {
-            JsValue::Null => JsonValue::Null,
+            JsValue::Undefined | JsValue::Null => JsonValue::Null,
             JsValue::Bool(b) => JsonValue::Bool(*b),
             JsValue::Number(n) => number_to_json(*n),
             JsValue::String(s) => JsonValue::String(s.clone()),
             JsValue::Array(a) => JsonValue::Array(a.iter().map(JsValue::to_json).collect()),
             JsValue::Object(o) => {
-                JsonValue::Object(o.iter().map(|(k, v)| (k.clone(), v.to_json())).collect())
+                JsonValue::Object(o.iter().filter(|(_, v)| !v.is_undefined()).map(|(k, v)| (k.clone(), v.to_json())).collect())
             }
             // Matches JS `JSON.stringify(date)`, which calls the date's own
             // `toJSON` -> `toISOString`.
@@ -276,8 +309,19 @@ pub fn is_bool(v: &JsValue) -> bool {
     matches!(v, JsValue::Bool(_))
 }
 
+/// JS `v === null`.
 pub fn is_null(v: &JsValue) -> bool {
     matches!(v, JsValue::Null)
+}
+
+/// JS `v === undefined`.
+pub fn is_undefined(v: &JsValue) -> bool {
+    matches!(v, JsValue::Undefined)
+}
+
+/// JS `v == null`: `null` or `undefined`.
+pub fn is_nullish(v: &JsValue) -> bool {
+    matches!(v, JsValue::Null | JsValue::Undefined)
 }
 
 /// Extract the numeric value of a `JsValue::Number` as `f64`. Non-number
@@ -477,6 +521,9 @@ pub fn strict_eq(l: &JsValue, r: &JsValue) -> bool {
         return false;
     }
     match (l, r) {
+        // `undefined` is only itself, never `null`.
+        (JsValue::Undefined, JsValue::Undefined) => true,
+        (JsValue::Undefined, _) | (_, JsValue::Undefined) => false,
         (JsValue::Null, JsValue::Null) => true,
         (JsValue::Null, _) | (_, JsValue::Null) => false,
         (JsValue::Bool(a), JsValue::Bool(b)) => a == b,

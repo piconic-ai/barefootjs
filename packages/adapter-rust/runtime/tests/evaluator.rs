@@ -140,7 +140,7 @@ fn boolean_valued_ops_return_real_booleans() {
 
     // `.length` is a string/array property only; a numeric scalar has none.
     let length = evaluator::evaluate(&nmem(nid("n"), "length"), &env_of(&[("n", num(123.0))]));
-    assert_eq!(length, JsValue::Null);
+    assert_eq!(length, JsValue::Undefined);
 }
 
 #[test]
@@ -241,7 +241,7 @@ fn filter_every_some_find_find_index_over_predicate() {
     let empty = JsValue::Array(vec![]);
     assert!(evaluator::every(&empty, &pred, "u", &Env::new()));
     assert!(!evaluator::some(&empty, &pred, "u", &Env::new()));
-    assert_eq!(evaluator::find(&empty, &pred, "u", true, &Env::new()), JsValue::Null);
+    assert_eq!(evaluator::find(&empty, &pred, "u", true, &Env::new()), JsValue::Undefined);
     assert_eq!(evaluator::find_index(&empty, &pred, "u", true, &Env::new()), -1);
 
     let pred_json = pred.to_string();

@@ -241,7 +241,7 @@ function minijinjaAccessorFromSegments(base: string, segments: readonly LoopBind
 /** How a lowered loop destructure binding reads off the row item. */
 const DESTRUCTURE_SPELLING: DestructureSpelling = {
   accessor: minijinjaAccessorFromSegments,
-  slice: (parent, from) => `bf.slice(${parent}, ${from})`,
+  slice: (parent, from) => `bf.slice(${parent}, ${from}, bf.undefined)`,
   omit: (parent, keys) => `bf.omit(${parent}, [${keys.map((k) => `'${escapeMinijinjaSingleQuoted(k)}'`).join(', ')}])`,
 }
 
@@ -922,11 +922,12 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
         }
       },
       spread: (value) => this.convertExpressionToJinja(value.expr),
-      // `is defined` too, as in the `??` lowering: a never-seeded variable is
-      // undefined, which `is not none` alone lets through.
+      // The fallback (no caller keys recorded) is JS `name in props` read
+      // off the value: present unless `undefined` (the runtime's undefined,
+      // or a never-seeded variable), so an explicit `null` counts as passed.
       presentParam: (name) => {
         const v = minijinjaIdent(name)
-        return `({${minijinjaHashKey(name)}: ${v}} if bf.passed(${minijinjaHashKey(name)}, ${v} is defined and ${v} is not none) else {})`
+        return `({${minijinjaHashKey(name)}: ${v}} if bf.passed(${minijinjaHashKey(name)}, ${v} is defined) else {})`
       },
     })
     const dict = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
