@@ -161,13 +161,17 @@ function resolveSignalInitialValue(signal: SignalInfo, lookups: DeclarationEmitL
  * (`composePropRead`). The IR encodes the destructure as `props.label ??
  * 'x'` (`ConstantInfo.value`), which the SSR seed plans read; built here
  * from the props param the analyzer overlays the default onto (#2943), not
- * from that text. Null for any other constant, which keeps its own value.
+ * from that text. The default is the authored expression: a read of an
+ * earlier binding (`{ a = [], b = a }`) stays a read of that local, which
+ * `rewriteBodyAliasReads` turns into a live prop read only where it drops
+ * the local's declaration. Null for any other constant, which keeps its own
+ * value.
  */
 function bodyDestructureValue(c: ConstantInfo, ctx: ClientJsContext): string | null {
   const sourceKey = c.propsDestructure?.sourceKey
   if (sourceKey === undefined || ctx.propsObjectName === null) return null
   const param = ctx.propsParams.find(p => p.name === c.name && (p.sourceName ?? p.name) === sourceKey)
-  const defaultText = param && propDefaultText(param)
+  const defaultText = param?.defaultValue
   if (!param || !defaultText) return null
   return composePropRead(`${ctx.propsObjectName}.${sourceKey}`, {
     kind: 'default',

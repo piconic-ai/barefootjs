@@ -514,8 +514,9 @@ export function propReadFallback(
   p: LivePropReadInfo,
   usage: PropUsage | undefined,
   usedAsCondition: boolean,
+  retained?: ReadonlySet<string>,
 ): PropReadFallback | null {
-  const defaultText = propDefaultText(p)
+  const defaultText = propDefaultText(p, retained)
   if (defaultText) return { kind: p.coalescesNull ? 'guard' : 'default', text: coalesceDefaultText(defaultText, p.defaultContainsArrow) }
   if (usage?.usedAsLoopArray) return { kind: 'guard', text: '[]' }
   if (propHasPropertyAccess(usage) && !usedAsCondition) return { kind: 'guard', text: '{}' }
@@ -538,15 +539,45 @@ export function composePropRead(base: string, fallback: PropReadFallback | null)
 /**
  * A prop's destructure default as client JS. A default that reads an earlier
  * binding of its own pattern (`{ off = false, on = off }`, #3531) renders each
- * read as that prop's own live read (`_p.off ?? false`), since the emitted
- * scope binds no `off`; any other default is its source text. Undefined when
- * the prop has no default.
+ * read as that prop's own live read (`_p.off === undefined ? false :
+ * _p.off`) where the emitted scope binds no `off`; any other default is its
+ * source text. `retained` names the earlier bindings that ARE locals of the
+ * emitted scope (`retainedPropLocals`): a read of one stays a read of that
+ * local, as in JS, so a default sharing an earlier binding's array, or
+ * reading a value a default assigned to it, sees that binding. Undefined
+ * when the prop has no default.
  */
-export function propDefaultText(p: LivePropReadInfo): string | undefined {
+export function propDefaultText(p: LivePropReadInfo, retained: ReadonlySet<string> = EMPTY_SET): string | undefined {
   if (!p.defaultParts) return p.defaultValue
   return p.defaultParts
-    .map(part => (part.kind === 'text' ? part.text : livePropReadExpr(part.param, undefined, false)))
+    .map(part => {
+      if (part.kind === 'text') return part.text
+      return retained.has(part.param.name) ? part.param.name : livePropReadExpr(part.param, undefined, false, retained)
+    })
     .join('')
+}
+
+/**
+ * The destructured prop bindings the init body keeps as locals, by local
+ * name: a written or mutated parameter (`let start = …`, `emitPropsExtraction`)
+ * and a body destructure of the props object that does not keep its declared
+ * value (`let { a } = props`, or one mutated later). Every other destructured
+ * binding is read live (`keepsDeclaredValue`). A default reading one of these
+ * reads the local ({@link propDefaultText}).
+ */
+export function retainedPropLocals(b: {
+  propsObjectName: string | null
+  propsParams: readonly ParamInfo[]
+  localConstants: readonly ConstantInfo[]
+}): ReadonlySet<string> {
+  const names = new Set<string>()
+  if (b.propsObjectName === null) {
+    for (const p of b.propsParams) if (!p.isRest && !keepsDeclaredValue(p)) names.add(p.name)
+  }
+  for (const c of b.localConstants) {
+    if (c.propsDestructure && !c.isModule && !keepsDeclaredValue(c)) names.add(c.name)
+  }
+  return names
 }
 
 /**
@@ -569,9 +600,10 @@ export function livePropReadExpr(
   p: LivePropReadInfo,
   usage: PropUsage | undefined,
   usedAsCondition: boolean,
+  retained?: ReadonlySet<string>,
 ): string {
   const base = propReadBase(p)
-  const fallback = propReadFallback(p, usage, usedAsCondition)
+  const fallback = propReadFallback(p, usage, usedAsCondition, retained)
   return fallback === null ? base : `(${composePropRead(base, fallback)})`
 }
 

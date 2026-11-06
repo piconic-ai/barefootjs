@@ -114,6 +114,31 @@ function bodyAliasDefaultParts(ctx: ClientJsContext, local: string, key: string)
 }
 
 /**
+ * Drop from `aliases` every body alias whose default reads an earlier
+ * binding the init body keeps as a local (`const { a = [], b = a } = props;
+ * a.push(x)`, or a `let` destructure): JS binds `b` to that local's value
+ * once, so `b` keeps its declaration (`const b = _p.b === undefined ? a :
+ * _p.b`) instead of a live read that would build a fresh `a` default. The
+ * kept locals are the body-destructured constants that are not aliases;
+ * an alias dropped here is kept too, so the walk repeats until it settles.
+ */
+function keepAliasesReadingRetainedLocals(aliases: Map<string, { key: string }>, ctx: ClientJsContext): void {
+  const retained = new Set(
+    ctx.localConstants.filter(c => c.propsDestructure && !c.isModule && !aliases.has(c.name)).map(c => c.name),
+  )
+  for (let changed = true; changed; ) {
+    changed = false
+    for (const [local, alias] of aliases) {
+      const parts = bodyAliasDefaultParts(ctx, local, alias.key).defaultParts ?? []
+      if (!parts.some(part => part.kind === 'param' && retained.has(part.param.name))) continue
+      aliases.delete(local)
+      retained.add(local)
+      changed = true
+    }
+  }
+}
+
+/**
  * Rewrite every bare value-position read of a BODY-destructured (or
  * bare-member-alias) prop local in `code` to a live `_p.<key>` read, for a
  * bare-props-form component (`function Foo(props: Props)`).
@@ -154,6 +179,7 @@ function rewriteBodyAliasReads(code: string, ctx: ClientJsContext): string {
   for (const [local, alias] of aliases) {
     if (alias.key === 'children') aliases.delete(local)
   }
+  keepAliasesReadingRetainedLocals(aliases, ctx)
   if (aliases.size === 0) return code
   // Quick exit when none of the candidate local names appear at all.
   if (![...aliases.keys()].some((name) => identifierPattern(name).test(code))) return code

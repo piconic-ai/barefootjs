@@ -104,7 +104,36 @@ function propExtractionName(stmt: ts.Statement): string | null {
 
   const parsed = parsePropReadInitializer(decl.initializer)
   if (parsed === null || (parsed.key !== decl.name.text && parsed.key !== 'children')) return null
+  // A default that does something when it runs (`{ a = 1, b = (a = 2) }`)
+  // runs whether or not its binding is read, so its declaration stays.
+  if (parsed.fallback !== null && mayHaveSideEffect(parsed.fallback)) return null
   return decl.name.text
+}
+
+/** `=`, `+=`, `??=` and the other compound assignments. */
+function isAssignmentOperator(kind: ts.SyntaxKind): boolean {
+  return kind >= ts.SyntaxKind.FirstAssignment && kind <= ts.SyntaxKind.LastAssignment
+}
+
+/**
+ * Whether evaluating `expr` may do more than produce a value: an
+ * assignment, an update, a call, `new`, `delete`, `await` or `yield`. The
+ * body of a function `expr` creates is not evaluated, so it does not count.
+ */
+function mayHaveSideEffect(expr: ts.Node): boolean {
+  if (ts.isArrowFunction(expr) || ts.isFunctionExpression(expr)) return false
+  if (ts.isBinaryExpression(expr) && isAssignmentOperator(expr.operatorToken.kind)) return true
+  if (ts.isPrefixUnaryExpression(expr) || ts.isPostfixUnaryExpression(expr)) {
+    const op = expr.operator
+    if (op === ts.SyntaxKind.PlusPlusToken || op === ts.SyntaxKind.MinusMinusToken) return true
+  }
+  if (
+    ts.isCallExpression(expr) || ts.isNewExpression(expr) || ts.isDeleteExpression(expr) ||
+    ts.isAwaitExpression(expr) || ts.isYieldExpression(expr) || ts.isTaggedTemplateExpression(expr)
+  ) {
+    return true
+  }
+  return ts.forEachChild(expr, child => (mayHaveSideEffect(child) ? true : undefined)) ?? false
 }
 
 /**

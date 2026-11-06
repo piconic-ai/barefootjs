@@ -23,7 +23,7 @@
 
 import { type PropUsage, isChildrenPropParam } from '../../types.ts'
 import { computePropsUsedAsConditions } from '../compute-prop-usage.ts'
-import { composePropRead, propReadBase, propReadFallback, keepsDeclaredValue } from '../../props-binding.ts'
+import { composePropRead, propReadBase, propReadFallback, keepsDeclaredValue, retainedPropLocals } from '../../props-binding.ts'
 import type { ClientJsContext } from '../types.ts'
 
 export function emitPropsExtraction(
@@ -62,8 +62,12 @@ function emitWrittenPropLocals(lines: string[], ctx: ClientJsContext, propUsage:
   const written = ctx.propsParams.filter(p => !p.isRest && !isChildrenPropParam(p) && !keepsDeclaredValue(p))
   if (written.length === 0) return
   const usedAsCondition = computePropsUsedAsConditions(ctx, new Set(written.map(p => p.name)))
+  // The locals are declared in parameter order, so a default reading an
+  // earlier written prop reads its local, as in JS (`{ a = [], b = a }`
+  // shares `a`'s array); an earlier prop that is not written reads live.
+  const retained = retainedPropLocals(ctx)
   for (const prop of written) {
-    const fallback = propReadFallback(prop, propUsage.get(prop.name), usedAsCondition.has(prop.name))
+    const fallback = propReadFallback(prop, propUsage.get(prop.name), usedAsCondition.has(prop.name), retained)
     lines.push(`  let ${prop.name} = ${composePropRead(propReadBase(prop), fallback)}`)
   }
   lines.push('')

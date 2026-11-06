@@ -54,6 +54,33 @@ export function Counter({ n = 1 }: { n?: number | null }) {
     expect(js).not.toContain('_p.n ??')
   })
 
+  test('a default reading an earlier binding kept as a local reads that local', () => {
+    const js = clientJs(`
+'use client'
+export function Demo(props: { a?: string[]; b?: string[] }) {
+  let { a = [], b = a } = props
+  a.push('x')
+  return <p>{b.length}</p>
+}
+export function Assigned(props: { a?: number; b?: number; c?: number }) {
+  let { a = 1, b = (a = 2), c = a } = props
+  return <p>{c}</p>
+}
+export function Kept(props: { a?: string[]; b?: string[] }) {
+  const { a = [], b = a } = props
+  a.push('x')
+  return <p>{b.length}</p>
+}
+`)
+    expect(js).toContain('let b = _p.b === undefined ? a : _p.b')
+    // An unread binding whose default assigns stays, so the assignment runs.
+    expect(js).toContain('let b = _p.b === undefined ? (a = 2) : _p.b')
+    expect(js).toContain('let c = _p.c === undefined ? a : _p.c')
+    expect(js).toContain('const b = _p.b === undefined ? a : _p.b')
+    expect(js).not.toContain('let b = _p.b === undefined ? (_p.a')
+    expect(js).not.toContain('const b = _p.b === undefined ? (_p.a')
+  })
+
   test('an arrow default keeps its own parens', () => {
     const js = clientJs(`
 'use client'
