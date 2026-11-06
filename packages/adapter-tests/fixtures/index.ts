@@ -316,6 +316,8 @@ import { fixture as destructureDefaultNullHydrate } from './destructure-default-
 // (shared array identity, an assignment in an earlier default).
 import { fixture as destructureDefaultSharedArray } from './destructure-default-shared-array'
 import { fixture as destructureDefaultSharedArrayRenamed } from './destructure-default-shared-array-renamed'
+import { fixture as destructureDefaultSharedArrayClient } from './destructure-default-shared-array-client'
+import { fixture as destructureDefaultSharedArrayRenamedClient } from './destructure-default-shared-array-renamed-client'
 import { fixture as destructureDefaultEarlierAssignment } from './destructure-default-earlier-assignment'
 import { fixture as undefNullJsonStringify } from './undef-null-json-stringify'
 import { fixture as undefNullJsonStringifyObjectMember } from './undef-null-json-stringify-object-member'
@@ -1614,6 +1616,8 @@ export const jsxFixtures: JSXFixture[] = [
   destructureDefaultNullHydrate,
   destructureDefaultSharedArray,
   destructureDefaultSharedArrayRenamed,
+  destructureDefaultSharedArrayClient,
+  destructureDefaultSharedArrayRenamedClient,
   destructureDefaultEarlierAssignment,
   undefNullJsonStringify,
   undefNullJsonStringifyObjectMember,

@@ -5338,6 +5338,20 @@
       }
     }
   ],
+  "destructure-default-shared-array-client": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": []
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
+      }
+    }
+  ],
   "destructure-default-shared-array-renamed": [
     {
       "name": "gen:a:empty",
@@ -5350,6 +5364,20 @@
       "name": "gen:b:empty",
       "props": {
         "__instanceId": "DestructureDefaultSharedArrayRenamed_test",
+        "b": []
+      }
+    }
+  ],
+  "destructure-default-shared-array-renamed-client": [
+    {
+      "name": "gen:a:empty",
+      "props": {
+        "a": []
+      }
+    },
+    {
+      "name": "gen:b:empty",
+      "props": {
         "b": []
       }
     }

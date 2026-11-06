@@ -3644,7 +3644,8 @@
             "unlowered-method-call"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-client"
           }
         },
         "erb": {
@@ -3656,7 +3657,8 @@
             "unlowered-method-call"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-client"
           }
         },
         "go-template": {
@@ -3668,7 +3670,8 @@
             "unlowered-method-call"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-client"
           }
         },
         "jinja": {
@@ -3680,7 +3683,8 @@
             "unlowered-method-call"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-client"
           }
         },
         "minijinja": {
@@ -3692,7 +3696,8 @@
             "unlowered-method-call"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-client"
           }
         },
         "mojolicious": {
@@ -3704,7 +3709,8 @@
             "unlowered-method-call"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-client"
           }
         },
         "pebble": {
@@ -3716,7 +3722,8 @@
             "unlowered-method-call"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-client"
           }
         },
         "twig": {
@@ -3728,7 +3735,8 @@
             "unlowered-method-call"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-client"
           }
         },
         "xslate": {
@@ -3740,7 +3748,8 @@
             "unlowered-method-call"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-client"
           }
         }
       },
@@ -3754,7 +3763,8 @@
             "unlowered-method-call"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-renamed-client"
           }
         },
         "erb": {
@@ -3766,7 +3776,8 @@
             "unlowered-method-call"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-renamed-client"
           }
         },
         "go-template": {
@@ -3778,7 +3789,8 @@
             "unlowered-method-call"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-renamed-client"
           }
         },
         "jinja": {
@@ -3790,7 +3802,8 @@
             "unlowered-method-call"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-renamed-client"
           }
         },
         "minijinja": {
@@ -3802,7 +3815,8 @@
             "unlowered-method-call"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-renamed-client"
           }
         },
         "mojolicious": {
@@ -3814,7 +3828,8 @@
             "unlowered-method-call"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-renamed-client"
           }
         },
         "pebble": {
@@ -3826,7 +3841,8 @@
             "unlowered-method-call"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-renamed-client"
           }
         },
         "twig": {
@@ -3838,7 +3854,8 @@
             "unlowered-method-call"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-renamed-client"
           }
         },
         "xslate": {
@@ -3850,7 +3867,8 @@
             "unlowered-method-call"
           ],
           "escape": {
-            "state": "debt"
+            "state": "escapable",
+            "twin": "destructure-default-shared-array-renamed-client"
           }
         }
       },
@@ -11744,6 +11762,14 @@
       "conditional-nested-loop-precomputed-reactivity": {
         "description": "precomputed escape for conditional nested const loops retains reactive row bindings",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-nested-loop-precomputed-reactivity.ts"
+      },
+      "destructure-default-shared-array-client": {
+        "description": "A destructure default reading an earlier binding kept as a local, deferred to the client via /*…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-shared-array-client.ts"
+      },
+      "destructure-default-shared-array-renamed-client": {
+        "description": "A destructure default reading an earlier binding kept as a local, deferred to the client via /*…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-shared-array-renamed-client.ts"
       },
       "every-typeof-predicate-client": {
         "description": "Off-subset `.every()` predicate deferred to the client via /* @client */",

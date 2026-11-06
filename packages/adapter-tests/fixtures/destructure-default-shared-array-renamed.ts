@@ -7,7 +7,8 @@
  * The push runs in a `const` initializer (`const n = a.push('x') &&
  * b.length`) because the reference adapter renders only the component
  * body's declarations. The template adapters refuse the call (BF101,
- * `unlowered-method-call`), and the CSR template cannot run an init-time
+ * `unlowered-method-call`; its escape is the `/* @client *\/` twin
+ * `destructure-default-shared-array-renamed-client`), and the CSR template cannot run an init-time
  * mutation (`CSR_SKIP_FIXTURES`), so the real-browser fixture-hydrate and
  * oracle suites are where the client behaviour is checked.
  *
@@ -23,6 +24,7 @@ export const spec: SharedFixtureSpec = {
   sourceRoot: 'fixture',
   description: 'A destructure default reading an earlier binding kept as a local reads that local (shared-array-renamed)',
   interactions: [{ type: 'expectText', selector: 'p[data-slot="count"]', text: '1' }],
+  escapes: [{ kind: 'client-directive', fixture: 'destructure-default-shared-array-renamed-client' }],
 }
 
 export const fixture = defineSharedFixture(spec)
