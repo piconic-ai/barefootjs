@@ -13,7 +13,7 @@
     },
     "packages/adapter-erb/src/test-render.ts": {
       "buildRubyProps": [
-        50
+        33
       ],
       "renderErbComponent": [
         52

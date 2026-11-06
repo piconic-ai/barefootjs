@@ -13,84 +13,34 @@
       "reason": "deliberate: an unset prop must not surface a literal \"null\" in HTML"
     },
     "number/empty string coerces to 0": {
-      "expect": { "$num": "NaN" },
+      "expect": {
+        "$num": "NaN"
+      },
       "reason": "deliberate: empty input must not silently zero downstream arithmetic"
     },
     "number/null coerces to 0": {
-      "expect": { "$num": "NaN" },
+      "expect": {
+        "$num": "NaN"
+      },
       "reason": "deliberate: unset props must not silently zero downstream arithmetic"
     },
     "sort/localeCompare orders case-insensitively (ICU collation)": {
-      "expect": ["B", "a"],
+      "expect": [
+        "B",
+        "a"
+      ],
       "reason": "String#<=> is byte/codepoint order, not ICU collation (same barrier as Go/Perl)"
     },
     "sort/relational compare on numeric strings is lexical": {
-      "expect": ["9", "10"],
+      "expect": [
+        "9",
+        "10"
+      ],
       "reason": "the shared \"auto\" compare goes numeric when both keys look like numbers (same catalogue as Go bf_sort / Perl BarefootJS::sort)"
     },
     "reduce/numeric-string items concatenate under JS +": {
       "expect": 11,
       "reason": "numeric folds parse numeric strings instead of concatenating (same catalogue as Perl bf->reduce)"
-    },
-    "ends_with/endPosition null coerces to 0": {
-      "expect": true,
-      "reason": "The helper treats a null argument like an omitted one (its nil test is the default test), where JS coerces null. Graduates in U4 with the switch to is_undefined (spec/js-undefined-value.md, §4 \"Runtime helper code to audit\")."
-    },
-    "pad_start/pad null coerces to the string \"null\"": {
-      "expect": "  abc",
-      "reason": "The helper treats a null argument like an omitted one (its nil test is the default test), where JS coerces null. Graduates in U4 with the switch to is_undefined (spec/js-undefined-value.md, §4 \"Runtime helper code to audit\")."
-    },
-    "pad_end/pad null coerces to the string \"null\"": {
-      "expect": "abc  ",
-      "reason": "The helper treats a null argument like an omitted one (its nil test is the default test), where JS coerces null. Graduates in U4 with the switch to is_undefined (spec/js-undefined-value.md, §4 \"Runtime helper code to audit\")."
-    },
-    "split/limit null coerces to 0 and yields []": {
-      "expect": ["a", "b", "c"],
-      "reason": "The helper treats a null argument like an omitted one (its nil test is the default test), where JS coerces null. Graduates in U4 with the switch to is_undefined (spec/js-undefined-value.md, §4 \"Runtime helper code to audit\")."
-    },
-    "split/separator null splits on the string \"null\"": {
-      "expect": ["anullb"],
-      "reason": "The helper treats a null argument like an omitted one (its nil test is the default test), where JS coerces null. Graduates in U4 with the switch to is_undefined (spec/js-undefined-value.md, §4 \"Runtime helper code to audit\")."
-    },
-    "at/out of range yields undefined": {
-      "expect": null,
-      "reason": "The runtime has no undefined value yet: this read returns its nil, which is JS null, where JS returns undefined. Graduates in U4 (spec/js-undefined-value.md)."
-    },
-    "at/negative out of range yields undefined": {
-      "expect": null,
-      "reason": "The runtime has no undefined value yet: this read returns its nil, which is JS null, where JS returns undefined. Graduates in U4 (spec/js-undefined-value.md)."
-    },
-    "at/empty array yields undefined": {
-      "expect": null,
-      "reason": "The runtime has no undefined value yet: this read returns its nil, which is JS null, where JS returns undefined. Graduates in U4 (spec/js-undefined-value.md)."
-    },
-    "at/index undefined coerces to 0": {
-      "expect": null,
-      "reason": "The runtime has no undefined value yet: an undefined argument arrives as its nil, which the helper reads as null, so the argument's JS default does not apply. Graduates in U4 (spec/js-undefined-value.md, §4 \"Runtime helper code to audit\")."
-    },
-    "at/index null coerces to 0": {
-      "expect": null,
-      "reason": "The helper treats a null argument like an omitted one (its nil test is the default test), where JS coerces null. Graduates in U4 with the switch to is_undefined (spec/js-undefined-value.md, §4 \"Runtime helper code to audit\")."
-    },
-    "at/string: out of range yields undefined": {
-      "expect": null,
-      "reason": "The runtime has no undefined value yet: this read returns its nil, which is JS null, where JS returns undefined. Graduates in U4 (spec/js-undefined-value.md)."
-    },
-    "slice/end null coerces to 0 and yields []": {
-      "expect": [2, 3, 4],
-      "reason": "The helper treats a null argument like an omitted one (its nil test is the default test), where JS coerces null. Graduates in U4 with the switch to is_undefined (spec/js-undefined-value.md, §4 \"Runtime helper code to audit\")."
-    },
-    "slice/string: end null coerces to 0 and yields empty string": {
-      "expect": "footjs",
-      "reason": "The helper treats a null argument like an omitted one (its nil test is the default test), where JS coerces null. Graduates in U4 with the switch to is_undefined (spec/js-undefined-value.md, §4 \"Runtime helper code to audit\")."
-    },
-    "join/separator null coerces to the string \"null\"": {
-      "expect": "a,b",
-      "reason": "The helper treats a null argument like an omitted one (its nil test is the default test), where JS coerces null. Graduates in U4 with the switch to is_undefined (spec/js-undefined-value.md, §4 \"Runtime helper code to audit\")."
-    },
-    "find/no match yields undefined": {
-      "expect": null,
-      "reason": "The runtime has no undefined value yet: this read returns its nil, which is JS null, where JS returns undefined. Graduates in U4 (spec/js-undefined-value.md)."
     }
   },
   "unsupported": {}

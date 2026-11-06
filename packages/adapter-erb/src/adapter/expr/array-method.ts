@@ -26,9 +26,11 @@ import type {
 } from '@barefootjs/jsx'
 import { rubySymbolKey, rubyStringLiteral } from '../lib/ruby-naming.ts'
 
-const helperCall = prefixedArrayMethodSpelling('bf.', 'nil')
+// The undefined literal is the `slice` end the source left out: the runtime's
+// `UNDEF` (`bf.undefined`), which `bf.slice` reads as "to the length"; `nil`
+// would be a `null` end, which JS coerces to 0.
+const helperCall = prefixedArrayMethodSpelling('bf.', 'bf.undefined')
 
-// The undefined literal is the `slice` end the source left out; Ruby reads `nil`.
 // Ruby's native `.downcase` / `.upcase` need no runtime helper.
 const ARRAY_METHOD_SPELLING: ArrayMethodSpelling = {
   ...helperCall,

@@ -85,10 +85,15 @@ module BarefootJS
       end
 
       # Render `<name>.erb` (relative to `path`) with `child_bf` bound as
-      # `bf` and `vars` (a Hash, symbol-keyed) bound as `v`.
+      # `bf` and `vars` (a Hash, symbol-keyed) bound as `v`. A template reads
+      # a var the host did not set as JS `undefined` (`BarefootJS::UNDEF`),
+      # through a copy of `vars` whose default is `UNDEF`; the host's own Hash
+      # is left as it is.
       def render_named(name, child_bf, vars)
         template = load_template(name)
-        Renderer.new(child_bf, vars || {}).render(template)
+        bound = (vars || {}).dup
+        bound.default = BarefootJS::UNDEF
+        Renderer.new(child_bf, bound).render(template)
       end
 
       private

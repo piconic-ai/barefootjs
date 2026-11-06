@@ -22,6 +22,21 @@ bf = BarefootJS::Context.new(backend)
 
 Values are JSON-shaped Ruby data with symbol hash keys throughout (props, env hashes, array-of-hash records).
 
+### `null` and `undefined`
+
+Ruby's `nil` is JS `null`. JS `undefined` is `BarefootJS::UNDEF`, a frozen singleton. A props Hash already has the four states a JS prop has, so no wrapper type is needed:
+
+| JS | Props Hash |
+| --- | --- |
+| prop not passed | key left out |
+| `undefined` passed (`c={props.c}` with `c` unset) | `{ c: BarefootJS::UNDEF }` |
+| `null` | `{ c: nil }` |
+| a value | `{ c: 'x' }` |
+
+A destructure default applies to the first two only. JSON decoded with `JSON.parse(..., symbolize_names: true)` gives `nil` for `null` and leaves a missing key out, which is what you want.
+
+`UNDEF.nil?` is true and it prints as `''`, but Ruby cannot make it falsy: `if value` and `value || default` treat it as present. Test with `BarefootJS.undefined?`, `BarefootJS.null?` and `BarefootJS.nullish?` (`== null`) instead.
+
 ## Documentation
 
 - [barefootjs.dev](https://barefootjs.dev/) — core documentation

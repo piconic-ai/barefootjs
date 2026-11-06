@@ -89,7 +89,8 @@ class PrimitiveVectorsTest < Minitest::Test
     return VectorUndefined.runtime_undefined?(got) if VectorUndefined.sentinel?(expect)
 
     case expect
-    when nil then got.nil?
+    # `UNDEF.nil?` is true: a `null` expect wants host nil itself.
+    when nil then BarefootJS.null?(got)
     when true, false then got == expect
     when Numeric then number_match?(got, expect)
     when Array then got.is_a?(Array) && got.size == expect.size && got.zip(expect).all? { |g, e| match?(g, e) }

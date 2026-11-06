@@ -68,7 +68,8 @@ class EvalVectorsTest < Minitest::Test
   # stay a straightforward type + value check.
   def value_match?(got, expect)
     return VectorUndefined.runtime_undefined?(got) if VectorUndefined.sentinel?(expect)
-    return got.nil? if expect.nil?
+    # `UNDEF.nil?` is true: a `null` expect wants host nil itself.
+    return BarefootJS.null?(got) if expect.nil?
     if expect.is_a?(Hash) && expect.key?(:$num)
       kind = expect[:$num]
       return false unless got.is_a?(Numeric)
@@ -90,7 +91,7 @@ class EvalVectorsTest < Minitest::Test
 
       return expect.keys.all? { |k| got.key?(k) && value_match?(got[k], expect[k]) }
     end
-    return false if got.nil?
+    return false if BarefootJS.nullish?(got)
 
     # A number must match a number, and a string must match a string --
     # a string-vs-number type mismatch fails (e.g. String(42) must return

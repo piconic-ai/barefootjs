@@ -80,6 +80,10 @@ import {
   numberLiteralSpelling,
   plusSpelling,
   needsToString,
+  operandFacts,
+  isNeverNil,
+  type NilTestHelper,
+  type ScopedOperandTyping,
 } from '@barefootjs/jsx'
 
 import type { ErbEmitContext } from '../emit-context.ts'
@@ -105,9 +109,11 @@ export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'ERB', 
  * own listed there.
  */
 export const NATIVE_SAFE: NativeSafeTable = {
-  // The runtime does not carry JS `undefined` apart from `null` yet
-  // (spec/js-undefined-value.md); rollout step U4 flips it.
-  carriesUndefined: false,
+  // The runtime carries JS `undefined` (`BarefootJS::UNDEF`) apart from
+  // `null` (host `nil`), spec/js-undefined-value.md rollout step U4. `UNDEF`
+  // is truthy under Ruby's own `if`, which no emission relies on: every
+  // test goes through `bf.truthy?` (`'to-boolean'` claims no proof).
+  carriesUndefined: true,
   'to-boolean': [],
   // A unary `+` is native only over a proven number, `to_number` otherwise
   // (#3824 step 3). `unproven` describes binary `-` / `*` over operands Phase 1
@@ -179,9 +185,9 @@ function spellLogical(op: '&&' | '||', plan: PrimitivePlan | null, l: string, r:
 /**
  * JS `l ?? r` in a value position (#3839), boxed the way `spellLogical` boxes
  * `&&` / `||`: `keep_nonnil(l)` is the one-element array `[l]` unless `l` is
- * nil, so Ruby's `||` stops at `l`'s box exactly when JS returns `l` and
- * builds `[r]` only otherwise (the short circuit). `0`, `''` and `false` are
- * present, as in JS. Each operand is rendered once, so a chain
+ * `null` or `undefined`, so Ruby's `||` stops at `l`'s box exactly when JS
+ * returns `l` and builds `[r]` only otherwise (the short circuit). `0`, `''`
+ * and `false` are present, as in JS. Each operand is rendered once, so a chain
  * `a ?? b ?? c …` grows linearly; `l.nil? ? r : l` rendered `l` twice, and a
  * 16-operand chain 2^15 times.
  */
@@ -248,14 +254,67 @@ function flattenPropsMember(
 }
 
 /**
+ * JS `undefined` in a template: the runtime's `BarefootJS::UNDEF`, which the
+ * `bf` object exposes as `bf.undefined` (spec/js-undefined-value.md, rollout
+ * step U4). Ruby's `nil` is JS `null`.
+ */
+export const ERB_UNDEFINED = 'bf.undefined'
+
+/**
+ * Spell a nil-test plan (`x === null` / `x === undefined` / `x == null`,
+ * `spec/js-undefined-value.md` "Decisions" (7)) through the runtime's
+ * `is_null` / `is_undefined` / `is_nullish`. Never Ruby's own `.nil?`, which
+ * `UNDEF` answers too, nor `== nil`, which it does not.
+ */
+function spellNilTest(helper: NilTestHelper, negated: boolean, operand: string): string {
+  const test = `bf.${helper}(${operand})`
+  return negated ? `!${test}` : test
+}
+
+/**
+ * Spell a binary `-` / `*` plan: Ruby's own operator when the plan is native
+ * (two proven numbers), the runtime's JS ToNumber arithmetic (`bf.sub` /
+ * `bf.mul`) when it names the helper, as it does for an operand that may be
+ * `UNDEF` or `nil` (a target that carries `undefined`). Null for any other
+ * operator.
+ */
+function spellNumericBinary(op: string, plan: PrimitivePlan | null, l: string, r: string): string | null {
+  if (op !== '-' && op !== '*') return null
+  if (plan?.mode === 'helper' && (plan.helper === 'sub' || plan.helper === 'mul')) return `bf.${plan.helper}(${l}, ${r})`
+  return `(${l} ${op} ${r})`
+}
+
+/**
+ * A non-computed member read `obj.k` (#3848 U4). JS reads a key the object
+ * does not have as `undefined`, Ruby's `Hash#[]` as `nil` (JS `null`), so a
+ * field Phase 1 does not prove present (optional, nullable or untyped) reads
+ * through the runtime's `bf.get`, which gives `UNDEF` on a miss. A field the
+ * declared type proves present and non-nil keeps the native `[:k]` read. A
+ * `?.`-written read is `bf.get_opt`: Ruby's `nil&.[](:k)` gives `nil` where
+ * JS's `null?.k` gives `undefined`, and `&.` calls through on `UNDEF`.
+ */
+function memberRead(
+  object: ParsedExpr,
+  property: string,
+  optional: boolean,
+  receiver: string,
+  typing: ScopedOperandTyping,
+): string {
+  const key = rubySymbolLiteral(property)
+  if (optional) return `bf.get_opt(${receiver}, ${key})`
+  const facts = operandFacts({ kind: 'member', object, property, computed: false, optional: false }, typing)
+  return isNeverNil(facts) ? `${receiver}[${key}]` : `bf.get(${receiver}, ${key})`
+}
+
+/**
  * `x.length` through `bf.length` (#2255, UTF-16 code units). An
- * optional-chained `x?.length` yields `nil` — JS's `undefined` — for an
- * absent receiver instead of `bf.length(nil)`'s `0`, so a bare read renders
+ * optional-chained `x?.length` yields JS's `undefined` (`bf.undefined`) for a
+ * nullish receiver instead of `bf.length(nil)`'s `0`, so a bare read renders
  * empty and a `??` fallback takes over (#3332).
  */
 function optionalLength(receiver: string, optional: boolean): string {
   const read = `bf.length(${receiver})`
-  return optional ? `((${receiver}).nil? ? nil : ${read})` : read
+  return optional ? `(bf.is_nullish(${receiver}) ? ${ERB_UNDEFINED} : ${read})` : read
 }
 
 /**
@@ -362,6 +421,8 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     const signal = this.localVarMap.get(name)
     if (signal) return `v[${rubySymbolLiteral(signal)}]`
     if (this.isLoopBoundOuter(name)) return rubyLocal(name)
+    // The unbound `undefined` identifier is the constant.
+    if (name === 'undefined') return ERB_UNDEFINED
     return `v[${rubySymbolLiteral(name)}]`
   }
 
@@ -390,16 +451,13 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     // code units (#2255) — array `.length` is unaffected either way, so
     // this stays one call site for both receiver shapes.
     if (property === 'length') return optionalLength(emit(object), optional)
-    // A `?.`-written access (`user?.name`, #2168 optional-chaining-prop):
-    // Ruby's own `nil[:key]` raises `NoMethodError` (unlike Hash#[] on a
-    // present Hash) — `&.` is Ruby's native safe-navigation operator, and
-    // `&.[](...)` is its explicit-method form for indexing rather than a
-    // dotted method call. Only guards the single written `?.` hop, not a
+    // A `?.`-written access (`user?.name`, #2168 optional-chaining-prop)
+    // reads through `bf.get_opt`, `undefined` over a nullish receiver
+    // (`memberRead`). Only guards the single written `?.` hop, not a
     // JS-style whole-chain short-circuit — see the `ParsedExpr` `member`
     // variant's docstring for the multi-hop caveat.
     if (computed) return this.indexAccess(object, literalMemberIndex(property), emit, _plan)
-    if (optional) return `${emit(object)}&.[](${rubySymbolLiteral(property)})`
-    return `${emit(object)}[${rubySymbolLiteral(property)}]`
+    return memberRead(object, property, optional, emit(object), this.primitives.typing())
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
@@ -440,11 +498,16 @@ export class ErbFilterEmitter implements ParsedExprEmitter {
     // JS Abstract Relational Comparison otherwise (#3824 step 3).
     const relational = relationalHelper(op, plan)
     if (relational) return `bf.${relational}(${l}, ${r})`
+    const numeric = spellNumericBinary(op, plan, l, r)
+    if (numeric !== null) return numeric
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
-      '+': '+', '-': '-', '*': '*',
     }
     return `(${l} ${opMap[op] ?? op} ${r})`
+  }
+
+  nilTest(helper: NilTestHelper, negated: boolean, operand: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    return spellNilTest(helper, negated, emit(operand))
   }
 
   logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
@@ -613,10 +676,12 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
   }
 
   identifier(name: string): string {
-    // `undefined` / `null` nested inside a larger expression tree (e.g.
-    // `props.isActive ? 'page' : undefined`) — the top-level short-circuits
-    // don't see them.
-    if (name === 'undefined' || name === 'null') return 'nil'
+    // `undefined` nested inside a larger expression tree (e.g.
+    // `props.isActive ? 'page' : undefined`) is the runtime's `UNDEF`, a
+    // `null` identifier Ruby's `nil` — the top-level short-circuits don't see
+    // them.
+    if (name === 'undefined') return ERB_UNDEFINED
+    if (name === 'null') return 'nil'
     // A loop-bound name (this identifier resolves to a bare Ruby local
     // introduced by an enclosing loop, not a vars-Hash entry) takes
     // priority over const inlining — mirrors the Mojo adapter's threaded
@@ -662,12 +727,10 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     // units vs. Ruby's codepoint-counting `String#length`).
     if (property === 'length') return optionalLength(obj, optional)
     // A `?.`-written access (`user?.name`, #2168 optional-chaining-prop):
-    // see `ErbFilterEmitter.member()`'s comment above for why `&.[](...)`
-    // (not a dotted `&.name`) is the right safe-nav form for a Hash-keyed
-    // prop, and for the single-hop caveat.
+    // see `ErbFilterEmitter.member()`'s comment above (`bf.get_opt`, and the
+    // single-hop caveat).
     if (computed) return this.indexAccess(object, literalMemberIndex(property), emit, _plan)
-    if (optional) return `${obj}&.[](${rubySymbolLiteral(property)})`
-    return `${obj}[${rubySymbolLiteral(property)}]`
+    return memberRead(object, property, optional, obj, this.primitives.typing())
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
@@ -788,7 +851,7 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
   private coerceNullishOperand(op: string, expr: ParsedExpr, other: ParsedExpr | undefined, operand: string): string {
     const coercion = this.ctx._arithmeticCoercion(op, expr, other)
     if (coercion === 'undefined') return `bf.number(${operand})`
-    if (coercion === 'undefined-keep') return `((${operand}).nil? ? Float::NAN : ${operand})`
+    if (coercion === 'undefined-keep') return `(bf.is_nullish(${operand}) ? Float::NAN : ${operand})`
     return coercion === 'null' ? `(${operand} || 0)` : operand
   }
 
@@ -807,11 +870,16 @@ export class ErbTopLevelEmitter implements ParsedExprEmitter {
     // JS Abstract Relational Comparison otherwise (#3824 step 3).
     const relational = relationalHelper(op, plan)
     if (relational) return `bf.${relational}(${l}, ${r})`
+    const numeric = spellNumericBinary(op, plan, l, r)
+    if (numeric !== null) return numeric
     const opMap: Record<string, string> = {
       '===': '==', '!==': '!=', '>': '>', '<': '<', '>=': '>=', '<=': '<=',
-      '+': '+', '-': '-', '*': '*',
     }
     return `(${l} ${opMap[op] ?? op} ${r})`
+  }
+
+  nilTest(helper: NilTestHelper, negated: boolean, operand: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    return spellNilTest(helper, negated, emit(operand))
   }
 
   logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {

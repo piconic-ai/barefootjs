@@ -2017,8 +2017,6 @@
               "nested-callback-in-filter-predicate",
               "object-equality-by-contents",
               "off-subset-callback-body",
-              "omitted-optional-nullable-number-arithmetic",
-              "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
               "record-const-index-unknown-keys",
               "unlowerable-loop-filter-predicate",
@@ -2209,12 +2207,6 @@
     "fixtures": {
       "awaits-undefined-plus-shapes": {
         "blade": {
-          "kind": "render",
-          "limitations": [
-            "awaits-undefined-value"
-          ]
-        },
-        "erb": {
           "kind": "render",
           "limitations": [
             "awaits-undefined-value"
@@ -3548,12 +3540,6 @@
       },
       "destructure-default-null-hydrate": {
         "blade": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "erb": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -7003,19 +6989,6 @@
             "twin": "omitted-optional-number-arithmetic"
           }
         },
-        "erb": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic"
-          }
-        },
         "go-template": {
           "kind": "refusal",
           "codes": [
@@ -7084,19 +7057,6 @@
       },
       "omitted-optional-nullable-number-arithmetic-destructured": {
         "blade": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic-destructured"
-          }
-        },
-        "erb": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -7189,19 +7149,6 @@
             "twin": "omitted-optional-number-relational"
           }
         },
-        "erb": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-relational"
-          }
-        },
         "go-template": {
           "kind": "refusal",
           "codes": [
@@ -7282,19 +7229,6 @@
             "twin": "omitted-optional-number-unary-plus"
           }
         },
-        "erb": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-unary-plus"
-          }
-        },
         "go-template": {
           "kind": "refusal",
           "codes": [
@@ -7363,19 +7297,6 @@
       },
       "omitted-optional-nullable-string-relational": {
         "blade": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-scalar-relational"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-string-relational"
-          }
-        },
-        "erb": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -7750,12 +7671,6 @@
       },
       "props-object-non-props-name-operand-typing": {
         "blade": {
-          "kind": "render",
-          "limitations": [
-            "props-object-non-props-name-operand-typing"
-          ]
-        },
-        "erb": {
           "kind": "render",
           "limitations": [
             "props-object-non-props-name-operand-typing"
@@ -10063,12 +9978,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -10107,12 +10016,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -10146,12 +10049,6 @@
       },
       "undef-null-json-stringify": {
         "blade": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "erb": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10258,19 +10155,6 @@
             "twin": "omitted-optional-number-arithmetic"
           }
         },
-        "erb": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic"
-          }
-        },
         "go-template": {
           "kind": "refusal",
           "codes": [
@@ -10344,12 +10228,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -10383,12 +10261,6 @@
       },
       "undef-null-optional-chain-result": {
         "blade": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "erb": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10432,12 +10304,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -10471,19 +10337,6 @@
       },
       "undef-null-relational": {
         "blade": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-relational"
-          }
-        },
-        "erb": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -10569,12 +10422,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -10608,12 +10455,6 @@
       },
       "undef-null-sort": {
         "blade": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "erb": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10657,12 +10498,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -10701,12 +10536,6 @@
             "host-nil-collapses-undefined-and-null"
           ]
         },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -10740,12 +10569,6 @@
       },
       "undef-null-string-includes": {
         "blade": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "erb": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -11907,7 +11730,6 @@
       ],
       "adapters": [
         "blade",
-        "erb",
         "go-template",
         "mojolicious",
         "pebble",
@@ -12187,7 +12009,6 @@
       ],
       "adapters": [
         "blade",
-        "erb",
         "go-template",
         "mojolicious",
         "pebble",
@@ -12722,7 +12543,6 @@
       ],
       "adapters": [
         "blade",
-        "erb",
         "go-template",
         "mojolicious",
         "pebble",
@@ -12744,7 +12564,6 @@
       ],
       "adapters": [
         "blade",
-        "erb",
         "go-template",
         "mojolicious",
         "pebble",
@@ -12839,7 +12658,6 @@
       ],
       "adapters": [
         "blade",
-        "erb",
         "go-template",
         "mojolicious",
         "pebble",
