@@ -178,13 +178,6 @@ const LOOP_REFUSALS: LoopRefusalSpelling = {
 }
 
 /**
- * The `XslateAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
- *
- * @since 0.9.1
- * @stability alpha
- */
-
-/**
  * `stringifyBooleanBranches` for an attribute value, keeping a `??` whose
  * boolean left operand the rewrite folds away (`(a > b) ?? 'x'` is `a > b`):
  * this target spells every `??` through its `keep_nonnil` box
@@ -198,6 +191,13 @@ function stringifyBranchesKeepingNullish(expr: ParsedExpr): ParsedExpr {
   if (rewritten.kind === 'logical' && rewritten.op === '??') return rewritten
   return { ...expr, left: rewritten, right: stringifyBooleanBranches(expr.right) }
 }
+
+/**
+ * The `XslateAdapter` template adapter. Pass an instance as the `adapter` option of `@barefootjs/vite`.
+ *
+ * @since 0.9.1
+ * @stability alpha
+ */
 export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<XslateRenderCtx> {
   name = 'xslate'
   extension = '.tx'
