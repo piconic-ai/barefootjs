@@ -120,7 +120,7 @@ class HelperVectorsTest < Minitest::Test
     'index_of' => ->(*a) { BF.index_of(*a) },
     'last_index_of' => ->(*a) { BF.last_index_of(*a) },
     'concat' => ->(a, b) { BF.concat(a, b) },
-    'slice' => ->(recv, s, e = nil) { BF.slice(recv, s, e) },
+    'slice' => ->(*a) { BF.slice(*a) },
     'reverse' => ->(v) { BF.reverse(v) },
     'flat' => ->(*a) { BF.flat(*a) },
     'flat_dynamic' => ->(*a) { BF.flat_dynamic(*a) },
@@ -267,7 +267,8 @@ class HelperVectorsTest < Minitest::Test
   # numerically, arrays/hashes recursively, strings by ==.
   def value_match?(got, expect)
     return VectorUndefined.runtime_undefined?(got) if VectorUndefined.sentinel?(expect)
-    return got.nil? if expect.nil?
+    # `UNDEF.nil?` is true: a `null` expect wants host nil itself.
+    return BarefootJS.null?(got) if expect.nil?
     if expect.is_a?(Hash) && expect.key?(:$num)
       kind = expect[:$num]
       return false unless got.is_a?(Numeric)
@@ -287,7 +288,7 @@ class HelperVectorsTest < Minitest::Test
 
       return expect.keys.all? { |k| got.key?(k) && value_match?(got[k], expect[k]) }
     end
-    return false if got.nil?
+    return false if BarefootJS.nullish?(got)
     return got == expect if got.is_a?(Numeric) && expect.is_a?(Numeric)
 
     got == expect

@@ -36,7 +36,7 @@
  * regression test.
  */
 
-import { extractSsrDefaults, deriveStashFromDefaults, importsSearchParams } from '@barefootjs/jsx'
+import { extractSsrDefaults, importsSearchParams } from '@barefootjs/jsx'
 import { compileFixtureJSX } from '@barefootjs/adapter-tests/harness-program'
 import type { ComponentIR, SsrDefault } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
@@ -267,12 +267,18 @@ export async function renderErbComponent(options: RenderOptions): Promise<string
     // `JSON.parse(..., symbolize_names: true)` on the Ruby side is the
     // whole marshalling story; no hand-built Ruby literals.
     const { obj: rootProps, needsSearchParams, userProps } = buildRubyProps(props, ir)
-    await Bun.write(resolve(tempDir, 'props.json'), JSON.stringify(rootProps))
+    await Bun.write(resolve(tempDir, 'props.json'), toRubyJson(rootProps))
     // Separate from `props.json`: the caller-facing subset only (no
     // scope_id / signal / memo bookkeeping) — what `bf._props(...)` below
     // feeds `props_attr`'s bf-p payload, matching what a production
     // Sinatra route handler passes, not this harness's internal vars hash.
-    await Bun.write(resolve(tempDir, 'user_props.json'), JSON.stringify(userProps))
+    await Bun.write(resolve(tempDir, 'user_props.json'), toRubyJson(userProps))
+    // The caller's props as the root's seed reads them (every key: a prop
+    // may itself be named with a leading `__`), and the root's statically
+    // derived ssrDefaults, VERBATIM — the production seed
+    // (`BarefootJS::Context.derive_vars_from_defaults`) runs over both in
+    // the render script below.
+    await writeRootSeedInputs(tempDir, props, ir)
 
     // Honour `__instanceId` from props for the root scope id so
     // shared-component fixtures (which pin `<ComponentName>_test`) match
@@ -316,8 +322,7 @@ bf = BarefootJS::Context.new(backend)
 # scope ids Hono / Go emit; default to 'test'.
 bf._scope_id(${rootScopeId})
 
-props = JSON.parse(File.read(File.join(__dir__, 'props.json')), symbolize_names: true)
-# Mirrors production's \`props_attr\` contract (see barefoot_js.rb and
+${rootSeedRuby(ir.metadata.restPropsName)}# Mirrors production's \`props_attr\` contract (see barefoot_js.rb and
 # props_attr_test.rb): the caller is expected to seed \`_props\` before
 # rendering the root component, so this harness must call it explicitly.
 #
@@ -326,7 +331,7 @@ props = JSON.parse(File.read(File.join(__dir__, 'props.json')), symbolize_names:
 # values), which a real Sinatra route handler never has and never passes.
 # Production's bf-p carries neither scope_id nor signal state, only the
 # caller-facing props.
-bf._props(JSON.parse(File.read(File.join(__dir__, 'user_props.json')), symbolize_names: true))
+bf._props(bf_read_json('user_props.json'))
 ${needsSearchParams ? "# (#1922) Request-scoped searchParams() env signal: bind the reserved\n# `search_params` vars key to an empty-query reader. Only when the\n# component imports `searchParams`.\nprops[:search_params] = bf.search_params('')\n" : ''}
 ${childRenderers}
 html = backend.render_named(${rubyStringLiteral(toSnakeCase(componentName))}, bf, props)
@@ -362,6 +367,48 @@ print bf.portals
   } finally {
     await rm(tempDir, { recursive: true, force: true }).catch(() => {})
   }
+}
+
+/** The two inputs of {@link rootSeedRuby}'s seed, written next to the script. */
+async function writeRootSeedInputs(tempDir: string, props: Record<string, unknown> | undefined, ir: ComponentIR): Promise<void> {
+  await Bun.write(resolve(tempDir, 'seed_props.json'), toRubyJson(props ?? {}))
+  await Bun.write(resolve(tempDir, 'root_defaults.json'), JSON.stringify(extractSsrDefaults(ir.metadata) ?? {}))
+}
+
+/**
+ * The render script's root vars: `props.json` merged with the production
+ * seed over the caller's props (`seed_props.json`) and the root's
+ * ssrDefaults (`root_defaults.json`). The rest bag is routed into
+ * `props.json` already, so the seed's rest entry is dropped.
+ */
+function rootSeedRuby(restPropsName: string | null | undefined): string {
+  const restDelete = restPropsName ? `# The rest bag is routed into \`props\` already.\nroot_seed.delete(${rubySymbolLiteral(restPropsName)})\n` : ''
+  return `# A fixture's \`undefined\` crosses the JSON boundary as
+# \`{"__bf_special": "undefined"}\` and is the runtime's \`UNDEF\` here; a
+# fixture's \`null\` is \`nil\`. (Harness-only: the runtime never walks
+# decoded data.)
+def bf_decode(value)
+  return BarefootJS::UNDEF if value == { __bf_special: 'undefined' }
+  return value.map { |v| bf_decode(v) } if value.is_a?(Array)
+  return value.transform_values { |v| bf_decode(v) } if value.is_a?(Hash)
+
+  value
+end
+
+def bf_read_json(name)
+  bf_decode(JSON.parse(File.read(File.join(__dir__, name), encoding: 'UTF-8'), symbolize_names: true))
+end
+
+props = bf_read_json('props.json')
+# Every declared prop, signal and memo is seeded by the production
+# \`derive_vars_from_defaults\` over the caller's props: an omitted prop is
+# left out of them, never null-filled, so the seed decides
+# (spec/js-undefined-value.md, "Shared: the seed and the default") — its
+# default when it has one, \`UNDEF\` otherwise; an explicit \`null\` stays nil.
+root_defaults = JSON.parse(File.read(File.join(__dir__, 'root_defaults.json'), encoding: 'UTF-8'), symbolize_names: true)
+root_seed = BarefootJS::Context.derive_vars_from_defaults(root_defaults, bf_read_json('seed_props.json'))
+${restDelete}props = props.merge(root_seed)
+`
 }
 
 /**
@@ -411,7 +458,7 @@ function buildChildRenderersRuby(
   if (childTemplates.size === 0) return ''
 
   const lines: string[] = []
-  lines.push(`child_defaults = JSON.parse(File.read(File.join(__dir__, 'child_defaults.json')), symbolize_names: true)`)
+  lines.push(`child_defaults = JSON.parse(File.read(File.join(__dir__, 'child_defaults.json'), encoding: 'UTF-8'), symbolize_names: true)`)
   lines.push(``)
   lines.push(`# Register child component renderers`)
 
@@ -512,16 +559,30 @@ function toSnakeCase(name: string): string {
 }
 
 /**
+ * JSON for the render script, with a fixture's `undefined` (a present key
+ * holding it, or an array element) written as `{"__bf_special":
+ * "undefined"}`, which the script decodes to the runtime's `UNDEF`. Plain
+ * `JSON.stringify` would drop the key, which is an absent prop, not a
+ * present `undefined` one.
+ */
+function toRubyJson(value: unknown): string {
+  return JSON.stringify(value, (_key, v) => (v === undefined ? { __bf_special: 'undefined' } : v))
+}
+
+/**
  * Build the root props object (later JSON-serialised) + whether the
  * component imports `searchParams`, PLUS `userProps` — the exact raw
- * fixture props (no defaults, no null-fill, no signal/memo seeding),
- * mirroring production's route-handler call `bf._props(props)` verbatim.
- * `obj` stays the full internal vars hash the compiled template renders
- * against (local-var-keyed, defaulted, signal/memo-seeded); `userProps`
- * is for `bf._props(...)` (bf-p hydration payload) only — these must NOT
- * be the same object, and `userProps` must NOT be derived from `obj` or
- * from the defaulted stash: production's own bf-p carries only what the
- * caller actually passed in, unmodified.
+ * fixture props (no defaults, no signal/memo seeding), mirroring
+ * production's route-handler call `bf._props(props)` verbatim. `obj` holds
+ * the vars the render script binds ahead of the root's seed (the rest bag,
+ * the caller's undeclared props and `scope_id`); every declared prop,
+ * signal and memo comes from the production seed
+ * (`BarefootJS::Context.derive_vars_from_defaults`, run in the script), so
+ * an omitted declared prop is never null-filled here. `userProps` is for
+ * `bf._props(...)` (bf-p hydration payload) only — these must NOT be the
+ * same object, and `userProps` must NOT be derived from `obj`:
+ * production's own bf-p carries only what the caller actually passed in,
+ * unmodified.
  */
 function buildRubyProps(
   props: Record<string, unknown> | undefined,
@@ -531,27 +592,6 @@ function buildRubyProps(
 
   const explicitScope = typeof props?.__instanceId === 'string' ? props.__instanceId : 'test'
   obj.scope_id = explicitScope
-
-  // Prop params with defaults (before signals, so signals can reference them).
-  // Seeded through the shared `deriveStashFromDefaults` (the TS twin of the
-  // production `derive_vars_from_defaults` this harness ALSO calls below for
-  // child components) so an aliased destructured prop's CALLER-facing key
-  // (`propName`, e.g. `n` for `{ n: count }`) is honoured, not just the
-  // local template var name (#2524 SSR half). `props` is keyed by the
-  // caller-facing name, exactly what `propName` resolves against.
-  //
-  // This defaulted/derived stash feeds ONLY `obj` (the template-rendering
-  // vars hash) below — never `userProps` (the bf-p payload), which is
-  // built separately, straight off the raw `props` argument.
-  const rootSsrDefaults = extractSsrDefaults(ir.metadata) ?? {}
-  const derivedProps = deriveStashFromDefaults(rootSsrDefaults, props ?? {})
-  for (const param of ir.metadata.propsParams) {
-    if (param.isRest) continue
-    // No default + no caller value: seed `nil` so a bare reference to an
-    // optional prop's vars-Hash key resolves (to nil) instead of the key
-    // being wholly absent — matches the Perl harnesses' explicit `undef`.
-    obj[param.name] = derivedProps[param.name] ?? null
-  }
 
   // Route undeclared props into the rest bag (`spread_attrs(v[:<rest>])`).
   const restPropsName = ir.metadata.restPropsName
@@ -575,12 +615,11 @@ function buildRubyProps(
   }
 
   // User props. Skip a key that's already a declared param's LOCAL template
-  // var name — `derivedProps` above already resolved that var correctly
-  // (through `propName`, for an aliased prop); re-assigning the raw
-  // `props[key]` here would silently clobber it with an UNRELATED value
-  // whenever a caller happens to also pass a same-spelled-as-local-name prop
-  // that isn't this param's actual `propName` (#2524 — surfaced by the
-  // aliased-destructured-prop generated data points, which pass both `n`
+  // var name — the seed resolves that var (through `propName`, for an
+  // aliased prop); the raw `props[key]` here would otherwise clobber it with
+  // an UNRELATED value whenever a caller also passes a same-spelled-as-local-
+  // name prop that isn't this param's actual `propName` (#2524 — surfaced by
+  // the aliased-destructured-prop generated data points, which pass both `n`
   // (the real propName) and an incidental `count` key).
   const localParamNames = new Set(ir.metadata.propsParams.map(p => p.name))
   if (props) {
@@ -607,40 +646,7 @@ function buildRubyProps(
     }
   }
 
-  // No initializer re-evaluation against raw props — production's
-  // before_render seeds only from `deriveStashFromDefaults` (#2696).
-  for (const signal of ir.metadata.signals) {
-    // Env signals (#2057 / #1922) are bound below via `search_params('')`,
-    // not from a static initial value.
-    if (signal.envReader) continue
-    if (Object.prototype.hasOwnProperty.call(derivedProps, signal.getter)) {
-      obj[signal.getter] = derivedProps[signal.getter]
-    }
-  }
-
-  // No `?? 0` for entries the manifest lacks — production seeds nothing there (#2696).
-  for (const memo of ir.metadata.memos) {
-    if (Object.prototype.hasOwnProperty.call(derivedProps, memo.name)) {
-      obj[memo.name] = derivedProps[memo.name]
-    }
-  }
-
-  // #2813: `extractSsrDefaults` can seed an entry under a name that is
-  // none of `propsParams` / `signals` / `memos` above — a bare local-const
-  // alias of a signal/memo getter (`const items__alias = items`,
-  // `ssr-defaults.ts`) seeds `items__alias` alongside `items`. Production
-  // hands the whole manifest-derived stash straight through
-  // (`deriveStashFromDefaults` IS the production seeding mechanism here,
-  // not a harness stand-in), so any leftover `derivedProps` key must be
-  // copied into `obj` too, or this harness would silently omit what
-  // production actually provides, mismeasuring this conformance case.
-  for (const [name, value] of Object.entries(derivedProps)) {
-    if (Object.prototype.hasOwnProperty.call(obj, name)) continue
-    obj[name] = value
-  }
-
   const needsSearchParams = importsSearchParams(ir.metadata)
 
   return { obj, needsSearchParams, userProps }
 }
-

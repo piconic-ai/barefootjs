@@ -2,6 +2,7 @@
 
 require 'set'
 require 'time'
+require 'barefoot_js/undefined'
 require 'barefoot_js/evaluator'
 require 'barefoot_js/search_params'
 
@@ -24,7 +25,10 @@ require 'barefoot_js/search_params'
 # directly than Perl's blurred numeric-string scalars, so this port needs
 # none of the `JSON::PP::Boolean` sentinel-detection machinery the Perl
 # runtime carries -- a Ruby `true`/`false` IS a boolean, distinguishable
-# from `0`/`1` for free.
+# from `0`/`1` for free. Host `nil` is JS `null`; JS `undefined` is
+# `BarefootJS::UNDEF` (barefoot_js/undefined.rb), so a props Hash has JS's
+# four states: a key left out (absent), `UNDEF` (present `undefined`), `nil`
+# (`null`) and a value.
 module BarefootJS
   # Marker wrapper for a string that is ALREADY finished HTML and must not
   # be re-escaped by `Context#h` -- e.g. a named-slot / children capture
@@ -43,6 +47,13 @@ module BarefootJS
   # `register_components_from_manifest` construct a fresh child instance
   # per nested render, chaining scope/slot identity off the caller.
   class Context
+    # The default of a helper's optional argument: the call passed none. JS
+    # reads an omitted argument as `undefined`, so `omitted?` accepts `UNDEF`
+    # too; an explicit `nil` is JS `null`, which each helper coerces like any
+    # other value.
+    OMITTED = Object.new.freeze
+    private_constant :OMITTED
+
     # ---------------------------------------------------------------------
     # Minimal get/set accessors (Perl-style: no-arg reads, one-arg writes,
     # matching BarefootJS.pm's hand-rolled accessor base so the exact same
@@ -116,7 +127,7 @@ module BarefootJS
     # BarefootJS.pm's docstring on the client reconciliation contract.
     def data_key_attr
       k = _data_key
-      return '' if k.nil?
+      return '' if BarefootJS.nullish?(k)
 
       escaped = k.to_s.gsub('&', '&amp;').gsub('"', '&quot;')
       %( data-key="#{escaped}")
@@ -142,7 +153,7 @@ module BarefootJS
       # (e.g. a blog paragraph) terminates the single-quoted attribute and
       # truncates the hydration payload. The browser entity-decodes the
       # attribute value, so the client's JSON.parse sees the original text.
-      json = html_escape(backend.encode_json(client_props))
+      json = html_escape(backend.encode_json(json_ready(client_props)))
       %( bf-p='#{json}')
     end
 
@@ -172,7 +183,7 @@ module BarefootJS
       ''
     end
 
-    def use_context(name, default = nil)
+    def use_context(name, default = UNDEF)
       stack = CONTEXT_STACKS[name]
       stack.empty? ? default : stack.last
     end
@@ -206,7 +217,7 @@ module BarefootJS
     # callers must have already classified the expression as boolean-
     # result; non-boolean attribute bindings never reach this helper.
     def bool_str(value)
-      value ? 'true' : 'false'
+      value && !BarefootJS.undefined?(value) ? 'true' : 'false'
     end
 
     # A JSX text child's value: JSX renders nothing for a boolean (#3824
@@ -231,7 +242,7 @@ module BarefootJS
       mount = _bf_mount
       host_segment = "|h=#{host}|m=#{mount || ''}" if host && !host.empty?
       props_json = ''
-      props_json = "|#{backend.encode_json(_props)}" if _props && !_props.empty?
+      props_json = "|#{backend.encode_json(json_ready(_props))}" if _props && !_props.empty?
       "<!--bf-scope:#{scope_id}#{host_segment}#{props_json}-->"
     end
 
@@ -350,14 +361,14 @@ module BarefootJS
       end
     end
 
-    # Whether this component's caller passed the prop `name`, even as `nil`:
-    # JS's `name in props`, which a template can't ask of its vars (every
-    # declared prop is seeded, so an omitted one and a `nil` one read the
-    # same). A `{...props}` spread onto a child carries a param only when
-    # this is true. The keys are those `render_child` recorded for a child
-    # and `_props` for the root; with neither recorded (a root rendered
-    # without `_props`), `fallback`, the template's own "not nil" test,
-    # decides.
+    # Whether this component's caller passed the prop `name`, even as `nil`
+    # (`null`) or `UNDEF`: JS's `name in props`, which a template can't ask of
+    # its vars (every declared prop is seeded, so an omitted one reads as its
+    # default or `UNDEF`, as a present `undefined` one does). A `{...props}`
+    # spread onto a child carries a param only when this is true. The keys
+    # are those `render_child` recorded for a child and `_props` for the
+    # root; with neither recorded (a root rendered without `_props`),
+    # `fallback`, the template's own "not undefined" test, decides.
     def passed?(name, fallback)
       stack = Thread.current[:barefoot_js_caller_keys]
       keys = stack && !stack.empty? ? stack.last : _props&.keys&.map(&:to_s)
@@ -400,7 +411,7 @@ module BarefootJS
           child_bf = self.class.new(parent.backend)
           slot_id = props.delete(:_bf_slot)
           data_key = props.delete(:key)
-          child_bf._data_key(data_key) unless data_key.nil?
+          child_bf._data_key(data_key) unless BarefootJS.nullish?(data_key)
           child_bf._scope_id(
             slot_id ? "#{host_scope}_#{slot_id}" : "#{template_name}_#{rand.to_s[2, 6]}",
           )
@@ -444,9 +455,12 @@ module BarefootJS
     # Each entry shape: `{ value:, propName:, isRestProps: }`. For
     # `isRestProps`, the rest bag passes through unchanged (or the static
     # `{}` if the caller didn't supply one). For ordinary entries the
-    # caller's `props[propName]` wins when present, otherwise the static
-    # `value` does. `propName`-less entries (signal / memo locals) always
-    # use the static value.
+    # caller's `props[propName]` wins when present -- `nil` (JS `null`)
+    # included -- and an absent or `UNDEF` prop takes the static `value`, or
+    # `UNDEF` when the entry has none (the manifest writes `value` only for a
+    # prop with a default; spec/js-undefined-value.md, decision 6).
+    # `propName`-less entries (signal / memo locals) always use the static
+    # value.
     #
     # Public (not `private_class_method`): `register_components_from_manifest`
     # above uses it for the `ui/*` registry path, but a page that composes
@@ -466,7 +480,7 @@ module BarefootJS
           next
         end
         if d[:isRestProps]
-          extra[name] = props.key?(name) ? props[name] : d[:value]
+          extra[name] = props.key?(name) ? props[name] : static_fallback(d)
           next
         end
         # `propName` rides in from the JSON manifest as a String -- JSON has
@@ -479,14 +493,21 @@ module BarefootJS
         # rendering empty) (#2157).
         prop_name = d[:propName]&.to_sym
         extra[name] =
-          if !prop_name.nil? && props.key?(prop_name) && !props[prop_name].nil?
+          if !prop_name.nil? && props.key?(prop_name) && !BarefootJS.undefined?(props[prop_name])
             props[prop_name]
           else
-            d[:value]
+            static_fallback(d)
           end
       end
       extra
     end
+
+    # An `ssrDefaults` entry's seed when the caller's prop is absent or
+    # `UNDEF`: its `value`, or `UNDEF` when it has none.
+    def self.static_fallback(entry)
+      entry.key?(:value) ? entry[:value] : UNDEF
+    end
+    private_class_method :static_fallback
 
     # -----------------------------------------------------------------
     # Streaming SSR (Out-of-Order)
@@ -521,27 +542,54 @@ module BarefootJS
     # are `null`, at any depth (#3787). Ruby's encoder would write `-2.0` /
     # `-4.0e-08` and raise on a non-finite Float. Arrays and Hashes are
     # walked here in insertion order, as `JSON.generate` does; strings and
-    # other leaves go through the backend's encoder.
+    # other leaves go through the backend's encoder. `undefined` follows
+    # `JSON.stringify` too: a member holding it is skipped, an element is
+    # written as `null`, and at the top level the result is `UNDEF` itself
+    # (no string), which prints nothing and omits an attribute.
     def json(value)
       case value
+      when Undefined then value
       when Integer, Float
         value.to_f.finite? ? Evaluator.number_to_string(value) : 'null'
-      when Array then "[#{value.map { |el| json(el) }.join(',')}]"
+      when Array then "[#{value.map { |el| BarefootJS.undefined?(el) ? 'null' : json(el) }.join(',')}]"
       when Hash
-        members = value.map { |k, v| "#{backend.encode_json(k.to_s)}:#{json(v)}" }
+        members = value.reject { |_, v| BarefootJS.undefined?(v) }.map { |k, v| "#{backend.encode_json(k.to_s)}:#{json(v)}" }
         "{#{members.join(',')}}"
       else backend.encode_json(value)
       end
     end
 
+    # JS `undefined` as a template spells it (`bf.undefined`): the
+    # `undefined` identifier, an omitted method argument's default, the
+    # result of a `?.` over a nullish receiver.
+    def undefined
+      UNDEF
+    end
+
+    # The nil tests (spec/js-undefined-value.md, decisions 3 and 7): JS
+    # `x === undefined`, `x === null` and the loose `x == null`. A template
+    # spells a nil-test plan through them.
+    def is_undefined(value)
+      BarefootJS.undefined?(value)
+    end
+
+    def is_null(value)
+      BarefootJS.null?(value)
+    end
+
+    def is_nullish(value)
+      BarefootJS.nullish?(value)
+    end
+
     # JS `String(v)` mirror, EXCEPT `nil` renders as '' (not the literal
     # "null") so an unset prop doesn't surface as literal text in
     # user-facing HTML -- the same divergence the Go/Perl adapters document
-    # for their `string` helper. This is the canonical JS-ish stringifier
-    # used throughout this file (join, spread_attrs, `h`, reduce's string
-    # fold, ...).
+    # for their `string` helper; `undefined` renders as '' too, as a JSX
+    # text child does. This is the canonical display stringifier used
+    # throughout this file (join, spread_attrs, `h`, reduce's string fold,
+    # ...); JS ToString itself is `to_string`.
     def string(value)
-      return '' if value.nil?
+      return '' if BarefootJS.nullish?(value)
       return value ? 'true' : 'false' if value.is_a?(TrueClass) || value.is_a?(FalseClass)
       return Evaluator.number_to_string(value) if value.is_a?(Numeric)
       # JS `Array.prototype.toString` is `this.join(',')`, applied
@@ -552,6 +600,23 @@ module BarefootJS
       return value.map { |el| string(el) }.join(',') if value.is_a?(Array)
 
       value.to_s
+    end
+
+    # JS `l - r` / `l * r` over operands the compiler could not prove numbers:
+    # ToNumber of both (`undefined` is NaN, `null` 0).
+    def sub(left, right)
+      Evaluator.binary('-', left, right)
+    end
+
+    def mul(left, right)
+      Evaluator.binary('*', left, right)
+    end
+
+    # JS `o?.k`: `undefined` over a nullish receiver, the read of `k`
+    # (`get`) otherwise. Ruby's `nil&.[](:k)` gives `nil`, JS's `null?.k`
+    # `undefined`; and `&.` calls through on `UNDEF`.
+    def get_opt(collection, key)
+      BarefootJS.nullish?(collection) ? UNDEF : get(collection, key)
     end
 
     # HTML-escaping helper for text interpolation (`<%= bf.h(expr) %>` --
@@ -610,10 +675,11 @@ module BarefootJS
 
     # The box for a value-position JS `l ?? r` (#3839): the adapter spells it
     # as `(bf.keep_nonnil(l) || [r])[0]`, so each operand appears once and a
-    # chain grows linearly (`l.nil? ? r : l` rendered `l` twice). Only nil is
-    # absent; `0`, `''` and `false` are kept, as in JS.
+    # chain grows linearly (`l.nil? ? r : l` rendered `l` twice). Only the
+    # two nils (`null`, `undefined`) are absent; `0`, `''` and `false` are
+    # kept, as in JS.
     def keep_nonnil(value)
-      value.nil? ? nil : [value]
+      BarefootJS.nullish?(value) ? nil : [value]
     end
 
     # JS primitive helpers (spec/js-primitive-semantics.md, "Operation
@@ -621,7 +687,8 @@ module BarefootJS
     # `+` and unary `-`. Each delegates to the shared evaluator's primitive
     # of the same operation, so a template helper call and a callback body
     # share one implementation. Unlike `number` and `string` (display
-    # helpers: nil -> NaN / ""), nil reads as JS null here (0 / "null").
+    # helpers: nil -> NaN / ""), nil reads as JS null here (0 / "null") and
+    # `UNDEF` as JS undefined (NaN / "undefined").
     def to_number(value)
       Evaluator.to_number(value)
     end
@@ -669,7 +736,7 @@ module BarefootJS
     # non-numeric / nil yield real numeric NaN so downstream arithmetic
     # propagates correctly (`Math.floor(NaN) === NaN`).
     def number(value)
-      return Float::NAN if value.nil?
+      return Float::NAN if BarefootJS.nullish?(value)
       return value ? 1 : 0 if value.is_a?(TrueClass) || value.is_a?(FalseClass)
       return value if value.is_a?(Numeric)
       return Float(value.strip) if value.is_a?(String) && value.strip =~ NUMERIC_STRING_RE
@@ -677,18 +744,20 @@ module BarefootJS
       Float::NAN
     end
 
+    # The `Math` helpers coerce through JS ToNumber (`null` is 0, `undefined`
+    # NaN), as `Math.floor(null)` is 0.
     def floor(value)
-      n = number(value)
+      n = js_number(value)
       finite_number?(n) ? n.floor : n
     end
 
     def ceil(value)
-      n = number(value)
+      n = js_number(value)
       finite_number?(n) ? n.ceil : n
     end
 
     def round(value)
-      n = number(value)
+      n = js_number(value)
       finite_number?(n) ? (n + 0.5).floor : n
     end
 
@@ -697,8 +766,8 @@ module BarefootJS
     # may return a plain Integer (no `#nan?`), so guard like
     # `finite_number?` above rather than calling `#nan?` unconditionally.
     def min(a, b)
-      x = number(a)
-      y = number(b)
+      x = js_number(a)
+      y = js_number(b)
       return x if nan_number?(x)
       return y if nan_number?(y)
 
@@ -706,8 +775,8 @@ module BarefootJS
     end
 
     def max(a, b)
-      x = number(a)
-      y = number(b)
+      x = js_number(a)
+      y = js_number(b)
       return x if nan_number?(x)
       return y if nan_number?(y)
 
@@ -716,7 +785,7 @@ module BarefootJS
 
     # `Math.abs()` (#2168 math-methods).
     def abs(value)
-      n = number(value)
+      n = js_number(value)
       nan_number?(n) ? n : n.abs
     end
 
@@ -915,9 +984,8 @@ module BarefootJS
       return recv.any? { |item| Evaluator.same_value_zero?(item, elem) } if recv.is_a?(Array)
       return false if recv.is_a?(Hash)
 
-      s = recv.nil? ? '' : string(recv)
-      needle = elem.nil? ? '' : string(elem)
-      s.include?(needle)
+      # The needle is JS ToString'd (`"anullb".includes(null)` is true).
+      string(recv).include?(js_string(elem))
     end
 
     # `.filter(fn)` / `.every(fn)` / `.some(fn)` / `.find(fn)` /
@@ -944,10 +1012,12 @@ module BarefootJS
       recv.any? { |item| pred.call(item) }
     end
 
+    # A miss is `undefined`, as JS `.find()` gives.
     def find(recv, pred)
-      return nil unless recv.is_a?(Array)
+      return UNDEF unless recv.is_a?(Array)
 
-      recv.find { |item| pred.call(item) }
+      recv.each { |item| return item if pred.call(item) }
+      UNDEF
     end
 
     def find_index(recv, pred)
@@ -958,10 +1028,10 @@ module BarefootJS
     end
 
     def find_last(recv, pred)
-      return nil unless recv.is_a?(Array)
+      return UNDEF unless recv.is_a?(Array)
 
       recv.reverse_each { |item| return item if pred.call(item) }
-      nil
+      UNDEF
     end
 
     def find_last_index(recv, pred)
@@ -973,20 +1043,21 @@ module BarefootJS
 
     # `String.prototype.toLowerCase()` / `.toUpperCase()`.
     def lc(s)
-      s.nil? ? '' : string(s).downcase
+      string(s).downcase
     end
 
     def uc(s)
-      s.nil? ? '' : string(s).upcase
+      string(s).upcase
     end
 
-    # `Array.prototype.join(sep)` with JS semantics: separator defaults to
-    # ",", undefined/null elements render as empty.
-    def join(recv, sep = nil)
+    # `Array.prototype.join(sep)` with JS semantics: an omitted or
+    # `undefined` separator is ",", any other one is ToString'd (`null` joins
+    # with "null"); undefined/null elements render as empty.
+    def join(recv, sep = OMITTED)
       return '' unless recv.is_a?(Array)
 
-      sep = ',' if sep.nil?
-      recv.map { |el| string(el) }.join(sep)
+      sep_s = omitted?(sep) ? ',' : js_string(sep)
+      recv.map { |el| string(el) }.join(sep_s)
     end
 
     # `.length` works on both arrays (element count) and strings. The
@@ -996,11 +1067,11 @@ module BarefootJS
     # Plane (astral, U+10000-U+10FFFF -- e.g. '👍') is a surrogate PAIR in
     # UTF-16, so it counts as 2, not 1; '日本語' is 3 either way (BMP-only).
     # An object's `.length` is its own `length` property (`{ length: 3 }`),
-    # nil when it has none (#3449).
+    # `undefined` when it has none (#3449).
     def length(recv)
       return recv.length if recv.is_a?(Array)
-      return recv.key?(:length) ? recv[:length] : recv['length'] if recv.is_a?(Hash)
-      return 0 if recv.nil?
+      return Evaluator.index_value(recv, :length) if recv.is_a?(Hash)
+      return 0 if BarefootJS.nullish?(recv)
 
       string(recv).each_char.sum { |c| c.ord > 0xFFFF ? 2 : 1 }
     end
@@ -1127,25 +1198,19 @@ module BarefootJS
       array_index_of(recv, elem, true)
     end
 
-    # `Array.prototype.at(i)` -- negative indices count from the end;
-    # out-of-bounds -> nil (renders as '' via `h`, matching JS `undefined`).
-    # A String receiver is indexed in UTF-16 code units (#3613). Half of a
-    # surrogate pair, a lone surrogate in JS, comes back as U+FFFD: a
-    # UTF-8 Ruby String can't hold one, so the halves compare equal and
-    # don't rejoin (limitation `string-at-lone-surrogate`).
-    def at(recv, i)
+    # `Array.prototype.at(i)` -- negative indices count from the end; the
+    # index is ToIntegerOrInfinity'd, so an omitted, `undefined` or `null`
+    # one reads element 0; out-of-bounds -> `undefined`. A String receiver
+    # is indexed in UTF-16 code units (#3613). Half of a surrogate pair, a
+    # lone surrogate in JS, comes back as U+FFFD: a UTF-8 Ruby String can't
+    # hold one, so the halves compare equal and don't rejoin (limitation
+    # `string-at-lone-surrogate`).
+    def at(recv, i = OMITTED)
       return utf16_at(recv, i) if recv.is_a?(String)
-      return nil unless recv.is_a?(Array)
-      return nil if i.nil?
+      return UNDEF unless recv.is_a?(Array)
 
-      idx = i.to_i
-      len = recv.length
-      return nil if len.zero?
-
-      idx = len + idx if idx.negative?
-      return nil if idx.negative? || idx >= len
-
-      recv[idx]
+      idx = relative_index(i, recv.length)
+      idx.nil? ? UNDEF : recv[idx]
     end
 
     # `Array.prototype.concat(other)` -- merges two arrays in order into a
@@ -1167,22 +1232,17 @@ module BarefootJS
     # a UTF-8-encoded string, matching JS except for astral-plane input
     # (the same divergence boundary every other adapter's pad/trim
     # helpers already accept).
-    def slice(recv, start, end_ = nil)
+    # Both bounds are ToIntegerOrInfinity'd (`null` is 0); an omitted or
+    # `undefined` end is the length.
+    def slice(recv, start = OMITTED, end_ = OMITTED)
       return [] unless recv.is_a?(Array) || recv.is_a?(String)
 
       empty = recv.is_a?(String) ? '' : []
       len = recv.length
       return empty if len.zero?
 
-      s = start.nil? ? 0 : start.to_i
-      s = len + s if s.negative?
-      s = 0 if s.negative?
-      s = len if s > len
-
-      e = end_.nil? ? len : end_.to_i
-      e = len + e if e.negative?
-      e = 0 if e.negative?
-      e = len if e > len
+      s = clamp_relative(to_integer_or_infinity(start), len)
+      e = omitted?(end_) ? len : clamp_relative(to_integer_or_infinity(end_), len)
 
       return empty if s >= e
 
@@ -1232,6 +1292,9 @@ module BarefootJS
     # value to `0` -- and only then delegates to `flat`'s recursion. Mirrors
     # Go's `FlatDynamicDepth`/`coerceFlatDepth` (adapter-go-template/runtime/bf.go).
     def flat_dynamic(recv, depth)
+      # An `undefined` depth is the default, 1; `null` coerces to 0.
+      return flat(recv, 1) if omitted?(depth)
+
       flat(recv, coerce_flat_depth(depth))
     end
 
@@ -1261,7 +1324,7 @@ module BarefootJS
 
     # `String.prototype.trim()`.
     def trim(recv)
-      return '' if recv.nil? || recv.is_a?(Array) || recv.is_a?(Hash)
+      return '' if BarefootJS.nullish?(recv) || recv.is_a?(Array) || recv.is_a?(Hash)
 
       string(recv).gsub(/\A\p{Space}+|\p{Space}+\z/, '')
     end
@@ -1270,25 +1333,27 @@ module BarefootJS
     # siblings of `trim` above (#2183 follow-up), same `\p{Space}` regex
     # restricted to one side.
     def trim_start(recv)
-      return '' if recv.nil? || recv.is_a?(Array) || recv.is_a?(Hash)
+      return '' if BarefootJS.nullish?(recv) || recv.is_a?(Array) || recv.is_a?(Hash)
 
       string(recv).sub(/\A\p{Space}+/, '')
     end
 
     def trim_end(recv)
-      return '' if recv.nil? || recv.is_a?(Array) || recv.is_a?(Hash)
+      return '' if BarefootJS.nullish?(recv) || recv.is_a?(Array) || recv.is_a?(Hash)
 
       string(recv).sub(/\p{Space}+\z/, '')
     end
 
     # `Number.prototype.toFixed(digits)` -- fixed-decimal string with
     # zero-padding, rounding half toward +Infinity (matching `round`).
-    def to_fixed(value, digits = 0)
+    # An omitted or `undefined` digit count is 0, as ToIntegerOrInfinity
+    # makes `null` too.
+    def to_fixed(value, digits = OMITTED)
       n = number(value)
       return 'NaN' if n.respond_to?(:nan?) && n.nan?
       return n.negative? ? '-Infinity' : 'Infinity' if n.respond_to?(:infinite?) && n.infinite?
 
-      digits = 0 if digits.nil? || digits.negative?
+      digits = [to_integer_or_infinity(digits), 0].max
       factor = 10.0**digits
       rounded = (n * factor + 0.5).floor
       format("%.#{digits}f", rounded / factor)
@@ -1299,35 +1364,35 @@ module BarefootJS
     # string in a single-element Array; trailing empty fields are kept
     # (JS parity -- Ruby's `String#split(str, -1)` already matches this,
     # and (unlike a Regexp) a String separator is matched literally).
-    def split(recv, sep = nil, limit = nil)
-      s = (recv.nil? || recv.is_a?(Array) || recv.is_a?(Hash)) ? '' : string(recv)
+    # An omitted or `undefined` separator yields `[s]`; any other one is
+    # ToString'd (`null` splits on "null"). An omitted or `undefined` limit
+    # is unbounded; any other one is ToUint32'd (`null` is 0).
+    def split(recv, sep = OMITTED, limit = OMITTED)
+      s = (recv.is_a?(Array) || recv.is_a?(Hash)) ? '' : string(recv)
       parts =
-        if sep.nil?
+        if omitted?(sep)
           [s]
-        elsif string(sep).empty?
-          s.chars
-        elsif s.empty?
-          ['']
         else
-          s.split(string(sep), -1)
+          sep_s = js_string(sep)
+          if sep_s.empty?
+            s.chars
+          elsif s.empty?
+            ['']
+          else
+            s.split(sep_s, -1)
+          end
         end
-      unless limit.nil?
-        n = limit.to_i
-        if n.zero?
-          parts = []
-        elsif n.positive? && n < parts.length
-          parts = parts[0...n]
-        end
-      end
+      parts = parts[0, to_uint32(limit)] unless omitted?(limit)
       parts
     end
 
     # `String.prototype.startsWith(prefix, position?)`.
-    def starts_with(recv, prefix, position = nil)
-      s = recv.nil? ? '' : string(recv)
-      p = prefix.nil? ? '' : string(prefix)
+    # An omitted or `undefined` position is 0; `null` is 0 too.
+    def starts_with(recv, prefix, position = OMITTED)
+      s = string(recv)
+      p = js_string(prefix)
       # `position` counts UTF-16 code units, like JS (#3613).
-      unless position.nil?
+      unless omitted?(position)
         units = utf16_units(s)
         return utf16_has_at?(units, utf16_units(p), clamp_index(to_integer_or_infinity(position), units.length))
       end
@@ -1335,11 +1400,12 @@ module BarefootJS
     end
 
     # `String.prototype.endsWith(suffix, endPosition?)`.
-    def ends_with(recv, suffix, end_position = nil)
-      s = recv.nil? ? '' : string(recv)
-      x = suffix.nil? ? '' : string(suffix)
+    # An omitted or `undefined` endPosition is the length; `null` is 0.
+    def ends_with(recv, suffix, end_position = OMITTED)
+      s = string(recv)
+      x = js_string(suffix)
       # `endPosition` counts UTF-16 code units, like JS (#3613).
-      unless end_position.nil?
+      unless omitted?(end_position)
         units = utf16_units(s)
         needle = utf16_units(x)
         return utf16_has_at?(units, needle, clamp_index(to_integer_or_infinity(end_position), units.length) - needle.length)
@@ -1351,9 +1417,9 @@ module BarefootJS
     # form only, replacing the FIRST occurrence, literally (no regex
     # metacharacters, no `$1`-style replacement interpolation).
     def replace(recv, pattern, replacement)
-      s = recv.nil? ? '' : string(recv)
-      o = pattern.nil? ? '' : string(pattern)
-      n = replacement.nil? ? '' : string(replacement)
+      s = string(recv)
+      o = js_string(pattern)
+      n = js_string(replacement)
       return n + s if o.empty?
 
       idx = s.index(o)
@@ -1374,9 +1440,9 @@ module BarefootJS
     # first and after the last character (`"abc".replaceAll("", "X")` ->
     # "XaXbXcX"), matching JS.
     def replace_all(recv, pattern, replacement)
-      s = recv.nil? ? '' : string(recv)
-      o = pattern.nil? ? '' : string(pattern)
-      n = replacement.nil? ? '' : string(replacement)
+      s = string(recv)
+      o = js_string(pattern)
+      n = js_string(replacement)
       return ([''] + s.chars + ['']).join(n) if o.empty?
 
       # `+''` (not the frozen `''` literal under frozen_string_literal)
@@ -1436,19 +1502,21 @@ module BarefootJS
     # `String.prototype.repeat(n)` -- a count <= 0 degrades to '' rather
     # than raising (JS throws RangeError for negative counts; SSR
     # templates degrade instead of dying mid-render).
-    def repeat(recv, count)
-      s = recv.nil? ? '' : string(recv)
-      n = count.nil? ? 0 : count.to_i
+    def repeat(recv, count = OMITTED)
+      s = string(recv)
+      n = to_integer_or_infinity(count)
       n.positive? ? s * n : ''
     end
 
-    # `String.prototype.padStart` / `padEnd`.
-    def pad_start(recv, target, pad_str = nil)
-      pad_string(recv.nil? ? '' : string(recv), target, pad_str, true)
+    # `String.prototype.padStart` / `padEnd`. An omitted or `undefined` pad
+    # string is a space; any other one is ToString'd (`null` pads with
+    # "null").
+    def pad_start(recv, target = OMITTED, pad_str = OMITTED)
+      pad_string(string(recv), target, pad_str, true)
     end
 
-    def pad_end(recv, target, pad_str = nil)
-      pad_string(recv.nil? ? '' : string(recv), target, pad_str, false)
+    def pad_end(recv, target = OMITTED, pad_str = OMITTED)
+      pad_string(string(recv), target, pad_str, false)
     end
 
     # `Array.prototype.sort(cmp)` / `.toSorted(cmp)` -- fixed comparator
@@ -1469,7 +1537,10 @@ module BarefootJS
       end
       return recv.dup if spec.empty?
 
-      decorated = recv.each_with_index.map do |item, idx|
+      # JS moves every `undefined` element to the end without handing it to
+      # the comparator.
+      defined, tail = recv.partition { |item| !BarefootJS.undefined?(item) }
+      decorated = defined.each_with_index.map do |item, idx|
         keys = spec.map { |sp| sp[:key_kind] == 'field' ? field_value(item, sp[:key]) : item }
         [keys, item, idx]
       end
@@ -1486,7 +1557,7 @@ module BarefootJS
         result.zero? ? (x[2] <=> y[2]) : result
       end
 
-      sorted.map { |pair| pair[1] }
+      sorted.map { |pair| pair[1] } + tail
     end
 
     # Fold an array into a scalar via the arithmetic-fold catalogue
@@ -1597,7 +1668,7 @@ module BarefootJS
         next if key_s == 'children'
 
         val = bag[key]
-        next if val.nil?
+        next if BarefootJS.nullish?(val)
 
         if val.is_a?(TrueClass) || val.is_a?(FalseClass)
           next unless val
@@ -1626,6 +1697,41 @@ module BarefootJS
     end
 
     private
+
+    # JS ToNumber for a helper argument: `Evaluator.to_number`, with a value
+    # outside its subset (an array or object) reading NaN instead of raising
+    # mid-render.
+    def js_number(value)
+      Evaluator.to_number(value)
+    rescue Evaluator::EvalUnsupported
+      Float::NAN
+    end
+
+    # JS ToString for a helper argument (a needle, a separator, a pattern):
+    # `Evaluator.to_string`, which spells `null` / `undefined` as JS does.
+    def js_string(value)
+      Evaluator.to_string(value)
+    rescue Evaluator::EvalUnsupported
+      string(value)
+    end
+
+    # Whether an optional argument takes its JS default: omitted or
+    # `undefined`, never `null` (JS coerces an explicit `null` like any
+    # other value: `[1, 2].slice(0, null)` is `[]`).
+    def omitted?(value)
+      OMITTED.equal?(value) || BarefootJS.undefined?(value)
+    end
+
+    # `value` as `JSON.stringify` sees it: a member holding `undefined` is
+    # dropped and an `undefined` element is `null`, at any depth. A host's
+    # `encode_json` never receives `UNDEF`.
+    def json_ready(value)
+      case value
+      when Hash then value.each_with_object({}) { |(k, v), out| out[k] = json_ready(v) unless BarefootJS.undefined?(v) }
+      when Array then value.map { |v| BarefootJS.undefined?(v) ? nil : json_ready(v) }
+      else value
+      end
+    end
 
     def finite_number?(n)
       !(n.respond_to?(:nan?) && n.nan?) && !(n.respond_to?(:infinite?) && n.infinite?)
@@ -1671,14 +1777,14 @@ module BarefootJS
     end
 
     def style_to_css(value)
-      return nil if value.nil?
+      return nil if BarefootJS.nullish?(value)
       unless value.is_a?(Hash)
         s = string(value)
         return s.empty? ? nil : s
       end
       parts = value.keys.sort_by(&:to_s).filter_map do |key|
         v = value[key]
-        next if v.nil?
+        next if BarefootJS.nullish?(v)
 
         prop = key.to_s.gsub(/([A-Z])/) { "-#{Regexp.last_match(1).downcase}" }
         "#{prop}:#{string(v)}"
@@ -1697,8 +1803,13 @@ module BarefootJS
       escaped.tr(' ', '+')
     end
 
+    # A row field's value: JS `item.key`, `undefined` when the row has no
+    # such field (or is no object).
     def field_value(item, key)
-      item.is_a?(Hash) ? item[field_key(key)] : nil
+      return UNDEF unless item.is_a?(Hash)
+
+      k = field_key(key)
+      item.key?(k) ? item[k] : UNDEF
     end
 
     def field_key(key)
@@ -1712,7 +1823,7 @@ module BarefootJS
     end
 
     def numeric_value(v)
-      return 0 if v.nil?
+      return 0 if BarefootJS.nullish?(v)
       return v if v.is_a?(Numeric)
       return Float(v.strip) if v.is_a?(String) && v.strip =~ NUMERIC_STRING_RE
 
@@ -1770,14 +1881,18 @@ module BarefootJS
     def compare_sort_key(av, bv, compare_type)
       case compare_type
       when 'string'
-        (av.nil? ? '' : string(av)) <=> (bv.nil? ? '' : string(bv))
+        string(av) <=> string(bv)
       when 'auto'
         if numeric_like?(av) && numeric_like?(bv)
           numeric_value(av) <=> numeric_value(bv)
         else
-          (av.nil? ? '' : string(av)) <=> (bv.nil? ? '' : string(bv))
+          string(av) <=> string(bv)
         end
       else
+        # `a - b` over an `undefined` key is NaN, which the sort reads as
+        # "equal".
+        return 0 if BarefootJS.undefined?(av) || BarefootJS.undefined?(bv)
+
         numeric_value(av) <=> numeric_value(bv)
       end
     end
@@ -1788,12 +1903,14 @@ module BarefootJS
       indices = reverse ? (recv.length - 1).downto(0).to_a : (0...recv.length).to_a
       indices.each do |i|
         item = recv[i]
-        if item.nil?
-          return i if elem.nil?
+        # Strict equality tells the nils apart: `null` matches only `null`,
+        # `undefined` only `undefined`.
+        if BarefootJS.nullish?(item) || BarefootJS.nullish?(elem)
+          return i if item.equal?(elem)
 
           next
         end
-        return i if !elem.nil? && item == elem
+        return i if item == elem
       end
       -1
     end
@@ -1812,7 +1929,7 @@ module BarefootJS
     # the caller's range check treats it as out of range instead of
     # `Float#to_i` raising FloatDomainError.
     def to_integer_or_infinity(value)
-      n = number(value)
+      n = js_number(value)
       return 0 if n.respond_to?(:nan?) && n.nan?
       return MAX_SAFE_INDEX if n >= MAX_SAFE_INDEX
       return -MAX_SAFE_INDEX if n <= -MAX_SAFE_INDEX
@@ -1828,7 +1945,7 @@ module BarefootJS
 
     def utf16_index_of(recv, elem, reverse)
       hay = utf16_units(recv)
-      needle = utf16_units(string(elem))
+      needle = utf16_units(js_string(elem))
       last = hay.length - needle.length
       indices = reverse ? last.downto(0) : 0.upto(last)
       indices.each { |i| return i if utf16_has_at?(hay, needle, i) }
@@ -1836,15 +1953,35 @@ module BarefootJS
     end
 
     def utf16_at(recv, i)
-      return nil if i.nil?
-
       units = utf16_units(recv)
-      idx = to_integer_or_infinity(i)
-      idx += units.length if idx.negative?
-      return nil if idx.negative? || idx >= units.length
+      idx = relative_index(i, units.length)
+      return UNDEF if idx.nil?
 
       u = units[idx]
       (0xD800..0xDFFF).cover?(u) ? "\uFFFD" : [u].pack('U')
+    end
+
+    # `Array.prototype.at`'s index: ToIntegerOrInfinity, counted from the
+    # end when negative; nil when it falls outside `[0, length)`.
+    def relative_index(value, length)
+      idx = to_integer_or_infinity(value)
+      idx += length if idx.negative?
+      idx >= 0 && idx < length ? idx : nil
+    end
+
+    # A `slice` bound: counted from the end when negative, clamped to
+    # `[0, length]`.
+    def clamp_relative(idx, length)
+      idx += length if idx.negative?
+      clamp_index(idx, length)
+    end
+
+    # JS `ToUint32` (`split`'s limit): NaN and the infinities are 0.
+    def to_uint32(value)
+      n = js_number(value).to_f
+      return 0 if n.nan? || n.infinite?
+
+      n.truncate % (2**32)
     end
 
     def clamp_index(n, len)
@@ -1854,11 +1991,11 @@ module BarefootJS
     end
 
     def pad_string(s, target, pad_str, at_start)
-      pad_str = pad_str.nil? ? ' ' : string(pad_str)
+      pad_str = omitted?(pad_str) ? ' ' : js_string(pad_str)
       return s if pad_str.empty?
 
       len = s.length
-      t = target.nil? ? 0 : target.to_i
+      t = to_integer_or_infinity(target)
       return s if len >= t
 
       need = t - len

@@ -9,7 +9,7 @@
     "perl": false,
     "php": false,
     "python": true,
-    "ruby": false,
+    "ruby": true,
     "rust": true
   },
   "runtimes": {

@@ -114,38 +114,7 @@
       }
     },
     "python": {},
-    "ruby": {
-      ".includes tells undefined from null (SameValueZero)": {
-        "step": "U4"
-      },
-      "a missing field adds as NaN": {
-        "step": "U4"
-      },
-      "a missing field concatenates as \"undefined\"": {
-        "step": "U4"
-      },
-      "a missing field is === undefined": {
-        "step": "U4"
-      },
-      "a missing field is not === null": {
-        "step": "U4"
-      },
-      "a missing field reads as undefined": {
-        "step": "U4"
-      },
-      "a present key holding undefined is === undefined": {
-        "step": "U4"
-      },
-      "an object-literal member may hold undefined": {
-        "step": "U4"
-      },
-      "out-of-range index reads as undefined": {
-        "step": "U4"
-      },
-      "the unbound undefined identifier is the constant": {
-        "step": "U4"
-      }
-    },
+    "ruby": {},
     "rust": {}
   }
 }

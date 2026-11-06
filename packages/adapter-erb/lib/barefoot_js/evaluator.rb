@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'json'
+require 'barefoot_js/undefined'
 
 module BarefootJS
   # Lightweight evaluator for the pure `ParsedExpr` subset, scoped to
@@ -32,6 +33,12 @@ module BarefootJS
   # `object-literal` property keys) are plain Ruby Strings coming out of the
   # parser; they are converted to Symbols at the point they touch a
   # SYMBOL-keyed Hash (env or object value).
+  #
+  # JS `undefined` is `BarefootJS::UNDEF` (barefoot_js/undefined.rb); host
+  # `nil` is JS `null`. A missing field, an out-of-range or non-canonical
+  # index, the unbound `undefined` identifier, an omitted builtin argument
+  # and a `find` with no result read as `UNDEF` (spec/js-undefined-value.md,
+  # section 2).
   module Evaluator
     # Thrown when a node/operator/builtin/identifier is outside the subset.
     class EvalUnsupported < StandardError; end
@@ -50,7 +57,12 @@ module BarefootJS
       when 'identifier'
         name = node[:name]
         key = name.to_sym
-        raise EvalUnsupported, "unbound identifier '#{name}'" unless env.key?(key)
+        unless env.key?(key)
+          # The unshadowed `undefined` identifier is the constant.
+          return UNDEF if name == 'undefined'
+
+          raise EvalUnsupported, "unbound identifier '#{name}'"
+        end
         env[key]
       when 'binary'
         binary(node[:op], evaluate(node[:left], env), evaluate(node[:right], env))
@@ -62,7 +74,7 @@ module BarefootJS
         case op
         when '&&' then truthy?(left) ? evaluate(node[:right], env) : left
         when '||' then truthy?(left) ? left : evaluate(node[:right], env)
-        else left.nil? ? evaluate(node[:right], env) : left # '??'
+        else BarefootJS.nullish?(left) ? evaluate(node[:right], env) : left # '??' coalesces both nils
         end
       when 'conditional'
         truthy?(evaluate(node[:test], env)) ? evaluate(node[:consequent], env) : evaluate(node[:alternate], env)
@@ -135,9 +147,11 @@ module BarefootJS
           # `.join(sep?)` (#2094) -- a nested `.flatMap(p => p.tags.map(...))
           # .join(...)` projection composes a `.join` on top of a nested
           # `.map`, so it must be executable in the same evaluator subset as
-          # `.includes`. Default separator "," (JS); a `nil` element joins
-          # as "" (not the string "null"). Mirrors Go's `evalJoin`.
-          sep = args.empty? ? ',' : to_string(evaluate(args[0], env))
+          # `.includes`. An omitted or `undefined` separator is "," (JS), a
+          # `null` one is ToString'd ("null"); a nil element joins as "" (not
+          # the string "null" / "undefined"). Mirrors Go's `evalJoin`.
+          sep_value = args.empty? ? UNDEF : evaluate(args[0], env)
+          sep = BarefootJS.undefined?(sep_value) ? ',' : to_string(sep_value)
           array_join(evaluate(node[:object], env), sep)
         else
           # Every other array/string method (`slice`, `flat`, ...) is
@@ -164,7 +178,8 @@ module BarefootJS
     # ---------------------------------------------------------------------
 
     def to_number(v)
-      return 0 if v.nil?
+      return 0 if BarefootJS.null?(v)
+      return Float::NAN if BarefootJS.undefined?(v)
       return v ? 1 : 0 if v.is_a?(TrueClass) || v.is_a?(FalseClass)
       return v if v.is_a?(Numeric)
       if v.is_a?(String)
@@ -179,18 +194,20 @@ module BarefootJS
       return v if v.is_a?(String)
       return number_to_string(v) if v.is_a?(Numeric)
       return v ? 'true' : 'false' if v.is_a?(TrueClass) || v.is_a?(FalseClass)
-      return 'null' if v.nil?
-      # Array.prototype.toString is join(","): a nil element prints as "",
-      # and a nested array flattens through its own join. A plain object
-      # prints as "[object Object]".
-      return v.map { |el| el.nil? ? '' : to_string(el) }.join(',') if v.is_a?(Array)
+      return 'null' if BarefootJS.null?(v)
+      return 'undefined' if BarefootJS.undefined?(v)
+      # Array.prototype.toString is join(","): a nil element (`null` or
+      # `undefined`) prints as "", and a nested array flattens through its
+      # own join. A plain object prints as "[object Object]".
+      return v.map { |el| BarefootJS.nullish?(el) ? '' : to_string(el) }.join(',') if v.is_a?(Array)
       return '[object Object]' if v.is_a?(Hash)
 
       raise EvalUnsupported, "cannot coerce #{v.class} to string"
     end
 
     def truthy?(v)
-      return false if v.nil? || v.is_a?(FalseClass)
+      # `UNDEF` is truthy under Ruby's own `if`: this is the JS test.
+      return false if BarefootJS.nullish?(v) || v.is_a?(FalseClass)
       return true if v.is_a?(TrueClass)
       if v.is_a?(Numeric)
         f = v.to_f
@@ -381,8 +398,10 @@ module BarefootJS
       if non_primitive?(l) || non_primitive?(r)
         raise EvalUnsupported, '=== on a non-primitive is not in the evaluator subset'
       end
-      return true if l.nil? && r.nil?
-      return false if l.nil? || r.nil?
+      # `null` is only itself and `undefined` only itself.
+      return BarefootJS.null?(r) if BarefootJS.null?(l)
+      return BarefootJS.undefined?(r) if BarefootJS.undefined?(l)
+      return false if BarefootJS.nullish?(r)
       return l == r if l.is_a?(Numeric) && r.is_a?(Numeric)
       return l == r if boolean?(l) && boolean?(r)
       return l == r if l.is_a?(String) && r.is_a?(String)
@@ -442,7 +461,7 @@ module BarefootJS
     def array_join(obj, sep)
       return '' unless obj.is_a?(Array)
 
-      obj.map { |el| el.nil? ? '' : to_string(el) }.join(sep)
+      obj.map { |el| BarefootJS.nullish?(el) ? '' : to_string(el) }.join(sep)
     end
     private_class_method :array_join
 
@@ -573,6 +592,8 @@ module BarefootJS
     private_class_method :math_round
 
     def call_builtin(name, args)
+      # An omitted argument is JS `undefined`.
+      arg = ->(i) { i < args.length ? args[i] : UNDEF }
       case name
       when 'Math.max'
         return -Float::INFINITY if args.empty?
@@ -588,17 +609,19 @@ module BarefootJS
         return Float::NAN if nums.any?(&:nan?)
 
         nums.min
-      when 'Math.abs' then to_number(args[0]).abs
+      when 'Math.abs' then to_number(arg.call(0)).abs
       when 'Math.floor'
-        n = to_number(args[0]).to_f
+        n = to_number(arg.call(0)).to_f
         n.finite? ? n.floor : n
       when 'Math.ceil'
-        n = to_number(args[0]).to_f
+        n = to_number(arg.call(0)).to_f
         n.finite? ? n.ceil : n
-      when 'Math.round' then math_round(to_number(args[0]).to_f)
-      when 'String' then to_string(args[0])
-      when 'Number' then to_number(args[0])
-      when 'Boolean' then truthy?(args[0])
+      when 'Math.round' then math_round(to_number(arg.call(0)).to_f)
+      # `String()` / `Number()` with no argument are "" / 0; `String(undefined)`
+      # is "undefined" and `Number(undefined)` NaN.
+      when 'String' then args.empty? ? '' : to_string(args[0])
+      when 'Number' then args.empty? ? 0 : to_number(args[0])
+      when 'Boolean' then truthy?(arg.call(0))
       else
         raise EvalUnsupported, "builtin '#{name}' is not in the evaluator subset"
       end
@@ -622,9 +645,9 @@ module BarefootJS
       end
       if obj.is_a?(Hash)
         sym = key.to_sym
-        return obj.key?(sym) ? obj[sym] : nil
+        return obj.key?(sym) ? obj[sym] : UNDEF
       end
-      raise EvalUnsupported, "cannot read property '#{key}' of #{obj.nil? ? 'null' : obj.class}"
+      raise EvalUnsupported, "cannot read property '#{key}' of #{js_type_name(obj)}"
     end
     private_class_method :read_property
 
@@ -633,12 +656,21 @@ module BarefootJS
     # is outside the subset here.
     def read_index(obj, index)
       unless obj.is_a?(Array) || obj.is_a?(Hash) || obj.is_a?(String)
-        raise EvalUnsupported, "cannot index #{obj.nil? ? 'null' : obj.class}"
+        raise EvalUnsupported, "cannot index #{js_type_name(obj)}"
       end
 
       index_value(obj, index)
     end
     private_class_method :read_index
+
+    # The name a refusal message gives a receiver: JS's for the two nils.
+    def js_type_name(obj)
+      return 'null' if BarefootJS.null?(obj)
+      return 'undefined' if BarefootJS.undefined?(obj)
+
+      obj.class
+    end
+    private_class_method :js_type_name
 
     # index_value(obj, index) -> JS `obj[index]`, shared with the template
     # helper `bf.get` (which delegates here, so a template read and a
@@ -649,27 +681,31 @@ module BarefootJS
     # unit), are read only through a canonical array index: "1" reads
     # element 1, while "01", "1e0", "-0", "1.1" and "-1" are ordinary
     # property names (spec/js-primitive-semantics.md, "ToPropertyKey and
-    # index read"). Any other receiver reads nil.
+    # index read"). A key the receiver does not have, and any read of a
+    # receiver with no properties, is `undefined`.
     def index_value(obj, index)
       key = property_key(index)
-      return nil if key.nil?
+      return UNDEF if key.nil?
 
       case obj
       when Hash
         sym = key.to_sym
         return obj[sym] if obj.key?(sym)
 
-        obj.key?(key) ? obj[key] : nil
+        obj.key?(key) ? obj[key] : UNDEF
       when Array, String
-        return nil unless key.match?(/\A(?:0|[1-9][0-9]*)\z/)
+        return UNDEF unless key.match?(/\A(?:0|[1-9][0-9]*)\z/)
 
         i = key.to_i
         return utf16_unit_at(obj, i) if obj.is_a?(String)
 
-        # An index past the end reads nil. Checking before `Array#[]` also
-        # keeps an oversized key ("9223372036854775808", 1e20) from raising
-        # RangeError: a Bignum cannot be converted to a C long.
-        i < obj.length ? obj[i] : nil
+        # An index past the end reads `undefined`. Checking before
+        # `Array#[]` also keeps an oversized key ("9223372036854775808",
+        # 1e20) from raising RangeError: a Bignum cannot be converted to a C
+        # long.
+        i < obj.length ? obj[i] : UNDEF
+      else
+        UNDEF
       end
     end
 
@@ -685,8 +721,8 @@ module BarefootJS
     end
     private_class_method :property_key
 
-    # The UTF-16 code unit of `str` at index `i` (JS `str[i]`), or nil past
-    # the end. One half of a surrogate pair reads as U+FFFD: a lone
+    # The UTF-16 code unit of `str` at index `i` (JS `str[i]`), or
+    # `undefined` past the end. One half of a surrogate pair reads as U+FFFD: a lone
     # surrogate cannot be written out as UTF-8
     # (spec/js-primitive-semantics.md, "Out of scope").
     def utf16_unit_at(str, i)
@@ -697,7 +733,7 @@ module BarefootJS
 
         pos += width
       end
-      nil
+      UNDEF
     end
     private_class_method :utf16_unit_at
 
@@ -742,7 +778,10 @@ module BarefootJS
       env = base_env ? base_env.dup : {}
       a_key = param_a.to_sym
       b_key = param_b.to_sym
-      decorated = items.each_with_index.map { |item, i| [i, item] }
+      # JS `Array.prototype.sort` moves every `undefined` element to the end
+      # without handing it to the comparator.
+      defined, tail = items.partition { |item| !BarefootJS.undefined?(item) }
+      decorated = defined.each_with_index.map { |item, i| [i, item] }
       sorted = decorated.sort do |x, y|
         env[a_key] = x[1]
         env[b_key] = y[1]
@@ -750,7 +789,7 @@ module BarefootJS
         sign = c.nan? ? 0 : (c <=> 0)
         sign.zero? ? (x[0] <=> y[0]) : sign
       end
-      sorted.map { |pair| pair[1] }
+      sorted.map { |pair| pair[1] } + tail
     end
 
     def sort_by_json(items, cmp_json, param_a, param_b, base_env = nil)
@@ -794,8 +833,8 @@ module BarefootJS
       end
     end
 
-    # find -- first matching element, or nil. `forward` false searches from
-    # the end (findLast).
+    # find -- first matching element, or `undefined`. `forward` false
+    # searches from the end (findLast).
     def find(items, pred, param, forward = true, base_env = nil)
       arr = items.is_a?(Array) ? items : []
       arr = arr.reverse unless forward
@@ -805,7 +844,7 @@ module BarefootJS
         env[key] = item
         return item if truthy?(evaluate(pred, env))
       end
-      nil
+      UNDEF
     end
 
     # find_index -- index of the first matching element, or -1. `forward`

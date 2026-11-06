@@ -409,8 +409,10 @@ export function TodoList(props: { initialTodos?: Todo[] }) {
     const ir = compileToIR(DIFFERENTLY_NAMED_SOURCE)
     const { template } = new ErbAdapter().generate(ir)
     // The loop-gating `<if>` must reference the loop's actual bound Ruby
-    // local (`todo[:done]`, from the MAP callback's param)...
-    expect(template).toContain('todo[:done]')
+    // local (`todo`, from the MAP callback's param), read through `bf.get`:
+    // the filter param's row type is not proven there, so a missing field
+    // reads as `undefined` (#3848 U4)...
+    expect(template).toContain('bf.get(todo, :done)')
     // ...never the filter callback's own param name resolved as an
     // (unseeded) vars-Hash key — the literal pre-fix bug.
     expect(template).not.toContain('v[:t]')
@@ -423,7 +425,7 @@ export function TodoList(props: { initialTodos?: Todo[] }) {
     )
     const ir = compileToIR(sameNamedSource)
     const { template } = new ErbAdapter().generate(ir)
-    expect(template).toContain('<%- if bf.truthy?(!bf.truthy?(todo[:done])) -%>')
+    expect(template).toContain('<%- if bf.truthy?(!bf.truthy?(bf.get(todo, :done))) -%>')
   })
 
   test('real Ruby render: reachable predicate on differently-named params renders correctly (pre-fix NoMethodError pin)', async () => {
@@ -788,5 +790,57 @@ function Widget(props: { label: string; rows: { tags: number[] }[] }) {
 }
 `)
     expect(template).toContain("('x' + bf.to_string(label))")
+  })
+})
+
+describe('ErbAdapter - JS undefined apart from null (spec/js-undefined-value.md, U4)', () => {
+  test('a nil test spells the runtime’s strict and loose tests, never the host nil test', () => {
+    const { template } = compileAndGenerate(`
+export function C(props: { v?: string | null }) {
+  return <p data-a={String(props.v === null)} data-b={String(props.v !== undefined)} data-c={String(props.v == null)}>x</p>
+}
+`)
+    expect(template).toContain('bf.is_null(v[:v])')
+    expect(template).toContain('!bf.is_undefined(v[:v])')
+    expect(template).toContain('bf.is_nullish(v[:v])')
+    expect(template).not.toContain('== nil')
+  })
+
+  test('`undefined`, an omitted slice end and a `?.` over a nullish receiver are the runtime’s undefined', () => {
+    const { template } = compileAndGenerate(`
+export function C(props: { items?: string[]; s: string; user?: { name: string } }) {
+  return <p data-u={JSON.stringify([undefined, null])} data-s={props.s.slice(1)} data-l={props.items?.length} data-n={props.user?.name}>x</p>
+}
+`)
+    expect(template).toContain('bf.json([bf.undefined, nil])')
+    expect(template).toContain('bf.slice(v[:s], 1, bf.undefined)')
+    expect(template).toContain('(bf.is_nullish(v[:items]) ? bf.undefined : bf.length(v[:items]))')
+    expect(template).toContain('bf.get_opt(v[:user], :name)')
+    expect(template).not.toContain('&.')
+  })
+
+  test('a field read reads natively only when the type proves it present', () => {
+    const { template } = compileAndGenerate(`
+type Row = { id: number; note?: string }
+export function C(props: { rows: Row[]; o: { a?: string } }) {
+  return <ul data-a={props.o.a}>{props.rows.map(r => <li key={r.id}>{r.note}</li>)}</ul>
+}
+`)
+    expect(template).toContain('r[:id]')
+    expect(template).toContain('bf.get(r, :note)')
+    expect(template).toContain('bf.get(v[:o], :a)')
+  })
+
+  test('String() / Number() are JS ToString / ToNumber; unproven `-` / `*` take the helpers', () => {
+    const { template } = compileAndGenerate(`
+export function C(props: { v?: number | null; n: number }) {
+  return <p data-s={String(props.v)} data-n={Number(props.v)} data-d={props.v - 1} data-m={props.v * props.n} data-p={props.n - 1}>x</p>
+}
+`)
+    expect(template).toContain('bf.to_string(v[:v])')
+    expect(template).toContain('bf.to_number(v[:v])')
+    expect(template).toContain('bf.sub(v[:v], 1)')
+    expect(template).toContain('bf.mul(v[:v], v[:n])')
+    expect(template).toContain('(v[:n] - 1)')
   })
 })

@@ -23,7 +23,8 @@ import { rubyStringLiteral } from '../lib/ruby-naming.ts'
 /** Ruby literal for a context-consumer's `createContext` default. */
 export function contextDefaultRuby(c: ContextConsumer): string {
   const d = c.defaultValue
-  if (d === null || d === undefined) return 'nil'
+  if (d === undefined) return 'bf.undefined'
+  if (d === null) return 'nil'
   if (typeof d === 'string') return rubyStringLiteral(d)
   if (typeof d === 'boolean') return d ? 'true' : 'false'
   return String(d)

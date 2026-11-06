@@ -33,9 +33,22 @@ class DeriveVarsFromDefaultsTest < Minitest::Test
     assert_equal '+1', extra[:children]
   end
 
-  def test_caller_prop_present_but_nil_falls_back_to_default_value
+  # A destructure default applies to an absent or `undefined` prop only: an
+  # explicit `nil` is JS `null` and keeps `null` (spec/js-undefined-value.md,
+  # decision 6).
+  def test_caller_prop_present_but_nil_keeps_null
     defaults = { label: { propName: 'label', value: 'Static' } }
     props = { label: nil }
+
+    extra = BarefootJS::Context.send(:derive_vars_from_defaults, defaults, props)
+
+    assert extra.key?(:label)
+    assert BarefootJS.null?(extra[:label])
+  end
+
+  def test_caller_prop_present_but_undefined_falls_back_to_default_value
+    defaults = { label: { propName: 'label', value: 'Static' } }
+    props = { label: BarefootJS::UNDEF }
 
     extra = BarefootJS::Context.send(:derive_vars_from_defaults, defaults, props)
 
@@ -91,16 +104,20 @@ class DeriveVarsFromDefaultsTest < Minitest::Test
   end
 
   # `extractSsrDefaults` writes no `value` for a prop without a default
-  # (spec/js-undefined-value.md, rollout step U1): such an entry seeds nil,
-  # exactly as `value: nil` did, and its key is still set.
-  def test_entry_without_value_seeds_nil_like_value_nil
+  # (spec/js-undefined-value.md, rollout step U1): an absent or `UNDEF` prop
+  # then seeds `UNDEF`, and its key is still set; a present prop, `nil`
+  # included, keeps its value.
+  def test_entry_without_value_seeds_undefined
     missing = { n: { propName: 'n' }, rest: { isRestProps: true } }
-    explicit = { n: { propName: 'n', value: nil }, rest: { isRestProps: true, value: nil } }
-    [{}, { n: nil }, { n: 3 }, { rest: { a: 1 } }].each do |props|
-      assert_equal BarefootJS::Context.send(:derive_vars_from_defaults, explicit, props),
-                   BarefootJS::Context.send(:derive_vars_from_defaults, missing, props)
+    [{}, { n: BarefootJS::UNDEF }].each do |props|
+      extra = BarefootJS::Context.send(:derive_vars_from_defaults, missing, props)
+      assert_equal %i[n rest], extra.keys
+      assert BarefootJS.undefined?(extra[:n])
+      assert BarefootJS.undefined?(extra[:rest])
     end
-    assert_equal({ n: nil, rest: nil }, BarefootJS::Context.send(:derive_vars_from_defaults, missing, {}))
+    assert BarefootJS.null?(BarefootJS::Context.send(:derive_vars_from_defaults, missing, { n: nil })[:n])
+    assert_equal 3, BarefootJS::Context.send(:derive_vars_from_defaults, missing, { n: 3 })[:n]
+    assert_equal({ a: 1 }, BarefootJS::Context.send(:derive_vars_from_defaults, missing, { rest: { a: 1 } })[:rest])
   end
 
   # ---------------------------------------------------------------------

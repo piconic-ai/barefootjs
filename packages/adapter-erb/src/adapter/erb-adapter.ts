@@ -141,16 +141,18 @@ import type { ErbAdapterOptions } from './lib/types.ts'
  * Build a chained Ruby Hash/Array accessor from a `.map()` destructure
  * binding's structured `segments` path (#2087 Phase B) — walking `segments`
  * instead of string-parsing `LoopParamBinding.path` (repo rule: never parse
- * JS/TS syntax with regex or string matching). A `field` step reads a
- * symbol key (`[:name]` / `[:"data-priority"]`, matching every item Hash's
- * `JSON.parse(..., symbolize_names: true)` construction); an `index` step
- * reads a numeric Array index (`[0]`). Empty `segments` (a rest binding at
- * the loop root) returns `base` unchanged.
+ * JS/TS syntax with regex or string matching). Each step reads through the
+ * runtime's `bf.get`: a `field` step a symbol key (`:name` /
+ * `:"data-priority"`, matching every item Hash's `JSON.parse(...,
+ * symbolize_names: true)` construction), an `index` step a numeric Array
+ * index (`0`). A miss is JS `undefined` (`UNDEF`), not Ruby's `nil`, which is
+ * JS `null` (#3848 U4). Empty `segments` (a rest binding at the loop root)
+ * returns `base` unchanged.
  */
 function rubyAccessorFromSegments(base: string, segments: readonly LoopBindingPathSegment[]): string {
   let accessor = base
   for (const seg of segments) {
-    accessor += seg.kind === 'index' ? `[${seg.index}]` : `[${rubySymbolLiteral(seg.key)}]`
+    accessor = `bf.get(${accessor}, ${seg.kind === 'index' ? seg.index : rubySymbolLiteral(seg.key)})`
   }
   return accessor
 }
@@ -167,7 +169,7 @@ const DESTRUCTURE_SPELLING: DestructureSpelling = {
   // `[]`) — route through the runtime's `slice` helper (barefoot_js.rb) so
   // both edge cases (`from` at or past length) return `[]` like JS, matching
   // the Go/Perl ports.
-  slice: (parent, from) => `bf.slice(${parent}, ${from})`,
+  slice: (parent, from) => `bf.slice(${parent}, ${from}, bf.undefined)`,
   // A TRUE residual Hash (not an alias of the parent) via native
   // `Hash#except` (Ruby >= 3.0; CI pins 3.3) — so a member read (`rest.flag`
   // → `rest[:flag]`, `ErbTopLevelEmitter#member`) and the existing
@@ -269,7 +271,7 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
    *
    * EXCEPT when the expression is already a top-level `String(...)` call
    * (`isExplicitStringCall`): `convertExpressionToRuby` lowers that to
-   * `bf.string(...)`, which for a real boolean already returns the
+   * `bf.to_string(...)`, which for a real boolean already returns the
    * JS-correct `"true"`/`"false"` text — wrapping that STRING in
    * `bf.bool_str` again is a bug (Ruby has no falsy-string, so
    * `bf.bool_str("false")` always returns `"true"`), not a harmless
@@ -1081,9 +1083,12 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
       },
       // Ruby's `**hash` double-splat folds a spread in place (`emitSpread`).
       spread: (value) => emitAttrValue(value, this.componentPropEmitter, ''),
+      // The fallback (no caller keys recorded) is JS `name in props` read
+      // off the value: present unless `undefined`, so an explicit `nil`
+      // (`null`) counts as passed. Not `.nil?`, which `UNDEF` answers too.
       presentParam: (name) => {
         const v = `v[${rubySymbolLiteral(name)}]`
-        return `**(bf.passed?(${rubySymbolLiteral(name)}, !${v}.nil?) ? { ${rubySymbolKey(name)} ${v} } : {})`
+        return `**(bf.passed?(${rubySymbolLiteral(name)}, !bf.is_undefined(${v})) ? { ${rubySymbolKey(name)} ${v} } : {})`
       },
     })
     const parts = segments.flatMap((s) => (s.kind === 'entries' ? s.parts : s.expr ? [s.expr] : []))

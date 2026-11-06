@@ -17,7 +17,9 @@
 import { rubyStringLiteral, rubySymbolKey } from './ruby-naming.ts'
 
 export function staticValueToRuby(value: unknown): string | null {
-  if (value === null || value === undefined) return 'nil'
+  // JS `undefined` is the runtime's `UNDEF` (`bf.undefined`), `null` Ruby's `nil`.
+  if (value === undefined) return 'bf.undefined'
+  if (value === null) return 'nil'
   if (typeof value === 'boolean') return value ? 'true' : 'false'
   if (typeof value === 'number') return String(value)
   if (typeof value === 'string') return rubyStringLiteral(value)
