@@ -132,10 +132,7 @@ import type { MojoAdapterOptions } from './lib/types.ts'
 function perlSegmentAccessor(base: string, segments: readonly LoopBindingPathSegment[]): string {
   let expr = base
   for (const seg of segments) {
-    expr +=
-      seg.kind === 'field'
-        ? `->{${seg.isIdent ? seg.key : perlHashKey(seg.key)}}`
-        : `->[${seg.index}]`
+    expr = `bf->get(${expr}, ${seg.kind === 'field' ? perlStringLiteral(seg.key) : seg.index})`
   }
   return expr
 }
@@ -143,7 +140,7 @@ function perlSegmentAccessor(base: string, segments: readonly LoopBindingPathSeg
 /** How a lowered loop destructure binding reads off the row item. */
 const DESTRUCTURE_SPELLING: DestructureSpelling = {
   accessor: perlSegmentAccessor,
-  slice: (parent, from) => `bf->slice(${parent}, ${from}, undef)`,
+  slice: (parent, from) => `bf->slice(${parent}, ${from}, bf->undefined)`,
   omit: (parent, keys) => `bf->omit(${parent}, [${keys.map(perlStringLiteral).join(', ')}])`,
 }
 
@@ -158,6 +155,21 @@ const LOOP_REFUSALS: LoopRefusalSpelling = {
     `  3. Mark the loop position as @client-only so the destructure runs in JS on the client.\n` +
     `  4. Move the loop into a primitive that the adapter registers explicitly.`,
   unresolvableConst: 'Mojo',
+}
+
+/**
+ * `stringifyBooleanBranches` for an attribute value, keeping a `??` whose
+ * boolean left operand the rewrite folds away (`(a > b) ?? 'x'` is `a > b`):
+ * this target spells every `??` through its `keep_nonnil` box
+ * (`NATIVE_SAFE.nullish` claims no proof, #3848 U5), so the node stays for
+ * the emitter to box as the plan names, its left operand printed as JS does.
+ * The output is the same; the plan and the template agree.
+ */
+function stringifyBranchesKeepingNullish(expr: ParsedExpr): ParsedExpr {
+  const rewritten = stringifyBooleanBranches(expr)
+  if (expr.kind !== 'logical' || expr.op !== '??') return rewritten
+  if (rewritten.kind === 'logical' && rewritten.op === '??') return rewritten
+  return { ...expr, left: rewritten, right: stringifyBooleanBranches(expr.right) }
 }
 
 /**
@@ -944,8 +956,11 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
       },
       // A `%{…}` hash dereference flattens a spread into the named-arg list (`emitSpread`).
       spread: (value) => emitAttrValue(value, this.componentPropEmitter, ''),
+      // The fallback (no caller keys recorded) is JS `name in props` read
+      // off the value: present unless `undefined`, so an explicit `undef`
+      // (`null`) counts as passed. Not `defined`, which `UNDEF` passes.
       presentParam: (name) =>
-        `%{ bf->passed(${perlStringLiteral(name)}, defined($${name})) ? +{ ${perlHashKey(name)} => $${name} } : +{} }`,
+        `%{ bf->passed(${perlStringLiteral(name)}, !bf->is_undefined($${name})) ? +{ ${perlHashKey(name)} => $${name} } : +{} }`,
     })
     const parts = segments.flatMap((s) => (s.kind === 'entries' ? s.parts : s.expr ? [s.expr] : []))
     const propsStr = parts.length > 0 ? `, ${parts.join(', ')}` : ''
@@ -1056,7 +1071,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
         case 'omit-nullable': {
           // A bare read here, so it doubles as the guard test and the value.
           const v = this.convertExpressionToPerl(value.expr)
-          return `<% if (defined ${v}) { %>${attr(v, plan.boolStr, valueParsed)}<% } %>`
+          return `<% if (!bf->is_nullish(${v})) { %>${attr(v, plan.boolStr, valueParsed)}<% } %>`
         }
         case 'boolean-attr':
           return `<%= ${this.perlTest(value.expr, this.convertExpressionToPerl(value.expr, value.parsed), value.parsed)} ? '${name}' : '' %>`
@@ -1079,11 +1094,11 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
         case 'plain': {
           // A ternary with a boolean and a string branch renders its boolean
           // as JS does, unless the whole value goes through `bool_str`.
-          const mixedParsed = valueParsed && !plan.boolStr ? stringifyBooleanBranches(valueParsed) : value.parsed
+          const mixedParsed = valueParsed && !plan.boolStr ? stringifyBranchesKeepingNullish(valueParsed) : value.parsed
           const v = this.convertExpressionToPerl(value.expr, mixedParsed)
           if (plan.kind === 'plain') return attr(v, plan.boolStr, mixedParsed)
           const tmp = `$bf_pu${this.presenceVarCounter++}`
-          return `<% my ${tmp} = ${v}; if (defined ${tmp}) { %>${attr(tmp, plan.boolStr, mixedParsed)}<% } %>`
+          return `<% my ${tmp} = ${v}; if (!bf->is_nullish(${tmp})) { %>${attr(tmp, plan.boolStr, mixedParsed)}<% } %>`
         }
       }
     },
@@ -1258,7 +1273,9 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
         // matching the go-template adapter's "empty when no case
         // matches" semantics. Pass `key` through `convertExpressionToPerl`
         // so its top-level-identifier tail (`variant` → `$variant`) and
-        // existing `props.x` rule apply uniformly.
+        // existing `props.x` rule apply uniformly. The table holds only
+        // string literals and is read natively, so a miss is Perl's `undef`,
+        // never `UNDEF`: `//` is exact here (#3848 U5).
         const keyExpr = this.convertExpressionToPerl(part.key)
         const entries = Object.entries(part.cases)
           .map(([k, v]) => `${perlStringLiteral(k)} => ${perlStringLiteral(v)}`)

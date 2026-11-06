@@ -26,6 +26,7 @@ use BarefootJS;
 # reaches the backend (for JSON encoding). A bare hash blessed into the
 # package with an injected pure backend is enough for these unit tests.
 my $bf = bless { c => undef, config => {}, backend => PureBackend->new }, 'BarefootJS';
+my $U = $BarefootJS::UNDEF;
 
 subtest 'json — mirrors JS JSON.stringify (with documented undef divergence)' => sub {
     is $bf->json({a => 1}),  '{"a":1}', 'hash';
@@ -254,7 +255,7 @@ subtest 'index_of / last_index_of — array value-equality search' => sub {
 };
 
 # `Array.prototype.at(i)` — supports negative indices; out-of-bounds
-# returns undef. Non-array receivers return undef. Mirrors the Go
+# returns JS `undefined`. Non-array receivers return `undefined`. Mirrors the Go
 # `bf_at` arithmetic so adapter output stays symmetric.
 subtest 'at — array indexed access with negative-index support' => sub {
     my $arr = ['a', 'b', 'c'];
@@ -264,11 +265,11 @@ subtest 'at — array indexed access with negative-index support' => sub {
     is $bf->at($arr, -1),  'c',  'last element via -1';
     is $bf->at($arr, -3),  'a',  'first element via -3 (length - 3)';
 
-    is $bf->at($arr,  3),  undef, 'out of bounds (positive) → undef';
-    is $bf->at($arr, -4),  undef, 'out of bounds (negative) → undef';
-    is $bf->at([],    0),  undef, 'empty array → undef';
-    is $bf->at(undef, 0),  undef, 'undef receiver → undef';
-    is $bf->at({a => 1},   0),  undef, 'hash ref receiver → undef';
+    ok BarefootJS::Undefined::is_undefined($bf->at($arr,  3)), 'out of bounds (positive) → undefined';
+    ok BarefootJS::Undefined::is_undefined($bf->at($arr, -4)), 'out of bounds (negative) → undefined';
+    ok BarefootJS::Undefined::is_undefined($bf->at([],    0)), 'empty array → undefined';
+    ok BarefootJS::Undefined::is_undefined($bf->at(undef, 0)), 'undef receiver → undefined';
+    ok BarefootJS::Undefined::is_undefined($bf->at({a => 1},   0)), 'hash ref receiver → undefined';
 };
 
 # String receivers (#3613) count UTF-16 code units, like JS: '本' is one
@@ -287,8 +288,8 @@ subtest 'string index methods count UTF-16 code units' => sub {
     is $bf->at('日本語', -1), '語',  'at BMP';
     is $bf->at('a😀b', -1),   'b',   'at after astral (negative)';
     is $bf->at('a😀b', 3),    'b',   'at after astral (positive)';
-    is $bf->at('abc', 3),     undef, 'at out of range';
-    is $bf->at('', 0),        undef, 'at empty string';
+    ok BarefootJS::Undefined::is_undefined($bf->at('abc', 3)), 'at out of range';
+    ok BarefootJS::Undefined::is_undefined($bf->at('', 0)), 'at empty string';
     is $bf->at('a😀b', 1),    "\x{FFFD}", 'at half of a surrogate pair → U+FFFD';
     ok  $bf->starts_with('日本語', '本', 1), 'startsWith BMP position';
     ok  $bf->starts_with('a😀b', 'b', 3),   'startsWith position after astral';
@@ -304,8 +305,8 @@ subtest 'string index methods read non-finite positions as ToIntegerOrInfinity' 
     my $inf = 9**9**9;
     my $nan = $inf - $inf;
     is $bf->at('abc', $nan),   'a',   'at(NaN) is at(0)';
-    is $bf->at('abc', $inf),   undef, 'at(Infinity) is out of range';
-    is $bf->at('abc', -$inf),  undef, 'at(-Infinity) is out of range';
+    ok BarefootJS::Undefined::is_undefined($bf->at('abc', $inf)), 'at(Infinity) is out of range';
+    ok BarefootJS::Undefined::is_undefined($bf->at('abc', -$inf)), 'at(-Infinity) is out of range';
     is $bf->at('abc', 1.9),    'b',   'at(1.9) truncates';
     is $bf->at('abc', -1.5),   'c',   'at(-1.5) truncates toward zero';
     ok  $bf->starts_with('abc', 'a', $nan), 'startsWith NaN position is 0';
@@ -341,32 +342,35 @@ subtest 'concat — merges two arrays into a new array ref' => sub {
 # `Array.prototype.slice(start, end?)` — carves out a sub-range
 # into a new ARRAY ref (#1448 Tier A). Mirrors the Go `bf_slice`
 # JS-compat semantics: negative-index normalisation, out-of-bounds
-# clamping, `start >= end` returns empty, undef `end` means "to
-# length". Non-array, non-string receivers return an empty ARRAY ref.
+# clamping, `start >= end` returns empty, an omitted or `undefined` `end`
+# means "to length". Non-array, non-string receivers return an empty ARRAY ref.
 subtest 'slice — array sub-range with negative-index + clamping' => sub {
     my $arr = ['a', 'b', 'c', 'd', 'e'];
 
     # 2-arg form.
     is $bf->slice($arr, 1, 3),     ['b', 'c'],             'start+end carves middle';
 
-    # 1-arg form (undef end = "to length").
-    is $bf->slice($arr, 2, undef), ['c', 'd', 'e'],        'undef end → to length';
-    is $bf->slice($arr, 0, undef), ['a', 'b', 'c', 'd', 'e'], 'start 0, undef end → full copy';
+    # 1-arg form (an `undefined` end, as the adapters pass an omitted one,
+    # is "to length"; a `null` end is 0).
+    is $bf->slice($arr, 2, $U), ['c', 'd', 'e'],        'undefined end → to length';
+    is $bf->slice($arr, 0, $U), ['a', 'b', 'c', 'd', 'e'], 'start 0, undefined end → full copy';
 
     # Negative-index normalisation.
-    is $bf->slice($arr, -2, undef),['d', 'e'],             '-2 start → last two';
+    is $bf->slice($arr, -2, $U),['d', 'e'],             '-2 start → last two';
+    is $bf->slice($arr, 2),        ['c', 'd', 'e'],        'omitted end → to length';
+    is $bf->slice($arr, 2, undef), [],                     'null end → 0 → empty';
     is $bf->slice($arr,  0, -1),   ['a', 'b', 'c', 'd'],   '-1 end → drop last';
     is $bf->slice($arr, -3, -1),   ['c', 'd'],             'both negative';
 
     # Clamping (out of bounds + start >= end).
-    is $bf->slice($arr, 100, undef), [],                   'start past end → empty';
+    is $bf->slice($arr, 100, $U), [],                   'start past end → empty';
     is $bf->slice($arr,   3,   1),   [],                   'start > end → empty';
     is $bf->slice($arr,   0,   0),   [],                   'start == end → empty';
 
     # Edge cases.
-    is $bf->slice([],     0, undef), [],                   'empty array → empty';
-    is $bf->slice(undef,  0, undef), [],                   'undef receiver → empty';
-    is $bf->slice({foo => 1}, 0, undef), [],                'hashref receiver → empty (not array, not string)';
+    is $bf->slice([],     0, $U), [],                   'empty array → empty';
+    is $bf->slice(undef,  0, $U), [],                   'undef receiver → empty';
+    is $bf->slice({foo => 1}, 0, $U), [],                'hashref receiver → empty (not array, not string)';
 
     # Mutation isolation.
     my $src = ['a', 'b', 'c'];
@@ -383,8 +387,8 @@ subtest 'slice — string sub-range with negative-index + clamping' => sub {
     my $word = 'barefootjs';
 
     is $bf->slice($word, 0, 4),      'bare',   'start+end carves the prefix';
-    is $bf->slice($word, -4, undef), 'otjs',   'negative start counts from the end';
-    is $bf->slice($word, 4, undef),  'footjs', 'undef end → to length';
+    is $bf->slice($word, -4, $U), 'otjs',   'negative start counts from the end';
+    is $bf->slice($word, 4, $U),  'footjs', 'undefined end → to length';
     is $bf->slice($word, 5, 2),      '',       'start > end → empty string';
 
     # Multi-byte: index by character, not byte.

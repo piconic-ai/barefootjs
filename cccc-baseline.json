@@ -155,10 +155,10 @@
     },
     "packages/adapter-mojolicious/src/test-render.ts": {
       "buildChildDefaultsPerl": [
-        39
+        32
       ],
       "buildPerlProps": [
-        81
+        64
       ],
       "renderMojoComponent": [
         39
@@ -223,7 +223,7 @@
     },
     "packages/adapter-xslate/src/test-render.ts": {
       "buildPerlProps": [
-        64
+        47
       ],
       "renderXslateComponent": [
         48

@@ -6,7 +6,7 @@
   "carriesUndefined": {
     "go": false,
     "java": false,
-    "perl": false,
+    "perl": true,
     "php": false,
     "python": true,
     "ruby": true,

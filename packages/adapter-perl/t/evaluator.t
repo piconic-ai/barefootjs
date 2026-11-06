@@ -136,7 +136,7 @@ subtest 'boolean-valued ops return JS booleans, not 1/0' => sub {
 
     # `.length` is a string/array property only; a numeric scalar has none.
     my $len = BarefootJS::Evaluator::evaluate(nmem(nid('n'), 'length'), { n => 123 });
-    ok(!defined $len, '(123).length is null, not 3');
+    ok(BarefootJS::Undefined::is_undefined($len), '(123).length is undefined, not 3');
 
     # #2196: `.length` counts codepoints even when the input string does NOT
     # carry Perl's internal UTF8 flag — the real-world shape a decoded-JSON
@@ -265,10 +265,10 @@ subtest 'filter / every / some / find / find_index over a predicate body' => sub
     is(BarefootJS::Evaluator::find_index(\@rows, $pred, 'u', 1), 1, 'findIndex → 1');
     is(BarefootJS::Evaluator::find_index(\@rows, $pred, 'u', 0), 2, 'findLastIndex → 2');
 
-    # Empty receiver: every vacuously true, some false, find undef / index -1.
+    # Empty receiver: every vacuously true, some false, find undefined / index -1.
     is(BarefootJS::Evaluator::every([], $pred, 'u'), 1, 'every(empty) → true');
     is(BarefootJS::Evaluator::some([], $pred, 'u'), 0, 'some(empty) → false');
-    ok(!defined BarefootJS::Evaluator::find([], $pred, 'u'), 'find(empty) → undef');
+    ok(BarefootJS::Undefined::is_undefined(BarefootJS::Evaluator::find([], $pred, 'u')), 'find(empty) → undefined');
     is(BarefootJS::Evaluator::find_index([], $pred, 'u'), -1, 'find_index(empty) → -1');
 
     # JSON seam: the body arrives as the string the adapter emits. Cover more

@@ -22,7 +22,8 @@ import { perlStringLiteral } from '../lib/perl-naming.ts'
 /** Perl literal for a context-consumer's `createContext` default. */
 export function contextDefaultPerl(c: ContextConsumer): string {
   const d = c.defaultValue
-  if (d === null || d === undefined) return 'undef'
+  if (d === undefined) return 'bf->undefined'
+  if (d === null) return 'undef'
   if (typeof d === 'string') return perlStringLiteral(d)
   // A JS boolean value, held as a JSON boolean (#3824 step 5).
   if (typeof d === 'boolean') return d ? 'bf->boolean(1)' : 'bf->boolean(0)'

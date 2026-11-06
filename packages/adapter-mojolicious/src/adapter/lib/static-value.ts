@@ -17,7 +17,9 @@
 import { perlHashKey, perlStringLiteral } from './perl-naming.ts'
 
 export function staticValueToPerl(value: unknown): string | null {
-  if (value === null || value === undefined) return 'undef'
+  // JS `undefined` is the runtime's `UNDEF` (`bf->undefined`), `null` Perl's `undef`.
+  if (value === undefined) return 'bf->undefined'
+  if (value === null) return 'undef'
   if (typeof value === 'boolean') return null
   if (typeof value === 'number') return String(value)
   if (typeof value === 'string') return perlStringLiteral(value)

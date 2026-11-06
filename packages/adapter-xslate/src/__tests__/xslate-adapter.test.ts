@@ -209,7 +209,7 @@ export function Item(props: { defaultOn?: boolean }) {
 }
 `)
     // The `false` fallback is stored as a JSON boolean (#3824 step 5).
-    expect(template).toContain(': my $on = ($defaultOn // $bf.boolean(0));')
+    expect(template).toContain(': my $on = ($bf.keep_nonnil($defaultOn) || [$bf.boolean(0)])[0];')
   })
 
   // Kolon can't `: my $x = … $x …` directly (the declaration shadows the
@@ -225,7 +225,7 @@ export function C(props: { x?: number }) {
   return <span>{x()}</span>
 }
 `)
-    expect(template).toContain(': my $__bf_seed_x = ($x // 7);')
+    expect(template).toContain(': my $__bf_seed_x = ($bf.keep_nonnil($x) || [7])[0];')
     expect(template).toContain(': my $x = $__bf_seed_x;')
   })
 
@@ -241,7 +241,7 @@ export function C(props: { items: string[]; x?: string }) {
   return <span>{x()}</span>
 }
 `)
-    expect(template).toContain(": my $__bf_seed_x = $bf.length($bf.filter($items, -> $i { $bf.truthy($bf.starts_with($i, ($x // ''))) }));")
+    expect(template).toContain(": my $__bf_seed_x = $bf.length($bf.filter($items, -> $i { $bf.truthy($bf.starts_with($i, ($bf.keep_nonnil($x) || [''])[0])) }));")
     expect(template).toContain(': my $x = $__bf_seed_x;')
   })
 
@@ -254,7 +254,7 @@ export function C(props: { label?: string }) {
   return <span>{x()}</span>
 }
 `)
-    expect(template).toContain(": my $x = ($label // '$x');")
+    expect(template).toContain(": my $x = ($bf.keep_nonnil($label) || ['$x'])[0];")
     expect(template).not.toContain('__bf_seed_x')
   })
 
@@ -325,7 +325,7 @@ export function SortStatus() {
   return <p>sort: {sort()}</p>
 }
 `)
-    expect(template).toContain(": my $sort = ($searchParams.get('sort') // 'date');")
+    expect(template).toContain(": my $sort = ($bf.keep_nonnil($searchParams.get('sort')) || ['date'])[0];")
   })
 
   // The Kolon lambda param and the `$bf` runtime object are
@@ -341,7 +341,7 @@ export function TaggedList(props: { items: { title: string; tags: string[] }[] }
   return <ul>{visible().map((p) => <li key={p.title}>{p.title}</li>)}</ul>
 }
 `)
-    expect(template).toContain(": my $tag = ($searchParams.get('tag') // '');")
+    expect(template).toContain(": my $tag = ($bf.keep_nonnil($searchParams.get('tag')) || [''])[0];")
     expect(template).toContain(': my $visible = $bf.filter($items,')
   })
 
@@ -849,5 +849,58 @@ export function C({ ${params} }: { ${types} }) {
 
   test('an undefined default does not', () => {
     expect(emit('on = undefined', 'on?: boolean')).not.toContain('bool_str')
+  })
+})
+
+describe('XslateAdapter - JS undefined apart from null (spec/js-undefined-value.md, U5)', () => {
+  test('a nil test spells the runtime’s strict and loose tests, never `defined` / `== nil`', () => {
+    const { template } = compileAndGenerate(`
+export function C(props: { v?: string | null }) {
+  return <p data-a={String(props.v === null)} data-b={String(props.v !== undefined)} data-c={String(props.v == null)}>x</p>
+}
+`)
+    expect(template).toContain('$bf.is_null($v)')
+    expect(template).toContain('!$bf.is_undefined($v)')
+    expect(template).toContain('$bf.is_nullish($v)')
+    expect(template).not.toContain('== nil')
+    expect(template).not.toContain('defined ')
+  })
+
+  test('`undefined`, an omitted slice end, `??` and a `?.` over a nullish receiver spell the runtime’s undefined', () => {
+    const { template } = compileAndGenerate(`
+export function C(props: { items?: string[]; s: string; user?: { name: string }; t?: string }) {
+  return <p data-u={JSON.stringify([undefined, null])} data-s={props.s.slice(1)} data-l={props.items?.length} data-n={props.user?.name} data-t={props.t ?? 'd'}>x</p>
+}
+`)
+    expect(template).toContain('$bf.json([$bf.undefined(), nil])')
+    expect(template).toContain('$bf.slice($s, 1, $bf.undefined())')
+    expect(template).toContain('($bf.is_nullish($items) ? $bf.undefined() : $bf.length($items))')
+    expect(template).toContain("$bf.get_opt($user, 'name')")
+    expect(template).toContain("($bf.keep_nonnil($t) || ['d'])[0]")
+    expect(template).not.toMatch(/ \/\/ /)
+  })
+
+  test('a field read reads natively only when the type proves it present', () => {
+    const { template } = compileAndGenerate(`
+type Row = { id: number; note?: string }
+export function C(props: { rows: Row[]; o: { a?: string } }) {
+  return <ul data-a={props.o.a}>{props.rows.map(r => <li key={r.id}>{r.note}</li>)}</ul>
+}
+`)
+    expect(template).toContain('$r.id')
+    expect(template).toContain("$bf.get($r, 'note')")
+    expect(template).toContain("$bf.get($o, 'a')")
+  })
+
+  test('String() / Number() are JS ToString / ToNumber; an omitted attribute tests both nils', () => {
+    const { template } = compileAndGenerate(`
+export function C(props: { v?: number | null; title?: string }) {
+  return <p data-s={String(props.v)} data-n={Number(props.v)} title={props.title}>x</p>
+}
+`)
+    expect(template).toContain('$bf.to_string($v)')
+    expect(template).toContain('$bf.to_number($v)')
+    expect(template).toContain('!$bf.is_nullish(')
+    expect(template).not.toContain('defined ')
   })
 })

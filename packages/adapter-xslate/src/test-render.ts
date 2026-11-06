@@ -17,7 +17,7 @@
  * than the Mojo harness's literal `test_<sN>`.
  */
 
-import { extractSsrDefaults, deriveStashFromDefaults, importsSearchParams } from '@barefootjs/jsx'
+import { extractSsrDefaults, importsSearchParams } from '@barefootjs/jsx'
 import { compileFixtureJSX } from '@barefootjs/adapter-tests/harness-program'
 import type { ComponentIR, SsrDefault } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
@@ -247,6 +247,7 @@ export async function renderXslateComponent(options: RenderOptions): Promise<str
 
     // Build props hash for Perl.
     const { propsPerl, userPropsPerl } = buildPerlProps(componentName, props, ir)
+    const rootSeed = rootSeedPerl(props, ir)
 
     // Honour `__instanceId` from props for the root scope id so
     // shared-component fixtures (which pin `<ComponentName>_test`) match
@@ -280,7 +281,7 @@ my $bf = BarefootJS->new(undef, { backend => $backend });
 $bf->_scope_id('${rootScopeId}');
 
 my $props = ${propsPerl};
-# Mirrors production's \`props_attr\` contract (BarefootJS.pm's \`_props\`
+${rootSeed}# Mirrors production's \`props_attr\` contract (BarefootJS.pm's \`_props\`
 # accessor; integrations/xslate/app.psgi calls \`$bf->_props($props)\`): the
 # caller is expected to seed it before rendering the root component, so
 # this harness must call it explicitly.
@@ -387,8 +388,7 @@ function buildChildRenderers(
     // (propName / isRestProps intact) to a Perl hashref literal — resolved
     // per-call against the REAL child props by `_derive_stash_from_defaults`
     // below, not flattened here.
-    const ssrDefaults = extractSsrDefaults(childIR.metadata) ?? {}
-    const defaultsPerl = ssrDefaultsToPerl(ssrDefaults)
+    const defaultsPerl = ssrDefaultsToPerl(manifestSsrDefaults(childIR))
     const restPropsName = childIR.metadata.restPropsName
 
     lines.push(`{`)
@@ -424,7 +424,7 @@ function buildChildRenderers(
     // JSX `key` (reserved prop) → data-key on the child scope root, for keyed
     // loop reconciliation parity with Hono.
     lines.push(`    my $data_key = delete $child_props->{key};`)
-    lines.push(`    $child_bf->_data_key($data_key) if defined $data_key;`)
+    lines.push(`    $child_bf->_data_key($data_key) unless BarefootJS::Undefined::is_nullish($data_key);`)
     // A loop child (no slot) gets a fresh `<ComponentName>_<rand>` id per
     // iteration — the PascalCase name is what `normalizeHTML` canonicalises to
     // `<ComponentName>_*`; a slotted child derives from the parent scope.
@@ -529,23 +529,12 @@ function buildPerlProps(
   const explicitScope = typeof props?.__instanceId === 'string' ? props.__instanceId : 'test'
   entries.push(`scope_id => '${escapePerlSingleQuoted(explicitScope)}'`)
 
-  // Prop params with defaults (before signals, so signals can reference them).
-  // Seeded through the shared `deriveStashFromDefaults` (the TS twin of the
-  // production `BarefootJS::_derive_stash_from_defaults` this harness ALSO
-  // calls at render time for child components) so an aliased destructured
-  // prop's CALLER-facing key (`propName`, e.g. `n` for `{ n: count }`) is
-  // honoured, not just the local template var name (#2524 SSR half).
-  // `props` is keyed by the caller-facing name, exactly what `propName`
-  // resolves against.
-  const rootSsrDefaults = extractSsrDefaults(ir.metadata) ?? {}
-  const derivedProps = deriveStashFromDefaults(rootSsrDefaults, props ?? {})
-  for (const param of ir.metadata.propsParams) {
-    if (param.isRest) continue
-    // No default + no caller value: pass `undef` so Kolon's var lookup
-    // for an optional prop doesn't fault before its falsy branch elides.
-    const value = derivedProps[param.name] ?? null
-    entries.push(`${param.name} => ${toPerlLiteral(value)}`)
-  }
+  // Every declared prop, signal and memo is seeded by the production
+  // `BarefootJS::_derive_stash_from_defaults` over the caller's props, in the
+  // render script (`rootSeedPerl`): an omitted prop is left out of them,
+  // never null-filled, so the seed decides (spec/js-undefined-value.md,
+  // "Shared: the seed and the default") — its default when it has one,
+  // `UNDEF` otherwise; an explicit `null` stays `undef`.
 
   // Route undeclared props into the rest bag (`spread_attrs($<rest>)`).
   const restPropsName = ir.metadata.restPropsName
@@ -569,8 +558,8 @@ function buildPerlProps(
   }
 
   // User props. Skip a key that's already a declared param's LOCAL template
-  // var name — `derivedProps` above already resolved that var correctly
-  // (through `propName`, for an aliased prop); re-pushing the raw
+  // var name — the seed resolves that var (through `propName`, for an
+  // aliased prop); re-pushing the raw
   // `props[key]` here would silently clobber it with an UNRELATED value
   // whenever a caller happens to also pass a same-spelled-as-local-name prop
   // that isn't this param's actual `propName` (#2524 — surfaced by the
@@ -582,7 +571,10 @@ function buildPerlProps(
       if (key.startsWith('__')) continue
       if (routedKeys.has(key)) continue
       if (localParamNames.has(key)) continue
-      if (typeof value === 'string') {
+      if (value === undefined) {
+        // A present `undefined` prop: the runtime's `UNDEF`.
+        entries.push(`${key} => $BarefootJS::UNDEF`)
+      } else if (typeof value === 'string') {
         entries.push(`${key} => '${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`)
       } else if (typeof value === 'number') {
         entries.push(`${key} => ${value}`)
@@ -614,43 +606,8 @@ function buildPerlProps(
   }
   const userPropsPerl = `{${userEntries.join(', ')}}`
 
-  // No initializer re-evaluation against raw props — production's
-  // before_render seeds only from `deriveStashFromDefaults` (#2696).
-  for (const signal of ir.metadata.signals) {
-    // Env signals (#2057) are bound below via `search_params('')`, not from a
-    // static initial value.
-    if (signal.envReader) continue
-    if (Object.prototype.hasOwnProperty.call(derivedProps, signal.getter)) {
-      entries.push(`${signal.getter} => ${toPerlLiteral(derivedProps[signal.getter])}`)
-    }
-  }
-
-  // No `?? 0` for entries the manifest lacks — production seeds nothing there (#2696).
-  for (const memo of ir.metadata.memos) {
-    if (Object.prototype.hasOwnProperty.call(derivedProps, memo.name)) {
-      entries.push(`${memo.name} => ${toPerlLiteral(derivedProps[memo.name])}`)
-    }
-  }
-
-  // #2813: `extractSsrDefaults` can seed an entry under a name that is
-  // none of `propsParams` / `signals` / `memos` above — a bare local-const
-  // alias of a signal/memo getter (`const items__alias = items`,
-  // `ssr-defaults.ts`) seeds `items__alias` alongside `items`. Production
-  // hands the whole manifest-derived stash straight through
-  // (`deriveStashFromDefaults` IS the production seeding mechanism here,
-  // not a harness stand-in), so any leftover `derivedProps` key must be
-  // pushed too, or this harness would silently omit what production
-  // actually provides, mismeasuring this conformance case.
-  const seededNames = new Set<string>([
-    ...ir.metadata.propsParams.filter(p => !p.isRest).map(p => p.name),
-    ...(restPropsName ? [restPropsName] : []),
-    ...ir.metadata.signals.filter(s => !s.envReader).map(s => s.getter),
-    ...ir.metadata.memos.map(m => m.name),
-  ])
-  for (const [name, value] of Object.entries(derivedProps)) {
-    if (seededNames.has(name)) continue
-    entries.push(`${name} => ${toPerlLiteral(value)}`)
-  }
+  // Signals, memos and the #2813 alias entries the manifest seeds under
+  // other names all come from the seed (`rootSeedPerl`).
 
   // (#1922) Request-scoped `searchParams()`: bind `$searchParams` to an
   // empty-query reader via the lazy-loading factory (so the render script
@@ -666,12 +623,46 @@ function buildPerlProps(
 }
 
 
+/**
+ * A component's ssrDefaults as the production manifest carries them: through
+ * JSON, as `vite build` writes `manifest.json`, so an `undefined` member of a
+ * static seed is what the manifest makes of it.
+ */
+function manifestSsrDefaults(ir: ComponentIR): Record<string, SsrDefault> {
+  return JSON.parse(JSON.stringify(extractSsrDefaults(ir.metadata) ?? {})) as Record<string, SsrDefault>
+}
+
+/**
+ * The render script's root seed: the production
+ * `BarefootJS::_derive_stash_from_defaults` over the caller's props (every
+ * key, as given; a fixture's `undefined` is `$BarefootJS::UNDEF`, its `null`
+ * `undef`) and the root's ssrDefaults, merged over `$props`. The rest bag is
+ * routed into `$props` already, so the seed's rest entry is dropped.
+ */
+function rootSeedPerl(props: Record<string, unknown> | undefined, ir: ComponentIR): string {
+  const rest = ir.metadata.restPropsName
+  return [
+    `# Every declared prop, signal and memo is seeded by the production`,
+    `# \`_derive_stash_from_defaults\` over the caller's props: an omitted prop is`,
+    `# left out of them, never null-filled, so the seed decides — its default`,
+    `# when it has one, \`UNDEF\` otherwise; an explicit \`null\` stays undef.`,
+    `my %root_seed = BarefootJS::_derive_stash_from_defaults(${ssrDefaultsToPerl(manifestSsrDefaults(ir))}, ${toPerlLiteral(props ?? {})});`,
+    ...(rest ? [`delete $root_seed{${perlSingleQuote(rest)}};`] : []),
+    `$props = { %$props, %root_seed };`,
+    '',
+  ].join('\n')
+}
+
 /** Perl single-quoted string escape: `'` AND `\` need escaping. */
 function perlSingleQuote(s: string): string {
   return `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
 }
 
 function toPerlLiteral(value: unknown): string {
+  // A fixture's `undefined` (a present key holding it, an array element) is
+  // the runtime's `UNDEF`; its `null` is `undef`.
+  if (value === undefined) return '$BarefootJS::UNDEF'
+  if (value === null) return 'undef'
   if (typeof value === 'string') return perlSingleQuote(value)
   if (typeof value === 'number') return String(value)
   // JS booleans → JSON::PP sentinels so `spread_attrs` can detect them

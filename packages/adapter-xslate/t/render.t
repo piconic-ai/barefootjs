@@ -51,6 +51,22 @@ TX
     like $frag_out, qr/<!--bf-\/scope:FragmentDemo_test-->\s*$/, 'end marker trails the fragment, same scope id';
 }
 
+# JS `undefined` (`$BarefootJS::UNDEF`) as Kolon sees it (#3848 U5): it prints
+# empty and tests falsy natively, but `defined` and `//` read it as a value,
+# which is why the adapter spells nil tests, `??` and attribute omission
+# through the runtime's predicates and the `keep_nonnil` box.
+{
+    open my $fh, '>:encoding(UTF-8)', File::Spec->catfile($dir, 'undef.tx') or die $!;
+    print $fh <<'TX';
+[<: $u :>][<: if $u { :>T<: } else { :>F<: } :>][<: $bf.is_nullish($u) ? 'N' : 'V' :>][<: $bf.is_null($n) ? 'null' : '' :>][<: ($bf.keep_nonnil($u) || ['d'])[0] :>][<: ($bf.keep_nonnil($z) || ['d'])[0] :>][<: $bf.get($h, 'missing') :>][<: $bf.json($u) :>][<: $bf.to_string($u) :>]
+TX
+    close $fh;
+    my $u_backend = BarefootJS::Backend::Xslate->new(path => [$dir]);
+    my $u_bf = BarefootJS->new(undef, { backend => $u_backend });
+    my $u_out = $u_backend->render_named('undef', $u_bf, { u => $BarefootJS::UNDEF, n => undef, z => 0, h => {} });
+    is $u_out, "[][F][N][null][d][0][][][undefined]\n", 'undefined prints empty, tests falsy, coalesces, and ToStrings as "undefined"';
+}
+
 # Backend unit operations.
 is $backend->materialize('plain'), 'plain', 'materialize: scalar passthrough';
 is $backend->materialize(sub { 'lazy' }), 'lazy', 'materialize: resolves CODE ref';

@@ -119,9 +119,9 @@ my %bindings = (
     index_of      => sub { $bf->index_of(@_) },
     last_index_of => sub { $bf->last_index_of(@_) },
     concat        => sub { $bf->concat(@_) },
-    # The Mojo emit always passes three value args (`undef` for an
-    # absent end) — mirror that exact shape.
-    slice   => sub { $bf->slice($_[0], $_[1], $_[2]) },
+    # The adapters pass an omitted end as `bf->undefined`, which the helper
+    # reads as omitted; an omitted argument here is omitted too.
+    slice   => sub { $bf->slice(@_) },
     reverse => sub { $bf->reverse($_[0]) },
     flat    => sub { $bf->flat(@_) },
     flat_dynamic => sub { $bf->flat_dynamic(@_) },
@@ -133,7 +133,7 @@ my %bindings = (
     filter_truthy => sub { [grep { $bf->truthy($_) } @{ $_[0] }] },
 
     # searchParams().get(key) (#1922) via the lazy factory consumers use.
-    # No divergence entry: get() returns undef for an absent key (~ JS null)
+    # No divergence entry: get() returns undef for an absent key (JS null)
     # and '' for present-but-empty, so the Perl backend matches JS exactly.
     search_params_get => sub { BarefootJS->search_params($_[0])->get($_[1]) },
 
