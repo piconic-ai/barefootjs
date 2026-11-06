@@ -2541,7 +2541,7 @@ describe('Client JS generation', () => {
       expect(content).toContain('sizeMap')
       expect(content).not.toContain('sizeMap'.replace('size', 'props.size'))
       // The standalone size reference should be rewritten
-      expect(content).toContain("_p.size ?? 'sm'")
+      expect(content).toContain("_p.size === undefined ? 'sm' : _p.size")
     })
 
     test('default values from destructuring are included in rewrite', () => {
@@ -2566,7 +2566,7 @@ describe('Client JS generation', () => {
 
       expect(content).toContain('createEffect')
       // Should include the default value in the rewrite
-      expect(content).toContain("_p.label ?? 'tag'")
+      expect(content).toContain("_p.label === undefined ? 'tag' : _p.label")
     })
 
     test('text node renders empty string for nullish reactive values', () => {
@@ -3077,7 +3077,7 @@ describe('Client JS generation', () => {
       // The destructure default rides the signal seed (and its controlled
       // effect) — the standalone `const size = …` extraction is pruned when
       // nothing else in the init reads it.
-      expect(js).toContain('_p.size ?? 5')
+      expect(js).toContain('_p.size === undefined ? 5 : _p.size')
       expect(js).not.toContain('_p.size ?? 0')
     })
   })

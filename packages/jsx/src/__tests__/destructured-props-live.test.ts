@@ -79,7 +79,7 @@ describe('destructured props compile to live reads', () => {
 
     // `items`'s destructure default survives as a live fallback, not a
     // one-time extraction.
-    expect(content).toContain('(_p.items ?? []).length')
+    expect(content).toContain('(_p.items === undefined ? [] : _p.items).length')
 
     // No BF043 diagnostic (retired) anywhere in errors/warnings.
     expect(result.errors.some((e) => e.code === 'BF043')).toBe(false)

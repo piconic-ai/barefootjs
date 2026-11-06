@@ -12,7 +12,7 @@ export function initLabel(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `${labelClasses} ${(_p.className ?? '')}`
+      { const __x = `${labelClasses} ${(_p.className === undefined ? '' : _p.className)}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -24,5 +24,5 @@ export function initLabel(__scope, _p = {}) {
 
 }
 
-hydrate('Label', { init: initLabel, template: (_p) => `<label data-slot="label" ${(`${('flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50')} ${(_p.className ?? '')}`) != null ? 'class="' + escapeAttr(`${('flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50')} ${(_p.className ?? '')}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</label>` })
+hydrate('Label', { init: initLabel, template: (_p) => `<label data-slot="label" ${(`${('flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50')} ${(_p.className === undefined ? '' : _p.className)}`) != null ? 'class="' + escapeAttr(`${('flex items-center gap-2 text-sm leading-none font-medium select-none group-data-[disabled=true]:pointer-events-none group-data-[disabled=true]:opacity-50 peer-disabled:cursor-not-allowed peer-disabled:opacity-50')} ${(_p.className === undefined ? '' : _p.className)}`) + '"' : ''} bf="s0">${markupOrEmpty(_p.children)}</label>` })
 export function Label(_p, __bfKey) { return createComponent('Label', _p, __bfKey) }

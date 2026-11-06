@@ -3498,6 +3498,56 @@
           }
         }
       },
+      "destructure-default-null-hydrate": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "host-nil-collapses-undefined-and-null"
+          ]
+        }
+      },
       "destructure-default-param-computed-array": {
         "go-template": {
           "kind": "refusal",
@@ -10963,6 +11013,10 @@
         "description": "A renamed body destructure default computing an array from an earlier binding takes the computed…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-computed-array.ts"
       },
+      "destructure-default-null-hydrate": {
+        "description": "A destructure default applies to an omitted or undefined prop, not to null, at SSR, on hydration…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-null-hydrate.ts"
+      },
       "destructure-default-param-computed-array": {
         "description": "A parameter destructure default computing an array from an earlier binding takes the computed array",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-computed-array.ts"
@@ -12090,6 +12144,7 @@
       "expected": "`undefined` and `null` are distinct values, so each renders its own JS result (`\"undefined\"` / `\"null\"`, `NaN` / `0`, a dropped member or no string / `null`, the default / `null`, the argument default / the coerced `null`)",
       "actual": "renders the result for one of them in place of the other, or fails to render, since the host nil stands for both; graduates per target as its runtime carries `undefined` (`spec/js-undefined-value.md`)",
       "fixtures": [
+        "destructure-default-null-hydrate",
         "undef-null-array-search",
         "undef-null-destructure-default",
         "undef-null-json-stringify",
@@ -12104,7 +12159,6 @@
         "undef-null-string-includes"
       ],
       "adapters": [
-        "hono",
         "blade",
         "erb",
         "go-template",

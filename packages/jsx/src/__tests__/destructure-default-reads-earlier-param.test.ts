@@ -72,7 +72,7 @@ describe('client JS reads the earlier prop live', () => {
         return <p>{String(on && true)}</p>
       }
     `)
-    expect(js).toContain('(_p.on ?? (_p.off ?? false))')
+    expect(js).toContain('(_p.on === undefined ? (_p.off === undefined ? false : _p.off) : _p.on)')
     expect(js).not.toContain('_p.on ?? off)')
   })
 
@@ -83,8 +83,8 @@ describe('client JS reads the earlier prop live', () => {
         return <p>{c}{String(on)}</p>
       }
     `)
-    expect(js).toContain(`(_p.c ?? (_p.b ?? (_p.a ?? 'x')))`)
-    expect(js).toContain('(_p.on ?? !(_p.off ?? false))')
+    expect(js).toContain(`(_p.c === undefined ? (_p.b === undefined ? (_p.a === undefined ? 'x' : _p.a) : _p.b) : _p.c)`)
+    expect(js).toContain('(_p.on === undefined ? !(_p.off === undefined ? false : _p.off) : _p.on)')
   })
 
   test('a renamed earlier binding reads its caller-facing key', () => {
@@ -94,7 +94,7 @@ describe('client JS reads the earlier prop live', () => {
         return <p>{String(on)}</p>
       }
     `)
-    expect(js).toContain('(_p.on ?? (_p.off ?? false))')
+    expect(js).toContain('(_p.on === undefined ? (_p.off === undefined ? false : _p.off) : _p.on)')
   })
 
   test('body form: the init body reads the earlier prop live too', () => {
@@ -106,7 +106,7 @@ describe('client JS reads the earlier prop live', () => {
       }
     `)
     expect(js).not.toMatch(/_p\.on \?\? off\b/)
-    expect(js).toContain('(_p.on ?? (_p.off ?? false))')
+    expect(js).toContain('(_p.on === undefined ? (_p.off === undefined ? false : _p.off) : _p.on)')
   })
 
   test('the CSR template reads a signal seed and a memo over the prop with its default', () => {
@@ -120,8 +120,8 @@ describe('client JS reads the earlier prop live', () => {
       }
     `)
     const template = js.slice(js.indexOf('template: (_p) =>'))
-    expect(template).toContain('String(((_p.on ?? (_p.off ?? false))))')
-    expect(template).toContain('String((!(_p.on ?? (_p.off ?? false))))')
+    expect(template).toContain('String(((_p.on === undefined ? (_p.off === undefined ? false : _p.off) : _p.on)))')
+    expect(template).toContain('String((!(_p.on === undefined ? (_p.off === undefined ? false : _p.off) : _p.on)))')
   })
 
   test('a controlled signal seeded by the prop reads the earlier prop live', () => {

@@ -37,7 +37,8 @@ import { collectValueReferencedNames } from '../value-references.ts'
 import { PROPS_PARAM } from './utils.ts'
 
 /**
- * Does `init` read `<objectName>.<key>` or `<objectName>.<key> ?? <fallback>`?
+ * Does `init` read `<objectName>.<key>`, `<objectName>.<key> ?? <fallback>`,
+ * or a defaulted `<objectName>.<key> === undefined ? <default> : <objectName>.<key>`?
  * The one recognizer for "a prop read initializer", shared by
  * `propExtractionName` below (which additionally requires the bound name to
  * equal `key` unless `key` is `children`, and always reads off `_p`), `rewriteBodyAliasReads`
@@ -50,7 +51,9 @@ import { PROPS_PARAM } from './utils.ts'
 export function parsePropReadInitializer(
   init: ts.Expression,
   objectName: string = PROPS_PARAM,
-): { key: string; fallback: ts.Expression | null } | null {
+): { key: string; fallback: ts.Expression | null; coalescesNull: boolean } | null {
+  const defaulted = parseDefaultedPropRead(init, objectName)
+  if (defaulted) return { ...defaulted, coalescesNull: false }
   let core: ts.Expression = init
   let fallback: ts.Expression | null = null
   if (
@@ -60,9 +63,30 @@ export function parsePropReadInitializer(
     fallback = core.right
     core = core.left
   }
-  if (!ts.isPropertyAccessExpression(core)) return null
-  if (!ts.isIdentifier(core.expression) || core.expression.text !== objectName) return null
-  return { key: core.name.text, fallback }
+  const key = propReadKey(core, objectName)
+  // A `??` fallback (`props.x ?? d`, the author's own) replaces `null` too.
+  return key === null ? null : { key, fallback, coalescesNull: fallback !== null }
+}
+
+/** `<objectName>.<key>`'s key, or null for any other expression. */
+function propReadKey(expr: ts.Expression, objectName: string): string | null {
+  if (!ts.isPropertyAccessExpression(expr)) return null
+  if (!ts.isIdentifier(expr.expression) || expr.expression.text !== objectName) return null
+  return expr.name.text
+}
+
+/**
+ * A destructure default as `composePropRead` spells it:
+ * `<objectName>.<key> === undefined ? <default> : <objectName>.<key>`.
+ */
+function parseDefaultedPropRead(init: ts.Expression, objectName: string): { key: string; fallback: ts.Expression } | null {
+  if (!ts.isConditionalExpression(init)) return null
+  const test = init.condition
+  if (!ts.isBinaryExpression(test) || test.operatorToken.kind !== ts.SyntaxKind.EqualsEqualsEqualsToken) return null
+  if (!ts.isIdentifier(test.right) || test.right.text !== 'undefined') return null
+  const key = propReadKey(test.left, objectName)
+  if (key === null || propReadKey(init.whenFalse, objectName) !== key) return null
+  return { key, fallback: init.whenTrue }
 }
 
 /** Is `stmt` a single-declarator `const X = _p.X…` prop extraction whose

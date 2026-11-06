@@ -307,9 +307,9 @@ describe('ClientJS generation with semantic prop refs', () => {
     const clientJs = result.files.find((f) => f.type === 'clientJs')
     expect(clientJs).toBeDefined()
     // No captured-once local — the live read carries the default at the
-    // read site itself: `(_p.open ?? false)`.
+    // read site itself: `(_p.open === undefined ? false : _p.open)`.
     expect(clientJs?.content).not.toContain('const open = ')
-    expect(clientJs?.content).toMatch(/\(_p\.open \?\? false\)/)
+    expect(clientJs?.content).toMatch(/\(_p\.open === undefined \? false : _p\.open\)/)
   })
 })
 

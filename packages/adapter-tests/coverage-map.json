@@ -4678,6 +4678,21 @@
         "text"
       ]
     },
+    "destructure-default-null-hydrate": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "destructure-default-param-chain-order": {
       "kinds": [
         "identifier",

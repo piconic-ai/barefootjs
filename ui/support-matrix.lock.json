@@ -5786,6 +5786,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6117,6 +6123,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -6469,6 +6481,12 @@
               "fixture": "destructure-default-body-renamed-callback-signal",
               "limitations": [
                 "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -7188,6 +7206,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7522,6 +7546,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7835,6 +7865,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -8163,6 +8199,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -8497,6 +8539,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -9328,6 +9376,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -9845,6 +9899,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -10407,6 +10467,12 @@
               "fixture": "destructure-default-body-renamed-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -11480,6 +11546,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -11994,6 +12066,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12487,6 +12565,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -12989,6 +13073,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -13509,6 +13599,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -14193,6 +14289,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -14572,6 +14674,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -15026,6 +15134,12 @@
               "fixture": "destructure-default-body-renamed-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -15811,6 +15925,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -16190,6 +16310,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -16581,6 +16707,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -16948,6 +17080,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -17330,6 +17468,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -29610,6 +29754,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -29719,6 +29869,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -29843,6 +29999,12 @@
               "fixture": "conditional-nested-loop-static-reactivity",
               "limitations": [
                 "conditional-nested-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -30010,6 +30172,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -30119,6 +30287,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -30240,6 +30414,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -30343,6 +30523,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -30455,6 +30641,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -32395,6 +32587,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -32666,6 +32864,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -33006,6 +33210,12 @@
               "fixture": "destructure-default-body-renamed-callback-signal",
               "limitations": [
                 "destructure-default-callback-unseeded"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -33563,6 +33773,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -33834,6 +34050,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -34117,6 +34339,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -34382,6 +34610,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -34656,6 +34890,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-null-hydrate",
+              "limitations": [
+                "host-nil-collapses-undefined-and-null"
               ]
             },
             {

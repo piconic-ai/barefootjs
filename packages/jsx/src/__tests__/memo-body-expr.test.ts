@@ -130,7 +130,7 @@ describe('template text over a body destructure binding in a (props)-arg compone
       }
     `, 'C.tsx')
   }
-  const read = "(_p.b ?? (['y', ''].filter((x) => x !== '')))"
+  const read = "(_p.b === undefined ? (['y', ''].filter((x) => x !== '')) : _p.b)"
 
   test('a memo body reads a renamed binding with a callback default as its prop', () => {
     const ctx = analyze(`
@@ -252,6 +252,6 @@ describe('template text keeps a local named like a typed prop (props)-arg compon
       const { value = 4 } = props
       const n = createMemo(() => value * 2)
     `)
-    expect(ctx.memos.find(m => m.name === 'n')?.templateBodyExpr).toBe('(_p.value ?? 4) * 2')
+    expect(ctx.memos.find(m => m.name === 'n')?.templateBodyExpr).toBe('(_p.value === undefined ? 4 : _p.value) * 2')
   })
 })

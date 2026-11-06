@@ -309,6 +309,9 @@ import { fixture as awaitsUndefinedPlusShapes } from './awaits-undefined-plus-sh
 import { fixture as styleObjectNilProperty } from './style-object-nil-property'
 import { fixture as undefNullArraySearch } from './undef-null-array-search'
 import { fixture as undefNullDestructureDefault } from './undef-null-destructure-default'
+// The same default over a forwarded `null` / `undefined` / omitted prop,
+// hydrated and updated in a real browser (fixture-hydrate, oracle).
+import { fixture as destructureDefaultNullHydrate } from './destructure-default-null-hydrate'
 import { fixture as undefNullJsonStringify } from './undef-null-json-stringify'
 import { fixture as undefNullJsonStringifyObjectMember } from './undef-null-json-stringify-object-member'
 import { fixture as undefNullNonDivergingPositions } from './undef-null-non-diverging-positions'
@@ -1603,6 +1606,7 @@ export const jsxFixtures: JSXFixture[] = [
   styleObjectNilProperty,
   undefNullArraySearch,
   undefNullDestructureDefault,
+  destructureDefaultNullHydrate,
   undefNullJsonStringify,
   undefNullJsonStringifyObjectMember,
   undefNullNonDivergingPositions,

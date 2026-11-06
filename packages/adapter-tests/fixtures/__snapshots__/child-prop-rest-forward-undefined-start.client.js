@@ -11,7 +11,7 @@ export function initRestForwardTag(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s0) {
-      { const __x = `${({"a": "cls-a", "b": "cls-b"})[(_p.variant ?? 'a')]}`
+      { const __x = `${({"a": "cls-a", "b": "cls-b"})[(_p.variant === undefined ? 'a' : _p.variant)]}`
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s0.setAttribute('class', String(__v)); else _s0.removeAttribute('class') }
       }
@@ -26,7 +26,7 @@ export function initRestForwardTag(__scope, _p = {}) {
 
 }
 
-hydrate('RestForwardTag', { init: initRestForwardTag, template: (_p) => `<span data-slot="rest-tag" ${(`${({"a": "cls-a", "b": "cls-b"})[(_p.variant ?? 'a')]}`) != null ? 'class="' + escapeAttr(`${({"a": "cls-a", "b": "cls-b"})[(_p.variant ?? 'a')]}`) + '"' : ''} ${(_p.tag) != null ? 'tag="' + escapeAttr(_p.tag) + '"' : ''} bf="s0">content</span>` })
+hydrate('RestForwardTag', { init: initRestForwardTag, template: (_p) => `<span data-slot="rest-tag" ${(`${({"a": "cls-a", "b": "cls-b"})[(_p.variant === undefined ? 'a' : _p.variant)]}`) != null ? 'class="' + escapeAttr(`${({"a": "cls-a", "b": "cls-b"})[(_p.variant === undefined ? 'a' : _p.variant)]}`) + '"' : ''} ${(_p.tag) != null ? 'tag="' + escapeAttr(_p.tag) + '"' : ''} bf="s0">content</span>` })
 export function RestForwardTag(_p, __bfKey) { return createComponent('RestForwardTag', _p, __bfKey) }
 export function initChildPropRestForwardUndefinedStart(__scope, _p = {}) {
   if (!__scope) return

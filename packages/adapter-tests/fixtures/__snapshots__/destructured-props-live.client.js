@@ -31,7 +31,7 @@ export function initLiveChild(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s7) {
-      { const __x = (_p.label ?? 'none')
+      { const __x = (_p.label === undefined ? 'none' : _p.label)
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         { const __v = __x; if (__v != null) _s7.setAttribute('data-label', String(__v)); else _s7.removeAttribute('data-label') }
       }
@@ -50,7 +50,7 @@ export function initLiveChild(__scope, _p = {}) {
   })
 }
 
-hydrate('LiveChild__ee1733f8', { init: initLiveChild, template: (_p) => `<div class="live-child" ${((_p.label ?? 'none')) != null ? 'data-label="' + escapeAttr((_p.label ?? 'none')) + '"' : ''} bf="s7"><span class="raw" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(_p.value)}<!--/--></span><span class="memo" bf="s3"><!--bf:s2-->${escapeTextOrMarkup((_p.value * 2))}<!--/--></span><span class="effect" bf="s5"><!--bf:s4-->${escapeTextOrMarkup((0))}<!--/--></span><button class="btn-pick" bf="s6">pick</button></div>`, name: 'LiveChild' })
+hydrate('LiveChild__ee1733f8', { init: initLiveChild, template: (_p) => `<div class="live-child" ${((_p.label === undefined ? 'none' : _p.label)) != null ? 'data-label="' + escapeAttr((_p.label === undefined ? 'none' : _p.label)) + '"' : ''} bf="s7"><span class="raw" bf="s1"><!--bf:s0-->${escapeTextOrMarkup(_p.value)}<!--/--></span><span class="memo" bf="s3"><!--bf:s2-->${escapeTextOrMarkup((_p.value * 2))}<!--/--></span><span class="effect" bf="s5"><!--bf:s4-->${escapeTextOrMarkup((0))}<!--/--></span><button class="btn-pick" bf="s6">pick</button></div>`, name: 'LiveChild' })
 export function LiveChild(_p, __bfKey) { return createComponent('LiveChild__ee1733f8', _p, __bfKey) }
 export function initDestructuredPropsLive(__scope, _p = {}) {
   if (!__scope) return

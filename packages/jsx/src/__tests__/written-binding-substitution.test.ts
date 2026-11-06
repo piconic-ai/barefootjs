@@ -91,7 +91,7 @@ describe('a destructured prop the component writes is an init local', () => {
       return <div><button onClick={() => setItems([...items(), ++start])}>add</button><p>{items().join(',')}</p></div>`,
       P,
     )
-    expect(js).toContain('let start = _p.start ?? 0')
+    expect(js).toContain('let start = _p.start === undefined ? 0 : _p.start')
     expect(js).toContain('++start')
     expect(js).not.toContain('++(_p.start')
   })
@@ -105,12 +105,12 @@ describe('a destructured prop the component writes is an init local', () => {
     )
     expect(js).toContain('const add = () => { start += 1; setItems([...items(), start]) }')
     // Until a handler runs, the binding holds the prop: the template reads it.
-    expect(templateOf(js)).toContain('(_p.start ?? 0)')
+    expect(templateOf(js)).toContain('(_p.start === undefined ? 0 : _p.start)')
   })
 
   test('a top-level reassignment', () => {
     const js = clientJs(`start = start + 1\n      return <p>{start}</p>`, P)
-    expect(js).toContain('let start = _p.start ?? 0')
+    expect(js).toContain('let start = _p.start === undefined ? 0 : _p.start')
     expect(js).toContain('start = start + 1')
   })
 
@@ -122,7 +122,7 @@ describe('a destructured prop the component writes is an init local', () => {
     )
     expect(js).toContain('[a, b] = [b, a]')
     expect(js).toContain('for (k in')
-    expect(js).toContain('let a = _p.a ?? 1')
+    expect(js).toContain('let a = _p.a === undefined ? 1 : _p.a')
   })
 
   test('a prop without a default no longer writes the props object', () => {
@@ -141,7 +141,7 @@ describe('a destructured prop the component writes is an init local', () => {
       return <div><button onClick={() => setItems([...items(), ++s])}>add</button><p>{items().join(',')}</p></div>`,
       '{ start: s = 0 }: { start?: number }',
     )
-    expect(js).toContain('let s = _p.start ?? 0')
+    expect(js).toContain('let s = _p.start === undefined ? 0 : _p.start')
     expect(js).toContain('++s')
   })
 
@@ -166,7 +166,7 @@ describe('a `for (let …)` head shadows a prop of the same name', () => {
       return <div><button onClick={add}>go</button><p>{n()}</p></div>`,
       '{ i = 5 }: { i?: number }',
     )
-    expect(js).toContain('for (let i = 0; i < 3; i++) t += i; setN(t + (_p.i ?? 5))')
+    expect(js).toContain('for (let i = 0; i < 3; i++) t += i; setN(t + (_p.i === undefined ? 5 : _p.i))')
   })
 })
 
@@ -207,7 +207,7 @@ describe('a written local in the client template', () => {
 describe('every template path leaves a write to init', () => {
   test('a stateless component writing a prop in a handler renders the prop from its template', () => {
     const js = clientJs(`return <button onClick={() => start++}>{start}</button>`, '{ start = 0 }: { start?: number }')
-    expect(js).toContain('let start = _p.start ?? 0')
+    expect(js).toContain('let start = _p.start === undefined ? 0 : _p.start')
     expect(runTemplate(js, { start: 5 })).toContain('5')
     expect(runTemplate(js, {})).toContain('0')
   })
@@ -361,7 +361,7 @@ describe('BF065: a client component markup that writes a binding while it render
       CHILD,
     )
     expect(templateOf(js)).toContain('data-bf-ph')
-    expect(js).toContain('let start = _p.start ?? 0')
+    expect(js).toContain('let start = _p.start === undefined ? 0 : _p.start')
     expect(js).toContain('return () => ++start')
   })
 

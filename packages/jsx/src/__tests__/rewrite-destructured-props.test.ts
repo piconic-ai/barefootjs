@@ -107,7 +107,7 @@ function Comp({ base, tag = 'all', page }: { base: string; tag?: string; page: s
 export { Comp }
 `
     const js = compileClientJs(source)
-    expect(js).toContain("{ tag: (_p.tag ?? 'all'), page: _p.page ? _p.page : '' }")
+    expect(js).toContain("{ tag: (_p.tag === undefined ? 'all' : _p.tag), page: _p.page ? _p.page : '' }")
     expect(js).not.toContain("(_p.tag ?? 'all'):")
   })
 
