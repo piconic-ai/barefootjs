@@ -80,7 +80,8 @@ const GO_NAMES: Partial<Record<PrimitiveHelper, readonly string[]>> = {
 // operand the same way (#3839).
 const DSL_NAMES = { truthy: TRUTHY_NAMES, coalesce: ['keep_nonnil'] }
 const PERL_NAMES = { sub: ['subtract'], mul: ['multiply'], div: ['divide'], truthy: TRUTHY_NAMES, coalesce: ['keep_nonnil'] }
-const PHP_NAMES = { get: ['index'], strict_eq: ['eq', 'neq'], truthy: TRUTHY_NAMES }
+// Blade boxes an unproven `??` left operand the same way (#3848 U6).
+const PHP_NAMES = { get: ['index'], strict_eq: ['eq', 'neq'], truthy: TRUTHY_NAMES, coalesce: ['keep_nonnil'] }
 
 const TARGETS: readonly Target[] = [
   {
@@ -107,10 +108,15 @@ const TARGETS: readonly Target[] = [
     name: 'twig',
     make: () => new TwigAdapter(),
     table: TWIG,
-    // Twig's value-position `&&` / `||` test through the `bf_js_or` /
-    // `bf_js_and` filters (`Barefoot\BarefootExtension`), not a `bf.` method.
+    // Twig's value-position `&&` / `||` / `??` test through the `bf_js_or` /
+    // `bf_js_and` / `bf_js_nullish` filters (`Barefoot\BarefootExtension`),
+    // not a `bf.` method (#3848 U6 for `??`).
     call: (helper) =>
-      helper === 'truthy' ? /(?<![\w$])bf\.truthy\(|\|bf_js_(?:or|and)\(/ : dslCall('bf.', PHP_NAMES)(helper),
+      helper === 'truthy'
+        ? /(?<![\w$])bf\.truthy\(|\|bf_js_(?:or|and)\(/
+        : helper === 'coalesce'
+          ? /\|bf_js_nullish\(/
+          : dslCall('bf.', PHP_NAMES)(helper),
   },
   { name: 'xslate', make: () => new XslateAdapter(), table: XSLATE, call: dslCall('$bf.', PERL_NAMES) },
 ]

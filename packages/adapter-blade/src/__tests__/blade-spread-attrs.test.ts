@@ -21,11 +21,11 @@
  *    unquoted" case to assert for a bare-identifier-safe prop name like
  *    `size`; only that BOTH keys are correctly quoted (same note as the
  *    Twig/Jinja ports' file headers).
- * 2. Twig's `is defined and is not null` null-guard on an `{% if %}` test
- *    becomes Blade's `isset($x)` — a SINGLE check (this file's port of the
- *    Twig adapter's divergence 6): PHP's `isset()` already returns `false`
- *    for both "never extracted into scope" and "extracted as null" in one
- *    call, verified empirically (see `blade-adapter.ts`'s file header).
+ * 2. The null-guard on an `@if` test is the runtime's
+ *    `!$bf->is_nullish(($x) ?? null)`: JS `undefined` is the runtime's
+ *    `Barefoot\Undefined`, which PHP's `isset()` reads as set (#3848 U6);
+ *    the inner `?? null` keeps `isset`'s silence on a variable never
+ *    extracted into scope.
  */
 
 import { test, expect, describe } from 'bun:test'
@@ -174,7 +174,7 @@ describe('BladeAdapter - props-object inherited-attribute enumeration (#checkbox
   // not enumerated in `propsParams`. The bare optional attribute must be
   // guarded so it's omitted when unset (Hono parity), even though `id`
   // isn't a declared param.
-  test('guards a props-object bare optional attr (props.id) with isset()', () => {
+  test('guards a props-object bare optional attr (props.id) with is_nullish', () => {
     const { template } = compileAndGenerate(`
 "use client"
 interface P { tone?: string }
@@ -182,7 +182,7 @@ export function Widget(props: P) {
   return <button id={props.id}>x</button>
 }
 `)
-    expect(template).toContain('@if(isset($id))')
+    expect(template).toContain('@if(!$bf->is_nullish(($id) ?? null))')
     expect(template).toContain('id="{!! e($bf->string($id)) !!}"')
   })
 })
@@ -207,18 +207,18 @@ export function Host() {
 })
 
 describe('BladeAdapter - nullish optional-attribute omission (textarea rows)', () => {
-  // A no-destructure-default, nillable-typed prop is `null` when the caller
-  // omits it; guard its bare-reference attribute with Blade's `isset($x)`
-  // test so it DROPS instead of rendering `attr=""` — matching Hono's
+  // A no-destructure-default, nillable-typed prop is `undefined` when the
+  // caller omits it; guard its bare-reference attribute with the runtime's
+  // `is_nullish` test so it DROPS instead of rendering `attr=""` — matching Hono's
   // nullish-attribute omission. Concrete/defaulted props are never `null`
   // and stay unconditional.
-  test('guards a no-default nillable attr with an isset() check', () => {
+  test('guards a no-default nillable attr with an is_nullish check', () => {
     const { template } = compileAndGenerate(`
 function C({ rows }: { rows?: number }) {
   return <textarea rows={rows} />
 }
 `)
-    expect(template).toContain('@if(isset($rows))')
+    expect(template).toContain('@if(!$bf->is_nullish(($rows) ?? null))')
     expect(template).toContain('rows="{!! e($bf->string($rows)) !!}"')
   })
 
@@ -231,6 +231,6 @@ function C({ placeholder = '' }: { placeholder?: string }) {
     // `placeholder` has a destructure default → never null → unconditional, exactly
     // like Hono's placeholder="".
     expect(template).toContain('placeholder="{!! e($bf->string($placeholder)) !!}"')
-    expect(template).not.toContain('@if(isset(')
+    expect(template).not.toContain('@if(!$bf->is_nullish(')
   })
 })

@@ -86,35 +86,14 @@ export function twigIdent(name: string): string {
  * nested rest binding (`segments` there is the prefix up to, not including,
  * the rest token).
  *
- * Verified empirically against Twig 3.x (`vendor/twig/twig` bundled under
- * `packages/adapter-twig/php`) — the two SSR item shapes this walk ever
- * touches are a JSON-decoded `stdClass` (an object field) or a PHP list
- * array (an array index), per the "canonical value convention" documented in
- * `test-render.ts` (JSON objects → stdClass, JSON arrays → PHP lists):
- *
- *   - `index` segments ALWAYS use bracket subscript (`base[N]`), never Twig's
- *     `base.N` dot form. Chaining two dot-number steps (`base.0.1`) mis-lexes
- *     as the single FLOAT LITERAL `0.1` — Twig's lexer greedily consumes
- *     `NUMBER '.' NUMBER` as one token right after the leading dot — which
- *     silently produces the wrong accessor instead of a parse error.
- *     Bracket subscript has no such collision, at any chain position, and
- *     works identically on a PHP list.
- *   - `field` segments with an identifier-safe key (`isIdent`) use dot
- *     notation (`base.key`): Twig's dot accessor resolves an object PROPERTY
- *     first, which is correct on `stdClass` — confirmed empirically that
- *     even reserved-word-shaped keys (`if`, `and`, `class`) read fine as
- *     `.if` / `.and` / `.class`, since Twig's NAME token is not
- *     keyword-reserved at the lexer level (only bareword HASH-LITERAL keys
- *     are, which is why `twigHashKey` above always quotes).
- *   - `field` segments with a non-identifier key (e.g. `'data-priority'`)
- *     do NOT use bracket subscript the way a JS accessor string would —
- *     confirmed empirically that Twig's `[...]` subscript on a `stdClass` is
- *     an ARRAY-item lookup only and silently resolves to nothing (no error,
- *     under `strict_variables: false`). Twig's built-in `attribute(receiver,
- *     key)` function is the one accessor that checks object-property AND
- *     array-item access uniformly (confirmed against both `stdClass` and PHP
- *     arrays, string or integer key), so non-ident field steps route through
- *     it instead.
+ * Every step — an `index` or a `field`, identifier-safe or not — reads
+ * through the runtime's `bf.index` (#3848 U6): JS reads a missing field or an
+ * out-of-range index as `undefined`, Twig's dot / bracket / `attribute()` as
+ * `null` (JS `null`). `bf.index` is the one single-level own-key read over
+ * the SSR item shapes this walk touches — a JSON-decoded `stdClass` (an
+ * object field) or a PHP list array (an array index), per the "canonical
+ * value convention" documented in `test-render.ts` — and it also sidesteps
+ * Twig's lexer reading a chained `base.0.1` as the float `0.1`.
  */
 export function twigLoopBindingAccessor(
   base: string,
@@ -122,13 +101,7 @@ export function twigLoopBindingAccessor(
 ): string {
   let acc = base
   for (const seg of segments) {
-    if (seg.kind === 'index') {
-      acc = `${acc}[${seg.index}]`
-    } else if (seg.isIdent) {
-      acc = `${acc}.${seg.key}`
-    } else {
-      acc = `attribute(${acc}, '${escapeTwigSingleQuoted(seg.key)}')`
-    }
+    acc = `bf.index(${acc}, ${seg.kind === 'index' ? seg.index : `'${escapeTwigSingleQuoted(seg.key)}'`})`
   }
   return acc
 }

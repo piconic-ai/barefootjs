@@ -147,18 +147,29 @@ bf_test('passed reads the caller keys', function () {
     bf_assert_eq($root->passed('tone', true), false);
 });
 
-bf_test('a manifest entry without value seeds null, as value null did', function () {
-    // `extractSsrDefaults` writes no `value` for a prop without a default
-    // (spec/js-undefined-value.md, rollout step U1).
-    $missing = ['n' => ['propName' => 'n'], 'rest' => ['isRestProps' => true]];
-    $explicit = ['n' => ['propName' => 'n', 'value' => null], 'rest' => ['isRestProps' => true, 'value' => null]];
-    foreach ([[], ['n' => null], ['n' => 3], ['rest' => ['a' => 1]]] as $props) {
-        bf_assert_eq(BarefootJS::deriveStashFromDefaults($missing, $props), BarefootJS::deriveStashFromDefaults($explicit, $props));
-    }
-    bf_assert_eq(BarefootJS::deriveStashFromDefaults($missing, []), ['n' => null, 'rest' => null]);
+bf_test('the seed: a default applies to an absent or undefined prop only (decision 6)', function () {
+    // `extractSsrDefaults` writes `value` only for a prop with a default
+    // (spec/js-undefined-value.md, "Shared: the seed and the default").
+    $U = \Barefoot\Undefined::value();
+    $noDefault = ['n' => ['propName' => 'n'], 'rest' => ['isRestProps' => true]];
+    $withDefault = ['n' => ['propName' => 'n', 'value' => 'D']];
+    // Absent or present `undefined`, without a default: `undefined`.
+    bf_assert_eq(BarefootJS::deriveStashFromDefaults($noDefault, []), ['n' => $U, 'rest' => $U]);
+    bf_assert_eq(BarefootJS::deriveStashFromDefaults($noDefault, ['n' => $U]), ['n' => $U, 'rest' => $U]);
+    // Absent or present `undefined`, with a default: the default.
+    bf_assert_eq(BarefootJS::deriveStashFromDefaults($withDefault, []), ['n' => 'D']);
+    bf_assert_eq(BarefootJS::deriveStashFromDefaults($withDefault, ['n' => $U]), ['n' => 'D']);
+    // A present prop keeps its value, `null` (JS `null`) included.
+    bf_assert_eq(BarefootJS::deriveStashFromDefaults($withDefault, ['n' => null]), ['n' => null]);
+    bf_assert_eq(BarefootJS::deriveStashFromDefaults($noDefault, ['n' => null]), ['n' => null, 'rest' => $U]);
+    bf_assert_eq(BarefootJS::deriveStashFromDefaults($withDefault, ['n' => 3]), ['n' => 3]);
+    // A rest bag passes through, and an explicit `value` is still used.
+    bf_assert_eq(BarefootJS::deriveStashFromDefaults($noDefault, ['rest' => ['a' => 1]]), ['n' => $U, 'rest' => ['a' => 1]]);
+    $explicitNull = ['n' => ['propName' => 'n', 'value' => null]];
+    bf_assert_eq(BarefootJS::deriveStashFromDefaults($explicitNull, []), ['n' => null]);
     // Decoded from the manifest's JSON text (`stdClass` entries).
-    $decoded = json_decode('{"n":{"propName":"n"}}');
-    bf_assert_eq(BarefootJS::deriveStashFromDefaults($decoded, []), ['n' => null]);
+    $decoded = json_decode('{"n":{"propName":"n"},"m":{"propName":"m","value":1}}');
+    bf_assert_eq(BarefootJS::deriveStashFromDefaults($decoded, ['m' => $U]), ['n' => $U, 'm' => 1]);
 });
 
 return bf_finish();

@@ -62,32 +62,7 @@
       }
     },
     "perl": {},
-    "php": {
-      ".includes tells undefined from null (SameValueZero)": {
-        "step": "U6"
-      },
-      "a missing field adds as NaN": {
-        "step": "U6"
-      },
-      "a missing field concatenates as \"undefined\"": {
-        "step": "U6"
-      },
-      "a missing field is not === null": {
-        "step": "U6"
-      },
-      "a missing field reads as undefined": {
-        "step": "U6"
-      },
-      "an object-literal member may hold undefined": {
-        "step": "U6"
-      },
-      "out-of-range index reads as undefined": {
-        "step": "U6"
-      },
-      "the unbound undefined identifier is the constant": {
-        "step": "U6"
-      }
-    },
+    "php": {},
     "python": {},
     "ruby": {},
     "rust": {}

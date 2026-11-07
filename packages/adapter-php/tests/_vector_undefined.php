@@ -7,30 +7,22 @@ declare(strict_types=1);
  * encoding for vectors"): the one-key `{"$undef": true}` sentinel, shared by
  * the primitive, helper and eval vector harnesses of both PHP adapters.
  *
- * The PHP runtime has no undefined value yet (rollout step U6 adds it), so
- * for now:
- *
  * - in `args` and the evaluator `env` the sentinel decodes to
- *   bf_vector_undefined_arg(), the host nil (null) a template receives for
- *   `undefined` today;
+ *   bf_vector_undefined_arg(), the runtime's `Barefoot\Undefined`;
  * - in an `expect` it matches only a value bf_is_runtime_undefined()
- *   accepts. None exists yet, so it never matches, also inside nested arrays
- *   and objects, and every such case is listed in an expected-failure ledger
- *   or pinned as a divergence.
- *
- * U6 flips both here: bf_vector_undefined_arg() returns the runtime's
- * undefined and bf_is_runtime_undefined() recognizes it.
+ *   accepts, the runtime's `Undefined`, also inside nested arrays and
+ *   objects. A `null` expect matches PHP's `null` only.
  */
 
 function bf_vector_undefined_arg()
 {
-    return null;
+    return \Barefoot\Undefined::value();
 }
 
-/** Whether `$got` is the runtime's own undefined value (none yet: U6). */
+/** Whether `$got` is the runtime's own undefined value. */
 function bf_is_runtime_undefined($got): bool
 {
-    return false;
+    return \Barefoot\Undefined::isUndefined($got);
 }
 
 /** Whether a JSON-decoded value (assoc array or stdClass) is `{"$undef": true}`. */

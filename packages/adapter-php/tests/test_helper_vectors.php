@@ -192,7 +192,7 @@ function bfv_call(BarefootJS $bf, string $fn, array $args)
         case 'index_of': return $bf->index_of(...$args);
         case 'last_index_of': return $bf->last_index_of(...$args);
         case 'concat': return $bf->concat($args[0], $args[1]);
-        case 'slice': return $bf->slice($args[0], $args[1], $args[2] ?? null);
+        case 'slice': return $bf->slice(...$args);
         case 'reverse': return $bf->reverse($args[0]);
         case 'flat': return $bf->flat(...$args);
         case 'flat_dynamic': return $bf->flat_dynamic(...$args);

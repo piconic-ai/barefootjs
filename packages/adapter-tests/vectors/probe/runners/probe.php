@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 // Probe runner (PHP evaluator). Reads $PROBE_VECTORS. See ../README.md.
+// `Barefoot\Undefined` (JS undefined) is what a missing field or index reads as.
+require_once __DIR__ . '/../../../../adapter-php/src/Undefined.php';
 require_once __DIR__ . '/../../../../adapter-php/src/Evaluator.php';
 use Barefoot\Evaluator;
 

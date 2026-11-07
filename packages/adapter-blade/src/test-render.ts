@@ -38,7 +38,7 @@
  *     caller's `props` and needs no JSON round-trip.
  */
 
-import { extractSsrDefaults, deriveStashFromDefaults, importsSearchParams } from '@barefootjs/jsx'
+import { extractSsrDefaults, importsSearchParams } from '@barefootjs/jsx'
 import { compileFixtureJSX } from '@barefootjs/adapter-tests/harness-program'
 import type { ComponentIR, SsrDefault } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
@@ -276,13 +276,18 @@ export async function renderBladeComponent(options: RenderOptions): Promise<stri
     // assignments for values JSON can't carry (non-finite numbers, the
     // `searchParams` object binding).
     const { data: propsData, literalAssignments, userProps } = buildBladeProps(props, ir)
-    await Bun.write(resolve(tempDir, 'props.json'), JSON.stringify(propsData))
+    await Bun.write(resolve(tempDir, 'props.json'), toPhpJson(propsData))
     // Separate from `props.json`: the caller-facing subset only (no
     // scope_id / signal / memo bookkeeping) — what `$bf->_props(...)` below
     // feeds `props_attr`'s bf-p payload, matching what a production
     // Blade/Laravel route handler passes, not this harness's internal
     // vars array.
-    await Bun.write(resolve(tempDir, 'user_props.json'), JSON.stringify(userProps))
+    await Bun.write(resolve(tempDir, 'user_props.json'), toPhpJson(userProps))
+    // The caller's props as the root's seed reads them: every key, as given
+    // (a fixture's `undefined` is the runtime's `Undefined`, its `null`
+    // PHP's `null`). The production seed (`deriveStashFromDefaults`) runs
+    // over them and the root's ssrDefaults in the render script below.
+    await writeSeedProps(tempDir, props)
 
     // Build child-renderer registration PHP.
     const childRenderers = buildChildRenderersPhp(childTemplates)
@@ -309,7 +314,7 @@ $bf->_scope_id(${phpStr(rootScopeIdRaw)});
 // the SAME collector, exactly like scripts/preloads do in production.
 $bf->_portal_elements(new \\ArrayObject());
 
-$vars = (array) json_decode(file_get_contents('props.json'));
+${rootSeedPhp(ir)}
 // Mirrors production's \`props_attr\` contract (BarefootJS.php's \`_props\`
 // accessor; integrations/blade/index.php calls \`$bf->_props($props)\`): the
 // caller is expected to seed it before rendering the root component, so
@@ -321,7 +326,7 @@ $vars = (array) json_decode(file_get_contents('props.json'));
 // Production's bf-p carries neither scope_id nor signal state, only the
 // caller-facing props. Decoded WITHOUT assoc (same as \`$vars\`) so a
 // nested \`{}\` stays a stdClass and re-encodes as \`{}\`, not \`[]\`.
-$bf->_props(json_decode(file_get_contents('user_props.json')));
+$bf->_props(bf_read_json('user_props.json'));
 ${literalAssignments.join('\n')}
 
 ${childRenderers}
@@ -488,9 +493,9 @@ function buildChildRenderersPhp(
     lines.push(`    $child_bf = new \\Barefoot\\BarefootJS(null, ['backend' => $backend]);`)
     // JSX `key` (reserved prop) → data-key on the child scope root, for keyed
     // loop reconciliation parity with Hono.
-    lines.push(`    $data_key = $child_props['key'] ?? null;`)
+    lines.push(`    $data_key = array_key_exists('key', $child_props) ? $child_props['key'] : null;`)
     lines.push(`    unset($child_props['key']);`)
-    lines.push(`    if ($data_key !== null) { $child_bf->_data_key($data_key); }`)
+    lines.push(`    if (!\\Barefoot\\Undefined::isNullish($data_key)) { $child_bf->_data_key($data_key); }`)
     // A loop child (no slot) gets a fresh `<ComponentName>_<rand>` id per
     // iteration — the PascalCase name is what `normalizeHTML` canonicalises
     // to `<ComponentName>_*`; a slotted child derives from the parent scope.
@@ -566,22 +571,12 @@ function buildBladeProps(
   const explicitScope = typeof props?.__instanceId === 'string' ? props.__instanceId : 'test'
   setEntry('scope_id', explicitScope)
 
-  // Prop params with defaults (before signals, so signals can reference them).
-  // Seeded through the shared `deriveStashFromDefaults` (the TS twin of the
-  // production `\Barefoot\BarefootJS::deriveStashFromDefaults` this harness
-  // ALSO calls at render time for child components) so an aliased
-  // destructured prop's CALLER-facing key (`propName`, e.g. `n` for
-  // `{ n: count }`) is honoured, not just the local template var name
-  // (#2524 SSR half). `props` is keyed by the caller-facing name, exactly
-  // what `propName` resolves against.
-  const rootSsrDefaults = extractSsrDefaults(ir.metadata) ?? {}
-  const derivedProps = deriveStashFromDefaults(rootSsrDefaults, props ?? {})
-  for (const param of ir.metadata.propsParams) {
-    if (param.isRest) continue
-    // No default + no caller value: pass `null` so Blade's var lookup for
-    // an optional prop doesn't fault before its falsy branch elides.
-    setEntry(param.name, derivedProps[param.name] ?? null)
-  }
+  // Every declared prop, signal and memo is seeded by the production
+  // `\Barefoot\BarefootJS::deriveStashFromDefaults` over the caller's props,
+  // in the render script (`rootSeedPhp`): an omitted prop is left out of
+  // them, never null-filled, so the seed decides (spec/js-undefined-value.md,
+  // "Shared: the seed and the default") — its default when it has one,
+  // `Undefined` otherwise; an explicit `null` stays `null`.
 
   // Route undeclared props into the rest bag (`bf.spread_attrs($<rest>)`).
   const restPropsName = ir.metadata.restPropsName
@@ -605,8 +600,8 @@ function buildBladeProps(
   }
 
   // User props. Skip a key that's already a declared param's LOCAL template
-  // var name — `derivedProps` above already resolved that var correctly
-  // (through `propName`, for an aliased prop); re-`setEntry`-ing the raw
+  // var name — the seed resolves that var (through `propName`, for an
+  // aliased prop); re-`setEntry`-ing the raw
   // `props[key]` here would silently clobber it with an UNRELATED value
   // whenever a caller happens to also pass a same-spelled-as-local-name prop
   // that isn't this param's actual `propName` (#2524 — surfaced by the
@@ -618,58 +613,14 @@ function buildBladeProps(
       if (key.startsWith('__')) continue
       if (routedKeys.has(key)) continue
       if (localParamNames.has(key)) continue
-      if (
-        typeof value === 'string' ||
-        typeof value === 'number' ||
-        typeof value === 'boolean' ||
-        Array.isArray(value) ||
-        (value && typeof value === 'object')
-      ) {
-        setEntry(key, value)
-      }
+      // `null` and `undefined` too: a present `undefined` prop is the
+      // runtime's `Undefined` (`toPhpJson`), a `null` one PHP's `null`.
+      if (typeof value !== 'function') setEntry(key, value)
     }
   }
 
-  // No initializer re-evaluation against raw props — production's
-  // before_render seeds only from `deriveStashFromDefaults` (#2696).
-  for (const signal of ir.metadata.signals) {
-    // Env signals (#2057) are bound below via `SearchParams('')`, not from a
-    // static initial value.
-    if (signal.envReader) continue
-    if (Object.prototype.hasOwnProperty.call(derivedProps, signal.getter)) {
-      setEntry(signal.getter, derivedProps[signal.getter])
-    }
-  }
-
-  // No `?? 0` for entries the manifest lacks — production seeds nothing there (#2696).
-  for (const memo of ir.metadata.memos) {
-    if (Object.prototype.hasOwnProperty.call(derivedProps, memo.name)) {
-      setEntry(memo.name, derivedProps[memo.name])
-    }
-  }
-
-  // #2813: `extractSsrDefaults` can seed an entry under a name that is
-  // none of `propsParams` / `signals` / `memos` above — a bare local-const
-  // alias of a signal/memo getter (`const items__alias = items`,
-  // `ssr-defaults.ts`) seeds `items__alias` alongside `items`. Production
-  // hands the whole manifest-derived stash straight through
-  // (`deriveStashFromDefaults` IS the production seeding mechanism here,
-  // not a harness stand-in), so any leftover `derivedProps` key must be
-  // set too, or this harness would silently omit what production actually
-  // provides, mismeasuring this conformance case. Checked against the
-  // NAMES each loop above seeds (not `data`'s own keys) — a non-finite
-  // number's `setEntry` writes `literalAssignments`, never `data`, so a
-  // `data`-keyed check would re-`setEntry` it here too.
-  const seededNames = new Set<string>([
-    ...ir.metadata.propsParams.filter(p => !p.isRest).map(p => p.name),
-    ...(restPropsName ? [restPropsName] : []),
-    ...ir.metadata.signals.filter(s => !s.envReader).map(s => s.getter),
-    ...ir.metadata.memos.map(m => m.name),
-  ])
-  for (const [name, value] of Object.entries(derivedProps)) {
-    if (seededNames.has(name)) continue
-    setEntry(name, value)
-  }
+  // Signals, memos and the #2813 alias entries the manifest seeds under
+  // other names all come from the seed (`rootSeedPhp`).
 
   // (#1922) Request-scoped `searchParams()`: bind `searchParams` to an
   // empty-query reader (so the render script needn't build one from a real
@@ -701,6 +652,84 @@ function buildBladeProps(
   return { data, literalAssignments, userProps }
 }
 
+
+/** `seed_props.json`, the caller's props {@link rootSeedPhp}'s seed reads. */
+async function writeSeedProps(tempDir: string, props: Record<string, unknown> | undefined): Promise<void> {
+  await Bun.write(resolve(tempDir, 'seed_props.json'), toPhpJson(props ?? {}))
+}
+
+/**
+ * JSON for the render script, with the values JSON cannot carry written as
+ * `{"__bf_special": "<kind>"}`, which the script's `bf_decode` turns back
+ * into PHP values: a fixture's `undefined` (a present key holding it, or an
+ * array element) into the runtime's `\Barefoot\Undefined`, `NaN` /
+ * `Infinity` / `-Infinity` into PHP's `NAN` / `INF` / `-INF`. Plain
+ * `JSON.stringify` would drop the `undefined` key, which is an absent prop,
+ * not a present `undefined` one, and write a non-finite number as `null`.
+ * The `bf-p` payload is unchanged: the runtime's JSON encoder writes a
+ * non-finite number as `null` and drops an `undefined` member, as
+ * `JSON.stringify` does.
+ */
+function toPhpJson(value: unknown): string {
+  return JSON.stringify(value, (_key, v) => {
+    if (v === undefined) return { __bf_special: 'undefined' }
+    if (typeof v === 'number' && !Number.isFinite(v)) return { __bf_special: String(v) }
+    return v
+  })
+}
+
+/**
+ * The render script's root vars: `props.json` merged with the production
+ * seed (`\Barefoot\BarefootJS::deriveStashFromDefaults`) over the caller's
+ * props (`seed_props.json`) and the root's ssrDefaults, VERBATIM. The rest
+ * bag is routed into `props.json` already, so the seed's rest entry is
+ * dropped. Keys stay unmangled on both sides: `render_named` mangles the
+ * merged vars once.
+ */
+function rootSeedPhp(ir: ComponentIR): string {
+  const rest = ir.metadata.restPropsName
+  return [
+    `// A fixture's \`undefined\` crosses the JSON boundary as`,
+    `// \`{"__bf_special": "undefined"}\` and is the runtime's \`Undefined\` here; a`,
+    `// fixture's \`null\` is \`null\`, and \`NaN\` / \`Infinity\` / \`-Infinity\` cross`,
+    `// as \`{"__bf_special": "NaN"}\` (...) and are PHP's \`NAN\` / \`INF\` / \`-INF\`.`,
+    `// (Harness-only: the runtime never walks decoded data.) Decoded WITHOUT`,
+    `// assoc, so a nested \`{}\` stays a stdClass.`,
+    `function bf_decode($v)`,
+    `{`,
+    `    if ($v instanceof \\stdClass) {`,
+    `        $members = get_object_vars($v);`,
+    `        $special = count($members) === 1 ? ($members['__bf_special'] ?? null) : null;`,
+    `        if ($special === 'undefined') {`,
+    `            return \\Barefoot\\Undefined::value();`,
+    `        }`,
+    `        if ($special === 'NaN' || $special === 'Infinity' || $special === '-Infinity') {`,
+    `            return $special === 'NaN' ? NAN : ($special === 'Infinity' ? INF : -INF);`,
+    `        }`,
+    `        $out = new \\stdClass();`,
+    `        foreach ($members as $k => $x) {`,
+    `            $out->{$k} = bf_decode($x);`,
+    `        }`,
+    `        return $out;`,
+    `    }`,
+    `    return is_array($v) ? array_map('bf_decode', $v) : $v;`,
+    `}`,
+    ``,
+    `function bf_read_json(string $name)`,
+    `{`,
+    `    return bf_decode(json_decode(file_get_contents($name)));`,
+    `}`,
+    ``,
+    `$vars = (array) bf_read_json('props.json');`,
+    `// Every declared prop, signal and memo is seeded by the production`,
+    `// \`deriveStashFromDefaults\` over the caller's props: an omitted prop is`,
+    `// left out of them, never null-filled, so the seed decides — its default`,
+    `// when it has one, \`Undefined\` otherwise; an explicit \`null\` stays null.`,
+    `$root_seed = \\Barefoot\\BarefootJS::deriveStashFromDefaults(${ssrDefaultsToPhp(extractSsrDefaults(ir.metadata) ?? {})}, (array) bf_read_json('seed_props.json'));`,
+    ...(rest ? [`unset($root_seed[${phpStr(rest)}]);`] : []),
+    `$vars = array_merge($vars, $root_seed);`,
+  ].join('\n')
+}
 
 /**
  * Convert PascalCase to snake_case for template naming (matches the

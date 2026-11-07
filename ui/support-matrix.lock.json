@@ -169,25 +169,7 @@
               ]
             },
             {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -1427,25 +1409,7 @@
               ]
             },
             {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -1718,30 +1682,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -2413,30 +2353,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -2652,12 +2568,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -3509,12 +3419,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -3649,12 +3553,6 @@
         "blade": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -3727,36 +3625,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-string-relational",
-              "limitations": [
-                "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
               "fixture": "plus-beyond-safe-integer",
               "limitations": [
                 "plus-beyond-safe-integer"
@@ -3766,12 +3634,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -3826,54 +3688,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -4949,12 +4763,6 @@
         "twig": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -5027,36 +4835,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-string-relational",
-              "limitations": [
-                "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
               "fixture": "plus-beyond-safe-integer",
               "limitations": [
                 "plus-beyond-safe-integer"
@@ -5066,12 +4844,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -5126,54 +4898,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -5405,12 +5129,6 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
-              ]
-            },
-            {
-              "fixture": "destructure-default-null-hydrate",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -5654,49 +5372,7 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-row-field-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -7764,12 +7440,6 @@
               ]
             },
             {
-              "fixture": "destructure-default-null-hydrate",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -8010,49 +7680,7 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-row-field-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -8425,12 +8053,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -8681,12 +8303,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -8812,12 +8428,6 @@
         "blade": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -8893,12 +8503,6 @@
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
-              ]
-            },
-            {
-              "fixture": "destructure-default-null-hydrate",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -9088,36 +8692,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-string-relational",
-              "limitations": [
-                "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -9133,12 +8707,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -9256,85 +8824,7 @@
               ]
             },
             {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-destructure-default",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-row-field-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -12266,12 +11756,6 @@
         "twig": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -12347,12 +11831,6 @@
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
-              ]
-            },
-            {
-              "fixture": "destructure-default-null-hydrate",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -12542,36 +12020,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-string-relational",
-              "limitations": [
-                "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -12587,12 +12035,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -12710,85 +12152,7 @@
               ]
             },
             {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-destructure-default",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-row-field-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -13431,12 +12795,6 @@
         "blade": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -13476,12 +12834,6 @@
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
-              ]
-            },
-            {
-              "fixture": "destructure-default-null-hydrate",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -13617,36 +12969,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-string-relational",
-              "limitations": [
-                "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -13656,12 +12978,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -13755,73 +13071,7 @@
               ]
             },
             {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-destructure-default",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -16015,12 +15265,6 @@
         "twig": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -16060,12 +15304,6 @@
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
-              ]
-            },
-            {
-              "fixture": "destructure-default-null-hydrate",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -16201,36 +15439,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-string-relational",
-              "limitations": [
-                "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -16240,12 +15448,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -16339,73 +15541,7 @@
               ]
             },
             {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-destructure-default",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -16774,12 +15910,6 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -17267,12 +16397,6 @@
               ]
             },
             {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
-              ]
-            },
-            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -17406,12 +16530,6 @@
         },
         "blade": {
           "gaps": [
-            {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
             {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
@@ -17605,30 +16723,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-string-relational",
-              "limitations": [
-                "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
               "fixture": "plus-beyond-safe-integer",
               "limitations": [
                 "plus-beyond-safe-integer"
@@ -17638,12 +16732,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -17719,79 +16807,7 @@
               ]
             },
             {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-row-field-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -19943,12 +18959,6 @@
         "twig": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -20141,30 +19151,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-string-relational",
-              "limitations": [
-                "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
               "fixture": "plus-beyond-safe-integer",
               "limitations": [
                 "plus-beyond-safe-integer"
@@ -20174,12 +19160,6 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -20255,79 +19235,7 @@
               ]
             },
             {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-row-field-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -21385,12 +20293,6 @@
         "blade": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -21424,24 +20326,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-row-field-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -21755,12 +20639,6 @@
         "twig": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -21794,24 +20672,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-row-field-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -21881,27 +20741,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -22035,27 +20877,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -23037,22 +21861,7 @@
     "array-method:includes": {
       "cells": {
         "hono": {},
-        "blade": {
-          "gaps": [
-            {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "blade": {},
         "erb": {},
         "go-template": {
           "gaps": [
@@ -23089,22 +21898,7 @@
             }
           ]
         },
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "twig": {},
         "xslate": {}
       },
       "source": {
@@ -23122,22 +21916,7 @@
     "array-method:indexOf": {
       "cells": {
         "hono": {},
-        "blade": {
-          "gaps": [
-            {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "blade": {},
         "erb": {},
         "go-template": {
           "gaps": [
@@ -23174,22 +21953,7 @@
             }
           ]
         },
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "twig": {},
         "xslate": {}
       },
       "source": {
@@ -23261,12 +22025,6 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -23680,12 +22438,6 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -23807,16 +22559,7 @@
     "array-method:padStart": {
       "cells": {
         "hono": {},
-        "blade": {
-          "gaps": [
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "blade": {},
         "erb": {},
         "go-template": {
           "gaps": [
@@ -23841,16 +22584,7 @@
             }
           ]
         },
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "twig": {},
         "xslate": {}
       },
       "source": {
@@ -23975,18 +22709,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -24093,18 +22815,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -24171,12 +22881,6 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -24289,12 +22993,6 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -24641,16 +23339,7 @@
     "binary:!=": {
       "cells": {
         "hono": {},
-        "blade": {
-          "gaps": [
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "blade": {},
         "erb": {},
         "go-template": {
           "gaps": [
@@ -24675,16 +23364,7 @@
             }
           ]
         },
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "twig": {},
         "xslate": {}
       },
       "source": {
@@ -24719,12 +23399,6 @@
               "fixture": "strict-equality-same-reference",
               "limitations": [
                 "array-self-equality"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -24934,12 +23608,6 @@
               "limitations": [
                 "array-self-equality"
               ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -25006,34 +23674,7 @@
     "binary:*": {
       "cells": {
         "hono": {},
-        "blade": {
-          "gaps": [
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "blade": {},
         "erb": {},
         "go-template": {
           "gaps": [
@@ -25094,34 +23735,7 @@
             }
           ]
         },
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "twig": {},
         "xslate": {}
       },
       "source": {
@@ -25142,39 +23756,15 @@
         "blade": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
               "fixture": "plus-beyond-safe-integer",
               "limitations": [
                 "plus-beyond-safe-integer"
-              ]
-            },
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -25187,30 +23777,6 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -25494,39 +24060,15 @@
         "twig": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
               "fixture": "plus-beyond-safe-integer",
               "limitations": [
                 "plus-beyond-safe-integer"
-              ]
-            },
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -25539,30 +24081,6 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -25611,16 +24129,7 @@
     "binary:-": {
       "cells": {
         "hono": {},
-        "blade": {
-          "gaps": [
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "blade": {},
         "erb": {},
         "go-template": {
           "gaps": [
@@ -25645,16 +24154,7 @@
             }
           ]
         },
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "undef-null-sort",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "twig": {},
         "xslate": {}
       },
       "source": {
@@ -25706,28 +24206,7 @@
     "binary:<": {
       "cells": {
         "hono": {},
-        "blade": {
-          "gaps": [
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            }
-          ]
-        },
+        "blade": {},
         "erb": {},
         "go-template": {
           "gaps": [
@@ -25776,28 +24255,7 @@
             }
           ]
         },
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            }
-          ]
-        },
+        "twig": {},
         "xslate": {}
       },
       "source": {
@@ -25815,22 +24273,7 @@
     "binary:<=": {
       "cells": {
         "hono": {},
-        "blade": {
-          "gaps": [
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            }
-          ]
-        },
+        "blade": {},
         "erb": {},
         "go-template": {
           "gaps": [
@@ -25867,22 +24310,7 @@
             }
           ]
         },
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            }
-          ]
-        },
+        "twig": {},
         "xslate": {}
       },
       "source": {
@@ -25900,16 +24328,7 @@
     "binary:==": {
       "cells": {
         "hono": {},
-        "blade": {
-          "gaps": [
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "blade": {},
         "erb": {},
         "go-template": {
           "gaps": [
@@ -25934,16 +24353,7 @@
             }
           ]
         },
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "twig": {},
         "xslate": {}
       },
       "source": {
@@ -26045,18 +24455,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -26692,18 +25090,6 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -27031,22 +25417,7 @@
     "binary:>=": {
       "cells": {
         "hono": {},
-        "blade": {
-          "gaps": [
-            {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-string-relational",
-              "limitations": [
-                "omitted-optional-nullable-scalar-relational"
-              ]
-            }
-          ]
-        },
+        "blade": {},
         "erb": {},
         "go-template": {
           "gaps": [
@@ -27083,22 +25454,7 @@
             }
           ]
         },
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-string-relational",
-              "limitations": [
-                "omitted-optional-nullable-scalar-relational"
-              ]
-            }
-          ]
-        },
+        "twig": {},
         "xslate": {}
       },
       "source": {
@@ -27561,12 +25917,6 @@
               ]
             },
             {
-              "fixture": "destructure-default-null-hydrate",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -27597,73 +25947,7 @@
               ]
             },
             {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-destructure-default",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -28117,12 +26401,6 @@
               ]
             },
             {
-              "fixture": "destructure-default-null-hydrate",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -28153,73 +26431,7 @@
               ]
             },
             {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-destructure-default",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
               "limitations": [
                 "host-nil-collapses-undefined-and-null"
               ]
@@ -28389,30 +26601,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -28464,36 +26652,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
               ]
             }
           ]
@@ -29617,30 +27775,6 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-arithmetic",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-arithmetic-destructured",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -29692,36 +27826,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
               ]
             }
           ]
@@ -29914,12 +28018,6 @@
         "blade": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -29941,12 +28039,6 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
-              ]
-            },
-            {
-              "fixture": "destructure-default-null-hydrate",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -30046,33 +28138,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-string-relational",
-              "limitations": [
-                "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -30133,66 +28201,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-destructure-default",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -31742,12 +29750,6 @@
         "twig": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -31769,12 +29771,6 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
-              ]
-            },
-            {
-              "fixture": "destructure-default-null-hydrate",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -31874,33 +29870,9 @@
               ]
             },
             {
-              "fixture": "omitted-optional-nullable-number-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "omitted-optional-nullable-string-relational",
-              "limitations": [
-                "omitted-optional-nullable-scalar-relational"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
               ]
             },
             {
@@ -31961,66 +29933,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "undef-null-array-search",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-destructure-default",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-optional-method-args",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-relational",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-strict-equality",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-coercion",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
-              "fixture": "undef-null-string-includes",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -33000,16 +30912,7 @@
     "logical:||": {
       "cells": {
         "hono": {},
-        "blade": {
-          "gaps": [
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
-              ]
-            }
-          ]
-        },
+        "blade": {},
         "erb": {},
         "go-template": {
           "gaps": [
@@ -33043,16 +30946,7 @@
             }
           ]
         },
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "props-object-non-props-name-operand-typing",
-              "limitations": [
-                "props-object-non-props-name-operand-typing"
-              ]
-            }
-          ]
-        },
+        "twig": {},
         "xslate": {
           "gaps": [
             {
@@ -33154,12 +31048,6 @@
         "blade": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
@@ -33254,12 +31142,6 @@
         "twig": {
           "gaps": [
             {
-              "fixture": "awaits-undefined-plus-shapes",
-              "limitations": [
-                "awaits-undefined-value"
-              ]
-            },
-            {
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
@@ -33293,16 +31175,7 @@
     "member:optional": {
       "cells": {
         "hono": {},
-        "blade": {
-          "gaps": [
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "blade": {},
         "erb": {},
         "go-template": {
           "gaps": [
@@ -33333,16 +31206,7 @@
             }
           ]
         },
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "undef-null-optional-chain-result",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "twig": {},
         "xslate": {}
       },
       "source": {
@@ -33700,28 +31564,7 @@
     "unary:+": {
       "cells": {
         "hono": {},
-        "blade": {
-          "gaps": [
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "blade": {},
         "erb": {},
         "go-template": {
           "gaps": [
@@ -33770,28 +31613,7 @@
             }
           ]
         },
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "omitted-optional-nullable-number-unary-plus",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "twig": {},
         "xslate": {}
       },
       "source": {
@@ -33809,22 +31631,7 @@
     "unary:-": {
       "cells": {
         "hono": {},
-        "blade": {
-          "gaps": [
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "blade": {},
         "erb": {},
         "go-template": {
           "gaps": [
@@ -33861,22 +31668,7 @@
             }
           ]
         },
-        "twig": {
-          "gaps": [
-            {
-              "fixture": "undef-null-number-coercion",
-              "limitations": [
-                "omitted-optional-nullable-number-arithmetic"
-              ]
-            },
-            {
-              "fixture": "undef-null-number-coercion-typed",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            }
-          ]
-        },
+        "twig": {},
         "xslate": {}
       },
       "source": {

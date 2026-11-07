@@ -249,13 +249,11 @@ export function bladeIndexAccess(objectExpr: string, indexExpr: string): string 
  * nested rest binding (`segments` there is the prefix up to, not including,
  * the rest token).
  *
- * UNLIKE `twigLoopBindingAccessor` (which branches on bracket-subscript vs.
- * dot-access vs. the `attribute()` builtin depending on whether a `field`
- * segment's key is identifier-safe), every segment here — `index` OR `field`,
- * ident-safe or not — routes through the SAME uniform `data_get` accessor
- * (see the file header, divergence 3): there is no raw-PHP polymorphic
- * operator to special-case around in the first place, so there is nothing to
- * branch on. This is strictly SIMPLER than the Twig port.
+ * Every segment — `index` OR `field`, ident-safe or not — routes through the
+ * runtime's `$bf->index` (the same single-level own-key read
+ * `twigLoopBindingAccessor` uses): JS reads a missing field or an
+ * out-of-range index as `undefined`, `data_get` as `null` (JS `null`), and
+ * `data_get` reads a dotted key as a path (#3848 U6, #3744).
  */
 export function bladeLoopBindingAccessor(
   base: string,
@@ -263,9 +261,7 @@ export function bladeLoopBindingAccessor(
 ): string {
   let acc = base
   for (const seg of segments) {
-    acc = seg.kind === 'index'
-      ? `data_get(${acc}, ${seg.index})`
-      : bladeMemberAccess(acc, seg.key)
+    acc = bladeIndexAccess(acc, seg.kind === 'index' ? String(seg.index) : bladeStringLiteral(seg.key))
   }
   return acc
 }

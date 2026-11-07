@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 use Barefoot\BarefootJS;
+use Barefoot\Undefined;
 use Barefoot\BladeBackend;
 
 /**
@@ -76,7 +77,7 @@ final class ExampleApp
      * The build manifest -- a plain build artifact (dist/templates/manifest.json),
      * not adapter internals -- lists each component's `ssrDefaults`: the set of
      * signal/memo names an optional-prop-derived initial value needs BOUND (to
-     * the real prop or to `null`) in the render context. This integration's
+     * the real prop or to its default / `undefined`) in the render context. This integration's
      * shared components aren't manifest-registered under `ui/*` (see
      * BarefootHelper::renderComponent's manual child wiring, mirroring
      * integrations/blade), so root-level renders derive the stash themselves
@@ -137,32 +138,20 @@ final class ExampleApp
     }
 
     /**
-     * Port of BarefootJS::deriveStashFromDefaults for root-level renders (see
-     * manifest()'s docstring for why root renders need their own copy instead
-     * of getting it via `register_components_from_manifest`). Same
-     * always-BIND-the-prop-or-null contract integrations/blade documents on
-     * its stash_from_ssr_defaults -- PHP's `??` coalesces silently for an
-     * entirely undefined variable, but the seeded arithmetic must still see
-     * the SAME value as every other adapter.
+     * A component's template vars seeded from its manifest `ssrDefaults`
+     * through the runtime's own `BarefootJS::deriveStashFromDefaults`, for
+     * root-level and flat-child renders (see manifest()'s docstring for why
+     * those don't go through `register_components_from_manifest`). A prop the
+     * caller left out, or passed as JS `undefined` (`Barefoot\Undefined`),
+     * takes its default, or `undefined` when it has none; a present prop
+     * keeps its value, `null` (JS `null`) included (spec/js-undefined-value.md,
+     * decision 6). Every declared prop stays BOUND, which the seeded
+     * arithmetic needs to see the SAME value as every other adapter.
      */
     public static function stashFromSsrDefaults(string $component, array $props): array
     {
         $entry = self::manifest()[$component] ?? [];
-        $defaults = $entry['ssrDefaults'] ?? [];
-        $extra = [];
-        foreach ($defaults as $name => $d) {
-            if (!is_array($d)) {
-                $extra[$name] = $d;
-                continue;
-            }
-            $propName = $d['propName'] ?? null;
-            if ($propName !== null && array_key_exists($propName, $props) && $props[$propName] !== null) {
-                $extra[$name] = $props[$propName];
-            } else {
-                $extra[$name] = $d['value'] ?? null;
-            }
-        }
-        return $extra;
+        return BarefootJS::deriveStashFromDefaults($entry['ssrDefaults'] ?? [], $props);
     }
 
     /**
@@ -235,9 +224,9 @@ final class ExampleApp
             $child = new BarefootJS(null, ['backend' => $backend]);
             $slotId = $props['_bf_slot'] ?? null;
             unset($props['_bf_slot']);
-            $dataKey = $props['key'] ?? null;
+            $dataKey = array_key_exists('key', $props) ? $props['key'] : null;
             unset($props['key']);
-            if ($dataKey !== null) {
+            if (!Undefined::isNullish($dataKey)) {
                 $child->_data_key($dataKey);
             }
             $child->_scope_id($slotId !== null ? "{$hostScope}_{$slotId}" : $component . '_' . self::randSuffix());
@@ -248,8 +237,11 @@ final class ExampleApp
             }
             $child->_child_renderers($parentBf->_child_renderers());
             self::shareScriptCollector($parentBf, $child);
+            // The caller's props win over `$extraSeed`; the seed then resolves
+            // each declared prop (an absent or `undefined` one takes its default).
+            $props = array_merge($extraSeed, $props);
             $extra = $hasDefaults ? self::stashFromSsrDefaults($component, $props) : [];
-            return $backend->render_named($component, $child, array_merge($extra, $extraSeed, $props));
+            return $backend->render_named($component, $child, array_merge($props, $extra));
         };
 
         $parentBf->register_child_renderer($slot, $renderer);
@@ -286,7 +278,9 @@ final class ExampleApp
             self::registerBlogChild($bf, $slot, $templateName, $seed);
         }
         $seed = self::stashFromSsrDefaults($component, $props);
-        return $backend->render_named($component, $bf, array_merge($seed, $props, $extra));
+        // The seed resolves each declared prop over the raw `$props` (an absent
+        // or `undefined` one takes its default); SSR-only `$extra` wins.
+        return $backend->render_named($component, $bf, array_merge($props, $seed, $extra));
     }
 
     /** Assemble the region-shell page around already-rendered content HTML.

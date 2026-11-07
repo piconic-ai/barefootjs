@@ -5,7 +5,7 @@
   "files": {
     "packages/adapter-blade/src/test-render.ts": {
       "buildBladeProps": [
-        57
+        37
       ],
       "renderBladeComponent": [
         48
@@ -215,7 +215,7 @@
     },
     "packages/adapter-twig/src/test-render.ts": {
       "buildTwigProps": [
-        57
+        37
       ],
       "renderTwigComponent": [
         48

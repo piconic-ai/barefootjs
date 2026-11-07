@@ -53,6 +53,7 @@ if (is_file($assembledAutoload)) {
 }
 
 use Barefoot\BarefootJS;
+use Barefoot\Undefined;
 use Barefoot\TwigBackend;
 
 // URL prefix the app is mounted under. Defaults to /integrations/php so the
@@ -112,16 +113,17 @@ $BLOG_DATA = is_file($blogDataPath)
     : ['posts' => [], 'listItems' => [], 'allTags' => []];
 
 /**
- * Port of BarefootJS::deriveStashFromDefaults for root-level renders (see the
- * $MANIFEST comment above for why root renders need their own copy instead
- * of getting it via `register_components_from_manifest`).
+ * A component's template vars seeded from its manifest `ssrDefaults` through
+ * the runtime's own `BarefootJS::deriveStashFromDefaults`, for root-level and
+ * flat-child renders (see the $MANIFEST comment above for why those don't go
+ * through `register_components_from_manifest`).
  *
  * Why this matters: a signal whose initial value derives from an optional
  * prop (`const [count] = createSignal(props.initial ?? 0)`) is seeded
  * in-template as `{% set count = (initial ?? 0) %}` (see
  * packages/adapter-twig's memo/seed lowering) -- that lowering expects
  * `initial` to always be BOUND in the render context (to the real value or
- * to `null`), never omitted outright, since Twig's `strict_variables: false`
+ * to `undefined` / `null`), never omitted outright, since Twig's `strict_variables: false`
  * makes an undefined variable coalesce silently via `??` too, BUT an
  * entirely absent key still needs the SAME value here as every other adapter
  * so the seeded arithmetic never diverges. Without this, `/counter` would
@@ -132,21 +134,11 @@ function stash_from_ssr_defaults(string $component, array $props): array
 {
     global $MANIFEST;
     $entry = $MANIFEST[$component] ?? [];
-    $defaults = $entry['ssrDefaults'] ?? [];
-    $extra = [];
-    foreach ($defaults as $name => $d) {
-        if (!is_array($d)) {
-            $extra[$name] = $d;
-            continue;
-        }
-        $propName = $d['propName'] ?? null;
-        if ($propName !== null && array_key_exists($propName, $props) && $props[$propName] !== null) {
-            $extra[$name] = $props[$propName];
-        } else {
-            $extra[$name] = $d['value'] ?? null;
-        }
-    }
-    return $extra;
+    // The runtime's own seed (spec/js-undefined-value.md, decision 6): a prop
+    // the caller left out, or passed as JS `undefined`
+    // (`Barefoot\Undefined`), takes its default, or `undefined` when it has
+    // none; a present prop keeps its value, `null` (JS `null`) included.
+    return BarefootJS::deriveStashFromDefaults($entry['ssrDefaults'] ?? [], $props);
 }
 
 // ---------------------------------------------------------------------------
@@ -557,9 +549,9 @@ function register_blog_child(BarefootJS $parentBf, string $slot, string $compone
         $child = new BarefootJS(null, ['backend' => $backend]);
         $slotId = $props['_bf_slot'] ?? null;
         unset($props['_bf_slot']);
-        $dataKey = $props['key'] ?? null;
+        $dataKey = array_key_exists('key', $props) ? $props['key'] : null;
         unset($props['key']);
-        if ($dataKey !== null) {
+        if (!Undefined::isNullish($dataKey)) {
             $child->_data_key($dataKey);
         }
         $child->_scope_id($slotId !== null ? "{$hostScope}_{$slotId}" : $component . '_' . rand_suffix());
@@ -570,8 +562,11 @@ function register_blog_child(BarefootJS $parentBf, string $slot, string $compone
         }
         $child->_child_renderers($parentBf->_child_renderers());
         share_script_collector($parentBf, $child);
+        // The caller's props win over `$extraSeed`; the seed then resolves
+        // each declared prop (an absent or `undefined` one takes its default).
+        $props = array_merge($extraSeed, $props);
         $extra = $hasDefaults ? stash_from_ssr_defaults($component, $props) : [];
-        return $backend->render_named($component, $child, array_merge($extra, $extraSeed, $props));
+        return $backend->render_named($component, $child, array_merge($props, $extra));
     };
 
     $parentBf->register_child_renderer($slot, $renderer);
@@ -608,7 +603,9 @@ function blog_island(BarefootJS $root, string $component, array $props = [], arr
         register_blog_child($bf, $slot, $templateName, $seed);
     }
     $seed = stash_from_ssr_defaults($component, $props);
-    return $backend->render_named($component, $bf, array_merge($seed, $props, $extra));
+    // The seed resolves each declared prop over the raw `$props` (an absent
+    // or `undefined` one takes its default); SSR-only `$extra` wins.
+    return $backend->render_named($component, $bf, array_merge($props, $seed, $extra));
 }
 
 /** Assemble the region-shell page around already-rendered content HTML.

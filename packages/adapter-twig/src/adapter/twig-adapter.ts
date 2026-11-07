@@ -20,7 +20,7 @@
  *   Jinja `{'k': v}` dict literal          → Twig `{'k': v}` hash literal (ALWAYS quoted key — see `lib/twig-naming.ts`)
  *   Jinja `~` concat                       → Twig `~` concat (same; every non-literal operand still routes `bf.string(...)`)
  *   Jinja `(a if t else b)` ternary        → Twig `(t ? a : b)` (Twig has no `X if T else Y` form — see `expr/emitters.ts`'s file header, divergence 1)
- *   Jinja `(l if (l is defined and l is not none) else r)` (`??`) → Twig `(l ?? r)` — **Twig-native**, covers undefined AND null in one operator (see divergence 3 below; no `is defined`/`is not none` dance)
+ *   Jinja `(l if (l is defined and l is not none) else r)` (`??`) → Twig `((l)|bf_js_nullish((__bf_lazy) => r))` — the runtime's nullish test, never Twig's own `??` (see divergence 3 below)
  *   Jinja `==`/`!=` (for `===`/`!==`)      → Twig `bf.eq(l, r)` / `bf.neq(l, r)` — **NEVER** Twig's own `==`/`!=` (see divergence 4 below)
  *   Jinja macro children capture          → Twig `{% set NAME %}…{% endset %}` set-block (same construct; see "Children capture" below)
  *
@@ -33,10 +33,10 @@
  * `packages/adapter-twig/php/`); this adapter's own HTML-attribute escaping
  * for STATIC text it inlines directly (`escapeAttrText`, e.g. `style="..."`
  * literal segments) still emits the numeric forms for parity with the other
- * adapters' static-text escaping. Unlike Jinja, Twig needs no
- * `undefined=ChainableUndefined` equivalent — `strict_variables: false`
- * alone makes an unset template var resolve to `null` for every purpose this
- * adapter cares about (member/index access, `is defined`, `??`). Templates
+ * adapters' static-text escaping. JS `undefined` is the runtime's
+ * `Barefoot\Undefined` (`bf.undefined()`, #3848 U6), which every declared
+ * prop the caller omits is seeded with; `strict_variables: false` keeps a
+ * var Twig never received from raising (it reads as `null`). Templates
  * are named `<snake_case_component>.twig` (same convention as Jinja's
  * `.jinja` files).
  *
@@ -76,19 +76,13 @@
  *      text/attribute-position value (not already boolean-routed) is routed
  *      through `bf.string(...)` before it reaches Twig's own
  *      escaping/concat machinery, not just values that "look" non-string.
- *   3. **`??` is Twig-native.** Twig's null-coalescing operator covers BOTH
- *      undefined (a template var Twig never received, under
- *      `strict_variables: false`) AND `null` in ONE operator — no
- *      `is defined and … is not none` guard is needed for the LOGICAL `??`
- *      lowering itself (`expr/emitters.ts`'s `logical`). This is strictly
- *      SIMPLER than the Jinja port, which needs the guard because Jinja's
- *      `ChainableUndefined` sentinel is a distinct object from `None` (so
- *      `is not none` alone doesn't catch it). Verified empirically against
- *      Twig 3.x. The SEPARATE `is defined and … is not null` guard still
- *      appears at ONE other call site — the nullable-optional-prop
- *      attribute-OMISSION rule in `elementAttrEmitter` below — because that
- *      rule needs to distinguish "render nothing" from "render a fallback
- *      value", which `??` alone doesn't express.
+ *   3. **Every nil test is the runtime's.** JS `undefined` is the runtime's
+ *      `Barefoot\Undefined` object (#3848 U6), which Twig's own `??`,
+ *      `is null` and `is defined` read as a value, so the LOGICAL `??`
+ *      lowering is the runtime's `bf_js_nullish` filter (`expr/emitters.ts`'s
+ *      `logical`), the nullable-optional-prop attribute-OMISSION rule in
+ *      `elementAttrEmitter` below tests `not bf.is_nullish(v)`, and the
+ *      `passed` fallback `not bf.is_undefined(v)`.
  *   4. **`===`/`!==` route through `bf.eq`/`bf.neq`, NEVER Twig's own
  *      `==`/`!=`.** This is a NEW divergence the Jinja/Kolon ports didn't
  *      have (Python/Perl's `==` already compares strings and numbers
@@ -137,10 +131,10 @@
  *      Twig hash literal silently resolves to `null` under
  *      `strict_variables: false`, never the value). The `${MAP[KEY]}`
  *      template-literal lookup part (`convertTemplateLiteralPartsToTwig`)
- *      therefore lowers to `({...}[keyExpr]) ?? ''` instead — Twig's native
- *      `??` (divergence 3) supplies the exact same "empty string when no
- *      case matches" default `.get(key, '')` gave the Jinja port, with no
- *      extra runtime surface needed.
+ *      therefore lowers to `bf.string(bf.index({...}, keyExpr))` instead —
+ *      the runtime's JS `MAP[KEY]` reads a miss as `undefined`, which
+ *      `bf.string` prints as the same "empty string when no case matches"
+ *      default `.get(key, '')` gave the Jinja port.
  */
 
 import type {
@@ -245,7 +239,7 @@ import type { TwigAdapterOptions } from './lib/types.ts'
 /** How a lowered loop destructure binding reads off the row item. */
 const DESTRUCTURE_SPELLING: DestructureSpelling = {
   accessor: twigLoopBindingAccessor,
-  slice: (parent, from) => `bf.slice(${parent}, ${from}, null)`,
+  slice: (parent, from) => `bf.slice(${parent}, ${from}, bf.undefined())`,
   omit: (parent, keys) => `bf.omit(${parent}, [${keys.map((k) => `'${escapeTwigSingleQuoted(k)}'`).join(', ')}])`,
 }
 
@@ -928,8 +922,11 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
         }
       },
       spread: (value) => `bf.omit(${this.convertExpressionToTwig(value.expr)}, [])`,
+      // The fallback (no caller keys recorded) is JS `name in props` read
+      // off the value: present unless `undefined`, so an explicit `null`
+      // counts as passed. Not `is not null`, which `UNDEF` passes.
       presentParam: (name) =>
-        `(bf.passed(${twigHashKey(name)}, ${twigIdent(name)} is not null) ? {${twigHashKey(name)}: ${twigIdent(name)}} : {})`,
+        `(bf.passed(${twigHashKey(name)}, not bf.is_undefined(${twigIdent(name)})) ? {${twigHashKey(name)}: ${twigIdent(name)}} : {})`,
     })
     const dict = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
     return `${captures.join('')}{{ bf.render_child('${tplName}'${dict}) | raw }}`
@@ -1034,7 +1031,7 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
         case 'omit-nullable': {
           // A bare read here, so it doubles as the guard test and the value.
           const v = this.convertExpressionToTwig(value.expr)
-          return `\n{% if ${v} is defined and ${v} is not null %}\n${attr(v, plan.boolStr)}\n{% endif %}\n`
+          return `\n{% if not bf.is_nullish(${v}) %}\n${attr(v, plan.boolStr)}\n{% endif %}\n`
         }
         case 'boolean-attr': {
           const v = this.convertExpressionToTwig(value.expr, value.parsed)
@@ -1057,7 +1054,7 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
         case 'omit-nil': {
           const v = this.convertExpressionToTwig(value.expr, value.parsed)
           const tmp = `bf_pu${this.presenceVarCounter++}`
-          return `\n{% set ${tmp} = ${v} %}\n{% if ${tmp} is defined and ${tmp} is not null %}\n${attr(tmp, plan.boolStr)}\n{% endif %}\n`
+          return `\n{% set ${tmp} = ${v} %}\n{% if not bf.is_nullish(${tmp}) %}\n${attr(tmp, plan.boolStr)}\n{% endif %}\n`
         }
         case 'plain':
           return attr(this.convertExpressionToTwig(value.expr, value.parsed), plan.boolStr)
@@ -1211,16 +1208,17 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
         )
       } else if (part.type === 'lookup') {
         // `${MAP[KEY]}` against a Record<T, string> literal — emit a Twig
-        // hash literal with an immediate bracket lookup, coalesced with
-        // Twig's native `??` (see the file header, divergence 9: Twig hashes
-        // have no `.get(key, default)` method the way Jinja/Python dicts
-        // do, so `??` supplies the same "empty when no case matches"
-        // default).
+        // hash literal read through the runtime's `bf.index` (JS
+        // `MAP[KEY]`), whose miss is `undefined`, which `bf.string` prints as
+        // the same "empty when no case matches" default (see the file
+        // header, divergence 9: Twig hashes have no `.get(key, default)`).
+        // Twig's own `[KEY] ?? ''` would throw on an `UNDEF` key (an object
+        // is no array offset; #3848 U6).
         const keyExpr = this.convertExpressionToTwig(part.key)
         const entries = Object.entries(part.cases)
           .map(([k, v]) => `${twigHashKey(k)}: '${escapeTwigSingleQuoted(v)}'`)
           .join(', ')
-        parts.push(`bf.string(({${entries}}[${keyExpr}]) ?? '')`)
+        parts.push(`bf.string(bf.index({${entries}}, ${keyExpr}))`)
       }
     }
     // Join with Twig string concatenation (`~`). Every term is already a

@@ -46,6 +46,8 @@ $backend = new class {
 };
 
 $bf = new BarefootJS(null, ['backend' => $backend]);
+// JS `undefined`: what a miss reads (spec/js-undefined-value.md).
+$U = \Barefoot\Undefined::value();
 
 function bfp_is_nan($n): bool
 {
@@ -78,29 +80,29 @@ bf_test('mod', function () use ($bf) {
     bf_assert_nan($bf->mod(2, null));
 });
 
-bf_test('index', function () use ($bf) {
+bf_test('index', function () use ($bf, $U) {
     $list = ['a', 'b', 'c'];
     $rows = [[10, 20], [30, 40]];
     // JS reads the key -0 as "0" (#3698), and an integral float as that index.
     bf_assert_eq($bf->index($list, $bf->mod(-4, 2)), 'a');
     bf_assert_eq($bf->index($list, 0.0), 'a');
     bf_assert_eq($bf->index($list, 1.0), 'b');
-    bf_assert_eq($bf->index($list, 1e3), null);
+    bf_assert_eq($bf->index($list, 1e3), $U);
     bf_assert_eq($bf->index($list, 0x1), 'b');
     // A fractional index names no element; it is not truncated (Twig's
     // `attribute()`) or read as a path into the element (`data_get`).
-    bf_assert_eq($bf->index($rows, 1.1), null);
-    bf_assert_eq($bf->index($rows, 0.5), null);
-    bf_assert_eq($bf->index($rows, '1.1'), null);
-    bf_assert_eq($bf->index($rows, 1e20), null);
-    bf_assert_eq($bf->index($rows, NAN), null);
-    bf_assert_eq($bf->index($rows, INF), null);
+    bf_assert_eq($bf->index($rows, 1.1), $U);
+    bf_assert_eq($bf->index($rows, 0.5), $U);
+    bf_assert_eq($bf->index($rows, '1.1'), $U);
+    bf_assert_eq($bf->index($rows, 1e20), $U);
+    bf_assert_eq($bf->index($rows, NAN), $U);
+    bf_assert_eq($bf->index($rows, INF), $U);
     // A canonical int string reads that index; any other spelling does not.
     bf_assert_eq($bf->index($list, '1'), 'b');
-    bf_assert_eq($bf->index($list, '01'), null);
-    bf_assert_eq($bf->index($list, '-0'), null);
-    bf_assert_eq($bf->index($list, -1), null);
-    bf_assert_eq($bf->index($list, 3), null);
+    bf_assert_eq($bf->index($list, '01'), $U);
+    bf_assert_eq($bf->index($list, '-0'), $U);
+    bf_assert_eq($bf->index($list, -1), $U);
+    bf_assert_eq($bf->index($list, 3), $U);
     // A key with a dot or a `*` names the own key, not a path or a wildcard.
     $obj = json_decode('{"a.b":1,"a":{"b":2},"*":3,"{first}":4,"1.5":5,"1e+21":6,"true":7,"x":null}');
     bf_assert_eq($bf->index($obj, 'a.b'), 1);
@@ -110,19 +112,19 @@ bf_test('index', function () use ($bf) {
     bf_assert_eq($bf->index($obj, 1e21), 6);
     bf_assert_eq($bf->index($obj, true), 7);
     bf_assert_eq($bf->index($obj, 'x'), null);
-    bf_assert_eq($bf->index($obj, 'missing'), null);
+    bf_assert_eq($bf->index($obj, 'missing'), $U);
     bf_assert_eq($bf->index((array) $obj, 'a.b'), 1);
     bf_assert_eq($bf->index((array) $obj, '*'), 3);
     // A numeric own key of a decoded object.
     bf_assert_eq($bf->index(json_decode('{"1":"one"}'), 1), 'one');
     bf_assert_eq($bf->index(json_decode('{"1":"one"}'), 1.0), 'one');
     // A nil target or key reads nothing.
-    bf_assert_eq($bf->index(null, 0), null);
-    bf_assert_eq($bf->index($list, null), null);
-    bf_assert_eq($bf->index('abc', 'missing'), null);
+    bf_assert_eq($bf->index(null, 0), $U);
+    bf_assert_eq($bf->index($list, null), $U);
+    bf_assert_eq($bf->index('abc', 'missing'), $U);
 });
 
-bf_test('index: the template read and the evaluator read share one answer', function () use ($bf) {
+bf_test('index: the template read and the evaluator read share one answer', function () use ($bf, $U) {
     // `xs[k]` in a template (`$bf->index`) and `xs[k]` inside a callback
     // (the evaluator's `index-access` node) go through one implementation,
     // so moving a read into `.map(r => r[k])` cannot change its result.
@@ -138,14 +140,14 @@ bf_test('index: the template read and the evaluator read share one answer', func
         [$list, 1, 'b'],
         [$list, 1.0, 'b'],
         [$list, -0.0, 'a'],
-        [$list, '01', null],
-        [$list, '-0', null],
-        [$list, '1e0', null],
-        [$list, ' 1', null],
-        [$list, '1.0', null],
-        [$list, true, null],
-        [$list, null, null],
-        [$list, 1.5, null],
+        [$list, '01', $U],
+        [$list, '-0', $U],
+        [$list, '1e0', $U],
+        [$list, ' 1', $U],
+        [$list, '1.0', $U],
+        [$list, true, $U],
+        [$list, null, $U],
+        [$list, 1.5, $U],
         [$obj, '01', 'padded'],
         [$obj, '-0', 'negzero'],
         [$obj, '1e0', 'exp'],
@@ -275,22 +277,22 @@ bf_test('index_of / last_index_of', function () use ($bf) {
     bf_assert_eq($bf->last_index_of([null, 'x', null], null), 2);
 });
 
-bf_test('at', function () use ($bf) {
+bf_test('at', function () use ($bf, $U) {
     $arr = ['a', 'b', 'c'];
     bf_assert_eq($bf->at($arr, 0), 'a');
     bf_assert_eq($bf->at($arr, 2), 'c');
     bf_assert_eq($bf->at($arr, -1), 'c');
     bf_assert_eq($bf->at($arr, -3), 'a');
-    bf_assert_eq($bf->at($arr, 3), null);
-    bf_assert_eq($bf->at($arr, -4), null);
-    bf_assert_eq($bf->at([], 0), null);
-    bf_assert_eq($bf->at(null, 0), null);
-    bf_assert_eq($bf->at(['a' => 1], 0), null);
+    bf_assert_eq($bf->at($arr, 3), $U);
+    bf_assert_eq($bf->at($arr, -4), $U);
+    bf_assert_eq($bf->at([], 0), $U);
+    bf_assert_eq($bf->at(null, 0), $U);
+    bf_assert_eq($bf->at(['a' => 1], 0), $U);
 });
 
 // String receivers (#3613) count UTF-16 code units, like JS: '本' is one
 // unit, '😀' is two.
-bf_test('string index methods count UTF-16 code units', function () use ($bf) {
+bf_test('string index methods count UTF-16 code units', function () use ($bf, $U) {
     bf_assert_eq($bf->index_of('banana', 'an'), 1);
     bf_assert_eq($bf->index_of('日本語', '本'), 1);
     bf_assert_eq($bf->index_of('a😀b', 'b'), 3);
@@ -305,8 +307,8 @@ bf_test('string index methods count UTF-16 code units', function () use ($bf) {
     bf_assert_eq($bf->at('日本語', -1), '語');
     bf_assert_eq($bf->at('a😀b', -1), 'b');
     bf_assert_eq($bf->at('a😀b', 3), 'b');
-    bf_assert_eq($bf->at('abc', 3), null);
-    bf_assert_eq($bf->at('', 0), null);
+    bf_assert_eq($bf->at('abc', 3), $U);
+    bf_assert_eq($bf->at('', 0), $U);
     // Half of a surrogate pair: U+FFFD where JS keeps a lone surrogate
     // (pinned divergence, limitation `string-at-lone-surrogate`).
     bf_assert_eq($bf->at('a😀b', 1), "\u{FFFD}");
@@ -321,10 +323,10 @@ bf_test('string index methods count UTF-16 code units', function () use ($bf) {
 // ToIntegerOrInfinity for the string index paths (#3613): NaN is 0,
 // ±Infinity is out of range (a bare (int) cast would make it 0),
 // fractions truncate toward zero.
-bf_test('string index methods read non-finite positions as ToIntegerOrInfinity', function () use ($bf) {
+bf_test('string index methods read non-finite positions as ToIntegerOrInfinity', function () use ($bf, $U) {
     bf_assert_eq($bf->at('abc', NAN), 'a');
-    bf_assert_eq($bf->at('abc', INF), null);
-    bf_assert_eq($bf->at('abc', -INF), null);
+    bf_assert_eq($bf->at('abc', INF), $U);
+    bf_assert_eq($bf->at('abc', -INF), $U);
     bf_assert_eq($bf->at('abc', 1.9), 'b');
     bf_assert_eq($bf->at('abc', -1.5), 'c');
     bf_assert_eq($bf->starts_with('abc', 'a', NAN), true);
@@ -353,12 +355,12 @@ bf_test('concat mutation isolation', function () use ($bf) {
 bf_test('slice mutation isolation and clamping', function () use ($bf) {
     $arr = ['a', 'b', 'c', 'd', 'e'];
     bf_assert_eq($bf->slice($arr, 1, 3), ['b', 'c']);
-    bf_assert_eq($bf->slice($arr, 2, null), ['c', 'd', 'e']);
-    bf_assert_eq($bf->slice($arr, -2, null), ['d', 'e']);
+    bf_assert_eq($bf->slice($arr, 2), ['c', 'd', 'e']);
+    bf_assert_eq($bf->slice($arr, -2), ['d', 'e']);
     bf_assert_eq($bf->slice($arr, 0, -1), ['a', 'b', 'c', 'd']);
-    bf_assert_eq($bf->slice($arr, 100, null), []);
+    bf_assert_eq($bf->slice($arr, 100), []);
     bf_assert_eq($bf->slice($arr, 3, 1), []);
-    bf_assert_eq($bf->slice(null, 0, null), []);
+    bf_assert_eq($bf->slice(null, 0), []);
 
     $src = ['a', 'b', 'c'];
     $out = $bf->slice($src, 0, 2);
@@ -372,8 +374,8 @@ bf_test('slice string receiver', function () use ($bf) {
     // instead of a substring.
     $word = 'barefootjs';
     bf_assert_eq($bf->slice($word, 0, 4), 'bare');
-    bf_assert_eq($bf->slice($word, -4, null), 'otjs');
-    bf_assert_eq($bf->slice($word, 4, null), 'footjs');
+    bf_assert_eq($bf->slice($word, -4), 'otjs');
+    bf_assert_eq($bf->slice($word, 4), 'footjs');
     bf_assert_eq($bf->slice($word, 5, 2), '');
     // Multi-byte: index by character, not byte.
     bf_assert_eq($bf->slice('héllo', 0, 2), 'hé');
