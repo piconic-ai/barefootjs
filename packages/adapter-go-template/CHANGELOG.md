@@ -1,5 +1,20 @@
 # @barefootjs/go-template
 
+## 0.41.0
+
+### Patch Changes
+
+- 0d4e4ea: An absent optional value bound to `class`, `className` or `style` (`className={props.tone}`, a static child's `class={tone}`, an object signal's `class={look()?.tone}`) now omits the attribute, as Hono does and as every other attribute already did; it used to render `class=""`. The nested `undefined` identifier now lowers to `nil`, as `null` does, so `undefined ?? 'x'` renders `x` in text and attribute position instead of an empty value.
+- 48c39e2: A spread of an object other than the component's own props onto a child component (`<Chip {...row} />`, a loop row's `{...r}`) no longer drops its keys:
+  
+  - Client JS: the spread merges with the call's explicit props in source order, in the CSR template (`renderChild`) and in the child's init. Init merges through the new runtime helper `spreadChildProps`, which resolves every read against the parts that have the key now, from the last part to the first, so a later value of the object reaches the child: a key it gains overrides an earlier explicit prop, and a key it drops brings that prop back. Nothing is evaluated until a read, so a spread in a branch the component did not take (the UI `Slot`'s `{...children.props}` with no `children` at hydration) is never evaluated. A child whose spread reads a value only init can see is rendered by init, as an explicit prop is.
+  - A `{...props}` or `{...rest}` spread on the same call merges in source order with it: `<Tag {...childProps} {...props} />` lets the caller's keys win over the object's.
+  - A `const` alias of a closed-type rest (`const a = rest`, through any number of hops) is the rest itself: its spread unrolls per key like `{...rest}`, so the keys the component destructured are not forwarded.
+  - Go: the child's input is built one field per key at compile time, so an object spread onto a child component is refused with BF101 instead of rendering the child empty.
+- a5f74ef: The primitive plan now reads each target's `carriesUndefined` flag (`collapsesNil`). On a target that carries JS `undefined` apart from `null`, an operand Phase 1 does not prove takes the runtime helper (no native claim over an `unproven` operand), a numeric `n?: number | null` operand is no longer refused with BF101, a string `c?: string | null` operand is left to `to_string` / `plus`, and `x === null` / `x === undefined` / `x == null` plan as the new `is_null` / `is_undefined` / `is_nullish` tests, which every emitter refuses loudly until its runtime gains them. Every target still declares `false`, so compiled output is unchanged. The `ssrDefaults` manifest entry of a prop without a default no longer carries `"value": null`; every runtime's seed reads the missing `value` as its nil, so rendered output is unchanged.
+- 5128394: Adds the `carriesUndefined` declaration to `NativeSafeTable`: every template adapter now declares whether its runtime carries JS `undefined` apart from `null` (all `false` for now; nothing reads it yet, so compiled output is unchanged). The conformance vectors gain the `{"$undef": true}` encoding for JS `undefined` in arguments, expectations and evaluator environments, with new `undefined` cases and optional-argument twins; each runtime's harness decodes it, and the cases a runtime does not pass yet are listed in the expected-failure ledgers (including the new `eval-expected-failures.json`) or pinned as helper divergences, naming the rollout step that fixes them (spec/js-undefined-value.md).
+- @barefootjs/shared@0.41.0
+
 ## 0.40.2
 
 ### Patch Changes

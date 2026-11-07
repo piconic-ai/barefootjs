@@ -1,5 +1,25 @@
 # @barefootjs/jinja
 
+## 0.41.0
+
+### Minor Changes
+
+- 143fab3: The Jinja adapter and its Python runtime now carry JS `undefined` apart from `null` (`spec/js-undefined-value.md`, rollout step U2). Host `None` is JS `null`; JS `undefined` is the runtime's `UNDEF`, a `JsUndefined` (a `ChainableUndefined` subclass) that the `JinjaBackend` Environment uses as its `undefined`, so a never-set template variable is `undefined` too. A missing field, an out-of-range index, `.at()` / `.find()` with no result, the `undefined` identifier, `?.` over a nullish receiver and an omitted declared prop read as `UNDEF`. `String()` / template literals / `+` print it as `"undefined"` (`null` as `"null"`), `Number()` and arithmetic read it as `NaN` (`null` as `0`), `x === null` / `x === undefined` are strict tests (`bf.is_null` / `bf.is_undefined`; `x == null` is `bf.is_nullish`), `JSON.stringify` and the `bf-p` payload drop an `undefined` member and write an `undefined` element as `null`, `includes` / `indexOf` tell the two apart, a sort puts `undefined` last, and an optional method argument (`slice` end, `join` / `split` separator, `padStart` pad, …) takes its default only when it is omitted or `undefined`. A destructure default now applies only to an absent or `undefined` prop: an explicit `null` keeps `null`. The package exports `UNDEF`, `JsUndefined`, `is_undefined`, `is_null` and `is_nullish`.
+  
+  Migration: a host that passed `None` to mean "unset" now gets JS `null` semantics (`'btn ' + c` renders `btn null`, and a destructure default no longer applies). To leave a prop unset, omit its key; to pass a prop that is present and `undefined`, pass `barefootjs.UNDEF`. A host that builds its own Jinja `Environment` should pass `undefined=JsUndefined`.
+  
+  `@barefootjs/jsx`: `ParsedExprEmitter` gains an optional `nilTest` method, which the dispatcher calls for a nil-test plan (`nilTestOperand` names its operand), and `collectNullableOptionalProps` takes the target's `NativeSafeTable`: on a target that carries `undefined`, a defaulted prop whose type admits `null` is presence-uncertain too. Targets that do not carry `undefined` compile as before.
+
+### Patch Changes
+
+- 38c45ab: A value-position `a ?? b ?? c …` chain now renders each operand once on Jinja, MiniJinja, ERB and Twig, so its template grows linearly instead of exponentially (#3839). Jinja and MiniJinja rendered the left operand three times and ERB twice, so a 16-operand chain produced hundreds of megabytes of template. The left operand is now boxed by a runtime presence test, as `&&` / `||` already were: `bf.keep_nonnil(l)` keeps `l` unless it is null or undefined (Jinja's `Undefined` included), so `0`, `''` and `false` are kept and the right operand is evaluated only when needed. Twig's own `??` still takes a variable left operand; a nested `??`, a conditional or an optional `.length` goes through the new `bf_js_nullish` filter.
+  
+  - Jinja: a custom backend passed to the Python runtime must now implement `is_undefined(value)`; `JinjaBackend` does.
+- a5f74ef: The primitive plan now reads each target's `carriesUndefined` flag (`collapsesNil`). On a target that carries JS `undefined` apart from `null`, an operand Phase 1 does not prove takes the runtime helper (no native claim over an `unproven` operand), a numeric `n?: number | null` operand is no longer refused with BF101, a string `c?: string | null` operand is left to `to_string` / `plus`, and `x === null` / `x === undefined` / `x == null` plan as the new `is_null` / `is_undefined` / `is_nullish` tests, which every emitter refuses loudly until its runtime gains them. Every target still declares `false`, so compiled output is unchanged. The `ssrDefaults` manifest entry of a prop without a default no longer carries `"value": null`; every runtime's seed reads the missing `value` as its nil, so rendered output is unchanged.
+- 5128394: Adds the `carriesUndefined` declaration to `NativeSafeTable`: every template adapter now declares whether its runtime carries JS `undefined` apart from `null` (all `false` for now; nothing reads it yet, so compiled output is unchanged). The conformance vectors gain the `{"$undef": true}` encoding for JS `undefined` in arguments, expectations and evaluator environments, with new `undefined` cases and optional-argument twins; each runtime's harness decodes it, and the cases a runtime does not pass yet are listed in the expected-failure ledgers (including the new `eval-expected-failures.json`) or pinned as helper divergences, naming the rollout step that fixes them (spec/js-undefined-value.md).
+- 2f19243: The engine-free evaluator returns `0` for `Number()` and `""` for `String()` called with no argument, as JavaScript does. Since U2 they returned `NaN` and `"undefined"`, because an omitted argument read as `undefined`. An explicit `undefined` argument still gives `NaN` / `"undefined"`.
+- @barefootjs/shared@0.41.0
+
 ## 0.40.2
 
 ### Patch Changes
