@@ -424,9 +424,10 @@ public final class Evaluator {
    * key. A list, and a string (by UTF-16 code unit), are read only through
    * a canonical array index: "1" reads element 1, while "01", "1e0", "-0",
    * "1.1" and "-1" are ordinary property names
-   * (spec/js-primitive-semantics.md, "ToPropertyKey and index read"). A
-   * missing key, an out-of-range or non-canonical index and any other
-   * receiver read JS {@code undefined}.
+   * (spec/js-primitive-semantics.md, "ToPropertyKey and index read"); a list
+   * or string also reads its own {@code length}. A missing key, an
+   * out-of-range or non-canonical index and any other receiver read JS
+   * {@code undefined}.
    */
   @SuppressWarnings("unchecked")
   public static Object indexValue(Object obj, Object index) {
@@ -443,6 +444,13 @@ public final class Evaluator {
     if (obj instanceof Map) {
       Map<String, Object> m = (Map<String, Object>) obj;
       return m.containsKey(key) ? m.get(key) : undef;
+    }
+    // `length` is the one own non-index property of a string (UTF-16 code
+    // units, Java's own `String.length()`) and of an array, read as the
+    // number the `.length` read gives (`bf.length`); a destructured
+    // `({ length }) =>` row reads it through here.
+    if (key.equals("length")) {
+      return obj instanceof List ? (double) ((List<?>) obj).size() : (double) ((String) obj).length();
     }
     if (!key.matches("0|[1-9][0-9]{0,9}")) {
       return undef;

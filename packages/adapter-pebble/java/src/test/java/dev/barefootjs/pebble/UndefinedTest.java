@@ -103,6 +103,20 @@ class UndefinedTest {
     assertSame(U, BF.use_context("never-provided"));
   }
 
+  /** `length` is the one own non-index property of a string and an array (`({ length }) =>`). */
+  @Test
+  void aStringOrListReadsItsOwnLength() {
+    assertEquals(3.0, BF.get("abc", "length"));
+    assertEquals(3.0, BF.get("a\ud83d\ude00", "length")); // UTF-16 code units
+    assertEquals(2.0, BF.get(list("x", "y"), "length"));
+    assertEquals(0.0, BF.get(list(), "length"));
+    assertEquals("3", BF.string(BF.get("abc", "length")));
+    assertSame(U, BF.get("abc", "size"));
+    assertSame(U, BF.get(list("x"), "size"));
+    assertEquals("x", BF.get(map("length", "x"), "length"));
+    assertSame(U, BF.get(map(), "length"));
+  }
+
   @Test
   void jsonFollowsJsonStringify() {
     assertEquals("{\"a\":null}", BF.json(map("a", null, "b", U)));
