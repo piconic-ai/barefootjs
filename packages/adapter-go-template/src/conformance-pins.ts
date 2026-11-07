@@ -25,20 +25,6 @@ export const conformancePins: ConformancePins = {
   'strict-equality-preamble-reference': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
   'strict-equality-optional-array-element': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
   'strict-equality-nullable-array-element': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
-  // A prop typed both optional and nullable: the engine cannot tell an
-  // omitted one (`NaN` in arithmetic) from a `null` one (`0`).
-  // An optional row field is a concrete struct field: the nil reading
-  // (#3824 step 4) cannot tell an omitted one from a supplied `''` / `0`, and no
-  // rewrite of the expression gives Go a nil to test until row fields carry one.
-  'omitted-optional-row-field-plus': [{ code: 'BF101', severity: 'error', limitation: 'optional-row-field-nil-reading', unescapable: true }],
-  'nil-reading-concrete-zero-row-field': [{ code: 'BF101', severity: 'error', limitation: 'optional-row-field-nil-reading', unescapable: true }],
-  'omitted-optional-nullable-number-arithmetic': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
-  'omitted-optional-nullable-number-arithmetic-destructured': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
-  'omitted-optional-nullable-number-relational': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
-  'omitted-optional-nullable-number-unary-plus': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
-  'undef-null-number-coercion': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
-  'undef-null-relational': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-number-arithmetic' }],
-  'omitted-optional-nullable-string-relational': [{ code: 'BF101', severity: 'error', limitation: 'omitted-optional-nullable-scalar-relational' }],
   // The props constructor applies the default before any read, so a
   // `/* @client */` read site doesn't avoid the refusal: no escape twin.
   'destructure-default-body-renamed-computed-array': [

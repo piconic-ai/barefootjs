@@ -21,12 +21,12 @@
  * missing its `raw` token. The caller then keeps `nil`.
  */
 
-import { foldNegatedNumberLiteral, numberLiteralSpelling, type ParsedExpr, type TypeDefinition, type TypeInfo } from '@barefootjs/jsx'
+import { foldNegatedNumberLiteral, numberLiteralSpelling, type ParsedExpr, type PropertyInfo, type TypeDefinition, type TypeInfo } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { goNumberLiteral } from '../lib/go-emit.ts'
 import { goFieldNameForKey } from '../lib/go-naming.ts'
-import { propertyInfoToGo, typeInfoToGo } from '../type/type-codegen.ts'
+import { optFieldElemType, propertyInfoToGo, typeInfoToGo } from '../type/type-codegen.ts'
 
 /**
  * Look up a struct property's declared type and optionality by source key. Resolves
@@ -212,62 +212,89 @@ export function parsedLiteralToGo(
 
   if (expr.kind === 'array-literal') return arrayLiteralToGo(ctx, expr, typeInfo)
 
-  if (expr.kind === 'object-literal') {
-    // Bake against a concrete local struct only. The struct's field map is the
-    // source of truth for each source key's Go field name (and, by omission,
-    // which keys it declares); defer when the target type isn't a known struct.
-    const goType = typeInfo ? typeInfoToGo(ctx, typeInfo) : 'interface{}'
-    const structFields = ctx.state.localStructFields.get(goType)
-    if (!structFields) return null
-    const entries: string[] = []
-    for (const prop of expr.properties) {
-      // A spread (`{ ...t }`, #2696 Step 2) has no static key to match a
-      // struct field against — defer the whole object, same as any other
-      // unsupported shape.
-      if (prop.kind === 'spread') return null
-      // `key: undefined` reads the same as an absent key, so the field
-      // keeps its Go zero value (#3610).
-      if (!prop.shorthand && isUndefinedIdentifier(prop.value)) continue
-      // A shorthand `{ a }` carries an identifier value → lowers to null below
-      // and defers the whole object.
-      const goField = structFields.get(prop.key)
-      if (!goField) return null
-      const property = structProperty(ctx, goType, prop.key)
-      const propType = property?.type
-      let go: string | null
-      if (prop.value.kind === 'array-literal') {
-        // A nested array property (`cells: readonly string[]`, #2087):
-        // thread the struct's own declared property type through so the
-        // array branch below bakes a properly-typed slice (`[]string{…}`)
-        // instead of deferring.
-        go = parsedLiteralToGo(ctx, prop.value, propType)
-        // An empty nested array (`tags: []`) is an empty slice of the
-        // declared type. The top-level empty-array deferral would otherwise
-        // drop the whole object, and the signal seed with it (#3447).
-        if (go === null && prop.value.elements.length === 0) {
-          go = `${propType?.kind === 'array' ? typeInfoToGo(ctx, propType) : '[]interface{}'}{}`
-        }
-      } else if (prop.value.kind === 'object-literal') {
-        // A nested object property (`user: { name: string }`, #2087): bake
-        // against a named struct if the declared type resolves to one,
-        // else fall back to the capitalized-key inline-map convention.
-        const nestedGoType = propType ? typeInfoToGo(ctx, propType) : undefined
-        go =
-          nestedGoType && ctx.state.localStructFields.has(nestedGoType)
-            ? parsedLiteralToGo(ctx, prop.value, propType)
-            : bakeInlineObjectAsGoMap(ctx, prop.value)
-        if (go !== null && property && propertyInfoToGo(ctx, property, goType).startsWith('*')) {
-          go = `&${go}`
-        }
-      } else {
-        go = parsedLiteralToGo(ctx, prop.value)
-      }
-      if (go === null) return null
-      entries.push(`${goField}: ${go}`)
-    }
-    return `${goType}{${entries.join(', ')}}`
-  }
+  if (expr.kind === 'object-literal') return objectLiteralToGoStruct(ctx, expr, typeInfo)
 
   // identifier / call / member / … → defer.
   return null
+}
+
+/**
+ * An object literal baked as a Go struct literal of the local struct
+ * `typeInfo` names, or null to defer: an optional scalar field
+ * (`optFieldElemType`) takes `bf.Some` / `bf.Null` / `bf.Undef`.
+ */
+function objectLiteralToGoStruct(
+  ctx: GoEmitContext,
+  expr: Extract<ParsedExpr, { kind: 'object-literal' }>,
+  typeInfo: TypeInfo | undefined,
+): string | null {
+  // Bake against a concrete local struct only. The struct's field map is the
+  // source of truth for each source key's Go field name (and, by omission,
+  // which keys it declares); defer when the target type isn't a known struct.
+  const goType = typeInfo ? typeInfoToGo(ctx, typeInfo) : 'interface{}'
+  const structFields = ctx.state.localStructFields.get(goType)
+  if (!structFields) return null
+  const entries: string[] = []
+  for (const prop of expr.properties) {
+    // A spread (`{ ...t }`, #2696 Step 2) has no static key to match a
+    // struct field against — defer the whole object, same as any other
+    // unsupported shape.
+    if (prop.kind === 'spread') return null
+    const goField = structFields.get(prop.key)
+    const property = structProperty(ctx, goType, prop.key)
+    const optElem = property ? optFieldElemType(ctx, property) : null
+    // `key: undefined` holds `undefined`: a `bf.Opt[T]` field takes the
+    // present `undefined`, any other field keeps its Go zero value (#3610).
+    if (!prop.shorthand && isUndefinedIdentifier(prop.value)) {
+      if (optElem !== null && goField) entries.push(`${goField}: bf.Undef[${optElem}]()`)
+      continue
+    }
+    // A shorthand `{ a }` carries an identifier value → lowers to null below
+    // and defers the whole object.
+    if (!goField) return null
+    const go = structFieldValueGo(ctx, prop.value, property, goType)
+    if (go === null) return null
+    // An optional scalar field is a `bf.Opt[T]`.
+    entries.push(`${goField}: ${optElem === null ? go : go === 'nil' ? `bf.Null[${optElem}]()` : `bf.Some[${optElem}](${go})`}`)
+  }
+  return `${goType}{${entries.join(', ')}}`
+}
+
+/** One property value of {@link objectLiteralToGoStruct}, against the struct field's declared `property`; null to defer. */
+function structFieldValueGo(
+  ctx: GoEmitContext,
+  value: ParsedExpr,
+  property: PropertyInfo | undefined,
+  goType: string,
+): string | null {
+  const propType = property?.type
+  let go: string | null
+  if (value.kind === 'array-literal') {
+    // A nested array property (`cells: readonly string[]`, #2087):
+    // thread the struct's own declared property type through so the
+    // array branch below bakes a properly-typed slice (`[]string{…}`)
+    // instead of deferring.
+    go = parsedLiteralToGo(ctx, value, propType)
+    // An empty nested array (`tags: []`) is an empty slice of the
+    // declared type. The top-level empty-array deferral would otherwise
+    // drop the whole object, and the signal seed with it (#3447).
+    if (go === null && value.elements.length === 0) {
+      go = `${propType?.kind === 'array' ? typeInfoToGo(ctx, propType) : '[]interface{}'}{}`
+    }
+  } else if (value.kind === 'object-literal') {
+    // A nested object property (`user: { name: string }`, #2087): bake
+    // against a named struct if the declared type resolves to one,
+    // else fall back to the capitalized-key inline-map convention.
+    const nestedGoType = propType ? typeInfoToGo(ctx, propType) : undefined
+    go =
+      nestedGoType && ctx.state.localStructFields.has(nestedGoType)
+        ? parsedLiteralToGo(ctx, value, propType)
+        : bakeInlineObjectAsGoMap(ctx, value)
+    if (go !== null && property && propertyInfoToGo(ctx, property, goType).startsWith('*')) {
+      go = `&${go}`
+    }
+  } else {
+    go = parsedLiteralToGo(ctx, value)
+  }
+  return go
 }

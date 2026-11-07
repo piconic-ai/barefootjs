@@ -72,6 +72,23 @@ export function isFinalPropWriter(prop: IRProp, keys: ReadonlyMap<string, Resolv
 }
 
 /**
+ * The `bf-p` key (`BfCallerProps`) of the param a later `{...props}` spread
+ * in `props` carries over the explicit `name` prop when the caller passed
+ * it, or null when no spread can carry `name` (spec/js-undefined-value.md
+ * §3: the spread carries the key, whatever it holds).
+ */
+export function spreadCarriedCallerKey(ctx: GoEmitContext, props: readonly IRProp[], name: string): string | null {
+  const ir = { metadata: { propsParams: ctx.state.currentPropsParams } } as unknown as ComponentIR
+  const call = resolvePropsSpreadCall(ctx, ir, props)
+  if (call?.kind !== 'resolved') return null
+  const resolved = call.keys.get(name)
+  const param = resolved?.presentParams.length ? ctx.state.currentPropsParams.find(p => p.name === resolved.key) : undefined
+  if (!param) return null
+  const key = param.sourceName ?? param.name
+  return key.charAt(0).toLowerCase() + key.slice(1)
+}
+
+/**
  * The props of a call without `{...props}` that are the values their keys
  * end up with, per the shared plan: a prop a later one of the same key
  * replaces (`<Chip {...rest} tone="x" />`, whose closed rest spread is
@@ -108,24 +125,6 @@ function forEachComponent(node: IRNode, visit: (props: readonly IRProp[]) => voi
     default:
       if ('children' in node) node.children.forEach((c) => forEachComponent(c, visit))
   }
-}
-
-/**
- * The params a `{...props}` spread onto a child component in `ir` forwards.
- * Their Input field must be nillable: an omitted param has to reach the
- * child as nil (the child observes the omission, `data-size` left out), and
- * one the spread carries only when passed is tested for nil to keep the
- * value an earlier prop gives its key.
- */
-export function collectPropsSpreadForwardedParams(ctx: GoEmitContext, ir: ComponentIR): Set<string> {
-  const names = new Set<string>()
-  const propsObjectName = ctx.state.propsObjectName
-  if (propsObjectName === null) return names
-  forEachComponent(ir.root, (props) => {
-    if (!props.some((p) => isPropsObjectSpread(p, propsObjectName))) return
-    for (const param of ir.metadata.propsParams) names.add(param.name)
-  })
-  return names
 }
 
 /**

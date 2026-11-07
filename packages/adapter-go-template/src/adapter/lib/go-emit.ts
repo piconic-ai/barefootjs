@@ -5,7 +5,7 @@
  */
 
 import type { ArithmeticCoercion, NilReadingSite, SortComparator, SupportResult, ParsedExpr, ScopedOperandTyping } from '@barefootjs/jsx'
-import { arithmeticHelper, BindingScope, EMPTY_OPERAND_TYPING, escapeBraceDelimiters, evalBody, isExactly, isNativeToNumber, numberLiteralSpelling, operandFacts, plusSpelling, spellTest, strictEqSpelling, type CallbackCapture, type NativeSafeTable, type PrimitivePlan } from '@barefootjs/jsx'
+import { arithmeticHelper, BindingScope, EMPTY_OPERAND_TYPING, escapeBraceDelimiters, evalBody, isExactly, isNativeToNumber, numberLiteralSpelling, operandFacts, plusSpelling, spellTest, strictEqSpelling, type CallbackCapture, type NativeSafeTable, type NilTestHelper, type PrimitivePlan } from '@barefootjs/jsx'
 
 import { capitalize } from "./go-naming.ts"
 
@@ -66,9 +66,12 @@ export function wrapIfMultiToken(rendered: string): string {
  * `primitive-plan-cross-adapter.test.ts` holds the emission to it.
  */
 export const GO_NATIVE_SAFE: NativeSafeTable = {
-  // The runtime does not carry JS `undefined` apart from `null` yet
-  // (spec/js-undefined-value.md); rollout step U8 flips it.
-  carriesUndefined: false,
+  // The runtime carries JS `undefined` (`bf.Undefined`, `bf_undefined`) apart
+  // from `null` (Go nil), spec/js-undefined-value.md rollout step U8. Every
+  // nil test is the runtime's (`bf_is_null` / `bf_is_undefined` /
+  // `bf_is_nullish`, `goNilTest`): html/template's `eq x nil` reads both as
+  // nil, which only an attribute's omission test (`ne x nil`) may rely on.
+  carriesUndefined: true,
   'to-boolean': ['boolean'],
   // A unary `+` over a proven number is the operand itself; anything else
   // takes `bf_to_number` (#3824 step 3). Binary `-` / `*` take `bf_sub` /
@@ -91,7 +94,9 @@ export const GO_NATIVE_SAFE: NativeSafeTable = {
   // `neg(0)` (#3824 step 6, pinned by the `primitives/number` vectors).
   neg: [],
   'number-literal': ['safe-integer'],
-  nullish: ['non-nil'],
+  // Every `??` is the nil-test box `index (or (bf_keep_nonnil l) (bf_arr r)) 0`
+  // (`lowerJsNullishValue`): `bf_keep_nonnil` reads `bf.Undefined` as nil.
+  nullish: [],
   get: [],
   // A comparison, `!` and a boolean literal are host booleans already (#3824 step 5).
   'boolean-value': ['boolean'],
@@ -607,6 +612,8 @@ export function stringTolerantEqOperands(l: string, r: string): [string, string]
  * strict equality takes `bf_eq` / `bf_ne` ({@link goComparisonCall}).
  */
 export function goStrictEqConst(op: string, left: ParsedExpr, right: ParsedExpr, plan: PrimitivePlan | null): string | null {
+  // A nil test is `goNilTest`'s (`goComparisonCall`).
+  if (plan?.op === 'nil-test') return null
   const eq = strictEqSpelling(op, left, right, plan)
   return eq?.kind === 'const' ? String(eq.value) : null
 }
@@ -636,15 +643,44 @@ export function goComparisonCall(
   const helper = GO_COMPARISON_HELPERS[op]
   if (!helper) return null
   if (helper === 'bf_eq' || helper === 'bf_ne') {
-    // `x === undefined` is a nil test, never a string comparison, which
-    // would also match a present `''` (#3435).
-    const isUndefined = (e: ParsedExpr | undefined) => e?.kind === 'identifier' && e.name === 'undefined'
-    if (isUndefined(operands?.[1])) return `${helper} ${wrapIfMultiToken(l)} nil`
-    if (isUndefined(operands?.[0])) return `${helper} nil ${wrapIfMultiToken(r)}`
+    // A comparison against `null` / `undefined` is a nil test, never a
+    // string comparison, which would also match a present `''` (#3435).
+    // `===` is strict, `==` loose (spec/js-undefined-value.md, decision 7).
+    const nilSide = operands ? nilLiteralSide(operands) : null
+    if (nilSide !== null) {
+      const helperName = op === '==' || op === '!=' ? 'is_nullish' : nilSide.literal
+      return goNilTest(helperName, helper === 'bf_ne', nilSide.index === 1 ? l : r)
+    }
     const [el, er] = stringTolerantEqOperands(l, r)
     return `${helper} ${wrapIfMultiToken(el)} ${wrapIfMultiToken(er)}`
   }
   return `${helper} ${l} ${r}`
+}
+
+/** The `null` literal or the `undefined` identifier, by the nil test it names. */
+function nilLiteralOf(e: ParsedExpr): 'is_null' | 'is_undefined' | null {
+  if (e.kind === 'literal' && e.literalType === 'null') return 'is_null'
+  if (e.kind === 'identifier' && e.name === 'undefined') return 'is_undefined'
+  return null
+}
+
+/** Which side of an equality is a `null` / `undefined` literal, and which test it names; null when neither is. */
+function nilLiteralSide(operands: readonly [ParsedExpr, ParsedExpr]): { index: 0 | 1; literal: 'is_null' | 'is_undefined' } | null {
+  const right = nilLiteralOf(operands[1])
+  if (right !== null) return { index: 1, literal: right }
+  const left = nilLiteralOf(operands[0])
+  return left !== null ? { index: 0, literal: left } : null
+}
+
+/**
+ * The runtime's nil test over a rendered operand (spec/js-undefined-value.md,
+ * "Decisions" (3) and (7)): `bf_is_null` for `x === null`, `bf_is_undefined`
+ * for `x === undefined`, `bf_is_nullish` for the loose `x == null`, negated
+ * by `not`.
+ */
+export function goNilTest(helper: NilTestHelper, negated: boolean, operand: string): string {
+  const test = `bf_${helper} ${wrapIfMultiToken(operand)}`
+  return negated ? `not (${test})` : test
 }
 
 /**
@@ -703,6 +739,25 @@ export function goPropDefault(defaultValue: string | undefined): string | null {
   }
   // Anything richer (objects, arrays, expressions) would mis-execute as Go.
   return null
+}
+
+/**
+ * The Go test that a prop's field `ref` of type `goType` holds JS
+ * `undefined`, where a destructure default applies (spec/js-undefined-value.md
+ * decision 6): `bf.IsUndefined` on an `interface{}` field, which holds
+ * `bf.Undefined` for an omitted prop and nil for an explicit `null`; a nil
+ * test on a slice, map or pointer field, whose nil stands for both.
+ */
+export function goUndefinedTest(ref: string, goType: string): string {
+  return goType === 'interface{}' || goType === 'any' ? `bf.IsUndefined(${ref})` : `${ref} == nil`
+}
+
+/**
+ * The Go test that `ref` holds JS `null` or `undefined` (`ref == null`):
+ * `bf.IsNullish`, which reads `bf.Undefined`, a nil and a typed nil alike.
+ */
+export function goNullishTest(ref: string): string {
+  return `bf.IsNullish(${ref})`
 }
 
 /**

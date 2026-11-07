@@ -233,7 +233,7 @@ function emitNilGuardedAttr(host: ElementAttrHost, value: ExpressionAttr, nameTo
   // with `s()` undefined, #3304): its `interface{}` field holds `nil`.
   if (nullableSignalAttrGetter(value.parsed, ctx.state.nillableSignalGetters) !== null) {
     const goExpr = ctx.convertExpressionToGo(value.expr, undefined, value.parsed)
-    return `{{if ne (${goExpr}) nil}}${nameTok}="{{${goExpr}}}"{{end}}`
+    return `{{if ne (${goExpr}) nil}}${nameTok}="{{${host.numericTextExpression(goExpr, value.parsed)}}}"{{end}}`
   }
   // A closed-type `{...rest}` key (#3057) reads off the rest bag's
   // `map[string]any` field via `bf_get` (see the `restPropsName` member-
@@ -244,7 +244,7 @@ function emitNilGuardedAttr(host: ElementAttrHost, value: ExpressionAttr, nameTo
   // guard share the identical `bf_get` expression.
   if (bare.restKeyRead) {
     const goExpr = ctx.convertExpressionToGo(value.expr, undefined, value.parsed)
-    return `{{if ne (${goExpr}) nil}}${nameTok}="{{${goExpr}}}"{{end}}`
+    return `{{if ne (${goExpr}) nil}}${nameTok}="{{${host.numericTextExpression(goExpr, value.parsed)}}}"{{end}}`
   }
   // Lower once; if the result is already a self-contained action block (e.g.
   // an inlined `sortClass(k)` → `{{if …}}…{{end}}`), embed it as-is rather

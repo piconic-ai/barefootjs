@@ -1,8 +1,10 @@
 /**
  * `{...props}` onto a child component (#3530): the child's `<Child>Input{...}`
- * literal follows the shared plan one key at a time. A param the spread
- * carries only when passed is a nil test on the parent's own Input field,
- * and a call the constructor can't merge at compile time is refused.
+ * literal follows the shared plan one key at a time. The spread carries the
+ * parent's own `bf.Opt` Input field, whose state `bf.Coerce` keeps; a param
+ * the spread carries over an earlier explicit prop only when passed is a
+ * `Passed()` test, and a call the constructor can't merge at compile time is
+ * refused.
  * Rendered output is pinned by the `component-spread-*` conformance fixtures.
  */
 import { describe, test, expect } from 'bun:test'
@@ -32,25 +34,25 @@ describe('GoTemplateAdapter - {...props} onto a child component', () => {
   test('an earlier explicit prop is kept when the caller omits the param', () => {
     const { types, all, bf101 } = compile(source(OPTIONAL, '<Tag tone="first" {...props} />'))
     expect(bf101).toEqual([])
-    // The parent's own field is nillable, so an omitted param reads as nil.
-    expect(all).toMatch(/type ParentInput struct \{[^}]*Tone interface\{\}/)
-    expect(types).toContain('Tone: func() interface{} { if in.Tone != nil { return in.Tone }; return "first" }(),')
-    expect(types).toContain('Label: in.Label,')
+    // The parent's own field is a `bf.Opt`, so an omitted param is not passed.
+    expect(all).toMatch(/type ParentInput struct \{[^}]*Tone bf\.Opt\[string\]/)
+    expect(types).toContain('Tone: bf.Coerce(TagInput{}.Tone, func() any { if input.Tone.Passed() { return input.Tone }; return "first" }()),')
+    expect(types).toContain('Label: bf.Coerce(TagInput{}.Label, input.Label),')
   })
 
   test('a later explicit prop replaces the param, which is not lowered at all', () => {
     const { types, bf101 } = compile(source(OPTIONAL, '<Tag {...props} tone="explicit" />'))
     expect(bf101).toEqual([])
-    expect(types).toContain('Tone: "explicit",')
-    expect(types).not.toContain('Tone: in.Tone,')
-    expect(types).toContain('Size: in.Size,')
+    expect(types).toContain('Tone: bf.Coerce(TagInput{}.Tone, "explicit"),')
+    expect(types).not.toContain('input.Tone')
+    expect(types).toContain('Size: bf.Coerce(TagInput{}.Size, input.Size),')
   })
 
   test("a concrete child field takes the passed param converted to the field's type", () => {
     const { types, bf101 } = compile(source('{ tone: string; size?: string; label?: string }', '<Tag tone="first" {...props} />'))
     expect(bf101).toEqual([])
     expect(types).toContain(
-      'Tone: func() string { if in.Tone != nil { return func() string { if v, ok := in.Tone.(string); ok { return v }; return "" }() }; return "first" }(),',
+      'Tone: bf.Coerce(TagInput{}.Tone, func() any { if input.Tone.Passed() { return input.Tone }; return "first" }()),',
     )
   })
 
@@ -64,7 +66,7 @@ export function Parent(props: { tone?: string; label?: string; own?: string }) {
 }
 `)
     expect(bf101).toEqual([])
-    expect(types).toContain('Label: in.Label,')
+    expect(types).toContain('Label: bf.Coerce(TagInput{}.Label, input.Label),')
     expect(types).not.toContain('Own:')
     expect(types).not.toContain('Tone:')
   })
@@ -74,8 +76,8 @@ export function Parent(props: { tone?: string; label?: string; own?: string }) {
     // as JS hands the spread's `tone` to the read.
     const { types, bf101 } = compile(source('{ label?: string }', '<Tag {...props} />', '; own?: string'))
     expect(bf101).toEqual([])
-    expect(types).toContain('Label: in.Label,')
-    expect(types).toContain('Tone: in.Tone,')
+    expect(types).toContain('Label: bf.Coerce(TagInput{}.Label, input.Label),')
+    expect(types).toContain('Tone: bf.Coerce(TagInput{}.Tone, input.Tone),')
     expect(types).not.toContain('Own:')
   })
 
@@ -89,7 +91,7 @@ export function Parent(props: { label?: string; own?: string }) {
 }
 `)
     expect(bf101).toEqual([])
-    expect(types).toContain('Label: in.Label,')
+    expect(types).toContain('Label: bf.Coerce(TagInput{}.Label, input.Label),')
     expect(types).toContain('Rest: map[string]any{"own": in.Own}')
   })
 

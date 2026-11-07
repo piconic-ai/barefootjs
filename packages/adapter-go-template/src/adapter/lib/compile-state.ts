@@ -279,23 +279,7 @@ export class CompileState {
   /** Signals and memos `attrValueMayBeNullish` reads (#3322). */
   nullishAttrCtx: NullishAttrContext = { nullableSignals: new Set(), memos: new Map() }
 
-  /**
-   * OPTIONAL prop names consumed nullish-sensitively (`??` left operand in a
-   * parsed expression tree, or a signal's `props.X ?? <literal>` seed) —
-   * #2248. Consulted by `resolvePropGoType` to flip an optional scalar to the
-   * nillable `interface{}` representation, so it MUST be populated before the
-   * first `resolvePropGoType` call of a compile (see `generate()`'s ordering
-   * against `collectNillablePropNames`).
-   */
-  nullishConsumedPropNames: Set<string> = new Set()
 
-  /**
-   * OPTIONAL no-default prop names consumed as a BARE omittable-attribute
-   * value (`rows={rows}`) — #2259. Same `resolvePropGoType` flip and same
-   * populate-before-first-resolve ordering as `nullishConsumedPropNames`:
-   * the attribute-omission guard (`{{if ne .X nil}}`) needs a nillable field.
-   */
-  omittableAttrConsumedPropNames: Set<string> = new Set()
 
   /**
    * OPTIONAL no-default prop names that directly seed a nullable signal —
@@ -314,20 +298,7 @@ export class CompileState {
    */
   absentPropSeedSignals: Set<string> = new Set()
 
-  /**
-   * OPTIONAL no-default scalar prop names read as an optional-chain receiver
-   * (`props.text?.length`) — #3422. Same `resolvePropGoType` flip: the `?.`
-   * guard needs a nil to see an omitted prop.
-   */
-  optionalChainReceiverPropNames: Set<string> = new Set()
 
-  /**
-   * OPTIONAL no-default number prop names read as an arithmetic operand whose
-   * nil reads as `undefined` (`props.n * 2`, `arithmeticOperandCoercion`) —
-   * #3533. Same `resolvePropGoType` flip: `bf_number` needs a nil to give
-   * `NaN` for an omitted prop, where an `int` field reads it as `0`.
-   */
-  arithmeticAbsentPropNames: Set<string> = new Set()
 
   /**
    * `Struct.field` keys of optional scalar struct fields a nullable signal
@@ -338,40 +309,9 @@ export class CompileState {
    */
   nullableSeedStructFields: Set<string> = new Set()
 
-  /**
-   * OPTIONAL no-default prop names consumed as a BARE TEXT-position
-   * expression value (`{size}`) — #2267. Same `resolvePropGoType` flip and
-   * same populate-before-first-resolve ordering as
-   * `nullishConsumedPropNames`: the text emitter's nil-safe `bf_string`
-   * wrap needs a nillable field to have something to guard.
-   */
-  textConsumedPropNames: Set<string> = new Set()
 
-  /**
-   * OPTIONAL no-default prop names whose PRESENCE is tested — `props.X !==
-   * undefined` (the "controlled component" idiom's `isControlled` memo) —
-   * #2260. Same `resolvePropGoType` flip and same populate-before-first-
-   * resolve ordering as `nullishConsumedPropNames`: distinguishing "caller
-   * passed a value" from "caller omitted the prop" needs a nillable field.
-   */
-  presenceCheckedPropNames: Set<string> = new Set()
 
-  /**
-   * Prop names a `{...props}` spread onto a child component forwards
-   * (`collectPropsSpreadForwardedParams`, #3530). Same `resolvePropGoType`
-   * flip: an omitted prop has to reach the child as nil, and a key the
-   * spread carries only when passed keeps an earlier prop's value only if
-   * an omitted prop reads as nil.
-   */
-  propsSpreadForwardedPropNames: Set<string> = new Set()
 
-  /**
-   * Prop names passed as they are into a child component's nillable Input
-   * field (`collectNillableForwardedPropNames`). Same `resolvePropGoType`
-   * flip: an omitted prop has to reach the child as nil for the child's own
-   * `??` / presence test to see the omission.
-   */
-  nillableForwardedPropNames: Set<string> = new Set()
 
   /**
    * String-typed signal getter / prop names (#2168 string-concat-plus).
@@ -465,7 +405,7 @@ export class CompileState {
  * so a component-scope `const` sitting between a `props.X` read and
  * `createSignal` (`const mid = props.label; createSignal(mid ?? 'Default')`)
  * doesn't hide the `props.X ?? <literal>` shape from
- * `extractPropFallbackFromParsed` / `collectNullishConsumedPropNames`'s
+ * `extractPropFallbackFromParsed` / `collectPropFallbackVars`'s
  * signal-seed loop — both need the SAME resolved tree (single door, not two
  * divergent walks: a mismatch between them is exactly what let the field-type
  * flip and the fallback-var construction disagree on nullish handling for

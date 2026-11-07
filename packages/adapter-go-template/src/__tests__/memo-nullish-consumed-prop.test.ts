@@ -1,12 +1,12 @@
 /**
  * An optional, no-default prop read under `??` inside a memo body is
- * nillable (`collectNullishConsumedPropNames`), so the runtime evaluator
- * that computes the memo sees nil for an omitted prop and takes the
- * fallback. A literal union (`'a' | 'b'`, `1 | 2`) takes the same flip as
- * its primitive. Pins what the shared fixture
- * `memo-nullish-omitted-literal-union-prop` cannot show on its own: a
- * callback param shadowing the prop inside the memo body reads the param,
- * so it leaves the prop's field concrete.
+ * nillable — every optional prop is a `bf.Opt[T]` Input field read into an
+ * `interface{}` one (U8) — so the runtime evaluator that computes the memo
+ * sees `undefined` for an omitted prop and takes the fallback. A literal
+ * union (`'a' | 'b'`, `1 | 2`) is typed like its primitive. Pins what the
+ * shared fixture `memo-nullish-omitted-literal-union-prop` cannot show on
+ * its own, including a callback param shadowing the prop inside the memo
+ * body.
  */
 import { describe, expect, test } from 'bun:test'
 import { compileFixtureJSX } from '@barefootjs/adapter-tests/harness-program'
@@ -18,13 +18,18 @@ function compileTypes(source: string): string {
   return result.files.find(f => f.type === 'types')?.content ?? ''
 }
 
-/** The Go type of `field` in `<component>Input`. */
-function inputFieldType(types: string, component: string, field: string): string | undefined {
-  const start = types.indexOf(`type ${component}Input struct {`)
+/** The Go type of `field` in the struct `typeName`. */
+function structFieldType(types: string, typeName: string, field: string): string | undefined {
+  const start = types.indexOf(`type ${typeName} struct {`)
   if (start < 0) return undefined
   const body = types.slice(start, types.indexOf('\n}', start))
   const line = body.split('\n').map(l => l.trim()).find(l => l.startsWith(`${field} `))
-  return line?.slice(field.length + 1).trim()
+  return line?.slice(field.length + 1).trim().replace(/\s*`[^`]*`$/, '')
+}
+
+/** The Go type the constructor reads `field` of `<component>Input` as (`bf<component>In`). */
+function readFieldType(types: string, component: string, field: string): string | undefined {
+  return structFieldType(types, `bf${component}In`, field)
 }
 
 describe('a prop read under `??` in a memo body is nillable', () => {
@@ -39,12 +44,9 @@ export function P(props: { s?: string; n?: number; u?: 'a' | 'b'; l?: 1 | 2; z?:
   return <b>{m()}{k()}{e()}</b>
 }
 `)
-    expect(inputFieldType(types, 'P', 'S')).toBe('interface{}')
-    expect(inputFieldType(types, 'P', 'N')).toBe('interface{}')
-    expect(inputFieldType(types, 'P', 'U')).toBe('interface{}')
-    expect(inputFieldType(types, 'P', 'L')).toBe('interface{}')
-    // `?? ''` lands on the zero value either way.
-    expect(inputFieldType(types, 'P', 'Z')).toBe('string')
+    for (const field of ['S', 'N', 'U', 'L', 'Z']) expect(readFieldType(types, 'P', field)).toBe('interface{}')
+    expect(structFieldType(types, 'PInput', 'U')).toBe('bf.Opt[string]')
+    expect(structFieldType(types, 'PInput', 'L')).toBe('bf.Opt[float64]')
   }, 30_000)
 
   test('a callback param shadowing the prop reads the param', () => {
@@ -60,7 +62,10 @@ export function O(props: { size?: string; rows: { size?: string }[] }) {
   return <b>{all()}</b>
 }
 `)
-    expect(inputFieldType(types, 'D', 'Size')).toBe('string')
-    expect(inputFieldType(types, 'O', 'Size')).toBe('string')
+    expect(readFieldType(types, 'D', 'Size')).toBe('interface{}')
+    expect(readFieldType(types, 'O', 'Size')).toBe('interface{}')
+    // The callback's `size` is the row, not the prop: the evaluator env
+    // carries the rows only.
+    expect(types).not.toContain('"size": in.Size')
   }, 30_000)
 })

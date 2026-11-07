@@ -125,9 +125,9 @@ describe('an absent prop under `??` in an evaluated seed (#3532)', () => {
     expect(types).toMatch(/^\s+V float64 /m)
   })
 
-  test('a zero-equivalent default keeps the concrete field', () => {
+  test('a zero-equivalent fallback reads the nillable field too', () => {
     const { types } = generate(PROPS, '(props.n ?? 0) * 2')
-    expect(types).toMatch(/^\s+N float64 /m)
+    expect(types).toMatch(/^\s+N interface\{\} /m)
   })
 })
 

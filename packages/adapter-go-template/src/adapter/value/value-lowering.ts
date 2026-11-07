@@ -387,7 +387,7 @@ function propSliceFallbackSeed(
   const fallback = parsedLiteralToGo(ctx, preParsed.right, param.type)
   if (fallback === null) return null
   const ref = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
-  return `func() ${goType} { if ${ref} != nil { return ${ref} }; return ${fallback} }()`
+  return `func() ${goType} { if !bf.IsNullish(${ref}) { return ${ref} }; return ${fallback} }()`
 }
 
 /**

@@ -101,10 +101,10 @@ export function Parent() {
   })
 
   test.each([
-    ['a backslash', String.raw`<Badge label="a\b" />`, String.raw`Label: "a\\b",`],
-    ['a double quote', `<Badge label='say "hi"' />`, String.raw`Label: "say \"hi\"",`],
-    ['single quotes around the value', `<Badge label="'q'" />`, `Label: "'q'",`],
-    ['a template delimiter', '<Badge label="` ${x}" />', 'Label: "` ${x}",'],
+    ['a backslash', String.raw`<Badge label="a\b" />`, String.raw`Label: bf.Coerce(BadgeInput{}.Label, "a\\b"),`],
+    ['a double quote', `<Badge label='say "hi"' />`, String.raw`Label: bf.Coerce(BadgeInput{}.Label, "say \"hi\""),`],
+    ['single quotes around the value', `<Badge label="'q'" />`, `Label: bf.Coerce(BadgeInput{}.Label, "'q'"),`],
+    ['a template delimiter', '<Badge label="` ${x}" />', 'Label: bf.Coerce(BadgeInput{}.Label, "` ${x}"),'],
   ])('a literal prop with %s is a Go string literal', (_name, call, field) => {
     const { types, errors } = compile(`${children}
 export function Parent() {

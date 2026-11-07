@@ -2195,14 +2195,6 @@
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
     "fixtures": {
-      "awaits-undefined-plus-shapes": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "awaits-undefined-value"
-          ]
-        }
-      },
       "body-destructure-non-identifier-source": {
         "blade": {
           "kind": "refusal",
@@ -2832,46 +2824,6 @@
           ]
         }
       },
-      "component-prop-undefined-literal-spread": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "props-spread-explicit-null-override"
-          ]
-        }
-      },
-      "component-spread-explicit-null": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "props-spread-explicit-null-override"
-          ]
-        }
-      },
-      "component-spread-explicit-null-positions": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "props-spread-explicit-null-override"
-          ]
-        }
-      },
-      "component-spread-explicit-undefined-prop": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "props-spread-explicit-null-override"
-          ]
-        }
-      },
-      "component-spread-forwarded-null": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "props-spread-explicit-null-override"
-          ]
-        }
-      },
       "component-spread-props-in-static-loop-row": {
         "go-template": {
           "kind": "render",
@@ -3388,39 +3340,7 @@
           ]
         }
       },
-      "destructure-default-body-callback": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        }
-      },
-      "destructure-default-body-callback-shadow": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        }
-      },
-      "destructure-default-body-renamed-callback": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        }
-      },
       "destructure-default-body-renamed-callback-memo-chain": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        }
-      },
-      "destructure-default-body-renamed-callback-signal": {
         "go-template": {
           "kind": "render",
           "limitations": [
@@ -3498,14 +3418,6 @@
           ]
         }
       },
-      "destructure-default-null-hydrate": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        }
-      },
       "destructure-default-param-computed-array": {
         "go-template": {
           "kind": "refusal",
@@ -3518,22 +3430,6 @@
           "escape": {
             "state": "debt"
           }
-        }
-      },
-      "destructure-default-param-renamed-callback": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        }
-      },
-      "destructure-default-param-renamed-callback-memo": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
         }
       },
       "destructure-default-shared-array": {
@@ -5609,14 +5505,6 @@
           }
         }
       },
-      "loop-row-child-absent-optional-field-attr": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "absent-optional-row-field-forwarded"
-          ]
-        }
-      },
       "loop-row-child-caller-rows-outer-state-key": {
         "go-template": {
           "kind": "refusal",
@@ -6891,28 +6779,6 @@
           ]
         }
       },
-      "nil-reading-concrete-zero-row-field": {
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "optional-row-field-nil-reading"
-          ],
-          "escape": {
-            "state": "debt"
-          }
-        }
-      },
-      "nullish-optional-row-field": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "nullish-optional-scalar-row-field"
-          ]
-        }
-      },
       "object-spread-branch-child": {
         "go-template": {
           "kind": "refusal",
@@ -6949,95 +6815,6 @@
           ],
           "limitations": [
             "object-spread-onto-child-component"
-          ],
-          "escape": {
-            "state": "debt"
-          }
-        }
-      },
-      "omitted-optional-nullable-number-arithmetic": {
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic"
-          }
-        }
-      },
-      "omitted-optional-nullable-number-arithmetic-destructured": {
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic-destructured"
-          }
-        }
-      },
-      "omitted-optional-nullable-number-relational": {
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-relational"
-          }
-        }
-      },
-      "omitted-optional-nullable-number-unary-plus": {
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-unary-plus"
-          }
-        }
-      },
-      "omitted-optional-nullable-string-relational": {
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-scalar-relational"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-string-relational"
-          }
-        }
-      },
-      "omitted-optional-row-field-plus": {
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "optional-row-field-nil-reading"
           ],
           "escape": {
             "state": "debt"
@@ -7325,12 +7102,6 @@
         }
       },
       "props-object-non-props-name-operand-typing": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "props-object-non-props-name-operand-typing"
-          ]
-        },
         "mojolicious": {
           "kind": "render",
           "limitations": [
@@ -9608,30 +9379,6 @@
           ]
         }
       },
-      "undef-null-array-search": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        }
-      },
-      "undef-null-destructure-default": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        }
-      },
-      "undef-null-json-stringify": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        }
-      },
       "undef-null-json-stringify-object-member": {
         "blade": {
           "kind": "render",
@@ -9640,12 +9387,6 @@
           ]
         },
         "erb": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "go-template": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -9682,100 +9423,6 @@
           ]
         },
         "xslate": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        }
-      },
-      "undef-null-number-coercion": {
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic"
-          }
-        }
-      },
-      "undef-null-number-coercion-typed": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        }
-      },
-      "undef-null-optional-chain-result": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        }
-      },
-      "undef-null-optional-method-args": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        }
-      },
-      "undef-null-relational": {
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-relational"
-          }
-        }
-      },
-      "undef-null-row-field-coercion": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        }
-      },
-      "undef-null-sort": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        }
-      },
-      "undef-null-strict-equality": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        }
-      },
-      "undef-null-string-coercion": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        }
-      },
-      "undef-null-string-includes": {
-        "go-template": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10022,10 +9669,6 @@
       }
     },
     "docs": {
-      "awaits-undefined-plus-shapes": {
-        "description": "A + or template literal over an either-nil string, a dynamic + over an omitted number, and an…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/awaits-undefined-plus-shapes.ts"
-      },
       "body-destructure-non-identifier-source": {
         "description": "A body destructure of a member read or a call is refused",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-destructure-non-identifier-source.ts"
@@ -10053,26 +9696,6 @@
       "child-undeclared-prop-whole-props-spread": {
         "description": "Undeclared props reach a child that spreads its whole props object",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/child-undeclared-prop-whole-props-spread.ts"
-      },
-      "component-prop-undefined-literal-spread": {
-        "description": "A child prop written as the literal undefined still passes its key to a props spread",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-prop-undefined-literal-spread.ts"
-      },
-      "component-spread-explicit-null": {
-        "description": "A props spread whose explicit null overrides an earlier explicit prop",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-explicit-null.ts"
-      },
-      "component-spread-explicit-null-positions": {
-        "description": "A props spread whose explicit null overrides an earlier explicit prop under a condition and in a…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-explicit-null-positions.ts"
-      },
-      "component-spread-explicit-undefined-prop": {
-        "description": "A props spread carrying a key its caller passed as undefined overrides an earlier explicit prop",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-explicit-undefined-prop.ts"
-      },
-      "component-spread-forwarded-null": {
-        "description": "An explicit null forwarded through two props spreads overrides the earlier explicit prop",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/component-spread-forwarded-null.ts"
       },
       "component-spread-props-in-static-loop-row": {
         "description": "A props spread onto a child component in a static-array loop row",
@@ -10106,25 +9729,9 @@
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
       },
-      "destructure-default-body-callback": {
-        "description": "A body destructure default holding a callback renders its value when the prop is omitted",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-callback.ts"
-      },
-      "destructure-default-body-callback-shadow": {
-        "description": "A body destructure default whose callback parameter shadows the prop name renders the filtered array",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-callback-shadow.ts"
-      },
-      "destructure-default-body-renamed-callback": {
-        "description": "A renamed body destructure default holding a callback renders its value when the prop is omitted",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback.ts"
-      },
       "destructure-default-body-renamed-callback-memo-chain": {
         "description": "A renamed body destructure default holding a callback, read through a memo of a memo, renders its…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback-memo-chain.ts"
-      },
-      "destructure-default-body-renamed-callback-signal": {
-        "description": "A renamed body destructure default holding a callback seeds a signal with its value",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback-signal.ts"
       },
       "destructure-default-body-renamed-computed-array": {
         "description": "A renamed body destructure default computing an array from an earlier binding takes the computed…",
@@ -10134,21 +9741,9 @@
         "description": "A destructure default reading an earlier binding kept as a local reads that local…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-earlier-assignment.ts"
       },
-      "destructure-default-null-hydrate": {
-        "description": "A destructure default applies to an omitted or undefined prop, not to null, at SSR, on hydration…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-null-hydrate.ts"
-      },
       "destructure-default-param-computed-array": {
         "description": "A parameter destructure default computing an array from an earlier binding takes the computed array",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-computed-array.ts"
-      },
-      "destructure-default-param-renamed-callback": {
-        "description": "A renamed parameter destructure default holding a callback renders its value when the prop is…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-renamed-callback.ts"
-      },
-      "destructure-default-param-renamed-callback-memo": {
-        "description": "A renamed parameter destructure default holding a callback, read through a memo, renders its value",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-renamed-callback-memo.ts"
       },
       "destructure-default-shared-array": {
         "description": "A destructure default reading an earlier binding kept as a local reads that local (shared-array)",
@@ -10246,10 +9841,6 @@
         "description": "A component loop row over a number array keyed by n.toString() renders data-key",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-key-to-string-number-component-row.ts"
       },
-      "loop-row-child-absent-optional-field-attr": {
-        "description": "A loop-row child fed an absent optional row field omits the attributes bound to it",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-absent-optional-field-attr.ts"
-      },
       "loop-row-child-caller-rows-outer-state-key": {
         "description": "A component loop row with a computed prop, keyed by an expression reading outer state, carries its…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-caller-rows-outer-state-key.ts"
@@ -10330,14 +9921,6 @@
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
       },
-      "nil-reading-concrete-zero-row-field": {
-        "description": "An optional row field supplied as the empty string and omitted, under a string concatenation",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nil-reading-concrete-zero-row-field.ts"
-      },
-      "nullish-optional-row-field": {
-        "description": "An omitted optional row field takes the ?? fallback and a present \"\" or 0 is kept",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nullish-optional-row-field.ts"
-      },
       "object-spread-branch-child": {
         "description": "an object spread inside an untaken early-return branch is not evaluated at init (#3861)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/object-spread-branch-child.ts"
@@ -10349,30 +9932,6 @@
       "object-spread-prop-child": {
         "description": "an object prop spread onto a child component merges in source order (#3861)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/object-spread-prop-child.ts"
-      },
-      "omitted-optional-nullable-number-arithmetic": {
-        "description": "Arithmetic over an omitted optional prop typed number | null (undefined → NaN)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-nullable-number-arithmetic.ts"
-      },
-      "omitted-optional-nullable-number-arithmetic-destructured": {
-        "description": "Arithmetic over an omitted destructured optional prop typed number | null",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-nullable-number-arithmetic-destructured.ts"
-      },
-      "omitted-optional-nullable-number-relational": {
-        "description": "A comparison over an omitted optional prop typed number | null (undefined → NaN → false)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-nullable-number-relational.ts"
-      },
-      "omitted-optional-nullable-number-unary-plus": {
-        "description": "Unary plus over an omitted optional prop typed number | null (+undefined → NaN)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-nullable-number-unary-plus.ts"
-      },
-      "omitted-optional-nullable-string-relational": {
-        "description": "A comparison over an omitted optional prop typed string | null (undefined → NaN → false)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-nullable-string-relational.ts"
-      },
-      "omitted-optional-row-field-plus": {
-        "description": "A + over an optional string row field renders undefined / NaN when the row omits it and…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-row-field-plus.ts"
       },
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
@@ -10510,61 +10069,9 @@
         "description": "A tag-opening brace in a template-literal URL attribute and in style element text prints as written",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/template-delimiter-contextual-escape.ts"
       },
-      "undef-null-array-search": {
-        "description": "includes / indexOf tell an undefined needle or element from a null one",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-array-search.ts"
-      },
-      "undef-null-destructure-default": {
-        "description": "A destructure default applies to an omitted or undefined prop, not to an explicit null",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-destructure-default.ts"
-      },
-      "undef-null-json-stringify": {
-        "description": "JSON.stringify writes an undefined array element as null and gives nothing for a top-level undefined",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-json-stringify.ts"
-      },
       "undef-null-json-stringify-object-member": {
         "description": "JSON.stringify drops an undefined object member and writes a null one",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-json-stringify-object-member.ts"
-      },
-      "undef-null-number-coercion": {
-        "description": "Number() / unary + / arithmetic / Math read null as 0 and undefined as NaN",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-number-coercion.ts"
-      },
-      "undef-null-number-coercion-typed": {
-        "description": "Number() / unary + / arithmetic / Math / < over a number typed with one nil read null as 0 and…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-number-coercion-typed.ts"
-      },
-      "undef-null-optional-chain-result": {
-        "description": "?. over a nullish receiver yields undefined, never null",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-optional-chain-result.ts"
-      },
-      "undef-null-optional-method-args": {
-        "description": "slice / join / padStart take the default for an undefined argument and coerce a null one",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-optional-method-args.ts"
-      },
-      "undef-null-relational": {
-        "description": "< / <= compare null as 0 and undefined as NaN",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-relational.ts"
-      },
-      "undef-null-row-field-coercion": {
-        "description": "An omitted row field reads undefined and a null one reads null under String / template literal /…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-row-field-coercion.ts"
-      },
-      "undef-null-sort": {
-        "description": "A numeric sort puts null as 0 and undefined elements last",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-sort.ts"
-      },
-      "undef-null-strict-equality": {
-        "description": "=== undefined / === null tell null and undefined apart; == null does not",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-strict-equality.ts"
-      },
-      "undef-null-string-coercion": {
-        "description": "String() / template literal / + render null and undefined as \"null\" and \"undefined\"",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-string-coercion.ts"
-      },
-      "undef-null-string-includes": {
-        "description": "includes / indexOf / startsWith on a string ToString an undefined or null needle",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-string-includes.ts"
       },
       "unlowered-global-call": {
         "description": "A zero-arg call on a JavaScript global refuses (BF101) instead of rendering a member read (#3505)",
@@ -10682,26 +10189,6 @@
         "description": "prop-precompute twin of module-const-loop-source-computed — computation moved to the caller, full…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-loop-source-computed-precomputed.ts"
       },
-      "omitted-optional-number-arithmetic": {
-        "description": "Arithmetic over an omitted optional number prop (undefined → NaN)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-number-arithmetic.ts"
-      },
-      "omitted-optional-number-arithmetic-destructured": {
-        "description": "Arithmetic over an omitted destructured optional number prop (undefined → NaN)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-number-arithmetic-destructured.ts"
-      },
-      "omitted-optional-number-relational": {
-        "description": "A comparison over an omitted optional number prop is false (undefined → NaN)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-number-relational.ts"
-      },
-      "omitted-optional-number-unary-plus": {
-        "description": "Unary plus over an omitted optional number prop (+undefined → NaN)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-number-unary-plus.ts"
-      },
-      "omitted-optional-string-relational": {
-        "description": "A comparison over an omitted optional string or boolean prop is false (undefined → NaN)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-string-relational.ts"
-      },
       "opaque-local-accessor-call-client": {
         "description": "Local accessor bound to an opaque helper call, read deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call-client.ts"
@@ -10785,19 +10272,6 @@
     }
   },
   "limitations": {
-    "absent-optional-row-field-forwarded": {
-      "title": "An absent optional row field passed to a loop-row child component",
-      "kind": "silent",
-      "given": "a loop row's optional scalar field (`tone?: string`) passed as it is to a child component's prop (`<Item tone={r.tone} />`), over rows that omit the field, where the child binds the prop to an attribute (`class={tone}`, `data-tone={tone}`)",
-      "expected": "the child receives `undefined` for a row that omits the field, so the attribute is omitted",
-      "actual": "renders the attribute empty (`class=\"\"`): the row stores an omitted field as its type's zero value, so the child receives a present `''`",
-      "fixtures": [
-        "loop-row-child-absent-optional-field-attr"
-      ],
-      "adapters": [
-        "go-template"
-      ]
-    },
     "ambient-locale-date-formatting": {
       "title": "Ambient-locale Date formatting",
       "kind": "by-design",
@@ -10898,19 +10372,6 @@
       ],
       "diagnostics": [
         "BF056"
-      ]
-    },
-    "awaits-undefined-value": {
-      "title": "A `+` or template-literal operand whose nil may stand for `undefined` and Phase 1 cannot say",
-      "kind": "silent",
-      "given": "an omitted prop typed both optional and nullable (`c?: string | null`) under `+` or in a template literal, an omitted optional number under a `+` whose other operand is untyped, or an untyped nil (an out-of-range index read) in a template literal",
-      "expected": "the omitted value reads `undefined`: `\"btn undefined\"`, `\"undefinedx\"`, `\"undefined\"`",
-      "actual": "renders the either-nil string as the empty string and the other two as `null` (`\"nullx\"`, `\"null\"`), since the runtimes hold `undefined` and `null` as one nil; fixed per target once its runtime carries `undefined` (`spec/js-undefined-value.md`)",
-      "fixtures": [
-        "awaits-undefined-plus-shapes"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "body-destructure-without-const-form": {
@@ -11232,13 +10693,7 @@
       "expected": "the omitted prop takes the default value",
       "actual": "renders the omitted prop as an empty value, without its default",
       "fixtures": [
-        "destructure-default-body-callback",
-        "destructure-default-body-callback-shadow",
-        "destructure-default-body-renamed-callback",
-        "destructure-default-body-renamed-callback-memo-chain",
-        "destructure-default-body-renamed-callback-signal",
-        "destructure-default-param-renamed-callback",
-        "destructure-default-param-renamed-callback-memo"
+        "destructure-default-body-renamed-callback-memo-chain"
       ],
       "adapters": [
         "go-template"
@@ -11313,24 +10768,11 @@
       "expected": "`undefined` and `null` are distinct values, so each renders its own JS result (`\"undefined\"` / `\"null\"`, `NaN` / `0`, a dropped member or no string / `null`, the default / `null`, the argument default / the coerced `null`)",
       "actual": "renders the result for one of them in place of the other, or fails to render, since the host nil stands for both; graduates per target as its runtime carries `undefined` (`spec/js-undefined-value.md`)",
       "fixtures": [
-        "destructure-default-null-hydrate",
-        "undef-null-array-search",
-        "undef-null-destructure-default",
-        "undef-null-json-stringify",
-        "undef-null-json-stringify-object-member",
-        "undef-null-number-coercion-typed",
-        "undef-null-optional-chain-result",
-        "undef-null-optional-method-args",
-        "undef-null-row-field-coercion",
-        "undef-null-sort",
-        "undef-null-strict-equality",
-        "undef-null-string-coercion",
-        "undef-null-string-includes"
+        "undef-null-json-stringify-object-member"
       ],
       "adapters": [
         "blade",
         "erb",
-        "go-template",
         "jinja",
         "minijinja",
         "mojolicious",
@@ -11632,19 +11074,6 @@
         "go-template"
       ]
     },
-    "nullish-optional-scalar-row-field": {
-      "title": "`??` over an optional scalar field of a typed loop row",
-      "kind": "silent",
-      "given": "`??` whose left operand is a loop row's optional field declared as one scalar type (`s?: string`, `m?: number`), read as `t.s` or destructured, over rows that hold `''` / `0` and rows that omit the field",
-      "expected": "a present `''` / `0` is not nullish and is kept; an omitted field takes the fallback",
-      "actual": "renders the fallback for a present `''` / `0`: the row stores an omitted field as its type's zero value, so `??` cannot tell the two apart",
-      "fixtures": [
-        "nullish-optional-row-field"
-      ],
-      "adapters": [
-        "go-template"
-      ]
-    },
     "object-equality-by-contents": {
       "title": "Strict equality between distinct objects or arrays with the same contents",
       "kind": "refusal",
@@ -11718,43 +11147,6 @@
         "BF101"
       ]
     },
-    "omitted-optional-nullable-number-arithmetic": {
-      "title": "Arithmetic, unary plus or a comparison over an optional prop typed as a nullable number",
-      "kind": "refusal",
-      "given": "arithmetic, a unary `+`, or a `<` / `<=` / `>` / `>=` comparison, over a prop whose type admits both `null` and absence (`n?: number | null`)",
-      "expected": "an omitted prop reads as `undefined` (`NaN`, so a comparison is false) and a `null` one as `0`",
-      "actual": "the compiler refuses with BF101",
-      "fixtures": [
-        "omitted-optional-nullable-number-arithmetic",
-        "omitted-optional-nullable-number-arithmetic-destructured",
-        "omitted-optional-nullable-number-relational",
-        "omitted-optional-nullable-number-unary-plus",
-        "undef-null-number-coercion",
-        "undef-null-relational"
-      ],
-      "adapters": [
-        "go-template"
-      ],
-      "diagnostics": [
-        "BF101"
-      ]
-    },
-    "omitted-optional-nullable-scalar-relational": {
-      "title": "A comparison over an optional prop typed as a nullable string or boolean",
-      "kind": "refusal",
-      "given": "a `<` / `<=` / `>` / `>=` comparison over a string or boolean prop whose type admits both `null` and absence (`s?: string | null`)",
-      "expected": "an omitted prop reads as `undefined` (`NaN`, so the comparison is false) and a `null` one as `0`",
-      "actual": "the compiler refuses with BF101",
-      "fixtures": [
-        "omitted-optional-nullable-string-relational"
-      ],
-      "adapters": [
-        "go-template"
-      ],
-      "diagnostics": [
-        "BF101"
-      ]
-    },
     "opaque-local-accessor-call": {
       "title": "Opaque local accessor invoked from a template position",
       "kind": "refusal",
@@ -11774,23 +11166,6 @@
         "pebble",
         "twig",
         "xslate"
-      ],
-      "diagnostics": [
-        "BF101"
-      ]
-    },
-    "optional-row-field-nil-reading": {
-      "title": "An optional row field read by its nil under a coercion",
-      "kind": "refusal",
-      "given": "an optional scalar row field (`id?: string`) under a `+`, a template literal, an arithmetic or a relational operator, on a target whose row struct holds the field as a concrete value",
-      "expected": "a supplied empty or zero value is kept (`'' + '!'` is `!`) and an omitted field reads `undefined` (`undefined!`)",
-      "actual": "the compiler refuses with BF101",
-      "fixtures": [
-        "nil-reading-concrete-zero-row-field",
-        "omitted-optional-row-field-plus"
-      ],
-      "adapters": [
-        "go-template"
       ],
       "diagnostics": [
         "BF101"
@@ -11838,27 +11213,8 @@
         "props-object-non-props-name-operand-typing"
       ],
       "adapters": [
-        "go-template",
         "mojolicious",
         "xslate"
-      ]
-    },
-    "props-spread-explicit-null-override": {
-      "title": "An explicit null prop carried by a props spread onto a child component",
-      "kind": "silent",
-      "given": "a child component call that spreads the props object after an explicit prop of the same key (`<Child label=\"first\" {...props} />`), called with that key set to `null` or `undefined`",
-      "expected": "the spread carries the key, so its `null` / `undefined` overrides the earlier explicit prop",
-      "actual": "keeps the earlier explicit prop, as if the caller had omitted the key",
-      "fixtures": [
-        "component-prop-undefined-literal-spread",
-        "component-spread-explicit-null",
-        "component-spread-explicit-null-positions",
-        "component-spread-explicit-undefined-prop",
-        "component-spread-forwarded-absent",
-        "component-spread-forwarded-null"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "props-spread-static-loop-row": {

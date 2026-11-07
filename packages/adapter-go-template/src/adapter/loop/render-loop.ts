@@ -45,6 +45,7 @@ import { isFieldlessRowType } from '../lib/loop-row-path.ts'
 import type { RowsFieldSite } from '../lib/nested-rows-field.ts'
 import { hasNoInputSlot, restBagOverrideFields, routesToRestBag, type ChildComponentShape } from '../lib/types.ts'
 import { loopRowType } from '../type/number-read.ts'
+import { spreadCarriedCallerKey } from '../props/props-spread.ts'
 
 
 /**
@@ -92,6 +93,8 @@ export interface LoopRenderHost {
   loopBindingStack(): Array<Map<string, string>>
   /** A destructure row frame's binding accessors. */
   destructureAccessors(): WeakMap<ScopeFrame, Map<string, string>>
+  /** `accessor` (of the row binding `name`) as its JS value (`bf_js`) when it may read a `bf.Opt[T]` row field. */
+  optBindingRead(name: string, accessor: string): string
   /** Object-rest exclude keys of the enclosing loops, innermost last. */
   loopRestExcludeStack(): Array<Map<string, { parent: string; excludeKeys: string[] }>>
   /** Whether each enclosing loop's row is a scalar, innermost last. */
@@ -406,6 +409,11 @@ function bindLoopRowVars(
   if (supportableDestructure) {
     // Bindings resolve against the synthetic `$__bf_item` range var.
     const built = buildDestructureBindingMap(loop, rangeValue)
+    // A binding to a `bf.Opt[T]` row field reads its JS value (`bf_js`).
+    for (const b of loop.paramBindings ?? []) {
+      const accessor = built.bindings.get(b.name)
+      if (!b.rest && accessor !== undefined) built.bindings.set(b.name, host.optBindingRead(b.name, accessor))
+    }
     host.loopBindingStack().push(built.bindings)
     const rowFrame = (loop.paramBindings ?? []).length > 0
       ? host.scope().lookup(loop.paramBindings![0].name)?.frame
@@ -980,8 +988,14 @@ function lowerLoopRowChildProp(
     // Claimed below, once the prop's value has actually lowered.
     rebuild = staleRebuild
   }
-  const go = lowerOverrideValue(host, comp, prop, prop.value, escaped)
-  if (go === null) return null
+  const lowered = lowerOverrideValue(host, comp, prop, prop.value, escaped)
+  if (lowered === null) return null
+  // A later `{...props}` spread carries the key when the caller passed it,
+  // `null` / `undefined` included: the row's value applies only otherwise.
+  const carried = spreadCarriedCallerKey(host.ctx, comp.props, prop.name)
+  const go = carried === null
+    ? lowered
+    : `(bf_ternary (bf_has $.BfCallerProps ${JSON.stringify(carried)}) (bf_get $.BfCallerProps ${JSON.stringify(carried)}) ${wrapIfMultiToken(lowered)})`
   // #3062: a rest-bag prop has no declared field — deliver its per-row
   // value through `bf_with_bag` (keyed by the RAW JSX attribute name,
   // same as `queueDynamicPropDefine`'s static sibling route) instead of

@@ -29,7 +29,7 @@ import {
 import type { GoEmitContext } from '../emit-context.ts'
 import type { PropFallbackVar } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
-import { escapeGoString, GO_NATIVE_SAFE, goNilReadingSite } from '../lib/go-emit.ts'
+import { escapeGoString, GO_NATIVE_SAFE, goNilReadingSite, goNullishTest, goUndefinedTest } from '../lib/go-emit.ts'
 import {
   convertInitialValue,
   getSignalInitialValueAsGo,
@@ -1067,17 +1067,14 @@ function isNillablePropField(ctx: GoEmitContext, propName: string): boolean {
 /**
  * () => props.X !== undefined (or !=/===/==) — the "controlled component"
  * idiom's `isControlled` memo (#2260). Distinguishing "caller passed a
- * value" from "caller omitted the prop" needs the nillable `interface{}`
- * representation `collectPresenceCheckedPropNames`/`resolvePropGoType`
- * flip `props.X` to; the input field's Go zero value for `interface{}` IS
- * `nil`, so a plain nil-check is exact (no `bf_nullish`-style helper
- * needed — this is presence, not a `??` fallback).
+ * value" from "caller omitted the prop" reads the nillable `interface{}`
+ * field `resolvePropGoType` gives an optional prop, which holds
+ * `bf.Undefined` for an omitted one: `x === undefined` is `bf.IsUndefined`,
+ * the loose `x == undefined` `bf.IsNullish`.
  *
- * Guarded on the field ACTUALLY being nillable-flipped — a presence check
- * against a CONCRETE-typed field (a required prop, or an optional one this
- * memo's shape didn't trigger the flip for, e.g. via
- * `collectPresenceCheckedPropNames`'s primitive-only / no-default gate)
- * can't be tested this way (`x != nil` doesn't even compile against a
+ * Guarded on the field ACTUALLY being nillable — a presence check
+ * against a CONCRETE-typed field (a required prop, or an optional one
+ * with a zero-value default) can't be tested this way (`x != nil` doesn't even compile against a
  * `string`/`bool` field) — the caller's zero-value default applies instead
  * of invalid Go. Reads the RAW `in.<Field>` directly.
  */
@@ -1092,7 +1089,13 @@ function presenceCheckArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
   const isNe = body.op === '!==' || body.op === '!='
   // `nillablePropNames` stays keyed by the LOCAL name (a source-level
   // set); the emitted field is caller-facing (#2525).
-  return `in.${capitalizeFieldName(param.sourceName ?? propName)} ${isNe ? '!=' : '=='} nil`
+  const field = `in.${capitalizeFieldName(param.sourceName ?? propName)}`
+  // `x === undefined` is strict, `x == undefined` loose (decision 7): an
+  // explicit `null` is present to the first and nullish to the second.
+  const owner = env.ctx.state.currentPropsParams.find(p => p.name === propName)
+  const goType = owner ? resolvePropGoType(env.ctx, owner, env.ctx.state.propTypeOverrides) : 'interface{}'
+  const test = body.op === '===' || body.op === '!==' ? goUndefinedTest(field, goType) : goNullishTest(field)
+  return isNe ? `!(${test})` : test
 }
 
 /** A string-literal or module-string-const ternary branch → its Go string literal, else null. */
@@ -1522,7 +1525,7 @@ export function resolveGetterValueAsGo(
     if (fb && capitalizeFieldName(fb.propName) === capitalizeFieldName(memo.name)) {
       const fbParam = propsParams.find(p => p.name === fb.propName)
       const field = `in.${capitalizeFieldName(fbParam?.sourceName ?? fb.propName)}`
-      return `func() interface{} { v := interface{}(${field}); if v == nil || v == "" { return ${fb.goFallback} }; return v }()`
+      return `func() interface{} { v := interface{}(${field}); if bf.IsNullish(v) { return ${fb.goFallback} }; return v }()`
     }
     return computeMemoInitialValueOrNull(
       ctx, memo, signals, propsParams, propFallbackVars, new Set([...resolving, memo.name]),
@@ -1607,7 +1610,7 @@ export function resolveComparisonOperandGo(
     const propName = propsAccessNameFromParsed(ctx, node.left)
     if (propName) {
       const field = `in.${capitalizeFieldName(propName)}`
-      return `func() interface{} { v := interface{}(${field}); if v == nil || v == "" { return ${JSON.stringify(node.right.value)} }; return v }()`
+      return `func() interface{} { v := interface{}(${field}); if bf.IsNullish(v) { return ${JSON.stringify(node.right.value)} }; return v }()`
     }
   }
   // Bare props.X.

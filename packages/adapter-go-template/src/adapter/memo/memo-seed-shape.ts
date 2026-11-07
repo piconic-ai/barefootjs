@@ -86,10 +86,8 @@ export function isResolvableLengthRead(
 /**
  * A prop reference resolved against the component's ACTUAL props-object
  * binding (`ctx.state.propsObjectName` — may be a non-`props` name, or
- * `null` for a destructured signature), else null. Mirrors
- * `collectPresenceCheckedPropNames`'s (prop-types.ts) exact shape so the
- * presence-check codegen branch below can't drift from the collector that
- * decides which props got the nillable flip in the first place — unlike
+ * `null` for a destructured signature), else null. The presence-check
+ * codegen reads the same shape — unlike
  * `propsMemberName` (hardcoded to the literal name `props`), which only
  * matches the conventional object-props signature.
  */

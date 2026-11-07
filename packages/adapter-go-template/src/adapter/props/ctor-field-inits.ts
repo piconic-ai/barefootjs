@@ -53,7 +53,7 @@ export function emitPropFallbackLocals(
         : info.assertType === 'float64' ? `bf.ToFloat64(in.${info.fieldName})`
         : `in.${info.fieldName}.(${info.assertType})`
       lines.push(`\tvar ${info.varName} ${info.assertType} = ${info.goFallback}`)
-      lines.push(`\tif in.${info.fieldName} != nil {`)
+      lines.push(`\tif !bf.IsNullish(in.${info.fieldName}) {`)
       lines.push(`\t\t${info.varName} = ${deref}`)
       lines.push(`\t}`)
     } else {
@@ -186,7 +186,7 @@ export function emitPropFieldInits(
         // interface{} field (`size ?? 'icon'`): the string zero-check doesn't
         // compile, so wrap in a nil/empty-tolerant IIFE.
         lines.push(
-          `\t\t${fieldName}: func() interface{} { v := interface{}(in.${inputField}); if v == nil || v == "" { return ${memoFold.goFallback} }; return v }(),`,
+          `\t\t${fieldName}: func() interface{} { v := interface{}(in.${inputField}); if bf.IsNullish(v) { return ${memoFold.goFallback} }; return v }(),`,
         )
       } else {
         lines.push(`\t\t${fieldName}: in.${inputField},`)

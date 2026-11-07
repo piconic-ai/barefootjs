@@ -25,7 +25,7 @@ import {
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { propsObjectKeyRead, resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
-import { applyGoFallback, GO_NATIVE_SAFE } from '../lib/go-emit.ts'
+import { applyGoFallback, GO_NATIVE_SAFE, goUndefinedTest } from '../lib/go-emit.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { collapseLiteralUnion, literalNumberValue, typeInfoToGo } from '../type/type-codegen.ts'
 import { evalExprGo, evaluatedAsGoType } from '../memo/memo-compute.ts'
@@ -82,6 +82,15 @@ export function buildPropTypeOverrides(ctx: GoEmitContext, ir: ComponentIR): Map
 }
 
 /**
+ * Whether `goType` is a scalar a prop's field holds as it is: a primitive or
+ * a string-union alias (`type Tone = string`), as opposed to a slice, map,
+ * pointer or struct, which is nillable already.
+ */
+function isScalarPropGoType(ctx: GoEmitContext, goType: string): boolean {
+  return NULLISH_SCALAR_GO_TYPES.has(goType) || ctx.state.localTypeAliases.has(goType)
+}
+
+/**
  * Concrete scalar Go types eligible for the nullish (`??`) nillable flip in
  * `resolvePropGoType`. Only these can round-trip through an `interface{}`
  * field and back via a constructor type assertion / `bf.ToInt`-style
@@ -110,177 +119,6 @@ function nullishTestedReads(left: ParsedExpr): ParsedExpr[] {
   if (left.kind === 'logical') return [...nullishTestedReads(left.left), ...nullishTestedReads(left.right)]
   if (left.kind === 'conditional') return [...nullishTestedReads(left.consequent), ...nullishTestedReads(left.alternate)]
   return [left]
-}
-
-/**
- * Names of OPTIONAL props consumed nullish-sensitively — the left operand of
- * a `??` anywhere in the component's parsed expression trees or signal seeds
- * (#3532), or a signal's `props.X ?? <literal>` initial value (#2248).
- *
- * Why this matters: JS `??` falls back only on `null`/`undefined`, keeping
- * `''`/`0`/`false`. A Go zero-valued scalar field cannot represent "absent",
- * so a `??`-consumed optional scalar must lower to the adapter's established
- * nillable representation (`interface{}`) for the distinction to exist at
- * render time. `resolvePropGoType` applies that flip using this set.
- *
- * The IR walk is generic (any nested object/array is descended, so parsed
- * trees inside expressions, conditions, attributes, and loops are all seen)
- * and the match is shape-precise: `identifier` left (destructured props) or
- * `<propsObject>.<name>` member left. KNOWN LIMITATION (same class as
- * `collectToFixedPropNames`): an `identifier` left shadowed by a same-named
- * loop/callback param is misattributed to the prop — the flip is then merely
- * unnecessary, not incorrect.
- */
-export function collectNullishConsumedPropNames(ctx: GoEmitContext, ir: ComponentIR): Set<string> {
-  const names = new Set<string>()
-  // A destructure default (`{ className = '' }`) means the binding is never
-  // nullish in JS — the default already applied — so such props never need
-  // the nillable flip (and `applyGoFallback`'s concrete-typed baking relies
-  // on them staying concrete).
-  const optionalParams = new Set(
-    ir.metadata.propsParams.filter(p => p.optional && p.defaultValue == null).map(p => p.name),
-  )
-  if (optionalParams.size === 0) return names
-
-  const propsObject = ctx.state.propsObjectName
-  const propNameOfLeft = (left: ParsedExpr): string | null => {
-    if (left.kind === 'identifier') return left.name
-    const key = propsObjectKeyRead(propsObject, left)
-    if (key !== null) return key
-    if (left.kind === 'member' && !left.computed && left.object.kind === 'identifier') {
-      // Single-hop member access rooted at a bare destructured optional
-      // OBJECT prop (`user?.name ?? '…'`, #2256): the flip belongs to the
-      // ROOT prop (`user`) — an optional-object prop already lowers to a
-      // nillable `map[string]interface{}` by construction
-      // (`resolvePropGoType`'s struct-map branch), so it's the root's
-      // membership here (not the accessed field) that keeps the root's
-      // field nillable, so `bf_get`'s hop reads nil for it. A deeper
-      // chain (`props.user?.name`, `user?.address?.city`) isn't matched —
-      // same single-hop `?.` caveat documented on the `member` ParsedExpr
-      // variant.
-      return left.object.name
-    }
-    return null
-  }
-
-  // `?? <zero-equivalent literal>` (`?? ''`, `?? 0`, `?? false`) is the one
-  // shape where nullish and truthiness semantics coincide — nil and the zero
-  // value both land on the same output — so it earns no flip. Only a
-  // fallback the zero value must NOT collapse into makes the distinction
-  // observable. `?? null` is not one: an attribute bound to it is omitted
-  // for an absent prop and kept for a present `''` (#3824 step 7). Nor is a
-  // zero of another type than the prop's (`s ?? 0` over a string, `n ?? ''`
-  // over a number): the prop's zero value differs from the fallback, so an
-  // absent prop must stay distinguishable from a present `''` / `0`.
-  const zeroLiteralType = (right: ParsedExpr): 'string' | 'number' | 'boolean' | null => {
-    if (right.kind !== 'literal') return null
-    if (right.value === '') return 'string'
-    if (right.value === false) return 'boolean'
-    return right.literalType === 'number' && Number(right.value) === 0 ? 'number' : null
-  }
-  const declaredPrimitive = new Map(
-    ir.metadata.propsParams.map(p => [p.name, p.type?.kind === 'primitive' ? p.type.primitive : undefined]),
-  )
-  /** Whether `propName`, read by `?? right`, takes the nillable flip. */
-  const flipsUnder = (propName: string | null, right: ParsedExpr): propName is string => {
-    if (!propName || !optionalParams.has(propName)) return false
-    const zero = zeroLiteralType(right)
-    if (zero === null) return true
-    const declared = declaredPrimitive.get(propName)
-    return declared !== undefined && declared !== zero
-  }
-
-  const walk = (node: unknown): void => {
-    if (!node || typeof node !== 'object') return
-    if (Array.isArray(node)) {
-      for (const item of node) walk(item)
-      return
-    }
-    const rec = node as Record<string, unknown>
-    if (rec.kind === 'logical' && rec.op === '??' && rec.left && rec.right) {
-      for (const read of nullishTestedReads(rec.left as ParsedExpr)) {
-        const propName = propNameOfLeft(read)
-        if (flipsUnder(propName, rec.right as ParsedExpr)) names.add(propName)
-      }
-    }
-    for (const value of Object.values(rec)) walk(value)
-  }
-  walk(ir.root)
-  // A computed const reads as its initializer in the template (#3494), so a
-  // `props.X ?? d` there is consumed like one written in place.
-  walk(computedConstInitializers(ir))
-  // A memo body the runtime evaluator computes (`() => props.size ?? 'icon'`)
-  // hands it the prop's field the same way a computed seed does. A callback
-  // inside the body (`rows.map(size => size ?? 'x')`) binds its own params,
-  // so a `??` over one of those reads the param, not the prop.
-  const walkMemoBody = (node: unknown, scope: BindingScope): void => {
-    if (!node || typeof node !== 'object') return
-    if (Array.isArray(node)) {
-      for (const item of node) walkMemoBody(item, scope)
-      return
-    }
-    const rec = node as Record<string, unknown>
-    if (rec.kind === 'arrow') {
-      walkMemoBody(rec.body, scope.enterCallback(rec.params as string[]))
-      return
-    }
-    if (rec.kind === 'logical' && rec.op === '??' && rec.left && rec.right) {
-      for (const read of nullishTestedReads(rec.left as ParsedExpr)) {
-        const root = read.kind === 'member' ? read.object : read
-        const propName = root.kind === 'identifier' && scope.isBound(root.name) ? null : propNameOfLeft(read)
-        if (flipsUnder(propName, rec.right as ParsedExpr)) names.add(propName)
-      }
-    }
-    for (const value of Object.values(rec)) walkMemoBody(value, scope)
-  }
-  for (const memo of ir.metadata.memos) walkMemoBody(memo.parsed, BindingScope.EMPTY)
-  // A signal seed the runtime evaluator computes (`(props.n ?? 1) * 2`)
-  // hands it the prop's field, which must be nil when the prop is absent
-  // for that `??` to take its right side (#3532). Read through the seed
-  // plan's const-hop inlining, as the evaluator is (`const mid = props.n;
-  // createSignal((mid ?? 1) * 2)`).
-  walk(ir.metadata.signals.map(s => resolveSignalParsedThroughSeedPlan(ctx.state, s)))
-
-  // Signal seeds (`createSignal(props.X ?? 1)`) live in metadata, not the
-  // tree — reuse the seam's existing `props.X ?? <literal>` recognizer. The
-  // zero-equivalent exclusion matches on the Go-formatted fallback literal.
-  for (const signal of ir.metadata.signals) {
-    // Resolved through the seed plan's const-hop inlining (#2685) — see
-    // `resolveSignalParsedThroughSeedPlan` — so a component-scope `const`
-    // between `props.X` and `createSignal` doesn't leave this loop and
-    // `collectPropFallbackVars`'s identical extraction disagreeing on
-    // whether the prop needs the nillable flip.
-    const resolvedParsed = resolveSignalParsedThroughSeedPlan(ctx.state, signal)
-    let match = ctx.extractPropFallbackFromParsed(resolvedParsed)
-    // #2683: the idempotent fold above declines a non-idempotent derivation
-    // (`(props.count ?? 1) * 2`) at the top level. When that signal's Go
-    // field name COLLIDES with the prop's own field, the props-struct
-    // emitter composes the derivation onto the SHARED field (see
-    // `collectPropFallbackVars`'s identical collision gate) — which needs
-    // the SAME nillable flip an ordinary `??` fallback gets, so an absent
-    // prop (nil) stays distinguishable from an explicit zero-equivalent
-    // value. Gated strictly on the collision, matching that other site, so
-    // a differently-named signal deriving from the same prop (not
-    // colliding — its own dedicated field, untouched by this fix) doesn't
-    // spuriously flip the prop's type.
-    if (!match) {
-      const collision = ctx.extractCollisionDerivation(resolvedParsed)
-      if (collision) {
-        const collisionParam = ir.metadata.propsParams.find(p => p.name === collision.propName)
-        const collisionField = collisionParam
-          ? capitalizeFieldName(collisionParam.sourceName ?? collision.propName)
-          : null
-        if (collisionField && capitalizeFieldName(signal.getter) === collisionField) {
-          match = { propName: collision.propName, goFallback: collision.goFallback }
-        }
-      }
-    }
-    if (!match || !optionalParams.has(match.propName)) continue
-    const f = match.goFallback
-    if (f === '""' || f === 'false' || f === 'nil' || Number(f) === 0) continue
-    names.add(match.propName)
-  }
-  return names
 }
 
 /**
@@ -390,325 +228,6 @@ function omittableAttrPropReads(
 }
 
 /**
- * Names of OPTIONAL no-default props consumed as the BARE value of an
- * omittable attribute (`rows={rows}` / `rows={props.rows}`) anywhere in the
- * component's element tree.
- *
- * Why this matters: Hono omits an attribute whose value is `undefined`, and
- * the adapter's `emitExpression` mirrors that with a `{{if ne .X nil}}` guard
- * — which needs a nillable field to test. A concrete scalar field would
- * render the zero value (`rows="0"`) instead of dropping the attribute, so
- * these props take the same `interface{}` flip as `??` consumption
- * (`resolvePropGoType`). The match mirrors `emitExpression`'s guard branch:
- * bare identifiers / `<propsObject>.<name>` only, skipping boolean/presence
- * attrs (truthiness-tested, where a nil and a zero value already coincide).
- * `class` / `className` / `style` are included (#3859): Hono omits them on
- * `undefined` like any other attribute. Only a primitive prop is flipped, so
- * a `style` object prop keeps its type, and a `style={{ … }}` literal never
- * reads a prop whole. Same shadowing caveat as
- * `collectNullishConsumedPropNames`: a same-named loop/callback param can
- * misattribute, making the flip merely unnecessary, not incorrect.
- */
-export function collectOmittableAttrConsumedPropNames(ctx: GoEmitContext, ir: ComponentIR): Set<string> {
-  const names = new Set<string>()
-  const optionalParams = new Set(
-    ir.metadata.propsParams.filter(p => p.optional && p.defaultValue == null).map(p => p.name),
-  )
-  if (optionalParams.size === 0) return names
-
-  const propsObject = ctx.state.propsObjectName
-  const nullableProps = collectNullishAttrContext(ir).nullableProps ?? new Map<string, string>()
-  const walk = (node: unknown): void => {
-    if (!node || typeof node !== 'object') return
-    if (Array.isArray(node)) {
-      for (const item of node) walk(item)
-      return
-    }
-    const rec = node as Record<string, unknown>
-    if (rec.type === 'element' && Array.isArray(rec.attrs)) {
-      for (const attr of rec.attrs as Array<{ name: string; value: Record<string, unknown> }>) {
-        for (const propName of omittableAttrPropReads(attr, propsObject, nullableProps)) {
-          if (optionalParams.has(propName)) names.add(propName)
-        }
-      }
-    }
-    for (const value of Object.values(rec)) walk(value)
-  }
-  walk(ir.root)
-  return names
-}
-
-/**
- * Names of OPTIONAL no-default props consumed as the BARE value of a
- * TEXT-position expression (`{size}` / `{props.size}`) anywhere in the
- * component's element tree.
- *
- * Why this matters (#2267): with no flip, an absent `size?: number` prop
- * resolves to a concrete `int` field and `{{.Size}}` prints its zero value
- * (`0`) instead of empty — the JS reference renders `undefined` as "".
- * These props take the same `interface{}` flip as `??`/omittable-attribute
- * consumption (`resolvePropGoType`); `renderExpression`'s emitter then
- * routes the flipped field through `bf_string` (nil-safe stringify)
- * instead of a bare `{{.X}}`, since `text/template` prints a nil
- * `interface{}` as the literal `<no value>`, not "".
- *
- * Generic recursive walk (matching `type: 'expression'` ANYWHERE, like
- * `collectNullishConsumedPropNames`) rather than only `element.children` —
- * a fragment return (`<>{size}</>`) or a conditional branch's children
- * would otherwise be missed. Same shadowing caveat as the sibling
- * collectors: a same-named loop/callback param can misattribute, making
- * the flip merely unnecessary, not incorrect.
- *
- * Filtered to `kind: 'primitive'` — unlike the `??`/omittable-attribute
- * collectors (whose consumers, `bf_nullish` and the `{{if ne .X nil}}`
- * guard, are nil-test-only and pass the underlying value through
- * untouched), this collector's consumer (`renderExpression`'s `bf_string`
- * wrap) RESTRINGIFIES the value via `fmt.Sprintf`. An optional prop
- * carrying already-rendered markup (a JSX-element/children prop) also
- * independently resolves to `interface{}` via `resolvePropGoType`'s
- * struct-map branch — routing THAT through `bf_string` would strip its
- * `template.HTML` safe-markup typing, so `text/template` re-escapes
- * already-escaped HTML on print (observed as literal `&lt;div&gt;...`).
- * Restricting to primitives keeps this collector disjoint from that flip.
- */
-export function collectTextConsumedPropNames(ctx: GoEmitContext, ir: ComponentIR): Set<string> {
-  const names = new Set<string>()
-  const optionalParams = new Set(
-    ir.metadata.propsParams
-      .filter(p => p.optional && p.defaultValue == null && p.type.kind === 'primitive')
-      .map(p => p.name),
-  )
-  if (optionalParams.size === 0) return names
-
-  const propsObject = ctx.state.propsObjectName
-  const walk = (node: unknown): void => {
-    if (!node || typeof node !== 'object') return
-    if (Array.isArray(node)) {
-      for (const item of node) walk(item)
-      return
-    }
-    const rec = node as Record<string, unknown>
-    if (rec.type === 'expression') {
-      const propName = barePropReadName(propsObject, rec.parsed as ParsedExpr | undefined)
-      if (propName !== null && optionalParams.has(propName)) names.add(propName)
-    }
-    for (const value of Object.values(rec)) walk(value)
-  }
-  walk(ir.root)
-  return names
-}
-
-/**
- * Names of OPTIONAL no-default scalar props read as the RECEIVER of an
- * optional chain (`props.text?.length`, `text?.length`, `props.n?.toFixed(2)`)
- * anywhere in the component's element tree (#3422, #3435).
- *
- * The `?.` lowering guards the read with `bf_eq <receiver> nil`, so an
- * absent receiver yields `undefined` (empty text, and the `??` fallback).
- * A concrete `string` field reads an omitted prop as `""`, the guard never
- * fires, and `.length` renders `0`. These props take the same
- * `interface{}` flip as `??`/attribute/text consumption
- * (`resolvePropGoType`), which also drops the absent prop from the
- * hydration payload. Same shadowing caveat as the sibling collectors: a
- * same-named loop/callback param can misattribute, making the flip merely
- * unnecessary, not incorrect.
- */
-export function collectOptionalChainReceiverPropNames(ctx: GoEmitContext, ir: ComponentIR): Set<string> {
-  const names = new Set<string>()
-  const optionalParams = new Set(
-    ir.metadata.propsParams
-      .filter(p => p.optional && p.defaultValue == null && p.type.kind === 'primitive')
-      .map(p => p.name),
-  )
-  if (optionalParams.size === 0) return names
-
-  const propsObject = ctx.state.propsObjectName
-  const propNameOf = (receiver: ParsedExpr): string | null =>
-    propsObjectKeyRead(propsObject, receiver) ??
-      (!propsObject && receiver.kind === 'identifier' ? receiver.name : null)
-  const isNullish = (e: ParsedExpr): boolean =>
-    (e.kind === 'literal' && e.literalType === 'null') || (e.kind === 'identifier' && e.name === 'undefined')
-  const walk = (node: unknown): void => {
-    if (!node || typeof node !== 'object') return
-    if (Array.isArray(node)) {
-      for (const item of node) walk(item)
-      return
-    }
-    const rec = node as Record<string, unknown>
-    if (rec.kind === 'member' && rec.optional === true && rec.object) {
-      const propName = propNameOf(rec.object as ParsedExpr)
-      if (propName && optionalParams.has(propName)) names.add(propName)
-    }
-    // An optional-chained CALL (`props.x?.toFixed(2)`) reaches here as the
-    // parser's guard `props.x === null || props.x === undefined ? … : …`
-    // (#3435), so an equality against null / undefined marks the receiver.
-    if (rec.kind === 'binary' && ['===', '!==', '==', '!='].includes(rec.op as string) && rec.left && rec.right) {
-      const l = rec.left as ParsedExpr
-      const r = rec.right as ParsedExpr
-      const propName = isNullish(r) ? propNameOf(l) : isNullish(l) ? propNameOf(r) : null
-      if (propName && optionalParams.has(propName)) names.add(propName)
-    }
-    for (const value of Object.values(rec)) walk(value)
-  }
-  walk(ir.root)
-  return names
-}
-
-/**
- * Names of OPTIONAL no-default props read as an arithmetic operand whose nil
- * reads as `undefined` (`props.n * 2`, `n + 1`, `-n`, `+n` with `n?: number`,
- * or a comparison over `s?: string`) anywhere in the component's element
- * tree (#3533, #3824 step 3), or as an operand of a strict equality
- * (`maybe === 0`, #3824 step 8). The shared decision
- * (`arithmeticOperandCoercion`) routes the operand through `bf_number`,
- * which maps nil to `NaN` as JS `ToNumber(undefined)` does. A concrete
- * `float64` field reads an omitted prop as `0`, so these props take the same
- * `interface{}` flip as `??`/attribute/text consumption
- * (`resolvePropGoType`). Same shadowing caveat as the sibling collectors: a
- * same-named loop/callback param can misattribute, making the flip merely
- * unnecessary, not incorrect.
- */
-export function collectArithmeticAbsentPropNames(ctx: GoEmitContext, ir: ComponentIR): Set<string> {
-  const names = new Set<string>()
-  // The eligibility `resolvePropGoType` flips by: a primitive, or a literal
-  // union of one family (`size?: '' | 'large'`).
-  const optionalParams = new Set(
-    ir.metadata.propsParams
-      .filter(p => p.optional && p.defaultValue == null && p.type && collapseLiteralUnion(p.type).kind === 'primitive')
-      .map(p => p.name),
-  )
-  if (optionalParams.size === 0) return names
-
-  const nullishCtx = collectNullishAttrContext(ir)
-  const propsObject = ctx.state.propsObjectName
-  const propNameOf = (operand: ParsedExpr): string | null =>
-    propsObjectKeyRead(propsObject, operand) ??
-      (!propsObject && operand.kind === 'identifier' ? operand.name : null)
-  const addStrictEqOperand = (operand: ParsedExpr): void => {
-    const propName = propNameOf(operand)
-    if (propName !== null && optionalParams.has(propName)) names.add(propName)
-  }
-  const addOperand = (op: string, operand: ParsedExpr, other: ParsedExpr | undefined): void => {
-    const propName = propNameOf(operand)
-    if (propName === null || !optionalParams.has(propName)) return
-    const coercion = arithmeticOperandCoercion(op, operand, other, nullishCtx)
-    if (coercion === 'undefined' || coercion === 'undefined-keep') names.add(propName)
-  }
-  // An operand the nil-reading rewrite reads by its nil (`props.s + '!'`,
-  // `` `${props.n}` ``, #3824 step 4) is tested for nil at render, which a
-  // concrete field cannot hold either.
-  const typing = collectOperandTyping(ir.metadata).at(BindingScope.forComponent(ir.metadata.propsObjectName ?? null))
-  const addRewritten = (operand: ParsedExpr, rewritten: ParsedExpr): void => {
-    const propName = rewritten === operand ? null : propNameOf(operand)
-    if (propName !== null && optionalParams.has(propName)) names.add(propName)
-  }
-  const addNilReadings = (node: ParsedExpr): void => {
-    const rewritten = rewriteNilReadings(node, typing, GO_NATIVE_SAFE)
-    if (rewritten === node) return
-    if (node.kind === 'binary' && rewritten.kind === 'binary') {
-      addRewritten(node.left, rewritten.left)
-      addRewritten(node.right, rewritten.right)
-    } else if (node.kind === 'unary' && rewritten.kind === 'unary') {
-      addRewritten(node.argument, rewritten.argument)
-    } else if (node.kind === 'template-literal' && rewritten.kind === 'template-literal') {
-      node.parts.forEach((part, i) => {
-        const next = rewritten.parts[i]
-        if (part.type === 'expression' && next?.type === 'expression') addRewritten(part.expr, next.expr)
-      })
-    }
-  }
-  const walk = (node: unknown): void => {
-    if (!node || typeof node !== 'object') return
-    if (Array.isArray(node)) {
-      for (const item of node) walk(item)
-      return
-    }
-    const rec = node as Record<string, unknown>
-    if (rec.kind === 'binary' && rec.left && rec.right) {
-      const left = rec.left as ParsedExpr
-      const right = rec.right as ParsedExpr
-      addOperand(rec.op as string, left, right)
-      addOperand(rec.op as string, right, left)
-      // A strict equality tells an omitted prop (nil) from `0` / `''` /
-      // `false` (#3824 step 8): `maybe === 0` is false when `maybe` is
-      // omitted, which a concrete field reads as `0`.
-      if ((rec.op === '===' || rec.op === '!==') && !isNullishTest(rec.op, left, right)) {
-        addStrictEqOperand(left)
-        addStrictEqOperand(right)
-      }
-    }
-    if (rec.kind === 'unary' && (rec.op === '-' || rec.op === '+') && rec.argument) {
-      addOperand(rec.op, rec.argument as ParsedExpr, undefined)
-    }
-    if ((rec.kind === 'binary' && rec.left && rec.right) || (rec.kind === 'unary' && rec.argument) || (rec.kind === 'template-literal' && Array.isArray(rec.parts))) {
-      addNilReadings(rec as ParsedExpr)
-    }
-    // An attribute ternary's test reaches Phase 2 as text only
-    // (`IRTemplatePart` `'ternary'`), so it is parsed here: an operand it
-    // compares is read by its nil like any other (#3750).
-    if (rec.type === 'ternary' && typeof rec.condition === 'string') walk(parseExpression(rec.condition))
-    for (const value of Object.values(rec)) walk(value)
-  }
-  walk(ir.root)
-  // Memo bodies seed at construction, and a local constant's initializer is
-  // inlined where the constant is read (`const v = props.s + '!'`), both
-  // through the same rewrite.
-  walk((ir.metadata.memos ?? []).map(m => m.parsed))
-  walk((ir.metadata.localConstants ?? []).map(c => c.parsed))
-  return names
-}
-
-/**
- * Names of OPTIONAL no-default props whose PRESENCE is tested — `props.X
- * !== undefined` / `!= undefined` (or the `===`/`==` negation) — anywhere in
- * a memo's computation (#2260). This is the "controlled component" idiom's
- * `isControlled` check (`createMemo(() => props.pressed !== undefined)`):
- * distinguishing "caller passed a value" from "caller omitted the prop" is
- * only expressible on the nillable `interface{}` representation (a
- * concrete `bool` field can't tell `pressed={false}` from omitted `pressed`
- * apart — both are the Go zero value `false`), so these props take the
- * same `interface{}` flip as `??`/attribute/text consumption
- * (`resolvePropGoType`). `memoInitialFromParsedBody`'s presence-check
- * branch then lowers the comparison to `in.X != nil`.
- *
- * Scoped to `ir.metadata.memos[].parsed` (not the generic tree walk the
- * sibling collectors use) — a presence check is a memo-computation shape,
- * never a JSX child/attribute expression.
- */
-export function collectPresenceCheckedPropNames(ctx: GoEmitContext, ir: ComponentIR): Set<string> {
-  const names = new Set<string>()
-  const optionalParams = new Set(
-    ir.metadata.propsParams
-      .filter(p => p.optional && p.defaultValue == null && p.type.kind === 'primitive')
-      .map(p => p.name),
-  )
-  if (optionalParams.size === 0) return names
-
-  const propsObject = ctx.state.propsObjectName
-  const isUndefinedCheck = (op: string): boolean =>
-    op === '!==' || op === '!=' || op === '===' || op === '=='
-
-  for (const memo of ir.metadata.memos) {
-    const body = memo.parsed
-    if (!body || body.kind !== 'binary' || !isUndefinedCheck(body.op)) continue
-    const other = body.right.kind === 'identifier' && body.right.name === 'undefined'
-      ? body.left
-      : body.left.kind === 'identifier' && body.left.name === 'undefined'
-        ? body.right
-        : null
-    if (!other) continue
-    // Object-props style (`props.X`) — `other` is a member access rooted at
-    // the props object. Destructured style (`X` bare) — `other` is a bare
-    // identifier naming the prop directly.
-    const propName =
-      propsObjectKeyRead(propsObject, other) ??
-        (!propsObject && other.kind === 'identifier' ? other.name : null)
-    if (propName && optionalParams.has(propName)) names.add(propName)
-  }
-  return names
-}
-
-/**
  * Resolve a prop param's Go struct-field type using the SAME logic
  * `generatePropsStruct` / `generateInputStruct` use: a `propTypeOverrides` entry
  * wins, otherwise `typeInfoToGo(param.type, param.defaultValue, param.parsed)`.
@@ -743,8 +262,10 @@ export function defaultedBindingGo(
   const fieldOwner = propsParams.find(p => capitalizeFieldName(p.sourceName ?? p.name) === inputField)
   const inputType = fieldOwner ? resolvePropGoType(ctx, fieldOwner, propTypeOverrides) : undefined
   if (inputType === 'interface{}') {
-    const read = outputType === 'interface{}' ? `in.${inputField}` : `in.${inputField}.(${outputType})`
-    return `func() ${outputType} { if in.${inputField} == nil { return ${paramDefault} }; return ${read} }()`
+    // The default applies to an undefined prop only: an explicit `null`
+    // stays (decision 6).
+    const read = outputType === 'interface{}' ? `in.${inputField}` : `bf.Coerce(*new(${outputType}), in.${inputField})`
+    return `func() ${outputType} { if ${goUndefinedTest(`in.${inputField}`, inputType)} { return ${paramDefault} }; return ${read} }()`
   }
   return applyGoFallback(`in.${inputField}`, paramDefault)
 }
@@ -810,7 +331,7 @@ export function dependentDefaultNormalization(
       rawLocals.set(field, raw)
       lines.push(`\t${raw} := in.${field}`)
     }
-    lines.push(`\tif in.${field} == nil {`)
+    lines.push(`\tif ${goUndefinedTest(`in.${field}`, goType)} {`)
     lines.push(`\t\tin.${field} = ${value}`)
     lines.push('\t}')
   }
@@ -846,8 +367,8 @@ function sharedDependentDefaultGo(
   const value = dependentDefaultGo(ctx, param, outputType, propsParams, propTypeOverrides)
   if (value === null) return null
   const field = `in.${capitalizeFieldName(key)}`
-  const read = outputType === inputType || outputType === 'interface{}' ? field : `${field}.(${outputType})`
-  return `func() ${outputType} { if ${field} == nil { return ${value} }; return ${read} }()`
+  const read = outputType === inputType || outputType === 'interface{}' ? field : `bf.Coerce(*new(${outputType}), ${field})`
+  return `func() ${outputType} { if ${goUndefinedTest(field, inputType)} { return ${value} }; return ${read} }()`
 }
 
 /**
@@ -866,11 +387,12 @@ export function evaluatedDefaultBindingGo(
   if (param.defaultValue === undefined || !param.parsed || param.defaultParts) return null
   const key = param.sourceName ?? param.name
   const owner = propsParams.find(p => !p.isRest && (p.sourceName ?? p.name) === key) ?? param
-  if (!isNillableGoType(resolvePropGoType(ctx, owner, propTypeOverrides))) return null
+  const ownerType = resolvePropGoType(ctx, owner, propTypeOverrides)
+  if (!isNillableGoType(ownerType)) return null
   const value = evalExprGo(ctx, param.parsed, [], propsParams, new Map(), new Set())
   if (value === null) return null
   const field = `in.${capitalizeFieldName(key)}`
-  return `func() any { if ${field} == nil { return ${value} }; return ${field} }()`
+  return `func() any { if ${goUndefinedTest(field, ownerType)} { return ${value} }; return ${field} }()`
 }
 
 function isNillableGoType(goType: string): boolean {
@@ -911,6 +433,17 @@ export function isConcreteStringPropField(ctx: GoEmitContext, propName: string):
   return binding !== undefined && resolvePropGoType(ctx, binding, ctx.state.propTypeOverrides) === 'string'
 }
 
+/**
+ * Whether prop `propName` is a string prop whose field holds the JS value
+ * (`interface{}`: `bf.Undefined` for an omitted prop, nil for `null`), so a
+ * concatenation spells it through `bf.ToString`.
+ */
+export function isNillableStringPropField(ctx: GoEmitContext, propName: string): boolean {
+  const binding = ctx.state.currentPropsParams.find(p => p.name === propName)
+  if (!binding || resolvePropGoType(ctx, binding, ctx.state.propTypeOverrides) !== 'interface{}') return false
+  return typeInfoToGo(ctx, binding.type) === 'string' || ctx.state.localTypeAliases.has(typeInfoToGo(ctx, binding.type))
+}
+
 export function resolvePropGoType(
   ctx: GoEmitContext,
   param: IRMetadata['propsParams'][number],
@@ -929,58 +462,19 @@ export function resolvePropGoType(
   if (param.optional && ctx.state.localStructFields.has(base)) {
     return 'map[string]interface{}'
   }
-  // An OPTIONAL scalar prop consumed by `??` lowers to `interface{}` (#2248):
-  // a zero-valued `string`/`int` field cannot distinguish "absent" from
-  // `''`/`0`, so JS nullish semantics (which KEEP `''`/`0`) are unexpressible
-  // on the concrete type. `interface{}` is the adapter's established nillable
-  // representation; the `??` template lowering then tests nil-ness via
-  // `bf_nullish` and the constructor seeds via a nil check + assertion.
-  // Assignment ergonomics are unchanged (plain literals assign into
-  // `interface{}`), and the prop joins the existing nillable behaviours
-  // (bare-attribute omission) by construction.
-  //
-  // A single-family literal union (`size?: 'default' | 'icon'`,
-  // `level?: 1 | 2`) takes the flip like its primitive: the runtime
-  // evaluator (a memo body, a computed seed) and a child's nillable field
-  // read the Go value as it is, so an omitted prop must be nil there, not
-  // `""` / `0`. A local alias of one (`tone?: Tone`) is still a named
-  // reference here and keeps its alias type.
-  // A bare-attribute consumption (`rows={rows}`) takes the same flip (#2259):
-  // attribute omission for an absent optional needs a nil to test — see
-  // `collectOmittableAttrConsumedPropNames`. A bare TEXT-position
-  // consumption (`{size}`) takes the same flip too (#2267) — see
-  // `collectTextConsumedPropNames`. A presence check (`props.X !==
-  // undefined`, the "controlled component" idiom's `isControlled` memo)
-  // takes the same flip too (#2260) — see `collectPresenceCheckedPropNames`.
-  // A prop seeding a nullable signal takes it too (#3323) — see
-  // `collectNullableSignalSeedPropNames`. So does an optional-chain
-  // receiver (#3422) — see `collectOptionalChainReceiverPropNames`. So does
-  // an arithmetic operand whose nil reads as `undefined` (#3533) — see
-  // `collectArithmeticAbsentPropNames`. So does a param a `{...props}`
-  // spread onto a child component forwards (#3530) — see
-  // `collectPropsSpreadForwardedParams`. So does a param passed as it is
-  // into a child's nillable field — see `collectNillableForwardedPropNames`.
-  // A default that reads an earlier prop (`{ off = false, on = off }`,
-  // #3531), or a literal one other than the zero value (`{ tag = 'z' }`,
-  // `{ n = 2 }`, `{ on = true }`), applies to an absent prop only, which the
-  // constructor tells apart by nil (`appliesDefaultOnNil`,
-  // `dependentDefaultNormalization`): an explicit `''` / `0` / `false` stays
-  // the caller's value.
-  if (
-    param.optional &&
-    collapseLiteralUnion(param.type).kind === 'primitive' &&
-    (appliesDefaultOnNil(param) ||
-      ctx.state.nullishConsumedPropNames.has(param.name) ||
-      ctx.state.omittableAttrConsumedPropNames.has(param.name) ||
-      ctx.state.textConsumedPropNames.has(param.name) ||
-      ctx.state.presenceCheckedPropNames.has(param.name) ||
-      ctx.state.nullableSignalSeedPropNames.has(param.name) ||
-      ctx.state.optionalChainReceiverPropNames.has(param.name) ||
-      ctx.state.arithmeticAbsentPropNames.has(param.name) ||
-      ctx.state.propsSpreadForwardedPropNames.has(param.name) ||
-      ctx.state.nillableForwardedPropNames.has(param.name)) &&
-    NULLISH_SCALAR_GO_TYPES.has(base)
-  ) {
+  // An OPTIONAL scalar prop without a default lowers to `interface{}`: the
+  // field holds the JS value (spec/js-undefined-value.md §3, rollout step
+  // U8), `bf.Undefined` for an omitted prop and nil for an explicit `null`,
+  // read off its Input's `bf.Opt[T]` (`optInputRead`). A concrete
+  // `string` / `float64` field could hold neither. A literal default other
+  // than the zero value (`{ tag = 'z' }`, `{ n = 2 }`, `{ on = true }`) and a
+  // default that reads an earlier prop (`{ off = false, on = off }`, #3531)
+  // apply to an undefined prop only (`appliesDefaultOnNil`,
+  // `dependentDefaultNormalization`), which the constructor tells apart the
+  // same way: an explicit `false` / `''` / `0` stays the caller's value. A
+  // zero-literal default keeps the concrete field: the zero value is the
+  // default.
+  if (param.optional && (param.defaultValue == null || appliesDefaultOnNil(param)) && isScalarPropGoType(ctx, base)) {
     return 'interface{}'
   }
   return base

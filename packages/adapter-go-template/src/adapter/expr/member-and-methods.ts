@@ -84,6 +84,8 @@ export interface MemberAndMethodsHost {
   isCurrentLoopRecord(name: string): boolean
   /** The nil-safe `bf_get` read of `property` on `object`. */
   renderOptionalMember(object: string, property: string): string
+  /** `read` (of `object.property`) as its JS value (`bf_js`) when it may be a `bf.Opt[T]` field, `read` otherwise. */
+  optFieldRead(object: ParsedExpr, property: string, read: string): string
   /** An operand in an argument position (a template literal folds to `bf_concat_str`). */
   emitOperand(n: ParsedExpr, emit: (e: ParsedExpr) => string): string
 }
@@ -274,7 +276,7 @@ function renderFieldMemberRead(
   // identifier keys (snake_case included) the two functions agree, so
   // nothing previously reachable changes shape.
   if (object.kind === 'identifier' && host.isCurrentLoopRecord(object.name) && !keyRead) {
-    return `.${goFieldNameForKey(property)}`
+    return host.optFieldRead(object, property, `.${goFieldNameForKey(property)}`)
   }
 
   const obj = emit(object)
@@ -288,9 +290,10 @@ function renderFieldMemberRead(
     const read = `bf_length ${wrapIfMultiToken(obj)}`
     // `x?.length` (#3332) is `undefined` for an absent receiver, not
     // `bf_length nil`'s 0: a bare read renders empty (html/template prints
-    // a nil value as nothing) and a `??` fallback takes over. `bf_eq`
-    // treats a typed nil (an absent slice) as nil.
-    return optional ? `bf_ternary (bf_eq ${wrapIfMultiToken(obj)} nil) nil (${read})` : read
+    // a nil value as nothing) and a `??` fallback takes over.
+    // `bf_is_nullish` reads `bf.Undefined`, nil and a typed nil (an absent
+    // slice) alike.
+    return optional ? `bf_ternary (bf_is_nullish ${wrapIfMultiToken(obj)}) (bf_undefined) (${read})` : read
   }
   // A `?.`-written access (`user?.name`, #2168 optional-chaining-prop):
   // a plain `.Field` dot-chain panics evaluating a field on a nil
@@ -316,7 +319,7 @@ function renderFieldMemberRead(
   if (optional || keyRead || host.isMapRootedPropChain(object) || host.isMapSeededSignalChain(object)) {
     return host.renderOptionalMember(obj, property)
   }
-  return `${obj}.${goFieldNameForKey(property)}`
+  return host.optFieldRead(object, property, `${obj}.${goFieldNameForKey(property)}`)
 }
 
 

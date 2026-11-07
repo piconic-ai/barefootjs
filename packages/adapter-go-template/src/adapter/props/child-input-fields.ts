@@ -45,6 +45,7 @@ import { hasNoInputSlot, objectBakeTargetFor, routesToRestBag } from '../lib/typ
 import { evaluateChildPropValue, evaluateUntypedChildPropValue, resolveLocalGetterAsGo, templatePartsToGoCode, unboxNillablePropRef } from '../value/child-prop-value.ts'
 import { parsedLiteralToGo } from '../value/parsed-literal-to-go.ts'
 import { objectLiteralToGoComposite, unboxToGoScalar } from '../value/value-lowering.ts'
+import { isOptInputParam } from './input-opt.ts'
 import { finalPropWriters, isFinalPropWriter, isPropsObjectSpread, resolvePropsSpreadCall } from './props-spread.ts'
 
 type GetterSignal = { getter: string; setter: string | null; initialValue: JsSourceText; type: TypeInfo; parsed?: ParsedExpr }
@@ -88,7 +89,13 @@ export interface ChildInputHost {
   staticArrayElement(objectName: string, key: string): ParsedExpr | null
 }
 
-type ChildInputField = { goField: string; goValue: string }
+/**
+ * One `Field: value` of a child's Input literal. `coerce` marks a value
+ * that is itself a `bf.Opt` or an `any` (a `{...props}` spread's carried
+ * param), which the parent writes through `bf.Coerce` whatever the child's
+ * field is.
+ */
+type ChildInputField = { goField: string; goValue: string; coerce?: boolean }
 
 /** One child call being lowered: everything a per-prop step reads, plus where its fields go. */
 interface ChildCallSite {
@@ -98,7 +105,7 @@ interface ChildCallSite {
   readonly propFallbackVars: ReadonlyMap<string, PropFallbackVar>
   readonly childShape: ChildComponentShape | undefined
   /** Emit `jsxName`'s value as a field (or rest-bag entry) of the literal. */
-  readonly emit: (jsxName: string, writtenValue: string) => void
+  readonly emit: (jsxName: string, writtenValue: string, coerce?: boolean) => void
 }
 
 /**
@@ -137,10 +144,12 @@ export function lowerChildInputFields(
   const restBagEntries: string[] = []
   // A `{...props}` spread, resolved per key by the shared plan (#3530).
   const call = planChildCallProps(host.ctx, child, ir, childShape)
-  const emit = (jsxName: string, writtenValue: string): void =>
-    emitChildField(fields, restBagEntries, childShape, jsxName, call.passedOr(jsxName, writtenValue))
+  const emit = (jsxName: string, writtenValue: string, coerce = false): void => {
+    const value = call.passedOr(jsxName, writtenValue)
+    emitChildField(fields, restBagEntries, childShape, jsxName, value, coerce || value !== writtenValue)
+  }
   const site: ChildCallSite = { host, child, ir, propFallbackVars, childShape, emit }
-  call.paramFields.forEach(field => emit(field.name, field.goValue))
+  call.paramFields.forEach(field => emit(field.name, field.goValue, field.coerce))
   for (const prop of call.props) {
     // A prop reading the row (`tone={o.tone}`) can't be evaluated here: the
     // constructor runs once, outside the row. It is delivered per row at
@@ -164,6 +173,7 @@ function emitChildField(
   childShape: ChildComponentShape | undefined,
   jsxName: string,
   goValue: string,
+  coerce: boolean,
 ): void {
   if (routesToRestBag(childShape, jsxName)) {
     restBagEntries.push(`${JSON.stringify(jsxName)}: ${goValue}`)
@@ -187,6 +197,10 @@ function emitChildField(
   // (`interface{}`, `nillableParamNames`) takes the value unchanged: the
   // caller's nil is the child's `undefined`, which `bf.Number` would turn
   // into `NaN`.
+  if (coerce) {
+    fields.push({ goField: fieldName, goValue, coerce })
+    return
+  }
   const numeric = childShape?.paramGoTypes.get(jsxName) === 'float64' &&
     !childShape.nillableParamNames.has(jsxName) &&
     !/^-?\d+(\.\d+)?$/.test(goValue) && !goValue.startsWith('bf.Number(')
@@ -568,7 +582,7 @@ function planChildCallProps(
   childShape: ChildComponentShape | undefined,
 ): {
   props: readonly IRProp[]
-  paramFields: Array<{ name: string; goValue: string }>
+  paramFields: Array<{ name: string; goValue: string; coerce?: boolean }>
   passedOr: (name: string, value: string) => string
 } {
   const call = resolvePropsSpreadCall(ctx, ir, child.props)
@@ -580,15 +594,24 @@ function planChildCallProps(
     return { props, paramFields: [], passedOr: (_name, value) => value }
   }
   const propsParams = ir.metadata.propsParams
-  const paramFields: Array<{ name: string; goValue: string }> = []
+  const paramFields: Array<{ name: string; goValue: string; coerce?: boolean }> = []
   for (const resolved of call.keys.values()) {
     const param = resolved.base?.kind === 'props-param' ? propsParams.find(p => p.name === resolved.key) : undefined
     if (!param) continue
     // A key the child neither declares nor collects in a rest bag has no
     // field on its Input: JS hands it over, but the child never reads it.
     if (hasNoInputSlot(childShape, param.name)) continue
-    const ref = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
-    const keepsNil = routesToRestBag(childShape, param.name) || childShape?.nillableParamNames.has(param.name)
+    const field = capitalizeFieldName(param.sourceName ?? param.name)
+    const ref = `in.${field}`
+    const toRestBag = routesToRestBag(childShape, param.name)
+    // The spread carries the caller's own `bf.Opt` field, so a key the caller
+    // left out stays out of the child's Input too (`bf.Coerce` keeps its
+    // state).
+    if (isOptInputParam(param) && !toRestBag) {
+      paramFields.push({ name: param.name, goValue: `input.${field}`, coerce: true })
+      continue
+    }
+    const keepsNil = toRestBag || childShape?.nillableParamNames.has(param.name)
     paramFields.push({
       name: param.name,
       goValue: keepsNil ? ref : unboxNillablePropRef(ctx, ref, propsParams, childShape?.paramGoTypes.get(param.name)),
@@ -607,10 +630,11 @@ function planChildCallProps(
 
 /**
  * `value` for a key a `{...props}` spread carries only when the caller
- * passed the param of the same name: the param's own Input field when it is
- * not nil, `value` otherwise. The field is nillable by construction
- * (`propsSpreadForwardedPropNames`); a param whose field is not, or a child
- * field this can't type, is refused rather than overridden unconditionally.
+ * passed the param of the same name: the caller's own `bf.Opt` Input field
+ * when it was passed (`Passed()`, whatever it holds: an explicit `null` or
+ * `undefined` overrides `value` too), `value` otherwise. The parent writes
+ * the result through `bf.Coerce`, which keeps an Opt's state, and a rest-bag
+ * entry takes its JS value. A required param is always passed.
  */
 function passedPropsParamOr(
   ctx: GoEmitContext,
@@ -618,14 +642,8 @@ function passedPropsParamOr(
   value: string,
   site: { childName: string; spread: IRProp; childShape: ChildComponentShape | undefined; ir: ComponentIR },
 ): string {
-  const { childShape } = site
   const param = site.ir.metadata.propsParams.find(p => p.name === name)
-  const ref = param ? `in.${capitalizeFieldName(param.sourceName ?? param.name)}` : ''
-  const destType = routesToRestBag(childShape, name) || childShape?.nillableParamNames.has(name)
-    ? 'interface{}'
-    : childShape?.paramGoTypes.get(name)
-  const passed = destType === 'interface{}' ? ref : destType ? unboxToGoScalar(ref, destType) : null
-  if (!param || !ctx.state.nillablePropNames.has(param.name) || passed === null) {
+  if (!param) {
     refusePropsSpreadMerge(
       ctx,
       site.childName,
@@ -634,7 +652,10 @@ function passedPropsParamOr(
     )
     return value
   }
-  return `func() ${destType} { if ${ref} != nil { return ${passed} }; return ${value} }()`
+  const field = capitalizeFieldName(param.sourceName ?? param.name)
+  if (!isOptInputParam(param)) return `in.${field}`
+  const carried = routesToRestBag(site.childShape, name) ? `input.${field}.V()` : `input.${field}`
+  return `func() any { if input.${field}.Passed() { return ${carried} }; return ${value} }()`
 }
 
 /** BF101 for a `{...props}` spread onto a child the Go constructor can't merge soundly (#3530). */
@@ -866,7 +887,7 @@ export function sourceRowChildInputFields(
   shape: LoopRowShape,
   propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
   emit: boolean,
-): Array<{ goField: string; goValue: string; readsRow?: true }> | null {
+): Array<{ goField: string; goValue: string; readsRow?: true; coerce?: boolean }> | null {
   const rowFields = sourceRowReadFields(host, ir, nested, shape)
   if (rowFields === null) return null
   const state = host.ctx.state
@@ -905,7 +926,7 @@ function sourceRowReadFields(
 ): Array<{ goField: string; goValue: string; readsRow: true }> | null {
   const row: LoopRowBinding = { param: nested.loopParam, paramBindings: nested.loopParamBindings }
   const childShape = host.childShape(nested.name)
-  const rowFields: Array<{ goField: string; goValue: string; readsRow: true }> = []
+  const rowFields: Array<{ goField: string; goValue: string; readsRow: true; coerce?: true }> = []
   for (const prop of nested.rowProps) {
     if (prop.name === 'key' || hasNoInputSlot(childShape, prop.name)) continue
     const ssrData = isUndeliveredSsrData(host, prop, nested.name, ir)
@@ -922,8 +943,11 @@ function sourceRowReadFields(
     // child's (`ListItemsItem` vs `BadgeValue`), and a scalar read can
     // still differ (`int` row field, `float64` `.toFixed()` prop). Anything
     // else keeps the caller-supplied rows.
-    if (!rowReadAssignsToChildField(parsed!, row, shape, childShape, prop.name)) return null
-    rowFields.push({ goField: capitalizeFieldName(prop.name), goValue: rowReadGoValue(accessor, shape), readsRow: true })
+    const assigns = rowReadAssignsToChildField(parsed!, row, shape, childShape, prop.name)
+    if (assigns === false) return null
+    // A `bf.Opt[T]` row field reaches the child through `bf.Coerce`,
+    // whichever way the child declares its field.
+    rowFields.push({ goField: capitalizeFieldName(prop.name), goValue: rowReadGoValue(accessor, shape), readsRow: true, ...(assigns === 'opt' ? { coerce: true as const } : {}) })
   }
   return rowFields
 }
@@ -942,10 +966,13 @@ function rowReadAssignsToChildField(
   shape: LoopRowShape,
   childShape: ChildComponentShape | undefined,
   jsxName: string,
-): boolean {
+): boolean | 'opt' {
   const path = rowItemPath(expr, row)
   const readGoType = path && shape.readGoType ? shape.readGoType(path) : null
   const fieldGoType = childShape?.paramGoTypes.get(jsxName)
   if (!readGoType || !fieldGoType) return false
+  // An optional scalar row field (`bf.Opt[T]`) of the child field's own `T`.
+  const optElem = readGoType.startsWith('bf.Opt[') ? readGoType.slice('bf.Opt['.length, -1) : null
+  if (optElem !== null) return SCALAR_ROW_GO_TYPES.has(optElem) && optElem === fieldGoType ? 'opt' : false
   return SCALAR_ROW_GO_TYPES.has(readGoType) && readGoType === fieldGoType
 }

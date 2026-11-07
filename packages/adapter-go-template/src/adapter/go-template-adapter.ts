@@ -35,7 +35,7 @@ import type {
   JsSourceText,
 } from '@barefootjs/jsx'
 import {
-  collectAbsentPropSeedReads, isElidedFactoryGetter } from '@barefootjs/jsx'
+  collectAbsentPropSeedReads, isElidedFactoryGetter, loopValueTypeAt, type LoopValueType } from '@barefootjs/jsx'
 import {
   BaseAdapter,
   type AdapterOutput,
@@ -43,6 +43,7 @@ import {
   type TemplateSections,
   type ParsedExprEmitter,
   type PrimitivePlan,
+  type NilTestHelper,
   type PrimitiveInputs,
   collectOperandTyping,
   type HigherOrderMethod,
@@ -145,6 +146,7 @@ import {
   wrapGoArg,
   emitPredicateEval,
   goBinaryHelperCall,
+  goNilTest,
   goStrictEqConst,
   buildUnsupportedSuggestion,
   GO_REMEDIATION_OPTIONS,
@@ -181,7 +183,7 @@ import {
   objectLiteralToGoMap,
 } from "./value/value-lowering.ts"
 import { numberLiteralTemplateGo, parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
-import { propertyInfoToGo, typeInfoToGo } from "./type/type-codegen.ts"
+import { optFieldElemType, propertyInfoToGo, typeInfoToGo, withoutNilMembers } from "./type/type-codegen.ts"
 import { isKnownArray, isKnownNonNumber, loopRowType } from "./type/number-read.ts"
 import { planSynthPropStructs } from "./type/synth-prop-structs.ts"
 import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, isPrimitiveLiteralArray, signalFieldGoType, signalLoopRows, signalSeedGo } from "./type/state-fields.ts"
@@ -191,10 +193,10 @@ import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { computeMemoInitialValue, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evaluatedAsGoType, computedPropSeedGo } from "./memo/memo-compute.ts"
 import { collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
-import { collectPropsSpreadForwardedParams, refuseObjectSpreadsOntoChildren } from "./props/props-spread.ts"
-import { callsComponent, collectNillableForwardedPropNames } from "./props/child-forwarded-nillable.ts"
-import { buildPropTypeOverrides, dependentDefaultNormalization, resolvePropGoType, collectNillablePropNames, collectNullishConsumedPropNames, collectOmittableAttrConsumedPropNames, collectTextConsumedPropNames, collectPresenceCheckedPropNames, collectNullableSignalSeedPropNames, collectOptionalChainReceiverPropNames, collectArithmeticAbsentPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
+import { refuseObjectSpreadsOntoChildren } from "./props/props-spread.ts"
+import { buildPropTypeOverrides, dependentDefaultNormalization, resolvePropGoType, collectNillablePropNames, collectNullableSignalSeedPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
+import { childInputFieldValue, goOptType, isOptInputParam, optElemGoType, optInputRead } from "./props/input-opt.ts"
 import { emitMemoFieldInits, emitPropFallbackLocals, emitPropFieldInits, emitSignalFieldInits, hoistSiblingMemoLocals } from "./props/ctor-field-inits.ts"
 import { lowerChildInputFields, lowerLoopRowChildInputFields, lowerStaticChildDataKey, sourceRowChildInputFields, type ChildInputHost } from "./props/child-input-fields.ts"
 import { resolveLocalGetterAsGo } from "./value/child-prop-value.ts"
@@ -229,7 +231,7 @@ const SYNTH_TYPE_LOC: SourceLocation = {
  * not enough (see `emitRepropsRegistration`).
  */
 type RepropsSpec = {
-  params: { propsField: string; inputField: string }[]
+  params: { propsField: string; inputField: string; opt: boolean }[]
   usesSearchParams: boolean
 }
 
@@ -315,6 +317,20 @@ function withInlinedMemoBodies(ir: ComponentIR, isAdapterBound: (name: string) =
   )
   if (!memos.some((m, i) => m.parsed !== ir.metadata.memos[i].parsed)) return ir
   return { ...ir, metadata: { ...ir.metadata, memos } }
+}
+
+/**
+ * A constructor's `in` when the Input has a `bf.Opt[T]` field: the mirror
+ * struct's name, and each of its fields' value read off the `input` param.
+ */
+interface InputShadow {
+  typeName: string
+  copies: { field: string; value: string }[]
+}
+
+/** The Go type the props constructor reads `<componentName>Input` into (`InputShadow`). */
+function inputShadowTypeName(componentName: string): string {
+  return `bf${componentName}In`
 }
 
 /**
@@ -575,6 +591,20 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private childComponentShapes: Map<string, ChildComponentShape> = new Map()
 
+  /**
+   * Per component, the `bf<Name>In` mirror its constructor reads the Input
+   * into when the Input has a `bf.Opt[T]` field (`generateInputStruct`); no
+   * entry when it has none.
+   */
+  private inputShadows: Map<string, InputShadow> = new Map()
+
+  /**
+   * Per component this instance generated or had registered, its Input's
+   * `bf.Opt[T]` field names, so a parent building that Input knows which
+   * fields take a value as it is (`childInputField`).
+   */
+  private knownOptInputFields: Map<string, ReadonlySet<string>> = new Map()
+
   /** Child component name → the contexts it consumes (cross-component, for provider wiring). */
   private childContextConsumers: Map<string, ContextConsumer[]> = new Map()
 
@@ -824,21 +854,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `collectNillablePropNames` reads below. `generateTypes` recomputes it
     // once this compile's anonymous-object structs are synthesized.
     this.state.propTypeOverrides = buildPropTypeOverrides(this.emitCtx, ir)
-    this.state.nullishConsumedPropNames = collectNullishConsumedPropNames(this.emitCtx, ir)
-    this.state.omittableAttrConsumedPropNames = collectOmittableAttrConsumedPropNames(this.emitCtx, ir)
-    this.state.textConsumedPropNames = collectTextConsumedPropNames(this.emitCtx, ir)
-    this.state.presenceCheckedPropNames = collectPresenceCheckedPropNames(this.emitCtx, ir)
     this.state.nullableSignalSeedPropNames = collectNullableSignalSeedPropNames(this.emitCtx, ir)
     this.state.absentPropSeedSignals = new Set(
       [...collectAbsentPropSeedReads(ir)]
         .filter(([, reads]) => [...reads].every(name => this.state.nullableSignalSeedPropNames.has(name)))
         .map(([getter]) => getter),
-    )
-    this.state.optionalChainReceiverPropNames = collectOptionalChainReceiverPropNames(this.emitCtx, ir)
-    this.state.arithmeticAbsentPropNames = collectArithmeticAbsentPropNames(this.emitCtx, ir)
-    this.state.propsSpreadForwardedPropNames = collectPropsSpreadForwardedParams(this.emitCtx, ir)
-    this.state.nillableForwardedPropNames = collectNillableForwardedPropNames(
-      this.emitCtx, ir, (name) => this.childComponentShapes.get(this.resolveChildName(name)),
     )
     for (const key of collectNullableSeedStructFields(ir.metadata, ir.root)) this.fileNullableSeedStructFields.add(key)
     this.state.nullableSeedStructFields = this.fileNullableSeedStructFields
@@ -1315,13 +1335,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * The IR each registered shape was built from, so a shape registered later
-   * can re-probe the components forwarding into it
-   * (`refreshNillableForwarders`).
-   */
-  private shapeSources: Map<string, Pick<ComponentIR, 'metadata' | 'root'>> = new Map()
-
-  /**
    * `ir`'s nillable params by caller-facing name: the child's own nillable
    * decision, primed on a separate instance so this compile's state is
    * untouched (#3323). The instance reads the shapes registered so far, so a
@@ -1337,27 +1350,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         .filter(p => probe.state.nillablePropNames.has(p.name))
         .map(p => p.sourceName ?? p.name),
     )
-  }
-
-  /**
-   * Re-probe every registered component that calls `changed` (and, in turn,
-   * the components calling one whose nillable params grew), so a forwarding
-   * component registered BEFORE its child still sees the child's nillable
-   * fields whatever the registration order.
-   */
-  private refreshNillableForwarders(changed: string): void {
-    const pending = [changed]
-    while (pending.length > 0) {
-      const child = pending.pop()!
-      for (const [name, source] of this.shapeSources) {
-        const shape = this.childComponentShapes.get(name)
-        if (!shape || name === child || !callsComponent(source, child)) continue
-        const next = this.probeNillableParamNames(source)
-        if (next.size === shape.nillableParamNames.size && [...next].every(n => shape.nillableParamNames.has(n))) continue
-        this.childComponentShapes.set(name, { ...shape, nillableParamNames: next })
-        pending.push(name)
-      }
-    }
   }
 
   registerChildComponentShape(ir: Pick<ComponentIR, 'metadata' | 'root'>): void {
@@ -1475,8 +1467,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // make an aliased child's derived field look dependency-free and silently
     // un-refuse / un-rebuild it.
     this.recordDerivedFieldDeps(ir, new Set((ir.metadata.propsParams ?? []).map(p => p.name)))
-    this.shapeSources.set(name, ir)
-    if (nillableParamNames.size > 0) this.refreshNillableForwarders(name)
+    // The child's `bf.Opt[T]` Input fields (`isOptInputParam`), so a parent
+    // compiled before the child knows which of its fields take a value as
+    // it is (`childInputField`).
+    this.knownOptInputFields.set(
+      name,
+      new Set((ir.metadata.propsParams ?? []).filter(isOptInputParam).map(p => capitalizeFieldName(p.sourceName ?? p.name))),
+    )
     // Contexts this child consumes, so a parent `<Ctx.Provider value>` wrapping
     // it can set the matching field on the child's slot input.
     this.childContextConsumers.set(name, collectContextConsumers(ir.metadata))
@@ -1766,6 +1763,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       params: params.map(p => ({
         propsField: propsFieldName(p, ir.metadata),
         inputField: capitalizeFieldName(p.sourceName ?? p.name),
+        opt: isOptInputParam(p),
       })),
       usesSearchParams: this.usesSearchParams(ir),
     })
@@ -1825,8 +1823,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push('\t\t\tBfParent: b.BfParent,')
     lines.push('\t\t\tBfMount: b.BfMount,')
     if (usesSearchParams) lines.push('\t\t\tSearchParams: b.SearchParams,')
-    for (const { propsField, inputField } of params) {
-      lines.push(`\t\t\t${inputField}: b.${propsField},`)
+    for (const { propsField, inputField, opt } of params) {
+      // A `bf.Opt[T]` field takes the Props field's JS value as its state.
+      const value = opt ? childInputFieldValue(componentName, inputField, `b.${propsField}`, false) : `b.${propsField}`
+      lines.push(`\t\t\t${inputField}: ${value},`)
     }
     lines.push('\t\t}')
     lines.push('\t\tfor i := 0; i < len(kv); i += 2 {')
@@ -1914,7 +1914,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // absent from the hydration payload rather than serializing it as null.
     // A field flipped to `interface{}` for a nullable signal seed (#3323)
     // likewise leaves a missing member out of the payload, as JS does.
-    const omit = field.goType.startsWith('*') || field.nullableSeed ? ',omitempty' : ''
+    // A `bf.Opt[T]` field (an optional scalar) drops an omitted member the
+    // same way, through `omitzero` (`Opt.IsZero`).
+    const omit = field.goType.startsWith('bf.Opt[') ? ',omitzero' : field.goType.startsWith('*') || field.nullableSeed ? ',omitempty' : ''
     return `\t${field.goName} ${field.goType} \`json:"${this.toJsonTag(field.tsName)}${omit}"\``
   }
 
@@ -2022,8 +2024,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     propTypeOverrides: Map<string, string>,
   ): void {
     const inputTypeName = `${componentName}Input`
-    lines.push(`// ${inputTypeName} is the user-facing input type.`)
-    lines.push(`type ${inputTypeName} struct {`)
+    // The Input's fields, and the same fields as the constructor reads them
+    // (`bf<Name>In`): a `bf.Opt[T]` prop through `optInputRead`, every other
+    // field as it is (`InputShadow`).
+    const outer = lines
+    lines = []
+    const shadowLines: string[] = []
+    const copies: InputShadow['copies'] = []
     lines.push('\tScopeID string // Optional: if empty, random ID is generated')
     // Slot identity for child scopes mounted as a slot of an outer component.
     // Forwarded to Props's BfParent / BfMount.
@@ -2064,6 +2071,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (emittedInputFields.has(fieldName)) continue
       emittedInputFields.add(fieldName)
       const goType = resolvePropGoType(this.emitCtx, param, propTypeOverrides)
+      if (isOptInputParam(param)) {
+        // A prop that may be absent or `null` carries the JS state
+        // (spec/js-undefined-value.md §3, `bf.Opt[T]`).
+        const tag = this.toJsonTag(param.sourceName ?? param.name)
+        lines.push(`\t${fieldName} ${goOptType(optElemGoType(this.emitCtx, param, goType))} \`json:"${tag},omitzero"\``)
+        shadowLines.push(`\t${fieldName} ${goType}`)
+        copies.push({ field: fieldName, value: optInputRead(fieldName, goType) })
+        continue
+      }
       lines.push(`\t${fieldName} ${goType}`)
     }
 
@@ -2115,8 +2131,34 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t${fieldName} map[string]any \`json:"${jsonTag}"\``)
     }
 
-    lines.push('}')
-    lines.push('')
+    this.knownOptInputFields.set(componentName, new Set(copies.map(c => c.field)))
+    outer.push(`// ${inputTypeName} is the user-facing input type.`)
+    outer.push(`type ${inputTypeName} struct {`)
+    outer.push(...lines)
+    outer.push('}')
+    outer.push('')
+    this.inputShadows.delete(componentName)
+    if (copies.length === 0) return
+    // Every field the Input declares, a `bf.Opt[T]` one in the type the
+    // constructor reads it as: the constructor's `in`.
+    const optFields = new Set(copies.map(c => c.field))
+    const typeName = inputShadowTypeName(componentName)
+    let next = 0
+    outer.push(`// ${typeName} is ${inputTypeName} as New${componentName}Props reads it: each`)
+    outer.push('// bf.Opt field as its JS value.')
+    outer.push(`type ${typeName} struct {`)
+    for (const line of lines) {
+      const name = line.trim().split(/\s+/)[0]
+      if (optFields.has(name)) {
+        outer.push(shadowLines[next++])
+      } else {
+        outer.push(line)
+        copies.push({ field: name, value: `input.${name}` })
+      }
+    }
+    outer.push('}')
+    outer.push('')
+    this.inputShadows.set(componentName, { typeName, copies })
   }
 
   private generatePropsStruct(
@@ -2336,7 +2378,17 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       n => n.isDynamic && !n.isPropDerived && !(n.bodyChildren && n.bodyChildren.length > 0),
     )
     this.emitNewPropsDocComment(lines, componentName, inputTypeName, propsTypeName, signalDynamicNested)
-    lines.push(`func New${componentName}Props(in ${inputTypeName}) ${propsTypeName} {`)
+    const shadow = this.inputShadows.get(componentName)
+    if (shadow) {
+      // The Input with each `bf.Opt[T]` prop read as the value the rest of
+      // the constructor works with (`generateInputStruct`).
+      lines.push(`func New${componentName}Props(input ${inputTypeName}) ${propsTypeName} {`)
+      lines.push(`\tin := ${shadow.typeName}{`)
+      for (const { field, value } of shadow.copies) lines.push(`\t\t${field}: ${value},`)
+      lines.push('\t}')
+    } else {
+      lines.push(`func New${componentName}Props(in ${inputTypeName}) ${propsTypeName} {`)
+    }
     lines.push('\tscopeID := in.ScopeID')
     lines.push('\tif scopeID == "" {')
     lines.push(`\t\tscopeID = "${componentName}_" + randomID(6)`)
@@ -2394,7 +2446,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (baked) {
         lines.push(`\t${varName} := make([]${declaredName}Props, ${baked.items.length})`)
         baked.items.forEach((item, i) => {
-          const fields = item.inputFields.map(f => `${f.goField}: ${f.goValue}`).join(', ')
+          const fields = item.inputFields.map(f => this.childInputField(nested.name, f.goField, f.goValue)).join(', ')
           lines.push(`\t${varName}[${i}] = New${declaredName}Props(${declaredName}Input{${fields}})`)
           lines.push(`\t${varName}[${i}].BfParent = scopeID`)
           lines.push(`\t${varName}[${i}].BfMount = "${nested.slotId}"`)
@@ -2438,7 +2490,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
     hoistSiblingMemoLocals(this.emitCtx, lines, ir, propFallbackVars)
 
-    this.emitCallerPropsInit(lines, ir, propTypeOverrides)
+    this.emitCallerPropsInit(lines, ir)
 
     lines.push(`\treturn ${propsTypeName}{`)
     lines.push('\t\tScopeID: scopeID,')
@@ -2517,51 +2569,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Build the `bfCallerProps` local (assigned to `BfCallerProps` in the
-   * returned struct) — the hydration-only, caller-supplied-keys-only view
-   * of this component's props (#2684). See the field's doc comment
-   * (`emitPropsStructHeader`) for the two-consumers rationale.
-   *
-   * Three classes, mirroring the issue's taxonomy — gated on `param.optional`
-   * (NOT on the resolved Go type's nillability alone, even though that reads
-   * as the more "obvious" test): a REQUIRED prop must stay unconditional
-   * even when its resolved type happens to be nillable (`ctx: unknown`, the
-   * `array-flatmap-thisarg` fixture passes `ctx: null` explicitly) — Go's
-   * `interface{}` cannot tell "explicit null" from "omitted" once
-   * unmarshaled (both are the nil zero value), so nil-checking a required
-   * field would silently turn an intentional `null` into a dropped key.
-   *   1. Required prop → always included, raw `in.<InputField>` (never the
-   *      defaulted Props-field value — a caller who passes the same value
-   *      as the author's default is indistinguishable from one who didn't,
-   *      but that's inherent to a required prop having no "omitted" state).
-   *   2. Optional prop whose resolved Go type is nillable (`interface{}`,
-   *      `map[string]interface{}`, or any slice `[]T`) → included only
-   *      when `in.<InputField> != nil`, i.e. only when the caller actually
-   *      passed something.
-   *   3. Optional prop that nonetheless resolved to a CONCRETE type (a
-   *      string-union alias like `placement?: 'top' | 'bottom'`, a bare
-   *      scalar never consumed nullish/attr/text/presence-wise, OR a type
-   *      that resolves to `interface{}` some OTHER way — e.g. an inherited
-   *      `extends` clause the analyzer can't fully resolve — while
-   *      `param.optional` itself is, possibly inaccurately, `false`) —
-   *      presence is unknowable from Input alone, so it's included
-   *      unconditionally, same as class 1. A documented residual, not
-   *      silently dropped; see the PR that introduced this method for named
-   *      instances found in the corpus (e.g. `textarea`'s `rows`, inherited
-   *      through `TextareaHTMLAttributes`). Do NOT widen these props' types
-   *      to "fix" this — that's `resolvePropGoType`'s call, not this
-   *      method's, and doing so would risk the same `ctx`-style regression.
-   *
-   * `children` is excluded outright (#1952 — a separately-declared
-   * position, not relitigated here). Rest-props bags are never added to
-   * the Props struct's JSON at all (checked: no field exists for them
-   * outside Input), so nothing to exclude here either — already at parity
-   * with the reference, which never serializes rest keys.
-   *
-   * Every prop has its own Input field here: a loop's rows never take over
-   * a prop's field (`nestedRowsFieldName`, #3603/#3616).
-   */
-  /**
    * Apply each computed destructure default (one reading an earlier prop,
    * #3531, or any other non-literal one, `hasComputedDefault`) to the Input
    * before anything reads it (`dependentDefaultNormalization`), and refuse
@@ -2577,7 +2584,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // (`emitCallerPropsInit`), so only the others keep a local for it.
     const { lines: normalization, rawLocals, unsupported } = dependentDefaultNormalization(
       this.emitCtx, ir.metadata.propsParams, propTypeOverrides,
-      param => !isChildrenPropParam(param),
+      // An Opt param's caller value stays on `input` (`emitCallerPropsInit`).
+      param => !isChildrenPropParam(param) && !isOptInputParam(param),
     )
     lines.push(...normalization)
     this.dependentDefaultRawLocals = rawLocals
@@ -2604,11 +2612,21 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return this.dependentDefaultRawLocals.get(field) ?? `in.${field}`
   }
 
-  private emitCallerPropsInit(
-    lines: string[],
-    ir: ComponentIR,
-    propTypeOverrides: Map<string, string>,
-  ): void {
+  /**
+   * Build the `bfCallerProps` local (assigned to `BfCallerProps` in the
+   * returned struct) — the hydration-only, caller-supplied-keys-only view
+   * of this component's props (#2684). See the field's doc comment
+   * (`emitPropsStructHeader`) for the two-consumers rationale.
+   *
+   * A required prop is always included (`in.<InputField>`). A `bf.Opt[T]`
+   * prop (`isOptInputParam`) is included exactly when the caller passed it
+   * (`Passed()`), with its JS value: `bf-p` follows `JSON.stringify`, so a
+   * present `undefined` is dropped there and a `null` written as `null`.
+   * `children` is excluded outright (#1952). Rest-props bags are never added
+   * (the reference never serializes rest keys), except the closed-type rest
+   * keys the client reads (#3845).
+   */
+  private emitCallerPropsInit(lines: string[], ir: ComponentIR): void {
     lines.push('\tbfCallerProps := map[string]interface{}{}')
     const bfCallerPropsTakenTags = new Set<string>()
 
@@ -2622,31 +2640,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // places, so the two computations can't disagree.
       const callerKey = this.claimJsonTag(this.toJsonTag(param.sourceName ?? param.name), bfCallerPropsTakenTags)
       if (callerKey === '-') continue // tag collision — dropped from the wire, same as the Props field itself would be
-      const inputField = this.callerPropValueGo(param)
-      const goType = resolvePropGoType(this.emitCtx, param, propTypeOverrides)
-      const isNillable = goType === 'interface{}' || goType === 'map[string]interface{}' || goType.startsWith('[]')
-      // `param.optional` gates the branch (not "isNillable alone") because a
-      // REQUIRED prop must stay unconditional even when its resolved type
-      // happens to be nillable (`ctx: unknown`, #2094's array-flatmap-thisarg
-      // fixture passes `ctx: null` explicitly) — Go's `interface{}` cannot
-      // tell "explicit null" from "omitted" once unmarshaled (both are the
-      // nil zero value), so a nil-check here would silently turn an
-      // intentional `null` into a dropped key, regressing a fixture that
-      // matched the reference before this method existed. `resolvePropGoType`
-      // never applies its nillable flip to a required prop, so this ONLY
-      // affects the rare case where a type resolves to `interface{}` some
-      // OTHER way (e.g. `unknown`, or a type inherited through an
-      // unresolved external `extends` clause) while `param.optional` is
-      // (accurately or not) false — see the method docstring's residual list.
-      if (param.optional && isNillable) {
-        lines.push(`\tif ${inputField} != nil {`)
-        lines.push(`\t\tbfCallerProps["${callerKey}"] = ${inputField}`)
+      if (isOptInputParam(param)) {
+        // The caller's own `bf.Opt` field: its key is on the wire only when
+        // it was passed, and its value is the JS value (`undefined`, which
+        // `bf-p` drops like `JSON.stringify`, `null`, or the value).
+        const field = capitalizeFieldName(param.sourceName ?? param.name)
+        lines.push(`\tif input.${field}.Passed() {`)
+        lines.push(`\t\tbfCallerProps["${callerKey}"] = input.${field}.V()`)
         lines.push(`\t}`)
-      } else {
-        // Required (class 1), or optional-but-concrete residual (class 3),
-        // or optional-but-misresolved-required residual — see docstring.
-        lines.push(`\tbfCallerProps["${callerKey}"] = ${inputField}`)
+        continue
       }
+      // A required prop is always passed.
+      lines.push(`\tbfCallerProps["${callerKey}"] = ${this.callerPropValueGo(param)}`)
     }
 
     // #3845: a closed-type rest key the client reads as `_p.<key>`
@@ -2660,6 +2665,19 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     }
 
     lines.push('')
+  }
+
+  /**
+   * The `Field: value` a parent writes into `childName`'s Input: the value as
+   * it is for a field the child declares plain, through `bf.Coerce` for a
+   * `bf.Opt[T]` field, a child whose Input this compile has not seen, or a
+   * value that is itself an Opt (`coerce`: a row's `bf.Opt[T]` field).
+   */
+  private childInputField(childName: string, goField: string, goValue: string, coerce = false): string {
+    const declaredName = this.resolveChildName(childName)
+    const optFields = this.knownOptInputFields.get(declaredName)
+    const knownPlain = !coerce && optFields !== undefined && !optFields.has(goField)
+    return `${goField}: ${childInputFieldValue(declaredName, goField, goValue, knownPlain)}`
   }
 
   private emitStaticChildInstances(
@@ -2697,8 +2715,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         }
       }
       const inputProps = { name: child.name, props: child.props.filter(p => p.name !== 'key') }
-      for (const { goField, goValue } of lowerChildInputFields(this.childInputHost, inputProps, ir, propFallbackVars).fields) {
-        lines.push(`\t\t\t${goField}: ${goValue},`)
+      for (const { goField, goValue, coerce } of lowerChildInputFields(this.childInputHost, inputProps, ir, propFallbackVars).fields) {
+        lines.push(`\t\t\t${this.childInputField(child.name, goField, goValue, coerce)},`)
       }
       // JSX children → the child slot's `Children` input. Plain text uses
       // JSON.stringify (dodges `goLiteral`'s number branch, which would emit
@@ -2738,7 +2756,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       lines.push(`\t\tBfParent: scopeID,`)
       lines.push(`\t\tBfMount: "${child.slotId}",`)
       for (const f of lowerLoopRowChildInputFields(this.childInputHost, child, ir, propFallbackVars, child.rowScope)) {
-        lines.push(`\t\t${f.goField}: ${f.goValue},`)
+        lines.push(`\t\t${this.childInputField(child.name, f.goField, f.goValue, f.coerce)},`)
       }
       lines.push(`\t})`)
     }
@@ -2765,7 +2783,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push(`\t\t\t\tBfMount: "${nested.slotId}",`)
     const own = { name: nested.name, props: nested.rowProps }
     for (const f of lowerLoopRowChildInputFields(this.childInputHost, own, ir, propFallbackVars, nested.rowScope)) {
-      lines.push(`\t\t\t\t${f.goField}: ${f.goValue},`)
+      lines.push(`\t\t\t\t${this.childInputField(nested.name, f.goField, f.goValue, f.coerce)},`)
     }
     lines.push(`\t\t\t}),`)
   }
@@ -3448,7 +3466,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push(`\t\t${varName}[i] = New${declaredName}Props(${declaredName}Input{`)
     lines.push(`\t\t\tBfParent: scopeID,`)
     lines.push(`\t\t\tBfMount: "${nested.slotId}",`)
-    for (const f of fields) lines.push(`\t\t\t${f.goField}: ${f.goValue},`)
+    for (const f of fields) lines.push(`\t\t\t${this.childInputField(nested.name, f.goField, f.goValue, f.coerce)},`)
     lines.push(`\t\t})`)
     this.emitRowDataKey(lines, nested, varName, source.shape, keyExpr)
     lines.push('\t}')
@@ -4187,8 +4205,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * prop name and the Go-formatted fallback. Returns null when there is no
    * tree, the tree isn't that shape, or the fallback isn't a literal
    * `goPropDefault` can translate. A bare identifier can shadow a same-named
-   * prop (loop/callback params — the `collectNullishConsumedPropNames`
-   * limitation class), so every caller validates the returned name against
+   * prop (loop/callback params), so every caller validates the returned name against
    * `ir.metadata.propsParams`.
    *
    * Keeps the original prop reference (not just the resolved value) so
@@ -4598,9 +4615,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return goExpr
     }
 
-    // A bare TEXT-position reference to an optional no-default scalar prop
-    // that `resolvePropGoType` flipped to nillable `interface{}` (#2267,
-    // `collectTextConsumedPropNames`) needs a nil-safe stringify: plain
+    // A bare TEXT-position reference to an optional no-default scalar prop,
+    // whose field `resolvePropGoType` types `interface{}` (#2267), needs a
+    // nil-safe stringify: plain
     // `{{.X}}` prints a nil `interface{}` as the literal `<no value>`, not
     // "" — `bf_string` (the runtime's nil-safe `String()`) prints "" for
     // nil and uses JS-compatible notation for a present float; other
@@ -4627,18 +4644,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
 
   /**
    * The nillable-prop name a bare TEXT-position expression refers to, or
-   * null. Keys on `textConsumedPropNames`, not `nullishConsumedPropNames` — a
-   * text-only optional scalar prop (`{size}`, never consumed by `??` or a
-   * bare omittable attribute) is in neither of those other two sets.
+   * null: an optional, no-default prop of a primitive type (a `children` or
+   * `any` prop holds markup, which a stringify would escape).
    */
   private textNillablePropNameOf(expr: ParsedExpr | undefined): string | null {
     if (!expr) return null
     const name = expr.kind === 'identifier' ? expr.name : propsObjectKeyRead(this.state.propsObjectName, expr)
-    return name !== null &&
-      this.state.textConsumedPropNames.has(name) &&
-      this.state.nillablePropNames.has(name)
-      ? name
-      : null
+    if (name === null || !this.state.nillablePropNames.has(name)) return null
+    const param = this.state.currentPropsParams.find(p => p.name === name)
+    return param?.optional && param.defaultValue == null && param.type.kind === 'primitive' ? name : null
   }
 
   /**
@@ -4685,12 +4699,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   // ===========================================================================
 
   identifier(name: string): string {
-    // `undefined` inside a larger expression tree is Go's `nil`, as a `null`
-    // literal is (#3860): `??`, `bf_keep_nonnil` and the attribute nil guard
-    // read it as absent, and a nil prints as "" in text. An attribute ternary
+    // `undefined` inside a larger expression tree is the runtime's
+    // `bf.Undefined` (spec/js-undefined-value.md, U8), `null` Go's `nil`:
+    // `??`, `bf_keep_nonnil` and the attribute nil guard (`ne x nil`) read
+    // both as absent, and both print as "" in text. An attribute ternary
     // whose falsy branch is `undefined` never gets here — it is wrapped in
     // the test instead (`emitOmittableTernaryAttr`).
-    if (name === 'undefined' || name === 'null') return 'nil'
+    if (name === 'undefined') return '(bf_undefined)'
+    if (name === 'null') return 'nil'
     // Module pure-string const (e.g. `const baseClasses = '...'` in a className
     // template literal): inline the literal value rather than emit
     // `{{.BaseClasses}}` against a Props field that never exists.
@@ -5293,6 +5309,100 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return emit(n)
   }
 
+  /**
+   * `read`, the template read of `object.property`, through `bf_js` when the
+   * field may be one a generated struct declares as `bf.Opt[T]`
+   * (`optFieldElemType`): the template then reads its JS value
+   * (`bf.Undefined`, nil or the value) rather than the struct, which
+   * text/template reads as always true. `bf_js` passes any other value
+   * through, so a row the caller built as a map reads the same. `params`
+   * are a predicate's own bindings (`predicateScope`).
+   */
+  private optFieldRead(object: ParsedExpr, property: string, read: string, params?: readonly string[]): string {
+    const scope = params ? this.predicateScope(params) : this.scope
+    return this.isOptStructField(this.readTypeOf(object, scope), property) ? `(bf_js ${read})` : read
+  }
+
+  /** {@link optFieldRead} for a destructured row binding `name` read as `accessor`. */
+  private optBindingRead(name: string, accessor: string): string {
+    return this.readsOptField({ kind: 'identifier', name }, this.scope) ? `(bf_js ${accessor})` : accessor
+  }
+
+  /** Whether `expr` (`row.f`, or a destructured row binding) reads a `bf.Opt[T]` field. */
+  private readsOptField(expr: ParsedExpr, scope: BindingScope): boolean {
+    if (expr.kind === 'member' && !expr.computed) return this.isOptStructField(this.readTypeOf(expr.object, scope), expr.property)
+    if (expr.kind !== 'identifier') return false
+    const row = scope.lookup(expr.name)?.binding.row
+    const last = row?.segments.at(-1)
+    if (!row || last?.kind !== 'field') return false
+    const namedFields = (n: string) => this.state.currentTypeDefinitions.find(td => td.name === n)?.properties
+    return this.isOptStructField(loopValueTypeAt(row.itemType, row.segments.slice(0, -1), namedFields), last.key)
+  }
+
+  /** Whether `key` of a value of type `parent` is a generated struct's `bf.Opt[T]` field (`optFieldElemType`). */
+  private isOptStructField(parent: LoopValueType | null, key: string): boolean {
+    if (!parent) return false
+    // An object type, or a named one this file defines, is a generated struct
+    // (`structFieldsFor`): the template renders before its declaration is
+    // registered, so the type itself decides.
+    const owner = withoutNilMembers(parent as TypeInfo)
+    // A named type's field a nullable signal seeds from is `interface{}`
+    // instead (`propertyInfoToGo`, #3323).
+    if (owner.raw && this.state.nullableSeedStructFields.has(`${owner.raw}.${key}`)) return false
+    const field = this.typeFields(owner)?.find(f => f.name === key)
+    return !!field && optFieldElemType(this.emitCtx, field as PropertyInfo) !== null
+  }
+
+  /**
+   * A prop's declared type as {@link readTypeOf} reads it: null for an
+   * optional object prop, whose field is a `map[string]interface{}`
+   * (`resolvePropGoType`), not a struct.
+   */
+  private propStructType(param: IRMetadata['propsParams'][number] | undefined): LoopValueType | null {
+    if (!param) return null
+    return param.optional && this.typeFields(withoutNilMembers(param.type)) ? null : param.type
+  }
+
+  /** The fields of an object type, through a named type's definition. */
+  private typeFields(type: LoopValueType): NonNullable<LoopValueType['properties']> | undefined {
+    if (type.properties) return type.properties
+    return type.raw ? this.state.currentTypeDefinitions.find(td => td.name === type.raw)?.properties : undefined
+  }
+
+  /**
+   * The declared type of the value `expr` reads at `scope`: a loop row (or a
+   * row binding), a prop, a signal getter, or a field of one of those; null
+   * when it can't tell.
+   */
+  private readTypeOf(expr: ParsedExpr, scope: BindingScope): LoopValueType | null {
+    const namedFields = (name: string) => this.state.currentTypeDefinitions.find(td => td.name === name)?.properties
+    if (expr.kind === 'identifier') {
+      const hit = scope.lookup(expr.name)
+      if (hit) return hit.binding.row ? loopValueTypeAt(hit.binding.row.itemType, hit.binding.row.segments, namedFields) : null
+      if (this.state.propsObjectName !== null) return null
+      return this.propStructType(this.state.currentPropsParams.find(p => p.name === expr.name && !p.isRest))
+    }
+    if (expr.kind === 'call' && expr.callee.kind === 'identifier' && expr.args.length === 0) {
+      const getter = expr.callee.name
+      if (scope.isBound(getter)) return null
+      return this.state.currentSignals.find(sig => sig.getter === getter)?.type ?? null
+    }
+    if (expr.kind !== 'member' || expr.computed) return null
+    const key = propsObjectKeyRead(this.state.propsObjectName, expr)
+    if (key !== null && !scope.isBound(this.state.propsObjectName!)) {
+      return this.propStructType(this.state.currentPropsParams.find(p => (p.sourceName ?? p.name) === key && !p.isRest))
+    }
+    const parent = this.readTypeOf(expr.object, scope)
+    if (!parent) return null
+    const field = this.typeFields(withoutNilMembers(parent as TypeInfo))?.find(f => f.name === expr.property)
+    return field ? field.type : null
+  }
+
+  /** `x === null` / `x === undefined` / `x == null` (`goNilTest`). */
+  nilTest(helper: NilTestHelper, negated: boolean, operand: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    return goNilTest(helper, negated, this.emitOperand(operand, emit))
+  }
+
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
     // Operands proven of different types fold to a constant (#3824 step 8).
     const folded = goStrictEqConst(op, left, right, plan)
@@ -5462,6 +5572,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const param = this.optionalPropRead(expr, scope)
     const isRowField = !param && this.readsRowField(expr, scope)
     if (!param && !isRowField) return null
+    // A `bf.Opt[T]` row field holds `bf.Undefined` when omitted, which a nil
+    // test tells from a present `''` / `0`.
+    if (isRowField && this.readsOptField(expr, scope)) return null
     const types = operandFacts(expr, this.state.operandTyping.at(scope)).types
     const present = [...types].filter(t => t !== 'nil')
     const factsKind: GoZeroKind = present.length === 1 && (present[0] === 'string' || present[0] === 'number' || present[0] === 'boolean') ? present[0] : 'unknown'
@@ -5587,8 +5700,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /**
    * A nil-reading operand (#3824 step 4) whose Go value is a concrete zero:
    * the `??` the rewrite built would test truthiness, so a present `''` /
-   * `0` / `false` would read as absent. Every such operand must take the
-   * nillable flip (`collectArithmeticAbsentPropNames`); one that did not is
+   * `0` / `false` would read as absent. Every such operand is nillable
+   * (`resolvePropGoType`, `bf.Opt[T]` row fields); one that is not is
    * refused loudly rather than rendered wrong.
    */
   private refuseConcreteNilReading(operand: ParsedExpr): void {
@@ -7202,6 +7315,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /** The adapter-owned renders and lookups the condition and filter-predicate lowering (`expr/condition-expr.ts`) reads. */
   private readonly conditionExprHost: ConditionExprHost = {
     ctx: this.emitCtx,
+    optFieldRead: (object, property, read, params) => this.optFieldRead(object, property, read, params),
     testPlan: (test, params) =>
       planTest(test, this.state.operandTyping.at(params ? this.scope.enterCallback(params) : this.scope), GO_NATIVE_SAFE),
     primitivePlan: (node, params) =>
@@ -7247,6 +7361,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /** The adapter-owned renders and lookups the member and array-method lowering (`expr/member-and-methods.ts`) reads. */
   private readonly memberAndMethodsHost: MemberAndMethodsHost = {
     ctx: this.emitCtx,
+    optFieldRead: (object, property, read) => this.optFieldRead(object, property, read),
     makeLoc: () => this.makeLoc(),
     inLoop: () => this.inLoop,
     isBound: (name) => this.scope.isBound(name),
@@ -7290,6 +7405,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     loopVarRefCount: () => this.loopVarRefCount,
     loopBindingStack: () => this.loopBindingStack,
     destructureAccessors: () => this.destructureAccessors,
+    optBindingRead: (name, accessor) => this.optBindingRead(name, accessor),
     loopRestExcludeStack: () => this.loopRestExcludeStack,
     loopScalarItemStack: () => this.loopScalarItemStack,
     loopWrapperStack: () => this.loopWrapperStack,

@@ -12,8 +12,12 @@ import { wrapGoArg } from "./go-emit.ts"
  */
 export const GO_TEMPLATE_PRIMITIVES: Record<string, PrimitiveSpec> = {
   'JSON.stringify': { arity: 1, emit: (args) => `bf_json ${wrapGoArg(args[0])}` },
-  'String':         { arity: 1, emit: (args) => `bf_string ${wrapGoArg(args[0])}` },
-  'Number':         { arity: 1, emit: (args) => `bf_number ${wrapGoArg(args[0])}` },
+  // `String(x)` / `Number(x)` are JS ToString / ToNumber (`bf_to_string` /
+  // `bf_to_number`), which read `null` and `undefined` apart (`"null"` / 0,
+  // `"undefined"` / NaN); `bf_string` / `bf_number` are the display helpers a
+  // text or attribute sink uses.
+  'String':         { arity: 1, emit: (args) => `bf_to_string ${wrapGoArg(args[0])}` },
+  'Number':         { arity: 1, emit: (args) => `bf_to_number ${wrapGoArg(args[0])}` },
   'Math.floor':     { arity: 1, emit: (args) => `bf_floor ${wrapGoArg(args[0])}` },
   'Math.ceil':      { arity: 1, emit: (args) => `bf_ceil ${wrapGoArg(args[0])}` },
   'Math.round':     { arity: 1, emit: (args) => `bf_round ${wrapGoArg(args[0])}` },
