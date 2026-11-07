@@ -166,7 +166,7 @@
     },
     "packages/adapter-pebble/src/test-render.ts": {
       "buildVars": [
-        48
+        30
       ],
       "renderPebbleComponent": [
         56

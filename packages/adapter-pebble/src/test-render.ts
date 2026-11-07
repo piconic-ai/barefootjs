@@ -31,11 +31,7 @@
  * `Bf.render_child`/`Main.loadManifest` expect.
  */
 
-import {
-  deriveStashFromDefaults,
-  extractSsrDefaults,
-  importsSearchParams,
-} from '@barefootjs/jsx'
+import { extractSsrDefaults, importsSearchParams } from '@barefootjs/jsx'
 import type { ComponentIR, SsrDefault } from '@barefootjs/jsx'
 import { compileFixtureJSX } from '@barefootjs/adapter-tests/harness-program'
 import { mkdir, rm } from 'node:fs/promises'
@@ -282,31 +278,28 @@ function buildManifest(
 }
 
 /**
- * Build the render context's `vars` object (props + signal/memo seeds) — a
- * plain JS object written to `vars.json` and read verbatim into the root
- * Pebble render context (`Main.render`: `context.putAll(vars)`, no
- * mangling pass on that side). UNLIKE `renderMinijinjaComponent`'s
- * `buildVars` (whose Rust runtime mangles reserved-word keys itself, inside
- * `render_named`), every key here is written through {@link pebbleIdent}
- * up front — the compiled ROOT template references each prop/signal/memo
- * through that IDENTICAL mangling (see `pebble-naming.ts`'s file header),
- * and nothing downstream of `vars.json` mangles keys again.
+ * Build the render context's `vars` object — a plain JS object written to
+ * `vars.json` and read verbatim into the root Pebble render context
+ * (`Main.render`: `context.putAll(vars)`, no mangling pass on that side).
+ * UNLIKE `renderMinijinjaComponent`'s `buildVars` (whose Rust runtime
+ * mangles reserved-word keys itself, inside `render_named`), every key here
+ * is written through {@link pebbleIdent} up front — the compiled ROOT
+ * template references each prop/signal/memo through that IDENTICAL mangling
+ * (see `pebble-naming.ts`'s file header).
  *
- * Otherwise a near-verbatim port of `renderMinijinjaComponent`'s
- * `buildVars`: seeds prop defaults through `deriveStashFromDefaults`
- * (`propName`-present-and-non-null-wins-over-default), routes undeclared
- * props into the rest bag, then signals/memos/leftover-derived-defaults —
- * see that function's own comments for the full rationale of each step.
+ * Routes undeclared props into the rest bag and passes every other caller
+ * prop through as given (a fixture's `null` is Java's `null`, its
+ * `undefined` the runtime's `Undefined`, see {@link encodeSpecials}). Every
+ * declared prop, signal and memo is seeded by the production
+ * `DeriveStashFromDefaults` over the caller's props and the root's
+ * ssrDefaults, inside `Main.render` (the reserved `__bf_seed_props` key):
+ * an omitted prop is left out of them, never null-filled, so the seed
+ * decides (spec/js-undefined-value.md, "Shared: the seed and the default")
+ * — its default when it has one, `Undefined` otherwise; an explicit `null`
+ * stays `null`.
  */
 function buildVars(props: Record<string, unknown> | undefined, ir: ComponentIR): Record<string, unknown> {
   const vars: Record<string, unknown> = {}
-
-  const rootSsrDefaults = extractSsrDefaults(ir.metadata) ?? {}
-  const derivedProps = deriveStashFromDefaults(rootSsrDefaults, props ?? {})
-  for (const param of ir.metadata.propsParams) {
-    if (param.isRest) continue
-    vars[pebbleIdent(param.name)] = derivedProps[param.name] ?? null
-  }
 
   const restPropsName = ir.metadata.restPropsName
   const declaredParams = new Set(ir.metadata.propsParams.map(p => p.sourceName ?? p.name))
@@ -324,42 +317,23 @@ function buildVars(props: Record<string, unknown> | undefined, ir: ComponentIR):
     vars[pebbleIdent(restPropsName)] = Object.fromEntries(restBagEntries)
   }
 
+  // User props. Skip a key that's already a declared param's LOCAL template
+  // var name: the seed resolves that var (through `propName`, for an
+  // aliased prop, #2524).
   const localParamNames = new Set(ir.metadata.propsParams.map(p => p.name))
   if (props) {
     for (const [key, value] of Object.entries(props)) {
       if (key.startsWith('__')) continue
       if (routedKeys.has(key)) continue
       if (localParamNames.has(key)) continue
-      if (
-        typeof value === 'string' ||
-        typeof value === 'number' ||
-        typeof value === 'boolean' ||
-        Array.isArray(value) ||
-        (value && typeof value === 'object')
-      ) {
-        vars[pebbleIdent(key)] = value
-      }
+      // `null` and `undefined` too: a present `undefined` prop is the
+      // runtime's `Undefined` (`encodeSpecials`), a `null` one Java's `null`.
+      if (typeof value !== 'function') vars[pebbleIdent(key)] = value
     }
   }
 
-  for (const signal of ir.metadata.signals) {
-    if (signal.envReader) continue
-    if (Object.prototype.hasOwnProperty.call(derivedProps, signal.getter)) {
-      vars[pebbleIdent(signal.getter)] = derivedProps[signal.getter]
-    }
-  }
-
-  for (const memo of ir.metadata.memos) {
-    if (Object.prototype.hasOwnProperty.call(derivedProps, memo.name)) {
-      vars[pebbleIdent(memo.name)] = derivedProps[memo.name]
-    }
-  }
-
-  for (const [name, value] of Object.entries(derivedProps)) {
-    const mangled = pebbleIdent(name)
-    if (Object.prototype.hasOwnProperty.call(vars, mangled)) continue
-    vars[mangled] = value
-  }
+  // The caller's props as the root's seed reads them: every key, as given.
+  vars.__bf_seed_props = props ?? {}
 
   return vars
 }
@@ -374,9 +348,16 @@ function buildVars(props: Record<string, unknown> | undefined, ir: ComponentIR):
  * represent them (`JSON.stringify(NaN)` silently becomes `null`). Decoded
  * back by `JsonDecode.materialize` (`Main`'s `vars.json`/manifest readers).
  * A `Date` prop crosses as its ISO-8601 string — `Bf.date`'s `toInstant`
- * accepts a plain ISO string.
+ * accepts a plain ISO string. A fixture's `undefined` (a present key holding
+ * it, or an array element) is the shared `{"$undef": true}` vector sentinel,
+ * which `JsonDecode.materialize` turns into the runtime's `Undefined`; plain
+ * `JSON.stringify` would drop the key, which is an absent prop, not a
+ * present `undefined` one.
  */
 function encodeSpecials(value: unknown): unknown {
+  if (value === undefined) {
+    return { $undef: true }
+  }
   if (value instanceof Date) {
     return value.toISOString()
   }

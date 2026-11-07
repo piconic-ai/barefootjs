@@ -29,38 +29,7 @@
         "step": "U8"
       }
     },
-    "java": {
-      ".includes tells undefined from null (SameValueZero)": {
-        "step": "U7"
-      },
-      "a missing field adds as NaN": {
-        "step": "U7"
-      },
-      "a missing field concatenates as \"undefined\"": {
-        "step": "U7"
-      },
-      "a missing field is === undefined": {
-        "step": "U7"
-      },
-      "a missing field is not === null": {
-        "step": "U7"
-      },
-      "a missing field reads as undefined": {
-        "step": "U7"
-      },
-      "a present key holding undefined is === undefined": {
-        "step": "U7"
-      },
-      "an object-literal member may hold undefined": {
-        "step": "U7"
-      },
-      "out-of-range index reads as undefined": {
-        "step": "U7"
-      },
-      "the unbound undefined identifier is the constant": {
-        "step": "U7"
-      }
-    },
+    "java": {},
     "perl": {},
     "php": {},
     "python": {},

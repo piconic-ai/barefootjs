@@ -160,3 +160,52 @@ export function Label({ label }: { label?: string }) {
     expect(emitter.objectLiteral([spreadT], '{...t}', emit)).toBe('bf.merge([t])')
   })
 })
+
+// The runtime carries JS `undefined` (`Undefined.INSTANCE`, `bf.undefined()`)
+// apart from `null` (#3848 U7): every nil test, an optional or untyped field
+// read and an unproven `-` / `*` go through the runtime, never Pebble's own
+// `is null` / `.k` / `-`, which read `UNDEF` as a value (or throw on it).
+describe('PebbleAdapter - JS undefined apart from null (U7)', () => {
+  test('a nil test is the strict or loose runtime predicate', () => {
+    const { template } = compileAndGenerate(`
+export function C({ u }: { u?: string | null }) {
+  return <p>{u === null ? 'N' : 'n'}{u === undefined ? 'U' : 'u'}{u == null ? 'L' : 'l'}</p>
+}
+`)
+    expect(template).toContain('{% if bf.is_null(u) %}')
+    expect(template).toContain('{% if bf.is_undefined(u) %}')
+    expect(template).toContain('{% if bf.is_nullish(u) %}')
+  })
+
+  test('an optional attribute is omitted through bf.is_nullish', () => {
+    const { template } = compileAndGenerate(`
+export function C({ t }: { t?: string }) {
+  return <a title={t}>x</a>
+}
+`)
+    expect(template).toContain('{% if not bf.is_nullish(t) %}')
+  })
+
+  test('an untyped or optional field reads through bf.get, a proven one natively', () => {
+    const { template } = compileAndGenerate(`
+type R = { a?: string; b: string }
+export function C({ rows, r }: { rows: R[]; r?: R }) {
+  return <ul>{rows.map(x => <li key={x.b}>{x.a}|{x.b}</li>)}<i>{r?.a}</i></ul>
+}
+`)
+    expect(template).toContain("bf.string(bf.get(x, 'a'))")
+    expect(template).toContain('bf.string(x.b)')
+    expect(template).toContain("bf.get_opt(r, 'a')")
+  })
+
+  test('undefined, ?.length over a nullish receiver and an unproven `-` go through the runtime', () => {
+    const { template } = compileAndGenerate(`
+export function C({ items, v }: { items?: string[]; v: any }) {
+  return <p>{items?.length}|{String(undefined)}|{v - 1}</p>
+}
+`)
+    expect(template).toContain('(bf.is_nullish(items) ? bf.undefined() : bf.length(items))')
+    expect(template).toContain('bf.to_string(bf.undefined())')
+    expect(template).toContain('bf.sub(v, 1)')
+  })
+})

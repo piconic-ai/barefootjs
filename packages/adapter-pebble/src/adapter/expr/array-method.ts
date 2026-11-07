@@ -25,8 +25,10 @@ import type {
 } from '@barefootjs/jsx'
 import { pebbleStringLiteral, pebbleHashKey } from '../lib/pebble-naming.ts'
 
-// The undefined literal is the `slice` end the source left out; Pebble reads `null`.
-const ARRAY_METHOD_SPELLING = prefixedArrayMethodSpelling('bf.', 'null')
+// The undefined literal is the `slice` end the source left out: the runtime's
+// `UNDEF` (`bf.undefined()`), which `bf.slice` reads as "to the length";
+// `null` would be a `null` end, which JS coerces to 0.
+const ARRAY_METHOD_SPELLING = prefixedArrayMethodSpelling('bf.', 'bf.undefined()')
 
 /**
  * Lower `object.method(...args)` through the shared catalogue

@@ -34,9 +34,15 @@ import java.util.Map;
  *       `null` value still counts as "supplied"), else the static
  *       {@code value} fallback.
  *   <li>Otherwise: prefer {@code props[propName]} when {@code propName} is set
- *       AND the caller supplied a NON-NULL value for it, else the static
- *       {@code value} fallback. {@code propName}-less entries always use the
- *       static value.
+ *       AND the caller supplied it with any value but JS {@code undefined}
+ *       ({@link Undefined}) — an explicit {@code null} is kept, so a
+ *       destructure default applies to an absent or {@code undefined} prop
+ *       only (spec/js-undefined-value.md, decision 6) — else the static
+ *       fallback. {@code propName}-less entries always use the static
+ *       fallback.
+ *   <li>The static fallback is the entry's {@code value} when it has one (a
+ *       declared default), JS {@code undefined} when it has none: the
+ *       manifest writes {@code value} only for a prop with a default.
  * </ul>
  *
  * <p>`public` (class and {@link #derive}) for the same reason as
@@ -70,20 +76,25 @@ public final class DeriveStashFromDefaults {
       }
       Map<String, Object> d = (Map<String, Object>) dRaw;
       if (Boolean.TRUE.equals(d.get("isRestProps"))) {
-        extra.put(key, props.containsKey(key) ? props.get(key) : d.get("value"));
+        extra.put(key, props.containsKey(key) ? props.get(key) : staticFallback(d));
         continue;
       }
       Object propNameObj = d.get("propName");
       if (propNameObj instanceof String) {
         String propName = PebbleIdent.mangle((String) propNameObj);
-        if (props.containsKey(propName) && props.get(propName) != null) {
+        if (props.containsKey(propName) && !Undefined.isUndefined(props.get(propName))) {
           extra.put(key, props.get(propName));
           continue;
         }
       }
-      extra.put(key, d.get("value"));
+      extra.put(key, staticFallback(d));
     }
     return extra;
+  }
+
+  /** An entry's seed when the caller's prop is absent or `undefined`: its `value`, or `undefined` when it has none. */
+  private static Object staticFallback(Map<String, Object> d) {
+    return d.containsKey("value") ? d.get("value") : Undefined.INSTANCE;
   }
 
   /**

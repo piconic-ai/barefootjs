@@ -296,7 +296,9 @@ import type { PebbleAdapterOptions } from './lib/types.ts'
 /** How a lowered loop destructure binding reads off the row item. */
 const DESTRUCTURE_SPELLING: DestructureSpelling = {
   accessor: pebbleAccessorFromSegments,
-  slice: (parent, from) => `bf.slice(${parent}, ${from}, null)`,
+  // The end the destructure leaves out is JS `undefined` (to the length);
+  // a `null` end would coerce to 0.
+  slice: (parent, from) => `bf.slice(${parent}, ${from}, bf.undefined())`,
   omit: (parent, keys) => `bf.omit(${parent}, [${keys.map((k) => pebbleHashKey(k)).join(', ')}])`,
 }
 
@@ -824,9 +826,8 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     // form binds to a Map.Entry, not a bare key or value. The `entries`
     // case therefore binds ONE loop variable to each `[key, value]` PAIR
     // `bf.entries` produces, then destructures it into the key/value
-    // locals via two `{% set %}` statements (the same numeric-index
-    // accessor `pebbleAccessorFromSegments`'s `{kind:'index'}` case emits
-    // for a `.map()` destructure binding) — never the two-variable `for`
+    // locals via two `{% set %}` statements (a numeric-index subscript:
+    // every `bf.entries` pair holds both elements) — never the two-variable `for`
     // header a mechanical Jinja/Twig port might suggest.
     const entryPairVar = `bf_entry_${loop.markerId}`
     const forHeader = loop.objectIteration === 'entries'
@@ -1009,7 +1010,10 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
       },
       spread: (value) => this.convertExpressionToPebble(value.expr),
       presentParam: (name) =>
-        `(bf.passed(${pebbleHashKey(name)}, ${pebbleIdent(name)} is not null) ? {${pebbleHashKey(name)}: ${pebbleIdent(name)}} : {})`,
+        // The fallback (no caller keys recorded) is JS `name in props` read
+        // off the value: present unless `undefined`, so an explicit `null`
+        // counts as passed. Not `is not null`, which `UNDEF` passes.
+        `(bf.passed(${pebbleHashKey(name)}, not bf.is_undefined(${pebbleIdent(name)})) ? {${pebbleHashKey(name)}: ${pebbleIdent(name)}} : {})`,
     })
     const dict = isEmptyComponentProps(segments) ? '' : `, ${this.combineComponentPropSegments(segments)}`
     return `${captures.join('')}{{ bf.render_child('${tplName}'${dict}) | raw }}`
@@ -1117,7 +1121,8 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
         case 'omit-nullable': {
           // A bare read here, so it doubles as the guard test and the value.
           const v = this.convertExpressionToPebble(value.expr)
-          return `\n{% if ${v} != null %}\n${attr(v, plan.boolStr)}\n{% endif %}\n`
+          // The runtime's nil test: Pebble's `!= null` reads `UNDEF` as a value.
+          return `\n{% if not bf.is_nullish(${v}) %}\n${attr(v, plan.boolStr)}\n{% endif %}\n`
         }
         case 'boolean-attr': {
           const v = this.convertExpressionToPebble(value.expr, value.parsed)
@@ -1140,7 +1145,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
         case 'omit-nil': {
           const v = this.convertExpressionToPebble(value.expr, value.parsed)
           const tmp = `bf_pu${this.presenceVarCounter++}`
-          return `\n{% set ${tmp} = ${v} %}\n{% if ${tmp} != null %}\n${attr(tmp, plan.boolStr)}\n{% endif %}\n`
+          return `\n{% set ${tmp} = ${v} %}\n{% if not bf.is_nullish(${tmp}) %}\n${attr(tmp, plan.boolStr)}\n{% endif %}\n`
         }
         case 'plain':
           return attr(this.convertExpressionToPebble(value.expr, value.parsed), plan.boolStr)
@@ -1312,7 +1317,7 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
         // `{...}[key]` shape verbatim without re-verifying it against
         // Pebble's own grammar). `bf.get` is this runtime's own dynamic
         // member/index-access helper (already used for the non-identifier
-        // loop-binding-accessor case — see `pebbleAccessorFromSegments`),
+        // loop-binding-accessor — see `pebbleAccessorFromSegments`),
         // routed through `bf.coalesce` (this file's header, divergence 3 —
         // Pebble has no native `??`) for the same "empty when no case
         // matches" default Jinja's dict `.get(key, default)` gives for

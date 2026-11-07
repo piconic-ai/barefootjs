@@ -133,6 +133,10 @@ import {
   unloweredCallRefusal,
   type CallbackLoweringOptions,
   type StringNameTest,
+  type NilTestHelper,
+  type ScopedOperandTyping,
+  operandFacts,
+  isNeverNil,
   isNativePlan,
   relationalHelper,
   strictEqSpelling,
@@ -164,14 +168,21 @@ export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Pebble
  * own listed there.
  */
 export const NATIVE_SAFE: NativeSafeTable = {
-  // The runtime does not carry JS `undefined` apart from `null` yet
-  // (spec/js-undefined-value.md); rollout step U7 flips it.
-  carriesUndefined: false,
+  // The runtime carries JS `undefined` (`Undefined.INSTANCE`,
+  // `bf.undefined()`) apart from `null` (Java `null`),
+  // spec/js-undefined-value.md rollout step U7. `Undefined` is an ordinary
+  // Java object: Pebble's own `if` / `not` / `and` / `or` refuse it (loud) and
+  // its `is null` / `== null` / `default` read it as a value, so no emission
+  // tests a JS value natively: a test goes through `bf.truthy` unless the
+  // operand is a proven boolean, and a nil test and an attribute omission
+  // through `bf.is_nullish` / `is_null` / `is_undefined`.
+  carriesUndefined: true,
   'to-boolean': ['boolean'],
   // A unary `+` is native only over a proven number, `to_number` otherwise
   // (#3824 step 3). `unproven` describes binary `-` / `*` over operands Phase 1
-  // cannot type, which keep the native operator (step 4a only reads their
-  // operands' nil).
+  // cannot type: a target that carries `undefined` claims nothing over an
+  // unproven operand (`claimsNative`), so they take the runtime's `sub` /
+  // `mul` (`spellNumericBinary`).
   'to-number': ['number-pair', 'number', 'unproven'],
   // A `+` is native over two proven numbers and over a proven string (the
   // host's concatenation, the other operand through `to_string`); anything
@@ -277,14 +288,68 @@ function spellPlus(plan: PrimitivePlan | null, l: string, r: string): string {
 }
 
 /**
+ * JS `undefined` in a template: the runtime's `Undefined.INSTANCE`, which
+ * the `bf` object exposes as `bf.undefined()` (spec/js-undefined-value.md,
+ * rollout step U7). Pebble's `null` is JS `null`.
+ */
+export const PEBBLE_UNDEFINED = 'bf.undefined()'
+
+/**
+ * Spell a nil-test plan (`x === null` / `x === undefined` / `x == null`,
+ * `spec/js-undefined-value.md` "Decisions" (7)) through the runtime's
+ * `is_null` / `is_undefined` / `is_nullish`. Never Pebble's own `is null` /
+ * `== null`, which read `UNDEF` as a value.
+ */
+function spellNilTest(helper: NilTestHelper, negated: boolean, operand: string): string {
+  const test = `bf.${helper}(${operand})`
+  return negated ? `not ${test}` : test
+}
+
+/**
+ * Spell a binary `-` / `*` plan: Pebble's own operator when the plan is
+ * native (two proven numbers), the runtime's JS ToNumber arithmetic
+ * (`bf.sub` / `bf.mul`) when it names the helper, as it does for an operand
+ * that may be `UNDEF` or `null` (Pebble's `-` throws on a non-number). Null
+ * for any other operator.
+ */
+function spellNumericBinary(op: string, plan: PrimitivePlan | null, l: string, r: string): string | null {
+  if (op !== '-' && op !== '*') return null
+  if (plan?.mode === 'helper' && (plan.helper === 'sub' || plan.helper === 'mul')) return `bf.${plan.helper}(${l}, ${r})`
+  return `${l} ${op} ${r}`
+}
+
+/**
+ * A non-computed member read `obj.k` (#3848 U7). JS reads a key the object
+ * does not have as `undefined`, Pebble's `.k` (`Map.get`) as `null` (JS
+ * `null`), so a field Phase 1 does not prove present (optional, nullable or
+ * untyped) reads through the runtime's `bf.get`, which gives `UNDEF` on a
+ * miss. A field the declared type proves present and non-nil keeps the
+ * native `.k` read. A `?.`-written read is `bf.get_opt`, `undefined` over a
+ * nullish receiver.
+ */
+function memberRead(
+  object: ParsedExpr,
+  property: string,
+  optional: boolean,
+  receiver: string,
+  typing: ScopedOperandTyping,
+): string {
+  const key = pebbleStringLiteral(property)
+  if (optional) return `bf.get_opt(${receiver}, ${key})`
+  const facts = operandFacts({ kind: 'member', object, property, computed: false, optional: false }, typing)
+  return isNeverNil(facts) ? `${receiver}.${property}` : `bf.get(${receiver}, ${key})`
+}
+
+/**
  * `x.length` through `bf.length`. An optional-chained `x?.length` yields
- * `null` — JS's `undefined` — for an absent receiver instead of
+ * JS's `undefined` (`bf.undefined()`) for a nullish receiver instead of
  * `bf.length`'s `0`, so a bare read renders empty and a `bf.coalesce`
- * fallback takes over (#3332).
+ * fallback takes over (#3332). `0`, `''` and `[]` receivers still read
+ * their length.
  */
 function optionalLength(receiver: string, optional: boolean): string {
   const read = `bf.length(${receiver})`
-  return optional ? `(${receiver} is null ? null : ${read})` : read
+  return optional ? `(bf.is_nullish(${receiver}) ? ${PEBBLE_UNDEFINED} : ${read})` : read
 }
 
 export class PebbleFilterEmitter implements ParsedExprEmitter {
@@ -343,6 +408,8 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
     if (name === this.param) return pebbleIdent(this.param)
     const signal = this.localVarMap.get(name)
     if (signal) return pebbleIdent(signal)
+    // The unbound `undefined` identifier is the constant.
+    if (name === 'undefined' && !this.isOuterBound(name)) return PEBBLE_UNDEFINED
     return pebbleIdent(name)
   }
 
@@ -365,9 +432,10 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
     // JS-compatible coercion first.
     if (property === 'length') return optionalLength(emit(object), optional)
     // Computed keys use the runtime getter; only plain property names
-    // can be appended safely to Pebble's dot accessor.
+    // can be appended safely to Pebble's dot accessor, and a field not
+    // proven present reads through `bf.get` (`memberRead`).
     if (computed) return this.indexAccess(object, literalMemberIndex(property), emit, _plan)
-    return `${emit(object)}.${property}`
+    return memberRead(object, property, optional, emit(object), this.primitives.typing())
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
@@ -416,11 +484,16 @@ export class PebbleFilterEmitter implements ParsedExprEmitter {
     // JS Abstract Relational Comparison otherwise (#3824 step 3).
     const relational = relationalHelper(op, plan)
     if (relational) return `bf.${relational}(${l}, ${r})`
+    const numeric = spellNumericBinary(op, plan, l, r)
+    if (numeric !== null) return numeric
     const opMap: Record<string, string> = {
       '>': '>', '<': '<', '>=': '>=', '<=': '<=',
-      '+': '+', '-': '-', '*': '*',
     }
     return `${l} ${opMap[op] ?? op} ${r}`
+  }
+
+  nilTest(helper: NilTestHelper, negated: boolean, operand: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    return spellNilTest(helper, negated, emit(operand))
   }
 
   logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
@@ -567,9 +640,10 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
   }
 
   identifier(name: string): string {
-    // `undefined` / `null` nested inside a larger expression tree — Pebble
-    // `null`.
-    if (name === 'undefined' || name === 'null') return 'null'
+    // `undefined` nested inside a larger expression tree is the runtime's
+    // `UNDEF`, a `null` identifier Pebble's `null`.
+    if (name === 'undefined') return PEBBLE_UNDEFINED
+    if (name === 'null') return 'null'
     // Inline a module-scope pure-string const (`const x = 'literal'`) — it
     // never reaches the per-render context, so a bare reference would
     // resolve to Undefined.
@@ -607,9 +681,10 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     const obj = emit(object)
     // `.length` → `bf.length` (array count or string char count, JS-compat).
     if (property === 'length') return optionalLength(obj, optional)
-    // Dot access — see the file header, divergence 6.
+    // Dot access — see the file header, divergence 6; a field not proven
+    // present reads through `bf.get` (`memberRead`).
     if (computed) return this.indexAccess(object, literalMemberIndex(property), emit, _plan)
-    return `${obj}.${property}`
+    return memberRead(object, property, optional, obj, this.primitives.typing())
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
@@ -718,14 +793,18 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
    * `ToNumber(undefined)` does (#3390).
    * A string or boolean relational operand that may only be absent
    * (`'undefined-keep'`, #3824 step 3) reads a nil as `NaN` and keeps a
-   * present value, which the relational helper converts itself.
+   * present value, which the relational helper converts itself. Every nil
+   * test is the runtime's (`bf.is_nullish` / `bf.is_null`): Pebble's own
+   * `is null` reads `UNDEF` as a value.
    */
   private coerceNullishOperand(op: string, expr: ParsedExpr, other: ParsedExpr | undefined, operand: string): string {
     const coercion = this.ctx._arithmeticCoercion(op, expr, other)
     // Pebble's `bf.number(null)` is JS `Number(null)`, `0`; spell the NaN out.
     // `'undefined-keep'` spells the same nil test: a present value stays as it is.
-    if (coercion === 'undefined' || coercion === 'undefined-keep') return `(${operand} is null ? bf.number('NaN') : ${operand})`
-    return coercion === 'null' ? `(${operand} is null ? 0 : ${operand})` : operand
+    if (coercion === 'undefined' || coercion === 'undefined-keep') return `(bf.is_nullish(${operand}) ? bf.number('NaN') : ${operand})`
+    // Only a `null` reads as 0: an `UNDEF` operand stays, and the runtime's
+    // JS ToNumber reads it as NaN.
+    return coercion === 'null' ? `(bf.is_null(${operand}) ? 0 : ${operand})` : operand
   }
 
   binary(op: string, left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
@@ -750,11 +829,16 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     // JS Abstract Relational Comparison otherwise (#3824 step 3).
     const relational = relationalHelper(op, plan)
     if (relational) return `bf.${relational}(${l}, ${r})`
+    const numeric = spellNumericBinary(op, plan, l, r)
+    if (numeric !== null) return numeric
     const opMap: Record<string, string> = {
       '>': '>', '<': '<', '>=': '>=', '<=': '<=',
-      '+': '+', '-': '-', '*': '*',
     }
     return `${l} ${opMap[op] ?? op} ${r}`
+  }
+
+  nilTest(helper: NilTestHelper, negated: boolean, operand: ParsedExpr, emit: (e: ParsedExpr) => string): string {
+    return spellNilTest(helper, negated, emit(operand))
   }
 
   logical(op: '&&' | '||' | '??', left: ParsedExpr, right: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {

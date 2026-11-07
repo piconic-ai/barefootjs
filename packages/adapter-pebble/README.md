@@ -112,6 +112,38 @@ PRs in the stack don't re-litigate them:
   native cross-type-numeric behavior remains unverified — see the file
   header, divergences 3, 4, 6, and 7.
 
+## `null` and `undefined`
+
+Java's `null` is JS `null`. JS `undefined` is
+`dev.barefootjs.pebble.Undefined.INSTANCE`, a singleton (`bf.undefined()` in
+a template). A props `Map` already has the four states a JS prop has, so no
+wrapper type is needed:
+
+| JS | Props map |
+| --- | --- |
+| prop not passed | key left out |
+| `undefined` passed (`c={props.c}` with `c` unset) | `Map.of("c", Undefined.INSTANCE)` |
+| `null` | a `null` value (`HashMap.put("c", null)`) |
+| a value | `Map.of("c", "x")` |
+
+A destructure default applies to the first two only
+(`DeriveStashFromDefaults.derive` / `rootVars`). Gson and Jackson give `null`
+for JSON `null` and leave a missing key out, which is what you want; nothing
+walks decoded data to convert it.
+
+`Undefined` prints as `""` and Pebble's `{% for %}` iterates it as empty, but
+it is an ordinary Java object: Pebble's own `if` / `not` / `and` / `or` refuse
+it, and `is null` / `== null` / `default` read it as a value. Compiled
+templates never test a JS value natively (`bf.truthy`, `bf.is_nullish`,
+`bf.is_null`, `bf.is_undefined`); host code should use
+`Undefined.isUndefined()` / `isNull()` / `isNullish()`. Do not hand it to
+Gson or Jackson: `Bf.json` follows `JSON.stringify` (an `undefined` member
+dropped, an `undefined` element `null`).
+
+Migration: a host that passed `null` to mean "unset" now gets JS `null`
+semantics (`'btn ' + c` renders `btn null`, and a destructure default no
+longer applies). Leave the key out to leave a prop unset.
+
 ## Java runtime
 
 **Phase 3a landed (#2101): Gradle project, `bf.*` helpers, `ParsedExpr`

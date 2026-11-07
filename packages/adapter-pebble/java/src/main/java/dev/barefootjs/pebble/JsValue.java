@@ -15,7 +15,9 @@ import java.util.Map;
  * `packages/adapter-tests/vectors/eval-reference.ts`): {@code null},
  * {@link Boolean}, {@link Double} (every JS number, see {@link JsNumber}),
  * {@link String}, {@link List}&lt;Object&gt; (JS array), {@link Map}
- * &lt;String,Object&gt; (JS object/map).
+ * &lt;String,Object&gt; (JS object/map), plus {@link Undefined#INSTANCE} for
+ * JS {@code undefined}; {@code null} is JS {@code null}
+ * (spec/js-undefined-value.md).
  */
 public final class JsValue {
 
@@ -24,7 +26,8 @@ public final class JsValue {
 
   /**
    * JS {@code String(v)}: numbers via {@link JsNumber#numberToString},
-   * {@code String(null)} -> {@code "null"}, {@code String(true)} ->
+   * {@code String(null)} -> {@code "null"}, {@code String(undefined)} ->
+   * {@code "undefined"}, {@code String(true)} ->
    * {@code "true"}, arrays join their elements with {@code ","} (JS
    * `Array.prototype.toString` delegates to `.join(',')`, recursively
    * stringifying each element the same way), plain objects render `"[object
@@ -34,6 +37,9 @@ public final class JsValue {
   public static String jsString(Object v) {
     if (v == null) {
       return "null";
+    }
+    if (v instanceof Undefined) {
+      return "undefined";
     }
     if (v instanceof String) {
       return (String) v;
@@ -52,7 +58,8 @@ public final class JsValue {
           sb.append(',');
         }
         Object el = list.get(i);
-        if (el != null) {
+        // A `null` or `undefined` element joins as "".
+        if (!Undefined.isNullish(el)) {
           sb.append(jsString(el));
         }
       }
@@ -69,11 +76,10 @@ public final class JsValue {
    * (`NaN`/`0`/`""` are the only falsy non-null/undefined primitives);
    * arrays and maps are ALWAYS truthy, even empty (`[]`/`{}` are JS-truthy
    * — the divergence from Python/PHP the TS adapter's file header flags as
-   * divergence 1). `null` (this runtime's single absent-value
-   * representation, standing in for both JS `null`/`undefined`) is falsy.
+   * divergence 1). `null` and {@link Undefined} are falsy.
    */
   public static boolean truthy(Object v) {
-    if (v == null) {
+    if (Undefined.isNullish(v)) {
       return false;
     }
     if (v instanceof Boolean) {
@@ -102,6 +108,10 @@ public final class JsValue {
   public static boolean strictEquals(Object a, Object b) {
     if (a == null || b == null) {
       return a == b;
+    }
+    // `undefined` is only itself, never `null`.
+    if (a instanceof Undefined || b instanceof Undefined) {
+      return a instanceof Undefined && b instanceof Undefined;
     }
     if (a instanceof Number && b instanceof Number) {
       // Both represented as double: JS `1 === 1.0` is true (same number),
