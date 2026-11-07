@@ -342,7 +342,7 @@ func indexHandler(c *gin.Context) {
 
 func counterHandler(c *gin.Context) {
 	c.Header("Cache-Control", cacheableCacheControl)
-	props := NewCounterProps(CounterInput{Initial: 0})
+	props := NewCounterProps(CounterInput{Initial: bf.Some[float64](0)})
 	render(c, http.StatusOK, "Counter", bf.RenderOptions{
 		Props:   &props,
 		Title:   "Counter - BarefootJS",
@@ -354,9 +354,9 @@ func toggleHandler(c *gin.Context) {
 	c.Header("Cache-Control", cacheableCacheControl)
 	props := NewToggleProps(ToggleInput{
 		ToggleItems: []ToggleSetting{
-			{Label: "Setting 1", DefaultOn: true},
-			{Label: "Setting 2", DefaultOn: false},
-			{Label: "Setting 3", DefaultOn: false},
+			{Label: "Setting 1", DefaultOn: bf.Some(true)},
+			{Label: "Setting 2", DefaultOn: bf.Some(false)},
+			{Label: "Setting 3", DefaultOn: bf.Some(false)},
 		},
 	})
 	render(c, http.StatusOK, "Toggle", bf.RenderOptions{
@@ -380,7 +380,7 @@ func todosHandler(c *gin.Context) {
 		todoItems[i] = TodoItemProps{Todo: t}
 	}
 
-	props := NewTodoAppProps(TodoAppInput{InitialTodos: currentTodos})
+	props := NewTodoAppProps(TodoAppInput{InitialTodos: bf.Some(currentTodos)})
 	props.Todos = currentTodos
 	props.TodoItems = todoItems
 
@@ -404,7 +404,7 @@ func todosSSRHandler(c *gin.Context) {
 		todoItems[i] = TodoItemProps{Todo: t}
 	}
 
-	props := NewTodoAppSSRProps(TodoAppSSRInput{InitialTodos: currentTodos})
+	props := NewTodoAppSSRProps(TodoAppSSRInput{InitialTodos: bf.Some(currentTodos)})
 	props.Todos = currentTodos
 	props.TodoItems = todoItems
 
@@ -425,7 +425,7 @@ func todosQueryHandler(c *gin.Context) {
 	copy(currentTodos, state.todos)
 	state.mu.Unlock()
 
-	props := NewQueryTodoAppProps(QueryTodoAppInput{InitialTodos: currentTodos})
+	props := NewQueryTodoAppProps(QueryTodoAppInput{InitialTodos: bf.Some(currentTodos)})
 	props.QueryTodoItems = make([]QueryTodoItemProps, len(currentTodos))
 	for i, t := range currentTodos {
 		// The generated constructor seeds the row's signal defaults and
@@ -494,7 +494,7 @@ func conditionalReturnHandler(c *gin.Context) {
 
 func conditionalReturnLinkHandler(c *gin.Context) {
 	c.Header("Cache-Control", cacheableCacheControl)
-	props := NewConditionalReturnProps(ConditionalReturnInput{Variant: "link"})
+	props := NewConditionalReturnProps(ConditionalReturnInput{Variant: bf.Some("link")})
 	render(c, http.StatusOK, "ConditionalReturn", bf.RenderOptions{
 		Props:   &props,
 		Title:   "Conditional Return (Link) - BarefootJS",

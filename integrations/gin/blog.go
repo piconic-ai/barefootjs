@@ -216,7 +216,7 @@ func blogIndexHandler(c *gin.Context) {
 		listProps := NewPostListProps(PostListInput{
 			Items:        blogListItems(),
 			Tags:         blogAllTags(),
-			Base:         blogBasePath(),
+			Base:         bf.Some(blogBasePath()),
 			SearchParams: sp,
 		})
 		listProps.PostListItems = blogPostListItems(listProps.ScopeID, sortKey, tag)
@@ -254,10 +254,10 @@ func blogPostHandler(c *gin.Context) {
 		Position:  float64(a.Position),
 		Total:     float64(a.Total),
 		Base:      blogBasePath(),
-		PrevSlug:  a.PrevSlug,
-		PrevTitle: a.PrevTitle,
-		NextSlug:  a.NextSlug,
-		NextTitle: a.NextTitle,
+		PrevSlug:  bf.Some(a.PrevSlug),
+		PrevTitle: bf.Some(a.PrevTitle),
+		NextSlug:  bf.Some(a.NextSlug),
+		NextTitle: bf.Some(a.NextTitle),
 	}
 
 	html := blogPageHTML(a.Post.Title+" — Barefoot Blog", func(frag blogFrag) template.HTML {
