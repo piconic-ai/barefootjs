@@ -13,23 +13,16 @@ import java.nio.file.Path;
  * encoding for vectors"): the one-key `{"$undef": true}` sentinel, shared by
  * the primitive, helper and eval vector harnesses.
  *
- * <p>The Java runtime has no undefined value yet (rollout step U7 adds it),
- * so for now:
- *
  * <ul>
  *   <li>in `args` and the evaluator `env` the sentinel decodes to
- *       {@link #ARG}, the host nil a template receives for `undefined` today
+ *       {@link #ARG}, the runtime's {@link Undefined#INSTANCE}
  *       ({@link JsonDecode#UNDEFINED}, which the render harness's
  *       `vars.json` reader uses too);
  *   <li>in an `expect` it decodes to {@link #EXPECT}, which matches only a
- *       value {@link #isRuntimeUndefined} accepts. None exists yet, so it
- *       never matches, also inside nested lists and maps, and every such
- *       case is listed in an expected-failure ledger or pinned as a
- *       divergence.
+ *       value {@link #isRuntimeUndefined} accepts, the runtime's
+ *       {@link Undefined}, also inside nested lists and maps. A `null`
+ *       expect matches Java's `null` only.
  * </ul>
- *
- * <p>U7 flips both in one place: {@link JsonDecode#UNDEFINED} becomes the
- * runtime's undefined and {@link #isRuntimeUndefined} recognizes it.
  */
 final class VectorUndefined {
 
@@ -45,9 +38,9 @@ final class VectorUndefined {
     }
   };
 
-  /** Whether {@code got} is the runtime's own undefined value (none yet: U7). */
+  /** Whether {@code got} is the runtime's own undefined value. */
   static boolean isRuntimeUndefined(Object got) {
-    return false;
+    return Undefined.isUndefined(got);
   }
 
   /** Whether a JSON element is `{"$undef": true}`. */

@@ -5,7 +5,7 @@
   "about": "Per runtime, the vector domains each op's NATIVE operator binding runs over: the union of the NATIVE_SAFE tables of the adapters on that runtime; and whether the runtime carries JS undefined apart from null (the tables' carriesUndefined, which the adapters of one runtime must agree on). Generated; never hand-edited.",
   "carriesUndefined": {
     "go": false,
-    "java": false,
+    "java": true,
     "perl": true,
     "php": true,
     "python": true,

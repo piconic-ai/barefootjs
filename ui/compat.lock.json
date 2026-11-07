@@ -2127,8 +2127,6 @@
               "nested-callback-in-filter-predicate",
               "object-equality-by-contents",
               "off-subset-callback-body",
-              "omitted-optional-nullable-number-arithmetic",
-              "omitted-optional-nullable-scalar-relational",
               "opaque-local-accessor-call",
               "record-const-index-unknown-keys",
               "unlowerable-loop-filter-predicate",
@@ -2199,12 +2197,6 @@
     "fixtures": {
       "awaits-undefined-plus-shapes": {
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "awaits-undefined-value"
-          ]
-        },
-        "pebble": {
           "kind": "render",
           "limitations": [
             "awaits-undefined-value"
@@ -3512,12 +3504,6 @@
           "limitations": [
             "host-nil-collapses-undefined-and-null"
           ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
         }
       },
       "destructure-default-param-computed-array": {
@@ -3786,6 +3772,56 @@
             "state": "escapable",
             "twin": "destructure-default-shared-array-renamed-client"
           }
+        }
+      },
+      "destructure-length-in-map": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "destructured-length-on-string-or-array-row"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "destructured-length-on-string-or-array-row"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "destructured-length-on-string-or-array-row"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "destructured-length-on-string-or-array-row"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "destructured-length-on-string-or-array-row"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "destructured-length-on-string-or-array-row"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "destructured-length-on-string-or-array-row"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "destructured-length-on-string-or-array-row"
+          ]
         }
       },
       "embedded-prop-member-signal-seed": {
@@ -6932,36 +6968,10 @@
             "state": "escapable",
             "twin": "omitted-optional-number-arithmetic"
           }
-        },
-        "pebble": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic"
-          }
         }
       },
       "omitted-optional-nullable-number-arithmetic-destructured": {
         "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic-destructured"
-          }
-        },
-        "pebble": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -6988,19 +6998,6 @@
             "state": "escapable",
             "twin": "omitted-optional-number-relational"
           }
-        },
-        "pebble": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-relational"
-          }
         }
       },
       "omitted-optional-nullable-number-unary-plus": {
@@ -7016,36 +7013,10 @@
             "state": "escapable",
             "twin": "omitted-optional-number-unary-plus"
           }
-        },
-        "pebble": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-unary-plus"
-          }
         }
       },
       "omitted-optional-nullable-string-relational": {
         "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-scalar-relational"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-string-relational"
-          }
-        },
-        "pebble": {
           "kind": "refusal",
           "codes": [
             "BF101"
@@ -7361,12 +7332,6 @@
           ]
         },
         "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "props-object-non-props-name-operand-typing"
-          ]
-        },
-        "pebble": {
           "kind": "render",
           "limitations": [
             "props-object-non-props-name-operand-typing"
@@ -9649,12 +9614,6 @@
           "limitations": [
             "host-nil-collapses-undefined-and-null"
           ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
         }
       },
       "undef-null-destructure-default": {
@@ -9663,22 +9622,10 @@
           "limitations": [
             "host-nil-collapses-undefined-and-null"
           ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
         }
       },
       "undef-null-json-stringify": {
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "pebble": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -9754,29 +9701,10 @@
             "state": "escapable",
             "twin": "omitted-optional-number-arithmetic"
           }
-        },
-        "pebble": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-arithmetic"
-          }
         }
       },
       "undef-null-number-coercion-typed": {
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "pebble": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -9789,22 +9717,10 @@
           "limitations": [
             "host-nil-collapses-undefined-and-null"
           ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
         }
       },
       "undef-null-optional-method-args": {
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "pebble": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -9824,29 +9740,10 @@
             "state": "escapable",
             "twin": "omitted-optional-number-relational"
           }
-        },
-        "pebble": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "omitted-optional-nullable-number-arithmetic"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "omitted-optional-number-relational"
-          }
         }
       },
       "undef-null-row-field-coercion": {
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "pebble": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -9859,22 +9756,10 @@
           "limitations": [
             "host-nil-collapses-undefined-and-null"
           ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
         }
       },
       "undef-null-strict-equality": {
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "pebble": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -9887,22 +9772,10 @@
           "limitations": [
             "host-nil-collapses-undefined-and-null"
           ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
         }
       },
       "undef-null-string-includes": {
         "go-template": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "pebble": {
           "kind": "render",
           "limitations": [
             "host-nil-collapses-undefined-and-null"
@@ -10284,6 +10157,10 @@
       "destructure-default-shared-array-renamed": {
         "description": "A destructure default reading an earlier binding kept as a local reads that local…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-shared-array-renamed.ts"
+      },
+      "destructure-length-in-map": {
+        "description": "Destructured { length } of string and array rows in .map()",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-length-in-map.ts"
       },
       "embedded-prop-member-signal-seed": {
         "description": "a signal seeded from an expression over an object prop member renders the computed seed at SSR",
@@ -11033,8 +10910,7 @@
         "awaits-undefined-plus-shapes"
       ],
       "adapters": [
-        "go-template",
-        "pebble"
+        "go-template"
       ]
     },
     "body-destructure-without-const-form": {
@@ -11308,8 +11184,7 @@
         "signal-array-prop-fallback-seed-default"
       ],
       "adapters": [
-        "go-template",
-        "pebble"
+        "go-template"
       ]
     },
     "derived-object-literal-signal": {
@@ -11384,6 +11259,26 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "destructured-length-on-string-or-array-row": {
+      "title": "A destructured `length` off a string or array row",
+      "kind": "silent",
+      "given": "a `.map()` callback that destructures `length` off each row (`({ length }) => …`) where the rows are strings or arrays",
+      "expected": "each row reads its own length: a string's UTF-16 code-unit count, an array's element count (`'abc'` gives `3`, `['x', 'y']` gives `2`)",
+      "actual": "renders every row's `length` empty (and a `key={length}` as `data-key=\"\"`), with no diagnostic, or fails the render",
+      "fixtures": [
+        "destructure-length-in-map"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "twig",
+        "xslate"
       ]
     },
     "fragment-wrapped-conditional-return-branch-scope": {
@@ -11838,8 +11733,7 @@
         "undef-null-relational"
       ],
       "adapters": [
-        "go-template",
-        "pebble"
+        "go-template"
       ],
       "diagnostics": [
         "BF101"
@@ -11855,8 +11749,7 @@
         "omitted-optional-nullable-string-relational"
       ],
       "adapters": [
-        "go-template",
-        "pebble"
+        "go-template"
       ],
       "diagnostics": [
         "BF101"
@@ -11947,7 +11840,6 @@
       "adapters": [
         "go-template",
         "mojolicious",
-        "pebble",
         "xslate"
       ]
     },

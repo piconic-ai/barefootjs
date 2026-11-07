@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import dev.barefootjs.pebble.JsNumber;
 import dev.barefootjs.pebble.JsValue;
+import dev.barefootjs.pebble.Undefined;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -36,7 +37,16 @@ import java.util.Map;
  * {@code index} plus captured free vars) is a {@code Map<String, Object>}
  * over this runtime's JSON-shaped value domain (see {@link JsValue}):
  * {@code null}, {@link Boolean}, {@link Double}, {@link String},
- * {@code List<Object>}, {@code Map<String, Object>}.
+ * {@code List<Object>}, {@code Map<String, Object>}, and
+ * {@link Undefined#INSTANCE}.
+ *
+ * <p>JS {@code undefined} is {@link Undefined#INSTANCE} and Java's
+ * {@code null} is JS {@code null} (spec/js-undefined-value.md, section 2). A
+ * missing field, an out-of-range or non-canonical index, the unbound
+ * {@code undefined} identifier, an omitted builtin argument and a
+ * {@code find} with no result read as {@code undefined}. Its ToNumber is
+ * NaN, its ToString {@code "undefined"}, its ToBoolean false; {@code ===}
+ * tells it from {@code null} and {@code ??} coalesces both.
  */
 public final class Evaluator {
 
@@ -56,6 +66,10 @@ public final class Evaluator {
       case "identifier": {
         String name = str(expr, "name");
         if (!env.containsKey(name)) {
+          // The unshadowed `undefined` identifier is the constant.
+          if (name.equals("undefined")) {
+            return Undefined.INSTANCE;
+          }
           throw new EvalUnsupported("unbound identifier '" + name + "'");
         }
         return env.get(name);
@@ -76,8 +90,8 @@ public final class Evaluator {
         if (op.equals("||")) {
           return JsValue.truthy(left) ? left : evaluate(obj(expr, "right"), env);
         }
-        // `??`
-        return left == null ? evaluate(obj(expr, "right"), env) : left;
+        // `??` coalesces both nils.
+        return Undefined.isNullish(left) ? evaluate(obj(expr, "right"), env) : left;
       }
 
       case "conditional":
@@ -161,6 +175,9 @@ public final class Evaluator {
     if (v == null) {
       return 0.0;
     }
+    if (v instanceof Undefined) {
+      return Double.NaN;
+    }
     if (v instanceof String) {
       String t = ((String) v).trim();
       if (t.isEmpty()) {
@@ -184,7 +201,11 @@ public final class Evaluator {
     if (v == null) {
       return "null";
     }
-    // Array.prototype.toString is join(","): a nil element prints as "", and
+    if (v instanceof Undefined) {
+      return "undefined";
+    }
+    // Array.prototype.toString is join(","): a nil element (`null` or
+    // `undefined`) prints as "", and
     // a nested array flattens through its own join. A plain object prints as
     // "[object Object]".
     if (v instanceof List) {
@@ -195,7 +216,7 @@ public final class Evaluator {
           out.append(',');
         }
         first = false;
-        if (el != null) {
+        if (!Undefined.isNullish(el)) {
           out.append(toStr(el));
         }
       }
@@ -310,6 +331,8 @@ public final class Evaluator {
   // ---------------------------------------------------------------------
 
   private static Object callBuiltin(String name, List<Object> args) {
+    // An omitted argument is JS `undefined`.
+    Object arg0 = args.isEmpty() ? Undefined.INSTANCE : args.get(0);
     switch (name) {
       case "Math.max": {
         double m = Double.NEGATIVE_INFINITY;
@@ -326,19 +349,21 @@ public final class Evaluator {
         return args.isEmpty() ? Double.POSITIVE_INFINITY : m;
       }
       case "Math.abs":
-        return Math.abs(toNumber(args.get(0)));
+        return Math.abs(toNumber(arg0));
       case "Math.floor":
-        return Math.floor(toNumber(args.get(0)));
+        return Math.floor(toNumber(arg0));
       case "Math.ceil":
-        return Math.ceil(toNumber(args.get(0)));
+        return Math.ceil(toNumber(arg0));
       case "Math.round":
-        return JsNumber.jsRound(toNumber(args.get(0)));
+        return JsNumber.jsRound(toNumber(arg0));
+      // `String()` / `Number()` with no argument are "" / 0;
+      // `String(undefined)` is "undefined" and `Number(undefined)` NaN.
       case "String":
-        return toStr(args.get(0));
+        return args.isEmpty() ? "" : toStr(arg0);
       case "Number":
-        return toNumber(args.get(0));
+        return args.isEmpty() ? (Object) 0.0 : (Object) toNumber(arg0);
       case "Boolean":
-        return JsValue.truthy(args.get(0));
+        return JsValue.truthy(arg0);
       default:
         throw new EvalUnsupported("builtin '" + name + "' is not in the evaluator subset");
     }
@@ -378,7 +403,7 @@ public final class Evaluator {
     }
     if (obj instanceof Map) {
       Map<String, Object> m = (Map<String, Object>) obj;
-      return m.containsKey(key) ? m.get(key) : null;
+      return m.containsKey(key) ? m.get(key) : Undefined.INSTANCE;
     }
     throw new EvalUnsupported("cannot read property '" + key + "' of " + (obj == null ? "null" : typeName(obj)));
   }
@@ -399,35 +424,45 @@ public final class Evaluator {
    * key. A list, and a string (by UTF-16 code unit), are read only through
    * a canonical array index: "1" reads element 1, while "01", "1e0", "-0",
    * "1.1" and "-1" are ordinary property names
-   * (spec/js-primitive-semantics.md, "ToPropertyKey and index read"). Any
-   * other receiver reads null.
+   * (spec/js-primitive-semantics.md, "ToPropertyKey and index read"); a list
+   * or string also reads its own {@code length}. A missing key, an
+   * out-of-range or non-canonical index and any other receiver read JS
+   * {@code undefined}.
    */
   @SuppressWarnings("unchecked")
   public static Object indexValue(Object obj, Object index) {
+    Object undef = Undefined.INSTANCE;
     if (!(obj instanceof List || obj instanceof Map || obj instanceof String)) {
-      return null;
+      return undef;
     }
     String key;
     try {
       key = toStr(index);
     } catch (EvalUnsupported e) {
-      return null;
+      return undef;
     }
     if (obj instanceof Map) {
       Map<String, Object> m = (Map<String, Object>) obj;
-      return m.containsKey(key) ? m.get(key) : null;
+      return m.containsKey(key) ? m.get(key) : undef;
+    }
+    // `length` is the one own non-index property of a string (UTF-16 code
+    // units, Java's own `String.length()`) and of an array, read as the
+    // number the `.length` read gives (`bf.length`); a destructured
+    // `({ length }) =>` row reads it through here.
+    if (key.equals("length")) {
+      return obj instanceof List ? (double) ((List<?>) obj).size() : (double) ((String) obj).length();
     }
     if (!key.matches("0|[1-9][0-9]{0,9}")) {
-      return null;
+      return undef;
     }
     long i = Long.parseLong(key);
     if (obj instanceof List) {
       List<?> list = (List<?>) obj;
-      return i < list.size() ? list.get((int) i) : null;
+      return i < list.size() ? list.get((int) i) : undef;
     }
     String s = (String) obj;
     if (i >= s.length()) {
-      return null;
+      return undef;
     }
     // One half of a surrogate pair reads as U+FFFD: a lone surrogate cannot
     // be written out as UTF-8 (spec/js-primitive-semantics.md, "Out of scope").
@@ -505,7 +540,10 @@ public final class Evaluator {
     }
     if (method.equals("join") && argsArr.size() <= 1) {
       Object receiver = evaluate(obj(expr, "object"), env);
-      String sep = argsArr.size() == 1 ? toStr(evaluate(argsArr.get(0).getAsJsonObject(), env)) : ",";
+      // An omitted or `undefined` separator is ","; a `null` one is
+      // ToString'd ("null").
+      Object sepValue = argsArr.size() == 1 ? evaluate(argsArr.get(0).getAsJsonObject(), env) : Undefined.INSTANCE;
+      String sep = Undefined.isUndefined(sepValue) ? "," : toStr(sepValue);
       return evalJoin(receiver, sep);
     }
     throw new EvalUnsupported("array-method '" + method + "' is not in the evaluator subset");
@@ -537,7 +575,7 @@ public final class Evaluator {
         sb.append(sep);
       }
       Object el = list.get(i);
-      if (el != null) {
+      if (!Undefined.isNullish(el)) {
         sb.append(toStr(el));
       }
     }

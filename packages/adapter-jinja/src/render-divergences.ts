@@ -40,6 +40,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A `.map()` callback destructuring `length` off a string or array row
+  // reads the row's field, which a string or list does not have.
+  'destructure-length-in-map': { limitation: 'destructured-length-on-string-or-array-row' },
   // A default assigning an earlier binding (`b = (a = 2)`) never runs.
   'destructure-default-earlier-assignment': { limitation: 'destructure-default-assigns-earlier-binding' },
   // `props-object-non-props-name-operand-typing` used to sit here: a props

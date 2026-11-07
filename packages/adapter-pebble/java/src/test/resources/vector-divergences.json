@@ -7,58 +7,6 @@
     "string/null renders as the string \"null\"": {
       "expect": "",
       "reason": "deliberate: an unset prop must not surface a literal \"null\" in HTML (matches the Perl/Python/Rust/PHP/Go/Ruby ports)"
-    },
-    "ends_with/endPosition undefined is the length": {
-      "expect": false,
-      "reason": "The runtime has no undefined value yet: an undefined argument arrives as its nil, which the helper reads as null, so the argument's JS default does not apply. Graduates in U7 (spec/js-undefined-value.md, §4 \"Runtime helper code to audit\")."
-    },
-    "pad_start/pad undefined defaults to a single space": {
-      "expect": "nuabc",
-      "reason": "The runtime has no undefined value yet: an undefined argument arrives as its nil, which the helper reads as null, so the argument's JS default does not apply. Graduates in U7 (spec/js-undefined-value.md, §4 \"Runtime helper code to audit\")."
-    },
-    "pad_end/pad undefined defaults to a single space": {
-      "expect": "abcnu",
-      "reason": "The runtime has no undefined value yet: an undefined argument arrives as its nil, which the helper reads as null, so the argument's JS default does not apply. Graduates in U7 (spec/js-undefined-value.md, §4 \"Runtime helper code to audit\")."
-    },
-    "split/limit undefined does not cap": {
-      "expect": [],
-      "reason": "The runtime has no undefined value yet: an undefined argument arrives as its nil, which the helper reads as null, so the argument's JS default does not apply. Graduates in U7 (spec/js-undefined-value.md, §4 \"Runtime helper code to audit\")."
-    },
-    "split/separator undefined yields the whole string": {
-      "expect": ["a", "b"],
-      "reason": "The runtime has no undefined value yet: an undefined argument arrives as its nil, which the helper reads as null, so the argument's JS default does not apply. Graduates in U7 (spec/js-undefined-value.md, §4 \"Runtime helper code to audit\")."
-    },
-    "at/out of range yields undefined": {
-      "expect": null,
-      "reason": "The runtime has no undefined value yet: this read returns its nil, which is JS null, where JS returns undefined. Graduates in U7 (spec/js-undefined-value.md)."
-    },
-    "at/negative out of range yields undefined": {
-      "expect": null,
-      "reason": "The runtime has no undefined value yet: this read returns its nil, which is JS null, where JS returns undefined. Graduates in U7 (spec/js-undefined-value.md)."
-    },
-    "at/empty array yields undefined": {
-      "expect": null,
-      "reason": "The runtime has no undefined value yet: this read returns its nil, which is JS null, where JS returns undefined. Graduates in U7 (spec/js-undefined-value.md)."
-    },
-    "at/string: out of range yields undefined": {
-      "expect": null,
-      "reason": "The runtime has no undefined value yet: this read returns its nil, which is JS null, where JS returns undefined. Graduates in U7 (spec/js-undefined-value.md)."
-    },
-    "slice/end null coerces to 0 and yields []": {
-      "expect": [2, 3, 4],
-      "reason": "The helper treats a null argument like an omitted one (its nil test is the default test), where JS coerces null. Graduates in U7 with the switch to is_undefined (spec/js-undefined-value.md, §4 \"Runtime helper code to audit\")."
-    },
-    "slice/string: end null coerces to 0 and yields empty string": {
-      "expect": "footjs",
-      "reason": "The helper treats a null argument like an omitted one (its nil test is the default test), where JS coerces null. Graduates in U7 with the switch to is_undefined (spec/js-undefined-value.md, §4 \"Runtime helper code to audit\")."
-    },
-    "join/separator undefined is the default \",\"": {
-      "expect": "anullb",
-      "reason": "The runtime has no undefined value yet: an undefined argument arrives as its nil, which the helper reads as null, so the argument's JS default does not apply. Graduates in U7 (spec/js-undefined-value.md, §4 \"Runtime helper code to audit\")."
-    },
-    "find/no match yields undefined": {
-      "expect": null,
-      "reason": "The runtime has no undefined value yet: this read returns its nil, which is JS null, where JS returns undefined. Graduates in U7 (spec/js-undefined-value.md)."
     }
   },
   "unsupported": {}

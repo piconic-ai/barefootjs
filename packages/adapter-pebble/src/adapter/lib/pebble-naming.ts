@@ -110,31 +110,15 @@ export function pebbleIdent(name: string): string {
  * structured {@link LoopBindingPathSegment} path (never string-parses the
  * JS accessor suffix — repo rule), walking `segments` off `base` (the
  * already-`pebbleIdent`-mangled loop variable, or a parent accessor for a
- * nested rest binding):
+ * nested rest binding).
  *
- *   - `{ kind: 'index', index }` → `base[N]` — the per-item value the runtime
- *     hands this loop is a Java `List` for an array-shaped JS value, and
- *     Pebble's bracket subscript against a `List` is standard numeric-index
- *     access (unambiguous — no dot-chain float-literal mislex risk the way
- *     Twig's `.0.1` dot-chaining has, since bracket subscript never shares
- *     lexer grammar with a float literal).
- *   - `{ kind: 'field', key, isIdent: true }` → `base.key` — Pebble's
- *     documented Map-attribute support resolves a dot-accessed name against
- *     a `Map`'s keys (the runtime represents a JS object as a
- *     `Map<String, Object>`), confirmed as a commonly-relied-on Pebble
- *     feature. See the file header's Phase 3/4 watchpoint about a key
- *     shaped like a `java.lang.Object` bean-property name (`class`, `hash`,
- *     …) — `pebbleIdent` mangles the worst offenders, but the exact
- *     Map-key-vs-bean-getter resolution ORDER needs verifying once the Java
- *     runtime exists.
- *   - `{ kind: 'field', key, isIdent: false }` → `bf.get(base, '<key>')` — a
- *     non-identifier-shaped key (e.g. a `'data-priority'` sibling key) can't
- *     be a bare Pebble dot-accessor. Routed through the adapter's own
- *     `bf.get(receiver, key)` runtime helper instead of Pebble's bracket
- *     subscript or a built-in `attribute()`-style function, because neither
- *     is confirmed (unlike Twig, which has a documented `attribute()`
- *     builtin) — `bf.get` keeps this fully under the Java runtime's own
- *     control (Phase 3).
+ * Every step — an `index` or a `field`, identifier-safe or not — reads
+ * through the runtime's `bf.get(base, key)` (#3848 U7): JS reads a missing
+ * field or an out-of-range index as `undefined`, Pebble's dot / bracket
+ * subscript (`Map.get` / `List.get`) as `null` (JS `null`). `bf.get` is the
+ * one single-level own-key read over the SSR item shapes this walk touches
+ * (a `Map<String, Object>` object or a `List` array), the same JS
+ * ToPropertyKey read the callback evaluator makes.
  */
 export function pebbleAccessorFromSegments(
   base: string,
@@ -142,13 +126,7 @@ export function pebbleAccessorFromSegments(
 ): string {
   let acc = base
   for (const seg of segments) {
-    if (seg.kind === 'index') {
-      acc = `${acc}[${seg.index}]`
-    } else if (seg.isIdent) {
-      acc = `${acc}.${seg.key}`
-    } else {
-      acc = `bf.get(${acc}, ${pebbleStringLiteral(seg.key)})`
-    }
+    acc = `bf.get(${acc}, ${seg.kind === 'index' ? seg.index : pebbleStringLiteral(seg.key)})`
   }
   return acc
 }

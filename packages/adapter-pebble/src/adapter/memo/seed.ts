@@ -44,7 +44,8 @@ import { pebbleIdent, pebbleStringLiteral } from '../lib/pebble-naming.ts'
 /** Pebble literal for a context-consumer's `createContext` default. */
 export function contextDefaultPebble(c: ContextConsumer): string {
   const d = c.defaultValue
-  if (d === null || d === undefined) return 'null'
+  if (d === undefined) return 'bf.undefined()'
+  if (d === null) return 'null'
   if (typeof d === 'string') return pebbleStringLiteral(d)
   if (typeof d === 'boolean') return d ? 'true' : 'false'
   return String(d)

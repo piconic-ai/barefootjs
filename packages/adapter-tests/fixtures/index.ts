@@ -598,6 +598,7 @@ import { fixture as restDestructureNestedInMap } from './rest-destructure-nested
 // (Go/Mojo/Xslate/Twig/Jinja/ERB/Rust) lower these via their
 // `segments`-based accessor emitters; Hono/CSR lowered them all along.
 import { fixture as destructureArrayIndexInMap } from './destructure-array-index-in-map'
+import { fixture as destructureLengthInMap } from './destructure-length-in-map'
 import { fixture as destructureNestedObjectInMap } from './destructure-nested-object-in-map'
 // Priority 11: JS Array / String method lowering (#1448 Tier A).
 // One fixture per method — every adapter starts pinned with BF101 in
@@ -1884,6 +1885,7 @@ export const jsxFixtures: JSXFixture[] = [
   restDestructureNestedInMap,
   // #2087 Phase A: fixed-binding (no-rest) destructure — array-index / nested.
   destructureArrayIndexInMap,
+  destructureLengthInMap,
   destructureNestedObjectInMap,
   // #1448 Tier A — Array methods.
   arrayIncludes,

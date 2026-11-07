@@ -42,6 +42,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // `module-const-arrow-helper` / `module-function-helper-chain` already do
 // — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A `.map()` callback destructuring `length` off a string or array row
+  // reads the row's field, which a string or list does not have.
+  'destructure-length-in-map': { limitation: 'destructured-length-on-string-or-array-row' },
   // `props-object-non-props-name-operand-typing` used to sit here: a props
   // object not named `props` left its members untyped, and the native `+`
   // over them did not concatenate. Since the runtime carries `undefined`

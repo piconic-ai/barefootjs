@@ -60,32 +60,47 @@ class ReservedWordContextTest {
   }
 
   /**
-   * `extractSsrDefaults` writes no `value` for a prop without a default
-   * (spec/js-undefined-value.md, rollout step U1): such an entry seeds
-   * `null`, exactly as `"value": null` did, and its key is still set.
+   * The seed (spec/js-undefined-value.md, decision 6): `extractSsrDefaults`
+   * writes `value` only for a prop with a default, and the default applies to
+   * an absent or `undefined` prop only. Without one, such a prop seeds JS
+   * `undefined`; a present prop keeps its value, `null` included.
    */
   @Test
-  void deriveSeedsAnEntryWithoutValueAsNull() {
-    Map<String, Object> missing = new LinkedHashMap<>();
-    missing.put("n", new LinkedHashMap<>(Map.of("propName", "n")));
-    missing.put("rest", new LinkedHashMap<>(Map.of("isRestProps", true)));
-    Map<String, Object> explicit = new LinkedHashMap<>();
-    Map<String, Object> n = new LinkedHashMap<>(Map.of("propName", "n"));
-    n.put("value", null);
-    Map<String, Object> rest = new LinkedHashMap<>(Map.of("isRestProps", true));
-    rest.put("value", null);
-    explicit.put("n", n);
-    explicit.put("rest", rest);
+  void deriveAppliesADefaultToAnAbsentOrUndefinedPropOnly() {
+    Object u = Undefined.INSTANCE;
+    Map<String, Object> noDefault = new LinkedHashMap<>();
+    noDefault.put("n", new LinkedHashMap<>(Map.of("propName", "n")));
+    noDefault.put("rest", new LinkedHashMap<>(Map.of("isRestProps", true)));
+    Map<String, Object> withDefault = Map.of("n", new LinkedHashMap<>(Map.of("propName", "n", "value", "D")));
+    Map<String, Object> undefN = new LinkedHashMap<>();
+    undefN.put("n", u);
     Map<String, Object> nullN = new LinkedHashMap<>();
     nullN.put("n", null);
-    for (Map<String, Object> props : List.<Map<String, Object>>of(Map.of(), nullN, Map.of("n", 3.0), Map.of("rest", Map.of("a", 1.0)))) {
-      assertEquals(DeriveStashFromDefaults.derive(explicit, props), DeriveStashFromDefaults.derive(missing, props));
+
+    // Absent or present `undefined`, without a default: `undefined`.
+    assertEquals(mapOf("n", u, "rest", u), DeriveStashFromDefaults.derive(noDefault, Map.of()));
+    assertEquals(mapOf("n", u, "rest", u), DeriveStashFromDefaults.derive(noDefault, undefN));
+    // Absent or present `undefined`, with a default: the default.
+    assertEquals(mapOf("n", "D"), DeriveStashFromDefaults.derive(withDefault, Map.of()));
+    assertEquals(mapOf("n", "D"), DeriveStashFromDefaults.derive(withDefault, undefN));
+    // A present prop keeps its value, `null` (JS `null`) included.
+    assertEquals(mapOf("n", null), DeriveStashFromDefaults.derive(withDefault, nullN));
+    assertEquals(mapOf("n", null, "rest", u), DeriveStashFromDefaults.derive(noDefault, nullN));
+    assertEquals(mapOf("n", 3.0), DeriveStashFromDefaults.derive(withDefault, Map.of("n", 3.0)));
+    // A rest bag passes through, and an explicit `value` is still used.
+    assertEquals(mapOf("n", u, "rest", Map.of("a", 1.0)), DeriveStashFromDefaults.derive(noDefault, Map.of("rest", Map.of("a", 1.0))));
+    Map<String, Object> explicitNull = new LinkedHashMap<>(Map.of("propName", "n"));
+    explicitNull.put("value", null);
+    assertEquals(mapOf("n", null), DeriveStashFromDefaults.derive(Map.of("n", explicitNull), Map.of()));
+  }
+
+  /** A map allowing `null` values, in insertion order. */
+  private static Map<String, Object> mapOf(Object... kv) {
+    Map<String, Object> out = new LinkedHashMap<>();
+    for (int i = 0; i < kv.length; i += 2) {
+      out.put((String) kv[i], kv[i + 1]);
     }
-    Map<String, Object> seeded = DeriveStashFromDefaults.derive(missing, Map.of());
-    Map<String, Object> want = new LinkedHashMap<>();
-    want.put("n", null);
-    want.put("rest", null);
-    assertEquals(want, seeded);
+    return out;
   }
 
   @Test

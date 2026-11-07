@@ -115,6 +115,7 @@ public final class Main {
     Map<String, ChildMeta> manifest = ManifestLoader.load(Path.of(templatesDir, "_bf_manifest.json"));
 
     Map<String, Object> context = new LinkedHashMap<>(vars);
+    seedRoot(context, manifest.get(entryName));
     // (#1922) Request-scoped `searchParams()` reader: the conformance test
     // harness (`renderPebbleComponent`) seeds this special key ONLY when
     // the component imports `searchParams` (mirrors the Rust/Jinja
@@ -144,6 +145,35 @@ public final class Main {
     // the component's own output (#3119). Collected but never emitted
     // otherwise, since this single-component CLI renders no layout at all.
     return writer.toString() + bf.portals();
+  }
+
+  /**
+   * The root's seed (spec/js-undefined-value.md, "Shared: the seed and the
+   * default"): the conformance harness hands the caller's props, as given,
+   * under the reserved `__bf_seed_props` key (never a template var), and
+   * every declared prop, signal and memo is seeded by the production
+   * {@link DeriveStashFromDefaults} over them and the root's own
+   * `ssrDefaults` — exactly what `integrations/spring`'s `Render` does
+   * through {@link DeriveStashFromDefaults#rootVars}. An omitted prop is its
+   * default when it has one, {@link Undefined} otherwise; an explicit `null`
+   * stays `null`. The harness routes the rest bag itself, so a rest entry it
+   * already set is kept.
+   */
+  @SuppressWarnings("unchecked")
+  private static void seedRoot(Map<String, Object> context, ChildMeta meta) {
+    Object seedProps = context.remove("__bf_seed_props");
+    if (!(seedProps instanceof Map) || meta == null) {
+      return;
+    }
+    String restKey = meta.restPropsName == null ? null : PebbleIdent.mangle(meta.restPropsName);
+    Map<String, Object> seed = DeriveStashFromDefaults.derive(
+        meta.ssrDefaults, PebbleIdent.mangleKeys((Map<String, ?>) seedProps));
+    for (Map.Entry<String, Object> e : seed.entrySet()) {
+      if (e.getKey().equals(restKey) && context.containsKey(restKey)) {
+        continue;
+      }
+      context.put(e.getKey(), e.getValue());
+    }
   }
 
 }

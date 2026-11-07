@@ -318,16 +318,12 @@ public final class Bf {
     // Deliberate divergence from strict JS `String(null) === "null"`,
     // pinned in `vector-divergences.json` ("string/null renders as the
     // string \"null\"") — matches EVERY other language port
-    // (Python/Rust/Perl/PHP/Go/Ruby): an absent/optional prop (a JS
-    // `undefined` this runtime's single `null` collapses onto, same as
-    // every other port's `None`/`nil`) must not surface a literal "null"
-    // in text-interpolation position — real JSX (Hono's reference) renders
-    // `{null}`/`{undefined}` as nothing. `JsValue.jsString` itself stays
-    // strictly JS-faithful (`"null"`) for every OTHER caller in this class
-    // (`concat`, `replace`, …) — none of those positions' golden vectors
-    // ever probe a `null` element, so this divergence is scoped to exactly
-    // the one call site that needed it.
-    if (v == null) {
+    // (Python/Rust/Perl/PHP/Go/Ruby): this is the display helper of a text
+    // or attribute sink, where real JSX (Hono's reference) renders
+    // `{null}`/`{undefined}` as nothing. JS ToString of either is
+    // `to_string` (`"null"` / `"undefined"`); `JsValue.jsString` stays
+    // strictly JS-faithful for every OTHER caller in this class.
+    if (Undefined.isNullish(v)) {
       return "";
     }
     return JsValue.jsString(v);
@@ -404,7 +400,41 @@ public final class Bf {
    * this helper instead of emitting the native (nonexistent) operator.
    */
   public Object coalesce(Object a, Object b) {
-    return a == null ? b : a;
+    return Undefined.isNullish(a) ? b : a;
+  }
+
+  /**
+   * JS {@code undefined} in a template (spec/js-undefined-value.md): the
+   * runtime's {@link Undefined#INSTANCE}. Pebble's {@code null} is JS
+   * {@code null}.
+   */
+  public Object undefined() {
+    return Undefined.INSTANCE;
+  }
+
+  /** JS {@code x === undefined} (spec/js-undefined-value.md, decision 7). */
+  public boolean is_undefined(Object v) {
+    return Undefined.isUndefined(v);
+  }
+
+  /** JS {@code x === null}: Java's {@code null} only. */
+  public boolean is_null(Object v) {
+    return v == null;
+  }
+
+  /**
+   * JS {@code x == null}: {@code null} or {@code undefined}. Every template
+   * nil test that means "nullish" spells this, never Pebble's own
+   * {@code is null} / {@code == null}, which read {@link Undefined} as a
+   * value.
+   */
+  public boolean is_nullish(Object v) {
+    return Undefined.isNullish(v);
+  }
+
+  /** JS {@code o?.k}: {@code undefined} over a nullish receiver, the read of {@code k} ({@link #get}) otherwise. */
+  public Object get_opt(Object receiver, Object key) {
+    return Undefined.isNullish(receiver) ? Undefined.INSTANCE : get(receiver, key);
   }
 
   /**
@@ -546,20 +576,24 @@ public final class Bf {
     return JsNumber.toDouble(a) + JsNumber.toDouble(b);
   }
 
+  // JS binary `-` / `*` / `/` / `%`: each operand through JS ToNumber, so
+  // `null` is 0 and `undefined` NaN (an operand Phase 1 does not prove a
+  // number reaches these, never Pebble's own operator, which throws on a
+  // non-number).
   public double sub(Object a, Object b) {
-    return JsNumber.toDouble(a) - JsNumber.toDouble(b);
+    return JsNumber.jsNumber(a) - JsNumber.jsNumber(b);
   }
 
   public double mul(Object a, Object b) {
-    return JsNumber.toDouble(a) * JsNumber.toDouble(b);
+    return JsNumber.jsNumber(a) * JsNumber.jsNumber(b);
   }
 
   public double div(Object a, Object b) {
-    return JsNumber.toDouble(a) / JsNumber.toDouble(b);
+    return JsNumber.jsNumber(a) / JsNumber.jsNumber(b);
   }
 
   public double mod(Object a, Object b) {
-    return JsNumber.jsMod(JsNumber.toDouble(a), JsNumber.toDouble(b));
+    return JsNumber.jsMod(JsNumber.jsNumber(a), JsNumber.jsNumber(b));
   }
 
   // JS unary `-` (#3824 step 6): `-ToNumber(x)`, the evaluator's primitive,
@@ -617,8 +651,21 @@ public final class Bf {
    * (JS `JSON.stringify(42)` -> `"42"`). Numbers route through
    * {@link JsNumber#numberToString} instead; object key order is
    * insertion order (a {@link Map} here is always a {@link LinkedHashMap}).
+   *
+   * <p>{@link Undefined} follows {@code JSON.stringify}: an object member
+   * holding it is dropped, an array element holding it is {@code null}, at
+   * any depth, and a top-level one gives no string ({@code undefined}
+   * itself, which prints nothing).
    */
-  public String json(Object v) {
+  public Object json(Object v) {
+    if (v instanceof Undefined) {
+      return v;
+    }
+    return jsonString(v);
+  }
+
+  /** {@link #json} of a value that is not {@link Undefined}, as a string. */
+  static String jsonString(Object v) {
     StringBuilder sb = new StringBuilder();
     writeJson(v, sb);
     return sb.toString();
@@ -626,7 +673,7 @@ public final class Bf {
 
   @SuppressWarnings("unchecked")
   private static void writeJson(Object v, StringBuilder sb) {
-    if (v == null) {
+    if (Undefined.isNullish(v)) {
       sb.append("null");
       return;
     }
@@ -662,6 +709,9 @@ public final class Bf {
       sb.append('{');
       boolean first = true;
       for (Map.Entry<String, Object> e : ((Map<String, Object>) v).entrySet()) {
+        if (e.getValue() instanceof Undefined) {
+          continue;
+        }
         if (!first) {
           sb.append(',');
         }
@@ -893,6 +943,7 @@ public final class Bf {
     return starts_with(v, prefix, 0.0);
   }
 
+  /** An {@code undefined} position is 0 (ToIntegerOrInfinity reads NaN, and {@code null}, as 0). */
   public boolean starts_with(Object v, Object prefix, Object position) {
     String s = JsValue.jsString(v);
     int pos = clamp((int) JsNumber.jsNumber(position), 0, s.length());
@@ -904,9 +955,12 @@ public final class Bf {
     return ends_with(v, suffix, (double) s.length());
   }
 
+  /** An omitted or {@code undefined} endPosition is the length; a {@code null} one is 0. */
   public boolean ends_with(Object v, Object suffix, Object endPosition) {
     String s = JsValue.jsString(v);
-    int end = clamp((int) JsNumber.jsNumber(endPosition), 0, s.length());
+    int end = Undefined.isUndefined(endPosition)
+        ? s.length()
+        : clamp((int) JsNumber.jsNumber(endPosition), 0, s.length());
     String truncated = s.substring(0, end);
     return truncated.endsWith(JsValue.jsString(suffix));
   }
@@ -953,8 +1007,13 @@ public final class Bf {
     return pad_start(v, targetLength, " ");
   }
 
+  /** An omitted or {@code undefined} pad is a single space; a {@code null} one is {@code "null"}. */
   public String pad_start(Object v, Object targetLength, Object pad) {
-    return jsPad(JsValue.jsString(v), (int) JsNumber.jsNumber(targetLength), JsValue.jsString(pad), true);
+    return jsPad(JsValue.jsString(v), (int) JsNumber.jsNumber(targetLength), padString(pad), true);
+  }
+
+  private static String padString(Object pad) {
+    return Undefined.isUndefined(pad) ? " " : JsValue.jsString(pad);
   }
 
   public String pad_end(Object v, Object targetLength) {
@@ -962,7 +1021,7 @@ public final class Bf {
   }
 
   public String pad_end(Object v, Object targetLength, Object pad) {
-    return jsPad(JsValue.jsString(v), (int) JsNumber.jsNumber(targetLength), JsValue.jsString(pad), false);
+    return jsPad(JsValue.jsString(v), (int) JsNumber.jsNumber(targetLength), padString(pad), false);
   }
 
   private static String jsPad(String s, int target, String pad, boolean start) {
@@ -985,14 +1044,38 @@ public final class Bf {
   }
 
   public List<Object> split(Object v, Object separator) {
-    return splitImpl(JsValue.jsString(v), JsValue.jsString(separator), -1);
+    return split(v, separator, Undefined.INSTANCE);
   }
 
+  /**
+   * An omitted or {@code undefined} separator yields the whole string, a
+   * {@code null} one splits on {@code "null"}; an omitted or
+   * {@code undefined} limit does not cap, any other is JS ToUint32 (a
+   * {@code null} one is 0).
+   */
   public List<Object> split(Object v, Object separator, Object limit) {
-    return splitImpl(JsValue.jsString(v), JsValue.jsString(separator), (int) JsNumber.jsNumber(limit));
+    long cap = Undefined.isUndefined(limit) ? -1 : toUint32(limit);
+    if (Undefined.isUndefined(separator)) {
+      List<Object> out = new ArrayList<>();
+      if (cap != 0) {
+        out.add(JsValue.jsString(v));
+      }
+      return out;
+    }
+    return splitImpl(JsValue.jsString(v), JsValue.jsString(separator), cap);
   }
 
-  private static List<Object> splitImpl(String s, String sep, int limit) {
+  /** JS {@code ToUint32} ({@code split}'s limit): NaN and the infinities are 0. */
+  private static long toUint32(Object v) {
+    double n = JsNumber.jsNumber(v);
+    if (Double.isNaN(n) || Double.isInfinite(n)) {
+      return 0;
+    }
+    double t = (n < 0 ? Math.ceil(n) : Math.floor(n)) % 4294967296.0;
+    return (long) (t < 0 ? t + 4294967296.0 : t);
+  }
+
+  private static List<Object> splitImpl(String s, String sep, long limit) {
     List<Object> out = new ArrayList<>();
     if (limit == 0) {
       return out;
@@ -1016,7 +1099,7 @@ public final class Bf {
       out.add(s.substring(from, idx));
       from = idx + sep.length();
       if (limit >= 0 && out.size() >= limit) {
-        return out.subList(0, limit);
+        return out.subList(0, (int) limit);
       }
     }
     return out;
@@ -1034,26 +1117,27 @@ public final class Bf {
       return (double) ((List<?>) v).size();
     }
     // An object's `.length` is its own `length` property (`{ length: 3 }`),
-    // null when it has none (#3449).
+    // `undefined` when it has none (#3449).
     if (v instanceof Map) {
-      return ((Map<?, ?>) v).get("length");
+      return get(v, "length");
     }
     return 0.0;
   }
 
+  /** {@code .at(i)}: JS {@code undefined} out of range (an {@code undefined} or {@code null} index is 0). */
   public Object at(Object recv, Object indexObj) {
     int i = (int) JsNumber.jsNumber(indexObj);
     if (recv instanceof List) {
       List<?> l = (List<?>) recv;
       int idx = i < 0 ? l.size() + i : i;
-      return (idx < 0 || idx >= l.size()) ? null : l.get(idx);
+      return (idx < 0 || idx >= l.size()) ? Undefined.INSTANCE : l.get(idx);
     }
     if (recv instanceof String) {
       String s = (String) recv;
       int idx = i < 0 ? s.length() + i : i;
-      return (idx < 0 || idx >= s.length()) ? null : String.valueOf(s.charAt(idx));
+      return (idx < 0 || idx >= s.length()) ? Undefined.INSTANCE : String.valueOf(s.charAt(idx));
     }
-    return null;
+    return Undefined.INSTANCE;
   }
 
   public boolean includes(Object recv, Object needle) {
@@ -1118,14 +1202,19 @@ public final class Bf {
   }
 
   public Object slice(Object recv, Object startObj) {
-    return slice(recv, startObj, null);
+    return slice(recv, startObj, Undefined.INSTANCE);
   }
 
+  /**
+   * An omitted or {@code undefined} end is the length; a {@code null} one
+   * coerces to 0, as JS ToIntegerOrInfinity does (and the start: NaN and
+   * {@code null} are 0).
+   */
   public Object slice(Object recv, Object startObj, Object endObj) {
     int len = (recv instanceof String) ? ((String) recv).length()
         : (recv instanceof List) ? ((List<?>) recv).size() : 0;
-    int start = clampSliceIndex(startObj == null ? 0 : (int) JsNumber.jsNumber(startObj), len);
-    int end = clampSliceIndex(endObj == null ? len : (int) JsNumber.jsNumber(endObj), len);
+    int start = clampSliceIndex((int) JsNumber.jsNumber(startObj), len);
+    int end = clampSliceIndex(Undefined.isUndefined(endObj) ? len : (int) JsNumber.jsNumber(endObj), len);
     if (start >= end) {
       return recv instanceof String ? "" : new ArrayList<>();
     }
@@ -1165,6 +1254,10 @@ public final class Bf {
 
   /** Dynamic `.flat(expr)` depth — JS `ToIntegerOrInfinity` coercion first (#2094). */
   public List<Object> flat_dynamic(Object v, Object depthObj) {
+    // An `undefined` depth is the default, 1; `null` coerces to 0.
+    if (Undefined.isUndefined(depthObj)) {
+      return flattenTo(v, 1);
+    }
     double raw = JsNumber.jsNumber(depthObj);
     int d;
     if (Double.isNaN(raw)) {
@@ -1196,14 +1289,15 @@ public final class Bf {
   }
 
   public String join(Object v) {
-    return join(v, ",");
+    return join(v, Undefined.INSTANCE);
   }
 
+  /** An omitted or {@code undefined} separator is {@code ","}; a {@code null} one is {@code "null"}. */
   public String join(Object v, Object sep) {
     if (!(v instanceof List)) {
       return "";
     }
-    String separator = JsValue.jsString(sep);
+    String separator = Undefined.isUndefined(sep) ? "," : JsValue.jsString(sep);
     StringBuilder sb = new StringBuilder();
     List<?> list = (List<?>) v;
     for (int i = 0; i < list.size(); i++) {
@@ -1211,7 +1305,7 @@ public final class Bf {
         sb.append(separator);
       }
       Object el = list.get(i);
-      if (el != null) {
+      if (!Undefined.isNullish(el)) {
         sb.append(JsValue.jsString(el));
       }
     }
@@ -1236,12 +1330,14 @@ public final class Bf {
   // (items, field[, value]) — spec/template-helpers.md
   // =========================================================================
 
+  /** A row field's value: JS {@code item.field}, {@code undefined} when the row has no such key. */
   @SuppressWarnings("unchecked")
   private static Object fieldOf(Object item, String field) {
     if (item instanceof Map) {
-      return ((Map<String, Object>) item).get(field);
+      Map<String, Object> m = (Map<String, Object>) item;
+      return m.containsKey(field) ? m.get(field) : Undefined.INSTANCE;
     }
-    return null;
+    return Undefined.INSTANCE;
   }
 
   public boolean every(Object recv, Object field) {
@@ -1284,9 +1380,10 @@ public final class Bf {
     return out;
   }
 
+  /** {@code find} / {@code find_last} return the matching element, or JS {@code undefined}. */
   public Object find(Object recv, Object field, Object value) {
     if (!(recv instanceof List)) {
-      return null;
+      return Undefined.INSTANCE;
     }
     String f = JsValue.jsString(field);
     for (Object item : (List<?>) recv) {
@@ -1294,7 +1391,7 @@ public final class Bf {
         return item;
       }
     }
-    return null;
+    return Undefined.INSTANCE;
   }
 
   public double find_index(Object recv, Object field, Object value) {
@@ -1313,7 +1410,7 @@ public final class Bf {
 
   public Object find_last(Object recv, Object field, Object value) {
     if (!(recv instanceof List)) {
-      return null;
+      return Undefined.INSTANCE;
     }
     String f = JsValue.jsString(field);
     List<?> list = (List<?>) recv;
@@ -1322,7 +1419,7 @@ public final class Bf {
         return list.get(i);
       }
     }
-    return null;
+    return Undefined.INSTANCE;
   }
 
   public double find_last_index(Object recv, Object field, Object value) {
@@ -1354,7 +1451,12 @@ public final class Bf {
     if (!(recv instanceof List)) {
       return new ArrayList<>();
     }
-    List<Object> out = new ArrayList<>((List<Object>) recv);
+    // JS moves every `undefined` element to the end without comparing it.
+    List<Object> out = new ArrayList<>();
+    List<Object> tail = new ArrayList<>();
+    for (Object el : (List<Object>) recv) {
+      (el instanceof Undefined ? tail : out).add(el);
+    }
     Map<String, Object> opts = (Map<String, Object>) optsObj;
     List<Object> keys = (List<Object>) opts.get("keys");
     Comparator<Object> cmp = (a, b) -> {
@@ -1376,6 +1478,7 @@ public final class Bf {
       return 0;
     };
     out.sort(cmp);
+    out.addAll(tail);
     return out;
   }
 
@@ -1533,12 +1636,16 @@ public final class Bf {
       List<String> values = new ArrayList<>();
       if (valueObj instanceof List) {
         for (Object el : (List<?>) valueObj) {
+          if (Undefined.isNullish(el)) {
+            continue;
+          }
           String s = JsValue.jsString(el);
           if (!s.isEmpty()) {
             values.add(s);
           }
         }
-      } else {
+      } else if (!Undefined.isNullish(valueObj)) {
+        // The client's `if (value)`: `null` and `undefined` are dropped.
         String s = JsValue.jsString(valueObj);
         if (!s.isEmpty()) {
           values.add(s);
@@ -1683,7 +1790,7 @@ public final class Bf {
     for (int i = 0; i + 1 < keyValuePairs.size(); i += 2) {
       String cssKey = JsValue.jsString(keyValuePairs.get(i));
       Object valueObj = keyValuePairs.get(i + 1);
-      if (valueObj == null) {
+      if (Undefined.isNullish(valueObj)) {
         continue;
       }
       String value = JsValue.jsString(valueObj);
@@ -1702,7 +1809,7 @@ public final class Bf {
     if (attrsObj instanceof Map) {
       for (Map.Entry<String, Object> e : ((Map<String, Object>) attrsObj).entrySet()) {
         Object v = e.getValue();
-        if (v == null || Boolean.FALSE.equals(v)) {
+        if (Undefined.isNullish(v) || Boolean.FALSE.equals(v)) {
           continue;
         }
         if (out.length() > 0) {
@@ -1809,12 +1916,13 @@ public final class Bf {
     // attribute and truncate the hydration payload — the browser
     // entity-decodes the attribute value, so the client's JSON.parse still
     // sees the original text.
-    return " bf-p='" + htmlEscape(json(markerProps)) + "'";
+    // `JSON.stringify`: an `undefined` member is dropped (`jsonString`).
+    return " bf-p='" + htmlEscape(jsonString(markerProps)) + "'";
   }
 
   /** A loop row's own data-key attribute, when this component is itself invoked as a keyed row. */
   public String data_key_attr() {
-    if (dataKey == null) {
+    if (Undefined.isNullish(dataKey)) {
       return "";
     }
     String k = JsValue.jsString(dataKey).replace("&", "&amp;").replace("\"", "&quot;");
@@ -1850,7 +1958,7 @@ public final class Bf {
     }
     String propsJson = "";
     if (markerProps instanceof Map && !((Map<String, Object>) markerProps).isEmpty()) {
-      propsJson = "|" + json(markerProps);
+      propsJson = "|" + jsonString(markerProps);
     }
     return "<!--bf-scope:" + rootScopeId + hostSegment + propsJson + "-->";
   }
@@ -1949,7 +2057,7 @@ public final class Bf {
    * the source position.
    */
   public String register_portal_element(Object content) {
-    String html = content == null ? "" : content.toString();
+    String html = Undefined.isNullish(content) ? "" : content.toString();
     synchronized (scripts) {
       portalElements.add(html);
     }
@@ -1992,9 +2100,9 @@ public final class Bf {
     return "";
   }
 
-  /** Zero-arg form — no default (a `useContext(Ctx)` call whose context has a resolvable static default already folds that default in at the TS emission layer, so this overload is a defensive fallback, not the common path). */
+  /** Zero-arg form — no default (a `useContext(Ctx)` call whose context has a resolvable static default already folds that default in at the TS emission layer, so this overload is a defensive fallback, not the common path): a consumer with no provider reads JS `undefined`. */
   public Object use_context(Object name) {
-    return use_context(name, null);
+    return use_context(name, Undefined.INSTANCE);
   }
 
   /** `bf.use_context(name, defaultValue)` — `memo/seed.ts`'s `generateContextConsumerSeed` always emits the 2-arg form (`contextDefaultPebble`'s static default, or the createContext(...) call's own default). */
@@ -2094,7 +2202,7 @@ public final class Bf {
     }
 
     Object slotIdObj = props.remove("_bf_slot");
-    String slotId = slotIdObj == null ? null : JsValue.jsString(slotIdObj);
+    String slotId = Undefined.isNullish(slotIdObj) ? null : JsValue.jsString(slotIdObj);
     Object dataKeyValue = props.remove(PebbleIdent.mangle("key"));
 
     String hostScope = this.rootScopeId;
@@ -2226,7 +2334,7 @@ public final class Bf {
 
   public Object find_eval(Object recv, String bodyJson, String param, Object forwardObj, Object env) {
     if (!(recv instanceof List)) {
-      return null;
+      return Undefined.INSTANCE;
     }
     boolean forward = JsValue.truthy(forwardObj);
     JsonObject body = parseNode(bodyJson);
@@ -2241,7 +2349,7 @@ public final class Bf {
         return item;
       }
     }
-    return null;
+    return Undefined.INSTANCE;
   }
 
   public double find_index_eval(Object recv, String bodyJson, String param, Object forwardObj, Object env) {
@@ -2290,17 +2398,22 @@ public final class Bf {
     }
     JsonObject body = parseNode(bodyJson);
     Map<String, Object> base = baseEnv(env);
+    // JS moves every `undefined` element to the end without handing it to
+    // the comparator.
     List<Object> out = new ArrayList<>();
+    List<Object> tail = new ArrayList<>();
     for (Object o : (List<?>) recv) {
-      out.add(o);
+      (o instanceof Undefined ? tail : out).add(o);
     }
     out.sort((a, b) -> {
       Map<String, Object> inner = new LinkedHashMap<>(base);
       inner.put(paramA, a);
       inner.put(paramB, b);
       double r = JsNumber.jsNumber(Evaluator.evaluate(body, inner));
-      return Double.compare(r, 0.0);
+      // A NaN result (`undefined - 1`) is +0, as in JS SortCompare.
+      return Double.isNaN(r) ? 0 : Double.compare(r, 0.0);
     });
+    out.addAll(tail);
     return out;
   }
 

@@ -4887,6 +4887,22 @@
         "text"
       ]
     },
+    "destructure-length-in-map": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "destructure-nested-object-in-map": {
       "kinds": [
         "array-literal",

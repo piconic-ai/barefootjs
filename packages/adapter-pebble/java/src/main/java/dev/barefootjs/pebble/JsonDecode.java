@@ -34,11 +34,11 @@ final class JsonDecode {
 
   /**
    * What the `{"$undef": true}` sentinel (`spec/js-undefined-value.md`, "JSON
-   * encoding for vectors") decodes to: the host nil a template receives for
-   * JS `undefined` today. The runtime has no undefined value yet; rollout
-   * step U7 replaces this with it.
+   * encoding for vectors") decodes to: the runtime's JS `undefined`. A
+   * `vars.json` key holding it is a present prop whose value is
+   * `undefined`; a JSON `null` stays Java's `null` (JS `null`).
    */
-  static final Object UNDEFINED = null;
+  static final Object UNDEFINED = Undefined.INSTANCE;
 
   /** Whether a JSON object is the `{"$undef": true}` sentinel. */
   static boolean isUndefSentinel(JsonObject obj) {
