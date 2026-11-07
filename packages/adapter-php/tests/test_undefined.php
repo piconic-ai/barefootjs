@@ -182,6 +182,21 @@ bf_test('json is JSON.stringify: member dropped, element null, top level undefin
     bf_assert_eq(Json::canonicalEncode(['o' => $o, 'l' => [$U]]), '{"l":[null],"o":{}}');
 });
 
+bf_test('a JS object stays an object whatever the drop leaves', function () use ($bf, $U) {
+    // An associative PHP array is a JS object: dropping a member must not
+    // turn what is left into a list.
+    $value = [0 => 'kept', 'drop' => $U];
+    bf_assert_eq($bf->json($value), '{"0":"kept"}');
+    bf_assert_eq(Json::canonicalEncode($value), '{"0":"kept"}');
+    bf_assert_eq(Json::canonicalEncode(['o' => [0 => 'a', 1 => 'b', 'x' => $U]]), '{"o":{"0":"a","1":"b"}}');
+    bf_assert_eq(Json::canonicalEncode(['drop' => $U]), '{}');
+    // A list stays a list.
+    bf_assert_eq(Json::canonicalEncode(['a', $U]), '["a",null]');
+    $bf->_scope_id('S_obj');
+    $bf->_props([0 => 'kept', 'drop' => $U]);
+    bf_assert_eq($bf->scope_comment(), '<!--bf-scope:S_obj|{"0":"kept"}-->');
+});
+
 bf_test('bf-p and the scope comment drop an undefined member', function () use ($bf, $U) {
     $bf->_scope_id('S_test');
     $bf->_props(['a' => $U, 'b' => null, 'c' => 'x']);

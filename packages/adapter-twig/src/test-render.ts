@@ -655,14 +655,23 @@ async function writeSeedProps(tempDir: string, props: Record<string, unknown> | 
 }
 
 /**
- * JSON for the render script, with a fixture's `undefined` (a present key
- * holding it, or an array element) written as `{"__bf_special":
- * "undefined"}`, which the script's `bf_decode` turns into the runtime's
- * `\Barefoot\Undefined`. Plain `JSON.stringify` would drop the key, which
- * is an absent prop, not a present `undefined` one.
+ * JSON for the render script, with the values JSON cannot carry written as
+ * `{"__bf_special": "<kind>"}`, which the script's `bf_decode` turns back
+ * into PHP values: a fixture's `undefined` (a present key holding it, or an
+ * array element) into the runtime's `\Barefoot\Undefined`, `NaN` /
+ * `Infinity` / `-Infinity` into PHP's `NAN` / `INF` / `-INF`. Plain
+ * `JSON.stringify` would drop the `undefined` key, which is an absent prop,
+ * not a present `undefined` one, and write a non-finite number as `null`.
+ * The `bf-p` payload is unchanged: the runtime's JSON encoder writes a
+ * non-finite number as `null` and drops an `undefined` member, as
+ * `JSON.stringify` does.
  */
 function toPhpJson(value: unknown): string {
-  return JSON.stringify(value, (_key, v) => (v === undefined ? { __bf_special: 'undefined' } : v))
+  return JSON.stringify(value, (_key, v) => {
+    if (v === undefined) return { __bf_special: 'undefined' }
+    if (typeof v === 'number' && !Number.isFinite(v)) return { __bf_special: String(v) }
+    return v
+  })
 }
 
 /**
@@ -678,14 +687,20 @@ function rootSeedPhp(ir: ComponentIR): string {
   return [
     `// A fixture's \`undefined\` crosses the JSON boundary as`,
     `// \`{"__bf_special": "undefined"}\` and is the runtime's \`Undefined\` here; a`,
-    `// fixture's \`null\` is \`null\`. (Harness-only: the runtime never walks`,
-    `// decoded data.) Decoded WITHOUT assoc, so a nested \`{}\` stays a stdClass.`,
+    `// fixture's \`null\` is \`null\`, and \`NaN\` / \`Infinity\` / \`-Infinity\` cross`,
+    `// as \`{"__bf_special": "NaN"}\` (...) and are PHP's \`NAN\` / \`INF\` / \`-INF\`.`,
+    `// (Harness-only: the runtime never walks decoded data.) Decoded WITHOUT`,
+    `// assoc, so a nested \`{}\` stays a stdClass.`,
     `function bf_decode($v)`,
     `{`,
     `    if ($v instanceof \\stdClass) {`,
     `        $members = get_object_vars($v);`,
-    `        if (count($members) === 1 && ($members['__bf_special'] ?? null) === 'undefined') {`,
+    `        $special = count($members) === 1 ? ($members['__bf_special'] ?? null) : null;`,
+    `        if ($special === 'undefined') {`,
     `            return \\Barefoot\\Undefined::value();`,
+    `        }`,
+    `        if ($special === 'NaN' || $special === 'Infinity' || $special === '-Infinity') {`,
+    `            return $special === 'NaN' ? NAN : ($special === 'Infinity' ? INF : -INF);`,
     `        }`,
     `        $out = new \\stdClass();`,
     `        foreach ($members as $k => $x) {`,

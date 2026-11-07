@@ -37,8 +37,9 @@ final class Json
      * `null`, at any depth, and a top-level `undefined` is `null` (an
      * encoder must return a string; `BarefootJS::json` answers a top-level
      * `undefined` itself). The encoder never receives `Undefined`, whose
-     * `jsonSerialize()` would keep the member as `null`. An object that
-     * loses every member stays an object (`{}`), not an empty list.
+     * `jsonSerialize()` would keep the member as `null`. A non-list array
+     * (a JS object) comes back as a `stdClass`, so it stays an object
+     * whatever the drop leaves (`{}`, `{"0":"kept"}`), not a list.
      */
     public static function ready($value)
     {
@@ -58,13 +59,16 @@ final class Json
             if (array_is_list($value)) {
                 return array_map([self::class, 'ready'], $value);
             }
-            $out = [];
+            // A PHP array that is no list is a JS object, and stays one after
+            // a drop: `[0 => 'kept', 'drop' => UNDEF]` is `{"0":"kept"}`, not
+            // the list `["kept"]` a PHP array with the keys left would encode.
+            $out = new \stdClass();
             foreach ($value as $k => $v) {
                 if (!($v instanceof Undefined)) {
-                    $out[$k] = self::ready($v);
+                    $out->{$k} = self::ready($v);
                 }
             }
-            return $out === [] ? new \stdClass() : $out;
+            return $out;
         }
         return $value;
     }
