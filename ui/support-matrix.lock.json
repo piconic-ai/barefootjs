@@ -43,6 +43,12 @@
               ]
             },
             {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -200,6 +206,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
               ]
             },
             {
@@ -402,6 +414,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
               ]
             },
             {
@@ -625,6 +643,12 @@
               ]
             },
             {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -785,6 +809,12 @@
               ]
             },
             {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -942,6 +972,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
               ]
             },
             {
@@ -1265,6 +1301,12 @@
               ]
             },
             {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -1422,6 +1464,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
               ]
             },
             {
@@ -5006,6 +5054,12 @@
               ]
             },
             {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5307,6 +5361,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
               ]
             },
             {
@@ -5647,6 +5707,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
               ]
             },
             {
@@ -6074,6 +6140,12 @@
               ]
             },
             {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6378,6 +6450,12 @@
               ]
             },
             {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6679,6 +6757,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
               ]
             },
             {
@@ -7266,6 +7350,12 @@
               ]
             },
             {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -7567,6 +7657,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
               ]
             },
             {
@@ -8326,6 +8422,12 @@
               ]
             },
             {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -8741,6 +8843,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
               ]
             },
             {
@@ -9231,6 +9339,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
               ]
             },
             {
@@ -9904,6 +10018,12 @@
               ]
             },
             {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -10316,6 +10436,12 @@
               ]
             },
             {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -10725,6 +10851,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
               ]
             },
             {
@@ -11528,6 +11660,12 @@
               ]
             },
             {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -11943,6 +12081,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
               ]
             },
             {
@@ -12531,6 +12675,12 @@
               ]
             },
             {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12820,6 +12970,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
               ]
             },
             {
@@ -13214,6 +13370,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
               ]
             },
             {
@@ -13719,6 +13881,12 @@
               ]
             },
             {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -14011,6 +14179,12 @@
               ]
             },
             {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -14300,6 +14474,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
               ]
             },
             {
@@ -14887,6 +15067,12 @@
               ]
             },
             {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -15176,6 +15362,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
               ]
             },
             {
@@ -27106,6 +27298,12 @@
               ]
             },
             {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -27299,6 +27497,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
               ]
             },
             {
@@ -27585,6 +27789,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
               ]
             },
             {
@@ -27952,6 +28162,12 @@
               ]
             },
             {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -28148,6 +28364,12 @@
               ]
             },
             {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -28341,6 +28563,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
               ]
             },
             {
@@ -28742,6 +28970,12 @@
               ]
             },
             {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -28935,6 +29169,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-length-in-map",
+              "limitations": [
+                "destructured-length-on-string-or-array-row"
               ]
             },
             {

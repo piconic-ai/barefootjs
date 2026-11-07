@@ -3774,6 +3774,56 @@
           }
         }
       },
+      "destructure-length-in-map": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "destructured-length-on-string-or-array-row"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "destructured-length-on-string-or-array-row"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "destructured-length-on-string-or-array-row"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "destructured-length-on-string-or-array-row"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "destructured-length-on-string-or-array-row"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "destructured-length-on-string-or-array-row"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "destructured-length-on-string-or-array-row"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "destructured-length-on-string-or-array-row"
+          ]
+        }
+      },
       "embedded-prop-member-signal-seed": {
         "go-template": {
           "kind": "refusal",
@@ -10108,6 +10158,10 @@
         "description": "A destructure default reading an earlier binding kept as a local reads that local…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-shared-array-renamed.ts"
       },
+      "destructure-length-in-map": {
+        "description": "Destructured { length } of string and array rows in .map()",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-length-in-map.ts"
+      },
       "embedded-prop-member-signal-seed": {
         "description": "a signal seeded from an expression over an object prop member renders the computed seed at SSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/embedded-prop-member-signal-seed.ts"
@@ -11205,6 +11259,26 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "destructured-length-on-string-or-array-row": {
+      "title": "A destructured `length` off a string or array row",
+      "kind": "silent",
+      "given": "a `.map()` callback that destructures `length` off each row (`({ length }) => …`) where the rows are strings or arrays",
+      "expected": "each row reads its own length: a string's UTF-16 code-unit count, an array's element count (`'abc'` gives `3`, `['x', 'y']` gives `2`)",
+      "actual": "renders every row's `length` empty (and a `key={length}` as `data-key=\"\"`), with no diagnostic, or fails the render",
+      "fixtures": [
+        "destructure-length-in-map"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "twig",
+        "xslate"
       ]
     },
     "fragment-wrapped-conditional-return-branch-scope": {
