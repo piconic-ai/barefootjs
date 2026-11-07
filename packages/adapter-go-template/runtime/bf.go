@@ -33,6 +33,24 @@ func FuncMap() template.FuncMap {
 		// Go's truthiness-based `or` would replace.
 		"bf_nullish": Nullish,
 
+		// JS `undefined` and `null` as two values (spec/js-undefined-value.md,
+		// U8): the constant, and the `x === undefined` / `x === null` /
+		// `x == null` tests. html/template's own `eq x nil` reads both as
+		// nil.
+		"bf_undefined":    func() any { return Undefined },
+		"bf_is_undefined": IsUndefined,
+		"bf_is_null":      IsNull,
+		"bf_is_nullish":   IsNullish,
+		// The JS value of a struct field the template reads: an optional
+		// field of a generated struct is a bf.Opt, read as Undefined, nil or
+		// its value; any other value is itself.
+		"bf_js": JSValue,
+		// `o?.k`: Undefined over a nullish receiver, `o[k]` otherwise.
+		"bf_get_opt": GetOpt,
+		// Whether a map holds key: the caller-passed check of a `{...props}`
+		// spread's key (`BfCallerProps`, JS `'k' in props`).
+		"bf_has": Has,
+
 		// Arithmetic
 		"bf_add":        Add,
 		"bf_concat_str": ConcatStr,
@@ -148,7 +166,7 @@ func FuncMap() template.FuncMap {
 
 		// Higher-order Array Methods
 		"bf_every":           Every,
-		"bf_some":            Some,
+		"bf_some":            SomeField,
 		"bf_filter":          Filter,
 		"bf_find":            Find,
 		"bf_find_index":      FindIndex,
@@ -1066,7 +1084,9 @@ func Omit(item any, excludeKeys ...string) map[string]any {
 			if _, skip := exclude[key]; skip {
 				continue
 			}
-			out[key] = rv.Field(i).Interface()
+			if val, present := structMember(rv.Field(i)); present {
+				out[key] = val
+			}
 		}
 	case reflect.Map:
 		for _, k := range rv.MapKeys() {
@@ -1084,6 +1104,16 @@ func Omit(item any, excludeKeys ...string) map[string]any {
 		}
 	}
 	return out
+}
+
+// structMember is a struct field as a JS object member: an Opt field reads
+// as its JS value, and is no member at all when it is absent.
+func structMember(field reflect.Value) (any, bool) {
+	val := field.Interface()
+	if o, ok := val.(interface{ Passed() bool }); ok && !o.Passed() {
+		return nil, false
+	}
+	return jsValue(val), true
 }
 
 // goInitialisms mirrors GO_INITIALISMS
@@ -1179,7 +1209,9 @@ func JSKeys(item any) map[string]any {
 					key = tag
 				}
 			}
-			out[key] = rv.Field(i).Interface()
+			if val, present := structMember(rv.Field(i)); present {
+				out[key] = val
+			}
 		}
 	case reflect.Map:
 		for _, k := range rv.MapKeys() {
@@ -1262,7 +1294,8 @@ func BfPropsAttr(props interface{}) (template.HTMLAttr, error) {
 		payload = props
 	}
 
-	propsJSON, err := json.Marshal(payload)
+	// JSON.stringify, as Hono's bf-p: an `undefined` member is dropped.
+	propsJSON, err := marshalJS(payload)
 	if err != nil {
 		return "", err
 	}
@@ -1298,7 +1331,7 @@ func ConcatStr(a, b any) string {
 
 // Sub returns a - b. Supports int and float64.
 func Sub(a, b any) any {
-	av, bv := toFloat64(a), toFloat64(b)
+	av, bv := ToNumber(a), ToNumber(b)
 	result := av - bv
 	if isIntLike(a) && isIntLike(b) && result == float64(int(result)) {
 		return int(result)
@@ -1308,7 +1341,7 @@ func Sub(a, b any) any {
 
 // Mul returns a * b. Supports int and float64.
 func Mul(a, b any) any {
-	av, bv := toFloat64(a), toFloat64(b)
+	av, bv := ToNumber(a), ToNumber(b)
 	result := av * bv
 	if isIntLike(a) && isIntLike(b) && result == float64(int(result)) {
 		return int(result)
@@ -1323,7 +1356,7 @@ func Mul(a, b any) any {
 // panic on a zero divisor. A nil operand reads as 0, as in the other
 // arithmetic helpers, so `2 / null` is `+Inf`.
 func Div(a, b any) any {
-	return toFloat64(a) / toFloat64(b)
+	return ToNumber(a) / ToNumber(b)
 }
 
 // Min returns the smaller of a and b (two-arg `Math.min`). Like Mul, it keeps
@@ -1334,7 +1367,7 @@ func Div(a, b any) any {
 // against NaN are always false and would otherwise let a non-NaN operand
 // win instead of propagating NaN like JS `Math.min`/`Math.max` do.
 func Min(a, b any) any {
-	av, bv := Number(a), Number(b)
+	av, bv := ToNumber(a), ToNumber(b)
 	if math.IsNaN(av) {
 		return av
 	}
@@ -1354,7 +1387,7 @@ func Min(a, b any) any {
 // Max returns the larger of a and b (two-arg `Math.max`), with the same
 // int-preserving rule and NaN-propagation as Min.
 func Max(a, b any) any {
-	av, bv := Number(a), Number(b)
+	av, bv := ToNumber(a), ToNumber(b)
 	if math.IsNaN(av) {
 		return av
 	}
@@ -1391,7 +1424,7 @@ func Mod(a, b any) any {
 			return math.Copysign(0, -1)
 		}
 	}
-	return math.Mod(toFloat64(a), toFloat64(b))
+	return math.Mod(ToNumber(a), ToNumber(b))
 }
 
 // Neg is JS unary `-` (#3824 step 6): `-ToNumber(a)`, the evaluator's
@@ -1449,9 +1482,9 @@ func TrimEnd(recv any) string {
 }
 
 // Contains returns true if s contains substr.
-func Contains(recv any, substr string) bool {
+func Contains(recv any, substr any) bool {
 	s := String(recv)
-	return strings.Contains(s, substr)
+	return strings.Contains(s, searchString(substr))
 }
 
 // Split lowers `String.prototype.split(sep, limit?)` (#1448 Tier B). It
@@ -1465,10 +1498,19 @@ func Contains(recv any, substr string) bool {
 // ignored (JS would also return every piece — its ToUint32 wrap makes
 // the limit effectively unbounded). The no-separator form is handled by
 // the adapter (it emits `bf_arr` for the whole-string single element).
-func Split(recv any, sep string, limit ...any) []any {
+//
+// An `undefined` separator (JS's omitted argument) yields the whole string
+// as one piece, and an `undefined` limit does not cap; any other separator
+// is its ToString (`null` splits on "null").
+func Split(recv any, sep any, limit ...any) []any {
 	s := String(recv)
-	parts := strings.Split(s, sep)
-	if len(limit) > 0 {
+	var parts []string
+	if isUndefined(sep) {
+		parts = []string{s}
+	} else {
+		parts = strings.Split(s, evalToString(sep))
+	}
+	if len(limit) > 0 && !isUndefined(limit[0]) {
 		if l := integerArg(limit[0]); l >= 0 && l < len(parts) {
 			parts = parts[:l]
 		}
@@ -1486,8 +1528,9 @@ func Split(recv any, sep string, limit ...any) []any {
 // at that index, counted in UTF-16 code units like JS (#3613) and
 // clamped to `[0, len]` so it never panics: `"abc".startsWith("b", 1)`
 // and `"日本語".startsWith("本", 1)` are both true.
-func StartsWith(recv any, prefix string, position ...any) bool {
+func StartsWith(recv any, search any, position ...any) bool {
 	s := String(recv)
+	prefix := searchString(search)
 	if len(position) == 0 {
 		return strings.HasPrefix(s, prefix)
 	}
@@ -1501,15 +1544,25 @@ func StartsWith(recv any, prefix string, position ...any) bool {
 // true (JS parity). The optional `endPosition` treats the string as if
 // it were only that many UTF-16 code units long (#3613; clamped to
 // `[0, len]`), matching JS `"abc".endsWith("b", 2) === true`.
-func EndsWith(recv any, suffix string, endPosition ...any) bool {
+func EndsWith(recv any, search any, endPosition ...any) bool {
 	s := String(recv)
-	if len(endPosition) == 0 {
+	suffix := searchString(search)
+	if len(endPosition) == 0 || isUndefined(endPosition[0]) {
 		return strings.HasSuffix(s, suffix)
 	}
 	units := utf16Units(s)
 	e := clampUnitPos(integerArg(endPosition[0]), len(units))
 	needle := utf16Units(suffix)
 	return hasUnitsAt(units, needle, e-len(needle))
+}
+
+// searchString is a string method's search argument as JS reads it: its
+// ToString, so `null` searches for "null" and `undefined` for "undefined".
+func searchString(v any) string {
+	if s, ok := v.(string); ok {
+		return s
+	}
+	return evalToString(v)
 }
 
 // Replace lowers the string-pattern form of `String.prototype.replace`
@@ -1582,24 +1635,24 @@ func padTo(s string, target int, pad string, atStart bool) string {
 }
 
 // PadStart lowers `String.prototype.padStart(target, pad?)` (#1448 Tier
-// B). The pad string defaults to a single space when omitted.
-func PadStart(recv any, target any, pad ...string) string {
-	s := String(recv)
-	p := " "
-	if len(pad) > 0 {
-		p = pad[0]
-	}
-	return padTo(s, integerArg(target), p, true)
+// B). The pad string defaults to a single space when omitted or
+// `undefined`; any other pad is its ToString (`null` pads with "null").
+func PadStart(recv any, target any, pad ...any) string {
+	return padTo(String(recv), integerArg(target), padString(pad), true)
 }
 
 // PadEnd lowers `String.prototype.padEnd(target, pad?)` (#1448 Tier B).
-func PadEnd(recv any, target any, pad ...string) string {
-	s := String(recv)
-	p := " "
-	if len(pad) > 0 {
-		p = pad[0]
+func PadEnd(recv any, target any, pad ...any) string {
+	return padTo(String(recv), integerArg(target), padString(pad), false)
+}
+
+// padString is the pad argument of PadStart / PadEnd: " " when it is
+// omitted or `undefined`, its ToString otherwise.
+func padString(pad []any) string {
+	if len(pad) == 0 || isUndefined(pad[0]) {
+		return " "
 	}
-	return padTo(s, integerArg(target), p, false)
+	return evalToString(pad[0])
 }
 
 // Join concatenates elements of a slice with sep. Accepts both
@@ -1609,17 +1662,24 @@ func PadEnd(recv any, target any, pad ...string) string {
 // doesn't distinguish between the two. Pre-fix this returned "" for
 // fixed-size arrays passed through template data (Copilot review on
 // #1445).
-func Join(items any, sep string) string {
+//
+// The separator is JS's: `undefined` (an omitted argument) is ",", and any
+// other value is its ToString (`null` joins with "null").
+func Join(items any, sep any) string {
 	v := reflect.ValueOf(items)
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return ""
+	}
+	separator := ","
+	if !isUndefined(sep) {
+		separator = evalToString(sep)
 	}
 
 	parts := make([]string, v.Len())
 	for i := 0; i < v.Len(); i++ {
 		parts[i] = toString(v.Index(i).Interface())
 	}
-	return strings.Join(parts, sep)
+	return strings.Join(parts, separator)
 }
 
 // Ternary returns a when cond is true, else b — the pipeline-position
@@ -1731,21 +1791,41 @@ func RawHTML(v any) template.HTML {
 // Finite numbers already take JS's spelling: `encoding/json` writes a
 // float64 as ES6 Number::toString does (`-2`, `-4e-8`, `-4e+21`).
 //
+// JS `undefined` follows `JSON.stringify` too (spec/js-undefined-value.md,
+// decision 5): an object member holding Undefined (or an absent Opt) is
+// dropped, an array element holding it is written as `null`, and a
+// top-level Undefined gives no string: JSON returns Undefined itself, which
+// prints as the empty string.
+//
 // Returns the marshal error so a `template.Execute` call fails
 // loudly on cycles / unsupported values rather than silently
 // producing `""` and reintroducing the SSR data-loss class
 // #1187 was filed against. Go's text/template treats a non-nil
 // error return from a func as an execution failure.
-func JSON(v any) (string, error) {
-	prepared, err := nullNonFinite(v, nil)
+func JSON(v any) (any, error) {
+	if isUndefined(jsValue(v)) {
+		return Undefined, nil
+	}
+	b, err := marshalJS(v)
 	if err != nil {
 		return "", err
+	}
+	return string(b), nil
+}
+
+// marshalJS is `JSON.stringify` of v as bytes: the JSON helper's encoding,
+// shared with the bf-p hydration payload. A top-level Undefined encodes as
+// `null`; JSON tells it apart first.
+func marshalJS(v any) ([]byte, error) {
+	prepared, err := nullNonFinite(v, nil)
+	if err != nil {
+		return nil, err
 	}
 	b, err := json.Marshal(prepared)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return string(unsignJSONZeros(b)), nil
+	return unsignJSONZeros(b), nil
 }
 
 // containerID identifies a map or slice on the walk's current path: its
@@ -1757,14 +1837,21 @@ type containerID struct {
 }
 
 // nullNonFinite returns v with every NaN / ±Inf float replaced by nil,
-// at any depth of a slice or a string-keyed map. A slice or map is
-// copied (as []any / map[string]any) only when it can hold a float and
-// does not marshal itself; v itself is never mutated. path holds the
+// at any depth of a slice or a string-keyed map, and JS `undefined` laid
+// out as `JSON.stringify` does: an Opt reads as its JS value, a map entry
+// holding Undefined is dropped, and a slice element holding it becomes nil.
+// A slice or map is copied (as []any / map[string]any) only when it can
+// hold a float, an interface or an Opt and does not marshal itself; v
+// itself is never mutated. path holds the
 // containers being walked: one met again on its own path is a cycle,
 // reported with `encoding/json`'s own error instead of recursing until
 // the stack overflows. A container reached twice on different paths is
 // not a cycle.
 func nullNonFinite(v any, path map[containerID]bool) (any, error) {
+	v = jsValue(v)
+	if isUndefined(v) {
+		return nil, nil
+	}
 	if _, ok := v.(json.Marshaler); ok {
 		return v, nil // the type spells itself
 	}
@@ -1835,16 +1922,24 @@ func nullNonFiniteEntries(rv reflect.Value, path map[containerID]bool) (any, err
 	out := make(map[string]any, rv.Len())
 	iter := rv.MapRange()
 	for iter.Next() {
-		if out[iter.Key().String()], err = nullNonFinite(iter.Value().Interface(), path); err != nil {
+		val := jsValue(iter.Value().Interface())
+		if isUndefined(val) {
+			continue // JSON.stringify drops an `undefined` member
+		}
+		if out[iter.Key().String()], err = nullNonFinite(val, path); err != nil {
 			return nil, err
 		}
 	}
 	return out, nil
 }
 
-// holdsFloat reports whether a value of type t can be or contain a float
-// that nullNonFinite rewrites (an interface may hold anything).
+// holdsFloat reports whether a value of type t can be or contain a value
+// that nullNonFinite rewrites: a float, an Opt or Undefined (an interface may
+// hold anything).
 func holdsFloat(t reflect.Type) bool {
+	if t.Implements(jsValuerType) || t == undefinedType {
+		return true
+	}
 	switch t.Kind() {
 	case reflect.Float32, reflect.Float64, reflect.Interface:
 		return true
@@ -1853,6 +1948,11 @@ func holdsFloat(t reflect.Type) bool {
 	}
 	return false
 }
+
+var (
+	jsValuerType  = reflect.TypeOf((*jsValuer)(nil)).Elem()
+	undefinedType = reflect.TypeOf(Undefined)
+)
 
 // unsignJSONZeros rewrites every `-0` number in encoded JSON to `0`, at
 // any depth: JS `JSON.stringify(-0)` is `0` (and `[-0, 1]` is `[0,1]`),
@@ -1942,13 +2042,13 @@ func Number(v any) float64 {
 // `Math.floor`. The return type stays float64 so chained primitives
 // (`bf_floor` then `bf_string`) line up with JS's number type.
 func Floor(v any) float64 {
-	return math.Floor(Number(v))
+	return math.Floor(ToNumber(v))
 }
 
 // Abs returns the absolute value of v as a float64, mirroring JS
 // `Math.abs`. #2168 math-methods.
 func Abs(v any) float64 {
-	return math.Abs(Number(v))
+	return math.Abs(ToNumber(v))
 }
 
 // ToFixed formats v with exactly `digits` decimal places, mirroring JS
@@ -1982,7 +2082,7 @@ func ToFixed(v any, fractionDigits any) string {
 // Ceil returns the smallest integer ≥ v as a float64. Mirrors JS
 // `Math.ceil`.
 func Ceil(v any) float64 {
-	return math.Ceil(Number(v))
+	return math.Ceil(ToNumber(v))
 }
 
 // Round returns v rounded to the nearest integer as a float64.
@@ -1991,7 +2091,7 @@ func Ceil(v any) float64 {
 // negatives; we accept that minor divergence since the conformance
 // contract is value-compat for the common positive case).
 func Round(v any) float64 {
-	return math.Round(Number(v))
+	return math.Round(ToNumber(v))
 }
 
 // =============================================================================
@@ -2119,8 +2219,7 @@ func Len(v any) int {
 // At lowers `Array.prototype.at(i)` and `String.prototype.at(i)` — the
 // adapter can't tell the receivers apart at compile time, so this
 // dispatches on `reflect.Kind()` like `Includes`. Negative indices count
-// from the end (-1 is the last element); out of range is nil (JS
-// `undefined`).
+// from the end (-1 is the last element); out of range is Undefined.
 //
 // A string receiver is indexed in UTF-16 code units, like JS (#3613):
 // `"日本語".at(-1)` is "語" and `"a😀b".at(-1)` is "b" (the emoji is
@@ -2139,17 +2238,17 @@ func At(items any, at any) any {
 			index += len(units)
 		}
 		if index < 0 || index >= len(units) {
-			return nil
+			return Undefined
 		}
 		return string(utf16.Decode(units[index : index+1]))
 	}
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
-		return nil
+		return Undefined
 	}
 
 	length := v.Len()
 	if length == 0 {
-		return nil
+		return Undefined
 	}
 
 	// Handle negative indices
@@ -2158,7 +2257,7 @@ func At(items any, at any) any {
 	}
 
 	if index < 0 || index >= length {
-		return nil
+		return Undefined
 	}
 
 	return v.Index(index).Interface()
@@ -2189,11 +2288,7 @@ func Includes(recv any, elem any) bool {
 		// callers have lowered through `convertExpressionToGo`
 		// where the arg type is whatever the template binds. Stringify
 		// via fmt to keep the helper total.
-		needle, ok := elem.(string)
-		if !ok {
-			needle = fmt.Sprintf("%v", elem)
-		}
-		return strings.Contains(v.String(), needle)
+		return strings.Contains(v.String(), evalToString(elem))
 	}
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return false
@@ -2227,7 +2322,7 @@ func IndexOf(items any, elem any) int {
 	v := reflect.ValueOf(items)
 	if v.Kind() == reflect.String {
 		hay := utf16Units(v.String())
-		needle := utf16Units(String(elem))
+		needle := utf16Units(evalToString(elem))
 		for i := 0; i+len(needle) <= len(hay); i++ {
 			if hasUnitsAt(hay, needle, i) {
 				return i
@@ -2259,7 +2354,7 @@ func LastIndexOf(items any, elem any) int {
 	v := reflect.ValueOf(items)
 	if v.Kind() == reflect.String {
 		hay := utf16Units(v.String())
-		needle := utf16Units(String(elem))
+		needle := utf16Units(evalToString(elem))
 		for i := len(hay) - len(needle); i >= 0; i-- {
 			if hasUnitsAt(hay, needle, i) {
 				return i
@@ -2330,7 +2425,7 @@ func clampSliceRange(length, start int, end []any) (int, int) {
 	}
 
 	stop := length
-	if len(end) > 0 {
+	if len(end) > 0 && !isUndefined(end[0]) {
 		stop = integerArg(end[0])
 		if stop < 0 {
 			stop = length + stop
@@ -2473,6 +2568,10 @@ func FlatDynamicDepth(items any, depth any) []any {
 // `.flat(depth)` argument, returning an int in `Flat`'s own contract (`-1`
 // = unbounded, `>= 0` = that many levels).
 func coerceFlatDepth(depth any) int {
+	// An `undefined` depth is the omitted argument's default, 1.
+	if isUndefined(depth) {
+		return 1
+	}
 	f, ok := flatDepthToFloat(depth)
 	if !ok || math.IsNaN(f) {
 		return 0
@@ -2601,12 +2700,12 @@ func FlatMapTuple(items any, specs ...string) []any {
 	return out
 }
 
-// First returns the first element of a slice, or nil if empty.
+// First returns the first element of a slice, or Undefined if empty.
 func First(items any) any {
 	return At(items, 0)
 }
 
-// Last returns the last element of a slice, or nil if empty.
+// Last returns the last element of a slice, or Undefined if empty.
 func Last(items any) any {
 	return At(items, -1)
 }
@@ -2693,7 +2792,7 @@ func KeepFalsy(v any) []any {
 // (the short circuit), and each operand appears once, so a `??` chain
 // grows linearly.
 func KeepNonNil(v any) []any {
-	if isNilValue(v) {
+	if isNullish(v) {
 		return []any{}
 	}
 	return []any{v}
@@ -2796,9 +2895,9 @@ func Every(items any, field string) bool {
 	return true
 }
 
-// Some returns true if at least one item's field is truthy. Mirrors
+// SomeField returns true if at least one item's field is truthy. Mirrors
 // JavaScript's Array.prototype.some(item => item.field).
-func Some(items any, field string) bool {
+func SomeField(items any, field string) bool {
 	v := reflect.ValueOf(items)
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
 		return false
@@ -2831,12 +2930,13 @@ func Filter(items any, field string, value any) []any {
 	return result
 }
 
-// Find returns the first item where item.field == value, or nil if not found.
+// Find returns the first item where item.field == value, or Undefined if not
+// found.
 // Mirrors JavaScript's Array.prototype.find(item => item.field === value).
 func Find(items any, field string, value any) any {
 	v := reflect.ValueOf(items)
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
-		return nil
+		return Undefined
 	}
 	for i := 0; i < v.Len(); i++ {
 		item := v.Index(i).Interface()
@@ -2844,7 +2944,7 @@ func Find(items any, field string, value any) any {
 			return item
 		}
 	}
-	return nil
+	return Undefined
 }
 
 // FindIndex returns the index of the first item where item.field == value, or -1.
@@ -2862,12 +2962,13 @@ func FindIndex(items any, field string, value any) int {
 	return -1
 }
 
-// FindLast returns the last item where item.field == value, or nil if not found.
+// FindLast returns the last item where item.field == value, or Undefined if
+// not found.
 // Mirrors JavaScript's Array.prototype.findLast(item => item.field === value).
 func FindLast(items any, field string, value any) any {
 	v := reflect.ValueOf(items)
 	if v.Kind() != reflect.Slice && v.Kind() != reflect.Array {
-		return nil
+		return Undefined
 	}
 	for i := v.Len() - 1; i >= 0; i-- {
 		item := v.Index(i).Interface()
@@ -2875,7 +2976,7 @@ func FindLast(items any, field string, value any) any {
 			return item
 		}
 	}
-	return nil
+	return Undefined
 }
 
 // FindLastIndex returns the index of the last item where item.field == value, or -1.
@@ -2943,11 +3044,13 @@ func Sort(items any, spec ...string) []any {
 	}
 
 	// Copy into a fresh []any so the sort is non-mutating regardless
-	// of whether the receiver is `[]T` or `[]any`.
+	// of whether the receiver is `[]T` or `[]any`. JS sorts every
+	// `undefined` element to the end without comparing it.
 	result := make([]any, length)
 	for i := 0; i < length; i++ {
 		result[i] = v.Index(i).Interface()
 	}
+	result, tail := splitUndefined(result)
 
 	keys := parseSortSpec(spec)
 	sort.SliceStable(result, func(i, j int) bool {
@@ -2966,7 +3069,7 @@ func Sort(items any, spec ...string) []any {
 		return false
 	})
 
-	return result
+	return append(result, tail...)
 }
 
 // parseSortSpec chunks the variadic operand list into 4-string key
@@ -3081,6 +3184,28 @@ const (
 	retryAllCases
 )
 
+// Has reports whether the string-keyed map m holds key (JS `key in m` for a
+// props bag); false for anything else.
+func Has(m any, key string) bool {
+	rv := reflect.ValueOf(m)
+	if rv.Kind() != reflect.Map || rv.Type().Key().Kind() != reflect.String {
+		return false
+	}
+	return rv.MapIndex(reflect.ValueOf(key).Convert(rv.Type().Key())).IsValid()
+}
+
+// JSValue is v as a JS value: an Opt as its V(), anything else as it is.
+func JSValue(v any) any { return jsValue(v) }
+
+// GetOpt is JS `o?.[k]` / `o?.k`: Undefined when o is nullish, the index
+// read otherwise.
+func GetOpt(item any, field any) any {
+	if isNullish(item) {
+		return Undefined
+	}
+	return indexValue(item, field)
+}
+
 // indexValue is JS `obj[key]`, the template helper `bf_get` and the
 // callback evaluator's index read (spec/js-primitive-semantics.md,
 // "ToPropertyKey and index read"). It is getFieldValue except that a map
@@ -3101,13 +3226,13 @@ func readValue(item any, field any, retry mapKeyRetry) any {
 	// `[]any` so a single bad row doesn't crash the whole sort.
 	if v.Kind() == reflect.Interface {
 		if v.IsNil() {
-			return nil
+			return Undefined
 		}
 		v = v.Elem()
 	}
 	if v.Kind() == reflect.Ptr {
 		if v.IsNil() {
-			return nil
+			return Undefined
 		}
 		v = v.Elem()
 	}
@@ -3115,7 +3240,7 @@ func readValue(item any, field any, retry mapKeyRetry) any {
 	if v.Kind() == reflect.Slice || v.Kind() == reflect.Array {
 		idx, ok := fieldAsIndex(field)
 		if !ok || idx < 0 || idx >= v.Len() {
-			return nil
+			return Undefined
 		}
 		return v.Index(idx).Interface()
 	}
@@ -3126,11 +3251,11 @@ func readValue(item any, field any, retry mapKeyRetry) any {
 		// (spec/js-primitive-semantics.md, "Out of scope").
 		idx, ok := fieldAsIndex(field)
 		if !ok {
-			return nil
+			return Undefined
 		}
 		units := utf16.Encode([]rune(v.String()))
 		if idx < 0 || idx >= len(units) {
-			return nil
+			return Undefined
 		}
 		return string(utf16.Decode(units[idx : idx+1]))
 	}
@@ -3144,7 +3269,7 @@ func readValue(item any, field any, retry mapKeyRetry) any {
 	}
 
 	if v.Kind() != reflect.Struct {
-		return nil
+		return Undefined
 	}
 
 	fieldVal := v.FieldByName(fieldStr)
@@ -3155,7 +3280,7 @@ func readValue(item any, field any, retry mapKeyRetry) any {
 			field := v.Type().Field(i)
 			tag := strings.Split(field.Tag.Get("json"), ",")[0]
 			if field.PkgPath == "" && tag != "" && tag != "-" && tag == fieldStr {
-				return v.Field(i).Interface()
+				return jsValue(v.Field(i).Interface())
 			}
 		}
 		// Case-variant fallback: the evaluator carries the JS field name
@@ -3168,14 +3293,15 @@ func readValue(item any, field any, retry mapKeyRetry) any {
 		// reach this fallback.
 		fieldVal = v.FieldByNameFunc(func(n string) bool { return strings.EqualFold(n, fieldStr) })
 		if !fieldVal.IsValid() {
-			return nil
+			return Undefined
 		}
 	}
-	return fieldVal.Interface()
+	// An Opt field reads as its JS value (Undefined when absent).
+	return jsValue(fieldVal.Interface())
 }
 
 // mapValue reads the key fieldStr from the map v; a map not keyed by a
-// string reads nil. After the exact key it tries the capitalised key and,
+// string reads Undefined, as does a key it does not hold. After the exact key it tries the capitalised key and,
 // with retryAllCases, the decapitalised and all-lowercase key, so
 // JSON-decoded user data (`map[string]any{"price": 30}`) and
 // PascalCase-emitted test data both resolve under a single key name
@@ -3183,7 +3309,7 @@ func readValue(item any, field any, retry mapKeyRetry) any {
 func mapValue(v reflect.Value, fieldStr string, retry mapKeyRetry) any {
 	keyType := v.Type().Key()
 	if keyType.Kind() != reflect.String {
-		return nil
+		return Undefined
 	}
 	// Convert the lookup string to the map's actual key type so maps
 	// keyed by a named string type (`type Key string`) don't panic with
@@ -3204,7 +3330,7 @@ func mapValue(v reflect.Value, fieldStr string, retry mapKeyRetry) any {
 		}
 	}
 	if retry != retryAllCases {
-		return nil
+		return Undefined
 	}
 	if low := decapitalize(fieldStr); low != fieldStr {
 		if r, ok := lookup(low); ok {
@@ -3220,7 +3346,7 @@ func mapValue(v reflect.Value, fieldStr string, retry mapKeyRetry) any {
 			return r
 		}
 	}
-	return nil
+	return Undefined
 }
 
 // fieldAsIndex converts a `getFieldValue` key argument to a slice/array/
@@ -3270,6 +3396,8 @@ func propertyKey(field any) string {
 		return k
 	case nil:
 		return "null"
+	case *undefinedT:
+		return "undefined"
 	case bool:
 		if k {
 			return "true"
@@ -3495,7 +3623,7 @@ func ScopeComment(props interface{}) (template.HTML, error) {
 		if !hasCallerProps {
 			payload = props
 		}
-		pJSON, err := json.Marshal(payload)
+		pJSON, err := marshalJS(payload)
 		if err != nil {
 			return "", err
 		}
@@ -3690,7 +3818,20 @@ func WithBagEntry(props interface{}, bagField, key string, val interface{}) (int
 // int-to-string conversion produces a rune, not a decimal string) and adds
 // the general assignable/convertible fallback for other field kinds
 // (numeric widening, etc.).
-func setStructFieldValue(target reflect.Value, val interface{}) error {
+func setStructFieldValue(target reflect.Value, val interface{}) (err error) {
+	// A bf.Opt field (an optional Input prop) takes the JS value as its own
+	// state: Undefined, nil (null) or the value.
+	if target.CanAddr() {
+		if a, ok := target.Addr().Interface().(jsAssigner); ok {
+			defer func() {
+				if r := recover(); r != nil {
+					err = fmt.Errorf("%v", r)
+				}
+			}()
+			a.assignJS(val)
+			return nil
+		}
+	}
 	if val == nil {
 		target.Set(reflect.Zero(target.Type()))
 		return nil
@@ -4505,11 +4646,11 @@ func setScriptsOnSingle(child interface{}, collector *ScriptCollector) {
 }
 
 // Nullish implements JS `??` for template use (`bf_nullish`, #2248): returns
-// fallback iff v is nil (untyped nil or a nil pointer/map/slice boxed in the
-// interface), otherwise v — so present-but-falsy `""`/`0`/`false` are KEPT,
+// fallback iff v is JS `null` or `undefined` (isNullish: an untyped nil,
+// Undefined, or a nil pointer/map/slice boxed in the interface), otherwise v — so present-but-falsy `""`/`0`/`false` are KEPT,
 // unlike the truthiness-based template `or`.
 func Nullish(v, fallback any) any {
-	if isNilValue(v) {
+	if isNullish(v) {
 		return fallback
 	}
 	return v
@@ -4545,6 +4686,10 @@ func numericKindValue(v any) (float64, bool) {
 // anything else — different types, or a non-comparable kind — is unequal,
 // as JS strict equality never coerces (`"1" === 1` is false).
 func Eq(a, b any) bool {
+	// `undefined` equals only itself, never `null`.
+	if ua, ub := isUndefined(a), isUndefined(b); ua || ub {
+		return ua && ub
+	}
 	if x, ok := numericKindValue(a); ok {
 		if y, ok := numericKindValue(b); ok {
 			return x == y
@@ -4684,7 +4829,8 @@ func Ge(a, b any) bool { c, ok := compareJS(a, b); return ok && c >= 0 }
 // callback evaluator's primitive of the same operation, so a template helper
 // call and a callback body share one implementation. Unlike Number and
 // String, which keep their display divergences (nil → NaN / ""), nil reads
-// as JS null here: ToNumber(nil) is 0 and ToString(nil) is "null".
+// as JS null here (ToNumber(nil) is 0 and ToString(nil) is "null") and
+// Undefined as JS undefined (NaN and "undefined").
 func ToNumber(v any) float64 { return evalToNumber(v) }
 func ToString(v any) string  { return evalToString(v) }
 func Plus(a, b any) any      { return evalBinary("+", a, b) }

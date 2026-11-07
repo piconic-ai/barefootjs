@@ -77,7 +77,14 @@ func EvalNode(node any, env map[string]any) any {
 
 	case "identifier":
 		name, _ := n["name"].(string)
-		return env[name]
+		if v, ok := env[name]; ok {
+			return v
+		}
+		// The unbound `undefined` identifier is the constant.
+		if name == "undefined" {
+			return Undefined
+		}
+		return nil
 
 	case "binary":
 		op, _ := n["op"].(string)
@@ -102,7 +109,7 @@ func EvalNode(node any, env map[string]any) any {
 			}
 			return EvalNode(n["right"], env)
 		case "??":
-			if left == nil {
+			if isNullish(left) {
 				return EvalNode(n["right"], env)
 			}
 			return left
@@ -297,7 +304,7 @@ func evalArrayCallback(method string, objectNode any, arrowNode map[string]any, 
 }
 
 // evalJoin implements `.join(sep)`: elements ToString'd and joined; a
-// null/undefined element ToStrings to the empty string (matching JS
+// null / undefined element joins as the empty string (matching JS
 // `Array.prototype.join`, which skips null/undefined rather than rendering
 // the literal string "null"/"undefined"). A non-array receiver degrades to
 // the empty string (unreachable for a validated body).
@@ -308,7 +315,7 @@ func evalJoin(obj any, sep string) string {
 	}
 	parts := make([]string, len(arr))
 	for i, el := range arr {
-		if el == nil {
+		if isNullish(el) {
 			parts[i] = ""
 			continue
 		}
@@ -449,6 +456,9 @@ func evalToString(v any) string {
 	if v == nil {
 		return "null"
 	}
+	if isUndefined(v) {
+		return "undefined"
+	}
 	// JS spells the non-finite doubles "Infinity" / "-Infinity" / "NaN"; the
 	// runtime String() helper (fmt %v) would render "+Inf" / "-Inf" / "NaN",
 	// so the non-finite cases are pinned here to stay JS-faithful (and match
@@ -491,7 +501,7 @@ func evalToString(v any) string {
 		if rv.Kind() == reflect.Slice || rv.Kind() == reflect.Array {
 			parts := make([]string, rv.Len())
 			for i := range parts {
-				if el := rv.Index(i).Interface(); el != nil {
+				if el := rv.Index(i).Interface(); !isNullish(el) {
 					parts[i] = evalToString(el)
 				}
 			}
@@ -594,6 +604,10 @@ func evalRelational(op string, l, r any) bool {
 func evalStrictEq(l, r any) bool {
 	// Strict `===`: equal JS type and value, no coercion. All numeric Go
 	// types are the single JS "number" type, so int 2 === float64 2.
+	// `undefined` equals only itself, never `null`.
+	if lu, ru := isUndefined(l), isUndefined(r); lu || ru {
+		return lu && ru
+	}
 	lnum := evalIsNumeric(l)
 	rnum := evalIsNumeric(r)
 	if lnum && rnum {
@@ -779,21 +793,21 @@ func evalReadProperty(obj any, key string) any {
 			// this can run inside comparator / reducer evaluation.
 			return utf8.RuneCountInString(o)
 		}
-		return nil
+		return Undefined
 	case []any:
 		if key == "length" {
 			return len(o)
 		}
-		return nil
+		return Undefined
 	case map[string]any:
 		// Case-variant lookup: a callback body reads the raw JS property
 		// (`t.duration`), but test data / Go-keyed maps may carry PascalCase
 		// keys (`{"Duration": …}`). Reuse the field reader the sort / reduce
 		// helpers use — it resolves `duration` → `Duration` and reads a
-		// genuinely missing key as null (the backends' single absent value).
+		// genuinely missing key as undefined.
 		return getFieldValue(o, key)
 	case nil:
-		return nil
+		return Undefined
 	default:
 		// A typed slice from real template data (a struct's `[]string`
 		// field) has a length too, not a `length` field (#3447).
@@ -902,12 +916,15 @@ func SortEval(items any, cmpJSON, paramA, paramB string, baseEnv map[string]any)
 	for k, v := range baseEnv {
 		env[k] = v
 	}
+	// JS sorts every `undefined` element to the end without calling the
+	// comparator on it.
+	arr, tail := splitUndefined(arr)
 	sort.SliceStable(arr, func(i, j int) bool {
 		env[paramA] = arr[i]
 		env[paramB] = arr[j]
 		return evalToNumber(EvalNode(cmp, env)) < 0
 	})
-	return arr
+	return append(arr, tail...)
 }
 
 // ---------------------------------------------------------------------------
@@ -993,13 +1010,13 @@ func SomeEval(items any, predJSON, param string, baseEnv map[string]any) bool {
 	return false
 }
 
-// FindEval returns the first element satisfying the predicate, or nil when none
-// does — the generalization of bf_find. `forward` false searches from the end
-// (findLast).
+// FindEval returns the first element satisfying the predicate, or Undefined
+// when none does — the generalization of bf_find. `forward` false searches
+// from the end (findLast).
 func FindEval(items any, predJSON, param string, forward bool, baseEnv map[string]any) any {
 	pred, ok := decodeEvalBody(predJSON)
 	if !ok {
-		return nil
+		return Undefined
 	}
 	env := seedPredEnv(baseEnv)
 	arr := toAnySlice(items)
@@ -1013,7 +1030,7 @@ func FindEval(items any, predJSON, param string, forward bool, baseEnv map[strin
 			return arr[i]
 		}
 	}
-	return nil
+	return Undefined
 }
 
 // FindIndexEval returns the index of the first element satisfying the predicate,
@@ -1131,6 +1148,20 @@ func Merge(maps ...any) map[string]any {
 		}
 	}
 	return out
+}
+
+// splitUndefined separates the Undefined elements of arr (in order) from the
+// rest, for a sort that orders them last as JS does.
+func splitUndefined(arr []any) (defined, undefined []any) {
+	defined = make([]any, 0, len(arr))
+	for _, el := range arr {
+		if isUndefined(el) {
+			undefined = append(undefined, el)
+		} else {
+			defined = append(defined, el)
+		}
+	}
+	return defined, undefined
 }
 
 // evalReadIndex is JS `obj[index]`: the same implementation as the

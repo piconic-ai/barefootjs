@@ -111,8 +111,8 @@ func TestPredicateEvalHelpers(t *testing.T) {
 	if SomeEval(empty, pred, "u", nil) {
 		t.Errorf("SomeEval(empty) = true, want false")
 	}
-	if got := FindEval(empty, pred, "u", true, nil); got != nil {
-		t.Errorf("FindEval(empty) = %v, want nil", got)
+	if got := FindEval(empty, pred, "u", true, nil); got != Undefined {
+		t.Errorf("FindEval(empty) = %v, want undefined", got)
 	}
 	if got := FindIndexEval(empty, pred, "u", true, nil); got != -1 {
 		t.Errorf("FindIndexEval(empty) = %d, want -1", got)
@@ -452,8 +452,8 @@ func TestLengthOf_ObjectOwnProperty(t *testing.T) {
 	if got := LengthOf(map[string]any{"length": 2}); got != 2 {
 		t.Fatalf("map length = %v, want 2", got)
 	}
-	if got := LengthOf(map[string]any{"a": 1}); got != nil {
-		t.Fatalf("map without length = %v, want nil", got)
+	if got := LengthOf(map[string]any{"a": 1}); got != Undefined {
+		t.Fatalf("map without length = %v, want undefined", got)
 	}
 	if got := LengthOf([]string{"a", "b"}); got != 2 {
 		t.Fatalf("slice length = %v, want 2", got)

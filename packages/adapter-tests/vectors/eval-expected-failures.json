@@ -3,32 +3,7 @@
   "spec": "spec/js-undefined-value.md",
   "about": "Every (runtime, case) of eval-vectors.json that fails until the runtime's U step of the undefined rollout (spec/js-undefined-value.md, §6) lands, keyed by the case note and naming that step. Shrink-only: a harness fails on an unexpected failure, on a listed case that now passes and on a listed note that names no case. Each U step empties its runtime; the file is deleted in U9.",
   "runtimes": {
-    "go": {
-      ".includes tells undefined from null (SameValueZero)": {
-        "step": "U8"
-      },
-      "a missing field adds as NaN": {
-        "step": "U8"
-      },
-      "a missing field concatenates as \"undefined\"": {
-        "step": "U8"
-      },
-      "a missing field is not === null": {
-        "step": "U8"
-      },
-      "a missing field reads as undefined": {
-        "step": "U8"
-      },
-      "an object-literal member may hold undefined": {
-        "step": "U8"
-      },
-      "out-of-range index reads as undefined": {
-        "step": "U8"
-      },
-      "the unbound undefined identifier is the constant": {
-        "step": "U8"
-      }
-    },
+    "go": {},
     "java": {},
     "perl": {},
     "php": {},
