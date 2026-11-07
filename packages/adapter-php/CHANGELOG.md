@@ -1,5 +1,17 @@
 # @barefootjs/php
 
+## 0.41.0
+
+### Minor Changes
+
+- 3fa9d4f: The Twig and Blade adapters and their shared PHP runtime (the `barefootjs/php` Composer package) now carry JS `undefined` apart from `null` (`spec/js-undefined-value.md`, rollout step U6). PHP's `null` is JS `null`; JS `undefined` is `Barefoot\Undefined::value()` (new `Barefoot\Undefined`), a singleton whose `__toString()` is `''` and whose `jsonSerialize()` is `null`. A missing key, an out-of-range index, `.at()` / `.find()` with no result, the `undefined` identifier (`bf.undefined()` / `$bf->undefined()` in a template), `?.` over a nullish receiver (`get_opt`), an optional or untyped field read (`bf.index` / `$bf->index`) and an omitted declared prop read as `Undefined`. `String()` / template literals / `+` print it as `"undefined"` (`null` as `"null"`), `Number()` and arithmetic read it as `NaN` (`null` as `0`; the new `sub` / `mul` and `div` / `mod` coerce through JS ToNumber), `x === null` / `x === undefined` are strict tests (`is_null` / `is_undefined`; `x == null` is `is_nullish`), `??` coalesces both (Twig's `bf_js_nullish` filter, Blade's `keep_nonnil` box), `JSON.stringify` and the `bf-p` / scope-comment payloads drop an `undefined` member and write an `undefined` element as `null` (`Barefoot\Json::ready` walks the value before any encoder sees it), `includes` / `indexOf` tell the two apart, a sort puts `undefined` last, and an optional method argument (`slice` end, `join` / `split` separator, `padStart` pad, `at` index, …) takes its default only when it is omitted or `undefined`. A destructure default now applies only to an absent or `undefined` prop: an explicit `null` keeps `null` (`BarefootJS::deriveStashFromDefaults`). The runtime adds, on the `bf` object, `undefined`, `is_undefined` / `is_null` / `is_nullish`, `get_opt`, `keep_nonnil`, `iterable`, `sub` and `mul`.
+  
+  Migration: a host that passed `null` to mean "unset" now gets JS `null` semantics (`'btn ' + c` renders `btn null`, and a destructure default no longer applies). To leave a prop unset, leave its key out of the props array; to pass a prop that is present and `undefined`, pass `Barefoot\Undefined::value()`. `Undefined` is a PHP object, so it is truthy for PHP's own `if` and `??` / `isset` treat it as set: host code that tests a value it got back from the runtime should use `Barefoot\Undefined::isNullish()` rather than `??` / `isset` / `=== null`.
+
+### Patch Changes
+
+- 5128394: Adds the `carriesUndefined` declaration to `NativeSafeTable`: every template adapter now declares whether its runtime carries JS `undefined` apart from `null` (all `false` for now; nothing reads it yet, so compiled output is unchanged). The conformance vectors gain the `{"$undef": true}` encoding for JS `undefined` in arguments, expectations and evaluator environments, with new `undefined` cases and optional-argument twins; each runtime's harness decodes it, and the cases a runtime does not pass yet are listed in the expected-failure ledgers (including the new `eval-expected-failures.json`) or pinned as helper divergences, naming the rollout step that fixes them (spec/js-undefined-value.md).
+
 ## 0.40.2
 
 ### Patch Changes
