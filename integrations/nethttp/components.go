@@ -288,7 +288,7 @@ type NestedCondToggleListProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	Items []ToggleItem `json:"items"`
+	Items interface{} `json:"items"`
 }
 
 // NoteBoxNativeInput is the user-facing input type.
@@ -544,7 +544,7 @@ type TodoAppProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	InitialTodos []Todo `json:"initialTodos"`
+	InitialTodos interface{} `json:"initialTodos"`
 	Todos []Todo `json:"-"`
 	NewText string `json:"-"`
 	Filter Filter `json:"-"`
@@ -577,7 +577,7 @@ type TodoAppSSRProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	InitialTodos []Todo `json:"initialTodos"`
+	InitialTodos interface{} `json:"initialTodos"`
 	Todos []Todo `json:"-"`
 	NewText string `json:"-"`
 	Filter Filter `json:"-"`
@@ -956,8 +956,8 @@ type QueryTodoAppProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	InitialTodos []Todo `json:"initialTodos"`
-	Todos []Todo `json:"-"`
+	InitialTodos interface{} `json:"initialTodos"`
+	Todos interface{} `json:"-"`
 	NewText string `json:"-"`
 	Filter Filter `json:"-"`
 	QueryTodoItems []QueryTodoItemProps `json:"-"`
@@ -1033,7 +1033,7 @@ type bfNestedCondToggleListIn struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	Items []ToggleItem
+	Items interface{}
 }
 
 // bfTodoAppIn is TodoAppInput as NewTodoAppProps reads it: each
@@ -1042,7 +1042,7 @@ type bfTodoAppIn struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	InitialTodos []Todo
+	InitialTodos interface{}
 }
 
 // bfTodoAppSSRIn is TodoAppSSRInput as NewTodoAppSSRProps reads it: each
@@ -1051,7 +1051,7 @@ type bfTodoAppSSRIn struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	InitialTodos []Todo
+	InitialTodos interface{}
 }
 
 // bfToggleItemIn is ToggleItemInput as NewToggleItemProps reads it: each
@@ -1102,7 +1102,7 @@ type bfQueryTodoAppIn struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	InitialTodos []Todo
+	InitialTodos interface{}
 }
 
 // NewAIChatInteractiveProps creates AIChatInteractiveProps from AIChatInteractiveInput.
@@ -1379,7 +1379,7 @@ func NewFormProps(in FormInput) FormProps {
 // NewNestedCondToggleListProps creates NestedCondToggleListProps from NestedCondToggleListInput.
 func NewNestedCondToggleListProps(input NestedCondToggleListInput) NestedCondToggleListProps {
 	in := bfNestedCondToggleListIn{
-		Items: input.Items.Value(),
+		Items: input.Items.V(),
 		ScopeID: input.ScopeID,
 		BfParent: input.BfParent,
 		BfMount: input.BfMount,
@@ -1399,7 +1399,7 @@ func NewNestedCondToggleListProps(input NestedCondToggleListInput) NestedCondTog
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
 		BfCallerProps: bfCallerProps,
-		Items: in.Items,
+		Items: bf.Coerce(*new([]ToggleItem), in.Items),
 	}
 }
 
@@ -1626,7 +1626,7 @@ func NewTextEscapeProps(in TextEscapeInput) TextEscapeProps {
 //   }
 func NewTodoAppProps(input TodoAppInput) TodoAppProps {
 	in := bfTodoAppIn{
-		InitialTodos: input.InitialTodos.Value(),
+		InitialTodos: input.InitialTodos.V(),
 		ScopeID: input.ScopeID,
 		BfParent: input.BfParent,
 		BfMount: input.BfMount,
@@ -1647,7 +1647,7 @@ func NewTodoAppProps(input TodoAppInput) TodoAppProps {
 		BfMount: in.BfMount,
 		BfCallerProps: bfCallerProps,
 		InitialTodos: in.InitialTodos,
-		Todos: in.InitialTodos,
+		Todos: bf.Coerce(*new([]Todo), in.InitialTodos),
 		NewText: "",
 		Filter: "all",
 	}
@@ -1669,7 +1669,7 @@ func NewTodoAppProps(input TodoAppInput) TodoAppProps {
 //   }
 func NewTodoAppSSRProps(input TodoAppSSRInput) TodoAppSSRProps {
 	in := bfTodoAppSSRIn{
-		InitialTodos: input.InitialTodos.Value(),
+		InitialTodos: input.InitialTodos.V(),
 		ScopeID: input.ScopeID,
 		BfParent: input.BfParent,
 		BfMount: input.BfMount,
@@ -1690,7 +1690,7 @@ func NewTodoAppSSRProps(input TodoAppSSRInput) TodoAppSSRProps {
 		BfMount: in.BfMount,
 		BfCallerProps: bfCallerProps,
 		InitialTodos: in.InitialTodos,
-		Todos: in.InitialTodos,
+		Todos: bf.Coerce(*new([]Todo), in.InitialTodos),
 		NewText: "",
 		Filter: "all",
 	}
@@ -2098,7 +2098,7 @@ func NewThemeToggleProps(in ThemeToggleInput) ThemeToggleProps {
 //   }
 func NewQueryTodoAppProps(input QueryTodoAppInput) QueryTodoAppProps {
 	in := bfQueryTodoAppIn{
-		InitialTodos: input.InitialTodos.Value(),
+		InitialTodos: input.InitialTodos.V(),
 		ScopeID: input.ScopeID,
 		BfParent: input.BfParent,
 		BfMount: input.BfMount,
