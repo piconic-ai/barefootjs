@@ -322,6 +322,7 @@ import { fixture as destructureDefaultEarlierAssignment } from './destructure-de
 import { fixture as undefNullJsonStringify } from './undef-null-json-stringify'
 import { fixture as undefNullJsonStringifyObjectMember } from './undef-null-json-stringify-object-member'
 import { fixture as undefArrayElementSignalSeed } from './undef-array-element-signal-seed'
+import { fixture as undefObjectMemberSignalSeed } from './undef-object-member-signal-seed'
 import { fixture as nullableMemberSignalSeedDestructured } from './nullable-member-signal-seed-destructured'
 import { fixture as undefNullNonDivergingPositions } from './undef-null-non-diverging-positions'
 import { fixture as undefNullNumberCoercion } from './undef-null-number-coercion'
@@ -1628,6 +1629,7 @@ export const jsxFixtures: JSXFixture[] = [
   undefNullJsonStringify,
   undefNullJsonStringifyObjectMember,
   undefArrayElementSignalSeed,
+  undefObjectMemberSignalSeed,
   nullableMemberSignalSeedDestructured,
   undefNullNonDivergingPositions,
   undefNullNumberCoercion,

@@ -9,7 +9,7 @@ export { compileJSX, buildMetadata } from './compiler.ts'
 export type { CompileResult, CompileOptions, CompileOptionsWithAdapter, FileOutput } from './compiler.ts'
 
 // SSR template-variable defaults (manifest seeds for stash-based adapters)
-export { extractSsrDefaults, deriveStashFromDefaults } from './ssr-defaults.ts'
+export { extractSsrDefaults, deriveStashFromDefaults, encodeUndefinedMembers, decodeUndefinedMembers, UNDEFINED_SENTINEL } from './ssr-defaults.ts'
 
 // #3144: shared "is this a component-body local bound to an opaque call"
 // check, consulted by every non-JS-runtime adapter's `call()` fallback

@@ -118,7 +118,6 @@ export const renderDivergences: RenderDivergences = {
   // A `null` / `undefined` `style` object property renders `color:` with
   // an empty value instead of being dropped.
   'style-object-nil-property': { limitation: 'style-object-nil-property' },
-  'undef-array-element-signal-seed': { limitation: 'array-literal-seed-undefined-element' },
 }
 
 /**

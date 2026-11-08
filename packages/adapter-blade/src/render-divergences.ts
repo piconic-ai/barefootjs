@@ -136,7 +136,6 @@ export const renderDivergences: RenderDivergences = {
   // the double: an accepted gap ("Decisions" (5) of
   // spec/js-primitive-semantics.md).
   'plus-beyond-safe-integer': { limitation: 'plus-beyond-safe-integer' },
-  'undef-array-element-signal-seed': { limitation: 'array-literal-seed-undefined-element' },
 }
 
 /**

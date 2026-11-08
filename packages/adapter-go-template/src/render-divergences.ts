@@ -299,7 +299,6 @@ export const renderDivergences: RenderDivergences = {
   // apart from nil, an optional prop is a `bf.Opt[T]` Input field read as
   // its JS value, and an optional scalar row field a `bf.Opt[T]` read
   // through `.V` (spec/js-undefined-value.md, U8).
-  'undef-array-element-signal-seed': { limitation: 'array-literal-seed-undefined-element' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches

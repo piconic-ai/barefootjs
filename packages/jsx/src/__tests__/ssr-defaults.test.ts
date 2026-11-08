@@ -598,9 +598,28 @@ describe('extractSsrDefaults', () => {
 
     const defaults = extractSsrDefaults(metadata)
     // Unlike the array case, a missing key on a plain object resolves that
-    // ONE element to `undefined` (→ `null`) and the `.map()` keeps going —
-    // it does not abort the whole computation.
-    expect(defaults?.x).toEqual({ value: [1, null] })
+    // ONE element to `undefined` and the `.map()` keeps going — it does not
+    // abort the whole computation. The manifest spells the `undefined`
+    // element with the `{"$undef": true}` sentinel.
+    expect(defaults?.x).toEqual({ value: [1, { $undef: true }] })
+  })
+
+  test('an `undefined` array element or object member is the `$undef` sentinel, apart from `null`', () => {
+    const metadata = metadataFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C() {
+        const [a] = createSignal([undefined, null, 'x'])
+        const [o] = createSignal({ a: null, b: undefined, n: { c: undefined } })
+        return <p>{a()}{o()}</p>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.a).toEqual({ value: [{ $undef: true }, null, 'x'] })
+    expect(defaults?.o).toEqual({ value: { a: null, b: { $undef: true }, n: { c: { $undef: true } } } })
+    // The manifest is JSON: the sentinel survives it, and a present key stays present.
+    expect(JSON.parse(JSON.stringify(defaults?.o))).toEqual({ value: { a: null, b: { $undef: true }, n: { c: { $undef: true } } } })
   })
 
   // #2813 (pullfrog nitpick on the PR fixing it): a bare local-const alias
@@ -835,6 +854,15 @@ describe('deriveStashFromDefaults', () => {
       expect(deriveStashFromDefaults(missing, props)).toEqual(deriveStashFromDefaults(explicit, props))
     }
     expect(deriveStashFromDefaults(missing, {})).toEqual({ n: null, rest: null })
+  })
+
+  test('the static fallback decodes the `$undef` sentinel to `undefined`, keeping the key', () => {
+    const defaults: Record<string, SsrDefault> = { o: { value: { a: null, b: { $undef: true } } }, a: { value: [{ $undef: true }] } }
+    const extra = deriveStashFromDefaults(defaults, {})
+    expect(extra.a).toEqual([undefined])
+    expect('b' in (extra.o as object)).toBe(true)
+    expect((extra.o as { b: unknown }).b).toBeUndefined()
+    expect(JSON.stringify(extra.o)).toBe('{"a":null}')
   })
 
   test('mixed defaults map resolves every entry kind independently', () => {
