@@ -100,6 +100,7 @@ export const renderDivergences: RenderDivergences = {
   // the `undef-null-*` fixtures used to sit here: the runtime held
   // `undefined` and `null` as one nil. It now carries `Undefined.INSTANCE`
   // apart from `null` (#3848 U7), so each renders like Hono.
+  'undef-array-element-signal-seed': { limitation: 'array-literal-seed-undefined-element' },
 }
 
 /**
