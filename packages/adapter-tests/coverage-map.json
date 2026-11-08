@@ -11768,6 +11768,22 @@
         "text"
       ]
     },
+    "object-entries-typed-object-signal": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "object-length-property-filter": {
       "kinds": [
         "array-literal",

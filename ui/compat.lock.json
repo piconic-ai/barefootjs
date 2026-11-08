@@ -6779,6 +6779,14 @@
           ]
         }
       },
+      "object-entries-typed-object-signal": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "object-entries-typed-object-signal"
+          ]
+        }
+      },
       "object-spread-branch-child": {
         "go-template": {
           "kind": "refusal",
@@ -9871,6 +9879,10 @@
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
       },
+      "object-entries-typed-object-signal": {
+        "description": "Object.entries over a signal typed with a named object type lists its members",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/object-entries-typed-object-signal.ts"
+      },
       "object-spread-branch-child": {
         "description": "an object spread inside an untaken early-return branch is not evaluated at init (#3861)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/object-spread-branch-child.ts"
@@ -10982,6 +10994,19 @@
       "actual": "renders no rows: the rows are not baked into the server-side state, and a destructured param reads a field name derived from the key (`.AB` for `'a.b'`)",
       "fixtures": [
         "literal-index-own-key"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
+    "object-entries-typed-object-signal": {
+      "title": "`Object.entries` over a signal typed with a named object type",
+      "kind": "silent",
+      "given": "an `Object.entries(o()).map(...)` loop over a signal whose type is a named object type (`type O = { a: string; b: string }`, `createSignal<O>({ a: 'x', b: 'y' })`)",
+      "expected": "the loop renders one row per member, in insertion order",
+      "actual": "throws at render time: the template loop cannot iterate the value",
+      "fixtures": [
+        "object-entries-typed-object-signal"
       ],
       "adapters": [
         "go-template"

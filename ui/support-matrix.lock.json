@@ -5530,6 +5530,12 @@
               ]
             },
             {
+              "fixture": "object-entries-typed-object-signal",
+              "limitations": [
+                "object-entries-typed-object-signal"
+              ]
+            },
+            {
               "fixture": "object-spread-branch-child",
               "limitations": [
                 "object-spread-onto-child-component"
@@ -9045,6 +9051,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "object-entries-typed-object-signal",
+              "limitations": [
+                "object-entries-typed-object-signal"
               ]
             },
             {
@@ -12722,6 +12734,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "object-entries-typed-object-signal",
+              "limitations": [
+                "object-entries-typed-object-signal"
               ]
             },
             {
@@ -18079,6 +18097,12 @@
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "object-entries-typed-object-signal",
+              "limitations": [
+                "object-entries-typed-object-signal"
               ]
             },
             {
@@ -25941,6 +25965,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "object-entries-typed-object-signal",
+              "limitations": [
+                "object-entries-typed-object-signal"
               ]
             },
             {
