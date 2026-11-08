@@ -477,10 +477,15 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     }
   }
 
+  return Object.keys(out).length === 0 ? undefined : encodeSeedValues(out)
+}
+
+/** Each entry's `value` through {@link encodeUndefinedMembers}, in place. */
+function encodeSeedValues(out: Record<string, SsrDefault>): Record<string, SsrDefault> {
   for (const d of Object.values(out)) {
     if ('value' in d) d.value = encodeUndefinedMembers(d.value)
   }
-  return Object.keys(out).length === 0 ? undefined : out
+  return out
 }
 
 /**
