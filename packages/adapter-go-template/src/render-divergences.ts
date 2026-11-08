@@ -120,18 +120,6 @@ export const renderDivergences: RenderDivergences = {
   // A `.map()` callback destructuring `length` off a string or array row
   // reads the row's field, which a string or list does not have.
   'destructure-length-in-map': { limitation: 'destructured-length-on-string-or-array-row' },
-  // A props object parameter not named `props` (`function C(p)`): its
-  // members are not typed as the component's props, so `p.label + p.n`
-  // does not concatenate (or the boolean `p.on` prints as `1`).
-  'props-object-non-props-name-operand-typing': { limitation: 'props-object-non-props-name-operand-typing' },
-  // `??` over an optional scalar field of a typed loop row: the row struct
-  // stores an omitted field as its zero value, so the lowering keeps Go's
-  // `or` there and a present `''` / `0` takes the fallback.
-  'nullish-optional-row-field': { limitation: 'nullish-optional-scalar-row-field' },
-  // The same row storage seen through a loop-row child: an omitted optional
-  // row field reaches the child as `''`, so its `class={tone}` renders
-  // `class=""` instead of being omitted.
-  'loop-row-child-absent-optional-field-attr': { limitation: 'absent-optional-row-field-forwarded' },
   // A JSX prop holding a nested component, forwarded by the receiving
   // component to a grandchild prop, renders nothing in the grandchild.
   'jsx-prop-nested-component-forwarded': { limitation: 'nested-component-in-jsx-prop-forwarded' },
@@ -159,17 +147,6 @@ export const renderDivergences: RenderDivergences = {
   // by Go field names. A JS-keyed map holding only `Name` then answers a read
   // of `name`; the two map shapes cannot be told apart at runtime.
   'index-read-capitalised-key-only': { limitation: 'index-read-capitalised-key-only' },
-  // A destructure default that calls a callback and reads no earlier prop
-  // (`{ b = ['y', ''].filter((x) => x !== '') }`): the props constructor
-  // has no conversion from the evaluated array to the field's slice type,
-  // so it applies no default and an omitted prop renders empty.
-  'destructure-default-body-renamed-callback': { limitation: 'destructure-default-callback-unseeded' },
-  'destructure-default-body-callback': { limitation: 'destructure-default-callback-unseeded' },
-  'destructure-default-param-renamed-callback': { limitation: 'destructure-default-callback-unseeded' },
-  'destructure-default-body-callback-shadow': { limitation: 'destructure-default-callback-unseeded' },
-  // The parameter form read through a memo: the memo reads the binding
-  // without the default too.
-  'destructure-default-param-renamed-callback-memo': { limitation: 'destructure-default-callback-unseeded' },
   // A memo calling a local function named like a typed prop the body never
   // destructures: the server render reads the prop for the call.
   'memo-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
@@ -185,7 +162,6 @@ export const renderDivergences: RenderDivergences = {
   // identity memo over it (`createMemo(() => local)`): the Go seed reads the
   // Input field without the default. A memo the runtime evaluator computes
   // (`createMemo(() => local.length)`) applies it.
-  'destructure-default-body-renamed-callback-signal': { limitation: 'destructure-default-callback-unseeded' },
   'destructure-default-body-renamed-callback-memo-chain': { limitation: 'destructure-default-callback-unseeded' },
   // `omitted-optional-number-arithmetic` used to sit here: an omitted
   // optional number prop read as `0` in arithmetic. A prop that can only be
@@ -194,17 +170,11 @@ export const renderDivergences: RenderDivergences = {
   // omitted `n?: number | null` prop read as `0` in arithmetic. The type
   // cannot say which nil it stands for, so the arithmetic is now refused
   // with BF101 (`conformance-pins.ts`).
-  // An explicit `null` (or an `undefined` a parent passed) carried by a
-  // `{...props}` spread onto a child: the Input struct holds it and an
-  // omitted prop as the same nil, so the spread carries the key only when it
-  // is not nil and an earlier explicit prop keeps its value where JS
-  // overrides it. The DSL runtimes record the keys each caller passed
-  // (`passed`); the Input struct has no such record.
-  'component-spread-explicit-null': { limitation: 'props-spread-explicit-null-override' },
-  'component-spread-explicit-null-positions': { limitation: 'props-spread-explicit-null-override' },
-  'component-spread-forwarded-null': { limitation: 'props-spread-explicit-null-override' },
-  'component-spread-explicit-undefined-prop': { limitation: 'props-spread-explicit-null-override' },
-  'component-prop-undefined-literal-spread': { limitation: 'props-spread-explicit-null-override' },
+  // The `component-spread-*` explicit-null / -undefined fixtures used to sit
+  // here: the Input held an explicit `null` and an omitted prop as the same
+  // nil, so a `{...props}` spread carried the key only when it was not nil.
+  // An optional prop is now a `bf.Opt[T]`, whose `Passed()` the spread reads
+  // (spec/js-undefined-value.md, U8).
   // A `{...props}` spread onto a child in a static-array loop row: the
   // constructor bakes the rows only from scalar props and declines a spread,
   // so the rows come from the caller-supplied `in.<Child>s`, which the
@@ -314,32 +284,21 @@ export const renderDivergences: RenderDivergences = {
   // renamed when a different prop owns the plural (`nestedRowsFieldName`).
   'module-const-destructure-default': { limitation: 'module-const-destructure-default' },
   'module-const-default-hydrate': { limitation: 'module-const-destructure-default' },
-  // A `+` or template literal over a nil Phase 1 cannot read as `undefined`
-  // (an `either` string, a dynamic `+`, an untyped part) keeps today's
-  // output until the runtime carries `undefined` (#3848).
-  'awaits-undefined-plus-shapes': { limitation: 'awaits-undefined-value' },
-  // An operation that tells `undefined` from `null` (spec/js-undefined-value.md
-  // §1): the runtime holds both as one nil, so it renders the answer for
-  // one in place of the other (or fails to render) until it carries
-  // `undefined` (#3848 U0; graduated per target by U2..U8).
-  'undef-null-array-search': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'undef-null-destructure-default': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'destructure-default-null-hydrate': { limitation: 'host-nil-collapses-undefined-and-null' },
   // A default assigning an earlier binding (`b = (a = 2)`) never runs.
   'destructure-default-earlier-assignment': { limitation: 'destructure-default-assigns-earlier-binding' },
-  'undef-null-json-stringify': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'undef-null-json-stringify-object-member': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'undef-null-number-coercion-typed': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'undef-null-optional-chain-result': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'undef-null-optional-method-args': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'undef-null-row-field-coercion': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'undef-null-sort': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'undef-null-strict-equality': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'undef-null-string-coercion': { limitation: 'host-nil-collapses-undefined-and-null' },
-  'undef-null-string-includes': { limitation: 'host-nil-collapses-undefined-and-null' },
   // A `null` / `undefined` `style` object property renders `color:` with
   // an empty value instead of being dropped.
   'style-object-nil-property': { limitation: 'style-object-nil-property' },
+  // The `undef-null-*` fixtures, `destructure-default-null-hydrate`,
+  // `awaits-undefined-plus-shapes`, `nullish-optional-row-field`,
+  // `loop-row-child-absent-optional-field-attr`, the
+  // `destructure-default-*-callback*` fixtures and
+  // `props-object-non-props-name-operand-typing` used to sit here: the
+  // runtime held `undefined` and `null` as one nil, and an omitted optional
+  // prop or row field as its Go zero value. It now carries `bf.Undefined`
+  // apart from nil, an optional prop is a `bf.Opt[T]` Input field read as
+  // its JS value, and an optional scalar row field a `bf.Opt[T]` read
+  // through `.V` (spec/js-undefined-value.md, U8).
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches
@@ -361,10 +320,7 @@ export const renderDivergences: RenderDivergences = {
  * `go-template-adapter.test.ts`'s citation check until the skip goes too.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
-  // The same fixture's root called with `label: null`, forwarded through two
-  // `{...props}` spreads: the second keeps its earlier `"first"`.
-  'component-spread-forwarded-absent:gen:label:union:1': { limitation: 'props-spread-explicit-null-override' },
-  // A JSON `null` and an omitted key both decode to a nil slice, so the
-  // destructure default applies to both and the `??` / `||` fallback never does.
-  'signal-array-prop-fallback-seed-default:items-null': { limitation: 'defaulted-array-prop-explicit-null' },
+  // `signal-array-prop-fallback-seed-default:items-null` used to sit here:
+  // the destructure default applied to an explicit `null`. It now applies
+  // only to an absent or `undefined` prop (#3848 U8).
 }

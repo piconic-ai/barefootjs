@@ -106,7 +106,7 @@ describe('GoTemplateAdapter - loop-row child BF101 covers only undelivered SSR d
   test('a row-independent logical prop is delivered through the evaluator', () => {
     const { bf101, types } = compile(rowSource('on={highlight() && ready()}'))
     expect(bf101).toEqual([])
-    expect(types).toContain('On: bf.Truthy(bf.EvalExpr(')
+    expect(types).toContain('On: bf.Coerce(MarkInput{}.On, bf.EvalExpr(')
   })
 
   test('an unlowerable row-independent data prop still refuses', () => {

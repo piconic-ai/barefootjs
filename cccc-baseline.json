@@ -104,11 +104,6 @@
         26
       ]
     },
-    "packages/adapter-go-template/src/adapter/value/parsed-literal-to-go.ts": {
-      "parsedLiteralToGo": [
-        60
-      ]
-    },
     "packages/adapter-go-template/src/adapter/value/prop-member-seed.ts": {
       "collectNullableSeedStructFields": [
         30
@@ -122,12 +117,6 @@
     "packages/adapter-go-template/src/test-render.ts": {
       "buildDynamicChildLoopSeeding": [
         55
-      ],
-      "buildGoPropsInit": [
-        32
-      ],
-      "goStructLiteral": [
-        31
       ],
       "renderGoTemplateComponent": [
         58

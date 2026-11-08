@@ -212,6 +212,12 @@ export interface ChildComponentShape {
    */
   nillableParamNames: ReadonlySet<string>
   /**
+   * Caller-facing names of the params whose Input field is a `bf.Opt[T]`
+   * (`isOptInputParam`): the parent passes the JS value as it is, and
+   * `bf.Coerce` keeps its state (`undefined` apart from `null`).
+   */
+  optParamNames: ReadonlySet<string>
+  /**
    * Caller-facing params declared as an array of one scalar family
    * (`string[]`, `number[]`, `boolean[]`) whose Input field is that typed
    * slice (no usage-driven override). An inline array literal the parent

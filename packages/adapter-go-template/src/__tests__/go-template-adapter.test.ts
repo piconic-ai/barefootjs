@@ -727,7 +727,7 @@ export function F(props: { items?: number[]; all: number[] }) {
   return <p>{props.items?.length}|{props.all.length}</p>
 }
 `)
-    expect(template).toContain('bf_ternary (bf_eq .Items nil) nil (bf_length .Items)')
+    expect(template).toContain('bf_ternary (bf_is_nullish .Items) (bf_undefined) (bf_length .Items)')
     expect(template).toContain('{{bf_length .All}}')
   })
 })
@@ -771,8 +771,9 @@ export function Example(props: { label?: string }) {
       const labelFields = result.types!.match(/\bLabel\b.*`json:"label"`/g) ?? []
       expect(labelFields.length).toBe(1)
 
-      // NewExampleProps should have exactly one Label assignment
-      const labelAssignments = result.types!.match(/Label:/g) ?? []
+      // NewExampleProps should have exactly one Label assignment (beside the
+      // constructor's read of the `bf.Opt` Input field)
+      const labelAssignments = result.types!.match(/Label: (?!input\.)/g) ?? []
       expect(labelAssignments.length).toBe(1)
     })
 
@@ -793,7 +794,7 @@ export function Counter(props: { initial?: number }) {
       expect(result.types).toContain('package components')
       expect(result.types).toContain('type CounterProps struct')
       expect(result.types).toContain('ScopeID string')
-      expect(result.types).toContain('Initial float64')
+      expect(result.types).toContain('Initial bf.Opt[float64]')
       expect(result.types).toContain('Count float64')
     })
 
@@ -907,9 +908,11 @@ export function TodoApp(props: { initial?: Todo[] }) {
       // now runs inferTypeFromValue on the arrow body for memos).
       expect(result.types).toContain('Remaining int')
       expect(result.types).toContain('Total int')
-      // Underlying prop / array signal still uses the array type.
-      expect(result.types).toContain('Initial []Todo')
+      // The optional prop holds its JS value (U8) off a `bf.Opt` of the
+      // array type; the array signal still uses the array type.
+      expect(result.types).toContain('Initial bf.Opt[[]Todo]')
       expect(result.types).toContain('Todos []Todo')
+      expect(result.types).toContain('Todos: bf.Coerce(*new([]Todo), in.Initial),')
       // The misclassified shapes from the original repro must not
       // resurface — even as `interface{}` (the fallback before the
       // analyzer recognised `.length`).
@@ -942,7 +945,7 @@ export function Counter(props: { initial?: number }) {
       // `Initial: 0` is honoured (JS `0 ?? 99` is `0`, #2248).
       expect(types).toContain('Initial interface{}')
       expect(types).toContain('var initial float64 = 99')
-      expect(types).toMatch(/if in\.Initial != nil \{\s*initial = bf\.ToFloat64\(in\.Initial\)\s*\}/)
+      expect(types).toMatch(/if !bf\.IsNullish\(in\.Initial\) \{\s*initial = bf\.ToFloat64\(in\.Initial\)\s*\}/)
 
       // Signal and memo reference the hoisted variable; the prop field keeps
       // the caller's value, since no signal shares it (#3577).
@@ -955,9 +958,10 @@ export function Counter(props: { initial?: number }) {
       expect(types).not.toContain('Doubled: in.Initial * 2,')
     })
 
-    test('zero-fallback (`??  0`) leaves NewXxxProps unchanged (#1423)', () => {
-      // The hoist is a no-op when the fallback is the Go zero value;
-      // emitting `if initial == 0 { initial = 0 }` would be noise.
+    test('zero-fallback (`??  0`) hoists against an undefined prop too (#1423, U8)', () => {
+      // The prop's field holds the JS value (`bf.Undefined` when omitted),
+      // so even a zero fallback is applied by a nullish test: a present `0`
+      // and an omitted prop both seed `0`.
       const adapter = new GoTemplateAdapter()
       const ir = compileToIR(`
 "use client"
@@ -971,8 +975,9 @@ export function Counter(props: { initial?: number }) {
       const result = adapter.generate(ir)
       const types = result.types!
       expect(types).not.toContain('initial := in.Initial')
+      expect(types).toContain('var initial float64 = 0')
       expect(types).toContain('Initial: in.Initial,')
-      expect(types).toContain('Count: in.Initial,')
+      expect(types).toContain('Count: initial,')
     })
 
     test('hoists string fallback for `props.X ?? "default"` (#1423)', () => {
@@ -992,7 +997,7 @@ export function Label(props: { label?: string }) {
       // `''`, #2248).
       expect(types).toContain('Label interface{}')
       expect(types).toContain('var label string = "Default"')
-      expect(types).toMatch(/if in\.Label != nil \{\s*label = in\.Label\.\(string\)\s*\}/)
+      expect(types).toMatch(/if !bf\.IsNullish\(in\.Label\) \{\s*label = in\.Label\.\(string\)\s*\}/)
       expect(types).toContain('Label: in.Label,')
       // Signal name `text` differs from prop name `label`, so the
       // signal field gets its own entry that resolves through the
@@ -1019,7 +1024,7 @@ export function Check(props: { checked?: boolean }) {
       const types = result.types!
       expect(types).toContain('Checked interface{}')
       expect(types).toContain('var checked bool = true')
-      expect(types).toMatch(/if in\.Checked != nil \{\s*checked = in\.Checked\.\(bool\)\s*\}/)
+      expect(types).toMatch(/if !bf\.IsNullish\(in\.Checked\) \{\s*checked = in\.Checked\.\(bool\)\s*\}/)
       expect(types).toContain('Checked: in.Checked,')
       expect(types).toContain('C: checked,')
     })
@@ -1063,17 +1068,15 @@ export function Counter({ size }: { size?: number }) {
       const types = result.types!
       expect(types).toContain('Size interface{}')
       expect(types).toContain('var size float64 = 1')
-      expect(types).toMatch(/if in\.Size != nil \{\s*size = bf\.ToFloat64\(in\.Size\)\s*\}/)
+      expect(types).toMatch(/if !bf\.IsNullish\(in\.Size\) \{\s*size = bf\.ToFloat64\(in\.Size\)\s*\}/)
       expect(types).toContain('Size: in.Size,')
       expect(types).toContain('Count: size,')
     })
 
-    test('destructured `x ?? 0` stays concrete and seeds the prop directly (#2259)', () => {
-      // A zero-equivalent fallback earns no nillable flip (nil and the Go
-      // zero value land on the same output), so the field keeps its scalar
-      // type and the signal seeds straight off the input — NOT the literal
-      // `0` the pre-#2259 lowering emitted for the unrecognized identifier
-      // form.
+    test('destructured `x ?? 0` seeds through the hoisted fallback (#2259, U8)', () => {
+      // An optional prop holds its JS value whatever its fallback, so the
+      // zero-equivalent `?? 0` is a nullish test too — NOT the literal `0`
+      // the pre-#2259 lowering emitted for the unrecognized identifier form.
       const adapter = new GoTemplateAdapter()
       const ir = compileToIR(`
 "use client"
@@ -1086,10 +1089,10 @@ export function Counter({ size }: { size?: number }) {
 `)
       const result = adapter.generate(ir)
       const types = result.types!
-      expect(types).toContain('Size float64')
-      expect(types).not.toContain('Size interface{}')
+      expect(types).toContain('Size bf.Opt[float64]')
+      expect(types).toContain('Size interface{}')
       expect(types).toContain('Size: in.Size,')
-      expect(types).toContain('Count: in.Size,')
+      expect(types).toContain('Count: size,')
     })
 
     test('negative fallback (`?? -1`) hoists in both prop styles (#2259 review)', () => {
@@ -1152,7 +1155,7 @@ export function Counter({ size = 5 }: { size?: number }) {
       const result = adapter.generate(ir)
       const types = result.types!
       expect(types).toContain('Size interface{}')
-      expect(types).toContain('if in.Size == nil {\n\t\tin.Size = 5.0\n\t}')
+      expect(types).toContain('if bf.IsUndefined(in.Size) {\n\t\tin.Size = 5.0\n\t}')
       expect(types).not.toContain('in.Size == 0')
     })
 
@@ -1809,10 +1812,12 @@ export function Widget(props: P) {
 `
       const ir = compileToIR(source, adapter)
       const types = adapter.generateTypes(ir)!
-      expect(types).toContain('ClassName string')
-      // `id` is a bare-reference optional → interface{} (nillable, omittable).
-      expect(types).toContain('ID interface{}')
-      expect(types).toContain('Disabled bool')
+      // Every optional prop, inherited ones included, is a `bf.Opt` Input
+      // field the constructor reads as its JS value (`interface{}`).
+      expect(types).toContain('ClassName bf.Opt[string]')
+      expect(types).toContain('ID bf.Opt[any]')
+      expect(types).toContain('Disabled bf.Opt[bool]')
+      expect(types).toContain('ClassName: input.ClassName.V(),')
     })
 
     // The className memo's SSR initial value must inline module string consts
@@ -1832,7 +1837,7 @@ export function Widget(props: P) {
 }
 `
       const types = adapter.generateTypes(compileToIR(source, adapter))!
-      expect(types).toContain('Classes: "a b" + " " + "c d" + " " + in.ClassName + " tail"')
+      expect(types).toContain('Classes: "a b" + " " + "c d" + " " + bf.ToString(bf.Nullish(in.ClassName, "")) + " tail"')
     })
 
     // A signal seeded from a bare identifier referencing a module-level
@@ -2054,7 +2059,7 @@ export function Toggle(props: { checked?: boolean; defaultChecked?: boolean }) {
       const types = adapter.generateTypes(compileToIR(source, adapter))!
       expect(types).toContain('IsChecked bool')
       expect(types).toContain(
-        'IsChecked: func() bool { if in.Checked != nil { return func() bool { if v, ok := in.Checked.(bool); ok { return v }; return false }() }; return in.DefaultChecked }(),',
+        'IsChecked: func() bool { if !(bf.IsUndefined(in.Checked)) { return func() bool { if v, ok := in.Checked.(bool); ok { return v }; return false }() }; return defaultChecked }(),',
       )
     })
   })
@@ -2087,7 +2092,7 @@ export function Host() {
       expect(types).not.toContain('Data-slot:')
       expect(types).toContain('Props: map[string]any{"data-slot": "indicator"}')
       // A declared param (`size`) still binds as a top-level field.
-      expect(types).toContain('Size: "sm"')
+      expect(types).toContain('Size: bf.Coerce(LeafInput{}.Size, "sm")')
     })
   })
 
@@ -2388,7 +2393,7 @@ export function Host(props: Props) {
       const types = result.files.filter(f => f.path.endsWith('.types')).map(f => f.content).join('\n')
       expect(types).not.toContain('NoText string')
       expect(types).toMatch(/NoText\s+interface\{\}/)
-      expect(types).toContain('if in.NoText != nil {')
+      expect(types).toContain('if input.NoText.Passed() {')
     })
 
     test('an absent receiver renders empty, an empty string renders 0', async () => {
@@ -2600,7 +2605,8 @@ export function Widget({ initial }: { initial?: State }) {
 `)
       expect(bf101).toHaveLength(1)
       expect(bf101[0].message).toContain('initial.label')
-      expect(bf101[0].message).toContain('map[string]interface{}')
+      // The field holds the prop's JS value (U8), no struct.
+      expect(bf101[0].message).toContain("Go type 'interface{}'")
     })
 
     test('a prop typed by a non-local type refuses — no struct field path', () => {
@@ -2794,7 +2800,7 @@ export function Demo() {
 
     test('a negated getter call reaches the child through bf.Truthy', () => {
       const { types, bf101 } = compileParent('!value()')
-      expect(types).toContain('ShowPlaceholder: !bf.Truthy(')
+      expect(types).toContain('ShowPlaceholder: bf.Coerce(TriggerInput{}.ShowPlaceholder, !bf.Truthy(')
       expect(bf101).toHaveLength(0)
     })
 
@@ -2802,7 +2808,7 @@ export function Demo() {
     // parent's seeds (#3437); `padStart` is outside it.
     test('a negated compound operand reaches the child through the evaluator', () => {
       const { types, bf101 } = compileParent('!(value() && ready())')
-      expect(types).toContain('ShowPlaceholder: bf.Truthy(bf.EvalExpr(')
+      expect(types).toContain('ShowPlaceholder: bf.Coerce(TriggerInput{}.ShowPlaceholder, bf.EvalExpr(')
       expect(bf101).toHaveLength(0)
     })
 
@@ -2833,17 +2839,17 @@ function C({ rows }: { rows?: number }) {
       expect(template).not.toMatch(/(?<!if ne \.Rows nil}})rows="\{\{bf_text \.Rows\}\}"/)
     })
 
-    test('leaves a concrete/defaulted attr unconditional (scope did not widen)', () => {
+    test('guards a defaulted attr, whose explicit null omits it', () => {
       const source = `
 function C({ placeholder = '' }: { placeholder?: string }) {
   return <textarea placeholder={placeholder} />
 }
 `
       const { template } = compileAndGenerate(source)
-      // `placeholder` has a destructure default → concrete `string` field →
-      // never nil → emitted unconditionally, exactly like Hono's placeholder="".
-      expect(template).toContain('placeholder="{{.Placeholder}}"')
-      expect(template).not.toContain('if ne .Placeholder nil')
+      // `placeholder` has a destructure default, applied to an undefined prop
+      // only: an explicit `null` keeps `null` (U8), which omits the
+      // attribute as Hono does, so the attribute is nil-guarded.
+      expect(template).toContain('{{if ne .Placeholder nil}}placeholder="{{.Placeholder}}"{{end}}')
     })
   })
 
@@ -3169,8 +3175,8 @@ export default function ReactiveProps() {
       expect(scopeMatches.length).toBe(2)
 
       // Label values should be present
-      expect(types).toContain('Label: "Child A"')
-      expect(types).toContain('Label: "Child B (doubled)"')
+      expect(types).toContain('Label: bf.Coerce(ReactiveChildInput{}.Label, "Child A")')
+      expect(types).toContain('Label: bf.Coerce(ReactiveChildInput{}.Label, "Child B (doubled)")')
     })
   })
 
@@ -3906,14 +3912,14 @@ export function Tagged(props: { className?: string }) {
       expect(roundResult.template).toContain('bf_round .V')
     })
 
-    test('String(props.x) and Number(props.x) emit bf_string / bf_number', () => {
+    test('String(props.x) and Number(props.x) emit bf_to_string / bf_to_number', () => {
       const stringResult = compileAndGenerate(`
         'use client'
         export function Foo(props: { v: number }) {
           return <div data-x={String(props.v)}>hi</div>
         }
       `)
-      expect(stringResult.template).toContain('bf_string .V')
+      expect(stringResult.template).toContain('bf_to_string .V')
 
       const numberResult = compileAndGenerate(`
         'use client'
@@ -3921,7 +3927,7 @@ export function Tagged(props: { className?: string }) {
           return <div data-x={Number(props.v)}>hi</div>
         }
       `)
-      expect(numberResult.template).toContain('bf_number .V')
+      expect(numberResult.template).toContain('bf_to_number .V')
     })
 
     test('Math.min(a, b) emits bf_min and parenthesises compound operands', () => {
@@ -4158,11 +4164,11 @@ export function T(props: { placement?: 'top' | 'left' }) {
 `, adapter)
       const out = adapter.generate(ir)
       // The non-literal side routes through bf_string as ONE argument:
-      // `(bf_string (or .Placement "top"))`. Stripping the inner parens
-      // would hand the parser three arguments and fail at runtime with
+      // `(bf_string (index (or …) 0))`. Stripping the inner parens would
+      // hand the parser several arguments and fail at runtime with
       // `bf_string: want 1 got 3`.
-      expect(out.template).toContain('eq (bf_string (or .Placement "top")) "left"')
-      expect(out.template).not.toContain('bf_string or ')
+      expect(out.template).toContain('bf_eq (bf_string (index (or (bf_keep_nonnil .Placement) (bf_arr "top")) 0)) "left"')
+      expect(out.template).not.toContain('bf_string index ')
     })
 
     test('intermediate-const composition (Button shape) carries through', () => {
@@ -6502,7 +6508,7 @@ export function Foo({ q: searchParams }: { q: string }) {
 // (undefaulted) values — see the field's doc comment in
 // `emitPropsStructHeader` for the two-consumers rationale.
 describe('GoTemplateAdapter - BfCallerProps hydration sidecar (#2684)', () => {
-  test('NewXxxProps populates BfCallerProps for the three classes: required, nullish-consumed optional, concrete-typed optional residual', () => {
+  test('NewXxxProps populates BfCallerProps for a required prop and for each optional prop the caller passed', () => {
     const result = compileJSX(`
 'use client'
 import { createSignal } from '@barefootjs/client'
@@ -6521,18 +6527,17 @@ export function C(props: { x?: number; label?: string; name: string }) {
     // Class 1 — required prop: always included, raw `in.Name` (never a
     // baked/defaulted value — there is none for a required prop anyway).
     expect(newProps).toContain('bfCallerProps["name"] = in.Name')
-    // Class 2 — optional, nullish-consumed (`??`) prop: flips to `interface{}`
-    // (#2248) and is included ONLY when the caller actually passed something.
-    // Critically, the RAW `in.X` goes in the map, never the baked default
-    // `7` the hoisted fallback var applies to the template-facing field.
-    expect(newProps).toContain('if in.X != nil {')
-    expect(newProps).toContain('bfCallerProps["x"] = in.X')
+    // Class 2 — optional prop: a `bf.Opt` Input field, included ONLY when
+    // the caller actually passed it, with its JS value. Critically, the
+    // caller's value goes in the map, never the baked default `7` the
+    // hoisted fallback var applies to the template-facing field.
+    expect(newProps).toContain('if input.X.Passed() {')
+    expect(newProps).toContain('bfCallerProps["x"] = input.X.V()')
     expect(newProps).not.toMatch(/bfCallerProps\["x"\]\s*=\s*7/)
-    // Class 3 — optional prop that resolves to a CONCRETE type (`label` is
-    // never consumed nullish/attr/text/presence-wise, so it stays a plain
-    // `string`): presence is unknowable from Input alone, so it's included
-    // unconditionally — a documented residual, not silently dropped.
-    expect(newProps).toContain('bfCallerProps["label"] = in.Label')
+    // Every optional prop is a `bf.Opt`, `label` too (never consumed by
+    // `??`): there is no concrete-typed residual left to include
+    // unconditionally.
+    expect(newProps).toContain('if input.Label.Passed() {\n\t\tbfCallerProps["label"] = input.Label.V()')
 
     // The struct literal wires the local into the field.
     expect(newProps).toContain('BfCallerProps: bfCallerProps,')
@@ -6641,7 +6646,7 @@ export function C(props: { count?: number }) {
     // The presence-check fold (`extractPropFallbackFromParsed`'s shape,
     // reused unchanged) hoists the RAW coalesced value into a local...
     expect(newProps).toContain('var count float64 = 1')
-    expect(newProps).toContain('if in.Count != nil {')
+    expect(newProps).toContain('if !bf.IsNullish(in.Count) {')
     expect(newProps).toContain('count = bf.ToFloat64(in.Count)')
     // ...and the shared field carries the FULLY DERIVED value — the local
     // with the surrounding `* 2` composed back on, not just the coalesce
@@ -6649,8 +6654,8 @@ export function C(props: { count?: number }) {
     expect(newProps).toContain('Count: count * 2,')
     // `BfCallerProps` (#2684) keeps carrying the RAW caller value, never the
     // derived one.
-    expect(newProps).toContain('if in.Count != nil {')
-    expect(newProps).toContain('bfCallerProps["count"] = in.Count')
+    expect(newProps).toContain('if input.Count.Passed() {')
+    expect(newProps).toContain('bfCallerProps["count"] = input.Count.V()')
     expect(newProps).not.toMatch(/bfCallerProps\["count"\]\s*=\s*count/)
   })
 
@@ -6891,8 +6896,8 @@ export function StaticList() {
   test('constructor bakes each item\'s props and data-key directly', () => {
     const result = compileStaticList()
     const types = result.files.find(f => f.type === 'types')!.content
-    expect(types).toContain('NewListItemProps(ListItemInput{Label: "Alpha", ClassName: "text-sm"})')
-    expect(types).toContain('NewListItemProps(ListItemInput{Label: "Beta", ClassName: "text-sm"})')
+    expect(types).toContain('NewListItemProps(ListItemInput{Label: bf.Coerce(ListItemInput{}.Label, "Alpha"), ClassName: bf.Coerce(ListItemInput{}.ClassName, "text-sm")})')
+    expect(types).toContain('NewListItemProps(ListItemInput{Label: bf.Coerce(ListItemInput{}.Label, "Beta"), ClassName: bf.Coerce(ListItemInput{}.ClassName, "text-sm")})')
     expect(types).toContain('BfDataKey = "Alpha"')
     expect(types).toContain('BfDataKey = "Beta"')
   })
@@ -6956,7 +6961,7 @@ export function TagList(props: { tags: string[] }) {
     const second = compileJSX(STATIC_LIST_SOURCE, 'test.tsx', { adapter, siblingTemplatesRegistered: true })
     expect(second.errors ?? []).toEqual([])
     const types = second.files.find(f => f.type === 'types')!.content
-    expect(types).toContain('NewListItemProps(ListItemInput{Label: "Alpha"')
+    expect(types).toContain('NewListItemProps(ListItemInput{Label: bf.Coerce(ListItemInput{}.Label, "Alpha")')
   })
 
   test('a reused adapter does not leak a prior component\'s baked data into a later runtime-computed one', () => {
@@ -7124,8 +7129,8 @@ export function List() {
     )
     expect(result.errors ?? []).toEqual([])
     const types = result.files.find(f => f.type === 'types')!.content
-    expect(types).toContain('NewListItemProps(ListItemInput{Label: "Alpha"})')
-    expect(types).toContain('NewListItemProps(ListItemInput{Label: "Beta"})')
+    expect(types).toContain('NewListItemProps(ListItemInput{Label: bf.Coerce(ListItemInput{}.Label, "Alpha")})')
+    expect(types).toContain('NewListItemProps(ListItemInput{Label: bf.Coerce(ListItemInput{}.Label, "Beta")})')
     // The template still ranges over `.ListItems` (#2208's shape — only the
     // constructor's data is baked, not the range itself).
     const template = result.files.find(f => f.type === 'markedTemplate')!.content
@@ -7474,22 +7479,25 @@ export function C(props: { flag?: boolean; tone?: Tone; config?: { a: number } }
     return result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
   }
 
-  test('a ternary reads the omitted alias prop as nil and nil-tests the whole value once, so the fallback stays lazy', () => {
+  // The alias prop holds its JS value (`bf.Undefined` when omitted, U8), so
+  // the whole left operand is nil-tested once and no leaf needs reading as
+  // nil.
+  test('a ternary nil-tests the whole value once, so the fallback stays lazy', () => {
     const template = compile("(props.flag ? 'ok' : props.tone) ?? JSON.stringify(props.config)")
     expect(template).toContain(
-      'data-v="{{bf_text (index (or (bf_keep_nonnil (bf_ternary (bf_truthy .Flag) "ok" (or .Tone nil))) (bf_arr (bf_json .Config))) 0)}}"',
+      'data-v="{{bf_text (index (or (bf_keep_nonnil (bf_ternary (bf_truthy .Flag) "ok" .Tone)) (bf_arr (bf_json .Config))) 0)}}"',
     )
   })
 
-  test('a `&&` keeps the value it yields: only the alias prop on its right is read as nil', () => {
+  test('a `&&` keeps the value it yields', () => {
     const template = compile("`${(props.flag && props.tone) ?? 'fb'}`")
     expect(template).toContain(
-      'data-v="{{bf_to_string (index (or (bf_keep_nonnil (index (or (bf_keep_falsy .Flag) (bf_arr (or .Tone nil))) 0)) (bf_arr "fb")) 0)}}"',
+      'data-v="{{bf_to_string (index (or (bf_keep_nonnil (index (or (bf_keep_falsy .Flag) (bf_arr .Tone)) 0)) (bf_arr "fb")) 0)}}"',
     )
   })
 
-  test('a leaf alias prop keeps `or`: only a compound left operand is converted leaf by leaf', () => {
-    expect(compile("props.tone ?? 'fb'")).toContain('data-v="{{bf_text (or .Tone "fb")}}"')
+  test('a leaf alias prop is nil-tested, not truthiness-tested', () => {
+    expect(compile("props.tone ?? 'fb'")).toContain('data-v="{{bf_text (index (or (bf_keep_nonnil .Tone) (bf_arr "fb")) 0)}}"')
   })
 })
 
@@ -7836,7 +7844,7 @@ export function C(props: Props) {
     const result = compileJSX(source.trimStart(), 'test.tsx', { adapter })
     expect(result.errors ?? []).toEqual([])
     const template = result.files?.find(f => f.path.endsWith('.tmpl'))?.content ?? ''
-    expect(template).toContain('{{if (bf_truthy .A.On)}}')
+    expect(template).toContain('{{if (bf_truthy ((index (or (bf_keep_nonnil .A) (bf_arr .B)) 0).On))}}')
 
     try {
       const offHtml = await renderGoTemplateComponent({
@@ -8220,13 +8228,12 @@ export { C }
       expect(m).not.toBeNull()
       return JSON.parse(m![1].replace(/&#34;/g, '"').replace(/&quot;/g, '"'))
     }
-    // `x` omitted: no baked `7`, no `null` — the key is simply absent.
-    // `label` (class-3 residual, no consumption anywhere) still shows up at
-    // its Go zero value — documented, not silently dropped.
-    expect(decode(htmlOmitted)).toEqual({ name: 'Ada', label: '' })
+    // `x` omitted: no baked `7`, no `null` — the key is simply absent, as
+    // is the omitted `label`.
+    expect(decode(htmlOmitted)).toEqual({ name: 'Ada' })
     // `x: 0` explicitly passed: present with the caller's real value, not
     // coalesced away or confused with "absent".
-    expect(decode(htmlExplicitZero)).toEqual({ name: 'Ada', label: '', x: 0 })
+    expect(decode(htmlExplicitZero)).toEqual({ name: 'Ada', x: 0 })
   })
 })
 
@@ -8307,7 +8314,7 @@ export function Row() {
     const { ctor, bf101 } = compileRow('on={highlight()}')
     expect(bf101).toEqual([])
     expect(ctor).toContain('BfMount: "s1",')
-    expect(ctor).toContain('On: true,')
+    expect(ctor).toContain('On: bf.Coerce(MarkInput{}.On, true),')
   })
 
   test('a prop reading the row is left out of the constructor and re-applied per row', () => {

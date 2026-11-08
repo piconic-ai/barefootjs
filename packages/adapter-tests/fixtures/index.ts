@@ -1435,6 +1435,9 @@ import { fixture as signalArraySeedRowStruct } from './signal-array-seed-row-str
 import { fixture as signalArrayPropFallbackSeed } from './signal-array-prop-fallback-seed'
 import { fixture as signalArrayPropFallbackSeedDestructured } from './signal-array-prop-fallback-seed-destructured'
 import { fixture as signalArrayPropFallbackSeedDefault } from './signal-array-prop-fallback-seed-default'
+import { fixture as optionalMemberSignalSeedJsValue } from './optional-member-signal-seed-js-value'
+import { fixture as explicitRowFieldPropStaysPresent } from './explicit-row-field-prop-stays-present'
+import { fixture as defaultedArrayPropNullCoercion } from './defaulted-array-prop-null-coercion'
 
 import type { JSXFixture } from '../src/types'
 
@@ -2527,4 +2530,7 @@ export const jsxFixtures: JSXFixture[] = [
   signalArrayPropFallbackSeed,
   signalArrayPropFallbackSeedDestructured,
   signalArrayPropFallbackSeedDefault,
+  optionalMemberSignalSeedJsValue,
+  explicitRowFieldPropStaysPresent,
+  defaultedArrayPropNullCoercion,
 ]

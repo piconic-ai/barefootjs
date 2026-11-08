@@ -98,13 +98,13 @@ var vectorBindings = map[string]func(args []any) any{
 	"repeat":      func(args []any) any { return Repeat(args[0].(string), args[1]) },
 	"pad_start": func(args []any) any {
 		if len(args) > 2 {
-			return PadStart(args[0].(string), args[1], args[2].(string))
+			return PadStart(args[0].(string), args[1], args[2])
 		}
 		return PadStart(args[0].(string), args[1])
 	},
 	"pad_end": func(args []any) any {
 		if len(args) > 2 {
-			return PadEnd(args[0].(string), args[1], args[2].(string))
+			return PadEnd(args[0].(string), args[1], args[2])
 		}
 		return PadEnd(args[0].(string), args[1])
 	},
@@ -114,9 +114,9 @@ var vectorBindings = map[string]func(args []any) any{
 			return Arr(args[0])
 		}
 		if len(args) > 2 {
-			return Split(args[0].(string), args[1].(string), args[2])
+			return Split(args[0].(string), args[1], args[2])
 		}
-		return Split(args[0].(string), args[1].(string))
+		return Split(args[0].(string), args[1])
 	},
 	"len":           func(args []any) any { return Len(args[0]) },
 	"at":            func(args []any) any { return At(args[0], args[1]) },
@@ -133,7 +133,7 @@ var vectorBindings = map[string]func(args []any) any{
 	"reverse":       func(args []any) any { return Reverse(args[0]) },
 	"flat":          func(args []any) any { return Flat(args[0], args[1].(int)) },
 	"flat_dynamic":  func(args []any) any { return FlatDynamicDepth(args[0], args[1]) },
-	"join":          func(args []any) any { return Join(args[0], args[1].(string)) },
+	"join":          func(args []any) any { return Join(args[0], args[1]) },
 	"arr":           func(args []any) any { return Arr(args...) },
 	"filter_truthy": func(args []any) any { return FilterTruthy(args[0]) },
 	"search_params_get": func(args []any) any {
@@ -153,7 +153,7 @@ var vectorBindings = map[string]func(args []any) any{
 		return s
 	},
 	"every":      func(args []any) any { return Every(args[0], args[1].(string)) },
-	"some":       func(args []any) any { return Some(args[0], args[1].(string)) },
+	"some":       func(args []any) any { return SomeField(args[0], args[1].(string)) },
 	"filter":     func(args []any) any { return Filter(args[0], args[1].(string), args[2]) },
 	"find":       func(args []any) any { return Find(args[0], args[1].(string), args[2]) },
 	"find_index": func(args []any) any { return FindIndex(args[0], args[1].(string), args[2]) },
@@ -321,19 +321,14 @@ func mustJoinRaw(raws []json.RawMessage) []byte {
 }
 
 // The `{"$undef": true}` sentinel (spec/js-undefined-value.md, "JSON
-// encoding for vectors") stands for JS `undefined`. The Go runtime has no
-// undefined value yet (rollout step U8 adds `bf.Undefined`), so for now:
+// encoding for vectors") stands for JS `undefined`, the runtime's
+// `Undefined`:
 //
-//   - in `args` and the evaluator `env` it decodes to vectorUndefinedArg, the
-//     host nil a template receives for `undefined` today;
+//   - in `args` and the evaluator `env` it decodes to vectorUndefinedArg;
 //   - in an `expect` it decodes to vectorUndefinedExpect, which matches only
-//     a value isRuntimeUndefined accepts. None exists yet, so it never
-//     matches, also inside nested arrays and objects, and every such case
-//     is listed in an expected-failure ledger or pinned as a divergence.
-//
-// U8 flips both in one place: vectorUndefinedArg becomes `Undefined` and
-// isRuntimeUndefined compares against it.
-var vectorUndefinedArg any = nil
+//     a value isRuntimeUndefined accepts, also inside nested arrays and
+//     objects.
+var vectorUndefinedArg = Undefined
 
 // undefinedExpect is the type of vectorUndefinedExpect; nothing else has it.
 type undefinedExpect struct{}
@@ -341,8 +336,8 @@ type undefinedExpect struct{}
 var vectorUndefinedExpect any = undefinedExpect{}
 
 // isRuntimeUndefined reports whether `got` is the runtime's own undefined
-// value. The Go runtime has none yet (U8).
-func isRuntimeUndefined(got any) bool { return false }
+// value.
+func isRuntimeUndefined(got any) bool { return isUndefined(got) }
 
 // isUndefSentinel reports whether a decoded JSON object is `{"$undef": true}`.
 func isUndefSentinel(x map[string]any) bool {

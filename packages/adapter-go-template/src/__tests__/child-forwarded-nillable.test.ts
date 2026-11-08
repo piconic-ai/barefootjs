@@ -1,11 +1,12 @@
 /**
- * A prop forwarded as it is into a child's nillable Input field takes the
- * nillable field itself (`collectNillableForwardedPropNames`), so an omitted
- * prop reaches the child as nil. Pins what the shared fixture
+ * A prop forwarded as it is into a child reaches it as its JS value: every
+ * optional prop is a `bf.Opt[T]` Input field the constructor reads into a
+ * nillable `interface{}` field (`bf<Name>In`), so an omitted prop reaches
+ * the child as `undefined` whatever the child does with it, and the parent
+ * writes the child's field through `bf.Coerce`. Pins what the shared fixture
  * `child-forwarded-omitted-optional-number` cannot show on its own: the
- * decision holds through a chain of forwarders registered before the child,
- * follows the real bindings (a loop row shadowing the prop forwards the row,
- * not the prop), and leaves a prop forwarded into a concrete field alone.
+ * typing holds through a chain of forwarders registered before the child,
+ * and a required prop keeps its concrete type.
  */
 import { describe, expect, test } from 'bun:test'
 import { compileFixtureJSX } from '@barefootjs/adapter-tests/harness-program'
@@ -17,13 +18,23 @@ function compileTypes(source: string): string {
   return result.files.find(f => f.type === 'types')?.content ?? ''
 }
 
-/** The Go type of `field` in `<component>Input`. */
-function inputFieldType(types: string, component: string, field: string): string | undefined {
-  const start = types.indexOf(`type ${component}Input struct {`)
+/** The Go type of `field` in the struct `typeName`. */
+function structFieldType(types: string, typeName: string, field: string): string | undefined {
+  const start = types.indexOf(`type ${typeName} struct {`)
   if (start < 0) return undefined
   const body = types.slice(start, types.indexOf('\n}', start))
   const line = body.split('\n').map(l => l.trim()).find(l => l.startsWith(`${field} `))
-  return line?.slice(field.length + 1).trim()
+  return line?.slice(field.length + 1).trim().replace(/\s*`[^`]*`$/, '')
+}
+
+/** The Go type of `field` in `<component>Input`. */
+function inputFieldType(types: string, component: string, field: string): string | undefined {
+  return structFieldType(types, `${component}Input`, field)
+}
+
+/** The Go type the constructor reads `field` of `<component>Input` as (`bf<component>In`). */
+function readFieldType(types: string, component: string, field: string): string | undefined {
+  return structFieldType(types, `bf${component}In`, field) ?? inputFieldType(types, component, field)
 }
 
 const SHOW = `
@@ -32,7 +43,7 @@ function Show(props: { value?: number }) {
 }
 `
 
-describe('a prop forwarded into a child\'s nillable field is nillable (#3778)', () => {
+describe('a prop forwarded into a child reaches it as its JS value (#3778, U8)', () => {
   test('through a chain of forwarders declared before the child', () => {
     const types = compileTypes(`
 function Outer({ n }: { n?: number }) {
@@ -46,9 +57,11 @@ export function Page(props: { total?: number }) {
   return <div><Outer n={props.total} /></div>
 }
 `)
-    expect(inputFieldType(types, 'Middle', 'Count')).toBe('interface{}')
-    expect(inputFieldType(types, 'Outer', 'N')).toBe('interface{}')
-    expect(inputFieldType(types, 'Page', 'Total')).toBe('interface{}')
+    for (const [component, field] of [['Middle', 'Count'], ['Outer', 'N'], ['Page', 'Total']]) {
+      expect(inputFieldType(types, component, field)).toBe('bf.Opt[float64]')
+      expect(readFieldType(types, component, field)).toBe('interface{}')
+    }
+    expect(types).toContain('Count: bf.Coerce(MiddleInput{}.Count, in.N)')
     expect(types).not.toContain('bf.Number(in.')
   }, 30_000)
 
@@ -65,8 +78,10 @@ export function Page() {
   return <div><Destructured rows={[1]} /><PropsObject rows={[{}]} /></div>
 }
 `)
-    expect(inputFieldType(types, 'Destructured', 'Count')).toBe('float64')
-    expect(inputFieldType(types, 'PropsObject', 'Count')).toBe('float64')
+    // The prop itself is optional, so a `bf.Opt[float64]` either way; the
+    // row's value is what reaches the child.
+    expect(inputFieldType(types, 'Destructured', 'Count')).toBe('bf.Opt[float64]')
+    expect(inputFieldType(types, 'PropsObject', 'Count')).toBe('bf.Opt[float64]')
   }, 30_000)
 
   test('through a const or an identity memo, unless a loop row rebinds the const', () => {
@@ -90,12 +105,12 @@ export function Page() {
   return <div><ViaConst /><ViaMemo /><Shadowed rows={[1]} /></div>
 }
 `)
-    expect(inputFieldType(types, 'ViaConst', 'Count')).toBe('interface{}')
-    expect(inputFieldType(types, 'ViaMemo', 'Count')).toBe('interface{}')
-    expect(inputFieldType(types, 'Shadowed', 'Count')).toBe('float64')
+    expect(readFieldType(types, 'ViaConst', 'Count')).toBe('interface{}')
+    expect(readFieldType(types, 'ViaMemo', 'Count')).toBe('interface{}')
+    expect(readFieldType(types, 'Shadowed', 'Count')).toBe('interface{}')
   }, 30_000)
 
-  test('a prop forwarded into a concrete field keeps its concrete type', () => {
+  test('a required prop keeps its concrete type; an optional one forwarded into it is coerced', () => {
     const types = compileTypes(`
 function Price(props: { value: number }) {
   return <i>{props.value}</i>
@@ -105,6 +120,6 @@ export function Page(props: { count?: number }) {
 }
 `)
     expect(inputFieldType(types, 'Price', 'Value')).toBe('float64')
-    expect(inputFieldType(types, 'Page', 'Count')).toBe('float64')
+    expect(inputFieldType(types, 'Page', 'Count')).toBe('bf.Opt[float64]')
   }, 30_000)
 })

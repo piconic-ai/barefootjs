@@ -367,7 +367,7 @@ func indexHandler(w http.ResponseWriter, _ *http.Request) {
 
 func counterHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Cache-Control", cacheableCacheControl)
-	props := NewCounterProps(CounterInput{Initial: 0})
+	props := NewCounterProps(CounterInput{Initial: bf.Some[float64](0)})
 	render(w, http.StatusOK, "Counter", bf.RenderOptions{
 		Props:   &props,
 		Title:   "Counter - BarefootJS",
@@ -379,9 +379,9 @@ func toggleHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Cache-Control", cacheableCacheControl)
 	props := NewToggleProps(ToggleInput{
 		ToggleItems: []ToggleSetting{
-			{Label: "Setting 1", DefaultOn: true},
-			{Label: "Setting 2", DefaultOn: false},
-			{Label: "Setting 3", DefaultOn: false},
+			{Label: "Setting 1", DefaultOn: bf.Some(true)},
+			{Label: "Setting 2", DefaultOn: bf.Some(false)},
+			{Label: "Setting 3", DefaultOn: bf.Some(false)},
 		},
 	})
 	render(w, http.StatusOK, "Toggle", bf.RenderOptions{
@@ -405,7 +405,7 @@ func todosHandler(w http.ResponseWriter, req *http.Request) {
 		todoItems[i] = TodoItemProps{Todo: t}
 	}
 
-	props := NewTodoAppProps(TodoAppInput{InitialTodos: currentTodos})
+	props := NewTodoAppProps(TodoAppInput{InitialTodos: bf.Some(currentTodos)})
 	props.Todos = currentTodos
 	props.TodoItems = todoItems
 
@@ -429,7 +429,7 @@ func todosSSRHandler(w http.ResponseWriter, req *http.Request) {
 		todoItems[i] = TodoItemProps{Todo: t}
 	}
 
-	props := NewTodoAppSSRProps(TodoAppSSRInput{InitialTodos: currentTodos})
+	props := NewTodoAppSSRProps(TodoAppSSRInput{InitialTodos: bf.Some(currentTodos)})
 	props.Todos = currentTodos
 	props.TodoItems = todoItems
 
@@ -450,7 +450,7 @@ func todosQueryHandler(w http.ResponseWriter, req *http.Request) {
 	copy(currentTodos, state.todos)
 	state.mu.Unlock()
 
-	props := NewQueryTodoAppProps(QueryTodoAppInput{InitialTodos: currentTodos})
+	props := NewQueryTodoAppProps(QueryTodoAppInput{InitialTodos: bf.Some(currentTodos)})
 	props.QueryTodoItems = make([]QueryTodoItemProps, len(currentTodos))
 	for i, t := range currentTodos {
 		// The generated constructor seeds the row's signal defaults and
@@ -519,7 +519,7 @@ func conditionalReturnHandler(w http.ResponseWriter, _ *http.Request) {
 
 func conditionalReturnLinkHandler(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Cache-Control", cacheableCacheControl)
-	props := NewConditionalReturnProps(ConditionalReturnInput{Variant: "link"})
+	props := NewConditionalReturnProps(ConditionalReturnInput{Variant: bf.Some("link")})
 	render(w, http.StatusOK, "ConditionalReturn", bf.RenderOptions{
 		Props:   &props,
 		Title:   "Conditional Return (Link) - BarefootJS",

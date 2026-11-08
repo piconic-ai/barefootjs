@@ -54,7 +54,7 @@ type BodyLiveChildInput struct {
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
 	Value float64
-	Label interface{}
+	Label bf.Opt[string] `json:"label,omitzero"`
 	OnPick interface{}
 }
 
@@ -126,7 +126,7 @@ type ConditionalReturnInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	Variant interface{}
+	Variant bf.Opt[string] `json:"variant,omitzero"`
 }
 
 // ConditionalReturnProps is the props type for the ConditionalReturn component.
@@ -149,7 +149,7 @@ type CounterInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	Initial float64
+	Initial bf.Opt[float64] `json:"initial,omitzero"`
 }
 
 // CounterProps is the props type for the Counter component.
@@ -163,7 +163,7 @@ type CounterProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	Initial float64 `json:"initial"`
+	Initial interface{} `json:"initial"`
 	Count float64 `json:"-"`
 	Doubled float64 `json:"-"`
 }
@@ -174,8 +174,8 @@ type LiveChildInput struct {
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
 	Value float64
-	Label interface{}
-	OnPick interface{}
+	Label bf.Opt[string] `json:"label,omitzero"`
+	OnPick bf.Opt[any] `json:"onPick,omitzero"`
 }
 
 // LiveChildProps is the props type for the LiveChild component.
@@ -274,7 +274,7 @@ type NestedCondToggleListInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	Items []ToggleItem
+	Items bf.Opt[[]ToggleItem] `json:"items,omitzero"`
 }
 
 // NestedCondToggleListProps is the props type for the NestedCondToggleList component.
@@ -288,7 +288,7 @@ type NestedCondToggleListProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	Items []ToggleItem `json:"items"`
+	Items interface{} `json:"items"`
 }
 
 // NoteBoxNativeInput is the user-facing input type.
@@ -530,7 +530,7 @@ type TodoAppInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	InitialTodos []Todo
+	InitialTodos bf.Opt[[]Todo] `json:"initialTodos,omitzero"`
 }
 
 // TodoAppProps is the props type for the TodoApp component.
@@ -544,7 +544,7 @@ type TodoAppProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	InitialTodos []Todo `json:"initialTodos"`
+	InitialTodos interface{} `json:"initialTodos"`
 	Todos []Todo `json:"-"`
 	NewText string `json:"-"`
 	Filter Filter `json:"-"`
@@ -563,7 +563,7 @@ type TodoAppSSRInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	InitialTodos []Todo
+	InitialTodos bf.Opt[[]Todo] `json:"initialTodos,omitzero"`
 }
 
 // TodoAppSSRProps is the props type for the TodoAppSSR component.
@@ -577,7 +577,7 @@ type TodoAppSSRProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	InitialTodos []Todo `json:"initialTodos"`
+	InitialTodos interface{} `json:"initialTodos"`
 	Todos []Todo `json:"-"`
 	NewText string `json:"-"`
 	Filter Filter `json:"-"`
@@ -617,7 +617,7 @@ type TodoItemProps struct {
 // ToggleSetting represents a togglesetting.
 type ToggleSetting struct {
 	Label string `json:"label"`
-	DefaultOn bool `json:"defaultOn"`
+	DefaultOn bf.Opt[bool] `json:"defaultOn,omitzero"`
 }
 
 // ToggleItemInput is the user-facing input type.
@@ -626,7 +626,7 @@ type ToggleItemInput struct {
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
 	Label string
-	DefaultOn bool
+	DefaultOn bf.Opt[bool] `json:"defaultOn,omitzero"`
 }
 
 // ToggleItemProps is the props type for the ToggleItem component.
@@ -641,7 +641,7 @@ type ToggleItemProps struct {
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
 	Label string `json:"label"`
-	DefaultOn bool `json:"defaultOn"`
+	DefaultOn interface{} `json:"defaultOn"`
 	On bool `json:"-"`
 }
 
@@ -747,10 +747,10 @@ type PostArticleInput struct {
 	Position float64
 	Total float64
 	Base string
-	PrevSlug interface{}
-	PrevTitle interface{}
-	NextSlug interface{}
-	NextTitle interface{}
+	PrevSlug bf.Opt[string] `json:"prevSlug,omitzero"`
+	PrevTitle bf.Opt[string] `json:"prevTitle,omitzero"`
+	NextSlug bf.Opt[string] `json:"nextSlug,omitzero"`
+	NextTitle bf.Opt[string] `json:"nextTitle,omitzero"`
 }
 
 // PostArticleProps is the props type for the PostArticle component.
@@ -801,7 +801,7 @@ type PostListInput struct {
 	SearchParams bf.SearchParams // Optional: request query for searchParams()
 	Items []Item
 	Tags []string
-	Base string
+	Base bf.Opt[string] `json:"base,omitzero"`
 }
 
 // PostListProps is the props type for the PostList component.
@@ -818,7 +818,7 @@ type PostListProps struct {
 	BfCallerProps map[string]interface{} `json:"-"`
 	Items []Item `json:"items"`
 	Tags []string `json:"tags"`
-	Base string `json:"base"`
+	Base interface{} `json:"base"`
 	Params map[string]interface{} `json:"-"`
 	Visible []Item `json:"-"`
 	PostListItems []PostListItemProps `json:"-"`
@@ -942,7 +942,7 @@ type QueryTodoAppInput struct {
 	ScopeID string // Optional: if empty, random ID is generated
 	BfParent string // Optional: parent scope id
 	BfMount string // Optional: slot id in parent
-	InitialTodos []Todo
+	InitialTodos bf.Opt[[]Todo] `json:"initialTodos,omitzero"`
 }
 
 // QueryTodoAppProps is the props type for the QueryTodoApp component.
@@ -956,8 +956,8 @@ type QueryTodoAppProps struct {
 	Scripts *bf.ScriptCollector `json:"-"`
 	Portals *bf.PortalCollector `json:"-"`
 	BfCallerProps map[string]interface{} `json:"-"`
-	InitialTodos []Todo `json:"initialTodos"`
-	Todos []Todo `json:"-"`
+	InitialTodos interface{} `json:"initialTodos"`
+	Todos interface{} `json:"-"`
 	NewText string `json:"-"`
 	Filter Filter `json:"-"`
 	QueryTodoItems []QueryTodoItemProps `json:"-"`
@@ -987,6 +987,124 @@ type QueryTodoItemProps struct {
 	Draft string `json:"-"`
 }
 
+// bfBodyLiveChildIn is BodyLiveChildInput as NewBodyLiveChildProps reads it: each
+// bf.Opt field as its JS value.
+type bfBodyLiveChildIn struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	Value float64
+	Label interface{}
+	OnPick interface{}
+}
+
+// bfConditionalReturnIn is ConditionalReturnInput as NewConditionalReturnProps reads it: each
+// bf.Opt field as its JS value.
+type bfConditionalReturnIn struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	Variant interface{}
+}
+
+// bfCounterIn is CounterInput as NewCounterProps reads it: each
+// bf.Opt field as its JS value.
+type bfCounterIn struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	Initial interface{}
+}
+
+// bfLiveChildIn is LiveChildInput as NewLiveChildProps reads it: each
+// bf.Opt field as its JS value.
+type bfLiveChildIn struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	Value float64
+	Label interface{}
+	OnPick interface{}
+}
+
+// bfNestedCondToggleListIn is NestedCondToggleListInput as NewNestedCondToggleListProps reads it: each
+// bf.Opt field as its JS value.
+type bfNestedCondToggleListIn struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	Items interface{}
+}
+
+// bfTodoAppIn is TodoAppInput as NewTodoAppProps reads it: each
+// bf.Opt field as its JS value.
+type bfTodoAppIn struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	InitialTodos interface{}
+}
+
+// bfTodoAppSSRIn is TodoAppSSRInput as NewTodoAppSSRProps reads it: each
+// bf.Opt field as its JS value.
+type bfTodoAppSSRIn struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	InitialTodos interface{}
+}
+
+// bfToggleItemIn is ToggleItemInput as NewToggleItemProps reads it: each
+// bf.Opt field as its JS value.
+type bfToggleItemIn struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	Label string
+	DefaultOn interface{}
+}
+
+// bfPostArticleIn is PostArticleInput as NewPostArticleProps reads it: each
+// bf.Opt field as its JS value.
+type bfPostArticleIn struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	Slug string
+	Title string
+	Date string
+	Tags []string
+	Body []string
+	Position float64
+	Total float64
+	Base string
+	PrevSlug interface{}
+	PrevTitle interface{}
+	NextSlug interface{}
+	NextTitle interface{}
+}
+
+// bfPostListIn is PostListInput as NewPostListProps reads it: each
+// bf.Opt field as its JS value.
+type bfPostListIn struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	SearchParams bf.SearchParams // Optional: request query for searchParams()
+	Items []Item
+	Tags []string
+	Base interface{}
+}
+
+// bfQueryTodoAppIn is QueryTodoAppInput as NewQueryTodoAppProps reads it: each
+// bf.Opt field as its JS value.
+type bfQueryTodoAppIn struct {
+	ScopeID string // Optional: if empty, random ID is generated
+	BfParent string // Optional: parent scope id
+	BfMount string // Optional: slot id in parent
+	InitialTodos interface{}
+}
+
 // NewAIChatInteractiveProps creates AIChatInteractiveProps from AIChatInteractiveInput.
 func NewAIChatInteractiveProps(in AIChatInteractiveInput) AIChatInteractiveProps {
 	scopeID := in.ScopeID
@@ -1009,21 +1127,28 @@ func NewAIChatInteractiveProps(in AIChatInteractiveInput) AIChatInteractiveProps
 }
 
 // NewBodyLiveChildProps creates BodyLiveChildProps from BodyLiveChildInput.
-func NewBodyLiveChildProps(in BodyLiveChildInput) BodyLiveChildProps {
+func NewBodyLiveChildProps(input BodyLiveChildInput) BodyLiveChildProps {
+	in := bfBodyLiveChildIn{
+		Label: input.Label.V(),
+		ScopeID: input.ScopeID,
+		BfParent: input.BfParent,
+		BfMount: input.BfMount,
+		Value: input.Value,
+		OnPick: input.OnPick,
+	}
 	scopeID := in.ScopeID
 	if scopeID == "" {
 		scopeID = "BodyLiveChild_" + randomID(6)
 	}
 
-	bfCallerLabel := in.Label
-	if in.Label == nil {
+	if bf.IsUndefined(in.Label) {
 		in.Label = "none"
 	}
 
 	bfCallerProps := map[string]interface{}{}
 	bfCallerProps["value"] = in.Value
-	if bfCallerLabel != nil {
-		bfCallerProps["label"] = bfCallerLabel
+	if input.Label.Passed() {
+		bfCallerProps["label"] = input.Label.V()
 	}
 	bfCallerProps["onPick"] = in.OnPick
 
@@ -1033,7 +1158,7 @@ func NewBodyLiveChildProps(in BodyLiveChildInput) BodyLiveChildProps {
 		BfMount: in.BfMount,
 		BfCallerProps: bfCallerProps,
 		Value: in.Value,
-		Label: func() interface{} { if in.Label == nil { return "none" }; return in.Label }(),
+		Label: func() interface{} { if bf.IsUndefined(in.Label) { return "none" }; return in.Label }(),
 		OnPick: in.OnPick,
 		Seen: 0,
 		Doubled: in.Value * 2,
@@ -1062,7 +1187,7 @@ func NewBodyDestructuredPropsLiveProps(in BodyDestructuredPropsLiveInput) BodyDe
 			BfParent: scopeID,
 			BfMount: "s6",
 			Value: 1,
-			Label: bf.EvalExpr("{\"kind\":\"conditional\",\"test\":{\"kind\":\"identifier\",\"name\":\"named\"},\"consequent\":{\"kind\":\"literal\",\"value\":\"named\"},\"alternate\":{\"kind\":\"identifier\",\"name\":\"undefined\"}}", map[string]any{"named": false}),
+			Label: bf.Coerce(BodyLiveChildInput{}.Label, bf.EvalExpr("{\"kind\":\"conditional\",\"test\":{\"kind\":\"identifier\",\"name\":\"named\"},\"consequent\":{\"kind\":\"literal\",\"value\":\"named\"},\"alternate\":{\"kind\":\"identifier\",\"name\":\"undefined\"}}", map[string]any{"named": false})),
 		}),
 	}
 }
@@ -1086,15 +1211,21 @@ func NewCheckboxNativeProps(in CheckboxNativeInput) CheckboxNativeProps {
 }
 
 // NewConditionalReturnProps creates ConditionalReturnProps from ConditionalReturnInput.
-func NewConditionalReturnProps(in ConditionalReturnInput) ConditionalReturnProps {
+func NewConditionalReturnProps(input ConditionalReturnInput) ConditionalReturnProps {
+	in := bfConditionalReturnIn{
+		Variant: input.Variant.V(),
+		ScopeID: input.ScopeID,
+		BfParent: input.BfParent,
+		BfMount: input.BfMount,
+	}
 	scopeID := in.ScopeID
 	if scopeID == "" {
 		scopeID = "ConditionalReturn_" + randomID(6)
 	}
 
 	bfCallerProps := map[string]interface{}{}
-	if in.Variant != nil {
-		bfCallerProps["variant"] = in.Variant
+	if input.Variant.Passed() {
+		bfCallerProps["variant"] = input.Variant.V()
 	}
 
 	return ConditionalReturnProps{
@@ -1108,14 +1239,27 @@ func NewConditionalReturnProps(in ConditionalReturnInput) ConditionalReturnProps
 }
 
 // NewCounterProps creates CounterProps from CounterInput.
-func NewCounterProps(in CounterInput) CounterProps {
+func NewCounterProps(input CounterInput) CounterProps {
+	in := bfCounterIn{
+		Initial: input.Initial.V(),
+		ScopeID: input.ScopeID,
+		BfParent: input.BfParent,
+		BfMount: input.BfMount,
+	}
 	scopeID := in.ScopeID
 	if scopeID == "" {
 		scopeID = "Counter_" + randomID(6)
 	}
 
+	var initial float64 = 0
+	if !bf.IsNullish(in.Initial) {
+		initial = bf.ToFloat64(in.Initial)
+	}
+
 	bfCallerProps := map[string]interface{}{}
-	bfCallerProps["initial"] = in.Initial
+	if input.Initial.Passed() {
+		bfCallerProps["initial"] = input.Initial.V()
+	}
 
 	return CounterProps{
 		ScopeID: scopeID,
@@ -1123,29 +1267,38 @@ func NewCounterProps(in CounterInput) CounterProps {
 		BfMount: in.BfMount,
 		BfCallerProps: bfCallerProps,
 		Initial: in.Initial,
-		Count: in.Initial,
-		Doubled: in.Initial * 2,
+		Count: initial,
+		Doubled: initial * 2,
 	}
 }
 
 // NewLiveChildProps creates LiveChildProps from LiveChildInput.
-func NewLiveChildProps(in LiveChildInput) LiveChildProps {
+func NewLiveChildProps(input LiveChildInput) LiveChildProps {
+	in := bfLiveChildIn{
+		Label: input.Label.V(),
+		OnPick: input.OnPick.V(),
+		ScopeID: input.ScopeID,
+		BfParent: input.BfParent,
+		BfMount: input.BfMount,
+		Value: input.Value,
+	}
 	scopeID := in.ScopeID
 	if scopeID == "" {
 		scopeID = "LiveChild_" + randomID(6)
 	}
 
-	bfCallerLabel := in.Label
-	if in.Label == nil {
+	if bf.IsUndefined(in.Label) {
 		in.Label = "none"
 	}
 
 	bfCallerProps := map[string]interface{}{}
 	bfCallerProps["value"] = in.Value
-	if bfCallerLabel != nil {
-		bfCallerProps["label"] = bfCallerLabel
+	if input.Label.Passed() {
+		bfCallerProps["label"] = input.Label.V()
 	}
-	bfCallerProps["onPick"] = in.OnPick
+	if input.OnPick.Passed() {
+		bfCallerProps["onPick"] = input.OnPick.V()
+	}
 
 	return LiveChildProps{
 		ScopeID: scopeID,
@@ -1153,7 +1306,7 @@ func NewLiveChildProps(in LiveChildInput) LiveChildProps {
 		BfMount: in.BfMount,
 		BfCallerProps: bfCallerProps,
 		Value: in.Value,
-		Label: func() interface{} { if in.Label == nil { return "none" }; return in.Label }(),
+		Label: func() interface{} { if bf.IsUndefined(in.Label) { return "none" }; return in.Label }(),
 		OnPick: in.OnPick,
 		Seen: 0,
 		Doubled: in.Value * 2,
@@ -1182,7 +1335,7 @@ func NewDestructuredPropsLiveProps(in DestructuredPropsLiveInput) DestructuredPr
 			BfParent: scopeID,
 			BfMount: "s6",
 			Value: 1,
-			Label: bf.EvalExpr("{\"kind\":\"conditional\",\"test\":{\"kind\":\"identifier\",\"name\":\"named\"},\"consequent\":{\"kind\":\"literal\",\"value\":\"named\"},\"alternate\":{\"kind\":\"identifier\",\"name\":\"undefined\"}}", map[string]any{"named": false}),
+			Label: bf.Coerce(LiveChildInput{}.Label, bf.EvalExpr("{\"kind\":\"conditional\",\"test\":{\"kind\":\"identifier\",\"name\":\"named\"},\"consequent\":{\"kind\":\"literal\",\"value\":\"named\"},\"alternate\":{\"kind\":\"identifier\",\"name\":\"undefined\"}}", map[string]any{"named": false})),
 		}),
 	}
 }
@@ -1224,15 +1377,21 @@ func NewFormProps(in FormInput) FormProps {
 }
 
 // NewNestedCondToggleListProps creates NestedCondToggleListProps from NestedCondToggleListInput.
-func NewNestedCondToggleListProps(in NestedCondToggleListInput) NestedCondToggleListProps {
+func NewNestedCondToggleListProps(input NestedCondToggleListInput) NestedCondToggleListProps {
+	in := bfNestedCondToggleListIn{
+		Items: input.Items.V(),
+		ScopeID: input.ScopeID,
+		BfParent: input.BfParent,
+		BfMount: input.BfMount,
+	}
 	scopeID := in.ScopeID
 	if scopeID == "" {
 		scopeID = "NestedCondToggleList_" + randomID(6)
 	}
 
 	bfCallerProps := map[string]interface{}{}
-	if in.Items != nil {
-		bfCallerProps["items"] = in.Items
+	if input.Items.Passed() {
+		bfCallerProps["items"] = input.Items.V()
 	}
 
 	return NestedCondToggleListProps{
@@ -1240,7 +1399,7 @@ func NewNestedCondToggleListProps(in NestedCondToggleListInput) NestedCondToggle
 		BfParent: in.BfParent,
 		BfMount: in.BfMount,
 		BfCallerProps: bfCallerProps,
-		Items: in.Items,
+		Items: bf.Coerce(*new([]ToggleItem), in.Items),
 	}
 }
 
@@ -1465,15 +1624,21 @@ func NewTextEscapeProps(in TextEscapeInput) TextEscapeProps {
 //     props.TodoItems[i].BfParent = props.ScopeID
 //     props.TodoItems[i].BfMount = "s3"
 //   }
-func NewTodoAppProps(in TodoAppInput) TodoAppProps {
+func NewTodoAppProps(input TodoAppInput) TodoAppProps {
+	in := bfTodoAppIn{
+		InitialTodos: input.InitialTodos.V(),
+		ScopeID: input.ScopeID,
+		BfParent: input.BfParent,
+		BfMount: input.BfMount,
+	}
 	scopeID := in.ScopeID
 	if scopeID == "" {
 		scopeID = "TodoApp_" + randomID(6)
 	}
 
 	bfCallerProps := map[string]interface{}{}
-	if in.InitialTodos != nil {
-		bfCallerProps["initialTodos"] = in.InitialTodos
+	if input.InitialTodos.Passed() {
+		bfCallerProps["initialTodos"] = input.InitialTodos.V()
 	}
 
 	return TodoAppProps{
@@ -1482,7 +1647,7 @@ func NewTodoAppProps(in TodoAppInput) TodoAppProps {
 		BfMount: in.BfMount,
 		BfCallerProps: bfCallerProps,
 		InitialTodos: in.InitialTodos,
-		Todos: in.InitialTodos,
+		Todos: bf.Coerce(*new([]Todo), in.InitialTodos),
 		NewText: "",
 		Filter: "all",
 	}
@@ -1502,15 +1667,21 @@ func NewTodoAppProps(in TodoAppInput) TodoAppProps {
 //     props.TodoItems[i].BfParent = props.ScopeID
 //     props.TodoItems[i].BfMount = "s3"
 //   }
-func NewTodoAppSSRProps(in TodoAppSSRInput) TodoAppSSRProps {
+func NewTodoAppSSRProps(input TodoAppSSRInput) TodoAppSSRProps {
+	in := bfTodoAppSSRIn{
+		InitialTodos: input.InitialTodos.V(),
+		ScopeID: input.ScopeID,
+		BfParent: input.BfParent,
+		BfMount: input.BfMount,
+	}
 	scopeID := in.ScopeID
 	if scopeID == "" {
 		scopeID = "TodoAppSSR_" + randomID(6)
 	}
 
 	bfCallerProps := map[string]interface{}{}
-	if in.InitialTodos != nil {
-		bfCallerProps["initialTodos"] = in.InitialTodos
+	if input.InitialTodos.Passed() {
+		bfCallerProps["initialTodos"] = input.InitialTodos.V()
 	}
 
 	return TodoAppSSRProps{
@@ -1519,7 +1690,7 @@ func NewTodoAppSSRProps(in TodoAppSSRInput) TodoAppSSRProps {
 		BfMount: in.BfMount,
 		BfCallerProps: bfCallerProps,
 		InitialTodos: in.InitialTodos,
-		Todos: in.InitialTodos,
+		Todos: bf.Coerce(*new([]Todo), in.InitialTodos),
 		NewText: "",
 		Filter: "all",
 	}
@@ -1553,15 +1724,29 @@ func NewTodoItemProps(in TodoItemInput) TodoItemProps {
 }
 
 // NewToggleItemProps creates ToggleItemProps from ToggleItemInput.
-func NewToggleItemProps(in ToggleItemInput) ToggleItemProps {
+func NewToggleItemProps(input ToggleItemInput) ToggleItemProps {
+	in := bfToggleItemIn{
+		DefaultOn: input.DefaultOn.V(),
+		ScopeID: input.ScopeID,
+		BfParent: input.BfParent,
+		BfMount: input.BfMount,
+		Label: input.Label,
+	}
 	scopeID := in.ScopeID
 	if scopeID == "" {
 		scopeID = "ToggleItem_" + randomID(6)
 	}
 
+	var defaultOn bool = false
+	if !bf.IsNullish(in.DefaultOn) {
+		defaultOn = in.DefaultOn.(bool)
+	}
+
 	bfCallerProps := map[string]interface{}{}
 	bfCallerProps["label"] = in.Label
-	bfCallerProps["defaultOn"] = in.DefaultOn
+	if input.DefaultOn.Passed() {
+		bfCallerProps["defaultOn"] = input.DefaultOn.V()
+	}
 
 	return ToggleItemProps{
 		ScopeID: scopeID,
@@ -1570,7 +1755,7 @@ func NewToggleItemProps(in ToggleItemInput) ToggleItemProps {
 		BfCallerProps: bfCallerProps,
 		Label: in.Label,
 		DefaultOn: in.DefaultOn,
-		On: in.DefaultOn,
+		On: defaultOn,
 	}
 }
 
@@ -1587,7 +1772,7 @@ func NewToggleProps(in ToggleInput) ToggleProps {
 			BfParent: scopeID,
 			BfMount: "s0",
 			Label: item.Label,
-			DefaultOn: item.DefaultOn,
+			DefaultOn: bf.Coerce(ToggleItemInput{}.DefaultOn, bf.JSValue(item.DefaultOn)),
 		})
 		toggleItems[i].BfDataKey = bf.String(item.Label)
 	}
@@ -1666,7 +1851,24 @@ func NewPageShellProps(in PageShellInput) PageShellProps {
 }
 
 // NewPostArticleProps creates PostArticleProps from PostArticleInput.
-func NewPostArticleProps(in PostArticleInput) PostArticleProps {
+func NewPostArticleProps(input PostArticleInput) PostArticleProps {
+	in := bfPostArticleIn{
+		PrevSlug: input.PrevSlug.V(),
+		PrevTitle: input.PrevTitle.V(),
+		NextSlug: input.NextSlug.V(),
+		NextTitle: input.NextTitle.V(),
+		ScopeID: input.ScopeID,
+		BfParent: input.BfParent,
+		BfMount: input.BfMount,
+		Slug: input.Slug,
+		Title: input.Title,
+		Date: input.Date,
+		Tags: input.Tags,
+		Body: input.Body,
+		Position: input.Position,
+		Total: input.Total,
+		Base: input.Base,
+	}
 	scopeID := in.ScopeID
 	if scopeID == "" {
 		scopeID = "PostArticle_" + randomID(6)
@@ -1681,17 +1883,17 @@ func NewPostArticleProps(in PostArticleInput) PostArticleProps {
 	bfCallerProps["position"] = in.Position
 	bfCallerProps["total"] = in.Total
 	bfCallerProps["base"] = in.Base
-	if in.PrevSlug != nil {
-		bfCallerProps["prevSlug"] = in.PrevSlug
+	if input.PrevSlug.Passed() {
+		bfCallerProps["prevSlug"] = input.PrevSlug.V()
 	}
-	if in.PrevTitle != nil {
-		bfCallerProps["prevTitle"] = in.PrevTitle
+	if input.PrevTitle.Passed() {
+		bfCallerProps["prevTitle"] = input.PrevTitle.V()
 	}
-	if in.NextSlug != nil {
-		bfCallerProps["nextSlug"] = in.NextSlug
+	if input.NextSlug.Passed() {
+		bfCallerProps["nextSlug"] = input.NextSlug.V()
 	}
-	if in.NextTitle != nil {
-		bfCallerProps["nextTitle"] = in.NextTitle
+	if input.NextTitle.Passed() {
+		bfCallerProps["nextTitle"] = input.NextTitle.V()
 	}
 
 	return PostArticleProps{
@@ -1743,7 +1945,16 @@ func NewPostArticleProps(in PostArticleInput) PostArticleProps {
 //     props.PostListItems[i].BfParent = props.ScopeID
 //     props.PostListItems[i].BfMount = "s13"
 //   }
-func NewPostListProps(in PostListInput) PostListProps {
+func NewPostListProps(input PostListInput) PostListProps {
+	in := bfPostListIn{
+		Base: input.Base.V(),
+		ScopeID: input.ScopeID,
+		BfParent: input.BfParent,
+		BfMount: input.BfMount,
+		SearchParams: input.SearchParams,
+		Items: input.Items,
+		Tags: input.Tags,
+	}
 	scopeID := in.ScopeID
 	if scopeID == "" {
 		scopeID = "PostList_" + randomID(6)
@@ -1752,7 +1963,9 @@ func NewPostListProps(in PostListInput) PostListProps {
 	bfCallerProps := map[string]interface{}{}
 	bfCallerProps["items"] = in.Items
 	bfCallerProps["tags"] = in.Tags
-	bfCallerProps["base"] = in.Base
+	if input.Base.Passed() {
+		bfCallerProps["base"] = input.Base.V()
+	}
 
 	return PostListProps{
 		ScopeID: scopeID,
@@ -1883,15 +2096,21 @@ func NewThemeToggleProps(in ThemeToggleInput) ThemeToggleProps {
 //     props.QueryTodoItems[i].BfParent = props.ScopeID
 //     props.QueryTodoItems[i].BfMount = "s5"
 //   }
-func NewQueryTodoAppProps(in QueryTodoAppInput) QueryTodoAppProps {
+func NewQueryTodoAppProps(input QueryTodoAppInput) QueryTodoAppProps {
+	in := bfQueryTodoAppIn{
+		InitialTodos: input.InitialTodos.V(),
+		ScopeID: input.ScopeID,
+		BfParent: input.BfParent,
+		BfMount: input.BfMount,
+	}
 	scopeID := in.ScopeID
 	if scopeID == "" {
 		scopeID = "QueryTodoApp_" + randomID(6)
 	}
 
 	bfCallerProps := map[string]interface{}{}
-	if in.InitialTodos != nil {
-		bfCallerProps["initialTodos"] = in.InitialTodos
+	if input.InitialTodos.Passed() {
+		bfCallerProps["initialTodos"] = input.InitialTodos.V()
 	}
 
 	return QueryTodoAppProps{

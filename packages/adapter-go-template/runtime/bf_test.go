@@ -570,10 +570,10 @@ func TestAt(t *testing.T) {
 	}{
 		{0, "a"},
 		{1, "b"},
-		{-1, "d"},  // Last element
-		{-2, "c"},  // Second to last
-		{10, nil},  // Out of bounds
-		{-10, nil}, // Out of bounds
+		{-1, "d"},        // Last element
+		{-2, "c"},        // Second to last
+		{10, Undefined},  // Out of bounds
+		{-10, Undefined}, // Out of bounds
 	}
 
 	for _, tt := range tests {
@@ -819,8 +819,8 @@ func TestFirst(t *testing.T) {
 	}
 
 	empty := []string{}
-	if got := First(empty); got != nil {
-		t.Errorf("First(empty) = %v, want nil", got)
+	if got := First(empty); got != Undefined {
+		t.Errorf("First(empty) = %v, want undefined", got)
 	}
 }
 
@@ -831,8 +831,8 @@ func TestLast(t *testing.T) {
 	}
 
 	empty := []string{}
-	if got := Last(empty); got != nil {
-		t.Errorf("Last(empty) = %v, want nil", got)
+	if got := Last(empty); got != Undefined {
+		t.Errorf("Last(empty) = %v, want undefined", got)
 	}
 }
 
@@ -1025,16 +1025,16 @@ func TestFind_NotFound(t *testing.T) {
 	}
 
 	got := Find(items, "id", 99)
-	if got != nil {
-		t.Errorf("Find not found: got %v, want nil", got)
+	if got != Undefined {
+		t.Errorf("Find not found: got %v, want undefined", got)
 	}
 }
 
 func TestFind_EmptySlice(t *testing.T) {
 	var items []findItem
 	got := Find(items, "id", 1)
-	if got != nil {
-		t.Errorf("Find empty: got %v, want nil", got)
+	if got != Undefined {
+		t.Errorf("Find empty: got %v, want undefined", got)
 	}
 }
 
@@ -1104,16 +1104,16 @@ func TestFindLast_NotFound(t *testing.T) {
 	}
 
 	got := FindLast(items, "id", 99)
-	if got != nil {
-		t.Errorf("FindLast not found: got %v, want nil", got)
+	if got != Undefined {
+		t.Errorf("FindLast not found: got %v, want undefined", got)
 	}
 }
 
 func TestFindLast_EmptySlice(t *testing.T) {
 	var items []findItem
 	got := FindLast(items, "id", 1)
-	if got != nil {
-		t.Errorf("FindLast empty: got %v, want nil", got)
+	if got != Undefined {
+		t.Errorf("FindLast empty: got %v, want undefined", got)
 	}
 }
 
@@ -1956,19 +1956,19 @@ func TestGetFieldValue_NonIntegralIndexIsNotFound(t *testing.T) {
 	arr := []string{"row0", "row1", "row2"}
 	// JS `arr[1.2]` is a property lookup (undefined), not index 1 —
 	// truncating would diverge from every other adapter.
-	if got := getFieldValue(arr, 1.2); got != nil {
-		t.Errorf("getFieldValue(arr, 1.2) = %v, want nil", got)
+	if got := getFieldValue(arr, 1.2); got != Undefined {
+		t.Errorf("getFieldValue(arr, 1.2) = %v, want undefined", got)
 	}
-	if got := getFieldValue(arr, float32(0.5)); got != nil {
-		t.Errorf("getFieldValue(arr, 0.5) = %v, want nil", got)
+	if got := getFieldValue(arr, float32(0.5)); got != Undefined {
+		t.Errorf("getFieldValue(arr, 0.5) = %v, want undefined", got)
 	}
 	// An integral float still indexes, matching JS `arr[1.0]`.
 	if got := getFieldValue(arr, 1.0); got != "row1" {
 		t.Errorf("getFieldValue(arr, 1.0) = %v, want row1", got)
 	}
 	// A non-numeric string key is not an index either.
-	if got := getFieldValue(arr, "not-numeric"); got != nil {
-		t.Errorf("getFieldValue(arr, \"not-numeric\") = %v, want nil", got)
+	if got := getFieldValue(arr, "not-numeric"); got != Undefined {
+		t.Errorf("getFieldValue(arr, \"not-numeric\") = %v, want undefined", got)
 	}
 }
 
@@ -1986,11 +1986,11 @@ func TestGetFieldValue_SliceNumericIndex(t *testing.T) {
 
 func TestGetFieldValue_SliceIndexOutOfRange(t *testing.T) {
 	items := []any{"row0", "row1"}
-	if got := getFieldValue(items, 5); got != nil {
-		t.Errorf("getFieldValue(slice, 5) = %v, want nil", got)
+	if got := getFieldValue(items, 5); got != Undefined {
+		t.Errorf("getFieldValue(slice, 5) = %v, want undefined", got)
 	}
-	if got := getFieldValue(items, -1); got != nil {
-		t.Errorf("getFieldValue(slice, -1) = %v, want nil", got)
+	if got := getFieldValue(items, -1); got != Undefined {
+		t.Errorf("getFieldValue(slice, -1) = %v, want undefined", got)
 	}
 }
 
@@ -2005,8 +2005,8 @@ func TestGetFieldValue_StringNumericIndex(t *testing.T) {
 	if got := getFieldValue("hello", 1); got != "e" {
 		t.Errorf("getFieldValue(string, 1) = %v, want e", got)
 	}
-	if got := getFieldValue("hello", 99); got != nil {
-		t.Errorf("getFieldValue(string, 99) = %v, want nil", got)
+	if got := getFieldValue("hello", 99); got != Undefined {
+		t.Errorf("getFieldValue(string, 99) = %v, want undefined", got)
 	}
 }
 
@@ -2029,8 +2029,8 @@ func TestGetFieldValue_MapDynamicStringKey(t *testing.T) {
 func TestIndexValue_MapKeyIsNotLowered(t *testing.T) {
 	obj := map[string]any{"id": "present"}
 	for _, k := range []string{"ID", "Id", "iD"} {
-		if got := indexValue(obj, k); got != nil {
-			t.Errorf("indexValue(obj, %q) = %v, want nil", k, got)
+		if got := indexValue(obj, k); got != Undefined {
+			t.Errorf("indexValue(obj, %q) = %v, want undefined", k, got)
 		}
 	}
 	if got := indexValue(obj, "id"); got != "present" {
@@ -2044,15 +2044,15 @@ func TestIndexValue_MapKeyIsNotLowered(t *testing.T) {
 	if got := indexValue(rowStruct{ID: 7}, "id"); got != 7 {
 		t.Errorf(`indexValue(struct, "id") = %v, want 7`, got)
 	}
-	if got := evalReadIndex(obj, "ID"); got != nil {
-		t.Errorf(`evalReadIndex(obj, "ID") = %v, want nil`, got)
+	if got := evalReadIndex(obj, "ID"); got != Undefined {
+		t.Errorf(`evalReadIndex(obj, "ID") = %v, want undefined`, got)
 	}
 }
 
 func TestGetFieldValue_NumericFieldAgainstMapReturnsNil(t *testing.T) {
 	row := map[string]any{"A": "row1-a"}
-	if got := getFieldValue(row, 0); got != nil {
-		t.Errorf("getFieldValue(map, 0) = %v, want nil", got)
+	if got := getFieldValue(row, 0); got != Undefined {
+		t.Errorf("getFieldValue(map, 0) = %v, want undefined", got)
 	}
 }
 
@@ -3518,9 +3518,9 @@ func TestIndexMethods_StringReceiverUTF16(t *testing.T) {
 		{"a😀b", -1, "b"},
 		{"a😀b", 3, "b"},
 		{"a😀b", 0, "a"},
-		{"abc", 3, nil},
-		{"abc", -4, nil},
-		{"", 0, nil},
+		{"abc", 3, Undefined},
+		{"abc", -4, Undefined},
+		{"", 0, Undefined},
 		// Half of a surrogate pair: JS returns a lone surrogate, which a
 		// Go string can't carry, so U+FFFD stands in (pinned divergence,
 		// limitation `string-at-lone-surrogate`).
@@ -3539,8 +3539,8 @@ func TestIndexMethods_StringReceiverUTF16(t *testing.T) {
 		want  any
 	}{
 		{math.NaN(), "a"},
-		{math.Inf(1), nil},
-		{math.Inf(-1), nil},
+		{math.Inf(1), Undefined},
+		{math.Inf(-1), Undefined},
 		{1.9, "b"},
 		{-1.5, "c"},
 	}
@@ -3680,7 +3680,7 @@ func TestAbsentAsNilCompoundNullishLeft(t *testing.T) {
 	const and = `{{bf_to_string (index (or (bf_keep_nonnil (index (or (bf_keep_falsy .Flag) (bf_arr (or .Tone nil))) 0)) (bf_arr "fb")) 0)}}`
 	calls := 0
 	fm := FuncMap()
-	fm["bf_json"] = func(v any) (string, error) {
+	fm["bf_json"] = func(v any) (any, error) {
 		calls++
 		return JSON(v)
 	}

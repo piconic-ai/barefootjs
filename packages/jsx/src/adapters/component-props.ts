@@ -96,10 +96,9 @@ export interface EarlierComponentProps {
  * caller actually handed over, and every optional param is `'present'`:
  * an `'entry'` would hand the child the key even when the caller left it
  * out, and the child would then read it as passed (a nil overriding its
- * own earlier prop in a further `{...props}`). Without `callerKeys` (Go,
- * whose Input struct can't tell the two nils apart), "passed" is "not
- * nil", and an explicit nil keeps the earlier value (limitation
- * `props-spread-explicit-null-override`).
+ * own earlier prop in a further `{...props}`). Without `callerKeys`,
+ * "passed" is "not nil"; Go answers it from its own `bf.Opt[T]` Input
+ * field (`Passed()`) instead.
  */
 export function propsSpreadParam(
   param: ComponentPropsParam,

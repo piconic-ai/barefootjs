@@ -23,8 +23,44 @@ import type { GoEmitContext } from '../emit-context.ts'
  * `interface{}` so an omitted member stays `nil`. */
 export function propertyInfoToGo(ctx: GoEmitContext, property: PropertyInfo, owner?: string): string {
   if (owner !== undefined && ctx.state.nullableSeedStructFields.has(`${owner}.${property.name}`)) return 'interface{}'
+  const optElem = optFieldElemType(ctx, property)
+  if (optElem !== null) return `bf.Opt[${optElem}]`
   const base = typeInfoToGo(ctx, property.type)
   return property.optional && ctx.state.localStructFields.has(base) ? `*${base}` : base
+}
+
+/** Whether `t` is the `null` or `undefined` type. */
+function isNilTypeMember(t: TypeInfo): boolean {
+  return t.kind === 'primitive' && (t.primitive === 'null' || t.primitive === 'undefined')
+}
+
+/** `t` without its `null` / `undefined` union members (a single member stands alone). */
+export function withoutNilMembers(t: TypeInfo): TypeInfo {
+  if (t.kind !== 'union' || !t.unionTypes) return t
+  const members = t.unionTypes.filter(m => !isNilTypeMember(m))
+  if (members.length === t.unionTypes.length) return t
+  if (members.length === 1) return members[0]
+  return { ...t, unionTypes: members }
+}
+
+/** Go scalar types a struct field holds as it is (a string-union alias included). */
+const OPT_SCALAR_GO_TYPES: ReadonlySet<string> = new Set(['string', 'float64', 'bool', 'int'])
+
+/**
+ * The `T` of a generated struct field's `bf.Opt[T]` (spec/js-undefined-value.md
+ * §3, rollout step U8): an optional field (`label?: string`, `tags?:
+ * string[]`, `meta?: Meta`), so a row can tell an omitted field
+ * (`undefined`) from `null` and from `''` / `0` / `[]`. A nested struct is
+ * held by pointer, as its plain field is. Null for a required field.
+ * Templates read such a field through `bf_js` (`optFieldRead`), and a loop
+ * over one through `bf_iter`.
+ */
+export function optFieldElemType(ctx: GoEmitContext, property: PropertyInfo): string | null {
+  if (!property.optional) return null
+  const elem = typeInfoToGo(ctx, withoutNilMembers(property.type))
+  if (OPT_SCALAR_GO_TYPES.has(elem) || ctx.state.localTypeAliases.has(elem)) return elem
+  if (elem.startsWith('[]') || elem.startsWith('map[')) return elem
+  return ctx.state.localStructFields.has(elem) ? `*${elem}` : null
 }
 
 /**

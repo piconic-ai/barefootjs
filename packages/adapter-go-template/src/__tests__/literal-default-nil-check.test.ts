@@ -1,11 +1,11 @@
 /**
- * A destructure default applies to an ABSENT prop only: an explicit `''` /
- * `0` / `false` stays the caller's value. A concrete Go field reads both as
- * its zero value, so an optional scalar prop whose literal default is not
- * that zero value takes a nillable `interface{}` Input field, and the props
- * constructor applies the default when the field is nil — once, before any
- * reader (Props field, signal seed, memo, child prop) sees it. A default that
- * IS the zero value needs no nil and keeps its concrete field.
+ * A destructure default applies to an ABSENT (or `undefined`) prop only: an
+ * explicit `''` / `0` / `false` / `null` stays the caller's value. Every
+ * optional prop is a `bf.Opt[T]` Input field; one with a literal default is
+ * read into a nillable `interface{}` field, and the props constructor applies
+ * the default when it holds `bf.Undefined` — once, before any reader (Props
+ * field, signal seed, memo, child prop) sees it. A default that IS the zero
+ * value is no exception: an explicit `null` is not `''` / `0` / `false`.
  *
  * Rendered coverage: the `destructure-default-explicit-falsy` conformance
  * fixture and the generated `:empty` / `:zero` / `:false` data points.
@@ -37,6 +37,13 @@ function inputStruct(goTypes: string): string {
   return match[0]
 }
 
+/** The `bf<Name>In` mirror the constructor reads the Input into. */
+function shadowStruct(goTypes: string): string {
+  const match = goTypes.match(/type bf\w+In struct \{[\s\S]*?\n\}/)
+  if (!match) throw new Error('no Input mirror struct')
+  return match[0]
+}
+
 describe('optional scalar prop with a literal destructure default', () => {
   const SRC = `
 export function Box({ tag = 'z', n = 2, on = true, blank = '', zero = 0, off = false }: {
@@ -46,25 +53,35 @@ export function Box({ tag = 'z', n = 2, on = true, blank = '', zero = 0, off = f
 }
 `
 
-  test('a non-zero default boxes the Input field so an explicit empty value stays distinct', () => {
+  test('every optional prop is a bf.Opt Input field', () => {
     const input = inputStruct(types(SRC))
-    expect(input).toMatch(/\bTag interface\{\}/)
-    expect(input).toMatch(/\bN interface\{\}/)
-    expect(input).toMatch(/\bOn interface\{\}/)
+    expect(input).toMatch(/\bTag bf\.Opt\[string\]/)
+    expect(input).toMatch(/\bN bf\.Opt\[float64\]/)
+    expect(input).toMatch(/\bOn bf\.Opt\[bool\]/)
+    expect(input).toMatch(/\bBlank bf\.Opt\[string\]/)
   })
 
-  test('a zero-value default keeps its concrete field', () => {
-    const input = inputStruct(types(SRC))
-    expect(input).toMatch(/\bBlank string/)
-    expect(input).toMatch(/\bZero float64/)
-    expect(input).toMatch(/\bOff bool/)
+  test('a non-zero default reads into a nillable field so an explicit empty value stays distinct', () => {
+    const shadow = shadowStruct(types(SRC))
+    expect(shadow).toMatch(/\bTag interface\{\}/)
+    expect(shadow).toMatch(/\bN interface\{\}/)
+    expect(shadow).toMatch(/\bOn interface\{\}/)
   })
 
-  test('the constructor applies the default to a nil field only', () => {
+  test('a zero-value default reads into a nillable field too, so an explicit null stays null', () => {
     const goTypes = types(SRC)
-    expect(goTypes).toContain('if in.Tag == nil {\n\t\tin.Tag = "z"\n\t}')
-    expect(goTypes).toContain('if in.N == nil {\n\t\tin.N = 2.0\n\t}')
-    expect(goTypes).toContain('if in.On == nil {\n\t\tin.On = true\n\t}')
+    const shadow = shadowStruct(goTypes)
+    expect(shadow).toMatch(/\bBlank interface\{\}/)
+    expect(shadow).toMatch(/\bZero interface\{\}/)
+    expect(shadow).toMatch(/\bOff interface\{\}/)
+    expect(goTypes).toContain('if bf.IsUndefined(in.Blank) {\n\t\tin.Blank = ""\n\t}')
+  })
+
+  test('the constructor applies the default to an undefined field only', () => {
+    const goTypes = types(SRC)
+    expect(goTypes).toContain('if bf.IsUndefined(in.Tag) {\n\t\tin.Tag = "z"\n\t}')
+    expect(goTypes).toContain('if bf.IsUndefined(in.N) {\n\t\tin.N = 2.0\n\t}')
+    expect(goTypes).toContain('if bf.IsUndefined(in.On) {\n\t\tin.On = true\n\t}')
     // The zero test of a concrete field would read an explicit `''` / `0` /
     // `false` as absent.
     expect(goTypes).not.toContain('in.Tag == ""')
@@ -74,8 +91,7 @@ export function Box({ tag = 'z', n = 2, on = true, blank = '', zero = 0, off = f
 
   test('hydration props carry only what the caller passed', () => {
     const goTypes = types(SRC)
-    expect(goTypes).toContain('bfCallerTag := in.Tag')
-    expect(goTypes).toContain('if bfCallerTag != nil {\n\t\tbfCallerProps["tag"] = bfCallerTag')
+    expect(goTypes).toContain('if input.Tag.Passed() {\n\t\tbfCallerProps["tag"] = input.Tag.V()')
   })
 })
 
@@ -95,15 +111,15 @@ describe('a literal default is emitted from its parsed value, not its spelling',
     ['1e21', 'number', '1e+21'],
     ["'x\\u0041'", 'string', '"xA"'],
     ['`tpl`', 'string', '"tpl"'],
-  ])('`n = %s` compiles and applies its value to a nil field', (spelling, tsType, goValue) => {
+  ])('`n = %s` compiles and applies its value to an undefined field', (spelling, tsType, goValue) => {
     const goTypes = types(`
 export function T({ n = ${spelling} }: { n?: ${tsType} }) {
   return <p>{n}</p>
 }
 `)
-    expect(inputStruct(goTypes)).toMatch(/\bN interface\{\}/)
-    expect(goTypes).toContain(`if in.N == nil {\n\t\tin.N = ${goValue}\n\t}`)
-    expect(goTypes).toContain(`N: func() interface{} { if in.N == nil { return ${goValue} }; return in.N }(),`)
+    expect(shadowStruct(goTypes)).toMatch(/\bN interface\{\}/)
+    expect(goTypes).toContain(`if bf.IsUndefined(in.N) {\n\t\tin.N = ${goValue}\n\t}`)
+    expect(goTypes).toContain(`N: func() interface{} { if bf.IsUndefined(in.N) { return ${goValue} }; return in.N }(),`)
   })
 })
 

@@ -16,7 +16,7 @@ import type { ParsedExpr, ParsedStatement, TypeInfo } from '@barefootjs/jsx'
 import type { GoEmitContext } from '../emit-context.ts'
 import { escapeGoString } from '../lib/go-emit.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
-import { isConcreteStringPropField } from '../props/prop-types.ts'
+import { isConcreteStringPropField, isNillableStringPropField } from '../props/prop-types.ts'
 
 /**
  * Compute the SSR initial value of a template-literal memo as a Go `string`
@@ -121,18 +121,22 @@ function resolveTemplateInterpolation(
     const right = node.right
     const isEmptyStr = right.kind === 'literal' && right.literalType === 'string' && right.value === ''
     const propName = propsAccessNameFromParsed(ctx, node.left)
-    if (propName && propNames.has(propName) && isEmptyStr && isConcreteStringPropField(ctx, propName)) {
-      // Unset string field is "" in Go — same as `?? ''`.
-      return `in.${capitalizeFieldName(propName)}`
+    if (propName && propNames.has(propName) && isEmptyStr) {
+      const field = `in.${capitalizeFieldName(propName)}`
+      // Unset string field is "" in Go — same as `?? ''`. A nillable
+      // field holds the JS value (`bf.Undefined`, nil or the string).
+      return isConcreteStringPropField(ctx, propName) ? field : `bf.ToString(bf.Nullish(${field}, ""))`
     }
     return null
   }
 
-  // Bare `props.X` over a concrete `string` field. A nillable or number
-  // field is no Go string operand; the evaluator computes the memo instead.
+  // Bare `props.X` over a concrete `string` field, or a nillable one as JS
+  // ToString spells it (`"undefined"` for an omitted prop). A number field is
+  // no Go string operand; the evaluator computes the memo instead.
   const propName = propsAccessNameFromParsed(ctx, node)
-  if (propName && propNames.has(propName) && isConcreteStringPropField(ctx, propName)) {
-    return `in.${capitalizeFieldName(propName)}`
+  if (propName && propNames.has(propName)) {
+    if (isConcreteStringPropField(ctx, propName)) return `in.${capitalizeFieldName(propName)}`
+    if (isNillableStringPropField(ctx, propName)) return `bf.ToString(in.${capitalizeFieldName(propName)})`
   }
   return null
 }

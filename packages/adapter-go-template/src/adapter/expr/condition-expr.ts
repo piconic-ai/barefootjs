@@ -41,6 +41,12 @@ import { lowerTemplateLiteralValue, lowerTernary } from './url-builder.ts'
  */
 export interface ConditionExprHost {
   readonly ctx: GoEmitContext
+  /**
+   * `read`, the template read of `object.property`, as its JS value
+   * (`bf_js`) when it may be a generated struct's `bf.Opt[T]` field
+   * (`params`: a predicate's own bindings); `read` itself otherwise.
+   */
+  optFieldRead(object: ParsedExpr, property: string, read: string, params?: readonly string[]): string
   /** Render a `ParsedExpr` through the adapter's `ParsedExprEmitter`. */
   renderParsedExpr(expr: ParsedExpr): string
   /** A source location for a diagnostic. */
@@ -366,7 +372,7 @@ function renderFilterMember(
     if ((expr.optional || expr.computed) && expr.property !== 'length') {
       return `(${host.renderOptionalMember(paramDot, expr.property)})`
     }
-    return `${paramPrefix}.${capitalizeFieldName(expr.property)}`
+    return host.optFieldRead(expr.object, expr.property, `${paramPrefix}.${capitalizeFieldName(expr.property)}`, [param])
   }
   // props.x on a bare-props-form component (#2879): props are
   // flattened onto the root struct, so this is a root-scope read
@@ -407,12 +413,12 @@ function renderFilterMember(
   // elements. A `.Length` field read is not defined on either.
   if (expr.property === 'length' && !expr.computed) {
     const read = `bf_length ${wrapIfMultiToken(obj)}`
-    return expr.optional ? `(bf_ternary (bf_eq ${wrapIfMultiToken(obj)} nil) nil (${read}))` : `(${read})`
+    return expr.optional ? `(bf_ternary (bf_is_nullish ${wrapIfMultiToken(obj)}) (bf_undefined) (${read}))` : `(${read})`
   }
   if ((expr.optional || expr.computed) && expr.property !== 'length') {
     return `(${host.renderOptionalMember(obj, expr.property)})`
   }
-  return `${obj}.${capitalizeFieldName(expr.property)}`
+  return host.optFieldRead(expr.object, expr.property, `${obj}.${capitalizeFieldName(expr.property)}`, [param])
 }
 
 /** The `call` arm of {@link renderFilterExprNode}. */
@@ -815,7 +821,7 @@ function renderConditionMember(
   // takes the `bf_get` arm below, the row itself rendering as `.`.
   const keyRead = isLiteralKeyRead(expr.computed)
   if (expr.object.kind === 'identifier' && host.isCurrentLoopRecord(expr.object.name) && !keyRead) {
-    return plain(`.${capitalizeFieldName(expr.property)}`)
+    return plain(host.optFieldRead(expr.object, expr.property, `.${capitalizeFieldName(expr.property)}`))
   }
 
   const obj = renderConditionExpr(host, expr.object)
@@ -852,7 +858,7 @@ function renderConditionMember(
   // `.Field` access, or Go reads the unparenthesised tail as an extra
   // sibling arg of the prefix call (`or .A .B.Name` — silently wrong,
   // not a panic, since `or`/`and` tolerate extra args).
-  return { preamble: obj.preamble, expr: `${wrapIfMultiToken(obj.expr)}.${capitalizeFieldName(expr.property)}` }
+  return { preamble: obj.preamble, expr: host.optFieldRead(expr.object, expr.property, `${wrapIfMultiToken(obj.expr)}.${capitalizeFieldName(expr.property)}`) }
 }
 
 const RELATIONAL_OPS: ReadonlySet<string> = new Set(['<', '<=', '>', '>='])

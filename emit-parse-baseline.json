@@ -32,9 +32,6 @@
     "packages/adapter-go-template/src/adapter/props/prop-classes.ts": {
       "isBareStringLiteral": 4
     },
-    "packages/adapter-go-template/src/adapter/props/prop-types.ts": {
-      "collectArithmeticAbsentPropNames/walk": 1
-    },
     "packages/adapter-go-template/src/adapter/spread/spread-codegen.ts": {
       "buildSpreadInitializer": 3
     },

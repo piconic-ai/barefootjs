@@ -7,13 +7,5 @@ export default defineLimitation({
     "a props destructure default that passes a callback to a call and reads no earlier binding of the pattern (`{ b = ['y', ''].filter((x) => x !== '') }`), in the parameter, body or renamed body destructure, with the prop omitted: read directly, or through a memo or signal seed that the backend computes from the binding (`createMemo(() => local.length)`, `createSignal(local.length)`)",
   expected: 'the omitted prop takes the default value',
   actual: 'renders the omitted prop as an empty value, without its default',
-  fixtures: [
-    'destructure-default-body-renamed-callback',
-    'destructure-default-body-callback',
-    'destructure-default-param-renamed-callback',
-    'destructure-default-body-callback-shadow',
-    'destructure-default-param-renamed-callback-memo',
-    'destructure-default-body-renamed-callback-signal',
-    'destructure-default-body-renamed-callback-memo-chain',
-  ],
+  fixtures: ['destructure-default-body-renamed-callback-memo-chain'],
 })
