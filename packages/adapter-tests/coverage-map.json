@@ -17954,6 +17954,27 @@
         "text"
       ]
     },
+    "undef-object-member-signal-seed": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "undefined-alternate-ternary-attr-test-question-mark": {
       "kinds": [
         "binary",

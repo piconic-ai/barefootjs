@@ -9379,62 +9379,6 @@
           ]
         }
       },
-      "undef-array-element-signal-seed": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "array-literal-seed-undefined-element"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "array-literal-seed-undefined-element"
-          ]
-        },
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "array-literal-seed-undefined-element"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "array-literal-seed-undefined-element"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "array-literal-seed-undefined-element"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "array-literal-seed-undefined-element"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "array-literal-seed-undefined-element"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "array-literal-seed-undefined-element"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "array-literal-seed-undefined-element"
-          ]
-        }
-      },
       "unlowered-global-call": {
         "blade": {
           "kind": "refusal",
@@ -10075,10 +10019,6 @@
         "description": "A tag-opening brace in a template-literal URL attribute and in style element text prints as written",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/template-delimiter-contextual-escape.ts"
       },
-      "undef-array-element-signal-seed": {
-        "description": "A signal seeded from an array literal keeps an undefined element apart from null",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-array-element-signal-seed.ts"
-      },
       "unlowered-global-call": {
         "description": "A zero-arg call on a JavaScript global refuses (BF101) instead of rendering a member read (#3505)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/unlowered-global-call.ts"
@@ -10326,27 +10266,6 @@
       ],
       "diagnostics": [
         "BF101"
-      ]
-    },
-    "array-literal-seed-undefined-element": {
-      "title": "An `undefined` element of an array-literal signal seed",
-      "kind": "silent",
-      "given": "a signal seeded from an array literal with an `undefined` element (`createSignal([undefined, 'x'])`), read at that index (`a()[0] === undefined`)",
-      "expected": "the element is `undefined`, so `a()[0] === undefined` is true",
-      "actual": "renders the element as `null`, so `a()[0] === undefined` is false",
-      "fixtures": [
-        "undef-array-element-signal-seed"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
       ]
     },
     "array-self-equality": {

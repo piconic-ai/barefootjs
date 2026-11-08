@@ -173,12 +173,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -326,12 +320,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -553,12 +541,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -718,12 +700,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -885,12 +861,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -1051,12 +1021,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -1210,12 +1174,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -1376,12 +1334,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -1548,12 +1500,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -3569,12 +3515,6 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -3698,12 +3638,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -3889,12 +3823,6 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -4030,12 +3958,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -4173,12 +4095,6 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -4309,12 +4225,6 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -4444,12 +4354,6 @@
               "fixture": "strict-equality-same-reference",
               "limitations": [
                 "array-self-equality"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -4593,12 +4497,6 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -4740,12 +4638,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -5084,12 +4976,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -5373,12 +5259,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -5776,12 +5656,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -6083,12 +5957,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -6396,12 +6264,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -6685,12 +6547,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -6983,12 +6839,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -7296,12 +7146,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -7597,12 +7441,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -8440,12 +8278,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -8825,12 +8657,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -9396,12 +9222,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -9811,12 +9631,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -10232,12 +10046,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -10638,12 +10446,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -11035,12 +10837,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -11462,12 +11258,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -11877,12 +11667,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -12393,12 +12177,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -12682,12 +12460,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -13103,12 +12875,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -13401,12 +13167,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -13696,12 +13456,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -14009,12 +13763,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -14286,12 +14034,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -14584,12 +14326,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -14894,12 +14630,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -15775,12 +15505,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -16034,12 +15758,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -16449,12 +16167,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -16738,12 +16450,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -17033,12 +16739,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -17310,12 +17010,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -17596,12 +17290,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -17897,12 +17585,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -18186,12 +17868,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -22518,12 +22194,6 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -22599,12 +22269,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -22718,12 +22382,6 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -22811,12 +22469,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -22906,12 +22558,6 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -22987,12 +22633,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -23075,12 +22715,6 @@
               "fixture": "strict-equality-same-reference",
               "limitations": [
                 "array-self-equality"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -23170,12 +22804,6 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -23263,12 +22891,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -24001,12 +23623,6 @@
               "limitations": [
                 "style-object-nil-property"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -24046,12 +23662,6 @@
               "fixture": "style-object-nil-property",
               "limitations": [
                 "style-object-nil-property"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -24105,12 +23715,6 @@
               "limitations": [
                 "style-object-nil-property"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -24151,12 +23755,6 @@
               "limitations": [
                 "style-object-nil-property"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -24196,12 +23794,6 @@
               "fixture": "style-object-nil-property",
               "limitations": [
                 "style-object-nil-property"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -24249,12 +23841,6 @@
               "limitations": [
                 "style-object-nil-property"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -24288,12 +23874,6 @@
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -24334,12 +23914,6 @@
               "fixture": "style-object-nil-property",
               "limitations": [
                 "style-object-nil-property"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -24386,12 +23960,6 @@
               "fixture": "style-object-nil-property",
               "limitations": [
                 "style-object-nil-property"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -25996,12 +25564,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -26195,12 +25757,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -26490,12 +26046,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -26698,12 +26248,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -26903,12 +26447,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -27126,12 +26664,6 @@
               ]
             },
             {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
-            },
-            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -27319,12 +26851,6 @@
               "fixture": "strict-equality-same-reference",
               "limitations": [
                 "array-self-equality"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -27527,12 +27053,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -27747,12 +27267,6 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -28574,12 +28088,6 @@
               "limitations": [
                 "array-self-equality"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -28589,12 +28097,6 @@
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -28618,12 +28120,6 @@
               "limitations": [
                 "array-self-equality"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -28633,12 +28129,6 @@
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -28650,12 +28140,6 @@
               "limitations": [
                 "array-self-equality"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -28665,12 +28149,6 @@
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -28682,12 +28160,6 @@
               "limitations": [
                 "array-self-equality"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -28698,12 +28170,6 @@
               "limitations": [
                 "array-self-equality"
               ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
-              ]
             }
           ]
         },
@@ -28713,12 +28179,6 @@
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
-              ]
-            },
-            {
-              "fixture": "undef-array-element-signal-seed",
-              "limitations": [
-                "array-literal-seed-undefined-element"
               ]
             }
           ]
