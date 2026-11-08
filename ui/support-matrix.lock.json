@@ -175,9 +175,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -329,9 +329,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -553,6 +553,12 @@
               "limitations": [
                 "statement-body-callback"
               ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
             }
           ]
         },
@@ -715,9 +721,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -881,9 +887,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -1047,9 +1053,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -1207,9 +1213,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -1373,9 +1379,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -1545,9 +1551,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -3563,6 +3569,12 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
             }
           ]
         },
@@ -3686,6 +3698,12 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
+              ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -3871,6 +3889,12 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
             }
           ]
         },
@@ -4006,6 +4030,12 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
+              ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -4143,6 +4173,12 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
             }
           ]
         },
@@ -4273,6 +4309,12 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
             }
           ]
         },
@@ -4402,6 +4444,12 @@
               "fixture": "strict-equality-same-reference",
               "limitations": [
                 "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -4545,6 +4593,12 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
             }
           ]
         },
@@ -4686,6 +4740,12 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
+              ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -5024,9 +5084,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -5316,9 +5376,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -5716,6 +5776,12 @@
               ]
             },
             {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -6020,9 +6086,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -6330,9 +6396,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -6622,9 +6688,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -6920,9 +6986,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -7230,9 +7296,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -7534,9 +7600,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -8374,9 +8440,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -8762,9 +8828,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -9330,6 +9396,12 @@
               ]
             },
             {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -9742,9 +9814,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -10160,9 +10232,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -10566,9 +10638,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -10966,9 +11038,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -11390,9 +11462,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -11808,9 +11880,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -12321,9 +12393,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -12613,9 +12685,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -13031,6 +13103,12 @@
               ]
             },
             {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -13323,9 +13401,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -13621,9 +13699,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -13931,9 +14009,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -14211,9 +14289,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -14509,9 +14587,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -14819,9 +14897,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -15697,9 +15775,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -15959,9 +16037,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -16371,6 +16449,12 @@
               ]
             },
             {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
+            },
+            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -16657,9 +16741,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -16949,9 +17033,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -17229,9 +17313,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -17515,9 +17599,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -17813,9 +17897,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -18105,9 +18189,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -18216,12 +18300,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -18285,12 +18363,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -18450,12 +18522,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -18519,12 +18585,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -18602,12 +18662,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -18665,12 +18719,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -18735,12 +18783,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -18817,12 +18859,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -22482,6 +22518,12 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
             }
           ]
         },
@@ -22557,6 +22599,12 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
+              ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -22670,6 +22718,12 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
             }
           ]
         },
@@ -22757,6 +22811,12 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
+              ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -22846,6 +22906,12 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
             }
           ]
         },
@@ -22921,6 +22987,12 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
+              ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -23003,6 +23075,12 @@
               "fixture": "strict-equality-same-reference",
               "limitations": [
                 "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -23092,6 +23170,12 @@
               "limitations": [
                 "string-at-lone-surrogate"
               ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
             }
           ]
         },
@@ -23179,6 +23263,12 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
+              ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -23913,9 +24003,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -23959,9 +24049,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -24015,6 +24105,12 @@
               "limitations": [
                 "style-object-nil-property"
               ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
             }
           ]
         },
@@ -24057,9 +24153,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -24103,9 +24199,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -24155,9 +24251,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -24195,9 +24291,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -24241,9 +24337,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -24293,9 +24389,9 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
+              "fixture": "undef-array-element-signal-seed",
               "limitations": [
-                "host-nil-collapses-undefined-and-null"
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -25900,6 +25996,12 @@
               ]
             },
             {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -26093,6 +26195,12 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
+              ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -26382,6 +26490,12 @@
               ]
             },
             {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -26584,6 +26698,12 @@
               ]
             },
             {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -26783,6 +26903,12 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
+              ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -27000,6 +27126,12 @@
               ]
             },
             {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
+            },
+            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -27187,6 +27319,12 @@
               "fixture": "strict-equality-same-reference",
               "limitations": [
                 "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -27389,6 +27527,12 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
+              ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -27603,6 +27747,12 @@
               "fixture": "string-at-lone-surrogate",
               "limitations": [
                 "string-at-lone-surrogate"
+              ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
               ]
             },
             {
@@ -28424,6 +28574,12 @@
               "limitations": [
                 "array-self-equality"
               ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
             }
           ]
         },
@@ -28433,6 +28589,12 @@
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -28456,6 +28618,12 @@
               "limitations": [
                 "array-self-equality"
               ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
             }
           ]
         },
@@ -28465,6 +28633,12 @@
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -28476,6 +28650,12 @@
               "limitations": [
                 "array-self-equality"
               ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
             }
           ]
         },
@@ -28485,6 +28665,12 @@
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
               ]
             }
           ]
@@ -28496,6 +28682,12 @@
               "limitations": [
                 "array-self-equality"
               ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
             }
           ]
         },
@@ -28506,6 +28698,12 @@
               "limitations": [
                 "array-self-equality"
               ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
+              ]
             }
           ]
         },
@@ -28515,6 +28713,12 @@
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
+              ]
+            },
+            {
+              "fixture": "undef-array-element-signal-seed",
+              "limitations": [
+                "array-literal-seed-undefined-element"
               ]
             }
           ]

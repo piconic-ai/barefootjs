@@ -9379,53 +9379,59 @@
           ]
         }
       },
-      "undef-null-json-stringify-object-member": {
+      "undef-array-element-signal-seed": {
         "blade": {
           "kind": "render",
           "limitations": [
-            "host-nil-collapses-undefined-and-null"
+            "array-literal-seed-undefined-element"
           ]
         },
         "erb": {
           "kind": "render",
           "limitations": [
-            "host-nil-collapses-undefined-and-null"
+            "array-literal-seed-undefined-element"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "array-literal-seed-undefined-element"
           ]
         },
         "jinja": {
           "kind": "render",
           "limitations": [
-            "host-nil-collapses-undefined-and-null"
+            "array-literal-seed-undefined-element"
           ]
         },
         "minijinja": {
           "kind": "render",
           "limitations": [
-            "host-nil-collapses-undefined-and-null"
+            "array-literal-seed-undefined-element"
           ]
         },
         "mojolicious": {
           "kind": "render",
           "limitations": [
-            "host-nil-collapses-undefined-and-null"
+            "array-literal-seed-undefined-element"
           ]
         },
         "pebble": {
           "kind": "render",
           "limitations": [
-            "host-nil-collapses-undefined-and-null"
+            "array-literal-seed-undefined-element"
           ]
         },
         "twig": {
           "kind": "render",
           "limitations": [
-            "host-nil-collapses-undefined-and-null"
+            "array-literal-seed-undefined-element"
           ]
         },
         "xslate": {
           "kind": "render",
           "limitations": [
-            "host-nil-collapses-undefined-and-null"
+            "array-literal-seed-undefined-element"
           ]
         }
       },
@@ -10069,9 +10075,9 @@
         "description": "A tag-opening brace in a template-literal URL attribute and in style element text prints as written",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/template-delimiter-contextual-escape.ts"
       },
-      "undef-null-json-stringify-object-member": {
-        "description": "JSON.stringify drops an undefined object member and writes a null one",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-json-stringify-object-member.ts"
+      "undef-array-element-signal-seed": {
+        "description": "A signal seeded from an array literal keeps an undefined element apart from null",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-array-element-signal-seed.ts"
       },
       "unlowered-global-call": {
         "description": "A zero-arg call on a JavaScript global refuses (BF101) instead of rendering a member read (#3505)",
@@ -10320,6 +10326,27 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "array-literal-seed-undefined-element": {
+      "title": "An `undefined` element of an array-literal signal seed",
+      "kind": "silent",
+      "given": "a signal seeded from an array literal with an `undefined` element (`createSignal([undefined, 'x'])`), read at that index (`a()[0] === undefined`)",
+      "expected": "the element is `undefined`, so `a()[0] === undefined` is true",
+      "actual": "reads the element as `null`, so `a()[0] === undefined` is false",
+      "fixtures": [
+        "undef-array-element-signal-seed"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "array-self-equality": {
@@ -10748,26 +10775,6 @@
         "BF029"
       ]
     },
-    "host-nil-collapses-undefined-and-null": {
-      "title": "One host nil standing for both `undefined` and `null`",
-      "kind": "silent",
-      "given": "an operation whose JS result differs between `undefined` and `null` (`String` / template literal / `+`, `Number` / arithmetic, `===` against either, `JSON.stringify`, a destructure default, `includes` / `indexOf` on an array or a string, a numeric sort, an optional method argument, a `?.` result), over an omitted prop, an explicit `null` prop, a forwarded `undefined`, a literal `null` / `undefined`, or a missing row or object field",
-      "expected": "`undefined` and `null` are distinct values, so each renders its own JS result (`\"undefined\"` / `\"null\"`, `NaN` / `0`, a dropped member or no string / `null`, the default / `null`, the argument default / the coerced `null`)",
-      "actual": "renders the result for one of them in place of the other, or fails to render, since the host nil stands for both; graduates per target as its runtime carries `undefined` (`spec/js-undefined-value.md`)",
-      "fixtures": [
-        "undef-null-json-stringify-object-member"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
     "index-read-capitalised-key-only": {
       "title": "Lowercase index key on an object holding only the capitalised key",
       "kind": "silent",
@@ -10895,26 +10902,6 @@
         "blade",
         "erb",
         "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
-    "member-seeded-signal-attr-nullish": {
-      "title": "An attribute bound to a signal seeded from an object prop's omitted or null optional field",
-      "kind": "silent",
-      "given": "a signal seeded from an optional field of an object prop (`type Init = { label?: string }`, `createSignal(initial.label)`) bound to an attribute (`title={label()}`), with the object omitting the field or holding `null` for it",
-      "expected": "the attribute is omitted, as for any attribute whose value is `null` or `undefined`",
-      "actual": "renders the attribute with an empty value (`title=\"\"`)",
-      "fixtures": [
-        "optional-member-signal-seed-js-value"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
         "jinja",
         "minijinja",
         "mojolicious",

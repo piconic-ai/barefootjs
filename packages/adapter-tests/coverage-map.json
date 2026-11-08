@@ -10833,6 +10833,25 @@
         "text"
       ]
     },
+    "nullable-member-signal-seed-destructured": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "nullable-number-arithmetic-destructured": {
       "kinds": [
         "binary",
@@ -17621,6 +17640,26 @@
       ],
       "contexts": [
         "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "undef-array-element-signal-seed": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:null",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
         "condition",
         "text"
       ]

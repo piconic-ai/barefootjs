@@ -11616,6 +11616,17 @@
           }
         ]
       }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "zero": 0,
+        "empty": "",
+        "no": false,
+        "nil": null,
+        "s": "s",
+        "rows": []
+      }
     }
   ],
   "number-addition-text-formatting": [
