@@ -135,11 +135,6 @@ export const renderDivergences: RenderDivergences = {
   // A `null` / `undefined` `style` object property renders `color:` with
   // an empty value instead of being dropped.
   'style-object-nil-property': { limitation: 'style-object-nil-property' },
-  // A signal seeded from an object literal with an `undefined` member: the
-  // static seed (`extractSsrDefaults`, shared by every target's manifest)
-  // writes the member as `null`, so `JSON.stringify` keeps it as `null`
-  // where JS drops it. The runtime's JSON walk drops an `UNDEF` member.
-  'undef-null-json-stringify-object-member': { limitation: 'host-nil-collapses-undefined-and-null' },
 }
 
 /**

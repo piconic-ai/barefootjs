@@ -754,7 +754,10 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
       }
       const v = evalNode(prop.initializer, ctx)
       if (v === UNRESOLVED) return UNRESOLVED
-      obj[key] = v === undefined ? null : v
+      // An `undefined` member is left out, as `JSON.stringify` leaves it out
+      // of the manifest: a runtime reads the missing key as its `UNDEF`
+      // (spec/js-undefined-value.md), where a `null` would read as `null`.
+      if (v !== undefined) obj[key] = v
     }
     return obj
   }
