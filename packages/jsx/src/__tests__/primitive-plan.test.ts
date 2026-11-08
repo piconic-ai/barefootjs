@@ -18,7 +18,6 @@ import {
   foldNegatedNumberLiteral,
   mayHoldObject,
   numberLiteralSpelling,
-  collapsesNil,
   collectNullableOptionalProps,
   nilTestOperand,
   exprToString,
@@ -166,9 +165,13 @@ describe('operandFacts', () => {
   })
 })
 
-const NONE: NativeSafeTable = { carriesUndefined: false }
-const ALL: NativeSafeTable = {
-  carriesUndefined: false,
+const NONE: NativeSafeTable = {}
+/**
+ * A table that claims `unproven` too, which the type forbids: the plan must
+ * still take the helper for an operand Phase 1 does not prove, since it may
+ * be `UNDEF` (spec/js-undefined-value.md).
+ */
+const CLAIMS_UNPROVEN = {
   'to-boolean': ['boolean', 'unproven'],
   'to-number': ['number-pair', 'number', 'unproven'],
   plus: ['number-pair', 'string', 'unproven'],
@@ -178,9 +181,8 @@ const ALL: NativeSafeTable = {
   'number-literal': ['safe-integer', 'unproven'],
   nullish: ['non-nil', 'unproven'],
   get: ['array-index', 'unproven'],
-}
+} as unknown as NativeSafeTable
 const PROVEN_ONLY: NativeSafeTable = {
-  carriesUndefined: false,
   'to-boolean': ['boolean'],
   'to-number': ['number-pair', 'number'],
   plus: ['number-pair', 'string'],
@@ -206,7 +208,6 @@ describe('planPrimitive', () => {
   test('ToBoolean (a test position) is native only for a proven boolean the target claims', () => {
     expect(plan('!props.on', PROVEN_ONLY)).toBe('native to-boolean boolean')
     expect(plan('!props.s', PROVEN_ONLY)).toBe('helper to-boolean truthy unproven')
-    expect(plan('!props.s', ALL)).toBe('native to-boolean unproven')
     expect(plan('props.on ? 1 : 2', NONE)).toBe('helper to-boolean truthy boolean')
     expect(plan('props.s && 1', PROVEN_ONLY)).toBe('helper to-boolean truthy unproven')
   })
@@ -221,8 +222,8 @@ describe('planPrimitive', () => {
   })
 
   test('`/` and `%` always name their helper', () => {
-    expect(plan('props.n / 2', ALL)).toBe('helper to-number div number-pair')
-    expect(plan('props.n % 2', ALL)).toBe('helper to-number mod number-pair')
+    expect(plan('props.n / 2', CLAIMS_UNPROVEN)).toBe('helper to-number div number-pair')
+    expect(plan('props.n % 2', CLAIMS_UNPROVEN)).toBe('helper to-number mod number-pair')
   })
 
   test('`+` adds two numbers, concatenates over a proven string, and is `plus` otherwise', () => {
@@ -236,16 +237,14 @@ describe('planPrimitive', () => {
     expect(plan("props.s === 'a'", PROVEN_ONLY)).toBe('native strict-eq string-pair')
     expect(plan('props.n === count()', PROVEN_ONLY)).toBe('native strict-eq number-pair')
     expect(plan('props.maybe === 1', PROVEN_ONLY)).toBe('helper strict-eq strict_eq unproven')
-    expect(plan("props.n === 'a'", ALL)).toBe('const strict-eq false')
-    expect(plan("props.n !== 'a'", ALL)).toBe('const strict-eq true')
+    expect(plan("props.n === 'a'", CLAIMS_UNPROVEN)).toBe('const strict-eq false')
+    expect(plan("props.n !== 'a'", CLAIMS_UNPROVEN)).toBe('const strict-eq true')
   })
 
   test('unary minus over a non-zero number literal folds into the literal; any other operand takes `neg`', () => {
     expect(plan('-1', PROVEN_ONLY)).toBe('native number-literal safe-integer')
     expect(plan('-1.5', PROVEN_ONLY)).toBe('helper number-literal number unproven')
-    expect(plan('-1e21', ALL)).toBe('native number-literal unproven')
     // `-0` does not fold: the zero operand is the case `neg` exists for.
-    expect(plan('-0', ALL)).toBe('native neg unproven')
     expect(plan('-0', PROVEN_ONLY)).toBe('helper neg neg unproven')
     expect(plan('-props.n', PROVEN_ONLY)).toBe('helper neg neg unproven')
     expect(plan('+props.n', PROVEN_ONLY)).toBe('native to-number number')
@@ -297,9 +296,9 @@ describe('planPrimitive', () => {
   })
 
   test('loose equality and other operators are not planned', () => {
-    expect(plan('props.n == 1', ALL)).toBe('none')
-    expect(plan("'a' in props", ALL)).toBe('none')
-    expect(plan('typeof props.n', ALL)).toBe('none')
+    expect(plan('props.n == 1', CLAIMS_UNPROVEN)).toBe('none')
+    expect(plan("'a' in props", CLAIMS_UNPROVEN)).toBe('none')
+    expect(plan('typeof props.n', CLAIMS_UNPROVEN)).toBe('none')
   })
 
   test('the empty typing proves only structure', () => {
@@ -309,52 +308,27 @@ describe('planPrimitive', () => {
   })
 })
 
-/** A target's table with its `carriesUndefined` flag flipped on (no real adapter declares it yet, rollout step U1). */
-const carrying = (table: NativeSafeTable): NativeSafeTable => ({ ...table, carriesUndefined: true })
-
-describe('carriesUndefined (spec/js-undefined-value.md, rollout step U1)', () => {
-  test('the flag is the one decision the plan reads it through', () => {
-    expect(collapsesNil(ALL)).toBe(true)
-    expect(collapsesNil(carrying(ALL))).toBe(false)
-  })
-
-  test('an operand Phase 1 does not prove takes the helper on a target that carries undefined', () => {
-    expect(plan('!props.s', carrying(ALL))).toBe('helper to-boolean truthy unproven')
-    expect(plan('props.n - props.maybe', carrying(ALL))).toBe('helper to-number sub unproven')
-    expect(plan('props.n <= props.maybe', carrying(ALL))).toBe('helper relational le unproven')
-    expect(plan('props.maybe ?? 0', carrying(ALL))).toBe('helper nullish coalesce unproven')
-    expect(plan('-props.n', carrying(ALL))).toBe('helper neg neg unproven')
-    expect(plan('props.rows[props.n]', carrying(ALL))).toBe('helper get get unproven')
-    // A dynamic `+` (neither side a proven number pair or a proven string).
-    expect(plan('props.maybe + props.n', carrying(ALL))).toBe('helper plus plus unproven')
-    // Collapsed: today's native claim over the unproven operand stands.
-    expect(plan('props.n - props.maybe', ALL)).toBe('native to-number unproven')
-    expect(plan('props.maybe + props.n', ALL)).toBe('native plus unproven')
-  })
-
-  test('a proven operand keeps its native claim whichever the flag', () => {
-    for (const src of ['!props.on', 'props.n < count()', 'props.n - 1', 'props.n + 1', "props.n + 'x'", "props.s === 'a'", "props.s ?? 'x'", '42']) {
-      expect(plan(src, carrying(PROVEN_ONLY))).toBe(plan(src, PROVEN_ONLY))
+describe('every target carries undefined (spec/js-undefined-value.md)', () => {
+  test('an operand Phase 1 does not prove takes the helper, even under a claim of `unproven`', () => {
+    for (const target of [PROVEN_ONLY, CLAIMS_UNPROVEN]) {
+      expect(plan('!props.s', target)).toBe('helper to-boolean truthy unproven')
+      expect(plan('props.n - props.maybe', target)).toBe('helper to-number sub unproven')
+      expect(plan('props.n <= props.maybe', target)).toBe('helper relational le unproven')
+      expect(plan('props.maybe ?? 0', target)).toBe('helper nullish coalesce unproven')
+      expect(plan('-props.n', target)).toBe('helper neg neg unproven')
+      expect(plan('-1e21', target)).toBe('helper number-literal number unproven')
+      expect(plan('props.rows[props.n]', target)).toBe('helper get get unproven')
+      // A dynamic `+` (neither side a proven number pair or a proven string).
+      expect(plan('props.maybe + props.n', target)).toBe('helper plus plus unproven')
     }
-    expect(plan("props.n === 'a'", carrying(ALL))).toBe('const strict-eq false')
   })
 
-  test('a numeric either operand is planned, not refused, by planPrimitive under either flag', () => {
-    // The BF101 of #3700 is the template adapters' (`arithmeticCoercionOrRefuse`),
-    // gated by the same flag; the plan itself only names the helper.
+  test('a numeric either operand is planned as the helper, not refused', () => {
     expect(plan('props.either * 2', PROVEN_ONLY)).toBe('helper to-number mul unproven')
-    expect(plan('props.either * 2', carrying(ALL))).toBe('helper to-number mul unproven')
-    expect(plan('props.either * 2', ALL)).toBe('native to-number unproven')
   })
 
-  test('a nullish test keeps its nil-test lowering (no plan) on a collapsing target', () => {
-    for (const src of ['props.maybe === null', 'props.maybe !== undefined', 'props.maybe == null', 'undefined != props.maybe']) {
-      expect(plan(src, ALL)).toBe('none')
-    }
-  })
-
-  test('on a target that carries undefined, `=== null` / `=== undefined` are strict and `== null` is nullish', () => {
-    const target = carrying(PROVEN_ONLY)
+  test('`=== null` / `=== undefined` are strict and `== null` is nullish', () => {
+    const target = PROVEN_ONLY
     expect(plan('props.maybe === null', target)).toBe('helper nil-test is_null unproven')
     expect(plan('props.maybe !== null', target)).toBe('helper nil-test is_null unproven')
     expect(plan('props.maybe === undefined', target)).toBe('helper nil-test is_undefined unproven')
@@ -371,8 +345,8 @@ describe('carriesUndefined (spec/js-undefined-value.md, rollout step U1)', () =>
     expect(plan('props.n == 1', target)).toBe('none')
   })
 
-  test('an emitter that receives a nil test refuses loudly', () => {
-    const p = planPrimitive(parseExpression('props.maybe === null'), typing, carrying(PROVEN_ONLY))
+  test('an emitter that receives a nil test without a spelling refuses loudly', () => {
+    const p = planPrimitive(parseExpression('props.maybe === null'), typing, PROVEN_ONLY)
     expect(() => refuseUnspelledNilTest(p)).toThrow('`is_null` nil test')
     expect(() => strictEqSpelling('===', parseExpression('props.maybe'), parseExpression('null'), p)).toThrow('no spelling')
     expect(() => refuseUnspelledNilTest(planPrimitive(parseExpression('props.n === 1'), typing, PROVEN_ONLY))).not.toThrow()
@@ -390,7 +364,7 @@ describe('carriesUndefined (spec/js-undefined-value.md, rollout step U1)', () =>
     expect(operand('null === undefined')).toBe('null')
   })
 
-  test('a defaulted prop typed with `null` is presence-uncertain only on a target that carries undefined', () => {
+  test('a defaulted prop typed with `null` is presence-uncertain: the default does not apply to `null`', () => {
     const ir = {
       metadata: meta({
         propsParams: [
@@ -401,8 +375,7 @@ describe('carriesUndefined (spec/js-undefined-value.md, rollout step U1)', () =>
       }),
     } as unknown as Parameters<typeof collectNullableOptionalProps>[0]
     const withMeta = { ...ir, metadata: { ...ir.metadata, restPropsExpandedKeys: [] } } as typeof ir
-    expect([...collectNullableOptionalProps(withMeta, PROVEN_ONLY)].sort()).toEqual(['x'])
-    expect([...collectNullableOptionalProps(withMeta, carrying(PROVEN_ONLY))].sort()).toEqual(['v', 'x'])
+    expect([...collectNullableOptionalProps(withMeta)].sort()).toEqual(['v', 'x'])
   })
 })
 
@@ -412,7 +385,7 @@ function analyzed(src: string): ScopedOperandTyping {
   return collectOperandTyping(metadata).at(BindingScope.forComponent(metadata.propsObjectName))
 }
 
-const NON_NIL_NULLISH: NativeSafeTable = { nullish: ['non-nil'], carriesUndefined: false }
+const NON_NIL_NULLISH: NativeSafeTable = { nullish: ['non-nil'] }
 
 describe('defaults, from analyzed components', () => {
   test('a renamed body-destructure default types the local binding, not the original property', () => {

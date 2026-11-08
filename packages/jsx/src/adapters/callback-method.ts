@@ -18,7 +18,6 @@
 
 import { rewriteNilReadingsDeep } from './nil-reading.ts'
 import type { ScopedOperandTyping } from './operand-typing.ts'
-import type { NativeSafeTable } from './primitive-plan.ts'
 import {
   freeVarsInBody,
   hasOpaqueCall,
@@ -107,12 +106,10 @@ export interface EvalBody {
 
 /**
  * Where an evaluator body is read, for its nil-reading rewrite
- * (`rewriteNilReadingsDeep`): the enclosing scope's operand typing and the
- * target whose runtime evaluates it.
+ * (`rewriteNilReadingsDeep`): the enclosing scope's operand typing.
  */
 export interface NilReadingSite {
   readonly typing: ScopedOperandTyping
-  readonly target: NativeSafeTable
 }
 
 /**
@@ -130,10 +127,10 @@ export interface NilReadingSite {
  * variable, and the predicate would read every `props.X` as `undefined`.
  */
 export function evalBody(body: ParsedExpr, bound: ReadonlySet<string>, propsObject: string, site?: NilReadingSite): EvalBody | null {
-  // The evaluator reads every nil as `null`: with the enclosing scope's
-  // typing, an operand whose nil Phase 1 reads is rewritten first (#3824
-  // step 4a), for a caller that reaches here without `emitParsedExpr`.
-  const read = site ? rewriteNilReadingsDeep(body, site.typing.enterCallback([...bound]), site.target) : body
+  // With the enclosing scope's typing, an operand whose nil Phase 1 reads is
+  // rewritten first (#3824 step 4a), for a caller that reaches here without
+  // `emitParsedExpr`, as `emitParsedExpr` would.
+  const read = site ? rewriteNilReadingsDeep(body, site.typing.enterCallback([...bound])) : body
   const lifted = liftPropsReads(read, bound, propsObject)
   const json = serializeParsedExpr(lifted.body)
   if (json === null) return null

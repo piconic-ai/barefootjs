@@ -229,7 +229,6 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
   }
 
   protected readonly loopChildDiagnosticName = 'Xslate'
-  protected readonly nativeSafe = NATIVE_SAFE
 
   /**
    * Names (signal getters + props) whose value is a string. In the Mojo
@@ -1215,8 +1214,6 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     paramLocal = param,
     onRead?: (name: string) => void,
   ): string {
-    // Arithmetic over a prop whose nil the type cannot classify (#3700).
-    this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
     // The predicate's own param and locals shadow an outer string-typed name.
     const predicateScope = this.scope.enterCallback([param, ...localVarMap.keys()])
     return emitParsedExpr(

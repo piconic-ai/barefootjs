@@ -4,9 +4,9 @@ import { createFixture } from '../src/types'
  * The unary-plus twin of `omitted-optional-nullable-number-arithmetic`
  * (#3824 step 3). Unary plus applies ToNumber, so an omitted prop is
  * `undefined` (`NaN`) and a `null` one is `0`. A prop typed
- * `missing?: number | null` can be either, a template engine holds both as
- * one nil, and the type does not say which, so every template adapter
- * refuses the operand with BF101 (`arithmeticOperandNilIsAmbiguous`).
+ * `missing?: number | null` can be either and the type does not say which,
+ * so the operand goes to the runtime's `to_number`, which reads the omitted
+ * prop as `UNDEF` (spec/js-undefined-value.md).
  * Declaring only one of the two is the rewrite:
  * `omitted-optional-number-unary-plus`.
  */

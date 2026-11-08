@@ -7,9 +7,8 @@ import { createFixture } from '../src/types'
  * receiving an explicit `null` prop, an omitted prop forwarded, a literal
  * `null`, a literal `undefined` and an omitted prop at the call. The
  * child's prop is typed `v?: number | null`, so the type cannot say which
- * nil a template engine's one nil stands for, and every template adapter
- * refuses the arithmetic with BF101 (as
- * `omitted-optional-nullable-number-arithmetic`). The single-nil typing is
+ * nil it holds and the runtime's helpers read the value, `null` or `UNDEF`
+ * (as `omitted-optional-nullable-number-arithmetic`). The single-nil typing is
  * `undef-null-number-coercion-typed`; declaring only one nil is the rewrite.
  */
 export const fixture = createFixture({

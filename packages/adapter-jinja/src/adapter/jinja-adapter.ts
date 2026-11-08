@@ -241,7 +241,6 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
   }
 
   protected readonly loopChildDiagnosticName = 'Jinja'
-  protected readonly nativeSafe = NATIVE_SAFE
   // Two source names that Jinja's renaming of reserved names turns into one
   // template variable would read the same value (#3404).
   protected override readonly templateIdentifierSpelling = { ident: jinjaIdent, label: 'Jinja' }
@@ -1108,8 +1107,6 @@ export class JinjaAdapter extends DslTemplateAdapter implements IRNodeEmitter<Ji
     param: string,
     localVarMap: Map<string, string> = new Map(),
   ): string {
-    // Arithmetic over a prop whose nil the type cannot classify (#3700).
-    this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
     // The predicate's own param shadows an outer string-typed name.
     const predicateScope = this.scope.enterCallback([param])
     return emitParsedExpr(

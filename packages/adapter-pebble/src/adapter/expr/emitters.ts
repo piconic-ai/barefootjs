@@ -169,21 +169,18 @@ export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Pebble
  */
 export const NATIVE_SAFE: NativeSafeTable = {
   // The runtime carries JS `undefined` (`Undefined.INSTANCE`,
-  // `bf.undefined()`) apart from `null` (Java `null`),
-  // spec/js-undefined-value.md rollout step U7. `Undefined` is an ordinary
+  // `bf.undefined()`) apart from `null` (Java `null`)
+  // (spec/js-undefined-value.md). `Undefined` is an ordinary
   // Java object: Pebble's own `if` / `not` / `and` / `or` refuse it (loud) and
   // its `is null` / `== null` / `default` read it as a value, so no emission
   // tests a JS value natively: a test goes through `bf.truthy` unless the
   // operand is a proven boolean, and a nil test and an attribute omission
   // through `bf.is_nullish` / `is_null` / `is_undefined`.
-  carriesUndefined: true,
   'to-boolean': ['boolean'],
   // A unary `+` is native only over a proven number, `to_number` otherwise
-  // (#3824 step 3). `unproven` describes binary `-` / `*` over operands Phase 1
-  // cannot type: a target that carries `undefined` claims nothing over an
-  // unproven operand (`claimsNative`), so they take the runtime's `sub` /
-  // `mul` (`spellNumericBinary`).
-  'to-number': ['number-pair', 'number', 'unproven'],
+  // (#3824 step 3). Binary `-` / `*` are native over two proven numbers and
+  // take the runtime's `sub` / `mul` otherwise (`spellNumericBinary`).
+  'to-number': ['number-pair', 'number'],
   // A `+` is native over two proven numbers and over a proven string (the
   // host's concatenation, the other operand through `to_string`); anything
   // else takes the runtime's JS `+` (`plus`; #3824 step 4, pinned by the

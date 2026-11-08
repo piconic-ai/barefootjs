@@ -554,7 +554,7 @@ export function templatePartPlans(parts: readonly TemplatePart[], emitter: Pick<
  */
 export function withNilReadings(expr: ParsedExpr, emitter: Pick<ParsedExprEmitter, 'primitives'>): ParsedExpr {
   if (expr.kind !== 'binary' && expr.kind !== 'unary' && expr.kind !== 'template-literal') return expr
-  return rewriteNilReadings(expr, emitter.primitives.typing(), emitter.primitives.nativeSafe)
+  return rewriteNilReadings(expr, emitter.primitives.typing())
 }
 
 /**
@@ -585,7 +585,7 @@ function withNilReadingBody(
   arrow: Extract<ParsedExpr, { kind: 'arrow' }>,
   emitter: Pick<ParsedExprEmitter, 'primitives'>,
 ): Extract<ParsedExpr, { kind: 'arrow' }> {
-  const body = rewriteNilReadingsDeep(arrow.body, emitter.primitives.typing().enterCallback(arrow.params), emitter.primitives.nativeSafe)
+  const body = rewriteNilReadingsDeep(arrow.body, emitter.primitives.typing().enterCallback(arrow.params))
   return body === arrow.body ? arrow : { ...arrow, body }
 }
 

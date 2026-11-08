@@ -101,14 +101,6 @@ export interface ConditionExprHost {
   /** Whether `path` names a registered template primitive. */
   isTemplatePrimitive(path: string): boolean
   /**
-   * Refuse (BF101) the arithmetic in `expr` over a prop whose nil the
-   * declared type cannot classify (`refuseAmbiguousNilArithmetic`, #3700):
-   * this module lowers operators without the adapter's operand coercion.
-   * `params` are the enclosing callback's own bindings (a filter predicate's
-   * parameter and locals), entered over the current scope.
-   */
-  refuseAmbiguousNilArithmetic(expr: ParsedExpr, params: readonly string[]): void
-  /**
    * The nil reading of an operand JS applies ToNumber to
    * (`arithmeticOperandCoercion`, #3824 step 3), spelled by
    * `lowerUndefinedOperand`: a relational operand or a unary `+` operand
@@ -182,8 +174,6 @@ export function renderFilterExpr(
   datumField?: string,
   fieldlessParam = false,
 ): string | null {
-  // The predicate's operators lower without the operand coercion (#3700).
-  host.refuseAmbiguousNilArithmetic(expr, [param, ...localVarMap.keys()])
   // Every caller tests the predicate's result (`{{if}}`), so it is a test.
   return renderFilterTest(host, expr, param, localVarMap, datumField, fieldlessParam)
 }

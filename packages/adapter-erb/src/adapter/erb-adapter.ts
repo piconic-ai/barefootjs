@@ -230,7 +230,6 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
   }
 
   protected readonly loopChildDiagnosticName = 'ERB'
-  protected readonly nativeSafe = NATIVE_SAFE
 
   /**
    * Names (signal getters + props) whose value is a string. Ruby's `==`
@@ -1370,8 +1369,6 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
     // match/render stay the same value, unchanged from before #2245.
     renderParamAs?: string,
   ): string {
-    // Arithmetic over a prop whose nil the type cannot classify (#3700).
-    this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
     return emitParsedExpr(
       expr,
       new ErbFilterEmitter(

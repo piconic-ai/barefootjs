@@ -2,10 +2,10 @@ import { createFixture } from '../src/types'
 
 /**
  * The destructured form of `omitted-optional-nullable-number-arithmetic`:
- * a binding typed `n?: number | null` is refused with BF101 on every
+ * a binding typed `n?: number | null` goes to the runtime's helper on every
  * template adapter alike. A destructured binding's union type is carried as
  * `ParamInfo.declaredType`, so the nil classification reads it as it reads
- * the `props.n` form. The rewrite is
+ * the `props.n` form. The single-nil twin is
  * `omitted-optional-number-arithmetic-destructured`.
  */
 export const fixture = createFixture({

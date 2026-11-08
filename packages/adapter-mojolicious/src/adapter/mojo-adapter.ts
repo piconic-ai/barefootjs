@@ -222,7 +222,6 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
   }
 
   protected readonly loopChildDiagnosticName = 'Mojo'
-  protected readonly nativeSafe = NATIVE_SAFE
 
   /**
    * Names (signal getters + props) whose value is a string, so `===`/`!==`
@@ -1233,8 +1232,6 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
     // rewriting the predicate (#2038). Wholesale refusal would block
     // the canonical case #1443 exists to enable, so the gate lives at
     // the exact degrade points inside `MojoFilterEmitter.callbackMethod`.
-    // Arithmetic over a prop whose nil the type cannot classify (#3700).
-    this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
     const predicateScope = this.scope.enterCallback([param, ...localVarMap.keys()])
     return emitParsedExpr(
       expr,

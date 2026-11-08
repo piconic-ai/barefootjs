@@ -7,9 +7,9 @@ import { createFixture } from '../src/types'
  * Sources: a child receiving an explicit `null` prop, an omitted prop
  * forwarded, a literal `null`, a literal `undefined` and an omitted prop at
  * the call. As in `undef-null-number-coercion`, the `v?: number | null`
- * typing is refused with BF101 on every template adapter (as
- * `omitted-optional-nullable-number-relational`); declaring only one nil is
- * the rewrite.
+ * typing leaves the operand to the runtime's relational helper (as
+ * `omitted-optional-nullable-number-relational`); the single-nil typing
+ * reads it statically.
  */
 export const fixture = createFixture({
   id: 'undef-null-relational',

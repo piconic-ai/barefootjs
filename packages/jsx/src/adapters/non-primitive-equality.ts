@@ -10,7 +10,7 @@
  * therefore refuses the comparison with BF101, as the callback evaluator
  * contract already does (`spec/compiler.md`, "ParsedExpr Evaluator
  * Semantics"). A nullish test (`x === null`, `x === undefined`) is not a
- * strict equality and keeps the target's nil test.
+ * strict equality: it plans as the runtime's nil test.
  *
  * The primitive plan names the refusal per node (`mode: 'refuse'`), and
  * every emitter spells the runtime's `strict_eq` for it; the error itself

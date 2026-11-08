@@ -2,11 +2,12 @@
  * The nil-reading rewrite (`spec/js-primitive-semantics.md`, "Nil reading is
  * a tree rewrite"; #3824 step 4a in `spec/js-undefined-value.md`).
  *
- * Every runtime holds JS `null` and `undefined` as one nil, and its
- * primitive helpers (`to_number`, `to_string`, `plus`, the relational ones)
- * read that nil as `null`. Where Phase-1 types say which value a nil stands
- * for, and the consumer's coercion is known statically, the operand is
- * rewritten before planning so that it is never nil:
+ * Every runtime carries JS `null` and `undefined` as two values
+ * (`spec/js-undefined-value.md`), and its primitive helpers (`to_number`,
+ * `to_string`, `plus`, the relational ones) read each exactly. Where
+ * Phase-1 types say which value a nil stands for, and the consumer's
+ * coercion is known statically, the operand is rewritten before planning so
+ * that it is never nil:
  *
  * | Consumer | nil reads as `null` | nil reads as `undefined` |
  * | --- | --- | --- |
@@ -14,8 +15,7 @@
  * | string (`+` concatenation, template-literal part) | `x ?? 'null'` | `x ?? 'undefined'` |
  *
  * After the rewrite the operand is non-nil, so the plan can name the native
- * operator (`(n ?? NaN) * 2` stays native) and the helpers never need to
- * know about `undefined`.
+ * operator (`(n ?? NaN) * 2` stays native).
  *
  * A `+` whose present branch concatenates and whose nil branch adds
  * (`o.id + 1` with `id?: string`) is split on nil by the numeric row:
@@ -24,27 +24,20 @@
  * the runtime's `plus`, which decides per value. With a `null` reading the
  * nil branch is `0 + 1`, as JS's `null + 1`.
  *
- * What the rewrite leaves alone (`spec/js-undefined-value.md` §7 (4)):
+ * What the rewrite leaves alone, to the runtime's helpers, which read the
+ * value, `null` or `UNDEF`, exactly:
  *
- * - A numeric operand whose nil may be either (`n?: number | null`): the
- *   template adapters refuse it with BF101 (#3700) where the coercion is
- *   static, and keep today's output elsewhere.
+ * - An operand whose nil may be either (`n?: number | null`,
+ *   `c?: string | null`).
  * - A `+` whose other operand is neither a proven number nor a proven
- *   string: numeric addition or concatenation is decided at run time, and a
- *   nil reading as `undefined` cannot be told from `null` there. It keeps
- *   today's output (the runtime's `plus` reads the nil as `null`) until the
- *   runtimes carry `undefined` (#3848).
- * - A string operand whose nil may be either (`c?: string | null`): it keeps
- *   today's display reading, the empty string, until the runtimes carry
- *   `undefined` (#3848). On a target that carries it ({@link collapsesNil})
- *   the operand is left alone: the runtime's `to_string` / `plus` read the
- *   value, `null` or `UNDEF`, exactly.
- * - A nil Phase 1 cannot type (an index read, an untyped value): the
- *   runtime's helpers read it as `null`.
+ *   string: numeric addition or concatenation is decided at run time
+ *   (the runtime's `plus`).
+ * - A nil Phase 1 cannot type (an index read, an untyped value): a missing
+ *   key or an out-of-range index is `UNDEF`, data `null` is `null`.
  */
 
 import type { ParsedExpr, TemplatePart } from '../expression-parser.ts'
-import { collapsesNil, operandFacts, type NativeSafeTable } from './primitive-plan.ts'
+import { operandFacts } from './primitive-plan.ts'
 import type { NilReading, OperandFacts, ScopedOperandTyping } from './operand-typing.ts'
 
 const NUMERIC_BINARY_OPS: ReadonlySet<string> = new Set(['-', '*', '/', '%', '**', '<', '<=', '>', '>='])
@@ -101,16 +94,13 @@ function numericOperand(operand: ParsedExpr, facts: OperandFacts): ParsedExpr {
 }
 
 /**
- * An operand of a string consumer: its nil as `'null'` / `'undefined'`, and
- * an `either` nil as today's display reading, the empty string (#3848), on a
- * target that collapses `undefined` into its nil; on one that carries it, an
+ * An operand of a string consumer: its nil as `'null'` / `'undefined'`; an
  * `either` operand is left to the runtime's helper.
  */
-function stringOperand(operand: ParsedExpr, facts: OperandFacts, target: NativeSafeTable): ParsedExpr {
+function stringOperand(operand: ParsedExpr, facts: OperandFacts): ParsedExpr {
   const reading = readingOf(facts)
-  if (reading === null) return operand
-  if (reading !== 'either') return coalesce(operand, facts, stringLiteral(reading))
-  return collapsesNil(target) ? coalesce(operand, facts, stringLiteral('')) : operand
+  if (reading === null || reading === 'either') return operand
+  return coalesce(operand, facts, stringLiteral(reading))
 }
 
 const PRIMITIVE_TYPES: ReadonlySet<string> = new Set(['number', 'string', 'boolean'])
@@ -126,14 +116,14 @@ function isExactly(facts: OperandFacts, type: string): boolean {
  * split, for a string operand) when the other is a proven number and this
  * one is a primitive; left alone otherwise.
  */
-function plusOperand(operand: ParsedExpr, facts: OperandFacts, other: OperandFacts, target: NativeSafeTable): ParsedExpr {
-  if (isExactly(other, 'string')) return stringOperand(operand, facts, target)
+function plusOperand(operand: ParsedExpr, facts: OperandFacts, other: OperandFacts): ParsedExpr {
+  if (isExactly(other, 'string')) return stringOperand(operand, facts)
   if (!isExactly(other, 'number')) return operand
   const present = presentTypes(facts)
   return [...present].every(t => PRIMITIVE_TYPES.has(t)) ? numericOperand(operand, facts) : operand
 }
 
-function rewriteBinary(expr: Extract<ParsedExpr, { kind: 'binary' }>, typing: ScopedOperandTyping, target: NativeSafeTable): ParsedExpr {
+function rewriteBinary(expr: Extract<ParsedExpr, { kind: 'binary' }>, typing: ScopedOperandTyping): ParsedExpr {
   const lf = operandFacts(expr.left, typing)
   const rf = operandFacts(expr.right, typing)
   let left = expr.left
@@ -142,8 +132,8 @@ function rewriteBinary(expr: Extract<ParsedExpr, { kind: 'binary' }>, typing: Sc
     left = numericOperand(expr.left, lf)
     right = numericOperand(expr.right, rf)
   } else if (expr.op === '+') {
-    left = plusOperand(expr.left, lf, rf, target)
-    right = plusOperand(expr.right, rf, lf, target)
+    left = plusOperand(expr.left, lf, rf)
+    right = plusOperand(expr.right, rf, lf)
   }
   return left === expr.left && right === expr.right ? expr : { ...expr, left, right }
 }
@@ -151,12 +141,11 @@ function rewriteBinary(expr: Extract<ParsedExpr, { kind: 'binary' }>, typing: Sc
 function rewriteTemplateLiteral(
   expr: Extract<ParsedExpr, { kind: 'template-literal' }>,
   typing: ScopedOperandTyping,
-  target: NativeSafeTable,
 ): ParsedExpr {
   let changed = false
   const parts: TemplatePart[] = expr.parts.map(part => {
     if (part.type !== 'expression') return part
-    const rewritten = stringOperand(part.expr, operandFacts(part.expr, typing), target)
+    const rewritten = stringOperand(part.expr, operandFacts(part.expr, typing))
     if (rewritten === part.expr) return part
     changed = true
     return { ...part, expr: rewritten }
@@ -166,21 +155,21 @@ function rewriteTemplateLiteral(
 
 /**
  * `expr` with the operands of its own coercion rewritten by their nil
- * reading in `typing`'s scope on `target`; `expr` itself when nothing changes. Shallow:
+ * reading in `typing`'s scope; `expr` itself when nothing changes. Shallow:
  * only `expr`'s direct operands are rewritten, as `emitParsedExpr` calls it
  * at every node it dispatches. Idempotent: a rewritten operand is never nil.
  */
-export function rewriteNilReadings(expr: ParsedExpr, typing: ScopedOperandTyping, target: NativeSafeTable): ParsedExpr {
+export function rewriteNilReadings(expr: ParsedExpr, typing: ScopedOperandTyping): ParsedExpr {
   switch (expr.kind) {
     case 'binary':
-      return rewriteBinary(expr, typing, target)
+      return rewriteBinary(expr, typing)
     case 'unary': {
       if (expr.op !== '-' && expr.op !== '+') return expr
       const argument = numericOperand(expr.argument, operandFacts(expr.argument, typing))
       return argument === expr.argument ? expr : { ...expr, argument }
     }
     case 'template-literal':
-      return rewriteTemplateLiteral(expr, typing, target)
+      return rewriteTemplateLiteral(expr, typing)
     default:
       return expr
   }
@@ -192,13 +181,13 @@ export function rewriteNilReadings(expr: ParsedExpr, typing: ScopedOperandTyping
  * walker instead of `emitParsedExpr` (a callback body, a memo body). An
  * arrow's params shadow outer names within its body.
  */
-export function rewriteNilReadingsDeep(expr: ParsedExpr, typing: ScopedOperandTyping, target: NativeSafeTable): ParsedExpr {
+export function rewriteNilReadingsDeep(expr: ParsedExpr, typing: ScopedOperandTyping): ParsedExpr {
   const walk = (e: ParsedExpr, at: ScopedOperandTyping): ParsedExpr => {
     if (e.kind === 'arrow') {
       const body = walk(e.body, at.enterCallback(e.params))
       return body === e.body ? e : { ...e, body }
     }
-    return rewriteNilReadings(mapChildren(e, child => walk(child, at)), at, target)
+    return rewriteNilReadings(mapChildren(e, child => walk(child, at)), at)
   }
   return walk(expr, typing)
 }

@@ -49,10 +49,10 @@ export type PrimitiveOp =
  * What Phase 1 proved about the operands of one operation.
  *
  * `unproven` is not in the design note's sketch: it is the proof of an
- * operation whose operands Phase 1 proves nothing about. A target that
- * spells its native operator for EVERY operand today (an "N" cell of the
- * note's status table) claims it, so the step-0 table can describe today's
- * output; each rollout step removes it from the table it graduates.
+ * operation whose operands Phase 1 proves nothing about. No target claims
+ * it: every runtime carries JS `undefined` apart from `null`
+ * (`spec/js-undefined-value.md`), so an unproven operand may be `UNDEF`,
+ * which only the runtime's helper reads exactly.
  */
 export type Proof =
   | 'boolean'
@@ -66,45 +66,19 @@ export type Proof =
   | 'non-nil'
   | 'unproven'
 
-/** The (op, proof) pairs a target's native operators are pinned for. */
-export type NativeSafeClaims = Readonly<Partial<Record<PrimitiveOp, readonly Proof[]>>>
-
 /**
- * A target's native-operator claims ({@link NativeSafeClaims}) plus the data
- * the plan needs about its runtime.
- *
- * `carriesUndefined` declares whether the target's runtime carries JS
- * `undefined` as a value distinct from `null` (`spec/js-undefined-value.md`,
- * "Carries undefined"): it passes the `undefined`-specific vectors and has
- * no entry left in the expected-failure ledgers. It is required so that a
- * new adapter must declare it. Every target declares `false` until its U
- * step. The plan reads it through {@link collapsesNil} only.
+ * The (op, proof) pairs a target's native operators are pinned for. Every
+ * target's runtime carries JS `undefined` apart from `null`
+ * (`spec/js-undefined-value.md`), so the plan needs nothing else about it:
+ * an operand Phase 1 does not prove (`either`, unknown, a dynamic `+`) takes
+ * the runtime's helper, which reads `null` and `UNDEF` exactly, and
+ * `x === null` / `x === undefined` / `x == null` plan as the `is_null` /
+ * `is_undefined` / `is_nullish` tests ("Decisions" (3) and (7)).
  */
-export type NativeSafeTable = NativeSafeClaims & { readonly carriesUndefined: boolean }
+export type NativeSafeClaims = Readonly<Partial<Record<PrimitiveOp, readonly Exclude<Proof, 'unproven'>[]>>>
 
-/**
- * Whether `target`'s runtime holds JS `null` and `undefined` as one host nil
- * (`spec/js-undefined-value.md`, rollout step U1): the one decision the plan,
- * the nil-reading rewrite (`nil-reading.ts`) and the ambiguous-nil refusal
- * (`ambiguous-nil-arithmetic.ts`) read the flag through.
- *
- * - Collapsing (`carriesUndefined: false`, every target today): the static
- *   nil reading decides what a nil stands for. A numeric `either` operand
- *   (`n?: number | null`) is refused with BF101 (#3700), a string `either`
- *   operand keeps today's display reading, a native claim over an
- *   `unproven` operand stands, and `x === null` lowers as the target's
- *   nullish test.
- * - Carrying: the runtime's helpers read `UNDEF` exactly, so an operand
- *   Phase 1 does not prove (`either`, unknown, a dynamic `+`) takes the
- *   helper and is never refused, and `x === null` / `x === undefined` /
- *   `x == null` plan as the `is_null` / `is_undefined` / `is_nullish` tests
- *   ("Decisions" (3) and (7)).
- *
- * Rollout step U9 deletes it with the collapsed branches.
- */
-export function collapsesNil(target: NativeSafeTable): boolean {
-  return !target.carriesUndefined
-}
+/** A target's native-operator claims ({@link NativeSafeClaims}). */
+export type NativeSafeTable = NativeSafeClaims
 
 /**
  * The runtime helper a plan names, by its catalogue id
@@ -269,13 +243,11 @@ function decide(op: PrimitiveOp, proof: Proof, target: NativeSafeTable, helper: 
 
 /**
  * Whether `target` spells its native operator for `op` over `proof`. An
- * `unproven` claim describes a host operator over a host nil, so it holds
- * only on a target that collapses `undefined` into that nil
- * ({@link collapsesNil}): on one that carries it, the operand may be
- * `UNDEF`, which only the runtime's helper reads exactly.
+ * `unproven` operand is never native: it may be `UNDEF`, which only the
+ * runtime's helper reads exactly.
  */
 function claimsNative(op: PrimitiveOp, proof: Proof, target: NativeSafeTable): boolean {
-  if (proof === 'unproven' && !collapsesNil(target)) return false
+  if (proof === 'unproven') return false
   return target[op]?.includes(proof) ?? false
 }
 
@@ -309,23 +281,14 @@ export function isNullishTest(op: string, left: ParsedExpr, right: ParsedExpr, t
 
 /**
  * The plan of a nullish test (`x === null`, `x !== undefined`, `x == null`;
- * {@link isNullishTest}), `spec/js-undefined-value.md` "Decisions" (7). On a
- * target that collapses `undefined` into its nil ({@link collapsesNil}) it
- * is null, as before: the test lowers as the target's own nil test. On one
- * that carries `undefined`, `===` / `!==` against `null` is the strict
- * `is_null`, against `undefined` the strict `is_undefined`, and the loose
- * `==` / `!=` against either is `is_nullish`; the emitter negates the test
- * for `!==` / `!=`. With a nil literal on both sides, the right one names
- * the test (`null === undefined` is `is_undefined(null)`, `false`).
+ * {@link isNullishTest}), `spec/js-undefined-value.md` "Decisions" (7):
+ * `===` / `!==` against `null` is the strict `is_null`, against `undefined`
+ * the strict `is_undefined`, and the loose `==` / `!=` against either is
+ * `is_nullish`; the emitter negates the test for `!==` / `!=`. With a nil
+ * literal on both sides, the right one names the test (`null === undefined`
+ * is `is_undefined(null)`, `false`).
  */
-function planNilTest(
-  op: string,
-  left: ParsedExpr,
-  right: ParsedExpr,
-  typing: ScopedOperandTyping,
-  target: NativeSafeTable,
-): PrimitivePlan | null {
-  if (collapsesNil(target)) return null
+function planNilTest(op: string, left: ParsedExpr, right: ParsedExpr, typing: ScopedOperandTyping): PrimitivePlan {
   const nilTest = (helper: NilTestHelper): PrimitivePlan => ({ mode: 'helper', op: 'nil-test', helper, proof: 'unproven' })
   if (op === '==' || op === '!=') return nilTest('is_nullish')
   // `isNullishTest` holds, so when `right` is not a nil literal `left` is.
@@ -343,18 +306,14 @@ export function nilTestOperand(left: ParsedExpr, right: ParsedExpr, typing?: Sco
 
 /**
  * Refuse a nil-test plan ({@link planNilTest}) at an emitter that has no
- * spelling for it. No target carries `undefined` yet, so no emitter
- * receives one; the rollout step that flips a target's `carriesUndefined`
- * adds its runtime's `is_null` / `is_undefined` / `is_nullish` and the
- * emitters' spelling. Until then this keeps a flipped flag loud instead of
- * letting an emitter fall back to its host nil test, which cannot tell
- * `null` from `undefined`.
+ * spelling for it (no `nilTest`), instead of letting it fall back to its
+ * host nil test, which cannot tell `null` from `undefined`.
  */
 export function refuseUnspelledNilTest(plan: PrimitivePlan | null): void {
   if (plan?.op !== 'nil-test' || plan.mode !== 'helper') return
   throw new Error(
     `[barefootjs] the primitive plan names the \`${plan.helper}\` nil test (a target that carries \`undefined\`), ` +
-      'but this emitter has no spelling for it (spec/js-undefined-value.md, rollout steps U2-U8)',
+      'but this emitter has no spelling for it (spec/js-undefined-value.md)',
   )
 }
 
@@ -408,10 +367,10 @@ export const NON_PRIMITIVE_EQUALITY_REASON = 'non-primitive-strict-equality'
  *   spells it too: the refusal itself is recorded once per component by
  *   `refuseNonPrimitiveStrictEquality`.
  * - `const`: the folded answer for operands proven of different types.
- * - `nullish`: a nullish test (`x === null`), which keeps the target's nil
- *   test on a target that collapses `undefined` into its nil. On one that
- *   carries it the plan is a nil test, which no emitter spells yet
- *   ({@link refuseUnspelledNilTest}).
+ * - `nullish`: a nullish test (`x === null`) reached without a plan (an
+ *   emitter method called outside `emitParsedExpr`). Under a plan a nullish
+ *   test is a nil test, which `emitParsedExpr` hands to the emitter's
+ *   `nilTest` ({@link refuseUnspelledNilTest} when it has none).
  *
  * Null for any other operator (loose `==` keeps its own lowering). A null
  * plan takes the helper, which is never wrong.
@@ -503,7 +462,7 @@ function planNumericBinary(op: string, left: OperandFacts, right: OperandFacts, 
 function planBinary(expr: Extract<ParsedExpr, { kind: 'binary' }>, typing: ScopedOperandTyping, target: NativeSafeTable): PrimitivePlan | null {
   const { op } = expr
   // `x === null` / `x == null` is a nullish test, not a strict equality.
-  if (isNullishTest(op, expr.left, expr.right, typing)) return planNilTest(op, expr.left, expr.right, typing, target)
+  if (isNullishTest(op, expr.left, expr.right, typing)) return planNilTest(op, expr.left, expr.right, typing)
   const isPrimitiveOp = op === '===' || op === '!==' || op === '+' || op in RELATIONAL_HELPERS || op === '-' || op === '*' || op === '/' || op === '%'
   if (!isPrimitiveOp) return null
   const left = operandFacts(expr.left, typing)
@@ -576,9 +535,7 @@ function planUnary(expr: Extract<ParsedExpr, { kind: 'unary' }>, typing: ScopedO
   if (expr.op === '+') {
     // A unary `+` is ToNumber itself, and no target's native `+x` converts a
     // string (Python, Ruby and Java raise; Perl, Go and the PHP engines drop
-    // it), so only a proven number is a claimable proof (#3824 step 3). The
-    // table's `unproven` claim for `to-number` describes binary `-` / `*`
-    // over unproven operands, which keep their native operator until step 4.
+    // it), so only a proven number is a claimable proof (#3824 step 3).
     return isExactly(operandFacts(expr.argument, typing), 'number')
       ? decide('to-number', 'number', target, 'to_number')
       : { mode: 'helper', op: 'to-number', helper: 'to_number', proof: 'unproven' }
@@ -648,7 +605,7 @@ export function isRuntimeNumberLiteral(expr: ParsedExpr): boolean {
 }
 
 /** The number-literal claim every target makes: a safe integer is spelled as a host literal. */
-const SAFE_INTEGER_LITERALS: NativeSafeTable = { 'number-literal': ['safe-integer'], carriesUndefined: false }
+const SAFE_INTEGER_LITERALS: NativeSafeTable = { 'number-literal': ['safe-integer'] }
 
 /**
  * How an emitter spells a number literal of `value` under its plan:
@@ -683,8 +640,7 @@ export function numberLiteralSpelling(value: number, plan: PrimitivePlan | null)
  * non-computed member, …).
  *
  * Planned kinds: `binary` (`===` `!==` `<` `<=` `>` `>=` `+` `-` `*` `/`
- * `%`, and, on a target that carries `undefined`, a nullish test with `==` /
- * `!=` too, {@link planNilTest}), `unary` (`!` `-` `+`), `logical` (its left operand's test, or `??`),
+ * `%`, and a nullish test with `==` / `!=` too, {@link planNilTest}), `unary` (`!` `-` `+`), `logical` (its left operand's test, or `??`),
  * `conditional` (its test), `index-access`, computed `member` and number
  * `literal`.
  */

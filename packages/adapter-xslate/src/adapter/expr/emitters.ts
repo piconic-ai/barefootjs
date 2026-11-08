@@ -88,12 +88,11 @@ export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Xslate
  */
 export const NATIVE_SAFE: NativeSafeTable = {
   // The runtime carries JS `undefined` (`$BarefootJS::UNDEF`) apart from
-  // `null` (Perl `undef`), spec/js-undefined-value.md rollout step U5. `UNDEF`
+  // `null` (Perl `undef`) (spec/js-undefined-value.md). `UNDEF`
   // is falsy under Kolon's own `if` but `defined` (and not `== nil`), so no
   // emission tests a JS value with `defined` / `//` / `== nil`: a nil test, a
   // `??` and an attribute omission go through `$bf.is_nullish` / `is_null` /
   // `is_undefined`.
-  carriesUndefined: true,
   // Perl's own truthiness reads the string "0" as false and NaN as true
   // (#3823), so a test is native only on a proven boolean (#3824 step 1).
   'to-boolean': ['boolean'],
