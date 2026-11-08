@@ -175,7 +175,30 @@ func OptOf[T any](v any) Opt[T] {
 	if convertible(rv, target) {
 		return Some(rv.Convert(target).Interface().(T))
 	}
+	if t, ok := reshape[T](v); ok {
+		return Some(t)
+	}
 	panic(fmt.Sprintf("bf.OptOf: a %T cannot be a %s", v, target))
+}
+
+// reshape is v, a slice, map or struct, as a T of another such type with the
+// same JS shape (a row type of one component read as another's, or a
+// decoded `[]any` as a typed slice), through its JSON form. False for a
+// scalar on either side, or a v whose JSON doesn't decode as a T.
+func reshape[T any](v any) (T, bool) {
+	var out T
+	if !isCompositeKind(reflect.TypeOf(v).Kind()) || !isCompositeKind(reflect.TypeOf((*T)(nil)).Elem().Kind()) {
+		return out, false
+	}
+	data, err := json.Marshal(v)
+	if err != nil || json.Unmarshal(data, &out) != nil {
+		return out, false
+	}
+	return out, true
+}
+
+func isCompositeKind(k reflect.Kind) bool {
+	return k == reflect.Slice || k == reflect.Array || k == reflect.Map || k == reflect.Struct || k == reflect.Pointer
 }
 
 // convertible reports whether OptOf converts rv to target: between two
@@ -237,7 +260,8 @@ func optFrom[T any](v any) Opt[T] {
 //   - into an Opt: OptOf, except that an Opt v keeps its state (an absent
 //     one stays absent);
 //   - into a plain type: v itself, its JS value for an Opt v, F's zero value
-//     for a nullish v, or v converted as OptOf converts.
+//     for a nullish v, or v converted as OptOf converts (a slice, map or
+//     struct of the same JS shape included, `reshape`).
 //
 // It panics on a value F cannot hold, which a type-checked component never
 // produces.
@@ -257,6 +281,9 @@ func Coerce[F any](zero F, v any) F {
 	target := reflect.TypeOf((*F)(nil)).Elem()
 	if rv := reflect.ValueOf(v); convertible(rv, target) {
 		return rv.Convert(target).Interface().(F)
+	}
+	if t, ok := reshape[F](v); ok {
+		return t
 	}
 	panic(fmt.Sprintf("bf.Coerce: a %T cannot be a %s", v, target))
 }

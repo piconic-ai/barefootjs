@@ -38,6 +38,7 @@ import type { BakedStaticChildLoop } from '../analysis/static-child-loop-bake.ts
 import type { GoEmitContext } from '../emit-context.ts'
 import { renderFilterExpr, type ConditionExprHost } from '../expr/condition-expr.ts'
 import { lowerValueOperand } from '../expr/url-builder.ts'
+import { propsObjectKeyRead } from '../lib/compile-state.ts'
 import { SCALAR_ROW_ITEM_FIELD } from '../lib/constants.ts'
 import { emitBfSort, emitSortEval, wrapIfMultiToken } from '../lib/go-emit.ts'
 import { capitalizeFieldName, goFieldNameForKey } from '../lib/go-naming.ts'
@@ -45,6 +46,7 @@ import { isFieldlessRowType } from '../lib/loop-row-path.ts'
 import type { RowsFieldSite } from '../lib/nested-rows-field.ts'
 import { hasNoInputSlot, restBagOverrideFields, routesToRestBag, type ChildComponentShape } from '../lib/types.ts'
 import { loopRowType } from '../type/number-read.ts'
+import { isNillableSeedSignal } from '../type/state-fields.ts'
 import { spreadCarriedCallerKey } from '../props/props-spread.ts'
 
 
@@ -95,6 +97,8 @@ export interface LoopRenderHost {
   destructureAccessors(): WeakMap<ScopeFrame, Map<string, string>>
   /** `accessor` (of the row binding `name`) as its JS value (`bf_js`) when it may read a `bf.Opt[T]` row field. */
   optBindingRead(name: string, accessor: string): string
+  /** Whether `expr` reads a generated struct's `bf.Opt[T]` field (a row's `r.tags`, or a destructured binding of one). */
+  readsOptField(expr: ParsedExpr): boolean
   /** Object-rest exclude keys of the enclosing loops, innermost last. */
   loopRestExcludeStack(): Array<Map<string, { parent: string; excludeKeys: string[] }>>
   /** Whether each enclosing loop's row is a scalar, innermost last. */
@@ -144,6 +148,29 @@ export interface LoopRenderHost {
   repropsOwner(): Map<string, string>
   /** Whether a lowered value is a template fragment rather than a pipeline. */
   isTemplateFragment(go: string, kind?: ParsedExpr['kind']): boolean
+}
+
+/**
+ * Whether `array` reads a prop whole (`items`, `props.items`) whose field
+ * holds its JS value (`interface{}`, `nillablePropNames`), or a signal
+ * seeded from one.
+ */
+function readsJsValuedProp(host: LoopRenderHost, array: ParsedExpr | undefined): boolean {
+  const state = host.ctx.state
+  // A signal seeded whole from such a prop holds the same value
+  // (`isNillableSeedSignal`).
+  if (array?.kind === 'call' && array.callee.kind === 'identifier' && array.args.length === 0 && !host.scope().isBound(array.callee.name)) {
+    const getter = array.callee.name
+    const signal = state.currentSignals.find(s => s.getter === getter)
+    return signal !== undefined && isNillableSeedSignal(host.ctx, signal)
+  }
+  let name: string | null = null
+  if (array?.kind === 'identifier' && state.propsObjectName === null && !host.scope().lookup(array.name)) name = array.name
+  else if (array && state.propsObjectName !== null && !host.scope().isBound(state.propsObjectName)) {
+    const key = propsObjectKeyRead(state.propsObjectName, array)
+    name = state.currentPropsParams.find(p => !p.isRest && (p.sourceName ?? p.name) === key)?.name ?? null
+  }
+  return name !== null && state.nillablePropNames.has(name)
 }
 
 /** Render a `.map()` loop as a Go-template `{{range}}` (the adapter's `renderLoop`). */
@@ -264,6 +291,11 @@ export function renderLoop(host: LoopRenderHost, loop: IRLoop): string {
   // non-wrapper in-loop branch).
   if (loop.childComponent) {
     goArray = `.${host.nestedRowsField({ name: loop.childComponent.name, loopMarkerId: loop.markerId })}`
+  } else if (readsJsValuedProp(host, loop.arrayParsed) || (loop.arrayParsed !== undefined && host.readsOptField(loop.arrayParsed))) {
+    // A prop field holding the JS value (`resolvePropGoType`), or a row's
+    // `bf.Opt[T]` field, is `bf.Undefined` when omitted, which `{{range}}`
+    // can't iterate (`items?.map(...)`): `bf_iter` iterates nothing for it.
+    goArray = `(bf_iter ${goArray})`
   }
 
   const { rowType, preambleAssignments, children, itemMarker } = renderLoopRow(host, loop, supportableDestructure, param, rangeIndex, rangeValue)

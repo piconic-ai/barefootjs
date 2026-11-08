@@ -44,7 +44,8 @@ func FuncMap() template.FuncMap {
 		// The JS value of a struct field the template reads: an optional
 		// field of a generated struct is a bf.Opt, read as Undefined, nil or
 		// its value; any other value is itself.
-		"bf_js": JSValue,
+		"bf_js":   JSValue,
+		"bf_iter": Iter,
 		// `o?.k`: Undefined over a nullish receiver, `o[k]` otherwise.
 		"bf_get_opt": GetOpt,
 		// Whether a map holds key: the caller-passed check of a `{...props}`
@@ -2824,6 +2825,8 @@ func isNilValue(v any) bool {
 // for a JS array result (see Filter). A non-nil pointer is the Go spelling
 // of an optional value, so it reads through to its pointee.
 func isTruthy(v any) bool {
+	// A row's bf.Opt field read without bf_js is its JS value.
+	v = jsValue(v)
 	if v == nil {
 		return false
 	}
@@ -3196,6 +3199,17 @@ func Has(m any, key string) bool {
 
 // JSValue is v as a JS value: an Opt as its V(), anything else as it is.
 func JSValue(v any) any { return jsValue(v) }
+
+// Iter is what `{{range}}` iterates for v, a JS value: nothing for `null` or
+// `undefined` (`items?.map(...)`), v otherwise. A range over Undefined itself
+// fails: it is a typed nil, not a collection.
+func Iter(v any) any {
+	v = jsValue(v)
+	if isNullish(v) {
+		return nil
+	}
+	return v
+}
 
 // GetOpt is JS `o?.[k]` / `o?.k`: Undefined when o is nullish, the index
 // read otherwise.

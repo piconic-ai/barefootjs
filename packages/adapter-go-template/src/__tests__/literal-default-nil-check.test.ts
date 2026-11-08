@@ -1,11 +1,11 @@
 /**
  * A destructure default applies to an ABSENT (or `undefined`) prop only: an
  * explicit `''` / `0` / `false` / `null` stays the caller's value. Every
- * optional prop is a `bf.Opt[T]` Input field; one whose literal default is
- * not the zero value is read into a nillable `interface{}` field, and the
- * props constructor applies the default when it holds `bf.Undefined` — once, before any
- * reader (Props field, signal seed, memo, child prop) sees it. A default that
- * IS the zero value needs no nil and keeps its concrete field.
+ * optional prop is a `bf.Opt[T]` Input field; one with a literal default is
+ * read into a nillable `interface{}` field, and the props constructor applies
+ * the default when it holds `bf.Undefined` — once, before any reader (Props
+ * field, signal seed, memo, child prop) sees it. A default that IS the zero
+ * value is no exception: an explicit `null` is not `''` / `0` / `false`.
  *
  * Rendered coverage: the `destructure-default-explicit-falsy` conformance
  * fixture and the generated `:empty` / `:zero` / `:false` data points.
@@ -68,11 +68,13 @@ export function Box({ tag = 'z', n = 2, on = true, blank = '', zero = 0, off = f
     expect(shadow).toMatch(/\bOn interface\{\}/)
   })
 
-  test('a zero-value default keeps its concrete field', () => {
-    const shadow = shadowStruct(types(SRC))
-    expect(shadow).toMatch(/\bBlank string/)
-    expect(shadow).toMatch(/\bZero float64/)
-    expect(shadow).toMatch(/\bOff bool/)
+  test('a zero-value default reads into a nillable field too, so an explicit null stays null', () => {
+    const goTypes = types(SRC)
+    const shadow = shadowStruct(goTypes)
+    expect(shadow).toMatch(/\bBlank interface\{\}/)
+    expect(shadow).toMatch(/\bZero interface\{\}/)
+    expect(shadow).toMatch(/\bOff interface\{\}/)
+    expect(goTypes).toContain('if bf.IsUndefined(in.Blank) {\n\t\tin.Blank = ""\n\t}')
   })
 
   test('the constructor applies the default to an undefined field only', () => {

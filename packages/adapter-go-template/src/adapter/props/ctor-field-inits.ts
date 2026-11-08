@@ -29,7 +29,7 @@ import type { PropFallbackVar } from '../lib/types.ts'
 import { computeMemoInitialValue, filterArmEarlierSiblingRefs, memoPropFallback } from '../memo/memo-compute.ts'
 import { inferMemoType, sharedFieldFallbackVar, signalSeedGo } from '../type/state-fields.ts'
 import { jsLiteralToGo } from '../value/value-lowering.ts'
-import { defaultedBindingGo, resolvePropGoType } from './prop-types.ts'
+import { defaultedBindingGo, resolvePropGoType, seedPassthroughPropName } from './prop-types.ts'
 
 /**
  * Signal-time prop fallbacks: `createSignal(props.X ?? N)` hoists `N` as a
@@ -189,12 +189,39 @@ export function emitPropFieldInits(
           `\t\t${fieldName}: func() interface{} { v := interface{}(in.${inputField}); if bf.IsNullish(v) { return ${memoFold.goFallback} }; return v }(),`,
         )
       } else {
-        lines.push(`\t\t${fieldName}: in.${inputField},`)
+        lines.push(`\t\t${fieldName}: ${sharingSignalSeedGo(ctx, ir, param, fieldName, propFallbackVars, propTypeOverrides) ?? `in.${inputField}`},`)
       }
     }
     propFieldNames.add(fieldName)
   }
   return propFieldNames
+}
+
+/**
+ * The seed of a signal kept on the field of the prop it falls back from
+ * (`const [rows] = createSignal(props.rows ?? [])`, the analyzer's
+ * `selfDerived` binding): that field holds the signal's value, which is
+ * the prop's only where it is neither `null` nor `undefined`. Null for any
+ * other prop, or one whose field is typed: its nil is the fallback's empty
+ * value there already.
+ */
+function sharingSignalSeedGo(
+  ctx: GoEmitContext,
+  ir: ComponentIR,
+  param: ComponentIR['metadata']['propsParams'][number],
+  fieldName: string,
+  propFallbackVars: ReadonlyMap<string, PropFallbackVar>,
+  propTypeOverrides: Map<string, string>,
+): string | null {
+  if (resolvePropGoType(ctx, param, propTypeOverrides) !== 'interface{}') return null
+  const signal = ir.metadata.signals.find(s =>
+    !s.envReader && capitalizeFieldName(s.getter) === fieldName &&
+    s.parsed?.kind === 'logical' && (s.parsed.op === '??' || s.parsed.op === '||') &&
+    seedPassthroughPropName(ctx, s.parsed) === param.name,
+  )
+  if (!signal) return null
+  const bakeType = ctx.state.synthStructTypes.get(signal.getter) ?? signal.type
+  return signalSeedGo(ctx, signal, ir.metadata.propsParams, propFallbackVars, bakeType, true)
 }
 
 /** Signal initial values (skip a name already emitted as a prop field). */

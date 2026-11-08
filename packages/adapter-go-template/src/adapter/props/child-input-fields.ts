@@ -469,7 +469,7 @@ function lowerResolvedChildProp(
     ir.metadata.memos,
     ir.metadata.propsParams,
     site.propFallbackVars,
-    childShape?.nillableParamNames.has(prop.name) ?? false,
+    (childShape?.nillableParamNames.has(prop.name) || childShape?.optParamNames.has(prop.name)) ?? false,
   )
   // Any other value inside the evaluator's surface (`u().name!`, a
   // member read off an object signal, #3437) is computed by

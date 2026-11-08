@@ -132,8 +132,8 @@ prop) is a `bf.Opt[T]` on the input struct; see [`null`, `undefined` and
 | `boolean` | `bool` |
 | `T[]` | `[]T` |
 | `x?: T`, `T \| null`, `T \| undefined` (prop) | `bf.Opt[T]` on the input struct |
-| `x?: T` (scalar field of an object type) | `bf.Opt[T]`, `json:",omitzero"` |
-| Optional nested object field | Pointer type `*T` |
+| `x?: T` (field of an object type) | `bf.Opt[T]`, `json:",omitzero"` |
+| `x?: T` (nested object field of an object type) | `bf.Opt[*T]`, `json:",omitzero"` |
 | Object type | Named struct |
 
 Child component props carry a `ScopeID` used for hydration. You do not mint these by hand: `Renderer.Render` backfills a unique `<Component>_<random>` id for any child (in a slice or a single field) whose `ScopeID` is empty, so build child props with just their data (`TodoItemProps{Todo: t}`). An explicit `ScopeID` is preserved when you need a stable id.
@@ -176,9 +176,13 @@ prop only; an explicit `null` keeps `null`. The `bf-p` hydration payload
 follows `JSON.stringify`: an omitted or `undefined` prop is left out, a
 `null` one is written as `null`.
 
-An optional scalar field of an object type (a loop row, `type Row = { id:
-number; tone?: string }`) is a `bf.Opt[T]` too, so a row can tell an omitted
-field from `null` and from `''`. Build rows with `bf.Some(...)` for the
+An optional field of an object type (a loop row, `type Row = { id: number;
+tone?: string; tags?: string[]; meta?: Meta }`) is a `bf.Opt[T]` too
+(`bf.Opt[*Meta]` for a nested object), so a row can tell an omitted field
+from `null` and from `''` / `[]`. An optional slice, map or object prop with
+no default arrives in the template as its JS value: a `{{range}}` the adapter
+generates over one iterates nothing for `null` or `undefined` (`bf_iter`).
+Build rows with `bf.Some(...)` for the
 fields you set; `encoding/json` fills them from JSON, and `omitzero` drops an
 omitted one when the row is encoded. `bf.JSON` (`JSON.stringify`) drops an
 `undefined` member and writes an `undefined` array element as `null`.
@@ -193,8 +197,9 @@ change, released as a 0.x minor), so host code that builds them changes too:
 - Leave the field out to leave a prop unset. Passing `nil` (or a zero value)
   used to mean "unset"; a `bf.Null[T]()` now means JS `null`, which renders
   `btn null` in `'btn ' + c` and does not take a destructure default.
-- Do the same for the optional scalar fields of row structs
-  (`Row{ID: 1, Tone: bf.Some("warm")}`).
+- Do the same for the optional fields of row structs
+  (`Row{ID: 1, Tone: bf.Some("warm"), Meta: bf.Some(&Meta{})}`). An optional
+  nested object field was a `*T`; it is a `bf.Opt[*T]` now.
 - Read a value back with `V()`, `Value()` or `Passed()`; a hand-written
   template reads an optional row field as `{{bf_js .Tone}}` (or `.Tone.V`).
 - `json.Unmarshal` into an input struct needs no change: a missing key stays

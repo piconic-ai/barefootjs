@@ -254,7 +254,7 @@ function objectLiteralToGoStruct(
     if (!goField) return null
     const go = structFieldValueGo(ctx, prop.value, property, goType)
     if (go === null) return null
-    // An optional scalar field is a `bf.Opt[T]`.
+    // An optional field is a `bf.Opt[T]`.
     entries.push(`${goField}: ${optElem === null ? go : go === 'nil' ? `bf.Null[${optElem}]()` : `bf.Some[${optElem}](${go})`}`)
   }
   return `${goType}{${entries.join(', ')}}`
@@ -290,7 +290,8 @@ function structFieldValueGo(
       nestedGoType && ctx.state.localStructFields.has(nestedGoType)
         ? parsedLiteralToGo(ctx, value, propType)
         : bakeInlineObjectAsGoMap(ctx, value)
-    if (go !== null && property && propertyInfoToGo(ctx, property, goType).startsWith('*')) {
+    // An optional nested struct is held by pointer, plain or in a `bf.Opt`.
+    if (go !== null && property && (propertyInfoToGo(ctx, property, goType).startsWith('*') || optFieldElemType(ctx, property)?.startsWith('*'))) {
       go = `&${go}`
     }
   } else {

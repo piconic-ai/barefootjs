@@ -57,7 +57,11 @@ function isAnyGoType(goType: string): boolean {
  */
 export function optElemGoType(ctx: GoEmitContext, param: PropParam, internalType: string): string {
   if (!isAnyGoType(internalType)) return internalType
-  const elem = typeInfoToGo(ctx, withoutNilMembers(param.type), param.defaultValue, param.parsed)
+  const override = ctx.state.propTypeOverrides.get(param.name)
+  const elem = override && !isAnyGoType(override) ? override : typeInfoToGo(ctx, withoutNilMembers(param.type), param.defaultValue, param.parsed)
+  // An optional object-typed prop takes a map, as its typed field did: only
+  // the keys the caller supplies (`resolvePropGoType`).
+  if (param.optional && ctx.state.localStructFields.has(elem)) return 'map[string]interface{}'
   return isAnyGoType(elem) || elem.includes('interface{}') ? 'any' : elem
 }
 

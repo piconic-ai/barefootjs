@@ -194,7 +194,7 @@ import { computeMemoInitialValue, collectPropsReadByCtorInit, isBoxedNumericMemo
 import { collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { refuseObjectSpreadsOntoChildren } from "./props/props-spread.ts"
-import { buildPropTypeOverrides, dependentDefaultNormalization, resolvePropGoType, collectNillablePropNames, collectNullableSignalSeedPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
+import { buildPropTypeOverrides, dependentDefaultNormalization, optDefaultedInputRead, resolvePropGoType, collectNillablePropNames, collectNullableSignalSeedPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 import { childInputFieldValue, goOptType, isOptInputParam, optElemGoType, optInputRead } from "./props/input-opt.ts"
 import { emitMemoFieldInits, emitPropFallbackLocals, emitPropFieldInits, emitSignalFieldInits, hoistSiblingMemoLocals } from "./props/ctor-field-inits.ts"
@@ -1458,6 +1458,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       dataTypedParamNames,
       paramGoTypes,
       nillableParamNames,
+      optParamNames: new Set((ir.metadata.propsParams ?? []).filter(isOptInputParam).map(p => p.sourceName ?? p.name)),
       scalarArrayParamTypes,
     })
     // NOT `paramNames`: `recordDerivedFieldDeps` forwards this set to
@@ -2077,7 +2078,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         const tag = this.toJsonTag(param.sourceName ?? param.name)
         lines.push(`\t${fieldName} ${goOptType(optElemGoType(this.emitCtx, param, goType))} \`json:"${tag},omitzero"\``)
         shadowLines.push(`\t${fieldName} ${goType}`)
-        copies.push({ field: fieldName, value: optInputRead(fieldName, goType) })
+        copies.push({ field: fieldName, value: optDefaultedInputRead(this.emitCtx, param, ir.metadata.propsParams, goType) ?? optInputRead(fieldName, goType) })
         continue
       }
       lines.push(`\t${fieldName} ${goType}`)
@@ -5320,7 +5321,27 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private optFieldRead(object: ParsedExpr, property: string, read: string, params?: readonly string[]): string {
     const scope = params ? this.predicateScope(params) : this.scope
+    // An optional object prop's field is a map (`resolvePropGoType`), whose
+    // keys are the JS ones: `.A` would look up `"A"`.
+    const suffix = `.${capitalizeFieldName(property)}`
+    if (this.readsMapProp(object, scope) && read.endsWith(suffix)) {
+      return `(bf_get ${wrapIfMultiToken(read.slice(0, -suffix.length))} ${JSON.stringify(property)})`
+    }
     return this.isOptStructField(this.readTypeOf(object, scope), property) ? `(bf_js ${read})` : read
+  }
+
+  /** Whether `expr` reads an optional object prop whole (`opts`, `props.opts`), whose field is a map. */
+  private readsMapProp(expr: ParsedExpr, scope: BindingScope): boolean {
+    let param: IRMetadata['propsParams'][number] | undefined
+    if (expr.kind === 'identifier') {
+      if (scope.lookup(expr.name) || this.state.propsObjectName !== null) return false
+      param = this.state.currentPropsParams.find(p => p.name === expr.name && !p.isRest)
+    } else if (expr.kind === 'member' && !expr.computed) {
+      const key = propsObjectKeyRead(this.state.propsObjectName, expr)
+      if (key === null || scope.isBound(this.state.propsObjectName!)) return false
+      param = this.state.currentPropsParams.find(p => (p.sourceName ?? p.name) === key && !p.isRest)
+    }
+    return !!param && this.propStructType(param) === null && param.type !== undefined
   }
 
   /** {@link optFieldRead} for a destructured row binding `name` read as `accessor`. */
@@ -7406,6 +7427,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     loopBindingStack: () => this.loopBindingStack,
     destructureAccessors: () => this.destructureAccessors,
     optBindingRead: (name, accessor) => this.optBindingRead(name, accessor),
+    readsOptField: (expr) => this.readsOptField(expr, this.scope),
     loopRestExcludeStack: () => this.loopRestExcludeStack,
     loopScalarItemStack: () => this.loopScalarItemStack,
     loopWrapperStack: () => this.loopWrapperStack,

@@ -908,9 +908,11 @@ export function TodoApp(props: { initial?: Todo[] }) {
       // now runs inferTypeFromValue on the arrow body for memos).
       expect(result.types).toContain('Remaining int')
       expect(result.types).toContain('Total int')
-      // Underlying prop / array signal still uses the array type.
-      expect(result.types).toContain('Initial []Todo')
+      // The optional prop holds its JS value (U8) off a `bf.Opt` of the
+      // array type; the array signal still uses the array type.
+      expect(result.types).toContain('Initial bf.Opt[[]Todo]')
       expect(result.types).toContain('Todos []Todo')
+      expect(result.types).toContain('Todos: bf.Coerce(*new([]Todo), in.Initial),')
       // The misclassified shapes from the original repro must not
       // resurface — even as `interface{}` (the fallback before the
       // analyzer recognised `.length`).
@@ -2603,7 +2605,8 @@ export function Widget({ initial }: { initial?: State }) {
 `)
       expect(bf101).toHaveLength(1)
       expect(bf101[0].message).toContain('initial.label')
-      expect(bf101[0].message).toContain('map[string]interface{}')
+      // The field holds the prop's JS value (U8), no struct.
+      expect(bf101[0].message).toContain("Go type 'interface{}'")
     })
 
     test('a prop typed by a non-local type refuses — no struct field path', () => {
@@ -2836,17 +2839,17 @@ function C({ rows }: { rows?: number }) {
       expect(template).not.toMatch(/(?<!if ne \.Rows nil}})rows="\{\{bf_text \.Rows\}\}"/)
     })
 
-    test('leaves a concrete/defaulted attr unconditional (scope did not widen)', () => {
+    test('guards a defaulted attr, whose explicit null omits it', () => {
       const source = `
 function C({ placeholder = '' }: { placeholder?: string }) {
   return <textarea placeholder={placeholder} />
 }
 `
       const { template } = compileAndGenerate(source)
-      // `placeholder` has a destructure default → concrete `string` field →
-      // never nil → emitted unconditionally, exactly like Hono's placeholder="".
-      expect(template).toContain('placeholder="{{.Placeholder}}"')
-      expect(template).not.toContain('if ne .Placeholder nil')
+      // `placeholder` has a destructure default, applied to an undefined prop
+      // only: an explicit `null` keeps `null` (U8), which omits the
+      // attribute as Hono does, so the attribute is nil-guarded.
+      expect(template).toContain('{{if ne .Placeholder nil}}placeholder="{{.Placeholder}}"{{end}}')
     })
   })
 

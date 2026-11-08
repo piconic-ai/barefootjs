@@ -3,8 +3,8 @@ package bf
 import (
 	"bytes"
 	"encoding/json"
-	"testing"
 	"html/template"
+	"testing"
 )
 
 // The four states of an Opt (spec/js-undefined-value.md §3) and their JS
@@ -168,5 +168,29 @@ func TestJSONUndefined(t *testing.T) {
 	}
 	if got != `[{"k":"a"},{"k":"b","s":null}]` {
 		t.Errorf("JSON of rows = %v", got)
+	}
+}
+
+func TestIterAndReshape(t *testing.T) {
+	tmpl := template.Must(template.New("t").Funcs(FuncMap()).Parse(`{{range bf_iter .U}}x{{end}}{{range bf_iter .N}}x{{end}}{{range bf_iter .S}}{{.}}{{end}}|{{if bf_truthy .O}}t{{else}}f{{end}}{{if bf_truthy .E}}t{{else}}f{{end}}`))
+	var buf bytes.Buffer
+	data := map[string]any{"U": Undefined, "N": nil, "S": []string{"a", "b"}, "O": Opt[[]string]{}, "E": Some([]string{})}
+	if err := tmpl.Execute(&buf, data); err != nil {
+		t.Fatal(err)
+	}
+	if got := buf.String(); got != "ab|ft" {
+		t.Errorf("template = %q, want %q", got, "ab|ft")
+	}
+	type rowA struct {
+		ID string `json:"id"`
+	}
+	type rowB struct {
+		ID string `json:"id"`
+	}
+	if got := Coerce(*new([]rowB), []rowA{{ID: "x"}}); len(got) != 1 || got[0].ID != "x" {
+		t.Errorf("Coerce reshape = %#v", got)
+	}
+	if got := OptOf[[]rowB]([]any{map[string]any{"id": "y"}}); !got.IsSet() || got.Value()[0].ID != "y" {
+		t.Errorf("OptOf reshape = %#v", got)
 	}
 }

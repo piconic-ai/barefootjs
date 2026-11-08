@@ -320,7 +320,7 @@ export const renderDivergences: RenderDivergences = {
  * `go-template-adapter.test.ts`'s citation check until the skip goes too.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
-  // A JSON `null` and an omitted key both decode to a nil slice, so the
-  // destructure default applies to both and the `??` / `||` fallback never does.
-  'signal-array-prop-fallback-seed-default:items-null': { limitation: 'defaulted-array-prop-explicit-null' },
+  // `signal-array-prop-fallback-seed-default:items-null` used to sit here:
+  // the destructure default applied to an explicit `null`. It now applies
+  // only to an absent or `undefined` prop (#3848 U8).
 }

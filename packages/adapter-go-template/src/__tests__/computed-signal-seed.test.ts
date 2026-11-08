@@ -114,7 +114,9 @@ describe('call and member seeds (#3540)', () => {
   test('the legacy row seed `(props.X ?? []).map(…)` keeps the prop field', () => {
     const { types, errors } = generate('props: { rows?: Row[] }', '(props.rows ?? []).map(r => ({ ...r }))')
     expect(errors).toEqual([])
-    expect(types).toMatch(/^\s+V: in\.Rows,$/m)
+    // The optional prop's field holds its JS value (U8): the typed signal
+    // takes it through `bf.Coerce`.
+    expect(types).toMatch(/^\s+V: bf\.Coerce\(\*new\(\[\]Row\), in\.Rows\),$/m)
   })
 })
 

@@ -19,9 +19,9 @@ import type { PropFallbackVar } from '../lib/types.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import { escapeGoString } from '../lib/go-emit.ts'
 import { bakeSourceKeyedObjectAsGoMap, numberLiteralRawGo, parsedLiteralToGo } from './parsed-literal-to-go.ts'
-import { collapseLiteralUnion, typeInfoToGo } from '../type/type-codegen.ts'
+import { collapseLiteralUnion, typeInfoToGo, withoutNilMembers } from '../type/type-codegen.ts'
 import { embeddedPropMemberChain, resolvePropMemberSeed } from './prop-member-seed.ts'
-import { seedPassthroughPropName } from '../props/prop-types.ts'
+import { nonScalarLiteralDefaultGo, seedPassthroughPropName } from '../props/prop-types.ts'
 
 /** A signal with no inferred type, for {@link GoEmitContext.computedSignalSeed}. */
 const UNKNOWN_TYPE: TypeInfo = { kind: 'unknown', raw: 'unknown' }
@@ -91,7 +91,25 @@ function nillableAwarePropRef(
 ): string {
   const fieldRef = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
   if (!ctx.state.nillablePropNames.has(param.name)) return fieldRef
-  return assertNillableScalar(fieldRef, expectedType) ?? fieldRef
+  return assertNillableScalar(fieldRef, expectedType) ?? typedNonScalarPropRef(ctx, param, fieldRef) ?? fieldRef
+}
+
+/**
+ * The field of an optional slice or map prop that holds its JS value
+ * (`interface{}`, `resolvePropGoType`) as the prop's own Go type, through
+ * `bf.Coerce`: `null` and `undefined` both become that type's nil there.
+ * Null for any other prop.
+ */
+export function typedNonScalarPropRef(
+  ctx: GoEmitContext,
+  param: { name: string; sourceName?: string },
+  fieldRef: string,
+): string | null {
+  const binding = ctx.state.currentPropsParams.find(p => p.name === param.name)
+  if (!binding?.type) return null
+  const goType = ctx.state.propTypeOverrides.get(binding.name) ?? typeInfoToGo(ctx, withoutNilMembers(binding.type))
+  if (!goType.startsWith('[]') && !goType.startsWith('map[')) return null
+  return `bf.Coerce(*new(${goType}), ${fieldRef})`
 }
 
 /**
@@ -378,16 +396,19 @@ function propSliceFallbackSeed(
   const propName = seedPassthroughPropName(ctx, preParsed)
   if (!propName || !propsParams?.some(p => p.name === propName)) return null
   const param = ctx.state.currentPropsParams.find(p => p.name === propName)
-  // A destructure default (`{ items: rows = [] }`) applies before `??` / `||`
-  // reads the binding, so the raw field's nil is not the fallback's cue:
-  // that seed keeps the defaulted prop read.
-  if (!param || param.defaultValue !== undefined) return null
+  // A destructure default (`{ items: rows = [] }`) applies to an undefined
+  // prop only (`optDefaultedInputRead`), before `??` / `||` reads the
+  // binding: the field's nil is then an explicit `null`, the fallback's cue
+  // as it is for a prop with no default. Any other default keeps the
+  // defaulted prop read.
+  if (!param || (param.defaultValue !== undefined && nonScalarLiteralDefaultGo(ctx, param, typeInfoToGo(ctx, param.type)) === null)) return null
   const goType = typeInfoToGo(ctx, param.type)
   if (!goType.startsWith('[]')) return null
   const fallback = parsedLiteralToGo(ctx, preParsed.right, param.type)
   if (fallback === null) return null
   const ref = `in.${capitalizeFieldName(param.sourceName ?? param.name)}`
-  return `func() ${goType} { if !bf.IsNullish(${ref}) { return ${ref} }; return ${fallback} }()`
+  const typed = ctx.state.nillablePropNames.has(param.name) ? typedNonScalarPropRef(ctx, param, ref) ?? ref : ref
+  return `func() ${goType} { if !bf.IsNullish(${ref}) { return ${typed} }; return ${fallback} }()`
 }
 
 /**

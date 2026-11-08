@@ -48,16 +48,19 @@ const OPT_SCALAR_GO_TYPES: ReadonlySet<string> = new Set(['string', 'float64', '
 
 /**
  * The `T` of a generated struct field's `bf.Opt[T]` (spec/js-undefined-value.md
- * §3, rollout step U8): an optional field (`label?: string`) whose value is a
- * scalar, so a row can tell an omitted field (`undefined`) from `null` and
- * from `''` / `0`. Null for any other field: a required one, and an optional
- * slice, map or nested struct, whose nil already stands for absence.
- * Templates read such a field through `bf_js` (`optFieldRead`).
+ * §3, rollout step U8): an optional field (`label?: string`, `tags?:
+ * string[]`, `meta?: Meta`), so a row can tell an omitted field
+ * (`undefined`) from `null` and from `''` / `0` / `[]`. A nested struct is
+ * held by pointer, as its plain field is. Null for a required field.
+ * Templates read such a field through `bf_js` (`optFieldRead`), and a loop
+ * over one through `bf_iter`.
  */
 export function optFieldElemType(ctx: GoEmitContext, property: PropertyInfo): string | null {
   if (!property.optional) return null
   const elem = typeInfoToGo(ctx, withoutNilMembers(property.type))
-  return OPT_SCALAR_GO_TYPES.has(elem) || ctx.state.localTypeAliases.has(elem) ? elem : null
+  if (OPT_SCALAR_GO_TYPES.has(elem) || ctx.state.localTypeAliases.has(elem)) return elem
+  if (elem.startsWith('[]') || elem.startsWith('map[')) return elem
+  return ctx.state.localStructFields.has(elem) ? `*${elem}` : null
 }
 
 /**

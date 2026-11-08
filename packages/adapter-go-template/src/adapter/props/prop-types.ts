@@ -27,7 +27,9 @@ import type { GoEmitContext } from '../emit-context.ts'
 import { propsObjectKeyRead, resolveSignalParsedThroughSeedPlan } from '../lib/compile-state.ts'
 import { applyGoFallback, GO_NATIVE_SAFE, goUndefinedTest } from '../lib/go-emit.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
-import { collapseLiteralUnion, literalNumberValue, typeInfoToGo } from '../type/type-codegen.ts'
+import { collapseLiteralUnion, literalNumberValue, typeInfoToGo, withoutNilMembers } from '../type/type-codegen.ts'
+import { bakeSourceKeyedObjectAsGoMap, parsedLiteralToGo } from '../value/parsed-literal-to-go.ts'
+import { isOptInputParam, optInputRead } from './input-opt.ts'
 import { evalExprGo, evaluatedAsGoType } from '../memo/memo-compute.ts'
 
 /**
@@ -146,11 +148,14 @@ export function collectNullableSignalSeedPropNames(ctx: GoEmitContext, ir: Compo
   }
   // A seed that can evaluate to an absent optional prop, read whole or
   // through a ternary branch or a `??` / `||` / `&&` operand (#3567), reads
-  // that prop the same way: its field must hold `nil` for the seed to. Only
-  // a primitive prop is flipped (`resolvePropGoType`); a slice or struct prop
-  // keeps its Go type, so its signal does too.
+  // that prop the same way: its field must hold the prop's JS value for the
+  // seed to. A primitive prop and a slice, map or object one hold it
+  // (`resolvePropGoType`), so the signal does too: an omitted prop seeds
+  // `undefined`, an explicit `null` seeds `null`.
   const primitiveParams = new Set(
-    ir.metadata.propsParams.filter(p => optionalParams.has(p.name) && p.type?.kind === 'primitive').map(p => p.name),
+    ir.metadata.propsParams
+      .filter(p => optionalParams.has(p.name) && (p.type?.kind === 'primitive' || isNonScalarPropGoType(ctx, typeInfoToGo(ctx, p.type, p.defaultValue, p.parsed))))
+      .map(p => p.name),
   )
   for (const reads of collectAbsentPropSeedReads(ir).values()) {
     for (const name of reads) if (primitiveParams.has(name)) names.add(name)
@@ -255,12 +260,21 @@ export function defaultedBindingGo(
   propsParams: IRMetadata['propsParams'],
   propTypeOverrides: Map<string, string>,
 ): string | null {
-  const paramDefault = propLiteralDefaultGo(param)
-  if (paramDefault === null) return sharedDependentDefaultGo(ctx, param, propsParams, propTypeOverrides)
   const inputField = capitalizeFieldName(param.sourceName ?? param.name)
   const outputType = resolvePropGoType(ctx, param, propTypeOverrides)
   const fieldOwner = propsParams.find(p => capitalizeFieldName(p.sourceName ?? p.name) === inputField)
   const inputType = fieldOwner ? resolvePropGoType(ctx, fieldOwner, propTypeOverrides) : undefined
+  // An array / object literal default on a slice or map binding whose Input
+  // field holds the JS value (a raw read shares it): applied to an undefined
+  // prop only. On a field of its own the constructor's `in` applies it
+  // already (`optDefaultedInputRead`).
+  const nonScalarDefault = nonScalarLiteralDefaultGo(ctx, param, outputType)
+  if (nonScalarDefault !== null) {
+    if (!sharesInputField(param, propsParams) || inputType !== 'interface{}') return null
+    return `func() ${outputType} { if bf.IsUndefined(in.${inputField}) { return ${nonScalarDefault} }; return bf.Coerce(*new(${outputType}), in.${inputField}) }()`
+  }
+  const paramDefault = propLiteralDefaultGo(param)
+  if (paramDefault === null) return sharedDependentDefaultGo(ctx, param, propsParams, propTypeOverrides)
   if (inputType === 'interface{}') {
     // The default applies to an undefined prop only: an explicit `null`
     // stays (decision 6).
@@ -331,7 +345,7 @@ export function dependentDefaultNormalization(
       rawLocals.set(field, raw)
       lines.push(`\t${raw} := in.${field}`)
     }
-    lines.push(`\tif ${goUndefinedTest(`in.${field}`, goType)} {`)
+    lines.push(`\tif ${defaultAppliesTest(param, field, goType)} {`)
     lines.push(`\t\tin.${field} = ${value}`)
     lines.push('\t}')
   }
@@ -459,6 +473,17 @@ export function resolvePropGoType(
   // Gate on `localStructFields` (an actual generated struct), NOT
   // `localTypeNames` — the latter also covers string-union aliases
   // (`placement?: 'top' | 'right' | …`), which must stay their scalar Go type.
+  // An OPTIONAL non-scalar prop without a default (a slice, a map, an object
+  // type) holds its JS value as well (`interface{}`, read off its Input's
+  // `bf.Opt[T]` by `optInputRead`): `bf.Undefined` for an omitted prop, nil
+  // for an explicit `null`. A typed slice or map could only hold nil for
+  // both. A reader that needs the typed value takes it through `bf.Coerce`
+  // (`nillableAwarePropRef`), so the two collapse only where nothing can
+  // tell them apart. A defaulted one keeps its type: its default applies to
+  // an undefined prop only (`optDefaultedInputRead`), so its nil is `null`.
+  if (param.optional && param.defaultValue == null && isNonScalarPropGoType(ctx, base)) {
+    return 'interface{}'
+  }
   if (param.optional && ctx.state.localStructFields.has(base)) {
     return 'map[string]interface{}'
   }
@@ -466,14 +491,13 @@ export function resolvePropGoType(
   // field holds the JS value (spec/js-undefined-value.md §3, rollout step
   // U8), `bf.Undefined` for an omitted prop and nil for an explicit `null`,
   // read off its Input's `bf.Opt[T]` (`optInputRead`). A concrete
-  // `string` / `float64` field could hold neither. A literal default other
-  // than the zero value (`{ tag = 'z' }`, `{ n = 2 }`, `{ on = true }`) and a
-  // default that reads an earlier prop (`{ off = false, on = off }`, #3531)
-  // apply to an undefined prop only (`appliesDefaultOnNil`,
+  // `string` / `float64` field could hold neither. A literal default
+  // (`{ tag = 'z' }`, `{ n = 0 }`, `{ on = true }`) and a default that reads
+  // an earlier prop (`{ off = false, on = off }`, #3531) apply to an
+  // undefined prop only (`appliesDefaultOnNil`,
   // `dependentDefaultNormalization`), which the constructor tells apart the
-  // same way: an explicit `false` / `''` / `0` stays the caller's value. A
-  // zero-literal default keeps the concrete field: the zero value is the
-  // default.
+  // same way: an explicit `null` and an explicit `false` / `''` / `0` stay
+  // the caller's value.
   if (param.optional && (param.defaultValue == null || appliesDefaultOnNil(param)) && isScalarPropGoType(ctx, base)) {
     return 'interface{}'
   }
@@ -481,36 +505,124 @@ export function resolvePropGoType(
 }
 
 /**
+ * When the constructor applies `param`'s destructure default to `in.<field>`
+ * (`dependentDefaultNormalization`): the prop is undefined. A typed field's
+ * nil is `null`, which keeps it, so the Input's own state tells an undefined
+ * prop apart there.
+ */
+function defaultAppliesTest(param: IRMetadata['propsParams'][number], field: string, goType: string): string {
+  return isOptInputParam(param) && goType !== 'interface{}'
+    ? `input.${field}.IsUndefined()`
+    : goUndefinedTest(`in.${field}`, goType)
+}
+
+/**
+ * The Go value of `param`'s array or object literal destructure default
+ * (`{ items = [] }`, `{ opts = { a: 'x' } }`) on a slice, map or `interface{}`
+ * field of Go type `goType`: never nil, so it stays apart from an explicit `null`. Null
+ * for any other default or field.
+ */
+export function nonScalarLiteralDefaultGo(
+  ctx: GoEmitContext,
+  param: IRMetadata['propsParams'][number],
+  goType: string,
+): string | null {
+  const parsed = param.parsed
+  if (param.isRest || param.defaultValue == null || !parsed || hasComputedDefault(param)) return null
+  const boxed = goType === 'interface{}'
+  if (parsed.kind === 'array-literal' && (boxed || goType.startsWith('[]'))) return arrayLiteralDefaultGo(ctx, param, parsed, goType)
+  if (parsed.kind === 'object-literal' && (boxed || goType.startsWith('map['))) {
+    return bakeSourceKeyedObjectAsGoMap(ctx, parsed) ?? evaluatedLiteralGo(ctx, parsed, goType)
+  }
+  return null
+}
+
+/** {@link nonScalarLiteralDefaultGo} for an array literal default. */
+function arrayLiteralDefaultGo(
+  ctx: GoEmitContext,
+  param: IRMetadata['propsParams'][number],
+  parsed: Extract<ParsedExpr, { kind: 'array-literal' }>,
+  goType: string,
+): string | null {
+  const boxed = goType === 'interface{}'
+  const type = param.type ? withoutNilMembers(param.type) : undefined
+  // An empty one is an empty slice, which `parsedLiteralToGo` leaves to the
+  // field's nil.
+  if (parsed.elements.length === 0) {
+    const sliceType = boxed ? (type ? typeInfoToGo(ctx, type) : '') : goType
+    return `${sliceType.startsWith('[]') ? sliceType : '[]interface{}'}{}`
+  }
+  const go = parsedLiteralToGo(ctx, parsed, type)
+  if (go !== null && (boxed ? go.startsWith('[]') : go.startsWith(goType + '{'))) return go
+  return evaluatedLiteralGo(ctx, parsed, goType)
+}
+
+/**
+ * Literal data no Go literal spells for `goType` (an object row of an
+ * `[]interface{}` field), built by the runtime evaluator and shaped as
+ * `goType` by `bf.Coerce`.
+ */
+function evaluatedLiteralGo(ctx: GoEmitContext, parsed: ParsedExpr, goType: string): string | null {
+  const evaluated = evalExprGo(ctx, parsed, [], [], new Map(), new Set())
+  if (evaluated === null) return null
+  return goType === 'interface{}' ? evaluated : `bf.Coerce(*new(${goType}), ${evaluated})`
+}
+
+/**
+ * How the constructor's `in` reads the Input field of `param`, a prop with an
+ * array or object literal default on a slice, map or `interface{}` field of its own
+ * (`nonScalarLiteralDefaultGo`): the default when the prop is undefined, its
+ * value (nil for `null`) otherwise. Null for any other prop, which
+ * `optInputRead` reads.
+ */
+export function optDefaultedInputRead(
+  ctx: GoEmitContext,
+  param: IRMetadata['propsParams'][number],
+  propsParams: IRMetadata['propsParams'],
+  goType: string,
+): string | null {
+  if (sharesInputField(param, propsParams)) return null
+  const value = nonScalarLiteralDefaultGo(ctx, param, goType)
+  if (value === null) return null
+  const field = capitalizeFieldName(param.sourceName ?? param.name)
+  return `func() ${goType} { if input.${field}.IsUndefined() { return ${value} }; return ${optInputRead(field, goType)} }()`
+}
+
+/** Whether `goType` is a slice, a map or a generated struct: a value a template ranges over or reads members of. */
+export function isNonScalarPropGoType(ctx: GoEmitContext, goType: string): boolean {
+  return goType.startsWith('[]') || goType.startsWith('map[') || ctx.state.localStructFields.has(goType)
+}
+
+/**
  * Whether the constructor applies `param`'s destructure default to its Input
  * field when the field is nil (`dependentDefaultNormalization`), which a
  * scalar field is boxed for ({@link resolvePropGoType}): a computed default
  * (`hasComputedDefault`: one reading an earlier prop, `{ a, b = a }`, #3531,
- * or any other non-literal one, `{ n = 'abc'.length }`), or a literal one
- * other than the field's Go zero value ({@link hasNonZeroLiteralDefault}).
+ * or any other non-literal one, `{ n = 'abc'.length }`), or a scalar literal
+ * one ({@link hasScalarLiteralDefault}).
  */
 export function appliesDefaultOnNil(param: IRMetadata['propsParams'][number]): boolean {
-  return hasComputedDefault(param) || hasNonZeroLiteralDefault(param)
+  return hasComputedDefault(param) || hasScalarLiteralDefault(param)
 }
 
 /**
- * Whether `param`'s destructure default is a literal other than its Go type's
- * zero value (`{ a = 'x' }`, `{ n = 2 }`, `{ on = true }`). The default
- * applies to an absent prop only, so an explicit `''` / `0` / `false` must stay
- * the caller's value; a concrete field reads both as its zero value, which
- * only a nil can tell apart. A zero default (`{ a = '' }`) needs no nil: an
- * absent prop and the default render the same.
+ * Whether `param`'s destructure default is a scalar literal (`{ a = 'x' }`,
+ * `{ n = 0 }`, `{ on = false }`). The default applies to an undefined prop
+ * only, so an explicit `null`, and an explicit `''` / `0` / `false` beside a
+ * non-zero default, must stay the caller's value: a concrete field reads
+ * all of them as its zero value, which only the JS value can tell apart. A
+ * zero default (`{ a = '' }`) is no exception: `null` is not `''`.
  */
-function hasNonZeroLiteralDefault(param: IRMetadata['propsParams'][number]): boolean {
+function hasScalarLiteralDefault(param: IRMetadata['propsParams'][number]): boolean {
   if (param.defaultValue == null) return false
-  const value = scalarLiteralDefault(param)
-  return value !== null && value !== '' && value !== 0 && value !== false
+  return scalarLiteralDefault(param) !== null
 }
 
 /**
  * The value of `param`'s destructure default when it is a scalar literal
  * (`'x'`, `2`, `-1e3`, `0x10`, `true`), read off the parsed tree; null for
  * any other shape. The single classification both the nil-boxing decision
- * ({@link hasNonZeroLiteralDefault}) and the Go literal it applies
+ * ({@link hasScalarLiteralDefault}) and the Go literal it applies
  * ({@link propLiteralDefaultGo}) read, so a spelling one accepts the other
  * can always emit.
  */
