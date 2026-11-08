@@ -6,9 +6,12 @@ and `null` as two distinct values, from the host boundary through template
 evaluation, the callback evaluator and JSON output, so that one TSX renders
 the same HTML as Hono on every backend?
 
-> Status: **design accepted, not implemented.** The owner decided the
-> questions in §7 on 2026-11-01. Tracked by #3848. Claims about current behaviour cite the code on
-> `main` (`9615fb9a1`) or a throwaway probe (listed in the appendix; not
+> Status: **implemented.** The rollout of §6 is complete (U0 to U9): every
+> runtime carries `undefined` apart from `null`, the expected-failure
+> ledgers are deleted, and the plan has no collapsed branch left. The owner
+> decided the questions in §7 on 2026-11-01. Tracked by #3848. The rest of
+> this note is the design as written before the rollout: claims about
+> "current behaviour" cite the code on `main` (`9615fb9a1`) or a throwaway probe (listed in the appendix; not
 > committed). "Prior probe" means the earlier per-runtime sentinel probes
 > (Python/jinja2, Perl, PHP 8.3, Ruby, Pebble 4.1.2). Anything not verified
 > is marked **unverified**.
@@ -25,7 +28,8 @@ Terms, in addition to those of `js-primitive-semantics.md`:
   `undefined`.
 - **Carries undefined**: a target whose runtime passes the
   `undefined`-specific vectors (see "Evaluator and vectors"). Declared as
-  data next to `NativeSafeTable`, like a native-safe claim.
+  data next to `NativeSafeTable` (`carriesUndefined`) during the rollout;
+  U9 removed the flag once every target carried it.
 
 ## Decisions in this note
 
@@ -787,6 +791,13 @@ the same rules for the life of this rollout, and the file is deleted in U9.
 | **U8** Go | `bf.Opt[T]`, `bf.Undefined`, `isNullish` (64 sites); generator rules (Input, Props, row structs, `.V` reads, `bfCallerProps`); deletes the flip collectors; Go harness `buildGoPropsInit` emits `bf.Some` / `bf.Null` / omission; breaking-change changeset and migration doc | same, `go`; Go-only limitations graduate | High: public Go API break, and the largest generator diff |
 | **U9** Cleanup | Removes `carriesUndefined` and the plan's collapsed branches (decisions 2 and 8, numeric-`either` BF101); deletes both ledgers; rewrites `spec/compiler.md` value domain, `spec/template-helpers.md` `:66-68`, and `js-primitive-semantics.md` decisions 2, 3, 4 and 8 | ledgers empty; no limitation cites a nil-reading reason | Low |
 
+All ten steps have landed. U9 removed `carriesUndefined` with the plan's
+collapsed branches (decision 2's `either` display reading, the dynamic `+`
+handling of decision 8 and the numeric-`either` BF101), deleted
+`primitives-expected-failures.json` and `eval-expected-failures.json` (a
+failing vector now fails its harness), and rewrote the specs named in its
+row.
+
 Order: U2 and U3 are first because their engines already have
 `Undefined`, so they prove the vectors, the plan flag and the harness
 change at the lowest risk. U4 to U7 follow. Within them, the targets where
@@ -836,7 +847,7 @@ choice and what it fixes for the rollout.
    reads as `undefined`. No compatibility flag. Each runtime exports its
    `UNDEF` for a host that must pass a present `undefined`, and each U step
    adds a changelog entry for hosts that passed nil meaning "unset".
-4. **Interim behaviour between 4a and the U steps**: the existing numeric
+4. **Interim behaviour between 4a and the U steps** (ended with U9): the existing numeric
    `either` refusal (#3700) stays, gated by `carriesUndefined: false`, and
    graduates per target. Decision 8's new refusal of a dynamic `+` over an
    `undefined` reading is **not built**; today's output for that shape is
