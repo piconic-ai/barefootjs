@@ -18,11 +18,6 @@ import (
 // Like vectors.json it only exists in the monorepo checkout.
 const primitivesDir = "../../adapter-tests/vectors/primitives"
 
-// primitivesLedgerPath is the step-0 expected-failure ledger: the cases that
-// fail on each runtime today, each naming the rollout step that removes it.
-// It may only shrink (see TestPrimitiveVectors).
-const primitivesLedgerPath = "../../adapter-tests/vectors/primitives-expected-failures.json"
-
 // primitivesNativeSafePath lists, per runtime, the vector domains each op's
 // NATIVE operator binding runs over: the go-template adapter's NATIVE_SAFE
 // claims (spec/js-primitive-semantics.md, "Conformance" item 3), generated
@@ -133,37 +128,6 @@ type primitiveCase struct {
 	Note   string            `json:"note"`
 }
 
-// expectedFailureLedger is the shape of primitives-expected-failures.json and
-// eval-expected-failures.json. `step` is a #3824 step number or a #3848 U-step
-// id ("U8"), so it is kept raw and only printed.
-type expectedFailureLedger struct {
-	Runtimes map[string]map[string]struct {
-		Step json.RawMessage `json:"step"`
-	} `json:"runtimes"`
-}
-
-// loadExpectedFailures reads the "go" runtime of a ledger: case key → step.
-func loadExpectedFailures(t *testing.T, path string) map[string]string {
-	t.Helper()
-	raw, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read %s: %v", path, err)
-	}
-	var ledger expectedFailureLedger
-	if err := json.Unmarshal(raw, &ledger); err != nil {
-		t.Fatalf("parse %s: %v", path, err)
-	}
-	entries, ok := ledger.Runtimes["go"]
-	if !ok {
-		t.Fatalf("%s has no \"go\" runtime", path)
-	}
-	out := make(map[string]string, len(entries))
-	for key, entry := range entries {
-		out[key] = string(entry.Step)
-	}
-	return out
-}
-
 func TestPrimitiveVectors(t *testing.T) {
 	files, err := filepath.Glob(filepath.Join(primitivesDir, "*.json"))
 	if err != nil {
@@ -174,9 +138,6 @@ func TestPrimitiveVectors(t *testing.T) {
 	}
 	sort.Strings(files)
 
-	expected := loadExpectedFailures(t, primitivesLedgerPath)
-
-	seen := map[string]bool{}
 	total, passed := 0, 0
 	for _, path := range files {
 		data, err := os.ReadFile(path)
@@ -191,27 +152,15 @@ func TestPrimitiveVectors(t *testing.T) {
 		}
 		for _, c := range file.Cases {
 			key := c.Fn + "/" + c.Note
-			seen[key] = true
 			total++
-			ok, detail := runPrimitiveCase(c)
-			step, listed := expected[key]
-			switch {
-			case ok && listed:
-				t.Errorf("ledger entry %q now passes; remove it from the ledger (step %s)", key, step)
-			case !ok && !listed:
-				t.Errorf("UNEXPECTED-FAIL %s: %s", key, detail)
-			}
-			if ok {
+			if ok, detail := runPrimitiveCase(c); ok {
 				passed++
+			} else {
+				t.Errorf("FAIL %s: %s", key, detail)
 			}
 		}
 	}
-	for key := range expected {
-		if !seen[key] {
-			t.Errorf("ledger entry %q matches no primitives case — renamed note?", key)
-		}
-	}
-	t.Logf("primitives: %d cases, %d pass, %d in the expected-failure ledger", total, passed, len(expected))
+	t.Logf("primitives: %d cases, %d pass", total, passed)
 }
 
 // runPrimitiveCase reports whether the Go binding returns the case's expect.
@@ -292,8 +241,8 @@ func primitiveEqual(got, expect any) bool {
 
 // TestPrimitiveNativeVectors holds each native claim of the go-template
 // adapter's NATIVE_SAFE table to the vectors: every case whose domain the
-// claim covers must give the JS answer through the native operator. No
-// ledger applies: a native claim the vectors refute is a bug in the table.
+// claim covers must give the JS answer through the native operator: a native
+// claim the vectors refute is a bug in the table.
 func TestPrimitiveNativeVectors(t *testing.T) {
 	raw, err := os.ReadFile(primitivesNativeSafePath)
 	if err != nil {

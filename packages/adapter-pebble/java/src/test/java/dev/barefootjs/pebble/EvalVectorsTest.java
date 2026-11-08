@@ -14,14 +14,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -32,19 +29,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * `expr` tree through {@link Evaluator} against its `env` and asserting
  * an EXACT match (no divergence allowance — every backend must match the
  * JS reference exactly here, per the vectors README's "Value-compat
- * comparison contract"). The only allowance is the shrink-only
- * expected-failure ledger of the undefined rollout
- * (`spec/js-undefined-value.md`, §6), keyed by note: an unlisted failure
- * fails, and so do a listed case that now passes and a listed note that
- * names no case.
+ * comparison contract").
  */
 class EvalVectorsTest {
 
   private static final Path VECTORS_PATH =
       Path.of("../../adapter-tests/vectors/eval-vectors.json").normalize();
-
-  private static final Path LEDGER_PATH =
-      Path.of("../../adapter-tests/vectors/eval-expected-failures.json").normalize();
 
   private static final Gson GSON = new GsonBuilder()
       .setObjectToNumberStrategy(ToNumberPolicy.DOUBLE)
@@ -58,8 +48,6 @@ class EvalVectorsTest {
     }
     JsonObject doc = GSON.fromJson(Files.readString(VECTORS_PATH), JsonObject.class);
     JsonArray cases = doc.getAsJsonArray("cases");
-    JsonObject expected = VectorUndefined.loadExpectedFailures(LEDGER_PATH);
-    Set<String> notes = new HashSet<>();
 
     List<DynamicTest> tests = new ArrayList<>();
     int i = 0;
@@ -70,7 +58,6 @@ class EvalVectorsTest {
       String testName = note + " (" + src + ")";
       i++;
 
-      notes.add(note);
       tests.add(DynamicTest.dynamicTest(testName, () -> {
         JsonObject expr = c.getAsJsonObject("expr");
         Map<String, Object> env = toEnv(c.getAsJsonObject("env"));
@@ -85,19 +72,9 @@ class EvalVectorsTest {
           ok = false;
           detail = "threw " + e;
         }
-        if (expected.has(note)) {
-          assertFalse(ok, "ledger entry '" + note + "' now passes; remove it from the ledger (step "
-              + expected.getAsJsonObject(note).get("step").getAsString() + ")");
-        } else {
-          assertTrue(ok, "UNEXPECTED-FAIL " + note + ": " + detail);
-        }
+        assertTrue(ok, "FAIL " + note + ": " + detail);
       }));
     }
-    tests.add(DynamicTest.dynamicTest("every ledger entry names an eval case", () -> {
-      for (String note : expected.keySet()) {
-        assertTrue(notes.contains(note), "ledger entry '" + note + "' matches no eval case -- renamed note?");
-      }
-    }));
     return tests.stream();
   }
 

@@ -2,11 +2,8 @@
 //! (`spec/js-primitive-semantics.md`, "Conformance"): every
 //! `packages/adapter-tests/vectors/primitives/<op>.json` case runs against
 //! the `runtime` helper a compiled MiniJinja template calls (`bf.<op>(...)`)
-//! for that operation. The step-0 expected-failure ledger
-//! (`packages/adapter-tests/vectors/primitives-expected-failures.json`) lists
-//! the cases that fail on Rust today, each naming the rollout step that
-//! removes it. It may only shrink: an unlisted failure fails, and so does a
-//! listed case that now passes. Skipped outside a monorepo checkout.
+//! for that operation. Every case must pass. Skipped outside a monorepo
+//! checkout.
 
 use barefootjs::num::JsValue;
 use barefootjs::runtime;
@@ -179,7 +176,7 @@ fn matches_native(got: &JsValue, expect: &JsValue) -> bool {
 }
 
 #[test]
-fn primitive_vectors_match_js_reference_or_ledger() {
+fn primitive_vectors_match_js_reference() {
     let dir = vectors_dir().join("primitives");
     let mut files: Vec<PathBuf> = match std::fs::read_dir(&dir) {
         Ok(entries) => entries.filter_map(|e| e.ok().map(|e| e.path())).filter(|p| p.extension().is_some_and(|x| x == "json")).collect(),
@@ -191,17 +188,13 @@ fn primitive_vectors_match_js_reference_or_ledger() {
     files.sort();
     assert!(!files.is_empty(), "no primitives/*.json under {dir:?}");
 
-    let expected = vector_undefined::load_expected_failures(&vectors_dir().join("primitives-expected-failures.json"));
-
     let mut problems = Vec::new();
-    let mut seen = HashSet::new();
     let (mut total, mut passed) = (0, 0);
     for path in &files {
         let doc: JsonValue = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
         for case in doc["cases"].as_array().unwrap() {
             let fn_name = case["fn"].as_str().unwrap();
             let key = format!("{fn_name}/{}", case["note"].as_str().unwrap());
-            seen.insert(key.clone());
             total += 1;
             let args: Vec<JsValue> = case["args"].as_array().unwrap().iter().map(|a| vector_undefined::to_arg(decode(a))).collect();
             let expect = decode(&case["expect"]);
@@ -210,28 +203,17 @@ fn primitive_vectors_match_js_reference_or_ledger() {
                 Some(got) if matches(&got, &expect) => None,
                 Some(got) => Some(format!("got {got:?}, want {expect:?}")),
             };
-            let listed = expected.get(&key);
-            match (&failure, listed) {
-                (None, Some(entry)) => problems.push(format!("ledger entry '{key}' now passes; remove it from the ledger (step {})", entry["step"])),
-                (Some(detail), None) => problems.push(format!("UNEXPECTED-FAIL {key}: {detail}")),
-                _ => {}
-            }
-            if failure.is_none() {
-                passed += 1;
+            match failure {
+                None => passed += 1,
+                Some(detail) => problems.push(format!("FAIL {key}: {detail}")),
             }
         }
     }
-    for key in expected.keys() {
-        if !seen.contains(key) {
-            problems.push(format!("ledger entry '{key}' matches no primitives case -- renamed note?"));
-        }
-    }
-    println!("primitives: {total} cases, {passed} pass, {} in the expected-failure ledger", expected.len());
+    println!("primitives: {total} cases, {passed} pass");
     assert!(problems.is_empty(), "\n{}", problems.join("\n"));
 }
 
-/// Every native claim gives the JS answer on every case it covers; no ledger
-/// applies.
+/// Every native claim gives the JS answer on every case it covers.
 #[test]
 fn native_claims_match_js_reference() {
     let claims_path = vectors_dir().join("primitives-native-safe.json");

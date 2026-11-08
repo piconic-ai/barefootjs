@@ -1,12 +1,6 @@
 package dev.barefootjs.pebble;
 
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 
 /**
  * JS `undefined` in the golden vectors (`spec/js-undefined-value.md`, "JSON
@@ -46,11 +40,5 @@ final class VectorUndefined {
   /** Whether a JSON element is `{"$undef": true}`. */
   static boolean isSentinel(JsonElement el) {
     return el != null && el.isJsonObject() && JsonDecode.isUndefSentinel(el.getAsJsonObject());
-  }
-
-  /** The "java" runtime of an expected-failure ledger: case key to entry. */
-  static JsonObject loadExpectedFailures(Path path) throws IOException {
-    return JsonParser.parseString(Files.readString(path)).getAsJsonObject()
-        .getAsJsonObject("runtimes").getAsJsonObject("java");
   }
 }

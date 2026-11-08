@@ -4,9 +4,8 @@
  * ToNumber both and add as doubles. A host-nil operand is `null`, so it
  * gives `'nullx'` against a string and `0 + x` against a number. An
  * `undefined` operand (the `$undef` sentinel) is `NaN` against a number and
- * `'undefined'` against a string (spec/js-undefined-value.md, §2); a runtime
- * that does not carry `undefined` yet lists those cases in the
- * expected-failure ledger under its U step. An array or object operand primitive-converts to its ToString, so the `+`
+ * `'undefined'` against a string (spec/js-undefined-value.md, §2). An array
+ * or object operand primitive-converts to its ToString, so the `+`
  * concatenates. A sum past 2^53 carries the `beyond-safe-integer` domain,
  * which no target claims natively ("Decisions" (5)).
  */

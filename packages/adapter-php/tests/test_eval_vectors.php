@@ -108,20 +108,11 @@ function bfe_match($got, $expect): bool
 $doc = json_decode(file_get_contents($VECTORS_PATH), true);
 bf_assert(!empty($doc['cases']), 'eval-vectors.json contains no cases');
 
-// The shrink-only expected-failure ledger of the undefined rollout
-// (spec/js-undefined-value.md, section 6), keyed by note: an unlisted
-// failure fails, and so do a listed case that now passes and a listed note
-// that names no case.
-$ledger = json_decode(file_get_contents(dirname($VECTORS_PATH) . '/eval-expected-failures.json'), true);
-$expected = $ledger['runtimes']['php'];
-$seen = [];
-
 foreach ($doc['cases'] as $case) {
     $note = $case['note'];
     $expr = $case['expr'];
     $env = bf_undefined_to_arg($case['env'] ?? []);
     $expect = $case['expect'];
-    $seen[$note] = true;
 
     try {
         $got = Evaluator::evaluate($expr, $env);
@@ -131,17 +122,8 @@ foreach ($doc['cases'] as $case) {
         $ok = false;
         $detail = 'threw ' . get_class($e) . ': ' . $e->getMessage();
     }
-    $listed = array_key_exists($note, $expected);
-    bf_test($note, function () use ($ok, $listed, $note, $detail, $expected) {
-        if ($ok && $listed) {
-            bf_assert(false, "ledger entry '{$note}' now passes; remove it from the ledger (step {$expected[$note]['step']})");
-        }
-        bf_assert($ok || $listed, "UNEXPECTED-FAIL {$note}: {$detail}");
-    });
-}
-foreach (array_keys($expected) as $note) {
-    bf_test("ledger entry {$note} names a case", function () use ($seen, $note) {
-        bf_assert(isset($seen[$note]), "ledger entry '{$note}' matches no eval case -- renamed note?");
+    bf_test($note, function () use ($ok, $note, $detail) {
+        bf_assert($ok, "FAIL {$note}: {$detail}");
     });
 }
 

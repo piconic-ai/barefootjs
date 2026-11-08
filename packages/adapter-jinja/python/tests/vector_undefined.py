@@ -11,8 +11,6 @@ primitive, helper and eval vector harnesses.
 
 from __future__ import annotations
 
-import json
-
 from barefootjs import UNDEF, is_undefined
 
 VECTOR_UNDEFINED_ARG = UNDEF
@@ -50,8 +48,3 @@ def undefined_to_arg(value):
         return {k: undefined_to_arg(v) for k, v in value.items()}
     return value
 
-
-def load_expected_failures(path: str) -> dict:
-    """The "python" runtime of an expected-failure ledger: case key -> entry."""
-    with open(path, encoding="utf-8") as fh:
-        return json.load(fh)["runtimes"]["python"]

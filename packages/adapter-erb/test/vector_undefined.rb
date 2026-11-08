@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'json'
 require 'barefoot_js/undefined'
 
 # JS `undefined` in the golden vectors (spec/js-undefined-value.md, "JSON
@@ -32,10 +31,5 @@ module VectorUndefined
     return value.transform_values { |v| to_arg(v) } if value.is_a?(Hash)
 
     value
-  end
-
-  # The "ruby" runtime of an expected-failure ledger: case key => entry.
-  def self.load_expected_failures(path)
-    JSON.parse(File.read(path, encoding: Encoding::UTF_8))['runtimes'].fetch('ruby')
   end
 end

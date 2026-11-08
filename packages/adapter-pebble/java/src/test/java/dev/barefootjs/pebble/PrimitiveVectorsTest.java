@@ -32,11 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * (`spec/js-primitive-semantics.md`, "Conformance"): every
  * `packages/adapter-tests/vectors/primitives/<op>.json` case runs against
  * the {@link Bf} helper a compiled `.peb` template calls for that
- * operation. The step-0 expected-failure ledger
- * (`packages/adapter-tests/vectors/primitives-expected-failures.json`) lists
- * the cases that fail on Java today, each naming the rollout step that
- * removes it. It may only shrink: an unlisted failure fails, and so does a
- * listed case that now passes. Skipped outside a monorepo checkout.
+ * operation. Every case must pass. Skipped outside a monorepo checkout.
  */
 class PrimitiveVectorsTest {
 
@@ -181,7 +177,7 @@ class PrimitiveVectorsTest {
     return capture.value;
   }
 
-  /** Every native claim gives the JS answer on every case it covers; no ledger applies. */
+  /** Every native claim gives the JS answer on every case it covers. */
   @Test
   void nativeClaims() throws IOException {
     Path claimsPath = VECTORS_DIR.resolve("primitives-native-safe.json");
@@ -228,10 +224,7 @@ class PrimitiveVectorsTest {
     files.sort(null);
     assertTrue(!files.isEmpty(), "no primitives/*.json under " + dir);
 
-    JsonObject expected = VectorUndefined.loadExpectedFailures(VECTORS_DIR.resolve("primitives-expected-failures.json"));
-
     List<String> problems = new ArrayList<>();
-    Set<String> seen = new HashSet<>();
     int total = 0;
     int passed = 0;
     for (Path path : files) {
@@ -239,28 +232,16 @@ class PrimitiveVectorsTest {
       for (JsonElement el : cases) {
         JsonObject c = el.getAsJsonObject();
         String key = c.get("fn").getAsString() + "/" + c.get("note").getAsString();
-        seen.add(key);
         total++;
         String failure = run(c);
-        boolean listed = expected.has(key);
         if (failure == null) {
           passed++;
-          if (listed) {
-            problems.add("ledger entry '" + key + "' now passes; remove it from the ledger (step "
-                + expected.getAsJsonObject(key).get("step").getAsString() + ")");
-          }
-        } else if (!listed) {
-          problems.add("UNEXPECTED-FAIL " + key + ": " + failure);
+        } else {
+          problems.add("FAIL " + key + ": " + failure);
         }
       }
     }
-    for (String key : expected.keySet()) {
-      if (!seen.contains(key)) {
-        problems.add("ledger entry '" + key + "' matches no primitives case -- renamed note?");
-      }
-    }
-    System.out.println("primitives: " + total + " cases, " + passed + " pass, " + expected.size()
-        + " in the expected-failure ledger");
+    System.out.println("primitives: " + total + " cases, " + passed + " pass");
     assertTrue(problems.isEmpty(), "\n" + String.join("\n", problems));
   }
 

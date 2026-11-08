@@ -10,9 +10,6 @@ require_relative 'vector_undefined'
 # evaluator and shared with the Go and Perl evaluators. The file lives in
 # packages/adapter-tests (a monorepo-only path) -- skip everywhere else.
 VECTORS_PATH = File.expand_path('../../adapter-tests/vectors/eval-vectors.json', __dir__)
-# The shrink-only expected-failure ledger of the eval vectors
-# (spec/js-undefined-value.md, section 6), keyed by note.
-EVAL_LEDGER_PATH = File.expand_path('../../adapter-tests/vectors/eval-expected-failures.json', __dir__)
 
 class EvalVectorsTest < Minitest::Test
   def self.load_vectors
@@ -30,8 +27,6 @@ class EvalVectorsTest < Minitest::Test
       skip 'eval vectors not available outside the monorepo checkout'
     end
   else
-    EXPECTED = VectorUndefined.load_expected_failures(EVAL_LEDGER_PATH).freeze
-
     VECTORS.each_with_index do |vector_case, i|
       define_method("test_#{i}_#{vector_case[:note].gsub(/\W+/, '_')}") do
         note = vector_case[:note]
@@ -44,17 +39,8 @@ class EvalVectorsTest < Minitest::Test
           ok = false
           detail = "raised #{e.class}: #{e.message}"
         end
-        if EXPECTED.key?(note)
-          refute ok, "ledger entry '#{note}' now passes; remove it from the ledger (step #{EXPECTED[note]['step']})"
-        else
-          assert ok, "UNEXPECTED-FAIL #{note}: #{detail}"
-        end
+        assert ok, "FAIL #{note}: #{detail}"
       end
-    end
-
-    def test_zzz_every_ledger_entry_matches_a_case
-      notes = VECTORS.map { |c| c[:note] }
-      EXPECTED.each_key { |note| assert_includes notes, note, "ledger entry '#{note}' matches no eval case -- renamed note?" }
     end
   end
 

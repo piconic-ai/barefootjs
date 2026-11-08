@@ -28,8 +28,6 @@ when a committed file drifts from its case definitions.
 | `cases.ts` | `generate.ts` | `vectors.json` |
 | `eval-cases.ts` + `eval-reference.ts` | `eval-generate.ts` | `eval-vectors.json` |
 | `primitives/<op>.ts` (listed in `primitives/index.ts`) | `primitives/generate.ts` | `primitives/<op>.json` |
-| — (hand-maintained) | — | `primitives-expected-failures.json` (see "Primitive vectors" below) |
-| — (hand-maintained) | — | `eval-expected-failures.json` (see "The undefined rollout's eval ledger" below) |
 | the adapters' `NATIVE_SAFE` tables | `primitives/native-safe.ts` | `primitives-native-safe.json` (see "Primitive vectors" below) |
 | — (hand-maintained) | — | `<backend package>/vector-divergences.json` (see "Divergence declarations" below) |
 
@@ -71,18 +69,15 @@ bun run generate:primitive-vectors
   holding `undefined`, distinct from a missing key; an array hole is
   an element holding `undefined`. The generators refuse data with a
   `$num` or `$undef` key of its own.
-- Until a runtime carries `undefined` (its U step of the rollout,
-  `spec/js-undefined-value.md` §6), every harness decodes the sentinel
-  by one rule, kept in one small helper per runtime
-  (`vector_undefined.py`, `vector_undefined.rb`, `t/lib/VectorUndefined.pm`,
-  `_vector_undefined.php`, `VectorUndefined.java` with `JsonDecode.UNDEFINED`,
+- Every harness decodes the sentinel by one rule, kept in one small
+  helper per runtime (`vector_undefined.py`, `vector_undefined.rb`,
+  `t/lib/VectorUndefined.pm`, `_vector_undefined.php`,
+  `VectorUndefined.java` with `JsonDecode.UNDEFINED`,
   `tests/vector_undefined/mod.rs`, and `vectorUndefinedArg` /
   `isRuntimeUndefined` in Go's `vectors_test.go`): in `args` / `env` it is
-  the host nil the runtime receives for `undefined` today; in an `expect`
-  it matches only the runtime's own undefined value, which does not exist
-  yet, so it never matches (also nested). The cases that therefore fail
-  are listed in the expected-failure ledgers (primitive, eval) or pinned in
-  `vector-divergences.json` (helper). A native binding is the exception:
+  the runtime's own undefined value (`UNDEF`, `spec/js-undefined-value.md`),
+  and in an `expect` it matches only that value (also nested). A native
+  binding is the exception:
   where the host engine has its own undefined (Jinja's `Undefined`,
   MiniJinja's `UNDEFINED`), a native read that yields it matches a
   `$undef` expect, since that is what the template position sees.
@@ -115,10 +110,8 @@ The two corpora hold backends to different strictness:
   and compare a zero by sign. A boolean expect needs the host's boolean
   type, except on Perl, which has none: there any non-reference scalar
   or JSON boolean compares by truthiness. They allow no
-  `vector-divergences.json` declarations; the only allowance is the
-  step-0 ledger described below.
-- The evaluator vectors' only allowance, for the life of the
-  undefined rollout, is `eval-expected-failures.json` (below).
+  `vector-divergences.json` declarations and no expected failures: a
+  failing case fails its harness.
 
 ## Divergence declarations
 
@@ -221,8 +214,8 @@ claims in `primitives-native-safe.json`. That file is generated from the
 adapters' `NATIVE_SAFE` tables by `primitives/native-safe.ts` (a runtime
 claims the union of its adapters' tables: Mojolicious and Xslate share
 Perl, Twig and Blade share PHP), and generation refuses a claimed proof no
-vector domain covers. A native claim the vectors refute fails the harness;
-no ledger applies to it. Only the ops a rollout step has wired are listed
+vector domain covers. A native claim the vectors refute fails the harness.
+Only the ops a rollout step has wired are listed
 (`truthy`, step 1; `get`, step 2; `to_number` and `lt` / `le` / `gt` /
 `ge`, step 3; `to_string` and `plus`, step 4; `number`, step 6). A domain
 no table claims runs under the helper binding only: today
@@ -230,64 +223,9 @@ no table claims runs under the helper binding only: today
 Python and PHP add integers exactly (`spec/js-primitive-semantics.md`,
 "Decisions" (5); the limitation `plus-beyond-safe-integer`).
 
-### The expected-failure ledger
-
-`primitives-expected-failures.json` is a step-0 scaffold: for each
-runtime, the cases that fail today, each naming the rollout step that
-removes it:
-
-```json
-{ "runtimes": { "go": { "neg/0 negates to -0": { "step": 6 } } } }
-```
-
-A `step` is a #3824 rollout step number, which must be the step of the
-case's operation, or a U-step id of the undefined rollout
-(`spec/js-undefined-value.md` §6), which must be the U step that owns the
-runtime: `python` `"U2"`, `rust` `"U3"`, `ruby` `"U4"`, `perl` `"U5"`,
-`php` `"U6"`, `java` `"U7"`, `go` `"U8"` (`vectors/undefined-rollout.ts`).
-The `$undef` cases (an `undefined` operand or result) take the U step.
-
-It may only shrink. Each harness fails on
-
-1. a failing case the ledger does not list (`UNEXPECTED-FAIL <key>`),
-2. a listed case that now passes (delete the entry), and
-3. a listed key that names no case.
-
-`src/__tests__/primitive-vectors.test.ts` checks that the ledger names
-exactly the seven runtimes, that every key is a real case, and that
-every entry names the step that owns it: its operation's step (`step` in
-the op file) for a number, its runtime's U step for a string. A rollout step corrects the evaluator primitive (and with it the
-helper), deletes its entries, and the file goes away once every runtime
-is empty. It is not a divergence declaration: nothing pins the wrong
-value, and nothing may be added to it except by a new case that a later
-step owns.
-
-### The undefined rollout's eval ledger
-
-`eval-expected-failures.json` is the same scaffold for `eval-vectors.json`
-(`spec/js-undefined-value.md` §6): for each runtime, the eval cases that
-fail until its U step lands, keyed by the case `note`, each naming that
-step (`{ "step": "U2" }`). The same three rules apply: every eval runner
-fails on an unlisted failure (`UNEXPECTED-FAIL <note>`), on a listed case
-that now passes, and on a listed note that names no case.
-`src/__tests__/eval-vectors.test.ts` checks that it names exactly the
-seven runtimes, that every key is a real note and that every entry names
-its runtime's U step. Each U step empties its runtime; the file is
-deleted in U9 with the primitives ledger's U entries.
-
-`primitives-native-safe.json` also mirrors each runtime's
-`carriesUndefined` (the `NativeSafeTable` field every adapter declares,
-`false` everywhere until its U step; generation refuses two adapters of
-one runtime that disagree). Nothing reads it for planning before U1.
-
-The helper vectors (`vectors.json`) keep their divergence declarations:
-a helper case a runtime cannot match until its U step is pinned in its
-`vector-divergences.json` with today's value and a `reason` naming that
-step.
-
 ## Current runners
 
-| Backend | Helper runner | Declarations | Primitive runner (ledger key) | Eval runner |
+| Backend | Helper runner | Declarations | Primitive runner (native-safe key) | Eval runner |
 |---|---|---|---|---|
 | Go | `packages/adapter-go-template/runtime/vectors_test.go` | `packages/adapter-go-template/runtime/testdata/vector-divergences.json` | `packages/adapter-go-template/runtime/primitive_vectors_test.go` (`go`) | `packages/adapter-go-template/runtime/eval_vectors_test.go` |
 | Perl (Mojolicious, Xslate) | `packages/adapter-perl/t/helper_vectors.t` | `packages/adapter-perl/t/vector-divergences.json` | `packages/adapter-perl/t/primitive_vectors.t` (`perl`) | `packages/adapter-perl/t/eval_vectors.t` |
@@ -314,13 +252,10 @@ corpus is plain JSON. The runner must:
    value-compat (see above).
 2. Read `eval-vectors.json` and run each case's `ParsedExpr` tree
    through the backend's evaluator, matching the reference exactly
-   (no divergence allowance), and add the backend's key to
-   `eval-expected-failures.json` while that file exists.
+   (no divergence allowance).
 3. Read every `primitives/*.json`, bind each op to the backend's
-   helper (delegating to its evaluator primitive), and add the
-   backend's key to `primitives-expected-failures.json` (see "Primitive
-   vectors"). A new backend starts with its failures listed under the
-   step that owns each op. Bind each op of `primitives-native-safe.json`
+   helper (delegating to its evaluator primitive), and pass every case
+   (see "Primitive vectors"). Bind each op of `primitives-native-safe.json`
    to the backend's native operator too, add the adapter to
    `RUNTIME_TABLES` in `primitives/native-safe.ts`, and run the native
    binding over the domains its `NATIVE_SAFE` table claims.
