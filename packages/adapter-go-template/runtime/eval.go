@@ -388,6 +388,10 @@ func evalToNumber(v any) float64 {
 		if evalIsNumeric(v) {
 			return toFloat64(v)
 		}
+		// A typed nil (slice, map, pointer) is JS null: Number(null) is 0.
+		if isNull(v) {
+			return 0
+		}
 		return math.NaN()
 	}
 }
@@ -453,11 +457,13 @@ func evalIsNumeric(v any) bool {
 }
 
 func evalToString(v any) string {
-	if v == nil {
-		return "null"
-	}
 	if isUndefined(v) {
 		return "undefined"
+	}
+	// Host nil is JS null, a typed nil slice, map or pointer included
+	// (`IsNull`): it is never an empty array or object.
+	if isNilValue(v) {
+		return "null"
 	}
 	// JS spells the non-finite doubles "Infinity" / "-Infinity" / "NaN"; the
 	// runtime String() helper (fmt %v) would render "+Inf" / "-Inf" / "NaN",
@@ -538,7 +544,10 @@ func objectValue(v any) (reflect.Value, bool) {
 		rv = rv.Elem()
 	}
 	switch rv.Kind() {
-	case reflect.Slice, reflect.Array, reflect.Map, reflect.Struct:
+	case reflect.Slice, reflect.Map:
+		// A nil one is JS null, not an empty array or object.
+		return rv, !rv.IsNil()
+	case reflect.Array, reflect.Struct:
 		return rv, true
 	}
 	return rv, false
@@ -607,6 +616,10 @@ func evalStrictEq(l, r any) bool {
 	// `undefined` equals only itself, never `null`.
 	if lu, ru := isUndefined(l), isUndefined(r); lu || ru {
 		return lu && ru
+	}
+	// `null` equals only itself; a typed nil slice, map or pointer is null.
+	if ln, rn := isNilValue(l), isNilValue(r); ln || rn {
+		return ln && rn
 	}
 	lnum := evalIsNumeric(l)
 	rnum := evalIsNumeric(r)

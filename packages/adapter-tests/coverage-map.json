@@ -4236,6 +4236,29 @@
         "text"
       ]
     },
+    "defaulted-array-prop-null-coercion": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:null",
+        "literal:string",
+        "logical:??",
+        "member:optional"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "destructure-array-index-in-map": {
       "kinds": [
         "array-literal",
@@ -5278,6 +5301,18 @@
         "literal:string"
       ],
       "contexts": [
+        "text"
+      ]
+    },
+    "explicit-row-field-prop-stays-present": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "loop",
         "text"
       ]
     },
@@ -12497,6 +12532,25 @@
         "attribute",
         "condition",
         "loop",
+        "text"
+      ]
+    },
+    "optional-member-signal-seed-js-value": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
         "text"
       ]
     },

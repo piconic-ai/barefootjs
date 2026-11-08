@@ -10903,6 +10903,26 @@
         "xslate"
       ]
     },
+    "member-seeded-signal-attr-nullish": {
+      "title": "An attribute bound to a signal seeded from an object prop's omitted or null optional field",
+      "kind": "silent",
+      "given": "a signal seeded from an optional field of an object prop (`type Init = { label?: string }`, `createSignal(initial.label)`) bound to an attribute (`title={label()}`), with the object omitting the field or holding `null` for it",
+      "expected": "the attribute is omitted, as for any attribute whose value is `null` or `undefined`",
+      "actual": "renders the attribute with an empty value (`title=\"\"`)",
+      "fixtures": [
+        "optional-member-signal-seed-js-value"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
     "module-const-destructure-default": {
       "title": "A destructure default that reads a module-scope const",
       "kind": "silent",

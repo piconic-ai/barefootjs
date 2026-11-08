@@ -888,7 +888,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const propNames = new Set(ir.metadata.propsParams.map(p => p.name))
     return new Set(
       ir.metadata.signals
-        .filter(signal => nullable.has(signal.getter))
+        // A seed read off an object's optional field holds its JS value
+        // (`resolvePropMemberSeed`), `bf.Undefined` when the field is
+        // omitted, whatever the signal's declared type.
+        .filter(signal => nullable.has(signal.getter) || propMemberSeedGoType(this.emitCtx, signal) === 'interface{}')
         .filter(signal => isNillableSeedSignal(this.emitCtx, signal) || propMemberSeedGoType(this.emitCtx, signal) === 'interface{}' || (
           !propNames.has(signal.initialValue) &&
           !seedPassthroughPropName(this.emitCtx, signal.parsed) &&

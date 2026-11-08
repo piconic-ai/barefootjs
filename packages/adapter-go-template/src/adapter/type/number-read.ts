@@ -255,9 +255,9 @@ function pathType(ctx: GoEmitContext, type: TypeInfo, segments: readonly RowSegm
 }
 
 /**
- * A string, a boolean (or a literal union of one of them), an array or an
- * object, possibly unioned with `null` / `undefined`: a type no Go `float64`
- * field can hold. A named type counts only when the file defines it as a
+ * A string, a boolean (or a literal union of one of them) or an object,
+ * possibly unioned with `null` / `undefined`: a type no Go `float64` field
+ * can hold, which a text sink prints as it is. A named type counts only when the file defines it as a
  * struct or a string union.
  */
 function isNonNumberType(type: TypeInfo): boolean {
@@ -267,5 +267,7 @@ function isNonNumberType(type: TypeInfo): boolean {
   if (members.length === 0) return false
   const collapsed = collapseLiteralUnion(members.length === 1 ? members[0] : { ...type, unionTypes: members })
   if (collapsed.kind === 'primitive') return collapsed.primitive === 'string' || collapsed.primitive === 'boolean'
-  return collapsed.kind === 'array' || collapsed.kind === 'object'
+  // An array prints through `bf_text` too: its field may hold a typed nil
+  // (JS `null`), which html/template would print as `[]`.
+  return collapsed.kind === 'object'
 }

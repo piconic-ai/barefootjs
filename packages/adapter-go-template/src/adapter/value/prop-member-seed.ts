@@ -146,20 +146,15 @@ export function resolvePropMemberSeed(
     type = propInfo.type
     owner = `'${property}'`
   }
-  // An optional slice, map or nested-struct field is read as its JS value,
-  // `bf.Undefined` when the row omits it.
-  const optElem = optElemOf(goType)
-  if (optElem !== null && !isScalarOptElem(optElem)) return { kind: 'resolved', propName, path, goRef: `${goRef}.V()`, goType: 'interface{}', type }
+  // An optional field (`bf.Opt[T]`, `optFieldElemType`) is read as its JS
+  // value: `bf.Undefined` when the object omits it, nil for `null`.
+  if (optElemOf(goType) !== null) return { kind: 'resolved', propName, path, goRef: `${goRef}.V()`, goType: 'interface{}', type }
   return { kind: 'resolved', propName, path, goRef, goType, type }
 }
 
 /** The `T` of a `bf.Opt[T]` Go type, else null. */
 function optElemOf(goType: string): string | null {
   return goType.startsWith('bf.Opt[') && goType.endsWith(']') ? goType.slice('bf.Opt['.length, -1) : null
-}
-
-function isScalarOptElem(elem: string): boolean {
-  return !elem.startsWith('*') && !elem.startsWith('[]') && !elem.startsWith('map[')
 }
 
 /**

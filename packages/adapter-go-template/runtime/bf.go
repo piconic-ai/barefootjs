@@ -1704,13 +1704,18 @@ func Ternary(cond bool, a, b any) any {
 // as JS `String(n)` does (`1500000`, not `fmt`'s `1.5e+06`), and every
 // other value is returned unchanged, so html/template prints it exactly as
 // it would print the bare value (a `template.HTML` stays trusted markup, a
-// nil stays nil, a string is escaped as before).
+// nil stays nil, a string is escaped as before). A typed nil slice, map or
+// pointer is JS null too, which renders nothing, as an untyped nil does
+// (html/template would print it as `[]` / `map[]`).
 func Text(v any) any {
 	switch n := v.(type) {
 	case float64:
 		return numberString(n)
 	case float32:
 		return numberString(float64(n))
+	}
+	if v != nil && isNull(v) {
+		return nil
 	}
 	return v
 }
@@ -1732,7 +1737,8 @@ func Display(v any) any {
 // as a literal "null"/"undefined" in user-facing HTML. Document the
 // divergence explicitly so callers don't rely on JS-exact parity.
 func String(v any) string {
-	if v == nil {
+	// A typed nil slice, map or pointer is nil too.
+	if v == nil || isNull(v) {
 		return ""
 	}
 	if number, ok := v.(float64); ok {

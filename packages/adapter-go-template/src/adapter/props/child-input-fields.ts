@@ -946,8 +946,12 @@ function sourceRowReadFields(
     const assigns = rowReadAssignsToChildField(parsed!, row, shape, childShape, prop.name)
     if (assigns === false) return null
     // A `bf.Opt[T]` row field reaches the child through `bf.Coerce`,
-    // whichever way the child declares its field.
-    rowFields.push({ goField: capitalizeFieldName(prop.name), goValue: rowReadGoValue(accessor, shape), readsRow: true, ...(assigns === 'opt' ? { coerce: true as const } : {}) })
+    // whichever way the child declares its field, as its JS value: an
+    // explicit `tone={r.tone}` passes the key even when the row omits the
+    // field (`undefined`), where the Opt itself would carry its absence as a
+    // `{...props}` spread does.
+    const read = rowReadGoValue(accessor, shape)
+    rowFields.push({ goField: capitalizeFieldName(prop.name), goValue: assigns === 'opt' ? `bf.JSValue(${read})` : read, readsRow: true, ...(assigns === 'opt' ? { coerce: true as const } : {}) })
   }
   return rowFields
 }

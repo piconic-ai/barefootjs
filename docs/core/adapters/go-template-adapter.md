@@ -142,7 +142,7 @@ A `.map()` whose row is a child component gets a rows field named after the comp
 
 ## `null`, `undefined` and `bf.Opt`
 
-Go's `nil` is JS `null`. JS `undefined` is `bf.Undefined`, a typed nil that
+Go's `nil` is JS `null`, a typed nil slice, map or pointer included. JS `undefined` is `bf.Undefined`, a typed nil that
 prints as the empty string and that `{{if}}` reads as false. The runtime
 creates it only where JS reads `undefined`: a missing key or field, an index
 out of range, an `at()` / `find()` miss, `?.` over a nullish receiver, the

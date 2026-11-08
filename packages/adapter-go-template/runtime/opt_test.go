@@ -194,3 +194,35 @@ func TestIterAndReshape(t *testing.T) {
 		t.Errorf("OptOf reshape = %#v", got)
 	}
 }
+
+func TestTypedNilIsNull(t *testing.T) {
+	var s []string
+	var m map[string]any
+	var p *struct{ A string }
+	for _, v := range []any{s, m, p} {
+		if got := ToString(v); got != "null" {
+			t.Errorf("ToString(%T nil) = %q, want null", v, got)
+		}
+		if got := ToNumber(v); got != 0 {
+			t.Errorf("ToNumber(%T nil) = %v, want 0", v, got)
+		}
+		if got := Plus(v, "x"); got != "nullx" {
+			t.Errorf("Plus(%T nil, x) = %v, want nullx", v, got)
+		}
+		if Truthy(v) || !IsNull(v) {
+			t.Errorf("%T nil: Truthy/IsNull wrong", v)
+		}
+		if got := Text(v); got != nil {
+			t.Errorf("Text(%T nil) = %#v, want nil", v, got)
+		}
+		if !evalStrictEq(v, nil) || evalStrictEq(v, Undefined) {
+			t.Errorf("%T nil === null should hold, === undefined not", v)
+		}
+	}
+	if got := ToString([]string{}); got != "" {
+		t.Errorf("ToString([]) = %q, want empty", got)
+	}
+	if got := ToString(map[string]any{}); got != "[object Object]" {
+		t.Errorf("ToString({}) = %q", got)
+	}
+}
