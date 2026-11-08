@@ -74,4 +74,22 @@ module BarefootJS
   def nullish?(value)
     NilClass === value || Undefined === value
   end
+
+  # Whether a JSON-decoded value (symbol or string keys) is the
+  # `{"$undef": true}` sentinel, the manifest's (and the golden vectors')
+  # spelling of JS `undefined` (spec/js-undefined-value.md, "JSON encoding
+  # for vectors").
+  def undefined_sentinel?(value)
+    value.is_a?(Hash) && value.size == 1 && (value[:$undef] == true || value['$undef'] == true)
+  end
+
+  # `value` with every sentinel, at any depth, replaced by `UNDEF`; inside a
+  # hash it is a present key holding `undefined`.
+  def decode_undefined(value)
+    return UNDEF if undefined_sentinel?(value)
+    return value.map { |v| decode_undefined(v) } if value.is_a?(Array)
+    return value.transform_values { |v| decode_undefined(v) } if value.is_a?(Hash)
+
+    value
+  end
 end

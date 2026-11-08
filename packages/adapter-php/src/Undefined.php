@@ -63,6 +63,43 @@ final class Undefined implements \JsonSerializable
         return $v === null || $v instanceof self;
     }
 
+    /**
+     * Whether a JSON-decoded value (assoc array or stdClass) is the
+     * `{"$undef": true}` sentinel, the manifest's (and the golden vectors')
+     * spelling of JS `undefined` (spec/js-undefined-value.md, "JSON encoding
+     * for vectors").
+     */
+    public static function isSentinel($v): bool
+    {
+        if ($v instanceof \stdClass) {
+            $v = get_object_vars($v);
+        }
+        return is_array($v) && count($v) === 1 && array_key_exists('$undef', $v) && $v['$undef'] === true;
+    }
+
+    /**
+     * `$v` with every sentinel, at any depth, replaced by the undefined
+     * value; inside an object (or assoc array) it is a present key holding
+     * `undefined`. The container kinds are kept.
+     */
+    public static function decode($v)
+    {
+        if (self::isSentinel($v)) {
+            return self::value();
+        }
+        if (is_array($v)) {
+            return array_map([self::class, 'decode'], $v);
+        }
+        if ($v instanceof \stdClass) {
+            $out = new \stdClass();
+            foreach (get_object_vars($v) as $k => $x) {
+                $out->{$k} = self::decode($x);
+            }
+            return $out;
+        }
+        return $v;
+    }
+
     public function __toString(): string
     {
         return '';

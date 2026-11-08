@@ -20,19 +20,10 @@ sub arg { return $BarefootJS::Undefined::UNDEF }
 sub runtime_undefined { return BarefootJS::Undefined::is_undefined($_[0]) }
 
 # Whether a JSON-decoded value is `{"$undef": true}`.
-sub is_sentinel {
-    my ($v) = @_;
-    return 0 unless ref $v eq 'HASH' && keys %$v == 1 && exists $v->{'$undef'};
-    return $v->{'$undef'} ? 1 : 0;
-}
+sub is_sentinel { return BarefootJS::Undefined::is_undefined_sentinel($_[0]) }
 
-# Replaces every `$undef` in an `args` / `env` value with `arg()`.
-sub to_arg {
-    my ($v) = @_;
-    return arg() if is_sentinel($v);
-    return [ map { to_arg($_) } @$v ] if ref $v eq 'ARRAY';
-    return { map { $_ => to_arg($v->{$_}) } keys %$v } if ref $v eq 'HASH';
-    return $v;
-}
+# Replaces every `$undef` in an `args` / `env` value with `arg()`: the
+# runtime's own manifest decoder.
+sub to_arg { return BarefootJS::Undefined::decode_undefined($_[0]) }
 
 1;

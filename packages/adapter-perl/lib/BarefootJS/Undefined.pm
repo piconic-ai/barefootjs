@@ -64,6 +64,25 @@ sub is_null { return defined($_[0]) ? 0 : 1 }
 # JS `v == null`: `null` or `undefined`.
 sub is_nullish { return (!defined($_[0]) || ref($_[0]) eq __PACKAGE__) ? 1 : 0 }
 
+# Whether a JSON-decoded value is the `{"$undef": true}` sentinel, the
+# manifest's (and the golden vectors') spelling of JS `undefined`
+# (spec/js-undefined-value.md, "JSON encoding for vectors").
+sub is_undefined_sentinel {
+    my ($v) = @_;
+    return 0 unless ref $v eq 'HASH' && keys %$v == 1 && exists $v->{'$undef'};
+    return $v->{'$undef'} ? 1 : 0;
+}
+
+# `$v` with every sentinel, at any depth, replaced by `$UNDEF`; inside a
+# hash it is a present key holding `undefined`.
+sub decode_undefined {
+    my ($v) = @_;
+    return $UNDEF if is_undefined_sentinel($v);
+    return [ map { decode_undefined($_) } @$v ] if ref $v eq 'ARRAY';
+    return { map { $_ => decode_undefined($v->{$_}) } keys %$v } if ref $v eq 'HASH';
+    return $v;
+}
+
 1;
 __END__
 

@@ -747,7 +747,7 @@ final class BarefootJS
             $key = $ident((string) $name);
             $dArr = ($d instanceof \stdClass || is_array($d)) ? self::toAssoc($d) : null;
             if ($dArr === null) {
-                $extra[$key] = $d;
+                $extra[$key] = Undefined::decode($d);
                 continue;
             }
             if (!empty($dArr['isRestProps'])) {
@@ -766,10 +766,11 @@ final class BarefootJS
     }
 
     /** An `ssrDefaults` entry's seed when the caller's prop is absent or
-     * `undefined`: its `value`, or `undefined` when it has none. */
+     * `undefined`: its `value` (a `{"$undef": true}` sentinel in it is
+     * `undefined`, `Undefined::decode`), or `undefined` when it has none. */
     private static function staticFallback(array $d)
     {
-        return array_key_exists('value', $d) ? $d['value'] : Undefined::value();
+        return array_key_exists('value', $d) ? Undefined::decode($d['value']) : Undefined::value();
     }
 
     // -----------------------------------------------------------------

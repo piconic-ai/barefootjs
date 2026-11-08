@@ -37,14 +37,8 @@ pub fn is_sentinel_value(v: &JsValue) -> bool {
     *v == sentinel_value()
 }
 
-/// Replaces every decoded sentinel in an `args` / `env` value with [`arg`].
+/// Replaces every decoded sentinel in an `args` / `env` value with [`arg`]:
+/// the runtime's own manifest decoder.
 pub fn to_arg(v: JsValue) -> JsValue {
-    if is_sentinel_value(&v) {
-        return arg();
-    }
-    match v {
-        JsValue::Array(a) => JsValue::Array(a.into_iter().map(to_arg).collect()),
-        JsValue::Object(o) => JsValue::Object(o.into_iter().map(|(k, x)| (k, to_arg(x))).collect()),
-        other => other,
-    }
+    barefootjs::manifest::decode_undefined(v)
 }
