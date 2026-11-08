@@ -14,7 +14,7 @@ export const fixture = createFixture({
   source: `
 'use client'
 import { createSignal } from '@barefootjs/client'
-type O = { a?: string | null; b?: string | null; c?: string | null }
+type O = Record<string, string | null | undefined>
 export function UndefObjectMemberSignalSeed() {
   const [o] = createSignal<O>({ a: null, b: undefined })
   return (
