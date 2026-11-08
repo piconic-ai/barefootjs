@@ -291,6 +291,28 @@ to mean "unset" gets JS `null` semantics:
 The way to say "unset" is to omit the key. Each runtime also exports its
 `UNDEF` for a host that must pass "present `undefined`".
 
+**A static seed value carries `undefined` with the vector sentinel**
+(landed in U9). JSON has no `undefined`, so a seed such as
+`createSignal([undefined, null, 'x'])` or `createSignal({ a: null, b:
+undefined })` would otherwise reach the runtime as `[null, null, "x"]` or
+lose its present `b` key. `extractSsrDefaults` writes each `undefined`
+array element and object member inside a `value` as `{"$undef": true}`
+(the encoding of "JSON encoding for vectors" below), so the manifest holds
+`[{"$undef": true}, null, "x"]` and `{"a": null, "b": {"$undef": true}}`.
+Each runtime's seed (`_derive_stash_from_defaults` and its ports) decodes
+the sentinel, at any depth, to its `UNDEF`: Python
+`evaluator.decode_undefined`, Ruby `BarefootJS.decode_undefined`, Perl
+`BarefootJS::Undefined::decode_undefined`, PHP `Undefined::decode`, Rust
+`manifest::decode_undefined`, Java `JsonDecode.materialize` (the manifest
+loader's decoder), and the TS twin `decodeUndefinedMembers`. The vector
+harnesses reuse these decoders. A decoded object member is a present key
+holding `undefined`: `Object.entries` yields it, a read gives `undefined`,
+`JSON.stringify` drops it. Go bakes the seed into its constructor instead
+and spells the element or member `bf.Undefined` (a struct's `bf.Opt[T]`
+field takes `bf.Undef[T]()`). A top-level `undefined` seed is written as no
+`value`, which every seed already reads as `UNDEF`. The client never reads
+the manifest: it runs the signal's own initializer.
+
 ### Go: `bf.Opt[T]`
 
 Candidates, probed with go1.25.6 (`probe go/v1`, `go/v2`):

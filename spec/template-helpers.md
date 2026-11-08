@@ -70,8 +70,11 @@ committed, consumed by one thin harness per backend.
   present key holding `undefined`, distinct from a missing key
   (`spec/js-undefined-value.md`, "JSON encoding for vectors"). Every
   backend decodes an `args` sentinel to its runtime's undefined value,
-  and an `expect` sentinel matches only that value. Args must stay
-  finite.
+  and an `expect` sentinel matches only that value. The build manifest's
+  `ssrDefaults` seed values use the same sentinel for an `undefined`
+  array element or object member, decoded by each runtime's seed with the
+  same decoder (`spec/js-undefined-value.md`, "Shared: the seed and the
+  default"). Args must stay finite.
 
 Regenerate with `cd packages/adapter-tests && bun run
 generate:helper-vectors`; the freshness test in
