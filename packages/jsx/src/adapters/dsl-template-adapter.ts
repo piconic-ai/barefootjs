@@ -17,8 +17,8 @@ import {
   type NullishAttrContext,
 } from '../nullable-signal-attr.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
-import { declaredValueTypes, loopRowType, type DeclaredValueTypes } from './loop-row-type.ts'
-import { collectOperandTyping, EMPTY_OPERAND_TYPING, type OperandTyping, type ScopedOperandTyping } from './operand-typing.ts'
+import { declaredValueType, declaredValueTypes, loopRowType, type DeclaredValueTypes } from './loop-row-type.ts'
+import { collectOperandTyping, EMPTY_OPERAND_TYPING, factsOfType, type OperandTyping, type ScopedOperandTyping } from './operand-typing.ts'
 import { rootPropAliasesForLoop, rootPropAliasNames } from '../scope/root-prop-alias.ts'
 import type {
   CompilerError,
@@ -423,10 +423,13 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     this.rootPropAliases = rootPropAliasNames(ir, this.propsParams.map(p => p.name))
     this.scope = BindingScope.forComponent(this.propsObjectName)
     this.nullableOptionalProps = collectNullableOptionalProps(ir)
-    this.nullableSignalGetters = collectNullableSignalGetters(ir)
     this.nullishAttrCtx = collectNullishAttrContext(ir)
     this.stringValueNames = this.stringValueNamesFor(ir)
     this.declaredTypes = declaredValueTypes(ir)
+    this.nullableSignalGetters = new Set([
+      ...collectNullableSignalGetters(ir),
+      ...memberSeededNilSignals(ir, this.declaredTypes, this.scope),
+    ])
     this.operandTyping = collectOperandTyping(ir.metadata, { namedFields: this.declaredTypes.namedFields })
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
@@ -459,3 +462,15 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
   }
 }
 
+/**
+ * Getters of signals seeded from a member of a prop whose declared type
+ * admits `null` or `undefined` (`type Init = { label?: string }`,
+ * `createSignal(initial.label)`): the signal holds the field's JS value, so
+ * an attribute bound to it is omitted when that value is nullish, as for any
+ * other nullable signal (`collectNullableSignalGetters`).
+ */
+function memberSeededNilSignals(ir: ComponentIR, types: DeclaredValueTypes, scope: BindingScope): string[] {
+  return (ir.metadata.signals ?? [])
+    .filter(s => s.parsed?.kind === 'member' && factsOfType(declaredValueType(types, s.parsed, scope)).types.has('nil'))
+    .map(s => s.getter)
+}

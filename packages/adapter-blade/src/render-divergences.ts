@@ -152,8 +152,6 @@ export const renderDivergences: RenderDivergences = {
  * `@barefootjs/go-template`'s `dataPointDivergences`.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
-  'optional-member-signal-seed-js-value:omitted': { limitation: 'member-seeded-signal-attr-nullish' },
-  'optional-member-signal-seed-js-value:null': { limitation: 'member-seeded-signal-attr-nullish' },
   // `signal-array-prop-fallback-seed-default:items-null` used to sit here:
   // the seed applied a destructure default to an explicit `null`. It now
   // applies only to an absent or `undefined` prop (#3848 U6).
