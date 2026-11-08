@@ -1772,7 +1772,7 @@ func NewToggleProps(in ToggleInput) ToggleProps {
 			BfParent: scopeID,
 			BfMount: "s0",
 			Label: item.Label,
-			DefaultOn: bf.Coerce(ToggleItemInput{}.DefaultOn, item.DefaultOn),
+			DefaultOn: bf.Coerce(ToggleItemInput{}.DefaultOn, bf.JSValue(item.DefaultOn)),
 		})
 		toggleItems[i].BfDataKey = bf.String(item.Label)
 	}
