@@ -1,8 +1,10 @@
 ---
-"@barefootjs/go-template": major
+"@barefootjs/go-template": minor
 ---
 
-The Go template adapter and its Go runtime (`github.com/barefootjs/runtime/bf`) now carry JS `undefined` apart from `null` (`spec/js-undefined-value.md`, rollout step U8). This changes the generated Go API: see the migration guide in the [Go Template Adapter docs](../docs/core/adapters/go-template-adapter.md#migrating-to-bfopt).
+**Breaking change** of the generated Go API and the Go runtime (released as a minor under the 0.x convention): read the migration guide in the [Go Template Adapter docs](../docs/core/adapters/go-template-adapter.md#migrating-to-bfopt) before upgrading.
+
+The Go template adapter and its Go runtime (`github.com/barefootjs/runtime/bf`) now carry JS `undefined` apart from `null` (`spec/js-undefined-value.md`, rollout step U8).
 
 Go's `nil` is JS `null`; JS `undefined` is the new `bf.Undefined` (a typed nil that prints as `""`), created only where JS reads `undefined`: a missing key or field, an out-of-range index, `.at()` / `.find()` with no result, `?.` over a nullish receiver, the `undefined` identifier (`bf_undefined`) and an omitted prop. `String()` / template literals / `+` print it as `"undefined"` (`null` as `"null"`; `String(x)` is now `bf_to_string`, `Number(x)` `bf_to_number`), `Number()`, arithmetic and the `Math` helpers read it as `NaN` (`null` as `0`), `x === null` / `x === undefined` are strict tests (`bf_is_null` / `bf_is_undefined`; `x == null` is `bf_is_nullish`), `JSON.stringify` (`bf.JSON`, which now returns `bf.Undefined` for an `undefined` argument) and the `bf-p` payload drop an `undefined` member and write an `undefined` element as `null`, `includes` / `indexOf` / `startsWith` tell the two apart, a sort puts `undefined` last, and an optional method argument (`slice` end, `join` / `split` separator, `split` limit, `padStart` pad, `endsWith` position, `flat` depth) takes its default only when it is omitted or `undefined`. A destructure default now applies only to an omitted or `undefined` prop: an explicit `null` keeps `null`. A `{...props}` spread onto a child carries a key whenever the caller passed it, `null` and `undefined` included.
 

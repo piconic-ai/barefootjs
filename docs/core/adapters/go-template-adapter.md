@@ -185,8 +185,8 @@ omitted one when the row is encoded. `bf.JSON` (`JSON.stringify`) drops an
 
 ### Migrating to `bf.Opt`
 
-Generated input structs change with this release of the runtime (it is a
-major version), so host code that builds them changes too:
+Generated input structs change with this release of the runtime (a breaking
+change, released as a 0.x minor), so host code that builds them changes too:
 
 - Wrap each optional or nullable prop you pass in `bf.Some(...)`. A number
   needs its type when you pass a constant: `bf.Some[float64](0)`.
