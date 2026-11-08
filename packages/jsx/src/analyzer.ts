@@ -4803,9 +4803,10 @@ function collectKeysFromMembers(
  * same check, recursively. A same-file object type referenced by name
  * (`Item` in `items: Item[]`) is checked through its declaration's members
  * (`LocalObjectMemberTypes`) the same way an inline object literal's are.
- * A union, a function, or any other named
- * type reachable ANYWHERE inside the shape declines the WHOLE member (not
- * just that one leaf): `collectMemberTypes` is an all-or-nothing gate per
+ * A leaf typed `T | null` / `T | undefined` inside the shape resolves when
+ * `T` does (`isNilUnionOfResolvable`). Any other union, a function, or any
+ * other named type reachable ANYWHERE inside the shape declines the WHOLE
+ * member (not just that one leaf): `collectMemberTypes` is an all-or-nothing gate per
  * member, so a partially-resolvable structural type must still decline —
  * per-field graceful degradation is `typeInfoToGo`'s job downstream, not
  * this gate's.
@@ -4832,8 +4833,9 @@ function isResolvableMemberType(
   info: TypeInfo,
   localObjectMembers?: LocalObjectMemberTypes,
   visiting: ReadonlySet<string> = new Set(),
+  nested = false,
 ): boolean {
-  const recurse = (t: TypeInfo): boolean => isResolvableMemberType(t, localObjectMembers, visiting)
+  const recurse = (t: TypeInfo): boolean => isResolvableMemberType(t, localObjectMembers, visiting, true)
   switch (info.kind) {
     case 'primitive':
       return info.primitive === 'string' || info.primitive === 'number' || info.primitive === 'boolean'
@@ -4847,16 +4849,33 @@ function isResolvableMemberType(
       const members = localObjectMembers(info.raw)
       if (!members) return false
       const inner = new Set(visiting).add(info.raw)
-      return members.every(t => isResolvableMemberType(t, localObjectMembers, inner))
+      return members.every(t => isResolvableMemberType(t, localObjectMembers, inner, true))
     }
     case 'array':
       return !!info.elementType && recurse(info.elementType)
     case 'object':
       return info.properties !== undefined && info.properties.every(prop => recurse(prop.type))
-    // Unions, functions, and `unknown` all decline — see docstring.
+    case 'union':
+      // A field or element of a structural shape typed `T | null` /
+      // `T | undefined` (`{ label?: string | null }`): the shape itself is
+      // resolvable when `T` is, exactly as the `props`-object form already
+      // resolves it. Every runtime carries `null` and `undefined` as values
+      // (spec/js-undefined-value.md), and the field keeps its union type, so
+      // a reader still sees that it may be nil. A top-level member typed
+      // with a union still declines.
+      return nested && isNilUnionOfResolvable(info, recurse)
+    // Functions, other unions and `unknown` all decline — see docstring.
     default:
       return false
   }
+}
+
+/** A union of `null` / `undefined` with at least one other member, every other member resolvable. */
+function isNilUnionOfResolvable(info: TypeInfo, resolves: (t: TypeInfo) => boolean): boolean {
+  const isNil = (t: TypeInfo) => t.kind === 'primitive' && (t.primitive === 'null' || t.primitive === 'undefined')
+  const members = info.unionTypes ?? []
+  const present = members.filter(t => !isNil(t))
+  return present.length > 0 && present.length < members.length && present.every(resolves)
 }
 
 /**
@@ -4930,7 +4949,8 @@ function localObjectMemberTypesFor(ctx: AnalyzerContext): LocalObjectMemberTypes
  * - A member resolves a type when it is a PRIMITIVE (string/number/boolean),
  *   a CATALOGUED rich type (`Date`), or a STRUCTURAL shape (array/object,
  *   inline or a same-file object type referenced by name) built entirely
- *   out of those, recursively (#2677). Unions, functions, and other named
+ *   out of those, recursively (#2677), a field of one possibly typed
+ *   `T | null` / `T | undefined`. Other unions, functions, and other named
  *   types (imports, generics, `Map`, `Set`, …) are left as `unknown` — see
  *   `isResolvableMemberType`'s own docstring for why the structural cases
  *   are safe to admit and why those three still are not.

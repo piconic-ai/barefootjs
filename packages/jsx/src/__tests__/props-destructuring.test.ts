@@ -210,6 +210,23 @@ describe('Destructured props keep their declared types (#2150)', () => {
     expect(typeOf(ctx, 'configs')).toEqual({ kind: 'unknown', raw: 'unknown' })
   })
 
+  test('resolves a structural member whose leaf is a nil union of a resolvable type; a top-level union still declines', () => {
+    const source = `
+      type Init = { label?: string | null; n: number | undefined }
+      type Props = { initial: Init; rows: { tag: string | null }[]; top: string | null }
+
+      export function Component({ initial, rows, top }: Props) {
+        return <div>{initial.label}{rows.length}{top}</div>
+      }
+    `
+
+    const ctx = analyzeComponent(source, 'Component.tsx')
+
+    expect(typeOf(ctx, 'initial')?.kind).toBe('interface')
+    expect(typeOf(ctx, 'rows')?.kind).toBe('array')
+    expect(typeOf(ctx, 'top')).toEqual({ kind: 'unknown', raw: 'unknown' })
+  })
+
   // A same-file object type referenced BY NAME resolves like its inline
   // spelling — the `props`-object form (`props: { initial: State }`) always
   // kept it; the destructured form declined it to `unknown`.
