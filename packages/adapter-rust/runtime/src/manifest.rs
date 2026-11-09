@@ -124,7 +124,7 @@ pub fn derive_stash_from_defaults(defaults: &JsValue, props: &JsValue) -> JsValu
         let dm = match d.as_object() {
             Some(m) => m,
             None => {
-                extra.insert(name.clone(), d.clone());
+                extra.insert(name.clone(), decode_undefined(d.clone()));
                 continue;
             }
         };
@@ -152,7 +152,34 @@ pub fn derive_stash_from_defaults(defaults: &JsValue, props: &JsValue) -> JsValu
 /// entry always carries its `value`. Shared with
 /// `runtime::BfInstance::render_child`'s `MjValue`-domain twin.
 pub(crate) fn static_fallback(entry: &BTreeMap<String, JsValue>) -> JsValue {
-    entry.get("value").cloned().unwrap_or(JsValue::Undefined)
+    entry.get("value").cloned().map(decode_undefined).unwrap_or(JsValue::Undefined)
+}
+
+/// Whether a decoded JSON value is the `{"$undef": true}` sentinel, the
+/// manifest's (and the golden vectors') spelling of JS `undefined`
+/// (spec/js-undefined-value.md, "JSON encoding for vectors").
+pub fn is_undefined_sentinel(v: &JsValue) -> bool {
+    matches!(v, JsValue::Object(o) if o.len() == 1 && matches!(o.get("$undef"), Some(JsValue::Bool(true))))
+}
+
+/// `v` with every `{"$undef": true}` sentinel, at any depth, replaced by
+/// [`JsValue::Undefined`]; inside an object it is a present key holding
+/// `undefined`. Every other object key that begins with `$$` loses one
+/// leading `$`: the manifest encoder escapes a seed's own `$`-prefixed keys
+/// that way, so data shaped like the sentinel stays data.
+pub fn decode_undefined(v: JsValue) -> JsValue {
+    if is_undefined_sentinel(&v) {
+        return JsValue::Undefined;
+    }
+    match v {
+        JsValue::Array(a) => JsValue::Array(a.into_iter().map(decode_undefined).collect()),
+        JsValue::Object(o) => JsValue::Object(o.into_iter().map(|(k, x)| (unescape_key(k), decode_undefined(x))).collect()),
+        other => other,
+    }
+}
+
+fn unescape_key(k: String) -> String {
+    if k.starts_with("$$") { k[1..].to_string() } else { k }
 }
 
 /// Strip the manifest's `markedTemplate` value (e.g. `"templates/PostList

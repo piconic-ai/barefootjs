@@ -115,6 +115,32 @@ def is_undefined(v: Any) -> bool:
     return getattr(type(v), UNDEFINED_MARKER, False) is True
 
 
+def is_undef_sentinel(v: Any) -> bool:
+    """Whether a JSON-decoded value is the `{"$undef": true}` sentinel that a
+    manifest's `ssrDefaults` (and the golden vectors) spell JS `undefined`
+    with (spec/js-undefined-value.md, "JSON encoding for vectors")."""
+    return isinstance(v, dict) and len(v) == 1 and v.get("$undef") is True
+
+
+def decode_undefined(v: Any) -> Any:
+    """`v` with every `{"$undef": true}` sentinel, at any depth, replaced by
+    `UNDEF`; a sentinel inside a dict is a present key holding `undefined`.
+    Every other dict key that begins with `$$` loses one leading `$`: the
+    manifest encoder escapes a seed's own `$`-prefixed keys that way, so data
+    shaped like the sentinel stays data."""
+    if is_undef_sentinel(v):
+        return undefined()
+    if isinstance(v, list):
+        return [decode_undefined(x) for x in v]
+    if isinstance(v, dict):
+        return {_unescape_key(k): decode_undefined(x) for k, x in v.items()}
+    return v
+
+
+def _unescape_key(k: Any) -> Any:
+    return k[1:] if isinstance(k, str) and k.startswith("$$") else k
+
+
 def is_null(v: Any) -> bool:
     """JS `v === null`: host `None`."""
     return v is None

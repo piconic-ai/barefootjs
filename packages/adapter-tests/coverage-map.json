@@ -10833,6 +10833,25 @@
         "text"
       ]
     },
+    "nullable-member-signal-seed-destructured": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "nullable-number-arithmetic-destructured": {
       "kinds": [
         "binary",
@@ -11743,6 +11762,22 @@
         "identifier"
       ],
       "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "object-entries-typed-object-signal": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
       "contexts": [
         "attribute",
         "loop",
@@ -17625,6 +17660,26 @@
         "text"
       ]
     },
+    "undef-array-element-signal-seed": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:null",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "undef-null-array-search": {
       "kinds": [
         "array-literal",
@@ -17908,6 +17963,69 @@
         "array-method:indexOf",
         "array-method:startsWith",
         "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "undef-object-member-signal-seed": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "undef-sentinel-seed-getter-alias": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:boolean",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "undef-sentinel-shaped-seed-data": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
         "literal:string"
       ],
       "contexts": [

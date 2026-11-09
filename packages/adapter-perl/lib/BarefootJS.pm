@@ -656,7 +656,7 @@ sub _derive_stash_from_defaults ($defaults, $props) {
     for my $name (keys %$defaults) {
         my $d = $defaults->{$name};
         if (ref($d) ne 'HASH') {
-            $extra{$name} = $d;
+            $extra{$name} = BarefootJS::Undefined::decode_undefined($d);
             next;
         }
         if ($d->{isRestProps}) {
@@ -674,9 +674,10 @@ sub _derive_stash_from_defaults ($defaults, $props) {
 }
 
 # An `ssrDefaults` entry's seed when the caller's prop is absent or `UNDEF`:
-# its `value`, or `UNDEF` when it has none.
+# its `value` (a `{"$undef": true}` sentinel in it is `UNDEF`), or `UNDEF`
+# when it has none.
 sub _static_fallback ($d) {
-    return exists $d->{value} ? $d->{value} : $UNDEF;
+    return exists $d->{value} ? BarefootJS::Undefined::decode_undefined($d->{value}) : $UNDEF;
 }
 
 # ---------------------------------------------------------------------------

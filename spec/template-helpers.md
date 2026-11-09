@@ -68,10 +68,15 @@ committed, consumed by one thin harness per backend.
   "-Infinity"}`. JS `undefined`, in `args` or `expect`, is the
   reserved sentinel `{"$undef": true}`; inside an object it is a
   present key holding `undefined`, distinct from a missing key
-  (`spec/js-undefined-value.md`, "JSON encoding for vectors"). A
-  backend whose runtime does not carry `undefined` yet decodes an
-  `args` sentinel to its host nil and pins the cases whose `expect`
-  it cannot match. Args must stay finite.
+  (`spec/js-undefined-value.md`, "JSON encoding for vectors"). Every
+  backend decodes an `args` sentinel to its runtime's undefined value,
+  and an `expect` sentinel matches only that value. The build manifest's
+  `ssrDefaults` seed values use the same sentinel for an `undefined`
+  array element or object member, and escape a seed's own `$`-prefixed
+  object keys with one more `$` (`$undef` → `$$undef`) so data shaped
+  like the sentinel stays data; each runtime's seed decodes both with the
+  same decoder (`spec/js-undefined-value.md`, "Shared: the seed and the
+  default"). Args must stay finite.
 
 Regenerate with `cd packages/adapter-tests && bun run
 generate:helper-vectors`; the freshness test in
@@ -253,7 +258,8 @@ length units differ across hosts otherwise).
 ### at
 
 JS `.at(i)` on arrays and strings, receiver-dispatched: negative
-indices count from the end; out of range → `undefined` ≡ `null`. A
+indices count from the end; out of range → `undefined` (the runtime's
+undefined value, apart from `null`). A
 string is indexed in UTF-16 code units (`"a😀b".at(-1)` is `"b"`;
 #3613). An index or position is read with `ToIntegerOrInfinity`:
 `NaN` is `0` (`"abc".at(NaN)` is `"a"`) and `±Infinity` is out of range,
@@ -437,7 +443,8 @@ JS `.every` / `.some` over the field-truthiness projection.
 ### filter / find / find_index / find_last / find_last_index
 
 JS semantics over the field-equality projection: `find`/`find_last`
-yield the element or `undefined` ≡ `null`; index forms yield `-1`;
+yield the element or `undefined` (apart from `null`); index forms yield
+`-1`;
 `filter` with no matches yields `[]`.
 
 ### sort

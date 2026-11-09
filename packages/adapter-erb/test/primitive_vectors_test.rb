@@ -8,11 +8,8 @@ require_relative 'vector_undefined'
 # JS primitive-operation vector conformance (spec/js-primitive-semantics.md,
 # "Conformance"): every packages/adapter-tests/vectors/primitives/<op>.json
 # case runs against the BarefootJS::Context helper a compiled ERB template
-# calls for that operation. The step-0 expected-failure ledger
-# (packages/adapter-tests/vectors/primitives-expected-failures.json) lists the
-# cases that fail on Ruby today, each naming the rollout step that removes it.
-# It may only shrink: an unlisted failure fails, and so does a listed case
-# that now passes. Skipped outside a monorepo checkout.
+# calls for that operation. Every case must pass. Skipped outside a monorepo
+# checkout.
 PRIMITIVES_VECTORS_DIR = File.expand_path('../../adapter-tests/vectors', __dir__)
 PRIMITIVE_FILES = Dir.glob(File.join(PRIMITIVES_VECTORS_DIR, 'primitives', '*.json')).sort
 
@@ -129,32 +126,22 @@ class PrimitiveVectorsTest < Minitest::Test
   def test_primitive_vectors
     skip 'primitive vectors not available outside the monorepo checkout' if PRIMITIVE_FILES.empty?
 
-    ledger_path = File.join(PRIMITIVES_VECTORS_DIR, 'primitives-expected-failures.json')
-    expected = VectorUndefined.load_expected_failures(ledger_path)
     problems = []
-    seen = {}
     total = passed = 0
     PRIMITIVE_FILES.each do |path|
       JSON.parse(File.read(path, encoding: Encoding::UTF_8), symbolize_names: true)[:cases].each do |c|
         key = "#{c[:fn]}/#{c[:note]}"
-        seen[key] = true
         total += 1
         ok, detail = self.class.run_case(c)
         passed += 1 if ok
-        if ok && expected.key?(key)
-          problems << "ledger entry '#{key}' now passes; remove it from the ledger (step #{expected[key]['step']})"
-        elsif !ok && !expected.key?(key)
-          problems << "UNEXPECTED-FAIL #{key}: #{detail}"
-        end
+        problems << "FAIL #{key}: #{detail}" unless ok
       end
     end
-    expected.each_key { |k| problems << "ledger entry '#{k}' matches no primitives case -- renamed note?" unless seen[k] }
-    puts "primitives: #{total} cases, #{passed} pass, #{expected.size} in the expected-failure ledger"
+    puts "primitives: #{total} cases, #{passed} pass"
     assert_empty problems, "\n#{problems.join("\n")}"
   end
 
-  # Every native claim gives the JS answer on every case it covers; no ledger
-  # applies.
+  # Every native claim gives the JS answer on every case it covers.
   def test_native_claims
     skip 'primitive vectors not available outside the monorepo checkout' if PRIMITIVE_FILES.empty?
 

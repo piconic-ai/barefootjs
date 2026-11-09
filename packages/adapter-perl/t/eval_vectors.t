@@ -45,23 +45,11 @@ die "eval-vectors.json contains no cases" unless @{ $doc->{cases} || [] };
 # divergences here (unlike the bf->string / number helper vectors). Each
 # case's real ParsedExpr tree, evaluated against its environment, must
 # reproduce the JS-computed expect exactly — same input → same output as Go.
-# The only allowance is the shrink-only expected-failure ledger of the
-# undefined rollout (spec/js-undefined-value.md, section 6), keyed by note:
-# an unlisted failure fails, and so do a listed case that now passes and a
-# listed note that names no case.
-my $ledger_path = File::Spec->catfile($FindBin::Bin, '..', '..', 'adapter-tests', 'vectors', 'eval-expected-failures.json');
-my %expected = do {
-    open my $fh, '<:raw', $ledger_path or die "open $ledger_path: $!";
-    local $/;
-    %{ JSON::PP->new->utf8->decode(scalar <$fh>)->{runtimes}{perl} // die "ledger has no \"perl\" runtime" };
-};
-my %seen;
 for my $case (@{ $doc->{cases} }) {
     my $note   = $case->{note};
     my $expr   = $case->{expr};
     my $env    = VectorUndefined::to_arg($case->{env});
     my $expect = $case->{expect};
-    $seen{$note} = 1;
 
     my ($ok, $detail);
     my $got = eval { BarefootJS::Evaluator::evaluate($expr, $env) };
@@ -71,16 +59,7 @@ for my $case (@{ $doc->{cases} }) {
         $ok = _match($got, $expect) ? 1 : 0;
         $detail = 'got ' . explain_value($got) . ', want ' . explain_value($expect);
     }
-    if ($ok && $expected{$note}) {
-        fail("ledger entry '$note' now passes; remove it from the ledger (step $expected{$note}{step})");
-    } elsif (!$ok && !$expected{$note}) {
-        fail("UNEXPECTED-FAIL $note: $detail");
-    } else {
-        pass($note . ($ok ? '' : " (expected failure, step $expected{$note}{step})"));
-    }
-}
-for my $note (sort keys %expected) {
-    fail("ledger entry '$note' matches no eval case — renamed note?") unless $seen{$note};
+    ok($ok, $note) or diag("FAIL $note: $detail");
 }
 
 done_testing;

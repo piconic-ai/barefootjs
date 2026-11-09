@@ -3,11 +3,7 @@
 
 Runs every `packages/adapter-tests/vectors/primitives/<op>.json` case against
 the `BarefootJS` helper a compiled Jinja template calls for that operation.
-The step-0 expected-failure ledger
-(`packages/adapter-tests/vectors/primitives-expected-failures.json`) lists the
-cases that fail on Python today, each naming the rollout step that removes
-it. It may only shrink: an unlisted failure fails, and so does a listed case
-that now passes.
+Every case must pass.
 
 Skipped outside a monorepo checkout, like the other vector harnesses.
 """
@@ -23,11 +19,10 @@ import unittest
 from jinja2 import Environment, Undefined
 
 from barefootjs import BarefootJS
-from tests.vector_undefined import UNDEFINED_EXPECT, is_runtime_undefined, load_expected_failures, undefined_to_arg
+from tests.vector_undefined import UNDEFINED_EXPECT, is_runtime_undefined, undefined_to_arg
 
 VECTORS_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "..", "adapter-tests", "vectors")
 PRIMITIVE_FILES = sorted(glob.glob(os.path.join(VECTORS_DIR, "primitives", "*.json")))
-LEDGER_PATH = os.path.join(VECTORS_DIR, "primitives-expected-failures.json")
 NATIVE_SAFE_PATH = os.path.join(VECTORS_DIR, "primitives-native-safe.json")
 
 bf = BarefootJS(None, {})
@@ -166,29 +161,22 @@ def _run(case, bind=None, match=_match):
 @unittest.skipUnless(PRIMITIVE_FILES, "primitive vectors not available outside the monorepo checkout")
 class PrimitiveVectorsTest(unittest.TestCase):
     def test_primitive_vectors(self):
-        expected = load_expected_failures(LEDGER_PATH)
-        problems, seen, total, passed = [], set(), 0, 0
+        problems, total, passed = [], 0, 0
         for path in PRIMITIVE_FILES:
             with open(path, encoding="utf-8") as fh:
                 cases = json.load(fh)["cases"]
             for case in cases:
                 key = f"{case['fn']}/{case['note']}"
-                seen.add(key)
                 total += 1
                 ok, detail = _run(case)
                 passed += ok
-                if ok and key in expected:
-                    problems.append(
-                        f"ledger entry '{key}' now passes; remove it from the ledger (step {expected[key]['step']})"
-                    )
-                elif not ok and key not in expected:
-                    problems.append(f"UNEXPECTED-FAIL {key}: {detail}")
-        problems += [f"ledger entry '{k}' matches no primitives case -- renamed note?" for k in expected if k not in seen]
-        print(f"primitives: {total} cases, {passed} pass, {len(expected)} in the expected-failure ledger")
+                if not ok:
+                    problems.append(f"FAIL {key}: {detail}")
+        print(f"primitives: {total} cases, {passed} pass")
         self.assertEqual(problems, [], "\n" + "\n".join(problems))
 
     def test_native_claims(self):
-        """Every native claim gives the JS answer on every case it covers; no ledger applies."""
+        """Every native claim gives the JS answer on every case it covers."""
         with open(NATIVE_SAFE_PATH, encoding="utf-8") as fh:
             claims = json.load(fh)["runtimes"]["python"]
         problems, ran = [], 0

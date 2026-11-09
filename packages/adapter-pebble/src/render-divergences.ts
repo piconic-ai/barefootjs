@@ -100,11 +100,6 @@ export const renderDivergences: RenderDivergences = {
   // the `undef-null-*` fixtures used to sit here: the runtime held
   // `undefined` and `null` as one nil. It now carries `Undefined.INSTANCE`
   // apart from `null` (#3848 U7), so each renders like Hono.
-  // A signal seeded from an object literal with an `undefined` member: the
-  // static seed (`extractSsrDefaults`, shared by every target's manifest)
-  // writes the member as `null`, so `JSON.stringify` keeps it as `null`
-  // where JS drops it. The runtime's JSON writer drops an `Undefined` member.
-  'undef-null-json-stringify-object-member': { limitation: 'host-nil-collapses-undefined-and-null' },
 }
 
 /**
@@ -116,8 +111,6 @@ export const renderDivergences: RenderDivergences = {
  * `@barefootjs/go-template`'s `dataPointDivergences`.
  */
 export const dataPointDivergences: Readonly<Record<string, { limitation: string }>> = {
-  'optional-member-signal-seed-js-value:omitted': { limitation: 'member-seeded-signal-attr-nullish' },
-  'optional-member-signal-seed-js-value:null': { limitation: 'member-seeded-signal-attr-nullish' },
   // `signal-array-prop-fallback-seed-default:items-null` used to sit here:
   // the seed applied a destructure default to an explicit `null`. It now
   // applies only to an absent or `undefined` prop (#3848 U7).

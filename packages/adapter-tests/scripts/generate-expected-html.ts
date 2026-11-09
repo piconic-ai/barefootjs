@@ -121,16 +121,12 @@ async function main() {
 
       if (content.includes('expectedHtml:')) {
         // Replace existing expectedHtml (single-line or multi-line)
-        content = content.replace(
-          /  expectedHtml: `[^`]*`,/s,
-          expectedHtmlBlock,
-        )
+        // A replacer function, not a string: a `$$` / `$&` in the HTML is
+        // text, not a replacement pattern.
+        content = content.replace(/  expectedHtml: `[^`]*`,/s, () => expectedHtmlBlock)
       } else {
         // Insert expectedHtml before the closing `})`
-        content = content.replace(
-          /\}\)\s*$/,
-          `${expectedHtmlBlock}\n})\n`,
-        )
+        content = content.replace(/\}\)\s*$/, () => `${expectedHtmlBlock}\n})\n`)
       }
 
       writeFileSync(filePath, content)

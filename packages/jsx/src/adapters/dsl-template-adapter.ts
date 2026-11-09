@@ -10,15 +10,15 @@ import { buildImportAliasMap } from '../ir-to-client-js/component-scope.ts'
 import { prepareLoweringMatchers, type LoweringMatcher } from '../lowering-registry.ts'
 import type { ParsedExpr } from '../expression-parser.ts'
 import {
+  arithmeticOperandCoercion,
   collectNullableSignalGetters,
   collectNullishAttrContext,
   type ArithmeticCoercion,
   type NullishAttrContext,
 } from '../nullable-signal-attr.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
-import { declaredValueTypes, loopRowType, type DeclaredValueTypes } from './loop-row-type.ts'
-import { collectOperandTyping, EMPTY_OPERAND_TYPING, type OperandTyping, type ScopedOperandTyping } from './operand-typing.ts'
-import type { NativeSafeTable } from './primitive-plan.ts'
+import { declaredValueType, declaredValueTypes, loopRowType, type DeclaredValueTypes } from './loop-row-type.ts'
+import { collectOperandTyping, EMPTY_OPERAND_TYPING, factsOfType, type OperandTyping, type ScopedOperandTyping } from './operand-typing.ts'
 import { rootPropAliasesForLoop, rootPropAliasNames } from '../scope/root-prop-alias.ts'
 import type {
   CompilerError,
@@ -29,13 +29,7 @@ import type {
   IRMetadata,
   PreambleValueDeclaration,
 } from '../types.ts'
-import {
-  arithmeticCoercionOrRefuse,
-  refuseAmbiguousNilArithmetic,
-  refuseAmbiguousNilMemoArithmetic,
-  type AmbiguousNilArithmeticSink,
-} from './ambiguous-nil-arithmetic.ts'
-import { refuseNonPrimitiveStrictEquality } from './non-primitive-equality.ts'
+import { refuseNonPrimitiveStrictEquality, type NonPrimitiveEqualitySink } from './non-primitive-equality.ts'
 import { collectImportedLoopChildComponentErrors } from './component-tree.ts'
 import { computedConstContext, type ComputedConstContext } from './computed-const.ts'
 import { searchParamsLocalNames } from './env-signal.ts'
@@ -220,12 +214,6 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
   /** The adapter's name in the BF103 imported-loop-child diagnostic ("The Jinja adapter emits …"). */
   protected abstract readonly loopChildDiagnosticName: string
   /**
-   * The adapter's native-safe table (`NATIVE_SAFE`): the target whose plan
-   * decides whether an arithmetic operand's nil is ambiguous (#3700; refused
-   * only on a target that collapses `undefined` into its nil, `collapsesNil`).
-   */
-  protected abstract readonly nativeSafe: NativeSafeTable
-  /**
    * For an adapter that renames reserved names: two source names the
    * renaming turns into one template variable would read the same value, so
    * `generate()` refuses them (#3404). `null` when the adapter renames none.
@@ -274,9 +262,8 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
 
   /**
    * The coercion an arithmetic operand's emitter spells
-   * (`arithmeticOperandCoercion`), refusing an operand whose nil the
-   * declared type cannot classify (`arithmeticCoercionOrRefuse`, #3700).
-   * `isShadowed` is the adapter's scope test at the emission site.
+   * (`arithmeticOperandCoercion`). `isShadowed` is the adapter's scope test
+   * at the emission site.
    */
   protected arithmeticCoercion(
     op: string,
@@ -284,21 +271,10 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     other: ParsedExpr | undefined,
     isShadowed: (name: string) => boolean,
   ): ArithmeticCoercion {
-    return arithmeticCoercionOrRefuse(op, operand, other, this.nullishAttrCtx, isShadowed, this.ambiguousNilSink(), this.nativeSafe)
+    return arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, isShadowed)
   }
 
-  /**
-   * Refuse the ambiguous-nil arithmetic (#3700) in a whole expression the
-   * adapter lowers through its own renderer rather than per operator: a
-   * `.filter()` predicate, read in the current scope with the callback's
-   * own `params` (its parameter and block locals) entered as a callback
-   * frame.
-   */
-  protected refuseAmbiguousNilArithmeticIn(expr: ParsedExpr, params: readonly string[]): void {
-    refuseAmbiguousNilArithmetic(expr, this.nullishAttrCtx, this.scope.enterCallback(params), this.ambiguousNilSink(), this.nativeSafe)
-  }
-
-  private ambiguousNilSink(): AmbiguousNilArithmeticSink {
+  private errorSink(): NonPrimitiveEqualitySink {
     return { errors: this.errors, componentName: this.componentName }
   }
 
@@ -446,11 +422,14 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     this.localConstants = ir.metadata.localConstants ?? []
     this.rootPropAliases = rootPropAliasNames(ir, this.propsParams.map(p => p.name))
     this.scope = BindingScope.forComponent(this.propsObjectName)
-    this.nullableOptionalProps = collectNullableOptionalProps(ir, this.nativeSafe)
-    this.nullableSignalGetters = collectNullableSignalGetters(ir)
+    this.nullableOptionalProps = collectNullableOptionalProps(ir)
     this.nullishAttrCtx = collectNullishAttrContext(ir)
     this.stringValueNames = this.stringValueNamesFor(ir)
     this.declaredTypes = declaredValueTypes(ir)
+    this.nullableSignalGetters = new Set([
+      ...collectNullableSignalGetters(ir),
+      ...memberSeededNilSignals(ir, this.declaredTypes, this.scope),
+    ])
     this.operandTyping = collectOperandTyping(ir.metadata, { namedFields: this.declaredTypes.namedFields })
     this.moduleStringConsts = collectModuleStringConsts(ir.metadata.localConstants)
     this._searchParamsLocals = searchParamsLocalNames(ir.metadata)
@@ -478,8 +457,20 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     if (!options?.siblingTemplatesRegistered) {
       this.errors.push(...collectImportedLoopChildComponentErrors(ir, this.componentName, this.loopChildDiagnosticName))
     }
-    refuseAmbiguousNilMemoArithmetic(ir.metadata.memos ?? [], this.nullishAttrCtx, this.ambiguousNilSink(), this.nativeSafe)
     // `===` / `!==` over an object or array (#3774, #3824 step 8).
-    refuseNonPrimitiveStrictEquality(ir, this.operandTyping, this.ambiguousNilSink())
+    refuseNonPrimitiveStrictEquality(ir, this.operandTyping, this.errorSink())
   }
+}
+
+/**
+ * Getters of signals seeded from a member of a prop whose declared type
+ * admits `null` or `undefined` (`type Init = { label?: string }`,
+ * `createSignal(initial.label)`): the signal holds the field's JS value, so
+ * an attribute bound to it is omitted when that value is nullish, as for any
+ * other nullable signal (`collectNullableSignalGetters`).
+ */
+function memberSeededNilSignals(ir: ComponentIR, types: DeclaredValueTypes, scope: BindingScope): string[] {
+  return (ir.metadata.signals ?? [])
+    .filter(s => s.parsed?.kind === 'member' && factsOfType(declaredValueType(types, s.parsed, scope)).types.has('nil'))
+    .map(s => s.getter)
 }

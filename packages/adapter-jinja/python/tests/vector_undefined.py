@@ -11,9 +11,9 @@ primitive, helper and eval vector harnesses.
 
 from __future__ import annotations
 
-import json
-
 from barefootjs import UNDEF, is_undefined
+from barefootjs.evaluator import decode_undefined
+from barefootjs.evaluator import is_undef_sentinel as _runtime_is_undef_sentinel
 
 VECTOR_UNDEFINED_ARG = UNDEF
 
@@ -35,23 +35,18 @@ UNDEFINED_EXPECT = _UndefinedExpect()
 
 def is_undef_sentinel(value) -> bool:
     """Whether a JSON-decoded value is `{"$undef": true}` (or its decoded marker)."""
-    if value is UNDEFINED_EXPECT:
-        return True
-    return isinstance(value, dict) and len(value) == 1 and value.get("$undef") is True
+    return value is UNDEFINED_EXPECT or _runtime_is_undef_sentinel(value)
 
 
 def undefined_to_arg(value):
-    """Replace every `$undef` in an `args` / `env` value with `VECTOR_UNDEFINED_ARG`."""
-    if is_undef_sentinel(value):
+    """Replace every `$undef` in an `args` / `env` value with `VECTOR_UNDEFINED_ARG`.
+    A raw JSON tree goes through the runtime's own manifest decoder
+    (`decode_undefined`); a harness that decoded first carries the marker."""
+    if value is UNDEFINED_EXPECT:
         return VECTOR_UNDEFINED_ARG
     if isinstance(value, list):
         return [undefined_to_arg(v) for v in value]
-    if isinstance(value, dict):
+    if isinstance(value, dict) and not _runtime_is_undef_sentinel(value):
         return {k: undefined_to_arg(v) for k, v in value.items()}
-    return value
+    return decode_undefined(value)
 
-
-def load_expected_failures(path: str) -> dict:
-    """The "python" runtime of an expected-failure ledger: case key -> entry."""
-    with open(path, encoding="utf-8") as fh:
-        return json.load(fh)["runtimes"]["python"]

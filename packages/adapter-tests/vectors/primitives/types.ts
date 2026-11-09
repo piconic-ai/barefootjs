@@ -82,8 +82,7 @@ export interface PrimitiveOp {
   fn: string
   /**
    * The rollout step (spec/js-primitive-semantics.md, "Rollout plan") that
-   * owns this operation. An expected-failure ledger entry for this op must
-   * name it.
+   * introduced this operation.
    */
   step: number
   /** The literal JS expression the operation lowers. */

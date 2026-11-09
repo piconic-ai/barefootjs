@@ -393,7 +393,6 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
   }
 
   protected readonly loopChildDiagnosticName = 'Blade'
-  protected readonly nativeSafe = NATIVE_SAFE
   // Two source names that Blade's renaming of reserved names turns into one
   // template variable would read the same value (#3408).
   protected override readonly templateIdentifierSpelling = { ident: bladeIdent, label: 'Blade' }
@@ -1302,8 +1301,6 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     param: string,
     localVarMap: Map<string, string> = new Map(),
   ): string {
-    // Arithmetic over a prop whose nil the type cannot classify (#3700).
-    this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
     // The predicate's own param and locals shadow an outer string-typed name.
     const predicateScope = this.scope.enterCallback([param, ...localVarMap.keys()])
     return emitParsedExpr(

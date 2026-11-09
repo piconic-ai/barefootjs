@@ -6,7 +6,6 @@
  */
 
 import type { ComponentIR, TypeInfo } from '../types.ts'
-import { collapsesNil, type NativeSafeTable } from './primitive-plan.ts'
 
 /**
  * Props whose declared TS type is boolean. A bare binding of one
@@ -28,15 +27,12 @@ export function collectBooleanTypedProps(ir: ComponentIR): Set<string> {
  * is absent (`None` / `nil` / `null` / `undef`) when the caller omits it, so
  * each adapter guards it with its own presence test before rendering.
  *
- * On a `target` that carries `undefined` (`collapsesNil` false), a
- * destructure default applies to an absent or `undefined` prop only, so a
+ * A destructure default applies to an absent or `undefined` prop only, so a
  * defaulted prop whose declared type admits `null` is still `null` when the
  * caller passes one (`spec/js-undefined-value.md`, "Decisions" (6)), and is
- * guarded too. A target that collapses the two nils seeds the default for a
- * `null` as well, so its defaulted props are never nil.
+ * guarded too.
  */
-export function collectNullableOptionalProps(ir: ComponentIR, target?: NativeSafeTable): Set<string> {
-  const defaultKeepsNull = target !== undefined && !collapsesNil(target)
+export function collectNullableOptionalProps(ir: ComponentIR): Set<string> {
   return new Set([
     ...ir.metadata.propsParams
       .filter(
@@ -44,7 +40,7 @@ export function collectNullableOptionalProps(ir: ComponentIR, target?: NativeSaf
           !p.isRest &&
           (p.defaultValue === undefined
             ? p.type?.kind !== 'primitive' || p.optional
-            : defaultKeepsNull && admitsNull(p.declaredType ?? p.type)),
+            : admitsNull(p.declaredType ?? p.type)),
       )
       .map(p => p.name),
     // A closed-type `{...rest}` key (#3057) is never destructured with its

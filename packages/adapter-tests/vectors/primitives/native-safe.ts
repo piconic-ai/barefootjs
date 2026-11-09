@@ -35,7 +35,7 @@ import type { Domain } from './types'
 
 export const NATIVE_SAFE_PATH = join(dirname(PRIMITIVES_DIR), 'primitives-native-safe.json')
 
-/** The adapters each runtime harness speaks for, by ledger key. */
+/** The adapters each runtime harness speaks for, by runtime key. */
 export const RUNTIME_TABLES: Readonly<Record<string, readonly NativeSafeTable[]>> = {
   go: [GO],
   java: [PEBBLE],
@@ -58,10 +58,9 @@ const NATIVE_BINDINGS: Readonly<
   truthy: { op: 'to-boolean', domains: { boolean: ['boolean'] } },
   get: { op: 'get', domains: { 'array-index': ['array-index'] } },
   // A unary `+` over a proven number is the operand itself. The plan's
-  // `to-number` op also covers binary `-` / `*` (`number-pair`, and
-  // `unproven` on the targets that keep their native operator for them),
-  // which no single-operand `to_number` vector exercises.
-  to_number: { op: 'to-number', domains: { number: ['number'] }, elsewhere: ['number-pair', 'unproven'] },
+  // `to-number` op also covers binary `-` / `*` over two proven numbers
+  // (`number-pair`), which no single-operand `to_number` vector exercises.
+  to_number: { op: 'to-number', domains: { number: ['number'] }, elsewhere: ['number-pair'] },
   lt: RELATIONAL_BINDING,
   le: RELATIONAL_BINDING,
   gt: RELATIONAL_BINDING,
@@ -86,26 +85,7 @@ export interface NativeSafeMirror {
   generator: string
   spec: string
   about: string
-  /**
-   * Per runtime, whether it carries JS `undefined` apart from `null`
-   * (spec/js-undefined-value.md, "Carries undefined"): the tables'
-   * `carriesUndefined`, which every adapter of one runtime must agree on.
-   */
-  carriesUndefined: Record<string, boolean>
   runtimes: Record<string, Record<string, Domain[]>>
-}
-
-/**
- * A runtime's `carriesUndefined`: the one value its adapters' tables declare.
- * The adapters of one runtime share its value domain, so a disagreement is
- * refused.
- */
-function carriesUndefined(runtime: string, tables: readonly NativeSafeTable[]): boolean {
-  const values = new Set(tables.map((t) => t.carriesUndefined))
-  if (values.size !== 1) {
-    throw new Error(`the NATIVE_SAFE tables of the ${runtime} runtime disagree on carriesUndefined`)
-  }
-  return [...values][0]!
 }
 
 /** The domains `tables` claim for `fn`'s native binding. */
@@ -127,10 +107,7 @@ export function buildNativeSafeMirror(): NativeSafeMirror {
     generator: 'packages/adapter-tests/vectors/primitives/native-safe.ts',
     spec: 'spec/js-primitive-semantics.md',
     about:
-      "Per runtime, the vector domains each op's NATIVE operator binding runs over: the union of the NATIVE_SAFE tables of the adapters on that runtime; and whether the runtime carries JS undefined apart from null (the tables' carriesUndefined, which the adapters of one runtime must agree on). Generated; never hand-edited.",
-    carriesUndefined: Object.fromEntries(
-      Object.entries(RUNTIME_TABLES).map(([runtime, tables]) => [runtime, carriesUndefined(runtime, tables)]),
-    ),
+      "Per runtime, the vector domains each op's NATIVE operator binding runs over: the union of the NATIVE_SAFE tables of the adapters on that runtime. Generated; never hand-edited.",
     runtimes: Object.fromEntries(
       Object.entries(RUNTIME_TABLES).map(([runtime, tables]) => [
         runtime,

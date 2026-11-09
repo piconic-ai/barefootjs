@@ -5,9 +5,9 @@ import { createFixture } from '../src/types'
  * (#3824 step 3). A comparison converts a non-string operand with ToNumber:
  * an omitted prop is `undefined` (`NaN`, so `missing < 1` is false) and a
  * `null` one is `0` (`missing < 1` is true). A prop typed
- * `missing?: string | null` can be either, a template engine holds both as
- * one nil, and the type does not say which, so every template adapter
- * refuses the comparison with BF101 (`arithmeticOperandNilIsAmbiguous`).
+ * `missing?: string | null` can be either and the type does not say which,
+ * so the operand goes to the runtime's relational helper, which reads the
+ * omitted prop as `UNDEF` (spec/js-undefined-value.md).
  * Declaring only one of the two is the rewrite:
  * `omitted-optional-string-relational`.
  */

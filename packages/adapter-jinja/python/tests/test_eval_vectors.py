@@ -16,14 +16,11 @@ import os
 import unittest
 
 from barefootjs import evaluator
-from tests.vector_undefined import is_runtime_undefined, is_undef_sentinel, load_expected_failures, undefined_to_arg
+from tests.vector_undefined import is_runtime_undefined, is_undef_sentinel, undefined_to_arg
 
 VECTORS_PATH = os.path.join(
     os.path.dirname(__file__), "..", "..", "..", "adapter-tests", "vectors", "eval-vectors.json"
 )
-# The shrink-only expected-failure ledger of the eval vectors
-# (spec/js-undefined-value.md, section 6), keyed by note.
-LEDGER_PATH = os.path.join(os.path.dirname(VECTORS_PATH), "eval-expected-failures.json")
 
 
 def _match(got, expect):
@@ -79,23 +76,17 @@ class EvalVectorsTest(unittest.TestCase):
             doc = json.load(fh)
 
         self.assertTrue(doc["cases"], "eval-vectors.json contains no cases")
-        expected = load_expected_failures(LEDGER_PATH)
-
-        problems, seen = [], set()
+        problems = []
         for case in doc["cases"]:
             note, expr, expect = case["note"], case["expr"], case["expect"]
             env = undefined_to_arg(case["env"])
-            seen.add(note)
             try:
                 got = evaluator.evaluate(expr, env)
                 ok, detail = _match(got, expect), f"got {got!r}, want {expect!r}"
             except Exception as exc:  # noqa: BLE001
                 ok, detail = False, f"raised {exc!r}"
-            if ok and note in expected:
-                problems.append(f"ledger entry '{note}' now passes; remove it from the ledger (step {expected[note]['step']})")
-            elif not ok and note not in expected:
-                problems.append(f"UNEXPECTED-FAIL {note}: {detail}")
-        problems += [f"ledger entry '{n}' matches no eval case -- renamed note?" for n in expected if n not in seen]
+            if not ok:
+                problems.append(f"FAIL {note}: {detail}")
         self.assertEqual(problems, [], "\n" + "\n".join(problems))
 
 

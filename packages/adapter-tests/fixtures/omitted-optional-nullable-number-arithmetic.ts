@@ -3,10 +3,9 @@ import { createFixture } from '../src/types'
 /**
  * Arithmetic over an omitted optional prop whose type also admits `null`
  * (`missing?: number | null`). JS reads the omitted prop as `undefined`, so
- * `missing * 2` is `NaN`, where a `null` one would give `0`. A template
- * engine holds both as the same nil, and the type does not say which one it
- * stands for, so every template adapter refuses the arithmetic with BF101
- * (`arithmeticOperandNilIsAmbiguous`) instead of rendering one reading.
+ * `missing * 2` is `NaN`, where a `null` one would give `0`. The type does
+ * not say which one it is, so the operand goes to the runtime's helper,
+ * which reads the omitted prop as `UNDEF` (spec/js-undefined-value.md).
  * Declaring only one of the two (`missing?: number`) is the rewrite: that
  * is `omitted-optional-number-arithmetic`. The destructured form is
  * `omitted-optional-nullable-number-arithmetic-destructured`.

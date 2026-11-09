@@ -1381,7 +1381,7 @@ fn resolve_child_vars(ssr_defaults: &JsValue, props: &BTreeMap<String, MjValue>)
             None => {
                 // Bare (non-object) entry -- used as-is, mirrors every other
                 // port's `ref($d) eq 'HASH'` / `isinstance(d, dict)` guard.
-                extra.insert(key, js_to_mj(d));
+                extra.insert(key, js_to_mj(&crate::manifest::decode_undefined(d.clone())));
                 continue;
             }
         };

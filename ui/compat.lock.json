@@ -6779,6 +6779,14 @@
           ]
         }
       },
+      "object-entries-typed-object-signal": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "object-entries-typed-object-signal"
+          ]
+        }
+      },
       "object-spread-branch-child": {
         "go-template": {
           "kind": "refusal",
@@ -9379,56 +9387,6 @@
           ]
         }
       },
-      "undef-null-json-stringify-object-member": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "host-nil-collapses-undefined-and-null"
-          ]
-        }
-      },
       "unlowered-global-call": {
         "blade": {
           "kind": "refusal",
@@ -9921,6 +9879,10 @@
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
       },
+      "object-entries-typed-object-signal": {
+        "description": "Object.entries over a signal typed with a named object type lists its members",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/object-entries-typed-object-signal.ts"
+      },
       "object-spread-branch-child": {
         "description": "an object spread inside an untaken early-return branch is not evaluated at init (#3861)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/object-spread-branch-child.ts"
@@ -10068,10 +10030,6 @@
       "template-delimiter-contextual-escape": {
         "description": "A tag-opening brace in a template-literal URL attribute and in style element text prints as written",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/template-delimiter-contextual-escape.ts"
-      },
-      "undef-null-json-stringify-object-member": {
-        "description": "JSON.stringify drops an undefined object member and writes a null one",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-json-stringify-object-member.ts"
       },
       "unlowered-global-call": {
         "description": "A zero-arg call on a JavaScript global refuses (BF101) instead of rendering a member read (#3505)",
@@ -10748,26 +10706,6 @@
         "BF029"
       ]
     },
-    "host-nil-collapses-undefined-and-null": {
-      "title": "One host nil standing for both `undefined` and `null`",
-      "kind": "silent",
-      "given": "an operation whose JS result differs between `undefined` and `null` (`String` / template literal / `+`, `Number` / arithmetic, `===` against either, `JSON.stringify`, a destructure default, `includes` / `indexOf` on an array or a string, a numeric sort, an optional method argument, a `?.` result), over an omitted prop, an explicit `null` prop, a forwarded `undefined`, a literal `null` / `undefined`, or a missing row or object field",
-      "expected": "`undefined` and `null` are distinct values, so each renders its own JS result (`\"undefined\"` / `\"null\"`, `NaN` / `0`, a dropped member or no string / `null`, the default / `null`, the argument default / the coerced `null`)",
-      "actual": "renders the result for one of them in place of the other, or fails to render, since the host nil stands for both; graduates per target as its runtime carries `undefined` (`spec/js-undefined-value.md`)",
-      "fixtures": [
-        "undef-null-json-stringify-object-member"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
     "index-read-capitalised-key-only": {
       "title": "Lowercase index key on an object holding only the capitalised key",
       "kind": "silent",
@@ -10895,26 +10833,6 @@
         "blade",
         "erb",
         "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
-    "member-seeded-signal-attr-nullish": {
-      "title": "An attribute bound to a signal seeded from an object prop's omitted or null optional field",
-      "kind": "silent",
-      "given": "a signal seeded from an optional field of an object prop (`type Init = { label?: string }`, `createSignal(initial.label)`) bound to an attribute (`title={label()}`), with the object omitting the field or holding `null` for it",
-      "expected": "the attribute is omitted, as for any attribute whose value is `null` or `undefined`",
-      "actual": "renders the attribute with an empty value (`title=\"\"`)",
-      "fixtures": [
-        "optional-member-signal-seed-js-value"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
         "jinja",
         "minijinja",
         "mojolicious",
@@ -11076,6 +10994,19 @@
       "actual": "renders no rows: the rows are not baked into the server-side state, and a destructured param reads a field name derived from the key (`.AB` for `'a.b'`)",
       "fixtures": [
         "literal-index-own-key"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
+    "object-entries-typed-object-signal": {
+      "title": "`Object.entries` over a signal typed with a named object type",
+      "kind": "silent",
+      "given": "an `Object.entries(o()).map(...)` loop over a signal whose type is a named object type (`type O = { a: string; b: string }`, `createSignal<O>({ a: 'x', b: 'y' })`)",
+      "expected": "the loop renders one row per member, in insertion order",
+      "actual": "throws at render time: the template loop cannot iterate the value",
+      "fixtures": [
+        "object-entries-typed-object-signal"
       ],
       "adapters": [
         "go-template"

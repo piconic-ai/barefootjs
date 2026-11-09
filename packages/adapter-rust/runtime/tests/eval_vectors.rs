@@ -8,15 +8,10 @@
 //! is JS-faithful by contract, so unlike the helper vectors there are NO
 //! Rust-side divergences here: each case's real ParsedExpr tree, evaluated
 //! against its environment, must reproduce the JS-computed expect exactly.
-//! The only allowance is the shrink-only expected-failure ledger of the
-//! undefined rollout (`spec/js-undefined-value.md`, §6), keyed by note: an
-//! unlisted failure fails, and so do a listed case that now passes and a
-//! listed note that names no case.
 
 use barefootjs::evaluator::{self, Env};
 use barefootjs::num::JsValue;
 use serde_json::Value as JsonValue;
-use std::collections::HashSet;
 use std::path::PathBuf;
 
 mod vector_undefined;
@@ -85,12 +80,9 @@ fn eval_vectors_match_js_reference() {
     let cases = doc["cases"].as_array().expect("eval-vectors.json has no cases");
     assert!(!cases.is_empty(), "eval-vectors.json contains no cases");
 
-    let expected = vector_undefined::load_expected_failures(&path.with_file_name("eval-expected-failures.json"));
     let mut failures = Vec::new();
-    let mut seen = HashSet::new();
     for case in cases {
         let note = case["note"].as_str().unwrap_or("<unnamed>");
-        seen.insert(note.to_string());
         let expr = &case["expr"];
         let expect = &case["expect"];
         let env: Env = case["env"]
@@ -100,15 +92,8 @@ fn eval_vectors_match_js_reference() {
 
         let got = evaluator::evaluate(expr, &env);
         let ok = matches(&got, expect);
-        match (ok, expected.get(note)) {
-            (true, Some(entry)) => failures.push(format!("ledger entry '{note}' now passes; remove it from the ledger (step {})", entry["step"])),
-            (false, None) => failures.push(format!("UNEXPECTED-FAIL {note}: got {got:?}, want {expect:?}")),
-            _ => {}
-        }
-    }
-    for note in expected.keys() {
-        if !seen.contains(note) {
-            failures.push(format!("ledger entry '{note}' matches no eval case -- renamed note?"));
+        if !ok {
+            failures.push(format!("FAIL {note}: got {got:?}, want {expect:?}"));
         }
     }
     assert!(failures.is_empty(), "\n{}", failures.join("\n"));

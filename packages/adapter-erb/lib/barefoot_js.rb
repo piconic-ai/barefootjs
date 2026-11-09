@@ -476,7 +476,7 @@ module BarefootJS
       extra = {}
       defaults.each do |name, d|
         unless d.is_a?(Hash)
-          extra[name] = d
+          extra[name] = BarefootJS.decode_undefined(d)
           next
         end
         if d[:isRestProps]
@@ -503,9 +503,10 @@ module BarefootJS
     end
 
     # An `ssrDefaults` entry's seed when the caller's prop is absent or
-    # `UNDEF`: its `value`, or `UNDEF` when it has none.
+    # `UNDEF`: its `value` (a `{"$undef": true}` sentinel in it is `UNDEF`),
+    # or `UNDEF` when it has none.
     def self.static_fallback(entry)
-      entry.key?(:value) ? entry[:value] : UNDEF
+      entry.key?(:value) ? BarefootJS.decode_undefined(entry[:value]) : UNDEF
     end
     private_class_method :static_fallback
 

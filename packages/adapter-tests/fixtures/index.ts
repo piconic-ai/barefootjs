@@ -321,6 +321,12 @@ import { fixture as destructureDefaultSharedArrayRenamedClient } from './destruc
 import { fixture as destructureDefaultEarlierAssignment } from './destructure-default-earlier-assignment'
 import { fixture as undefNullJsonStringify } from './undef-null-json-stringify'
 import { fixture as undefNullJsonStringifyObjectMember } from './undef-null-json-stringify-object-member'
+import { fixture as undefArrayElementSignalSeed } from './undef-array-element-signal-seed'
+import { fixture as undefObjectMemberSignalSeed } from './undef-object-member-signal-seed'
+import { fixture as undefSentinelShapedSeedData } from './undef-sentinel-shaped-seed-data'
+import { fixture as undefSentinelSeedGetterAlias } from './undef-sentinel-seed-getter-alias'
+import { fixture as objectEntriesTypedObjectSignal } from './object-entries-typed-object-signal'
+import { fixture as nullableMemberSignalSeedDestructured } from './nullable-member-signal-seed-destructured'
 import { fixture as undefNullNonDivergingPositions } from './undef-null-non-diverging-positions'
 import { fixture as undefNullNumberCoercion } from './undef-null-number-coercion'
 import { fixture as undefNullNumberCoercionTyped } from './undef-null-number-coercion-typed'
@@ -1625,6 +1631,12 @@ export const jsxFixtures: JSXFixture[] = [
   destructureDefaultEarlierAssignment,
   undefNullJsonStringify,
   undefNullJsonStringifyObjectMember,
+  undefArrayElementSignalSeed,
+  undefObjectMemberSignalSeed,
+  undefSentinelShapedSeedData,
+  undefSentinelSeedGetterAlias,
+  objectEntriesTypedObjectSignal,
+  nullableMemberSignalSeedDestructured,
   undefNullNonDivergingPositions,
   undefNullNumberCoercion,
   undefNullNumberCoercionTyped,

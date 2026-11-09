@@ -6,9 +6,12 @@ and `null` as two distinct values, from the host boundary through template
 evaluation, the callback evaluator and JSON output, so that one TSX renders
 the same HTML as Hono on every backend?
 
-> Status: **design accepted, not implemented.** The owner decided the
-> questions in §7 on 2026-11-01. Tracked by #3848. Claims about current behaviour cite the code on
-> `main` (`9615fb9a1`) or a throwaway probe (listed in the appendix; not
+> Status: **implemented.** The rollout of §6 is complete (U0 to U9): every
+> runtime carries `undefined` apart from `null`, the expected-failure
+> ledgers are deleted, and the plan has no collapsed branch left. The owner
+> decided the questions in §7 on 2026-11-01. Tracked by #3848. The rest of
+> this note is the design as written before the rollout: claims about
+> "current behaviour" cite the code on `main` (`9615fb9a1`) or a throwaway probe (listed in the appendix; not
 > committed). "Prior probe" means the earlier per-runtime sentinel probes
 > (Python/jinja2, Perl, PHP 8.3, Ruby, Pebble 4.1.2). Anything not verified
 > is marked **unverified**.
@@ -25,7 +28,8 @@ Terms, in addition to those of `js-primitive-semantics.md`:
   `undefined`.
 - **Carries undefined**: a target whose runtime passes the
   `undefined`-specific vectors (see "Evaluator and vectors"). Declared as
-  data next to `NativeSafeTable`, like a native-safe claim.
+  data next to `NativeSafeTable` (`carriesUndefined`) during the rollout;
+  U9 removed the flag once every target carried it.
 
 ## Decisions in this note
 
@@ -286,6 +290,37 @@ to mean "unset" gets JS `null` semantics:
 
 The way to say "unset" is to omit the key. Each runtime also exports its
 `UNDEF` for a host that must pass "present `undefined`".
+
+**A static seed value carries `undefined` with the vector sentinel**
+(landed in U9). JSON has no `undefined`, so a seed such as
+`createSignal([undefined, null, 'x'])` or `createSignal({ a: null, b:
+undefined })` would otherwise reach the runtime as `[null, null, "x"]` or
+lose its present `b` key. `extractSsrDefaults` writes each `undefined`
+array element and object member inside a `value` as `{"$undef": true}`
+(the encoding of "JSON encoding for vectors" below), so the manifest holds
+`[{"$undef": true}, null, "x"]` and `{"a": null, "b": {"$undef": true}}`.
+So that seed data shaped like the sentinel stays data, the encoder also
+gives every object key that begins with `$` one more `$` (`$undef` becomes
+`$$undef`, `$$x` becomes `$$$x`): `createSignal({ payload: { $undef: true }
+})` is written `{"payload": {"$$undef": true}}`. The undefined marker is
+exactly an object whose single key is `$undef`, holding `true`; a decoder
+turns it into `UNDEF` and strips one leading `$` from every other key that
+begins with `$$`, at any depth. The encoding is therefore bijective. The
+vector corpora need no escape (their data has no `$`-prefixed key of its
+own), so the harnesses share the decoders unchanged.
+Each runtime's seed (`_derive_stash_from_defaults` and its ports) decodes
+the sentinel, at any depth, to its `UNDEF`: Python
+`evaluator.decode_undefined`, Ruby `BarefootJS.decode_undefined`, Perl
+`BarefootJS::Undefined::decode_undefined`, PHP `Undefined::decode`, Rust
+`manifest::decode_undefined`, Java `JsonDecode.materialize` (the manifest
+loader's decoder), and the TS twin `decodeUndefinedMembers`. The vector
+harnesses reuse these decoders. A decoded object member is a present key
+holding `undefined`: `Object.entries` yields it, a read gives `undefined`,
+`JSON.stringify` drops it. Go bakes the seed into its constructor instead
+and spells the element or member `bf.Undefined` (a struct's `bf.Opt[T]`
+field takes `bf.Undef[T]()`). A top-level `undefined` seed is written as no
+`value`, which every seed already reads as `UNDEF`. The client never reads
+the manifest: it runs the signal's own initializer.
 
 ### Go: `bf.Opt[T]`
 
@@ -787,6 +822,13 @@ the same rules for the life of this rollout, and the file is deleted in U9.
 | **U8** Go | `bf.Opt[T]`, `bf.Undefined`, `isNullish` (64 sites); generator rules (Input, Props, row structs, `.V` reads, `bfCallerProps`); deletes the flip collectors; Go harness `buildGoPropsInit` emits `bf.Some` / `bf.Null` / omission; breaking-change changeset and migration doc | same, `go`; Go-only limitations graduate | High: public Go API break, and the largest generator diff |
 | **U9** Cleanup | Removes `carriesUndefined` and the plan's collapsed branches (decisions 2 and 8, numeric-`either` BF101); deletes both ledgers; rewrites `spec/compiler.md` value domain, `spec/template-helpers.md` `:66-68`, and `js-primitive-semantics.md` decisions 2, 3, 4 and 8 | ledgers empty; no limitation cites a nil-reading reason | Low |
 
+All ten steps have landed. U9 removed `carriesUndefined` with the plan's
+collapsed branches (decision 2's `either` display reading, the dynamic `+`
+handling of decision 8 and the numeric-`either` BF101), deleted
+`primitives-expected-failures.json` and `eval-expected-failures.json` (a
+failing vector now fails its harness), and rewrote the specs named in its
+row.
+
 Order: U2 and U3 are first because their engines already have
 `Undefined`, so they prove the vectors, the plan flag and the harness
 change at the lowest risk. U4 to U7 follow. Within them, the targets where
@@ -836,7 +878,7 @@ choice and what it fixes for the rollout.
    reads as `undefined`. No compatibility flag. Each runtime exports its
    `UNDEF` for a host that must pass a present `undefined`, and each U step
    adds a changelog entry for hosts that passed nil meaning "unset".
-4. **Interim behaviour between 4a and the U steps**: the existing numeric
+4. **Interim behaviour between 4a and the U steps** (ended with U9): the existing numeric
    `either` refusal (#3700) stays, gated by `carriesUndefined: false`, and
    graduates per target. Decision 8's new refusal of a dynamic `+` over an
    `undefined` reading is **not built**; today's output for that shape is

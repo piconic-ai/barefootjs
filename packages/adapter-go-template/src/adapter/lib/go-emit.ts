@@ -67,11 +67,10 @@ export function wrapIfMultiToken(rendered: string): string {
  */
 export const GO_NATIVE_SAFE: NativeSafeTable = {
   // The runtime carries JS `undefined` (`bf.Undefined`, `bf_undefined`) apart
-  // from `null` (Go nil), spec/js-undefined-value.md rollout step U8. Every
+  // from `null` (Go nil) (spec/js-undefined-value.md). Every
   // nil test is the runtime's (`bf_is_null` / `bf_is_undefined` /
   // `bf_is_nullish`, `goNilTest`): html/template's `eq x nil` reads both as
   // nil, which only an attribute's omission test (`ne x nil`) may rely on.
-  carriesUndefined: true,
   'to-boolean': ['boolean'],
   // A unary `+` over a proven number is the operand itself; anything else
   // takes `bf_to_number` (#3824 step 3). Binary `-` / `*` take `bf_sub` /
@@ -104,7 +103,7 @@ export const GO_NATIVE_SAFE: NativeSafeTable = {
 
 /** An evaluator body's nil-reading site on Go (`evalBody`), when the caller has the scope's typing. */
 export function goNilReadingSite(typing: ScopedOperandTyping | undefined): NilReadingSite | undefined {
-  return typing ? { typing, target: GO_NATIVE_SAFE } : undefined
+  return typing ? { typing } : undefined
 }
 
 /**

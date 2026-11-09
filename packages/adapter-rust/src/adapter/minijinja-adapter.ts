@@ -287,7 +287,6 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
   }
 
   protected readonly loopChildDiagnosticName = 'Jinja'
-  protected readonly nativeSafe = NATIVE_SAFE
   // Two source names that MiniJinja's renaming of reserved names turns into one
   // template variable would read the same value (#3404).
   protected override readonly templateIdentifierSpelling = { ident: minijinjaIdent, label: 'MiniJinja' }
@@ -1166,8 +1165,6 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
     param: string,
     localVarMap: Map<string, string> = new Map(),
   ): string {
-    // Arithmetic over a prop whose nil the type cannot classify (#3700).
-    this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
     // The predicate's own param shadows an outer string-typed name.
     const predicateScope = this.scope.enterCallback([param])
     return emitParsedExpr(

@@ -288,7 +288,6 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
   }
 
   protected readonly loopChildDiagnosticName = 'Twig'
-  protected readonly nativeSafe = NATIVE_SAFE
   // Two source names that Twig's renaming of reserved names turns into one
   // template variable would read the same value (#3404).
   protected override readonly templateIdentifierSpelling = { ident: twigIdent, label: 'Twig' }
@@ -1168,8 +1167,6 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
     param: string,
     localVarMap: Map<string, string> = new Map(),
   ): string {
-    // Arithmetic over a prop whose nil the type cannot classify (#3700).
-    this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
     // The predicate's own param and locals shadow an outer string-typed name.
     const predicateScope = this.scope.enterCallback([param, ...localVarMap.keys()])
     return emitParsedExpr(

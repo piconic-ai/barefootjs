@@ -63,6 +63,56 @@ final class Undefined implements \JsonSerializable
         return $v === null || $v instanceof self;
     }
 
+    /**
+     * Whether a JSON-decoded value (assoc array or stdClass) is the
+     * `{"$undef": true}` sentinel, the manifest's (and the golden vectors')
+     * spelling of JS `undefined` (spec/js-undefined-value.md, "JSON encoding
+     * for vectors").
+     */
+    public static function isSentinel($v): bool
+    {
+        if ($v instanceof \stdClass) {
+            $v = get_object_vars($v);
+        }
+        return is_array($v) && count($v) === 1 && array_key_exists('$undef', $v) && $v['$undef'] === true;
+    }
+
+    /**
+     * `$v` with every sentinel, at any depth, replaced by the undefined
+     * value; inside an object (or assoc array) it is a present key holding
+     * `undefined`. Every other key that begins with `$$` loses one leading
+     * `$`: the manifest encoder escapes a seed's own `$`-prefixed keys that
+     * way, so data shaped like the sentinel stays data. The container kinds
+     * are kept.
+     */
+    public static function decode($v)
+    {
+        if (self::isSentinel($v)) {
+            return self::value();
+        }
+        if (is_array($v)) {
+            $out = [];
+            foreach ($v as $k => $x) {
+                $out[self::unescapeKey($k)] = self::decode($x);
+            }
+            return $out;
+        }
+        if ($v instanceof \stdClass) {
+            $out = new \stdClass();
+            foreach (get_object_vars($v) as $k => $x) {
+                $out->{self::unescapeKey($k)} = self::decode($x);
+            }
+            return $out;
+        }
+        return $v;
+    }
+
+    /** A `$$`-prefixed key with one leading `$` removed; any other key as it is. */
+    private static function unescapeKey($k)
+    {
+        return (is_string($k) && strncmp($k, '$$', 2) === 0) ? substr($k, 1) : $k;
+    }
+
     public function __toString(): string
     {
         return '';

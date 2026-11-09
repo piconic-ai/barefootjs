@@ -173,12 +173,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -326,12 +320,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -713,12 +701,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -878,12 +860,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -1045,12 +1021,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -1204,12 +1174,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -1370,12 +1334,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -1542,12 +1500,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -5024,12 +4976,6 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -5316,12 +5262,6 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -5587,6 +5527,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "object-entries-typed-object-signal",
+              "limitations": [
+                "object-entries-typed-object-signal"
               ]
             },
             {
@@ -6020,12 +5966,6 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -6330,12 +6270,6 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -6619,12 +6553,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -6917,12 +6845,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -7230,12 +7152,6 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -7531,12 +7447,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -8374,12 +8284,6 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -8759,12 +8663,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -9153,6 +9051,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "object-entries-typed-object-signal",
+              "limitations": [
+                "object-entries-typed-object-signal"
               ]
             },
             {
@@ -9742,12 +9646,6 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -10160,12 +10058,6 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -10566,12 +10458,6 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -10963,12 +10849,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -11390,12 +11270,6 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -11805,12 +11679,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -12321,12 +12189,6 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -12613,12 +12475,6 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -12878,6 +12734,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "object-entries-typed-object-signal",
+              "limitations": [
+                "object-entries-typed-object-signal"
               ]
             },
             {
@@ -13323,12 +13185,6 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -13618,12 +13474,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -13931,12 +13781,6 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "unlowered-method-call",
               "limitations": [
                 "unlowered-method-call"
@@ -14208,12 +14052,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -14506,12 +14344,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -14816,12 +14648,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -15697,12 +15523,6 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -15956,12 +15776,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -16657,12 +16471,6 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -16949,12 +16757,6 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -17226,12 +17028,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -17512,12 +17308,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             },
             {
@@ -17813,12 +17603,6 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -18105,12 +17889,6 @@
               ]
             },
             {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
-            },
-            {
               "fixture": "unlowered-global-call",
               "limitations": [
                 "unlowered-method-call"
@@ -18216,12 +17994,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -18286,12 +18058,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -18331,6 +18097,12 @@
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "object-entries-typed-object-signal",
+              "limitations": [
+                "object-entries-typed-object-signal"
               ]
             },
             {
@@ -18450,12 +18222,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -18519,12 +18285,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -18602,12 +18362,6 @@
               "limitations": [
                 "statement-body-callback"
               ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -18665,12 +18419,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -18735,12 +18483,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -18817,12 +18559,6 @@
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -23911,12 +23647,6 @@
               "limitations": [
                 "style-object-nil-property"
               ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -23956,12 +23686,6 @@
               "fixture": "style-object-nil-property",
               "limitations": [
                 "style-object-nil-property"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -24055,12 +23779,6 @@
               "limitations": [
                 "style-object-nil-property"
               ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -24100,12 +23818,6 @@
               "fixture": "style-object-nil-property",
               "limitations": [
                 "style-object-nil-property"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -24153,12 +23865,6 @@
               "limitations": [
                 "style-object-nil-property"
               ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
-              ]
             }
           ]
         },
@@ -24192,12 +23898,6 @@
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -24238,12 +23938,6 @@
               "fixture": "style-object-nil-property",
               "limitations": [
                 "style-object-nil-property"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -24290,12 +23984,6 @@
               "fixture": "style-object-nil-property",
               "limitations": [
                 "style-object-nil-property"
-              ]
-            },
-            {
-              "fixture": "undef-null-json-stringify-object-member",
-              "limitations": [
-                "host-nil-collapses-undefined-and-null"
               ]
             }
           ]
@@ -26277,6 +25965,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "object-entries-typed-object-signal",
+              "limitations": [
+                "object-entries-typed-object-signal"
               ]
             },
             {

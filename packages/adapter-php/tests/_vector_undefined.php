@@ -28,27 +28,11 @@ function bf_is_runtime_undefined($got): bool
 /** Whether a JSON-decoded value (assoc array or stdClass) is `{"$undef": true}`. */
 function bf_is_undef_sentinel($v): bool
 {
-    if ($v instanceof \stdClass) {
-        $v = get_object_vars($v);
-    }
-    return is_array($v) && count($v) === 1 && array_key_exists('$undef', $v) && $v['$undef'] === true;
+    return \Barefoot\Undefined::isSentinel($v);
 }
 
-/** Replaces every `$undef` in an `args` / `env` value with bf_vector_undefined_arg(). */
+/** Replaces every `$undef` in an `args` / `env` value with bf_vector_undefined_arg(): the runtime's own manifest decoder. */
 function bf_undefined_to_arg($v)
 {
-    if (bf_is_undef_sentinel($v)) {
-        return bf_vector_undefined_arg();
-    }
-    if (is_array($v)) {
-        return array_map('bf_undefined_to_arg', $v);
-    }
-    if ($v instanceof \stdClass) {
-        $out = new \stdClass();
-        foreach (get_object_vars($v) as $k => $x) {
-            $out->{$k} = bf_undefined_to_arg($x);
-        }
-        return $out;
-    }
-    return $v;
+    return \Barefoot\Undefined::decode($v);
 }

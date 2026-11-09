@@ -7,12 +7,8 @@ declare(strict_types=1);
  * "Conformance"), shared by both PHP adapters (Twig, Blade).
  *
  * Runs every packages/adapter-tests/vectors/primitives/<op>.json case against
- * the BarefootJS helper a compiled template calls for that operation. The
- * step-0 expected-failure ledger
- * (packages/adapter-tests/vectors/primitives-expected-failures.json) lists
- * the cases that fail on PHP today, each naming the rollout step that
- * removes it. It may only shrink: an unlisted failure fails, and so does a
- * listed case that now passes. A missing corpus is a loud failure, as in
+ * the BarefootJS helper a compiled template calls for that operation. Every
+ * case must pass. A missing corpus is a loud failure, as in
  * test_eval_vectors.php.
  */
 
@@ -173,39 +169,25 @@ function bfp_run(array $bindings, \stdClass $case): array
     return bfp_match($got, $expect) ? [true, ''] : [false, 'got ' . bf_fmt($got) . ', want ' . bf_fmt($expect)];
 }
 
-$ledger = json_decode(file_get_contents($VECTORS_DIR . '/primitives-expected-failures.json'), true);
-$expected = $ledger['runtimes']['php'];
-$seen = [];
 $total = 0;
 $passed = 0;
 
 foreach ($FILES as $path) {
     foreach (json_decode(file_get_contents($path), false)->cases as $case) {
         $key = "{$case->fn}/{$case->note}";
-        $seen[$key] = true;
         $total++;
         [$ok, $detail] = bfp_run($BINDINGS, $case);
         if ($ok) {
             $passed++;
         }
-        $listed = array_key_exists($key, $expected);
-        bf_test($key, function () use ($ok, $listed, $key, $detail, $expected) {
-            if ($ok && $listed) {
-                bf_assert(false, "ledger entry '{$key}' now passes; remove it from the ledger (step {$expected[$key]['step']})");
-            }
-            bf_assert($ok || $listed, "UNEXPECTED-FAIL {$key}: {$detail}");
+        bf_test($key, function () use ($ok, $key, $detail) {
+            bf_assert($ok, "FAIL {$key}: {$detail}");
         });
     }
 }
-foreach (array_keys($expected) as $key) {
-    bf_test("ledger entry {$key} names a case", function () use ($seen, $key) {
-        bf_assert(isset($seen[$key]), "ledger entry '{$key}' matches no primitives case -- renamed note?");
-    });
-}
-echo "# primitives: {$total} cases, {$passed} pass, " . count($expected) . " in the expected-failure ledger\n";
+echo "# primitives: {$total} cases, {$passed} pass\n";
 
-// Every native claim gives the JS answer on every case it covers; no ledger
-// applies.
+// Every native claim gives the JS answer on every case it covers.
 $claims = json_decode(file_get_contents($VECTORS_DIR . '/primitives-native-safe.json'), true)['runtimes']['php'];
 $nativeRan = 0;
 foreach ($claims as $fn => $domains) {

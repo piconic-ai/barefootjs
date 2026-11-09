@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'json'
 require 'barefoot_js/undefined'
 
 # JS `undefined` in the golden vectors (spec/js-undefined-value.md, "JSON
@@ -22,20 +21,12 @@ module VectorUndefined
 
   # Whether a JSON-decoded value (symbol or string keys) is `{"$undef": true}`.
   def self.sentinel?(value)
-    value.is_a?(Hash) && value.size == 1 && (value[:$undef] == true || value['$undef'] == true)
+    BarefootJS.undefined_sentinel?(value)
   end
 
-  # Replaces every `$undef` in an `args` / `env` value with ARG.
+  # Replaces every `$undef` in an `args` / `env` value with ARG: the
+  # runtime's own manifest decoder.
   def self.to_arg(value)
-    return ARG if sentinel?(value)
-    return value.map { |v| to_arg(v) } if value.is_a?(Array)
-    return value.transform_values { |v| to_arg(v) } if value.is_a?(Hash)
-
-    value
-  end
-
-  # The "ruby" runtime of an expected-failure ledger: case key => entry.
-  def self.load_expected_failures(path)
-    JSON.parse(File.read(path, encoding: Encoding::UTF_8))['runtimes'].fetch('ruby')
+    BarefootJS.decode_undefined(value)
   end
 end

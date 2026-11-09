@@ -134,7 +134,7 @@ export function lowerTemplateLiteralValue(ctx: GoEmitContext, parts: readonly Te
   // Each part is read by its nil reading and printed as JS ToString does
   // (`bf_to_string`) unless its plan proves it a string (#3824 step 4).
   const typing = ctx.operandTyping()
-  const literal = rewriteNilReadings({ kind: 'template-literal', parts: [...parts] }, typing, GO_NATIVE_SAFE)
+  const literal = rewriteNilReadings({ kind: 'template-literal', parts: [...parts] }, typing)
   const terms: string[] = []
   for (const part of literal.kind === 'template-literal' ? literal.parts : parts) {
     if (part.type === 'string') {

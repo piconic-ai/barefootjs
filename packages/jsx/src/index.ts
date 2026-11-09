@@ -9,7 +9,7 @@ export { compileJSX, buildMetadata } from './compiler.ts'
 export type { CompileResult, CompileOptions, CompileOptionsWithAdapter, FileOutput } from './compiler.ts'
 
 // SSR template-variable defaults (manifest seeds for stash-based adapters)
-export { extractSsrDefaults, deriveStashFromDefaults } from './ssr-defaults.ts'
+export { extractSsrDefaults, deriveStashFromDefaults, encodeUndefinedMembers, decodeUndefinedMembers, UNDEFINED_SENTINEL } from './ssr-defaults.ts'
 
 // #3144: shared "is this a component-body local bound to an opaque call"
 // check, consulted by every non-JS-runtime adapter's `call()` fallback
@@ -134,7 +134,7 @@ export { emitParsedExpr, emitParsedValue, primitivePlanFor, arithmeticHelper, gr
 export type { StringNameTest } from './adapters/parsed-expr-emitter.ts'
 export { concatType, declaredValueTypes, loopRowType, type DeclaredValueTypes } from './adapters/loop-row-type.ts'
 export { collectNumberValueNames, isNumberValuedExpr, numberValuedSeedNames } from './adapters/number-value.ts'
-export { operandFacts, planPrimitive, planTest, spellTest, primitivesAt, isNativePlan, relationalHelper, isNativeToNumber, booleanValueSites, planTextDisplay, foldNegatedNumberLiteral, numberLiteralSpelling, isRuntimeNumberLiteral, plusSpelling, planToString, needsToString, strictEqSpelling, mayHoldObject, isNullishTest, isNilLiteralOperand, nilTestOperand, collapsesNil, refuseUnspelledNilTest, NON_PRIMITIVE_EQUALITY_REASON } from './adapters/primitive-plan.ts'
+export { operandFacts, planPrimitive, planTest, spellTest, primitivesAt, isNativePlan, relationalHelper, isNativeToNumber, booleanValueSites, planTextDisplay, foldNegatedNumberLiteral, numberLiteralSpelling, isRuntimeNumberLiteral, plusSpelling, planToString, needsToString, strictEqSpelling, mayHoldObject, isNullishTest, isNilLiteralOperand, nilTestOperand, refuseUnspelledNilTest, NON_PRIMITIVE_EQUALITY_REASON } from './adapters/primitive-plan.ts'
 export { refuseNonPrimitiveStrictEquality, type NonPrimitiveEqualitySink } from './adapters/non-primitive-equality.ts'
 export { rewriteNilReadings, rewriteNilReadingsDeep, isNilReadingFallback, NAN_LITERAL } from './adapters/nil-reading.ts'
 export type { PrimitiveOp, Proof, NativeSafeClaims, NativeSafeTable, PrimitiveHelper, NilTestHelper, PrimitivePlan, PrimitiveInputs, TextDisplay, NumberLiteralSpelling, PlusSpelling, StrictEqSpelling } from './adapters/primitive-plan.ts'
@@ -157,13 +157,6 @@ export { collectLoopBoundNames } from './adapters/loop-bound-names.ts'
 export { planStyleObject, type StyleObjectPlanEntry } from './adapters/style-object.ts'
 export { filterCaptureCollisions } from './adapters/filter-capture-collisions.ts'
 export { templateNameCollisionErrors } from './adapters/template-name-collisions.ts'
-export {
-  arithmeticCoercionOrRefuse,
-  targetArithmeticCoercion,
-  refuseAmbiguousNilArithmetic,
-  refuseAmbiguousNilMemoArithmetic,
-  type AmbiguousNilArithmeticSink,
-} from './adapters/ambiguous-nil-arithmetic.ts'
 export {
   collectBooleanValueNames,
   isAriaBooleanAttr,
@@ -243,8 +236,6 @@ export {
   arithmeticOperandIsNull,
   arithmeticOperandIsUndefined,
   arithmeticOperandCoercion,
-  arithmeticOperandNilIsAmbiguous,
-  ambiguousNilArithmeticOperands,
   bareGetterCallName,
   attrValueMayBeNullish,
   collectAbsentPropSeedReads,

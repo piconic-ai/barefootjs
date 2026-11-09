@@ -67,6 +67,16 @@ export function loopRowType(
   return arrayElementType(type) ?? null
 }
 
+/**
+ * The declared type of the value `expr` reads in `scope` (a prop, a member
+ * path below one, a loop row, a signal or memo getter), or null when the
+ * declarations do not say. An optional field below the root admits
+ * `undefined` (`loopValueTypeAt`).
+ */
+export function declaredValueType(types: DeclaredValueTypes, expr: ParsedExpr, scope: BindingScope): LoopValueType | null {
+  return valueType(types, expr, scope)
+}
+
 function valueType(types: DeclaredValueTypes, expr: ParsedExpr, scope: BindingScope): LoopValueType | null {
   switch (expr.kind) {
     case 'identifier': {

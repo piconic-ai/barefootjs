@@ -54,10 +54,7 @@ import {
   type AttrValueEmitter,
   type SupportResult,
   collectNullableSignalGetters,
-  arithmeticCoercionOrRefuse,
-  targetArithmeticCoercion,
-  refuseAmbiguousNilArithmetic,
-  refuseAmbiguousNilMemoArithmetic,
+  arithmeticOperandCoercion,
   refuseNonPrimitiveStrictEquality,
   type ArithmeticCoercion,
   collectNullishAttrContext,
@@ -913,9 +910,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.refusedLoopArrayConsts = new Set()
     this.scope = BindingScope.EMPTY
     ir = this.primeCompileState(ir)
-    // Memo bodies seed at construction through several paths that never
-    // reach the operand coercion; refuse their ambiguous-nil arithmetic once.
-    refuseAmbiguousNilMemoArithmetic(ir.metadata.memos ?? [], this.state.nullishAttrCtx, this.state, GO_NATIVE_SAFE)
     // `===` / `!==` over an object or array (#3774, #3824 step 8).
     refuseNonPrimitiveStrictEquality(ir, this.state.operandTyping, this.state)
     // A spread of an arbitrary object onto a child component (#3861).
@@ -5508,12 +5502,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * The shared arithmetic-operand decision (`arithmeticCoercionOrRefuse`,
-   * #3474 / #3700) in the emission site's scope: the coercion to spell, and
-   * a BF101 for an operand whose nil the declared type cannot classify.
+   * The shared arithmetic-operand decision (`arithmeticOperandCoercion`,
+   * #3474) in the emission site's scope: the coercion to spell.
    */
   private arithmeticCoercion(op: string, operand: ParsedExpr, other: ParsedExpr | undefined): ArithmeticCoercion {
-    return arithmeticCoercionOrRefuse(op, operand, other, this.state.nullishAttrCtx, n => this.scope.isBound(n), this.state, GO_NATIVE_SAFE)
+    return arithmeticOperandCoercion(op, operand, other, this.state.nullishAttrCtx, n => this.scope.isBound(n))
   }
 
   unary(op: string, argument: ParsedExpr, emit: (e: ParsedExpr) => string, plan: PrimitivePlan | null): string {
@@ -6659,8 +6652,6 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       return { condition: `false`, preamble: '' }
     }
 
-    // `renderConditionTest` lowers operators without the operand coercion.
-    this.conditionExprHost.refuseAmbiguousNilArithmetic(parsed, [])
     // The whole condition is a test, spelled from its ToBoolean plan (#3824):
     // `{{if}}` alone reads an empty slice or map as false and NaN as true,
     // where JS reads `[]` / `{}` as true and NaN as false.
@@ -7348,14 +7339,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     renderParsedExpr: (expr) => this.renderParsedExpr(expr),
     makeLoc: () => this.makeLoc(),
     hasScopeBinding: (name) => Boolean(this.scope.lookup(name)),
-    refuseAmbiguousNilArithmetic: (expr, params) =>
-      refuseAmbiguousNilArithmetic(expr, this.state.nullishAttrCtx, this.scope.enterCallback(params), this.state, GO_NATIVE_SAFE),
     operandCoercion: (op, operand, other, params) => {
       const scope = params ? this.scope.enterCallback(params) : this.scope
-      return targetArithmeticCoercion(op, operand, other, this.state.nullishAttrCtx, n => scope.isBound(n), GO_NATIVE_SAFE)
+      return arithmeticOperandCoercion(op, operand, other, this.state.nullishAttrCtx, n => scope.isBound(n))
     },
     rewriteNilReadings: (expr, params) =>
-      rewriteNilReadings(expr, this.state.operandTyping.at(params ? this.scope.enterCallback(params) : this.scope), GO_NATIVE_SAFE),
+      rewriteNilReadings(expr, this.state.operandTyping.at(params ? this.scope.enterCallback(params) : this.scope)),
     filterCaptureAlias: (name) => this.filterCaptureAliases.get(name),
     lookupDestructureBinding: (name) => this.lookupDestructureBinding(name),
     noteWrapperRowRead: (name, rendered) => this.noteWrapperRowRead(name, rendered),

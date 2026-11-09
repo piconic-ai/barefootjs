@@ -91,7 +91,8 @@ function bakeInlineObjectAsGoMap(ctx: GoEmitContext, expr: ParsedExpr): string |
  * `bakeInlineObjectAsGoMap` — a struct property's nested value, read through
  * Go-cased dot access — the keys stay as written, so `JSON.stringify` keeps
  * them and a non-identifier key (`'data-x'`) is still found. Omitted members
- * stay absent. Null-means-defer, like the rest of this module.
+ * stay absent; an `undefined` member is present, holding `bf.Undefined`.
+ * Null-means-defer, like the rest of this module.
  */
 export function bakeSourceKeyedObjectAsGoMap(ctx: GoEmitContext, expr: ParsedExpr): string | null {
   if (expr.kind !== 'object-literal') return null
@@ -99,14 +100,34 @@ export function bakeSourceKeyedObjectAsGoMap(ctx: GoEmitContext, expr: ParsedExp
   for (const prop of expr.properties) {
     if (prop.kind === 'spread') return null
     if (prop.shorthand) return null
-    const go =
-      prop.value.kind === 'object-literal'
-        ? bakeSourceKeyedObjectAsGoMap(ctx, prop.value)
-        : parsedLiteralToGo(ctx, prop.value)
+    const go = sourceKeyedValueGo(ctx, prop.value)
     if (go === null) return null
     entries.push(`${JSON.stringify(prop.key)}: ${go}`)
   }
   return `map[string]interface{}{${entries.join(', ')}}`
+}
+
+/**
+ * A member or element of a source-keyed seed (`bakeSourceKeyedObjectAsGoMap`):
+ * an object is a source-keyed map, an array an `[]interface{}` of such
+ * values, and `undefined` JS `undefined` itself (`bf.Undefined`), which
+ * `Object.entries` yields as a present member and `JSON.stringify` drops.
+ * The keys are data as written, so an object shaped like a sentinel
+ * (`{ $undef: true }`) stays an ordinary map. Null-means-defer.
+ */
+function sourceKeyedValueGo(ctx: GoEmitContext, value: ParsedExpr): string | null {
+  if (isUndefinedIdentifier(value)) return 'bf.Undefined'
+  if (value.kind === 'object-literal') return bakeSourceKeyedObjectAsGoMap(ctx, value)
+  if (value.kind === 'array-literal' && value.elements.some(e => e.kind === 'object-literal')) {
+    const elems: string[] = []
+    for (const el of value.elements) {
+      const go = sourceKeyedValueGo(ctx, el)
+      if (go === null) return null
+      elems.push(go)
+    }
+    return `[]interface{}{${elems.join(', ')}}`
+  }
+  return parsedLiteralToGo(ctx, value)
 }
 
 /**
@@ -174,10 +195,13 @@ function arrayLiteralToGo(
   const elemType = typeInfo?.kind === 'array' ? typeInfo.elementType : undefined
   const sliceHeader = typeInfo?.kind === 'array' ? typeInfoToGo(ctx, typeInfo) : '[]interface{}'
   const elems: string[] = []
+  // An `undefined` element still occupies a slot: JS iterates it and renders
+  // an empty row, as it does for `null` (#3610). An element that can hold
+  // any value holds JS `undefined` itself (`bf.Undefined`), apart from
+  // `null`; a typed element keeps its nil.
+  const undefinedElement = sliceHeader === '[]interface{}' || sliceHeader === '[]any' ? 'bf.Undefined' : 'nil'
   for (const el of expr.elements) {
-    // An `undefined` element still occupies a slot: JS iterates it and
-    // renders an empty row, as it does for `null` (#3610).
-    const go = isUndefinedIdentifier(el) ? 'nil' : parsedLiteralToGo(ctx, el, elemType)
+    const go = isUndefinedIdentifier(el) ? undefinedElement : parsedLiteralToGo(ctx, el, elemType)
     // Any non-scalar element (object / call / identifier) defers the WHOLE
     // array — struct-element baking is owned elsewhere.
     if (go === null) return null

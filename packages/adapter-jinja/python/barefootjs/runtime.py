@@ -82,7 +82,7 @@ from typing import Any, Callable, Optional
 from markupsafe import Markup
 
 from . import evaluator as _evaluator
-from .evaluator import is_null, is_nullish, is_undefined, looks_like_number, parse_number_literal, undefined
+from .evaluator import decode_undefined, is_null, is_nullish, is_undefined, looks_like_number, parse_number_literal, undefined
 from .search_params import SearchParams
 
 _caller_keys = threading.local()
@@ -587,10 +587,10 @@ def _derive_stash_from_defaults(defaults: dict, props: dict) -> dict:
     for name, d in (defaults or {}).items():
         key = jinja_ident(name)
         if not isinstance(d, dict):
-            extra[key] = d
+            extra[key] = decode_undefined(d)
             continue
         if d.get("isRestProps"):
-            extra[key] = props[key] if key in props else d.get("value")
+            extra[key] = props[key] if key in props else decode_undefined(d.get("value"))
             continue
         prop_name = d.get("propName")
         mangled_prop_name = jinja_ident(prop_name) if prop_name is not None else None
@@ -606,8 +606,9 @@ def _static_fallback(d: dict) -> Any:
     """An `ssrDefaults` entry's seed when the caller's prop is absent or
     `undefined`: its default, or `UNDEF` when the prop has none (the
     manifest writes no `value` then). A signal / memo entry always carries
-    its `value`."""
-    return d["value"] if "value" in d else undefined()
+    its `value`, in which a `{"$undef": true}` sentinel is `UNDEF`
+    (`decode_undefined`)."""
+    return decode_undefined(d["value"]) if "value" in d else undefined()
 
 
 _STRIPPED_TEMPLATE_SUFFIXES = (".html.ep", ".tx", ".jinja")

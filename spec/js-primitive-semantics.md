@@ -26,10 +26,12 @@ Terms used throughout:
 - **Native-safe**: a (operation, proof) pair for which a target's native
   operator is known to agree with JS. Known means pinned by vectors (see
   "Conformance"), not assumed.
-- **Nil reading**: which JS value a host nil stands for at a read: `null`,
-  `undefined`, or `either` (the type admits both). Every runtime holds both
-  as one nil (`spec/compiler.md`, "ParsedExpr Evaluator Semantics": "There
-  is no `undefined`").
+- **Nil reading**: which JS value a nil-capable operand holds when it is
+  nil, as Phase-1 types prove it: `null`, `undefined`, or `either` (the
+  type admits both). When this note was written every runtime held both as
+  one nil; every runtime now carries them as two values
+  (`spec/js-undefined-value.md`), so the reading is a proof the plan uses
+  to pick a native operator, not a limit on what output is possible.
 
 ## Problem
 
@@ -425,8 +427,11 @@ operand is proven never nil and never falsy; `isNeverNullishOperand` already
 returns the left operand directly when it cannot be nil.
 
 **Helper.** `coalesce(a, b)` (Pebble), `bf_nullish` (Go). The distinction
-between `null` and `undefined` does not matter here; it matters only to
-ToNumber and ToString, which the nil-reading rewrite handles.
+between `null` and `undefined` does not matter to `??`; it matters to
+ToNumber, ToString, `===`, JSON, defaults and presence
+(`spec/js-undefined-value.md` §1). `x === null` / `x === undefined` are
+strict tests and `x == null` is the nullish test (`is_null` /
+`is_undefined` / `is_nullish`, "Decisions" (7) there).
 
 **Status.** Go: `or`, `bf_nullish` or the left operand, per operand shape
 (`logical`); this is where `nullish-over-false-yielding-operand` is pinned.
@@ -529,14 +534,14 @@ or a `+` whose other operand is proven `string` (concatenation) or is proven
 | numeric (`- * / %`, unary, relational, numeric `+`) | `x ?? 0` | `x ?? NaN` |
 | string (`+` concat, template-literal part) | `x ?? 'null'` | `x ?? 'undefined'` |
 
-A numeric `either` operand (`n?: number | null`) is refused with BF101,
-the precedent `arithmeticCoercionOrRefuse` set for numbers (#3700). A string
-`either` operand (`c?: string | null`) reads its nil as `undefined`, with a
-registered limitation for an explicit `null`; see "Decisions" (2). `NaN` is spelled
-`number('NaN')`, which the `number` vectors already pin. After the rewrite
-the operand is non-nil, so `to_number` and `to_string` need no nil argument
-and stay identical to the evaluator's `_to_number` / `_to_string` (nil reads
-as `null`). This generalizes `arithmeticOperandCoercion` (#3474) from number
+An `either` operand (`n?: number | null`, `c?: string | null`) is left as
+it is: the runtime's helper (`to_number`, `to_string`, `plus`, the
+relational ones) reads its value, `null` or `undefined`, exactly
+(`spec/js-undefined-value.md`; this supersedes the BF101 of #3700 and
+"Decisions" (2)). `NaN` is spelled `number('NaN')`, which the `number`
+vectors already pin. After the rewrite the operand is non-nil, so the plan
+may name the native operator; `to_number` and `to_string` stay identical to
+the evaluator's `_to_number` / `_to_string`. This generalizes `arithmeticOperandCoercion` (#3474) from number
 props to every typed read, and closes the #3750 gaps by construction: the
 rewrite runs wherever the plan runs.
 
@@ -554,15 +559,12 @@ concatenation only at runtime, so neither row of the table preserves the
 result. For an omitted `n?: number`, `n + x` is `'undefinedx'` when `x` is
 `'x'` and `NaN` when `x` is `1`; `n ?? NaN` turns the first into `'NaNx'`,
 and `n ?? 'undefined'` turns the second into `'undefined1'` (both checked in
-Node). The runtimes have one nil, so `plus` cannot tell `undefined` from
-`null` once the operand is evaluated. Step 4 therefore refuses this shape
-with BF101: a nil-capable operand whose nil reads as `undefined`, under a
-`+` whose coercion is decided at runtime. Nil reading as `null` needs no
-refusal, since `plus(nil, x)` already gives `'nullx'` and `0 + x`. The
-alternative, a `plus` variant that receives the static nil reading as an
-argument, is open question 8. The `primitives/plus` vectors and the step 4
-position fixture include this case: an omitted optional operand with the
-other operand tested as both a string and a number.
+Node). This shape is not rewritten: the runtime's `plus` receives the
+operand's value, which is `undefined` for the omitted prop, and gives
+`'undefinedx'` / `NaN` as JS does (`spec/js-undefined-value.md`; this
+supersedes the refusal of "Decisions" (8)). The `primitives/plus` vectors
+and the step 4 position fixture include this case: an omitted optional
+operand with the other operand tested as both a string and a number.
 
 ### How it reaches emitters
 
@@ -584,7 +586,7 @@ review and in the cross-adapter test.
 the code:
 
 1. One tree is read in more than one scope. A memo's `parsed` body is
-   checked in the component scope (`refuseAmbiguousNilMemoArithmetic`) and
+   checked in the component scope (`refuseNonPrimitiveStrictEquality`) and
    lowered at its use; a row read changes type with the loop it sits in
    (`ScopeBinding.row`). A per-node annotation would hold one scope's answer.
 2. Phase 2 builds nodes that Phase 1 never saw:
@@ -716,12 +718,12 @@ The plan supports either: (a) is `strict_eq` with an identity branch, (b) is
 The eight questions this note left open were decided on 2026-11-01. Each entry names the question, the decision and the rollout step it unblocks.
 
 1. **Trust declared types at the runtime boundary: yes.** Native-safe rests on TypeScript types, and the host must pass JSON-typed values (a `number` prop receives a number, not `'1'`, #3769). The runtime does not normalise numeric strings. The adapter docs state the host's obligation. *Unblocks step 3 (relational, ToNumber) and step 8.*
-2. **`either` nil reading for strings: read as `undefined`, and register a `silent` limitation.** A `c?: string | null` operand of `+` or a template-literal part reads its nil as `undefined` (`'btn undefined'`). That is the JS answer for an omitted prop, the common case. An explicit `null` then renders `'undefined'` instead of `'null'`, which is registered as a limitation with its fixture and pins. Refusing (as arithmetic does, #3700) would break `'btn ' + props.className` (#3740). *Step 4.*
-3. **Nils whose type gives no reading: accept the evaluator's rule (nil reads as `null`).** This covers reads the nil-reading rewrite cannot type: an index read, an `unknown` or untyped value, and an explicit `null` against a missing JSON key. It does not cover an `either` read (a prop or row field typed `x?: T | null`), which has its own policy: a string `either` reads as `undefined` (decision 2) and a numeric `either` is refused with BF101 ("Nil reading is a tree rewrite"), for props and row fields alike. The plan reads such a nil as `null`, as `_to_number` / `_to_string` already do. Refusing would reject most code over row data. A read whose type does give the reading keeps it: an optional row field typed `x?: T` (no `null`) reads as `undefined` through the rewrite (or the nil split for a string field under `+ number`), so step 4 still graduates `omitted-optional-row-field-plus` (`undefined!`, `NaN`, `o1`). *Step 4.*
-4. **`===` on objects (#3774): option (b), refuse.** `===` / `!==` with an operand not proven primitive is BF101 on template adapters, matching the evaluator contract (`spec/compiler.md`). `x === null` style tests are unaffected, because they lower as nullish checks. *Unblocks step 8.*
+2. *Superseded by `spec/js-undefined-value.md`; never built.* Current rule: a string `either` operand (`c?: string | null`) is left to the runtime's `to_string` / `plus`, which render `'undefined'` for an omitted prop and `'null'` for an explicit `null`. The original decision follows. **`either` nil reading for strings: read as `undefined`, and register a `silent` limitation.** A `c?: string | null` operand of `+` or a template-literal part reads its nil as `undefined` (`'btn undefined'`). That is the JS answer for an omitted prop, the common case. An explicit `null` then renders `'undefined'` instead of `'null'`, which is registered as a limitation with its fixture and pins. Refusing (as arithmetic does, #3700) would break `'btn ' + props.className` (#3740). *Step 4.*
+3. *Superseded by `spec/js-undefined-value.md`.* Current rule: a missing key, an out-of-range index and the other producers of decision 1 there read as `undefined`, data `null` reads as `null`, and the helpers give each its JS result; a typed reading is still rewritten as an optimisation. The original decision follows. **Nils whose type gives no reading: accept the evaluator's rule (nil reads as `null`).** This covers reads the nil-reading rewrite cannot type: an index read, an `unknown` or untyped value, and an explicit `null` against a missing JSON key. It does not cover an `either` read (a prop or row field typed `x?: T | null`), which has its own policy: a string `either` reads as `undefined` (decision 2) and a numeric `either` is refused with BF101 ("Nil reading is a tree rewrite"), for props and row fields alike. The plan reads such a nil as `null`, as `_to_number` / `_to_string` already do. Refusing would reject most code over row data. A read whose type does give the reading keeps it: an optional row field typed `x?: T` (no `null`) reads as `undefined` through the rewrite (or the nil split for a string field under `+ number`), so step 4 still graduates `omitted-optional-row-field-plus` (`undefined!`, `NaN`, `o1`). *Step 4.*
+4. **`===` on objects (#3774): option (b), refuse.** `===` / `!==` with an operand not proven primitive is BF101 on template adapters, matching the evaluator contract (`spec/compiler.md`). `x === null` style tests are unaffected, because they lower as nullish checks. *Unblocks step 8.* *The last sentence is superseded by `spec/js-undefined-value.md`, decision 7: with two nils, `x === null` and `x === undefined` are strict tests (`is_null` / `is_undefined`) and only `x == null` is the nullish test (`is_nullish`); none of them is a strict equality, so none is refused.*
 5. **Native `+` past 2^53 on Ruby, Python and PHP: keep the native operator, as an accepted gap.** Their `NATIVE_SAFE.plus` claims `number × number`, although their integer `+` differs from IEEE double once a result passes 2^53; Phase 1 cannot prove an operand stays inside the safe-integer range. To keep the conformance rule that a claimed native domain passes its vectors with no allowance, the `primitives/plus` cases whose result passes 2^53 get their own domain, `beyond-safe-integer`, which no table claims: the helper binding runs them on every runtime, the native binding does not. The gap itself is registered as a `silent` limitation with a fixture and pins on these three runtimes, and the catalogue's existing `add/beyond the safe-integer edge` entries in their `vector-divergences.json` stay. Perl and Go keep `add` / `bf_add`. *Step 4.*
 6. **Lone surrogates (#3704): a permanent, documented limitation.** `string-at-lone-surrogate` is reclassified as a limitation that will not be fixed. A surrogate half reads as U+FFFD, as step 2 does for index reads. *No step blocked.*
 7. **Helper naming: keep the runtime spellings.** `helperNames` keeps mapping the catalogue's ids to each runtime's methods (`index` for `get` on PHP, `bf_eq` for `strict_eq` on Go, `divide` for `div` on Perl). Renaming would change public runtime APIs and gain nothing. *No step blocked.*
-8. **Dynamic `+` with an `undefined`-reading operand: refuse (BF101).** This is the step 4 default described under "Nil reading is a tree rewrite". No `plus` variant carrying the static nil reading is added; revisit only if real code needs the shape. *Step 4.*
+8. *Superseded by `spec/js-undefined-value.md`; never built.* Current rule: a dynamic `+` takes the runtime's `plus`, which reads an `undefined` operand as JS does (`'undefinedx'`, `NaN`); nothing is refused. The original decision follows. **Dynamic `+` with an `undefined`-reading operand: refuse (BF101).** This is the step 4 default described under "Nil reading is a tree rewrite". No `plus` variant carrying the static nil reading is added; revisit only if real code needs the shape. *Step 4.*
 
-**Revisit condition for 2, 3 and 8.** These three decisions follow from one constraint: each runtime has a single nil, so `undefined` and `null` cannot be told apart once a value is evaluated. If the runtimes can carry a distinct `undefined` sentinel through prop decoding, template evaluation and truthiness at an acceptable cost, the decisions change: 2 can render `'null'` for an explicit `null`, 3 can give each nil its JS reading, and 8 can produce `'undefinedx'` / `NaN` instead of refusing. The per-runtime check found that every runtime can carry it; the design is `spec/js-undefined-value.md`. Its decisions (§7 there) replace 2, 3 and 8: until a target carries `undefined`, 2 and 8 are not built and that target keeps today's output, pinned by fixtures; only the numeric `either` refusal (#3700) stays. Step 4 is narrowed to the parts that need no runtime support (step 4a there).
+**Revisit condition for 2, 3 and 8.** These three decisions follow from one constraint: each runtime has a single nil, so `undefined` and `null` cannot be told apart once a value is evaluated. If the runtimes can carry a distinct `undefined` sentinel through prop decoding, template evaluation and truthiness at an acceptable cost, the decisions change: 2 can render `'null'` for an explicit `null`, 3 can give each nil its JS reading, and 8 can produce `'undefinedx'` / `NaN` instead of refusing. The per-runtime check found that every runtime can carry it; the design is `spec/js-undefined-value.md`. Its decisions (§7 there) replace 2, 3 and 8. Its rollout is complete: every runtime carries `undefined`, 2 and 8 were never built, and the numeric `either` refusal (#3700) was removed with the plan's collapsed branches (step U9 there). Step 4 was narrowed to the parts that need no runtime support (step 4a there).

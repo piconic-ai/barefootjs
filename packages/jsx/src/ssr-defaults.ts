@@ -47,8 +47,12 @@ export interface SsrDefault {
   /**
    * Static fallback value when neither the caller's props nor the
    * adapter's own derivation supplies one. JSON-encodable: number,
-   * string, boolean, null, or a tree of plain objects / arrays. `null`
-   * when the source expression isn't statically evaluable.
+   * string, boolean, null, or a tree of plain objects / arrays, in which
+   * an `undefined` array element or object member is the sentinel
+   * `{"$undef": true}` (`UNDEFINED_SENTINEL`) that every runtime's seed
+   * decodes to its undefined value, and an object key that begins with `$`
+   * carries one more `$` (`encodeUndefinedMembers`). `null` when the source expression
+   * isn't statically evaluable.
    *
    * Absent on a prop entry whose prop has no destructure default
    * (`spec/js-undefined-value.md`, "Shared: the seed and the default"):
@@ -159,7 +163,7 @@ export function deriveStashFromDefaults(
  * `unwrap_or(Null)`, Ruby `d[:value]`, Java `d.get("value")`).
  */
 function fallbackOf(d: SsrDefault): unknown {
-  return 'value' in d ? d.value : null
+  return 'value' in d ? decodeUndefinedMembers(d.value) : null
 }
 
 const UNRESOLVED = Symbol('unresolved')
@@ -474,7 +478,72 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     }
   }
 
-  return Object.keys(out).length === 0 ? undefined : out
+  return Object.keys(out).length === 0 ? undefined : encodeSeedValues(out)
+}
+
+/**
+ * Each entry's `value` through {@link encodeUndefinedMembers}, in place.
+ * A getter alias shares its origin's entry object, so each distinct entry
+ * is encoded exactly once: encoding twice would escape the first pass's
+ * sentinels and `$`-prefixed keys again.
+ */
+function encodeSeedValues(out: Record<string, SsrDefault>): Record<string, SsrDefault> {
+  for (const d of new Set(Object.values(out))) {
+    if ('value' in d) d.value = encodeUndefinedMembers(d.value)
+  }
+  return out
+}
+
+/**
+ * The manifest's spelling of JS `undefined` inside a seed value: the
+ * one-key sentinel the golden vectors use (`spec/js-undefined-value.md`,
+ * "JSON encoding for vectors"). JSON has no `undefined`, and dropping it
+ * would turn an array element into `null` and a present member into a
+ * missing key.
+ */
+export const UNDEFINED_SENTINEL: Readonly<{ $undef: true }> = Object.freeze({ $undef: true })
+
+/**
+ * `v` with each `undefined` array element and object member replaced by
+ * {@link UNDEFINED_SENTINEL}, as a new tree; a top-level `undefined` stays
+ * itself (the entry then has no `value`, which every seed reads as its
+ * undefined value). So that seed data shaped like the sentinel stays data,
+ * every object key that begins with `$` gets one more `$` (`$undef` to
+ * `$$undef`, `$$x` to `$$$x`): the only object left with the single key
+ * `$undef` is the sentinel, and {@link decodeUndefinedMembers} inverts the
+ * encoding exactly.
+ */
+export function encodeUndefinedMembers(v: unknown): unknown {
+  const member = (x: unknown): unknown => (x === undefined ? { ...UNDEFINED_SENTINEL } : encodeUndefinedMembers(x))
+  if (Array.isArray(v)) return v.map(member)
+  if (v !== null && typeof v === 'object') {
+    return Object.fromEntries(
+      Object.entries(v as Record<string, unknown>).map(([k, x]) => [k.startsWith('$') ? `$${k}` : k, member(x)]),
+    )
+  }
+  return v
+}
+
+/**
+ * {@link encodeUndefinedMembers} inverted: each sentinel (an object whose
+ * only key is `$undef`, holding `true`) becomes `undefined` again, and each
+ * key that begins with `$$` loses one leading `$`.
+ */
+export function decodeUndefinedMembers(v: unknown): unknown {
+  if (isUndefinedSentinel(v)) return undefined
+  if (Array.isArray(v)) return v.map(decodeUndefinedMembers)
+  if (v !== null && typeof v === 'object') {
+    return Object.fromEntries(
+      Object.entries(v as Record<string, unknown>).map(([k, x]) => [k.startsWith('$$') ? k.slice(1) : k, decodeUndefinedMembers(x)]),
+    )
+  }
+  return v
+}
+
+function isUndefinedSentinel(v: unknown): boolean {
+  if (v === null || typeof v !== 'object' || Array.isArray(v)) return false
+  const keys = Object.keys(v)
+  return keys.length === 1 && keys[0] === '$undef' && (v as { $undef: unknown }).$undef === true
 }
 
 /**
@@ -754,7 +823,9 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
       }
       const v = evalNode(prop.initializer, ctx)
       if (v === UNRESOLVED) return UNRESOLVED
-      obj[key] = v === undefined ? null : v
+      // An `undefined` member is a present key holding `undefined`; the
+      // manifest carries it as `{"$undef": true}` (`encodeUndefinedMembers`).
+      obj[key] = v
     }
     return obj
   }
@@ -765,7 +836,7 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
       if (ts.isOmittedExpression(elem)) return UNRESOLVED
       const v = evalNode(elem, ctx)
       if (v === UNRESOLVED) return UNRESOLVED
-      arr.push(v === undefined ? null : v)
+      arr.push(v)
     }
     return arr
   }
@@ -848,7 +919,7 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
             const localBindings: Record<string, EvalResult> = { ...ctx.bindings, [paramName]: item }
             const v = evalNode(arrow.body as ts.Expression, { ...ctx, bindings: localBindings })
             if (v === UNRESOLVED) return UNRESOLVED
-            mapped.push(v === undefined ? null : v)
+            mapped.push(v)
           }
           return mapped
         }

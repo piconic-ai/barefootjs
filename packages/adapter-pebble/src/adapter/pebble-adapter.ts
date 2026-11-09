@@ -342,7 +342,6 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
   }
 
   protected readonly loopChildDiagnosticName = 'Pebble'
-  protected readonly nativeSafe = NATIVE_SAFE
   // Two source names that Pebble's renaming of reserved names turns into one
   // template variable would read the same value (#3404).
   protected override readonly templateIdentifierSpelling = { ident: pebbleIdent, label: 'Pebble' }
@@ -1265,8 +1264,6 @@ export class PebbleAdapter extends DslTemplateAdapter implements IRNodeEmitter<P
     param: string,
     localVarMap: Map<string, string> = new Map(),
   ): string {
-    // Arithmetic over a prop whose nil the type cannot classify (#3700).
-    this.refuseAmbiguousNilArithmeticIn(expr, [param, ...localVarMap.keys()])
     // The predicate's own param and locals shadow an outer string-typed name.
     const predicateScope = this.scope.enterCallback([param, ...localVarMap.keys()])
     return emitParsedExpr(

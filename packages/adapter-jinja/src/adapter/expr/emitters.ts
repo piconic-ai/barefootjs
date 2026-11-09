@@ -118,14 +118,12 @@ export const CALLBACK_LOWERING: CallbackLoweringOptions = { adapterName: 'Jinja'
  */
 export const NATIVE_SAFE: NativeSafeTable = {
   // The runtime carries JS `undefined` (`UNDEF`, a `JsUndefined`) apart
-  // from `null` (host `None`), spec/js-undefined-value.md rollout step U2.
-  carriesUndefined: true,
+  // from `null` (host `None`) (spec/js-undefined-value.md).
   'to-boolean': ['boolean'],
   // A unary `+` is native only over a proven number, `to_number` otherwise
-  // (#3824 step 3). `unproven` describes binary `-` / `*` over operands Phase 1
-  // cannot type, which keep the native operator (step 4a only reads their
-  // operands' nil).
-  'to-number': ['number-pair', 'number', 'unproven'],
+  // (#3824 step 3). Binary `-` / `*` are native over two proven numbers and
+  // take the runtime's `sub` / `mul` otherwise (`spellNumericBinary`).
+  'to-number': ['number-pair', 'number'],
   // A `+` is native over two proven numbers (Python's `+`, pinned by the
   // `primitives/plus` vectors; past 2^53 Python adds integers exactly, an
   // accepted gap, "Decisions" (5)) and over a proven string (`~`, the other

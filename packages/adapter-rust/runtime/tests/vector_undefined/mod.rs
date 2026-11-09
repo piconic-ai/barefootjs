@@ -11,7 +11,6 @@
 
 use barefootjs::num::JsValue;
 use serde_json::Value as JsonValue;
-use std::path::Path;
 
 /// What a `$undef` in `args` / `env` decodes to.
 pub fn arg() -> JsValue {
@@ -38,21 +37,8 @@ pub fn is_sentinel_value(v: &JsValue) -> bool {
     *v == sentinel_value()
 }
 
-/// Replaces every decoded sentinel in an `args` / `env` value with [`arg`].
+/// Replaces every decoded sentinel in an `args` / `env` value with [`arg`]:
+/// the runtime's own manifest decoder.
 pub fn to_arg(v: JsValue) -> JsValue {
-    if is_sentinel_value(&v) {
-        return arg();
-    }
-    match v {
-        JsValue::Array(a) => JsValue::Array(a.into_iter().map(to_arg).collect()),
-        JsValue::Object(o) => JsValue::Object(o.into_iter().map(|(k, x)| (k, to_arg(x))).collect()),
-        other => other,
-    }
-}
-
-/// The "rust" runtime of an expected-failure ledger: case key to entry.
-pub fn load_expected_failures(path: &Path) -> serde_json::Map<String, JsonValue> {
-    let raw = std::fs::read_to_string(path).unwrap_or_else(|e| panic!("read {path:?}: {e}"));
-    let doc: JsonValue = serde_json::from_str(&raw).unwrap_or_else(|e| panic!("parse {path:?}: {e}"));
-    doc["runtimes"]["rust"].as_object().cloned().expect("ledger has no \"rust\" runtime")
+    barefootjs::manifest::decode_undefined(v)
 }
