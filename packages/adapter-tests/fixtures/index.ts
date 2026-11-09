@@ -323,6 +323,7 @@ import { fixture as undefNullJsonStringify } from './undef-null-json-stringify'
 import { fixture as undefNullJsonStringifyObjectMember } from './undef-null-json-stringify-object-member'
 import { fixture as undefArrayElementSignalSeed } from './undef-array-element-signal-seed'
 import { fixture as undefObjectMemberSignalSeed } from './undef-object-member-signal-seed'
+import { fixture as undefSentinelShapedSeedData } from './undef-sentinel-shaped-seed-data'
 import { fixture as objectEntriesTypedObjectSignal } from './object-entries-typed-object-signal'
 import { fixture as nullableMemberSignalSeedDestructured } from './nullable-member-signal-seed-destructured'
 import { fixture as undefNullNonDivergingPositions } from './undef-null-non-diverging-positions'
@@ -1631,6 +1632,7 @@ export const jsxFixtures: JSXFixture[] = [
   undefNullJsonStringifyObjectMember,
   undefArrayElementSignalSeed,
   undefObjectMemberSignalSeed,
+  undefSentinelShapedSeedData,
   objectEntriesTypedObjectSignal,
   nullableMemberSignalSeedDestructured,
   undefNullNonDivergingPositions,

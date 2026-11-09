@@ -72,7 +72,9 @@ committed, consumed by one thin harness per backend.
   backend decodes an `args` sentinel to its runtime's undefined value,
   and an `expect` sentinel matches only that value. The build manifest's
   `ssrDefaults` seed values use the same sentinel for an `undefined`
-  array element or object member, decoded by each runtime's seed with the
+  array element or object member, and escape a seed's own `$`-prefixed
+  object keys with one more `$` (`$undef` → `$$undef`) so data shaped
+  like the sentinel stays data; each runtime's seed decodes both with the
   same decoder (`spec/js-undefined-value.md`, "Shared: the seed and the
   default"). Args must stay finite.
 

@@ -124,14 +124,21 @@ def is_undef_sentinel(v: Any) -> bool:
 
 def decode_undefined(v: Any) -> Any:
     """`v` with every `{"$undef": true}` sentinel, at any depth, replaced by
-    `UNDEF`; a sentinel inside a dict is a present key holding `undefined`."""
+    `UNDEF`; a sentinel inside a dict is a present key holding `undefined`.
+    Every other dict key that begins with `$$` loses one leading `$`: the
+    manifest encoder escapes a seed's own `$`-prefixed keys that way, so data
+    shaped like the sentinel stays data."""
     if is_undef_sentinel(v):
         return undefined()
     if isinstance(v, list):
         return [decode_undefined(x) for x in v]
     if isinstance(v, dict):
-        return {k: decode_undefined(x) for k, x in v.items()}
+        return {_unescape_key(k): decode_undefined(x) for k, x in v.items()}
     return v
+
+
+def _unescape_key(k: Any) -> Any:
+    return k[1:] if isinstance(k, str) and k.startswith("$$") else k
 
 
 def is_null(v: Any) -> bool:

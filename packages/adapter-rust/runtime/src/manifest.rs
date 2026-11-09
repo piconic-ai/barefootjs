@@ -164,16 +164,22 @@ pub fn is_undefined_sentinel(v: &JsValue) -> bool {
 
 /// `v` with every `{"$undef": true}` sentinel, at any depth, replaced by
 /// [`JsValue::Undefined`]; inside an object it is a present key holding
-/// `undefined`.
+/// `undefined`. Every other object key that begins with `$$` loses one
+/// leading `$`: the manifest encoder escapes a seed's own `$`-prefixed keys
+/// that way, so data shaped like the sentinel stays data.
 pub fn decode_undefined(v: JsValue) -> JsValue {
     if is_undefined_sentinel(&v) {
         return JsValue::Undefined;
     }
     match v {
         JsValue::Array(a) => JsValue::Array(a.into_iter().map(decode_undefined).collect()),
-        JsValue::Object(o) => JsValue::Object(o.into_iter().map(|(k, x)| (k, decode_undefined(x))).collect()),
+        JsValue::Object(o) => JsValue::Object(o.into_iter().map(|(k, x)| (unescape_key(k), decode_undefined(x))).collect()),
         other => other,
     }
+}
+
+fn unescape_key(k: String) -> String {
+    if k.starts_with("$$") { k[1..].to_string() } else { k }
 }
 
 /// Strip the manifest's `markedTemplate` value (e.g. `"templates/PostList

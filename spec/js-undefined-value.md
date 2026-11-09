@@ -299,6 +299,15 @@ lose its present `b` key. `extractSsrDefaults` writes each `undefined`
 array element and object member inside a `value` as `{"$undef": true}`
 (the encoding of "JSON encoding for vectors" below), so the manifest holds
 `[{"$undef": true}, null, "x"]` and `{"a": null, "b": {"$undef": true}}`.
+So that seed data shaped like the sentinel stays data, the encoder also
+gives every object key that begins with `$` one more `$` (`$undef` becomes
+`$$undef`, `$$x` becomes `$$$x`): `createSignal({ payload: { $undef: true }
+})` is written `{"payload": {"$$undef": true}}`. The undefined marker is
+exactly an object whose single key is `$undef`, holding `true`; a decoder
+turns it into `UNDEF` and strips one leading `$` from every other key that
+begins with `$$`, at any depth. The encoding is therefore bijective. The
+vector corpora need no escape (their data has no `$`-prefixed key of its
+own), so the harnesses share the decoders unchanged.
 Each runtime's seed (`_derive_stash_from_defaults` and its ports) decodes
 the sentinel, at any depth, to its `UNDEF`: Python
 `evaluator.decode_undefined`, Ruby `BarefootJS.decode_undefined`, Perl

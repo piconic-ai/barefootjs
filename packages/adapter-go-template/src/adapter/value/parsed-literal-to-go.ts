@@ -100,18 +100,34 @@ export function bakeSourceKeyedObjectAsGoMap(ctx: GoEmitContext, expr: ParsedExp
   for (const prop of expr.properties) {
     if (prop.kind === 'spread') return null
     if (prop.shorthand) return null
-    // `key: undefined` is a present key holding JS `undefined`
-    // (`bf.Undefined`): `Object.entries` yields it, `JSON.stringify` drops it.
-    const go =
-      !prop.shorthand && isUndefinedIdentifier(prop.value)
-        ? 'bf.Undefined'
-        : prop.value.kind === 'object-literal'
-          ? bakeSourceKeyedObjectAsGoMap(ctx, prop.value)
-          : parsedLiteralToGo(ctx, prop.value)
+    const go = sourceKeyedValueGo(ctx, prop.value)
     if (go === null) return null
     entries.push(`${JSON.stringify(prop.key)}: ${go}`)
   }
   return `map[string]interface{}{${entries.join(', ')}}`
+}
+
+/**
+ * A member or element of a source-keyed seed (`bakeSourceKeyedObjectAsGoMap`):
+ * an object is a source-keyed map, an array an `[]interface{}` of such
+ * values, and `undefined` JS `undefined` itself (`bf.Undefined`), which
+ * `Object.entries` yields as a present member and `JSON.stringify` drops.
+ * The keys are data as written, so an object shaped like a sentinel
+ * (`{ $undef: true }`) stays an ordinary map. Null-means-defer.
+ */
+function sourceKeyedValueGo(ctx: GoEmitContext, value: ParsedExpr): string | null {
+  if (isUndefinedIdentifier(value)) return 'bf.Undefined'
+  if (value.kind === 'object-literal') return bakeSourceKeyedObjectAsGoMap(ctx, value)
+  if (value.kind === 'array-literal' && value.elements.some(e => e.kind === 'object-literal')) {
+    const elems: string[] = []
+    for (const el of value.elements) {
+      const go = sourceKeyedValueGo(ctx, el)
+      if (go === null) return null
+      elems.push(go)
+    }
+    return `[]interface{}{${elems.join(', ')}}`
+  }
+  return parsedLiteralToGo(ctx, value)
 }
 
 /**

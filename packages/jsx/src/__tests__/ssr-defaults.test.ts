@@ -13,7 +13,7 @@
 //     computations that derive from those signals (`count() * 2`).
 
 import { describe, test, expect } from 'bun:test'
-import { extractSsrDefaults, deriveStashFromDefaults } from '../ssr-defaults'
+import { extractSsrDefaults, deriveStashFromDefaults, encodeUndefinedMembers, decodeUndefinedMembers } from '../ssr-defaults'
 import type { SsrDefault } from '../ssr-defaults'
 import { analyzeComponent } from '../analyzer'
 import { buildMetadata } from '../compiler'
@@ -854,6 +854,23 @@ describe('deriveStashFromDefaults', () => {
       expect(deriveStashFromDefaults(missing, props)).toEqual(deriveStashFromDefaults(explicit, props))
     }
     expect(deriveStashFromDefaults(missing, {})).toEqual({ n: null, rest: null })
+  })
+
+  test('seed data shaped like the sentinel stays data: `$`-prefixed keys get one more `$`', () => {
+    const data = { payload: { $undef: true }, $$x: 1, list: [{ $undef: true }, undefined], gone: undefined }
+    const encoded = encodeUndefinedMembers(data)
+    expect(encoded).toEqual({
+      payload: { $$undef: true },
+      $$$x: 1,
+      list: [{ $$undef: true }, { $undef: true }],
+      gone: { $undef: true },
+    })
+    const decoded = decodeUndefinedMembers(JSON.parse(JSON.stringify(encoded))) as Record<string, unknown>
+    expect(decoded).toEqual(data)
+    expect('gone' in decoded).toBe(true)
+    expect((decoded.list as unknown[])[1]).toBeUndefined()
+    expect(decodeUndefinedMembers({ $undef: true })).toBeUndefined()
+    expect(decodeUndefinedMembers({ $undef: false })).toEqual({ $undef: false })
   })
 
   test('the static fallback decodes the `$undef` sentinel to `undefined`, keeping the key', () => {

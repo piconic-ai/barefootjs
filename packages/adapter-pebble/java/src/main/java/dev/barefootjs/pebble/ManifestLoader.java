@@ -73,7 +73,7 @@ public final class ManifestLoader {
     for (Map.Entry<String, JsonElement> e : doc.entrySet()) {
       JsonObject entry = e.getValue().getAsJsonObject();
       String componentName = entry.has("componentName") ? entry.get("componentName").getAsString() : e.getKey();
-      Object ssrDefaultsRaw = entry.has("ssrDefaults") ? JsonDecode.materialize(entry.get("ssrDefaults")) : null;
+      Object ssrDefaultsRaw = entry.has("ssrDefaults") ? JsonDecode.materializeManifest(entry.get("ssrDefaults")) : null;
       Map<String, Object> ssrDefaults = ssrDefaultsRaw instanceof Map
           ? (Map<String, Object>) ssrDefaultsRaw
           : new LinkedHashMap<>();
@@ -162,7 +162,7 @@ public final class ManifestLoader {
 
   @SuppressWarnings("unchecked")
   private static void registerBuildManifestEntry(Map<String, ChildMeta> out, String componentName, JsonObject entryObj) {
-    Object ssrDefaultsRaw = entryObj.has("ssrDefaults") ? JsonDecode.materialize(entryObj.get("ssrDefaults")) : null;
+    Object ssrDefaultsRaw = entryObj.has("ssrDefaults") ? JsonDecode.materializeManifest(entryObj.get("ssrDefaults")) : null;
     Map<String, Object> ssrDefaults = ssrDefaultsRaw instanceof Map
         ? (Map<String, Object>) ssrDefaultsRaw
         : new LinkedHashMap<>();

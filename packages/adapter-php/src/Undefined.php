@@ -80,7 +80,10 @@ final class Undefined implements \JsonSerializable
     /**
      * `$v` with every sentinel, at any depth, replaced by the undefined
      * value; inside an object (or assoc array) it is a present key holding
-     * `undefined`. The container kinds are kept.
+     * `undefined`. Every other key that begins with `$$` loses one leading
+     * `$`: the manifest encoder escapes a seed's own `$`-prefixed keys that
+     * way, so data shaped like the sentinel stays data. The container kinds
+     * are kept.
      */
     public static function decode($v)
     {
@@ -88,16 +91,26 @@ final class Undefined implements \JsonSerializable
             return self::value();
         }
         if (is_array($v)) {
-            return array_map([self::class, 'decode'], $v);
+            $out = [];
+            foreach ($v as $k => $x) {
+                $out[self::unescapeKey($k)] = self::decode($x);
+            }
+            return $out;
         }
         if ($v instanceof \stdClass) {
             $out = new \stdClass();
             foreach (get_object_vars($v) as $k => $x) {
-                $out->{$k} = self::decode($x);
+                $out->{self::unescapeKey($k)} = self::decode($x);
             }
             return $out;
         }
         return $v;
+    }
+
+    /** A `$$`-prefixed key with one leading `$` removed; any other key as it is. */
+    private static function unescapeKey($k)
+    {
+        return (is_string($k) && strncmp($k, '$$', 2) === 0) ? substr($k, 1) : $k;
     }
 
     public function __toString(): string

@@ -74,12 +74,23 @@ sub is_undefined_sentinel {
 }
 
 # `$v` with every sentinel, at any depth, replaced by `$UNDEF`; inside a
-# hash it is a present key holding `undefined`.
+# hash it is a present key holding `undefined`. Every other hash key that
+# begins with `$$` loses one leading `$`: the manifest encoder escapes a
+# seed's own `$`-prefixed keys that way, so data shaped like the sentinel
+# stays data.
 sub decode_undefined {
     my ($v) = @_;
     return $UNDEF if is_undefined_sentinel($v);
     return [ map { decode_undefined($_) } @$v ] if ref $v eq 'ARRAY';
-    return { map { $_ => decode_undefined($v->{$_}) } keys %$v } if ref $v eq 'HASH';
+    if (ref $v eq 'HASH') {
+        my %out;
+        for my $k (keys %$v) {
+            my $key = $k;
+            $key = substr($key, 1) if index($key, '$$') == 0;
+            $out{$key} = decode_undefined($v->{$k});
+        }
+        return \%out;
+    }
     return $v;
 }
 

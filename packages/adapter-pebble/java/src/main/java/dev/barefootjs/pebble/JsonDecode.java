@@ -50,6 +50,20 @@ final class JsonDecode {
   }
 
   static Object materialize(JsonElement el) {
+    return materialize(el, false);
+  }
+
+  /**
+   * {@link #materialize} for a manifest seed value (`ssrDefaults`): the
+   * encoder escapes a seed's own `$`-prefixed object keys with one more `$`,
+   * so data shaped like a sentinel stays data. Every key that begins with
+   * `$$` loses one leading `$` here.
+   */
+  static Object materializeManifest(JsonElement el) {
+    return materialize(el, true);
+  }
+
+  private static Object materialize(JsonElement el, boolean manifest) {
     if (el == null || el.isJsonNull()) {
       return null;
     }
@@ -66,7 +80,7 @@ final class JsonDecode {
     if (el.isJsonArray()) {
       List<Object> out = new ArrayList<>();
       for (JsonElement e : (JsonArray) el) {
-        out.add(materialize(e));
+        out.add(materialize(e, manifest));
       }
       return out;
     }
@@ -88,7 +102,8 @@ final class JsonDecode {
     }
     Map<String, Object> out = new LinkedHashMap<>();
     for (Map.Entry<String, JsonElement> e : obj.entrySet()) {
-      out.put(e.getKey(), materialize(e.getValue()));
+      String key = manifest && e.getKey().startsWith("$$") ? e.getKey().substring(1) : e.getKey();
+      out.put(key, materialize(e.getValue(), manifest));
     }
     return out;
   }

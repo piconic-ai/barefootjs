@@ -50,7 +50,8 @@ export interface SsrDefault {
    * string, boolean, null, or a tree of plain objects / arrays, in which
    * an `undefined` array element or object member is the sentinel
    * `{"$undef": true}` (`UNDEFINED_SENTINEL`) that every runtime's seed
-   * decodes to its undefined value. `null` when the source expression
+   * decodes to its undefined value, and an object key that begins with `$`
+   * carries one more `$` (`encodeUndefinedMembers`). `null` when the source expression
    * isn't statically evaluable.
    *
    * Absent on a prop entry whose prop has no destructure default
@@ -501,23 +502,35 @@ export const UNDEFINED_SENTINEL: Readonly<{ $undef: true }> = Object.freeze({ $u
  * `v` with each `undefined` array element and object member replaced by
  * {@link UNDEFINED_SENTINEL}, as a new tree; a top-level `undefined` stays
  * itself (the entry then has no `value`, which every seed reads as its
- * undefined value).
+ * undefined value). So that seed data shaped like the sentinel stays data,
+ * every object key that begins with `$` gets one more `$` (`$undef` to
+ * `$$undef`, `$$x` to `$$$x`): the only object left with the single key
+ * `$undef` is the sentinel, and {@link decodeUndefinedMembers} inverts the
+ * encoding exactly.
  */
 export function encodeUndefinedMembers(v: unknown): unknown {
   const member = (x: unknown): unknown => (x === undefined ? { ...UNDEFINED_SENTINEL } : encodeUndefinedMembers(x))
   if (Array.isArray(v)) return v.map(member)
   if (v !== null && typeof v === 'object') {
-    return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, x]) => [k, member(x)]))
+    return Object.fromEntries(
+      Object.entries(v as Record<string, unknown>).map(([k, x]) => [k.startsWith('$') ? `$${k}` : k, member(x)]),
+    )
   }
   return v
 }
 
-/** {@link encodeUndefinedMembers} inverted: each sentinel becomes `undefined` again. */
+/**
+ * {@link encodeUndefinedMembers} inverted: each sentinel (an object whose
+ * only key is `$undef`, holding `true`) becomes `undefined` again, and each
+ * key that begins with `$$` loses one leading `$`.
+ */
 export function decodeUndefinedMembers(v: unknown): unknown {
   if (isUndefinedSentinel(v)) return undefined
   if (Array.isArray(v)) return v.map(decodeUndefinedMembers)
   if (v !== null && typeof v === 'object') {
-    return Object.fromEntries(Object.entries(v as Record<string, unknown>).map(([k, x]) => [k, decodeUndefinedMembers(x)]))
+    return Object.fromEntries(
+      Object.entries(v as Record<string, unknown>).map(([k, x]) => [k.startsWith('$$') ? k.slice(1) : k, decodeUndefinedMembers(x)]),
+    )
   }
   return v
 }
