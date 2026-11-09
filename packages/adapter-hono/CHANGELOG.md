@@ -1,5 +1,9 @@
 # @barefootjs/hono
 
+## 0.41.0
+
+No changes in this release.
+
 ## 0.40.2
 
 ### Patch Changes
