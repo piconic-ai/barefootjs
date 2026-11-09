@@ -481,9 +481,14 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
   return Object.keys(out).length === 0 ? undefined : encodeSeedValues(out)
 }
 
-/** Each entry's `value` through {@link encodeUndefinedMembers}, in place. */
+/**
+ * Each entry's `value` through {@link encodeUndefinedMembers}, in place.
+ * A getter alias shares its origin's entry object, so each distinct entry
+ * is encoded exactly once: encoding twice would escape the first pass's
+ * sentinels and `$`-prefixed keys again.
+ */
 function encodeSeedValues(out: Record<string, SsrDefault>): Record<string, SsrDefault> {
-  for (const d of Object.values(out)) {
+  for (const d of new Set(Object.values(out))) {
     if ('value' in d) d.value = encodeUndefinedMembers(d.value)
   }
   return out

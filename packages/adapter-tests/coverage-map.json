@@ -17991,6 +17991,26 @@
         "text"
       ]
     },
+    "undef-sentinel-seed-getter-alias": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:boolean",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "undef-sentinel-shaped-seed-data": {
       "kinds": [
         "array-literal",

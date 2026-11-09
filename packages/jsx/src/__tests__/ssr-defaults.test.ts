@@ -681,6 +681,23 @@ describe('extractSsrDefaults', () => {
     expect(defaults?.labelAlias).toBe(defaults?.label)
   })
 
+  test('a getter alias sharing its origin entry is encoded once', () => {
+    const metadata = metadataFor(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      function C() {
+        const [value] = createSignal<Record<string, unknown>>({ gone: undefined, payload: { $undef: true } })
+        const alias = value
+        return <p>{JSON.stringify(alias())}</p>
+      }
+    `)
+
+    const defaults = extractSsrDefaults(metadata)
+    expect(defaults?.alias).toBe(defaults?.value)
+    expect(defaults?.value).toEqual({ value: { gone: { $undef: true }, payload: { $$undef: true } } })
+    expect(decodeUndefinedMembers(defaults?.alias?.value)).toEqual({ gone: undefined, payload: { $undef: true } })
+  })
+
   // #2924 review follow-up (pullfrog nitpick on the PR fixing the setter
   // case): the setter-symmetric shape of the #2813 getter-alias test above
   // — a bare local-const alias of a signal SETTER must be seeded under its
