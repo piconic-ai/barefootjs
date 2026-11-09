@@ -17991,6 +17991,28 @@
         "text"
       ]
     },
+    "undef-sentinel-shaped-seed-data": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "undefined-alternate-ternary-attr-test-question-mark": {
       "kinds": [
         "binary",
