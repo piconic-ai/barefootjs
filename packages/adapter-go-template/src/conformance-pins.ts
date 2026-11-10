@@ -127,6 +127,12 @@ export const conformancePins: ConformancePins = {
   'static-literal-loop-component-in-row': [
     { code: 'BF101', severity: 'error', limitation: 'static-literal-loop-component-row' },
   ],
+  // A static literal loop array whose rows omit a field the row reads: the
+  // compile-time unroll cannot read the missing field, so the loop refuses.
+  // Escape twins: `loop-row-absent-optional-member-attr-module-const-{precomputed,client}`.
+  'loop-row-absent-optional-member-attr-module-const': [
+    { code: 'BF101', severity: 'error', limitation: 'static-literal-loop-absent-row-field' },
+  ],
   // Untyped object-literal loop arrays with no single row shape: there is
   // no one Go struct to synthesize for the rows, so `resolveNestedLoopItemTypes`
   // refuses instead of baking the array to `nil` and dropping the loop.

@@ -10,6 +10,11 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // The prop-precompute twin supplies the SSR/CSR parity proof; this twin's
   // mounted interactions were also verified in the real browser.
   'conditional-nested-loop-client-reactivity',
+  // The same: the client-directive twin's `/* @client */` loops leave SSR
+  // empty, its CSR template builds the rows. Its prop-precompute twin
+  // (`loop-row-absent-optional-member-attr-module-const-precomputed`)
+  // supplies the SSR/CSR parity proof.
+  'loop-row-absent-optional-member-attr-module-const-client',
   // #2073 graduated by #2988: `format` (a module-scope arrow-valued const
   // with no free identifiers beyond its own param) is now classified
   // `module-scope-safe` by `compute-inlinability.ts` instead of the old

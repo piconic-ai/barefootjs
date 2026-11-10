@@ -8441,6 +8441,58 @@
       }
     }
   ],
+  "loop-row-absent-optional-member-attr": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
+  "loop-row-absent-optional-member-attr-module-const-precomputed": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": [],
+        "raw": [
+          {
+            "id": 1,
+            "tone": "k"
+          },
+          {
+            "id": 2
+          },
+          {
+            "id": 3,
+            "tone": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:raw:empty",
+      "props": {
+        "rows": [
+          {
+            "id": 1,
+            "tone": "k"
+          },
+          {
+            "id": 2
+          }
+        ],
+        "raw": []
+      }
+    }
+  ],
+  "loop-row-boolean-member-attr": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "loop-row-child-absent-optional-field-attr": [
     {
       "name": "gen:rows:empty",

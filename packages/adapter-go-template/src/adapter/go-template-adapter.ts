@@ -181,7 +181,7 @@ import {
 } from "./value/value-lowering.ts"
 import { numberLiteralTemplateGo, parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
 import { optFieldElemType, propertyInfoToGo, typeInfoToGo, withoutNilMembers } from "./type/type-codegen.ts"
-import { isKnownArray, isKnownNonNumber, loopRowType } from "./type/number-read.ts"
+import { declaredNilRead, isKnownArray, isKnownNonNumber, loopRowType } from "./type/number-read.ts"
 import { planSynthPropStructs } from "./type/synth-prop-structs.ts"
 import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, isPrimitiveLiteralArray, signalFieldGoType, signalLoopRows, signalSeedGo } from "./type/state-fields.ts"
 import { propsFieldName, propsFieldNames } from './lib/props-field-names.ts'
@@ -863,7 +863,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.nillableSignalGetters = this.collectNillableSignalGetters(ir)
     ir = withInlinedMemoBodies(ir, bakesField)
     this.state.currentMemos = ir.metadata.memos
-    this.state.nullishAttrCtx = collectNullishAttrContext(ir)
+    this.state.nullishAttrCtx = {
+      ...collectNullishAttrContext(ir),
+      declaredNil: expr => declaredNilRead(this.emitCtx, expr, this.scope),
+    }
     // The primitive plans' typing (#3824), which `generateTypes` reads too:
     // the nil-reading rewrite of a memo body or child prop it evaluates.
     this.state.operandTyping = collectOperandTyping(ir.metadata, {
