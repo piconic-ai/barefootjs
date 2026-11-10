@@ -139,6 +139,12 @@
               ]
             },
             {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -296,6 +302,12 @@
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -513,6 +525,12 @@
               ]
             },
             {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -703,6 +721,12 @@
               ]
             },
             {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -875,6 +899,12 @@
               ]
             },
             {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1032,6 +1062,12 @@
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -1213,6 +1249,12 @@
               ]
             },
             {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1385,6 +1427,12 @@
               ]
             },
             {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1548,6 +1596,12 @@
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -1691,6 +1745,12 @@
               ]
             },
             {
+              "fixture": "module-function-helper-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
@@ -1774,6 +1834,12 @@
             },
             {
               "fixture": "module-const-arrow-helper",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -1897,6 +1963,12 @@
               ]
             },
             {
+              "fixture": "module-function-helper-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
@@ -1986,6 +2058,12 @@
             },
             {
               "fixture": "module-const-arrow-helper",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -2085,6 +2163,12 @@
               ]
             },
             {
+              "fixture": "module-function-helper-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
@@ -2168,6 +2252,12 @@
             },
             {
               "fixture": "module-const-arrow-helper",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -2267,6 +2357,12 @@
               ]
             },
             {
+              "fixture": "module-function-helper-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
@@ -2355,6 +2451,12 @@
               ]
             },
             {
+              "fixture": "module-function-helper-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
@@ -2438,6 +2540,12 @@
             },
             {
               "fixture": "module-const-arrow-helper",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -2577,6 +2685,24 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2674,6 +2800,24 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -2807,6 +2951,24 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2922,6 +3084,24 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -3043,6 +3223,24 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3140,6 +3338,24 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -3261,6 +3477,24 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3379,6 +3613,24 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3488,6 +3740,24 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -3613,9 +3883,21 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -3749,9 +4031,21 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -3939,9 +4233,21 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -4081,9 +4387,21 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -4223,9 +4541,21 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -4353,9 +4683,21 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -4501,9 +4843,21 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -4637,9 +4991,21 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -4785,9 +5151,21 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -5084,6 +5462,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -5097,6 +5499,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -5388,6 +5796,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -5401,6 +5833,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -5758,6 +6196,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -5771,6 +6233,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -6128,6 +6596,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -6141,6 +6633,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -6450,6 +6948,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -6463,6 +6985,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -6754,6 +7282,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -6767,6 +7319,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -7070,6 +7628,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -7083,6 +7665,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -7386,6 +7974,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -7399,6 +8011,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -7702,6 +8320,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -7715,6 +8357,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -7893,6 +8541,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -7906,6 +8578,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -7945,6 +8623,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -7958,6 +8660,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -7997,6 +8705,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -8010,6 +8742,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -8049,6 +8787,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -8062,6 +8824,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -8101,6 +8869,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -8114,6 +8906,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -8153,6 +8951,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -8166,6 +8988,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -8205,6 +9033,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -8218,6 +9070,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -8257,6 +9115,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -8270,6 +9152,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -8309,6 +9197,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -8322,6 +9234,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -8680,6 +9598,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -8693,6 +9635,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -9110,6 +10058,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -9123,6 +10095,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -9642,6 +10620,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -9655,6 +10657,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -10138,6 +11146,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -10151,6 +11183,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -10580,6 +11618,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -10593,6 +11655,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -11004,6 +12072,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -11017,6 +12109,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -11446,6 +12544,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -11459,6 +12581,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -11876,6 +13004,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -11889,6 +13041,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -12318,6 +13476,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -12331,6 +13513,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -12689,6 +13877,12 @@
         "hono": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -12716,6 +13910,12 @@
         },
         "blade": {
           "gaps": [
+            {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
             {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
@@ -12867,6 +14067,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
@@ -12897,6 +14103,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -12912,6 +14142,18 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -12960,6 +14202,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -13038,6 +14286,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
             {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
@@ -13183,6 +14437,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
@@ -13213,6 +14473,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -13228,6 +14512,18 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -13276,6 +14572,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -13354,6 +14656,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
             {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
@@ -13571,6 +14879,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-module-binding-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -13607,6 +14921,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -13622,6 +14960,18 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -13706,6 +15056,12 @@
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -13803,6 +15159,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -13953,6 +15315,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
@@ -13983,6 +15351,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -13998,6 +15390,18 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -14046,6 +15450,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -14125,6 +15535,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -14275,6 +15691,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
@@ -14305,6 +15727,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -14320,6 +15766,18 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -14368,6 +15826,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -14446,6 +15910,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
             {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
@@ -14591,6 +16061,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
@@ -14621,6 +16097,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -14636,6 +16136,18 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -14690,6 +16202,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -14781,6 +16299,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -14925,6 +16449,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
@@ -14955,6 +16485,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -14970,6 +16524,18 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -15018,6 +16584,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -15084,6 +16656,12 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
             {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
@@ -15235,6 +16813,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
@@ -15265,6 +16849,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -15280,6 +16888,18 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -15328,6 +16948,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -15407,6 +17033,12 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -15551,6 +17183,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
@@ -15581,6 +17219,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -15596,6 +17258,18 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -15650,6 +17324,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -16525,6 +18205,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -16540,6 +18244,18 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -16823,6 +18539,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -16838,6 +18578,18 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -17199,6 +18951,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -17214,6 +18990,18 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -17551,6 +19339,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -17566,6 +19378,18 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -17861,6 +19685,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -17876,6 +19724,18 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -18153,6 +20013,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -18168,6 +20052,18 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -18469,6 +20365,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -18484,6 +20404,18 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -18773,6 +20705,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -18788,6 +20744,18 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -19083,6 +21051,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -19098,6 +21090,18 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -19216,6 +21220,12 @@
         "hono": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -19231,6 +21241,12 @@
         },
         "blade": {
           "gaps": [
+            {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
             {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
@@ -19262,6 +21278,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -19275,6 +21315,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -19320,6 +21366,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -19350,6 +21402,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -19363,6 +21439,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -19408,6 +21490,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -19450,6 +21538,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -19463,6 +21575,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -19532,6 +21650,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -19562,6 +21686,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -19575,6 +21723,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -19620,6 +21774,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -19650,6 +21810,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -19663,6 +21847,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -19708,6 +21898,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -19738,6 +21934,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -19751,6 +21971,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -19808,6 +22034,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -19838,6 +22070,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -19851,6 +22107,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -19890,6 +22152,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -19920,6 +22188,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -19933,6 +22225,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -19978,6 +22276,12 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -20008,6 +22312,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -20021,6 +22349,12 @@
             },
             {
               "fixture": "module-const-inherited-key-memo-mixed",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
               "limitations": [
                 "const-literal-inherited-key"
               ]
@@ -22852,6 +25186,12 @@
               ]
             },
             {
+              "fixture": "module-function-helper-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -22863,6 +25203,12 @@
           "gaps": [
             {
               "fixture": "module-const-arrow-helper",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -22890,6 +25236,12 @@
               ]
             },
             {
+              "fixture": "module-function-helper-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -22901,6 +25253,12 @@
           "gaps": [
             {
               "fixture": "module-const-arrow-helper",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -22922,6 +25280,12 @@
               ]
             },
             {
+              "fixture": "module-function-helper-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -22933,6 +25297,12 @@
           "gaps": [
             {
               "fixture": "module-const-arrow-helper",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -22954,6 +25324,12 @@
               ]
             },
             {
+              "fixture": "module-function-helper-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -22970,6 +25346,12 @@
               ]
             },
             {
+              "fixture": "module-function-helper-chain",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -22981,6 +25363,12 @@
           "gaps": [
             {
               "fixture": "module-const-arrow-helper",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
               ]
@@ -23387,6 +25775,12 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
@@ -23418,6 +25812,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
               ]
             },
             {
@@ -23479,6 +25879,12 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
@@ -23504,6 +25910,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
               ]
             },
             {
@@ -23535,6 +25947,12 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
@@ -23560,6 +25978,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
               ]
             },
             {
@@ -23597,6 +26021,12 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo-chain",
               "limitations": [
                 "const-literal-inherited-key"
@@ -23622,6 +26052,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
               ]
             },
             {
@@ -23656,6 +26092,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
               ]
             },
             {
@@ -24655,6 +27097,12 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
             }
           ]
         },
@@ -24676,6 +27124,12 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             }
           ]
@@ -24699,6 +27153,12 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
             }
           ]
         },
@@ -24720,6 +27180,12 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             }
           ]
@@ -24743,6 +27209,12 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
             }
           ]
         },
@@ -24764,6 +27236,12 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             }
           ]
@@ -24787,6 +27265,12 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
             }
           ]
         },
@@ -24809,6 +27293,12 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
             }
           ]
         },
@@ -24830,6 +27320,12 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "module-helper-boolcontext-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             }
           ]
@@ -25770,6 +28266,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -25833,6 +28335,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -25918,6 +28426,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -25981,6 +28495,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -26102,6 +28622,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "memo-module-binding-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -26171,6 +28697,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -26268,6 +28800,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -26331,6 +28869,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -26416,6 +28960,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -26479,6 +29029,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -26564,6 +29120,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -26627,6 +29189,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -26724,6 +29292,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -26787,6 +29361,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -26866,6 +29446,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -26929,6 +29515,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
               ]
             },
             {
@@ -27014,6 +29606,12 @@
               ]
             },
             {
+              "fixture": "memo-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
@@ -27080,6 +29678,12 @@
               ]
             },
             {
+              "fixture": "signal-seed-local-function-named-like-prop",
+              "limitations": [
+                "local-function-named-like-prop"
+              ]
+            },
+            {
               "fixture": "static-loop-item-boolean-attr",
               "limitations": [
                 "boolean-in-static-loop-item"
@@ -27135,6 +29739,12 @@
         "hono": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -27150,6 +29760,12 @@
         },
         "blade": {
           "gaps": [
+            {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
             {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
@@ -27289,6 +29905,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -27304,6 +29944,24 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -27382,6 +30040,12 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
             {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
@@ -27515,6 +30179,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -27530,6 +30218,24 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -27608,6 +30314,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
             {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
@@ -27795,6 +30507,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -27810,6 +30546,18 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -27834,6 +30582,12 @@
               "fixture": "object-spread-prop-child",
               "limitations": [
                 "object-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -27931,6 +30685,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -28069,6 +30829,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -28084,6 +30868,24 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -28163,6 +30965,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -28301,6 +31109,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -28316,6 +31148,24 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -28394,6 +31244,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
             {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
@@ -28527,6 +31383,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -28542,6 +31422,24 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -28639,6 +31537,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -28771,6 +31675,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -28786,6 +31714,24 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -28858,6 +31804,12 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
             {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
@@ -28997,6 +31949,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -29012,6 +31988,24 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -29091,6 +32085,12 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "body-destructure-non-identifier-source",
+              "limitations": [
+                "body-destructure-without-const-form"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -29223,6 +32223,30 @@
               ]
             },
             {
+              "fixture": "module-const-inherited-key-function",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-direct",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-function-nested",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-iife",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-memo",
               "limitations": [
                 "const-literal-inherited-key"
@@ -29238,6 +32262,24 @@
               "fixture": "module-const-inherited-key-memo-mixed",
               "limitations": [
                 "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-inherited-key-object-method",
+              "limitations": [
+                "const-literal-inherited-key"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {

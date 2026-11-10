@@ -6531,6 +6531,482 @@
           }
         }
       },
+      "module-const-inherited-key-function": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        }
+      },
+      "module-const-inherited-key-function-direct": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        }
+      },
+      "module-const-inherited-key-function-nested": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        }
+      },
+      "module-const-inherited-key-iife": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        }
+      },
       "module-const-inherited-key-memo": {
         "blade": {
           "kind": "refusal",
@@ -6885,6 +7361,125 @@
           "escape": {
             "state": "escapable",
             "twin": "module-const-inherited-key-memo-client"
+          }
+        }
+      },
+      "module-const-inherited-key-object-method": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-function-client"
           }
         }
       },
@@ -10411,6 +11006,22 @@
         "description": "a module const read with a key only its prototype has reads the inherited function",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key.ts"
       },
+      "module-const-inherited-key-function": {
+        "description": "a local function returning a memo that reads an inherited const key, called at SSR, reads the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-function.ts"
+      },
+      "module-const-inherited-key-function-direct": {
+        "description": "a local function reading an inherited const key, called at SSR, reads the inherited function",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-function-direct.ts"
+      },
+      "module-const-inherited-key-function-nested": {
+        "description": "a local function calling another that reads an inherited const key through a memo, called at SSR,…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-function-nested.ts"
+      },
+      "module-const-inherited-key-iife": {
+        "description": "an IIFE in markup reading an inherited const key reads the inherited function",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-iife.ts"
+      },
       "module-const-inherited-key-memo": {
         "description": "a memo reading an inherited const key, read at SSR, reads the inherited function",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-memo.ts"
@@ -10422,6 +11033,10 @@
       "module-const-inherited-key-memo-mixed": {
         "description": "a memo reading an inherited const key, read at SSR and from /* @client */, reads the inherited…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-memo-mixed.ts"
+      },
+      "module-const-inherited-key-object-method": {
+        "description": "an object const method reading an inherited const key, called at SSR, reads the inherited function",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-object-method.ts"
       },
       "module-const-loop-source-computed": {
         "description": "A module-scope const computed via a function call refuses loudly (BF101) on every SSR template…",
@@ -10706,6 +11321,10 @@
       "module-const-inherited-key-client": {
         "description": "a /* @client */ read of a module const key only its prototype has defers to the browser",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-client.ts"
+      },
+      "module-const-inherited-key-function-client": {
+        "description": "local functions and methods reading an inherited const key, called only from /* @client */, defer…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-function-client.ts"
       },
       "module-const-inherited-key-memo-client": {
         "description": "memos reading an inherited const key, read only from /* @client */ positions, defer to the browser",
@@ -11164,14 +11783,19 @@
     "const-literal-inherited-key": {
       "title": "Literal const read with a key only its prototype has",
       "kind": "refusal",
-      "given": "a module- or component-scope array or object literal const read with a literal key the literal does not list but its prototype does (`const REC = { k: 'v' }`, `REC['toString']`; `const QS = ['a']`, `QS['map']`), in a server-rendered position or in the body of a memo one reads",
+      "given": "a module- or component-scope array or object literal const read with a literal key the literal does not list but its prototype does (`const REC = { k: 'v' }`, `REC['toString']`; `const QS = ['a']`, `QS['map']`), in a server-rendered position, or in the body of a memo, constant, local function or object const method one reads or calls",
       "expected": "the inherited function (`Object.prototype.toString`, `Array.prototype.map`), so a condition on the read is true",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
         "module-const-inherited-key",
+        "module-const-inherited-key-function",
+        "module-const-inherited-key-function-direct",
+        "module-const-inherited-key-function-nested",
+        "module-const-inherited-key-iife",
         "module-const-inherited-key-memo",
         "module-const-inherited-key-memo-chain",
-        "module-const-inherited-key-memo-mixed"
+        "module-const-inherited-key-memo-mixed",
+        "module-const-inherited-key-object-method"
       ],
       "adapters": [
         "blade",
