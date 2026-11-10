@@ -292,6 +292,8 @@ export const conformancePins: ConformancePins = {
   'opaque-local-accessor-call': [{ code: 'BF101', severity: 'error', limitation: 'opaque-local-accessor-call' }],
   // A zero-argument call of a local function the template cannot inline.
   'markup-uninlinable-local-function-named-like-prop': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'memo-uninlinable-local-function-named-like-prop': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'signal-seed-uninlinable-local-function-named-like-prop': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
   // A signal seed is baked as the Input field path its prop member chain
   // lives at (`resolvePropMemberSeed`, `adapter/value/prop-member-seed.ts`).
   // A chain that reads a member of a non-struct value

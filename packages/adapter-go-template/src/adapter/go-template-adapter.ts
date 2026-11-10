@@ -56,6 +56,7 @@ import {
   collectNullableSignalGetters,
   arithmeticOperandCoercion,
   refuseNonPrimitiveStrictEquality,
+  refuseUninlinableSeedCalls,
   type ArithmeticCoercion,
   collectNullishAttrContext,
   isNativePlan,
@@ -909,9 +910,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.pendingChildrenDefines = []
     this.state.refusedLoopArrayConsts = new Set()
     this.scope = BindingScope.EMPTY
+    // Read before `primeCompileState` inlines the memo bodies, which turns
+    // such a call into an unsupported node.
+    const authoredIr = ir
     ir = this.primeCompileState(ir)
     // `===` / `!==` over an object or array (#3774, #3824 step 8).
     refuseNonPrimitiveStrictEquality(ir, this.state.operandTyping, this.state)
+    // A server-read signal seed or memo body calling a function no template can inline (#3721).
+    refuseUninlinableSeedCalls(authoredIr, this.state)
     // A spread of an arbitrary object onto a child component (#3861).
     refuseObjectSpreadsOntoChildren(this.emitCtx, ir)
     this.state.stringValueNames = collectStringValueNames(ir)

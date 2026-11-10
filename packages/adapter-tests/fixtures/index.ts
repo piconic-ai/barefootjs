@@ -1298,6 +1298,11 @@ import { fixture as memoConstDeclaredAfterNamedLikeProp } from './memo-const-dec
 import { fixture as localBindingsNamedLikeProps } from './local-bindings-named-like-props'
 import { fixture as markupUninlinableLocalFunctionNamedLikeProp } from './markup-uninlinable-local-function-named-like-prop'
 import { fixture as markupUninlinableLocalFunctionNamedLikePropClient } from './markup-uninlinable-local-function-named-like-prop-client'
+import { fixture as memoUninlinableLocalFunctionNamedLikeProp } from './memo-uninlinable-local-function-named-like-prop'
+import { fixture as memoUninlinableLocalFunctionNamedLikePropClient } from './memo-uninlinable-local-function-named-like-prop-client'
+import { fixture as signalSeedUninlinableLocalFunctionNamedLikeProp } from './signal-seed-uninlinable-local-function-named-like-prop'
+import { fixture as signalSeedUninlinableLocalFunctionNamedLikePropClient } from './signal-seed-uninlinable-local-function-named-like-prop-client'
+import { fixture as markupLocalFunctionReadNamedLikeProp } from './markup-local-function-read-named-like-prop'
 import { fixture as markupLocalFunctionNamedLikeProp } from './markup-local-function-named-like-prop'
 import { fixture as destructureDefaultParamRenamedCallbackMemo } from './destructure-default-param-renamed-callback-memo'
 import { fixture as destructureDefaultBodyCallback } from './destructure-default-body-callback'
@@ -2361,6 +2366,11 @@ export const jsxFixtures: JSXFixture[] = [
   localBindingsNamedLikeProps,
   markupUninlinableLocalFunctionNamedLikeProp,
   markupUninlinableLocalFunctionNamedLikePropClient,
+  memoUninlinableLocalFunctionNamedLikeProp,
+  memoUninlinableLocalFunctionNamedLikePropClient,
+  signalSeedUninlinableLocalFunctionNamedLikeProp,
+  signalSeedUninlinableLocalFunctionNamedLikePropClient,
+  markupLocalFunctionReadNamedLikeProp,
   markupLocalFunctionNamedLikeProp,
   destructureDefaultParamRenamedCallbackMemo,
   destructureDefaultBodyCallback,

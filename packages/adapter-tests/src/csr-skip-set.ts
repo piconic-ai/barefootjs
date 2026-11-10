@@ -239,4 +239,7 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // A default assigning an earlier binding (`b = (a = 2)`): the CSR template
   // reads `c` as `_p.c ?? _p.a`, so the assignment never runs.
   'destructure-default-earlier-assignment': { limitation: 'destructure-default-assigns-earlier-binding' },
+  // An uncalled read of a local function: the CSR template prints the
+  // function's source text where JSX renders nothing.
+  'markup-local-function-read-named-like-prop': { limitation: 'local-function-read-named-like-prop' },
 }
