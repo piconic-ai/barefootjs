@@ -519,9 +519,13 @@ function lowerResolvedChildProp(
  * const holding one, which the IR passes as the literal) that no bake path
  * turned into a Go value. It reads nothing at render time, so nothing
  * delivers it later either: left out, the child would read its zero value.
- * A `/* @client *\/` prop is left out, as before.
+ * An empty array is not one: its zero value, the nil slice of the field's
+ * own type, is the empty array (`parsedLiteralToGo` leaves it nil on
+ * purpose), whatever the element type. A `/* @client *\/` prop is left out,
+ * as before.
  */
 function isUnbakedStaticLiteral(parsedValue: ParsedExpr): boolean {
+  if (parsedValue.kind === 'array-literal' && parsedValue.elements.length === 0) return false
   return (parsedValue.kind === 'array-literal' || parsedValue.kind === 'object-literal') && isFullyStaticLiteral(parsedValue)
 }
 

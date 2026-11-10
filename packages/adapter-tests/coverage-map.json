@@ -10246,6 +10246,24 @@
         "text"
       ]
     },
+    "module-const-empty-array-child-prop": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "module-const-hop-loop-shadow": {
       "kinds": [
         "binary",

@@ -1389,6 +1389,7 @@ import { fixture as moduleConstArrayLiteralIndex } from './module-const-array-li
 import { fixture as moduleConstArrayChildProp } from './module-const-array-child-prop'
 import { fixture as moduleConstRecordChildProp } from './module-const-record-child-prop'
 import { fixture as moduleConstObjectArrayChildProp } from './module-const-object-array-child-prop'
+import { fixture as moduleConstEmptyArrayChildProp } from './module-const-empty-array-child-prop'
 import { fixture as moduleConstArrayChildPropForwarded } from './module-const-array-child-prop-forwarded'
 import { fixture as moduleConstArrayNegativeZero } from './module-const-array-negative-zero'
 import { fixture as localConstLiteralIndex } from './local-const-literal-index'
@@ -2444,6 +2445,7 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstArrayChildProp,
   moduleConstRecordChildProp,
   moduleConstObjectArrayChildProp,
+  moduleConstEmptyArrayChildProp,
   moduleConstArrayChildPropForwarded,
   moduleConstArrayNegativeZero,
   localConstLiteralIndex,
