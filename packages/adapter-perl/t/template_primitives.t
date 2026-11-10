@@ -53,7 +53,13 @@ subtest 'json — numbers are written as JS writes them' => sub {
     is $bf->json([-4 / 2, -4 / 8]), '[-2,-0.5]', 'integral and fractional quotients';
     is $bf->json([-4e-8, -4e20, -4e21, -1e-6, -1e-7]),
         '[-4e-8,-400000000000000000000,-4e+21,-0.000001,-1e-7]', 'JS exponent notation';
-    is $bf->json([0.1 + 0.2, -4 / 3]), '[0.30000000000000004,-1.3333333333333333]', 'shortest round-trip digits';
+    # Inexact inputs are computed by the evaluator, which works in doubles
+    # as JS does: on a perl built with -Duselongdouble / -Dusequadmath a
+    # bare `0.1 + 0.2` is the wider NV nearest 0.3, which rounds to the
+    # double 0.3 -- a different input, not a json bug (#3445, #3872).
+    my $calc = \&BarefootJS::Evaluator::_binary;
+    is $bf->json([$calc->('+', 0.1, 0.2), $calc->('/', -4, 3)]),
+        '[0.30000000000000004,-1.3333333333333333]', 'shortest round-trip digits';
     is $bf->json(-$inf), 'null', 'top-level -Infinity is null';
     is $bf->json([-$inf, $inf, $inf - $inf, [-$inf]]), '[null,null,null,[null]]', 'non-finite at any depth';
     is $bf->json(['-0', '0.0', '-Inf', '1e5']), '["-0","0.0","-Inf","1e5"]', 'strings stay strings';
@@ -65,7 +71,7 @@ subtest 'json — numbers are written as JS writes them' => sub {
     my $cmp = $str < 0;
     is $bf->json($str), '"1e5"', 'a compared string stays a string';
     is $bf->json([$str, "007"]), '["1e5","007"]', 'inside an array';
-    my $num = 0.1 + 0.2;
+    my $num = $calc->('+', 0.1, 0.2);
     my $interp = "$num";
     is $bf->json($num), '0.30000000000000004', 'an interpolated number stays a number';
     my $input = [$neg_zero];
