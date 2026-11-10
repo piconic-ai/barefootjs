@@ -10061,6 +10061,45 @@
         "text"
       ]
     },
+    "module-const-array-child-prop": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:+",
+        "literal:number",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-array-child-prop-forwarded": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "module-const-array-literal-index": {
       "kinds": [
         "array-literal",
@@ -10223,6 +10262,24 @@
         "text"
       ]
     },
+    "module-const-empty-array-child-prop": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "module-const-hop-loop-shadow": {
       "kinds": [
         "binary",
@@ -10358,6 +10415,43 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "module-const-object-array-child-prop": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-record-child-prop": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
         "text"
       ]
     },
