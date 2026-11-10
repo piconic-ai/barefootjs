@@ -187,7 +187,7 @@ import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, isPrimiti
 import { propsFieldName, propsFieldNames } from './lib/props-field-names.ts'
 import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
-import { computeMemoInitialValue, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evaluatedAsGoType, computedPropSeedGo } from "./memo/memo-compute.ts"
+import { computeMemoInitialValue, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evaluatedAsGoType, computedPropSeedGo, resolvedConstantSeedGo } from "./memo/memo-compute.ts"
 import { collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { refuseObjectSpreadsOntoChildren } from "./props/props-spread.ts"
@@ -4317,7 +4317,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   ): string | null {
     // The seed plan's form, which reads through local consts and helper calls (#3562).
     const parsed = resolveSignalParsedThroughSeedPlan(this.state, signal)
-    const computed = computedPropSeedGo(this.emitCtx, parsed, [...propsParams], propFallbackVars)
+    const computed = computedPropSeedGo(this.emitCtx, parsed, [...propsParams], propFallbackVars) ??
+      resolvedConstantSeedGo(this.emitCtx, parsed, signal.parsed)
     if (computed === null) return null
     const propsParamMap = new Map(this.state.currentPropsParams.map(p => [p.name, p]))
     return evaluatedAsGoType(computed, signalFieldGoType(this.emitCtx, signal, propsParamMap, concreteDest))

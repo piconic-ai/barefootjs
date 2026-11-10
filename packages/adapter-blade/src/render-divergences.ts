@@ -56,16 +56,6 @@ export const renderDivergences: RenderDivergences = {
   // lone surrogate, so it returns U+FFFD (halves compare equal, and
   // rejoining them renders `��` instead of the emoji).
   'string-at-lone-surrogate': { limitation: 'string-at-lone-surrogate' },
-  // A memo calling a local function named like a typed prop the body never
-  // destructures: the server render reads the prop for the call.
-  'memo-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
-  // The same shape from a signal seed and from markup: the server render
-  // reads the prop for the call.
-  'signal-seed-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
-  'markup-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
-  // A memo reading an ordinary const declared after it, named like a typed
-  // prop: the server render does not read the const.
-  'memo-const-declared-after-named-like-prop': { limitation: 'local-function-named-like-prop' },
   // A const reading a signal getter (`const b = count()`) read in a loop row
   // that binds the getter's name (`rows.map(count => …{b}…)`): the template
   // reads `b` as a variable that is never set.

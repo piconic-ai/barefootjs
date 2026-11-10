@@ -1295,6 +1295,9 @@ import { fixture as memoLocalFunctionNamedLikeProp } from './memo-local-function
 import { fixture as signalSeedLocalFunctionNamedLikeProp } from './signal-seed-local-function-named-like-prop'
 import { fixture as memoModuleBindingNamedLikeProp } from './memo-module-binding-named-like-prop'
 import { fixture as memoConstDeclaredAfterNamedLikeProp } from './memo-const-declared-after-named-like-prop'
+import { fixture as localBindingsNamedLikeProps } from './local-bindings-named-like-props'
+import { fixture as markupUninlinableLocalFunctionNamedLikeProp } from './markup-uninlinable-local-function-named-like-prop'
+import { fixture as markupUninlinableLocalFunctionNamedLikePropClient } from './markup-uninlinable-local-function-named-like-prop-client'
 import { fixture as markupLocalFunctionNamedLikeProp } from './markup-local-function-named-like-prop'
 import { fixture as destructureDefaultParamRenamedCallbackMemo } from './destructure-default-param-renamed-callback-memo'
 import { fixture as destructureDefaultBodyCallback } from './destructure-default-body-callback'
@@ -2355,6 +2358,9 @@ export const jsxFixtures: JSXFixture[] = [
   signalSeedLocalFunctionNamedLikeProp,
   memoModuleBindingNamedLikeProp,
   memoConstDeclaredAfterNamedLikeProp,
+  localBindingsNamedLikeProps,
+  markupUninlinableLocalFunctionNamedLikeProp,
+  markupUninlinableLocalFunctionNamedLikePropClient,
   markupLocalFunctionNamedLikeProp,
   destructureDefaultParamRenamedCallbackMemo,
   destructureDefaultBodyCallback,

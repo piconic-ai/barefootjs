@@ -54,7 +54,7 @@ test('Counter compiles to a Twig .twig template', () => {
   // further than Perl's does, so this port wraps every text-position value,
   // unlike the Kolon port's bare `<: $count :>`).
   expect(content).toContain(`{{ bf.text_start("s0") | raw }}{{ bf.string(count) }}{{ bf.text_end() | raw }}`)
-  expect(content).toContain(`{{ bf.text_start("s2") | raw }}{{ bf.string(doubled) }}{{ bf.text_end() | raw }}`)
+  expect(content).toContain(`{{ bf.text_start("s2") | raw }}{{ bf.string(bf.mul(count, 2)) }}{{ bf.text_end() | raw }}`)
   // Button stays a plain element (onClick is client-only)
   expect(content).toContain(`+1</button>`)
 })

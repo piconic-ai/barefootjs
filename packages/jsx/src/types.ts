@@ -2287,6 +2287,20 @@ export interface FunctionInfo {
   freeIdentifiers?: ReadonlySet<string>
   /** When true, declared at module level (outside the component function). */
   isModule?: boolean
+  /**
+   * When true, the declaration sits inside the component function's body. A
+   * `function` declaration there is collected with `isModule` set too (the
+   * module walk is the one that reaches it, and client-JS scope placement
+   * demotes it later), so this is what says where its body's names resolve.
+   */
+  inComponentBody?: boolean
+  /**
+   * What a call with no arguments returns, for a function that takes no
+   * parameters and whose body is a single `return <expr>`: the returned
+   * expression's tree. A template inlines such a call (`value()` → `1`)
+   * where it reads the function (`localCallBodies`).
+   */
+  returnParsed?: ParsedExpr
   /** When true, this function returns JSX and is inlined at call sites (#569). */
   isJsxFunction?: boolean
   /**

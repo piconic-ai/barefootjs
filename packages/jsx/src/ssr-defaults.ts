@@ -32,7 +32,9 @@
 import ts from 'typescript'
 import { extractFreeIdentifiersFromNode } from './analyzer.ts'
 import { resolveGetterAliases, collectAliasableGetterNames } from './ir-to-client-js/csr-substitute.ts'
-import { resolveBodyDestructuredPropAliases } from './props-binding.ts'
+import { resolveBodyDestructuredPropAliases, templatePropReadParams } from './props-binding.ts'
+import { localCallBodies } from './local-call-body.ts'
+import { stringifyParsedExpr } from './expression-parser.ts'
 import { computeSsrSeedPlan } from './ssr-seed-plan.ts'
 import type { IRMetadata } from './types.ts'
 import { isElidedFactoryGetter } from './types.ts'
@@ -180,6 +182,35 @@ interface EvalContext {
   bindings: Record<string, EvalResult>
   /** Names whose `<name>.X` / `<name>[X]` reads should resolve to `undefined`. */
   propsLike: ReadonlySet<string>
+  /** Function name → what a call of it with no arguments returns (`localCallBodies`). */
+  calls?: Readonly<Record<string, EvalResult>>
+}
+
+/**
+ * The context a signal seed or memo body is evaluated in: the props in
+ * scope by their bare name (`templatePropReadParams`, so a `(props)`-arg
+ * component's typed prop the body never binds is not one) and the props
+ * object, the component-scope consts that evaluate without reading a prop,
+ * and the zero-argument calls whose returned expression evaluates the same
+ * way. `bindings` (module consts) is extended in place.
+ */
+function componentEvalScope(metadata: IRMetadata, bindings: Record<string, EvalResult>): Omit<EvalContext, 'bindings'> {
+  const propsLike = new Set(templatePropReadParams(metadata).map(p => p.name))
+  if (metadata.propsObjectName) propsLike.add(metadata.propsObjectName)
+  const noProps: ReadonlySet<string> = new Set()
+  for (const c of metadata.localConstants ?? []) {
+    if (c.isModule || c.value === undefined || c.declarationKind !== 'const' || c.mutatedAfterDeclaration) continue
+    // A function-valued const is not its return value; a call of it is (`calls`).
+    if (propsLike.has(c.name) || c.containsArrow || c.isFunctionValue) continue
+    const v = tryStaticEval(c.value, { bindings, propsLike: noProps })
+    if (v !== UNRESOLVED) bindings[c.name] = v
+  }
+  const calls: Record<string, EvalResult> = {}
+  for (const [name, { body }] of localCallBodies({ ...metadata, localConstants: metadata.localConstants ?? [] })) {
+    const v = tryStaticEval(stringifyParsedExpr(body), { bindings, propsLike: noProps })
+    if (v !== UNRESOLVED) calls[name] = v
+  }
+  return { propsLike, calls }
 }
 
 /**
@@ -290,6 +321,8 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     const v = tryStaticEval(c.value, { bindings, propsLike })
     if (v !== UNRESOLVED) bindings[c.name] = v
   }
+  // Signals and memos read the names their component scope binds (#3721).
+  const scope = componentEvalScope(metadata, bindings)
   for (const sig of metadata.signals) {
     if (!sig.getter || sig.isModule) continue
     // Env signals (#2057) have no static SSR default — their value is the
@@ -305,7 +338,7 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
     // getter-elided form is unaffected, a pre-existing, separate question
     // this issue doesn't cover.
     if (isElidedFactoryGetter(sig)) continue
-    const value = tryStaticEval(sig.initialValue, { bindings, propsLike })
+    const value = tryStaticEval(sig.initialValue, { ...scope, bindings })
     // Self-derivation collision (#2669): a signal whose getter shares its
     // name with the prop its OWN initializer derives from
     // (`const [label] = createSignal(props.label ?? 'Default')`) gets a
@@ -375,7 +408,7 @@ export function extractSsrDefaults(metadata: IRMetadata): Record<string, SsrDefa
 
   for (const memo of metadata.memos) {
     if (memo.isModule) continue
-    const value = tryStaticEval(memo.computation, { bindings, propsLike })
+    const value = tryStaticEval(memo.computation, { ...scope, bindings })
     // Same self-derivation collision as signals above, for a memo whose
     // computation derives from a same-named prop
     // (`createMemo(() => (props.label ?? 'Default') + n())`). See the
@@ -757,6 +790,20 @@ function parseExpression(expr: string): ts.Expression | null {
   return inner
 }
 
+const NOT_BOUND = Symbol('not-bound')
+
+/**
+ * What a zero-argument call of a bound name returns: a function's result
+ * (`ctx.calls`, #3721), or a binding's value, which resolves the signal
+ * getter pattern (`count() * 2` in a memo). `NOT_BOUND` for any other call.
+ */
+function zeroArgCallResult(node: ts.CallExpression, ctx: EvalContext): EvalResult | typeof NOT_BOUND {
+  if (node.arguments.length > 0 || !ts.isIdentifier(node.expression)) return NOT_BOUND
+  const name = node.expression.text
+  if (ctx.calls && name in ctx.calls) return ctx.calls[name]
+  return name in ctx.bindings ? ctx.bindings[name] : NOT_BOUND
+}
+
 function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
   // Strip parentheses / `as` / `satisfies` — they don't affect the value.
   if (ts.isParenthesizedExpression(node)) return evalNode(node.expression, ctx)
@@ -886,13 +933,8 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
   if (ts.isCallExpression(node)) {
     // Zero-arg call of a bound identifier — resolves the signal getter
     // pattern (`count() * 2` in a memo).
-    if (
-      node.arguments.length === 0 &&
-      ts.isIdentifier(node.expression) &&
-      node.expression.text in ctx.bindings
-    ) {
-      return ctx.bindings[node.expression.text]
-    }
+    const zeroArg = zeroArgCallResult(node, ctx)
+    if (zeroArg !== NOT_BOUND) return zeroArg
     // `<array>.map(cb)` — a single-param, expression-bodied arrow over a
     // resolved array receiver; anything else (block body, multi-param,
     // non-array receiver) stays `UNRESOLVED`, same conservative narrowing as

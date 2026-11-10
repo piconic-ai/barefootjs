@@ -57,7 +57,7 @@ test('Counter compiles to a Blade .blade.php template', () => {
   // further than Perl's does, so this port wraps every text-position value,
   // unlike the Kolon port's bare `<: $count :>`).
   expect(content).toContain(`{!! $bf->text_start("s0") !!}{!! e($bf->string($count)) !!}{!! $bf->text_end() !!}`)
-  expect(content).toContain(`{!! $bf->text_start("s2") !!}{!! e($bf->string($doubled)) !!}{!! $bf->text_end() !!}`)
+  expect(content).toContain(`{!! $bf->text_start("s2") !!}{!! e($bf->string($bf->mul($count, 2))) !!}{!! $bf->text_end() !!}`)
   // Button stays a plain element (onClick is client-only)
   expect(content).toContain(`+1</button>`)
 })

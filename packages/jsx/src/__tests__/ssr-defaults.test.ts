@@ -304,12 +304,9 @@ describe('extractSsrDefaults', () => {
     // const-chain widening only ever ADDS prop references it finds by
     // actually walking through `props.X`, never invents one.
     //
-    // (The value resolves to `null`, not `'sig'`: `tryStaticEval` doesn't
-    // bind component-scope const locals into its evaluation `bindings` —
-    // see the signal loop's `bindings` comment above — so `mid` itself is
-    // unresolved for VALUE purposes independent of this fix; only the
-    // separate `propName`-detection walk this test is pinning follows the
-    // const chain.)
+    // (The value is `'sig'`: a component-scope const that evaluates without
+    // reading a prop is bound for the signal seeds and memo bodies, #3721.
+    // The `propName`-detection walk this test pins is independent of it.)
     const metadata = metadataFor(`
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -324,7 +321,7 @@ describe('extractSsrDefaults', () => {
     // prop (`separateSignalPropBindings`): the signal keeps a plain entry
     // under its own name, and the prop keeps its prop entry.
     const defaults = extractSsrDefaults(metadata)
-    expect(defaults?.bfSignal_label).toEqual({ value: null })
+    expect(defaults?.bfSignal_label).toEqual({ value: 'sig' })
     expect(defaults?.label).toEqual({ propName: 'label' })
   })
 

@@ -547,6 +547,27 @@ export function computedPropSeedGo(
 }
 
 /**
+ * A signal seed the SSR seed plan resolved to an expression reading nothing
+ * (`createSignal(value())` with `function value() { return 1 }`, #3721),
+ * evaluated by the runtime evaluator. The seed as written reads a name the
+ * constructor has no value for, and would bake `nil` or the prop of that
+ * name. Null when the seed as written reads no name, or the resolved one does.
+ */
+export function resolvedConstantSeedGo(
+  ctx: GoEmitContext,
+  resolved: ParsedExpr | undefined,
+  written: ParsedExpr | undefined,
+): string | null {
+  if (!resolved || !written || freeIdentifiers(resolved)?.size !== 0) return null
+  // A seed written as a constant keeps its own lowering; only one the plan
+  // resolved away from a name is evaluated here.
+  if (freeIdentifiers(written)?.size === 0) return null
+  return evalExprGo(ctx, resolved, [], [], EMPTY_FALLBACK_VARS, new Set())
+}
+
+const EMPTY_FALLBACK_VARS: ReadonlyMap<string, PropFallbackVar> = new Map()
+
+/**
  * Whether `e` reads the props object or a prop binding. `freeIdentifiers`,
  * not `freeVarsInBody`: the latter skips the receiver of a string method
  * (`(props.label ?? 'x').toUpperCase()`).

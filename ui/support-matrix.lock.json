@@ -127,6 +127,12 @@
               ]
             },
             {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -272,6 +278,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -477,6 +489,12 @@
               ]
             },
             {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -655,6 +673,12 @@
               ]
             },
             {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -815,6 +839,12 @@
               ]
             },
             {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -960,6 +990,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -1129,6 +1165,12 @@
               ]
             },
             {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1289,6 +1331,12 @@
               ]
             },
             {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1440,6 +1488,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -2415,6 +2469,12 @@
               ]
             },
             {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2512,6 +2572,12 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -2645,6 +2711,12 @@
               ]
             },
             {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2760,6 +2832,12 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -2881,6 +2959,12 @@
               ]
             },
             {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -2978,6 +3062,12 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -3099,6 +3189,12 @@
               ]
             },
             {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3217,6 +3313,12 @@
               ]
             },
             {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -3326,6 +3428,12 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -4832,21 +4940,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -4919,12 +5015,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "signal-seed-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
               ]
             },
             {
@@ -5118,21 +5208,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -5205,12 +5283,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "signal-seed-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
               ]
             },
             {
@@ -5464,27 +5536,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-module-binding-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -5599,12 +5653,6 @@
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
-              ]
-            },
-            {
-              "fixture": "signal-seed-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
               ]
             },
             {
@@ -5822,21 +5870,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -5909,12 +5945,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "signal-seed-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
               ]
             },
             {
@@ -6126,21 +6156,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -6213,12 +6231,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "signal-seed-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
               ]
             },
             {
@@ -6412,21 +6424,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -6499,12 +6499,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "signal-seed-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
               ]
             },
             {
@@ -6710,21 +6704,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -6797,12 +6779,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "signal-seed-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
               ]
             },
             {
@@ -7008,21 +6984,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -7095,12 +7059,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "signal-seed-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
               ]
             },
             {
@@ -7306,21 +7264,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -7393,12 +7339,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "signal-seed-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
               ]
             },
             {
@@ -8092,21 +8032,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -8203,12 +8131,6 @@
               "fixture": "reserved-name-filter-param-and-internal-prop",
               "limitations": [
                 "reserved-name-collides-with-internal-name"
-              ]
-            },
-            {
-              "fixture": "signal-seed-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
               ]
             },
             {
@@ -8492,21 +8414,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -8585,12 +8495,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "signal-seed-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
               ]
             },
             {
@@ -8988,27 +8892,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-module-binding-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -9129,12 +9015,6 @@
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
-              ]
-            },
-            {
-              "fixture": "signal-seed-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
               ]
             },
             {
@@ -9460,21 +9340,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -9565,12 +9433,6 @@
               "fixture": "reserved-name-filter-param-and-internal-prop",
               "limitations": [
                 "reserved-name-collides-with-internal-name"
-              ]
-            },
-            {
-              "fixture": "signal-seed-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
               ]
             },
             {
@@ -9872,21 +9734,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -9977,12 +9827,6 @@
               "fixture": "reserved-name-filter-param-and-internal-prop",
               "limitations": [
                 "reserved-name-collides-with-internal-name"
-              ]
-            },
-            {
-              "fixture": "signal-seed-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
               ]
             },
             {
@@ -10266,21 +10110,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -10365,12 +10197,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "signal-seed-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
               ]
             },
             {
@@ -10678,21 +10504,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -10783,12 +10597,6 @@
               "fixture": "reserved-name-filter-param-and-internal-prop",
               "limitations": [
                 "reserved-name-collides-with-internal-name"
-              ]
-            },
-            {
-              "fixture": "signal-seed-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
               ]
             },
             {
@@ -11078,21 +10886,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -11189,12 +10985,6 @@
               "fixture": "reserved-name-filter-param-and-internal-prop",
               "limitations": [
                 "reserved-name-collides-with-internal-name"
-              ]
-            },
-            {
-              "fixture": "signal-seed-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
               ]
             },
             {
@@ -11490,21 +11280,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -11589,12 +11367,6 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "signal-seed-local-function-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
               ]
             },
             {
@@ -12045,15 +11817,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -12072,6 +11838,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -12331,15 +12103,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -12358,6 +12124,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -12689,21 +12461,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-module-binding-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -12722,6 +12482,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -13041,15 +12807,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -13068,6 +12828,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -13333,15 +13099,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -13360,6 +13120,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -13619,15 +13385,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -13646,6 +13406,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -13923,15 +13689,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -13950,6 +13710,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -14203,15 +13969,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -14230,6 +13990,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -14489,15 +14255,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -14516,6 +14276,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
               ]
             },
             {
@@ -24057,15 +23823,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -24199,15 +23959,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -24377,21 +24131,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-module-binding-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -24537,15 +24279,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -24679,15 +24415,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -24821,15 +24551,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -24975,15 +24699,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -25111,15 +24829,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -25253,15 +24965,9 @@
               ]
             },
             {
-              "fixture": "markup-local-function-named-like-prop",
+              "fixture": "markup-uninlinable-local-function-named-like-prop",
               "limitations": [
-                "local-function-named-like-prop"
-              ]
-            },
-            {
-              "fixture": "memo-const-declared-after-named-like-prop",
-              "limitations": [
-                "local-function-named-like-prop"
+                "uninlinable-local-function-call"
               ]
             },
             {
@@ -25522,6 +25228,18 @@
               ]
             },
             {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -25715,6 +25433,18 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -25968,6 +25698,12 @@
               ]
             },
             {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
               "fixture": "object-entries-typed-object-signal",
               "limitations": [
                 "object-entries-typed-object-signal"
@@ -25989,6 +25725,12 @@
               "fixture": "object-spread-prop-child",
               "limitations": [
                 "object-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -26212,6 +25954,18 @@
               ]
             },
             {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -26414,6 +26168,18 @@
               ]
             },
             {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -26607,6 +26373,18 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {
@@ -26824,6 +26602,18 @@
               ]
             },
             {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -27020,6 +26810,18 @@
               ]
             },
             {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -27213,6 +27015,18 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-loop-source-computed",
+              "limitations": [
+                "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "opaque-local-accessor-call",
+              "limitations": [
+                "opaque-local-accessor-call"
               ]
             },
             {

@@ -45,6 +45,7 @@ import {
   type ParsedExpr,
 } from './expression-parser.ts'
 import { templatePropReadParams } from './props-binding.ts'
+import { localCallBodies } from './local-call-body.ts'
 import type { IRMetadata, ParamInfo } from './types.ts'
 import { isElidedFactoryGetter } from './types.ts'
 
@@ -144,6 +145,14 @@ function localConstExprsByName(metadata: IRMetadata): ReadonlyMap<string, Parsed
   for (const c of metadata.localConstants ?? []) {
     if (c.isModule || c.declarationKind !== 'const' || c.value === undefined) continue
     out.set(c.name, c.parsed ?? parseExpression(c.value.trim()))
+  }
+  // A zero-argument call of a function returning one expression reads that
+  // expression (#3721): `inlineBinding` inlines a zero-param arrow's call as
+  // its body. A module function is listed only when its body reads nothing:
+  // its names resolve in module scope, which the plan's scope does not model.
+  for (const [name, { body, scope }] of localCallBodies({ ...metadata, localConstants: metadata.localConstants ?? [] })) {
+    if (out.has(name) || (scope === 'module' && freeIdentifiers(body)?.size !== 0)) continue
+    out.set(name, { kind: 'arrow', params: [], body })
   }
   return out
 }
@@ -334,7 +343,12 @@ export function inDefaultReadOrder(params: readonly ParamInfo[]): ParamInfo[] {
 }
 
 export function computeSsrSeedPlan(metadata: IRMetadata): SsrSeedPlan {
-  const baseScope: string[] = metadata.propsParams.map(p => p.name)
+  // A prop is in scope by its bare name only where the component binds it
+  // so: a destructured parameter, or a `(props)`-arg component's body
+  // binding that holds it. A typed prop the body never binds names nothing
+  // here; a local or module binding of that name is what the code reads
+  // (#3721).
+  const baseScope: string[] = templatePropReadParams(metadata).map(p => p.name)
   if (metadata.propsObjectName) baseScope.push(metadata.propsObjectName)
   const inlined = new Set(collectModuleStringConsts(metadata.localConstants).keys())
   baseScope.push(...inlined)
