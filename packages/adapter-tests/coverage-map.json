@@ -4288,6 +4288,43 @@
         "text"
       ]
     },
+    "destructure-default-array-literal": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "destructure-default-array-literal-body": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "destructure-default-array-memo": {
       "kinds": [
         "call",
@@ -4730,6 +4767,25 @@
       ],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "destructure-default-number-array-literal": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
         "text"
       ]
     },
