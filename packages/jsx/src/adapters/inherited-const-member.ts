@@ -9,16 +9,16 @@
  * with BF101 instead of rendering the key as missing. The decision of which
  * reads these are is `readStaticConstMember`'s (`static-const-member.ts`);
  * the error is recorded here, once per component, over every template
- * position, each read in its own scope, and over the bodies of the memos
- * those positions read (`memosEvaluatedAtSsr`).
+ * position, each read in its own scope, and over the bodies of the memos,
+ * constants and local functions those positions reach (`ssrReads`).
  */
 
 import { exprToString, type ParsedExpr } from '../expression-parser.ts'
 import { parsedExprChildren } from '../action-accessor.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
 import { readStaticConstMember, staticIndexKey } from '../static-const-member.ts'
-import { walkTemplatePositions } from '../template-position-walk.ts'
-import type { ComponentIR, MemoInfo, SourceLocation } from '../types.ts'
+import { declarationExprs, functionLocalNames, ssrReads } from '../ssr-read-declarations.ts'
+import type { ComponentIR, SourceLocation } from '../types.ts'
 import type { NonPrimitiveEqualitySink } from './non-primitive-equality.ts'
 
 type Constants = ComponentIR['metadata']['localConstants']
@@ -46,9 +46,10 @@ function inheritedReads(expr: ParsedExpr, scope: BindingScope, constants: Consta
 }
 
 /**
- * Record BF101 for every literal const member read in `ir`'s template
- * positions, and in the body of each memo such a position reads, that only
- * the prototype answers. One error per read text per compile.
+ * Record BF101 for every literal const member read that only the prototype
+ * answers, in `ir`'s server-rendered positions and in the bodies of the
+ * memos, constants and local functions they reach (`ssrReads`). One error per
+ * read text per compile.
  */
 export function refuseInheritedConstMemberReads(ir: ComponentIR, sink: NonPrimitiveEqualitySink): void {
   const constants = ir.metadata.localConstants
@@ -57,62 +58,15 @@ export function refuseInheritedConstMemberReads(ir: ComponentIR, sink: NonPrimit
   const check = (expr: ParsedExpr, scope: BindingScope, loc: SourceLocation): void => {
     for (const read of inheritedReads(expr, scope, constants)) record(exprToString(read), loc, sink)
   }
-  const ssrNames = new Set<string>()
-  walkTemplatePositions(ir.root, ({ expr, loc, scope }) => {
-    check(expr, scope ?? component, loc)
-    collectNames(expr, ssrNames)
-  }, component)
-  for (const memo of memosEvaluatedAtSsr(ir.metadata, ssrNames)) {
-    if (memo.parsed) check(memo.parsed, component, ir.root.loc)
+  const reads = ssrReads(ir, component)
+  for (const { expr, loc, scope } of reads.positions) check(expr, scope, loc)
+  for (const declaration of [...reads.memos, ...reads.constants]) {
+    for (const expr of declarationExprs(declaration)) check(expr, component, declaration.loc)
   }
-}
-
-/**
- * The memos a backend evaluates at SSR: those a template position reads,
- * directly or through another memo or a component constant — the rule
- * `checkAsyncActionReads` (BF117) applies, "every backend evaluates a memo
- * or constant it renders". A memo read only from `/* @client *\/`
- * positions (which `walkTemplatePositions` skips), and a module-scope memo,
- * runs in the browser only.
- */
-function memosEvaluatedAtSsr(metadata: ComponentIR['metadata'], read: ReadonlySet<string>): MemoInfo[] {
-  const memos = new Map((metadata.memos ?? []).filter(m => !m.isModule).map(m => [m.name, m]))
-  const constants = new Map((metadata.localConstants ?? []).map(c => [c.name, c]))
-  const reached = new Map<string, MemoInfo>()
-  const visited = new Set<string>()
-  const pending = [...read]
-  while (pending.length > 0) {
-    const name = pending.pop()!
-    if (visited.has(name)) continue
-    visited.add(name)
-    const memo = memos.get(name)
-    if (memo) {
-      reached.set(name, memo)
-      pending.push(...namesRead(memo.computationFreeIdentifiers, memo.parsed))
-      continue
-    }
-    const constant = constants.get(name)
-    if (constant) pending.push(...namesRead(constant.freeIdentifiers, constant.parsed))
+  for (const fn of reads.functions) {
+    const scope = component.enterCallback(functionLocalNames(fn))
+    for (const expr of declarationExprs(fn)) check(expr, scope, fn.loc)
   }
-  return [...reached.values()]
-}
-
-/**
- * The names a declaration reads: its recorded free identifiers, else every
- * identifier in its parse. The recorded set is only trusted as a `Set`: an IR
- * that went through a JSON round trip (a cached compile) carries it as `{}`.
- */
-function namesRead(free: ReadonlySet<string> | undefined, parsed: ParsedExpr | undefined): Iterable<string> {
-  if (free instanceof Set) return free
-  const names = new Set<string>()
-  if (parsed) collectNames(parsed, names)
-  return names
-}
-
-/** Every identifier `expr` names (an over-approximation of its free names: a callback param counts too). */
-function collectNames(expr: ParsedExpr, into: Set<string>): void {
-  if (expr.kind === 'identifier') into.add(expr.name)
-  for (const child of parsedExprChildren(expr)) collectNames(child.expr, into)
 }
 
 function record(read: string, loc: SourceLocation, sink: NonPrimitiveEqualitySink): void {

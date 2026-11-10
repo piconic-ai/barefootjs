@@ -1394,6 +1394,12 @@ import { fixture as moduleConstInheritedKeyMemo } from './module-const-inherited
 import { fixture as moduleConstInheritedKeyMemoChain } from './module-const-inherited-key-memo-chain'
 import { fixture as moduleConstInheritedKeyMemoMixed } from './module-const-inherited-key-memo-mixed'
 import { fixture as moduleConstInheritedKeyMemoClient } from './module-const-inherited-key-memo-client'
+import { fixture as moduleConstInheritedKeyFunction } from './module-const-inherited-key-function'
+import { fixture as moduleConstInheritedKeyFunctionDirect } from './module-const-inherited-key-function-direct'
+import { fixture as moduleConstInheritedKeyFunctionNested } from './module-const-inherited-key-function-nested'
+import { fixture as moduleConstInheritedKeyObjectMethod } from './module-const-inherited-key-object-method'
+import { fixture as moduleConstInheritedKeyIife } from './module-const-inherited-key-iife'
+import { fixture as moduleConstInheritedKeyFunctionClient } from './module-const-inherited-key-function-client'
 import { fixture as undefinedLiteralElementPositions } from './undefined-literal-element-positions'
 import { fixture as moduleConstArrayMethodCall } from './module-const-array-method-call'
 import { fixture as localConstLiteralIndex } from './local-const-literal-index'
@@ -2454,6 +2460,12 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstInheritedKeyMemoChain,
   moduleConstInheritedKeyMemoMixed,
   moduleConstInheritedKeyMemoClient,
+  moduleConstInheritedKeyFunction,
+  moduleConstInheritedKeyFunctionDirect,
+  moduleConstInheritedKeyFunctionNested,
+  moduleConstInheritedKeyObjectMethod,
+  moduleConstInheritedKeyIife,
+  moduleConstInheritedKeyFunctionClient,
   undefinedLiteralElementPositions,
   moduleConstArrayMethodCall,
   localConstLiteralIndex,

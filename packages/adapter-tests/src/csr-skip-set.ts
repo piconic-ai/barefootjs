@@ -209,6 +209,16 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // component's own, so loading it throws `"x" has already been declared`.
   // Per-adapter render conformance pins the SSR contract (#3696).
   'module-const-hop-loop-shadow',
+  // Markup calling a local function or an object const's method that reads
+  // a component local (a memo, a literal const): the `template` lambda this
+  // harness evaluates is module scope, so it cannot call the init body's
+  // function, and the text slot is filled once init runs. Per-adapter render
+  // conformance pins the SSR contract (every template adapter refuses the
+  // inherited-key read, BF101).
+  'module-const-inherited-key-function',
+  'module-const-inherited-key-function-direct',
+  'module-const-inherited-key-function-nested',
+  'module-const-inherited-key-object-method',
 ])
 
 /**
