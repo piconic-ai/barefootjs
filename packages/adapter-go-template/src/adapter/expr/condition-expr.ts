@@ -672,6 +672,9 @@ function renderConditionIdentifier(
   host: ConditionExprHost,
   expr: Extract<ParsedExpr, { kind: 'identifier' }>,
 ): ConditionParts {
+  // `undefined` is the runtime's `bf.Undefined`, as in value position: a
+  // typed nil `if` reads as false. The template has no field of that name.
+  if (expr.name === 'undefined') return plain('(bf_undefined)')
   // Destructure-param bindings (`.map(({ id, active }) => active ? …)`):
   // resolve the binding name to its accessor on the range var the same
   // way the value path (`identifier` in `ParsedExprEmitter`) does.
