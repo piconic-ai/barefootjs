@@ -6382,6 +6382,23 @@
         "loop"
       ]
     },
+    "fragment-root-conditional-child-bool-props": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "fragment-root-conditional-loop-row": {
       "kinds": [
         "call",
@@ -6392,6 +6409,23 @@
       "contexts": [
         "condition",
         "loop",
+        "text"
+      ]
+    },
+    "fragment-root-conditional-reactive-attrs": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
         "text"
       ]
     },
@@ -7635,6 +7669,28 @@
       "axes": [
         "binary:===",
         "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-item-conditional-reactive-attrs": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
         "literal:string"
       ],
       "contexts": [
