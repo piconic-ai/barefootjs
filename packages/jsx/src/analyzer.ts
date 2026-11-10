@@ -9,7 +9,7 @@
 import ts from 'typescript'
 import { foldRenderReassignmentsInSource } from './fold-render-reassignments.ts'
 import { CLIENT_DIRECTIVE_INTERIOR_RE, USE_CLIENT_DIRECTIVE, isUseClientDirectiveText } from './directives.ts'
-import type { ImportSpecifier, TypeInfo, ParamInfo, PropDefaultPart, PropDefaultRead, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation, SignalFactoryCall, MemoInfo, SignalInfo } from './types.ts'
+import type { ImportSpecifier, TypeInfo, ParamInfo, PropDefaultPart, PropDefaultRead, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation, SignalFactoryCall, MemoInfo, SignalInfo, ConstantInfo } from './types.ts'
 import { CALLBACK_METHODS, parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr, stringifyParsedExpr, type ParsedExpr } from './expression-parser.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { collectAssignmentTargets, rewriteBarePropRefs, splitScopedValueRefs } from './prop-rewrite.ts'
@@ -39,6 +39,7 @@ import { separateSignalPropBindings, programWithSeparatedSource } from './signal
 import { isAssignmentTargetIdentifier } from './assignment-target.ts'
 import { addSourceReplacement } from './strip-types.ts'
 import { walkWithScope } from './scope/lexical-scope-walk.ts'
+import { markIdentityBoundConstants, recordIdentityCandidate } from './const-identity.ts'
 
 // =============================================================================
 // TypeScript Program Creation
@@ -4609,7 +4610,7 @@ function collectConstant(
       ? parseExpression(`(${value.trim()})`)
       : undefined
 
-  ctx.localConstants.push({
+  const constant: ConstantInfo = {
     name,
     value,
     parsed,
@@ -4633,7 +4634,9 @@ function collectConstant(
       scope: isModule ? 'module' : 'init',
       effect: 'pure',
     },
-  })
+  }
+  recordIdentityCandidate(constant, node.initializer, ctx.checker)
+  ctx.localConstants.push(constant)
 }
 
 // =============================================================================
@@ -5333,6 +5336,9 @@ function validateContext(ctx: AnalyzerContext): void {
   // downstream inlining never re-embeds their stale initializer text (#2910).
   markMutatedConstants(ctx)
   markWrittenBindings(ctx)
+  // A const whose initializer allocates and reads nothing reactive is read
+  // as the binding, never re-evaluated at a prop read (#3868).
+  markIdentityBoundConstants(ctx)
   writeTemplatePropReads(ctx)
 
   // BF052: init statements that write to an identifier with no visible
