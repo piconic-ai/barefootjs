@@ -56,6 +56,7 @@ import {
   collectNullableSignalGetters,
   arithmeticOperandCoercion,
   refuseNonPrimitiveStrictEquality,
+  refuseInheritedConstMemberReads,
   type ArithmeticCoercion,
   collectNullishAttrContext,
   isNativePlan,
@@ -913,6 +914,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     ir = this.primeCompileState(ir)
     // `===` / `!==` over an object or array (#3774, #3824 step 8).
     refuseNonPrimitiveStrictEquality(ir, this.state.operandTyping, this.state)
+    // A literal const member only the prototype has (#3813).
+    refuseInheritedConstMemberReads(ir, this.state)
     // A spread of an arbitrary object onto a child component (#3861).
     refuseObjectSpreadsOntoChildren(this.emitCtx, ir)
     this.state.stringValueNames = collectStringValueNames(ir)

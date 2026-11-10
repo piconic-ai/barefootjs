@@ -235,6 +235,7 @@ export const conformancePins: ConformancePins = {
   // time reads inherited keys in JS (`labels['toString']`); no template
   // lookup does, so the read refuses rather than rendering `undefined`.
   'record-const-index-inherited-key': [{ code: 'BF101', severity: 'error', limitation: 'record-const-index-unknown-keys' }],
+  'module-const-inherited-key': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
   // A component-body destructure with no const form, and a read of a taken
   // key through a props-object body rest, are refused in the shared
   // analyzer, ahead of any adapter (#3854).
