@@ -1282,6 +1282,9 @@ import { fixture as destructureDefaultLiteralSpelling } from './destructure-defa
 import { fixture as destructureDefaultLargeNumber } from './destructure-default-large-number'
 import { fixture as destructureDefaultBodyRenamedComputedArray } from './destructure-default-body-renamed-computed-array'
 import { fixture as destructureDefaultParamComputedArray } from './destructure-default-param-computed-array'
+import { fixture as destructureDefaultArrayLiteral } from './destructure-default-array-literal'
+import { fixture as destructureDefaultArrayLiteralBody } from './destructure-default-array-literal-body'
+import { fixture as destructureDefaultNumberArrayLiteral } from './destructure-default-number-array-literal'
 import { fixture as destructureDefaultBodyRenamedCallback } from './destructure-default-body-renamed-callback'
 import { fixture as destructureDefaultBodyRenamedCallbackPositions } from './destructure-default-body-renamed-callback-positions'
 import { fixture as destructureDefaultBodyRenamedCallbackChild } from './destructure-default-body-renamed-callback-child'
@@ -2342,6 +2345,9 @@ export const jsxFixtures: JSXFixture[] = [
   destructureDefaultLargeNumber,
   destructureDefaultBodyRenamedComputedArray,
   destructureDefaultParamComputedArray,
+  destructureDefaultArrayLiteral,
+  destructureDefaultArrayLiteralBody,
+  destructureDefaultNumberArrayLiteral,
   destructureDefaultBodyRenamedCallback,
   destructureDefaultBodyRenamedCallbackPositions,
   destructureDefaultBodyRenamedCallbackChild,
