@@ -9355,6 +9355,14 @@
       }
     }
   ],
+  "module-const-array-child-prop-forwarded": [
+    {
+      "name": "gen:PS:empty",
+      "props": {
+        "PS": []
+      }
+    }
+  ],
   "module-const-array-literal-index": [
     {
       "name": "gen:on:true",

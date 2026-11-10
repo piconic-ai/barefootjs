@@ -127,6 +127,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -272,6 +278,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -483,6 +495,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -661,6 +679,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -821,6 +845,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -966,6 +996,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -1135,6 +1171,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1295,6 +1337,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -1446,6 +1494,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -8140,6 +8194,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -8537,6 +8597,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -9048,6 +9114,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -9514,6 +9586,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -9926,6 +10004,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -10323,6 +10407,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -10738,6 +10828,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -11135,6 +11231,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -11553,6 +11655,12 @@
               "fixture": "module-const-loop-source-computed",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -12099,6 +12207,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -12382,6 +12496,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -12755,6 +12875,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -13101,6 +13227,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -13393,6 +13525,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -13676,6 +13814,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -13983,6 +14127,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "module-function-helper-chain",
               "limitations": [
                 "module-scope-helper-call"
@@ -14260,6 +14410,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -14546,6 +14702,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -15469,6 +15631,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "plus-beyond-safe-integer",
               "limitations": [
                 "plus-beyond-safe-integer"
@@ -15740,6 +15908,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -16101,6 +16275,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "object-spread-branch-child",
               "limitations": [
                 "object-spread-onto-child-component"
@@ -16429,6 +16609,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -16715,6 +16901,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -16986,6 +17178,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -17281,6 +17479,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -17558,6 +17762,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -17853,6 +18063,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -18008,6 +18224,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -18069,6 +18291,12 @@
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -18151,6 +18379,12 @@
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -18242,6 +18476,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -18306,6 +18546,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -18367,6 +18613,12 @@
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -18446,6 +18698,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -18501,6 +18759,12 @@
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -18565,6 +18829,12 @@
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -25588,6 +25858,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -25781,6 +26057,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -26040,6 +26322,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "object-entries-typed-object-signal",
               "limitations": [
                 "object-entries-typed-object-signal"
@@ -26284,6 +26572,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -26486,6 +26780,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -26679,6 +26979,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -26896,6 +27202,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -27092,6 +27404,12 @@
               ]
             },
             {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -27285,6 +27603,12 @@
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
+              ]
+            },
+            {
+              "fixture": "module-const-object-array-child-prop",
+              "limitations": [
+                "object-array-literal-child-prop"
               ]
             },
             {
@@ -28292,10 +28616,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L169"
       },
       "example": {
-        "fixture": "omitted-optional-element-access-operands",
-        "description": "Omitted optional props read through props['x'] as a ?. receiver and a presence-check operand",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-element-access-operands.ts",
-        "code": "props['n']"
+        "fixture": "module-const-array-child-prop-forwarded",
+        "description": "a module array const passed whole in a loop row and through a forwarding child reaches the child",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-array-child-prop-forwarded.ts",
+        "code": "xs[1]"
       }
     },
     "member:optional": {

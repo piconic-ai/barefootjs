@@ -72,6 +72,7 @@ describe('compileForCompat', () => {
           'loop-row-key-outer-state',
           'module-scope-helper-call',
           'nested-callback-in-filter-predicate',
+          'object-array-literal-child-prop',
           'object-equality-by-contents',
           'object-spread-onto-child-component',
           'off-subset-callback-body',
