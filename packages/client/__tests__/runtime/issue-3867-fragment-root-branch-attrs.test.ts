@@ -114,6 +114,41 @@ export function Issue3867Single() {
     expect(action.hidden).toBe(true)
   })
 
+  // Slot ids are numbered per component file: Child's root gets `bf="s3"`
+  // from its own template, the same id as the parent's branch button. The
+  // branch binding must update the branch button, never the child root —
+  // under a Fragment root (sibling search) and under an element root
+  // (descendant search) alike.
+  for (const [rootName, open, close] of [
+    ['Issue3867CollisionFragment', '<>', '</>'],
+    ['Issue3867CollisionElement', '<div>', '</div>'],
+  ] as const) {
+    test(`a child root sharing the branch's slot id is left alone (${open})`, async () => {
+      await load(`'use client'
+import { createSignal } from '@barefootjs/client'
+function Child({ a, b, c }: { a: string; b: string; c: string }) {
+  return <button data-child data-state={a}>{a}{b}{c}</button>
+}
+export function ${rootName}() {
+  const [shown] = createSignal(true)
+  const [busy, setBusy] = createSignal(false)
+  return ${open}
+    <button data-toggle onClick={() => setBusy(!busy())}>toggle</button>
+    <Child a="a" b="b" c="c" />
+    {shown() ? <button data-own data-state={busy() ? 'yes' : 'no'}>own</button> : null}
+  ${close}
+}`, rootName)
+      const container = await mount(rootName)
+      const child = container.querySelector('[data-child]') as HTMLElement
+      const own = container.querySelector('[data-own]') as HTMLElement
+      expect(child.getAttribute('bf')).toBe(own.getAttribute('bf'))
+
+      ;(container.querySelector('[data-toggle]') as HTMLButtonElement).click()
+      expect(own.getAttribute('data-state')).toBe('yes')
+      expect(child.getAttribute('data-state')).toBe('a')
+    })
+  }
+
   test('a child component in a branch is hosted by the fragment scope and follows boolean props', async () => {
     await load(`'use client'
 import { createSignal } from '@barefootjs/client'
@@ -187,6 +222,19 @@ describe('#3867 — qsa on a comment-scope proxy', () => {
     const proxy = document.createElement('bf-loop-item')
     commentScopeRegistry.set(proxy, { commentNode: anchor, scopeId: 'P_1' })
     expect(qsa(proxy, '[bf="s3"]')?.id).toBe('row2')
+  })
+
+  test("never takes a child root's own slot marker for the parent's slot", () => {
+    const proxy = proxyOf(
+      '<!--bf-scope:P_1--><button bf="s1"></button>' +
+        '<i id="child" bf-s="P_1_s2" bf-h="P_1" bf-m="s2" bf="s3"></i>' +
+        '<b id="own" bf="s3"></b><!--bf-/scope:P_1-->',
+    )
+    expect(qsa(proxy, '[bf="s3"]')?.id).toBe('own')
+    // The same rule for a child root among an element root's descendants.
+    document.body.innerHTML =
+      '<div bf-s="P_2"><i bf-s="P_2_s2" bf-h="P_2" bf-m="s2" bf="s3"></i><b id="own2" bf="s3"></b></div>'
+    expect(qsa(document.body.firstElementChild, '[bf="s3"]')?.id).toBe('own2')
   })
 
   test("matches a top-level child component's own root", () => {
