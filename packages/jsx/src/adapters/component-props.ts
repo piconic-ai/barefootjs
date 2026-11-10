@@ -180,6 +180,18 @@ export function planComponentProps(
   return segments
 }
 
+/**
+ * The value a template passes for a component prop. A bare read of a const
+ * holding a static literal (`ExpressionAttr.staticConstLiteral`, `xs={QS}`)
+ * is that literal, as if the source had written it in place: a template
+ * holds the props, not the consts. Any other value is itself.
+ */
+export function templatePropValue(value: AttrValue): AttrValue {
+  if (value.kind !== 'expression' || !value.staticConstLiteral) return value
+  const { expr, parsed } = value.staticConstLiteral
+  return { kind: 'expression', expr, parsed }
+}
+
 /** A spelled segment: the entries' hash-literal parts, or the expression a spread folds in. */
 export type SpelledComponentPropSegment = { kind: 'entries'; parts: string[] } | { kind: 'spread'; expr: string }
 
@@ -200,7 +212,10 @@ export interface ComponentPropSpelling {
 
 /**
  * Spell a plan in source order, so the captures an entry's spelling emits
- * (named slots, then the children) keep their order and counter values.
+ * (named slots, then the children) keep their order and counter values. A
+ * `value` entry is spelled as the template passes it
+ * ({@link templatePropValue}); the plan keeps the IR's own value, which
+ * callers compare by identity.
  */
 export function spellComponentProps(
   segments: readonly ComponentPropSegment[],
@@ -211,7 +226,7 @@ export function spellComponentProps(
     if (segment.kind === 'present-param') return { kind: 'spread', expr: spelling.presentParam(segment.name) }
     const parts: string[] = []
     for (const entry of segment.entries) {
-      const part = spelling.entry(entry)
+      const part = spelling.entry(entry.kind === 'value' ? { ...entry, value: templatePropValue(entry.value) } : entry)
       if (part) parts.push(part)
     }
     return { kind: 'entries', parts }

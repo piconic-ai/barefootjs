@@ -47,6 +47,7 @@ import { parseExpression, freeIdentifiers, isSupported, parseBlockBody, foldBloc
 import { fallbackChainParts, nullishChainParts } from './children-nullish.ts'
 import type { IRLoopSort, FunctionInfo, ConstantInfo, ParamInfo, FreeReference, SpreadAttr, JsSourceText } from './types.ts'
 import { resolveStaticConstBinding } from './augment-inherited-props.ts'
+import { isFullyStaticLiteral } from './static-literal.ts'
 import { componentScopeNames } from './adapters/computed-const.ts'
 import { formatParamWithType } from './module-exports.ts'
 import { createError, ErrorCodes, internalInvariant } from './errors.ts'
@@ -7696,6 +7697,21 @@ function staticConstInitializerOf(expr: ts.Expression, ctx: TransformContext): t
 }
 
 /**
+ * `value` with `staticConstLiteral` set when the prop's value is a bare read
+ * of a const holding a fully static array or object literal (`<Kid xs={QS} />`
+ * beside `const QS = ['a', 'b']`): only a literal that reads no name and
+ * calls nothing (`isFullyStaticLiteral`). `value` unchanged otherwise.
+ */
+function withStaticConstLiteral(value: AttrValue, attr: ts.JsxAttribute, ctx: TransformContext): AttrValue {
+  if (value.kind !== 'expression' || !attr.initializer || !ts.isJsxExpression(attr.initializer) || !attr.initializer.expression) return value
+  const init = staticConstInitializerOf(attr.initializer.expression, ctx)
+  if (!init) return value
+  const parsed = tsNodeToParsedExpr(init)
+  if (!isFullyStaticLiteral(parsed)) return value
+  return { ...value, staticConstLiteral: { expr: astText(init), parsed } }
+}
+
+/**
  * {@link expandStaticConstSpread}'s entries of the object literal `init`,
  * or `null` when one of them has no per-key form.
  */
@@ -9604,7 +9620,7 @@ function valueComponentProp(attr: ts.JsxAttribute, name: string, ctx: TransformC
   const freeIdentifiers = attrFreeIdentifiers(attr)
   return {
     name,
-    value,
+    value: clientOnly ? value : withStaticConstLiteral(value, attr, ctx),
     clientOnly,
     loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
     ...computeReactivityFlags(attr, ctx),

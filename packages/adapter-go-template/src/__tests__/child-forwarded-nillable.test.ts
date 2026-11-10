@@ -74,10 +74,12 @@ function Destructured({ count, rows }: { count?: number; rows: number[] }) {
 function PropsObject(props: { count?: number; rows: { count?: number }[] }) {
   return <ul>{props.rows.map((props, i) => <li key={i}><Show value={props.count} /></li>)}</ul>
 }
-export function Page() {
-  return <div><Destructured rows={[1]} /><PropsObject rows={[{}]} /></div>
+export function Page(props: { objectRows: { count?: number }[] }) {
+  return <div><Destructured rows={[1]} /><PropsObject rows={props.objectRows} /></div>
 }
 `)
+    // An array of object literals written in place is refused
+    // (`object-array-literal-child-prop`), so the object rows come in as a prop.
     // The prop itself is optional, so a `bf.Opt[float64]` either way; the
     // row's value is what reaches the child.
     expect(inputFieldType(types, 'Destructured', 'Count')).toBe('bf.Opt[float64]')
