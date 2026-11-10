@@ -1243,6 +1243,13 @@ import { fixture as loopRowChildUntypedArrayMismatchedKeysTyped } from './loop-r
 // `child-listener-cleanup` scenario.
 import { fixture as conditionalChildListenerCleanup } from './conditional-child-listener-cleanup'
 import { fixture as fragmentChildInConditional } from './fragment-child-in-conditional'
+// Fragment-root component: reactive attributes inside conditional branches
+// that are direct children of the fragment (and a child given boolean props
+// there) keep updating after a CSR mount and after hydration.
+import { fixture as fragmentRootConditionalReactiveAttrs } from './fragment-root-conditional-reactive-attrs'
+import { fixture as fragmentRootConditionalChildBoolProps } from './fragment-root-conditional-child-bool-props'
+// The same lookup from a loop row that is itself a conditional.
+import { fixture as loopItemConditionalReactiveAttrs } from './loop-item-conditional-reactive-attrs'
 import { fixture as nestedChildNegatedProp } from './nested-child-negated-prop'
 // Diamond propagation: one signal read through two memos by one effect.
 // Regression test for glitch-free propagation — the effect runs once per
@@ -2312,6 +2319,9 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildUntypedArrayMismatchedKeysTyped,
   conditionalChildListenerCleanup,
   fragmentChildInConditional,
+  fragmentRootConditionalReactiveAttrs,
+  fragmentRootConditionalChildBoolProps,
+  loopItemConditionalReactiveAttrs,
   nestedChildNegatedProp,
   diamondPropagation,
   onPrefixedDataProp,

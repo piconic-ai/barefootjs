@@ -518,7 +518,64 @@ export function qsa(
   if (SLOT_SUFFIX_SELECTOR.test(selector)) {
     return qsaChildScope(el, selector)
   }
-  return qsaFromRoot(el, selector, receiverSlotIds, hostScopeId)
+  const hit = qsaFromRoot(el, selector, receiverSlotIds, hostScopeId)
+  if (hit) return hit
+  // A comment-scope proxy (a fragment-root component's first element, or a
+  // whole-item loop conditional's detached proxy) owns every top-level node
+  // of its comment range, not only its own subtree. A conditional branch
+  // that is a direct child of a Fragment root lands as a SIBLING of the
+  // proxy, so a branch binding looked up from the proxy (a reactive
+  // attribute's `qsa(__branchScope, '[bf="sN"]')`) has to search those
+  // siblings too, or the binding is silently never wired.
+  const commentInfo = commentScopeRegistry.get(el)
+  if (!commentInfo) return null
+  return qsaCommentRangeSiblings(el, commentInfo, selector, receiverSlotIds, hostScopeId ?? (commentInfo.scopeId || null))
+}
+
+/**
+ * Search the top-level elements of a comment scope's range other than the
+ * proxy `el` itself (`qsa` already searched it). A nested fragment-root
+ * child's own `<!--bf-scope:-->` range is skipped, and a top-level element
+ * carrying its own `bf-s` (a child component's root) is matched as a whole
+ * but never searched into, so a slot id that collides with one inside the
+ * child never resolves to the child's element.
+ */
+function qsaCommentRangeSiblings(
+  el: Element,
+  commentInfo: CommentScopeInfo,
+  selector: string,
+  receiverSlotIds: readonly string[] | undefined,
+  hostScopeId: string | null,
+): Element | null {
+  for (const top of ownTopLevelElements(commentInfo.commentNode)) {
+    if (top === el) continue
+    if (top.hasAttribute(BF_SCOPE)) {
+      if (top.matches(selector)) return top
+      continue
+    }
+    const hit = qsaFromRoot(top, selector, receiverSlotIds, hostScopeId)
+    if (hit) return hit
+  }
+  return null
+}
+
+/**
+ * The top-level elements of `commentNode`'s scope range, skipping every
+ * nested `<!--bf-scope:-->` … `<!--bf-/scope:-->` range inside it (the same
+ * depth walk as `isTopLevelCommentScopeNode`).
+ */
+function* ownTopLevelElements(commentNode: Comment): Generator<Element> {
+  const boundary = getCommentScopeBoundary(commentNode)
+  let depth = 0
+  for (let node = commentNode.nextSibling; node && node !== boundary; node = node.nextSibling) {
+    if (node.nodeType === Node.COMMENT_NODE) {
+      const value = (node as Comment).nodeValue ?? ''
+      if (value.startsWith(BF_SCOPE_COMMENT_PREFIX)) depth++
+      else if (value.startsWith(BF_SCOPE_COMMENT_END_PREFIX) && depth > 0) depth--
+    } else if (depth === 0 && node.nodeType === Node.ELEMENT_NODE) {
+      yield node as Element
+    }
+  }
 }
 
 /**
