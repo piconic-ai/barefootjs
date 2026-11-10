@@ -9939,6 +9939,23 @@
         "text"
       ]
     },
+    "module-const-array-method-call": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "array-method:includes",
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "module-const-array-negative-zero": {
       "kinds": [
         "array-literal",
@@ -10088,6 +10105,41 @@
         "text"
       ]
     },
+    "module-const-inherited-key": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "module-const-inherited-key-client": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "module-const-loop-source": {
       "kinds": [
         "array-literal",
@@ -10152,6 +10204,32 @@
       "axes": [],
       "contexts": [
         "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-missing-key": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "index-access",
+        "literal",
+        "logical",
+        "member",
+        "object-literal",
+        "unary"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:computed",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
         "loop",
         "text"
       ]
@@ -18067,6 +18145,23 @@
       ],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "undefined-literal-element-positions": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "unary"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:string",
+        "unary:!"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
         "text"
       ]
     },

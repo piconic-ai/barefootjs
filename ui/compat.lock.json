@@ -1984,6 +1984,7 @@
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
+              "const-literal-inherited-key",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
               "object-equality-by-contents",
@@ -2011,6 +2012,7 @@
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
+              "const-literal-inherited-key",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
               "object-equality-by-contents",
@@ -2041,6 +2043,7 @@
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
+              "const-literal-inherited-key",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
               "object-equality-by-contents",
@@ -2068,6 +2071,7 @@
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
+              "const-literal-inherited-key",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
               "object-equality-by-contents",
@@ -2096,6 +2100,7 @@
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
+              "const-literal-inherited-key",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
               "object-equality-by-contents",
@@ -2123,6 +2128,7 @@
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
+              "const-literal-inherited-key",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
               "object-equality-by-contents",
@@ -2150,6 +2156,7 @@
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
+              "const-literal-inherited-key",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
               "object-equality-by-contents",
@@ -2178,6 +2185,7 @@
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
+              "const-literal-inherited-key",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
               "object-equality-by-contents",
@@ -6126,6 +6134,62 @@
           ]
         }
       },
+      "module-const-array-method-call": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "module-const-array-method-call"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "module-const-array-method-call"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "module-const-array-method-call"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "module-const-array-method-call"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "module-const-array-method-call"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "module-const-array-method-call"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "module-const-array-method-call"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "module-const-array-method-call"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "module-const-array-method-call"
+          ]
+        }
+      },
       "module-const-arrow-helper": {
         "blade": {
           "kind": "refusal",
@@ -6346,6 +6410,125 @@
           "limitations": [
             "module-const-destructure-default"
           ]
+        }
+      },
+      "module-const-inherited-key": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-client"
+          }
         }
       },
       "module-const-loop-source-computed": {
@@ -9851,6 +10034,10 @@
         "description": "A memo reading a module-scope binding named like a typed prop reads the binding, not the prop",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-module-binding-named-like-prop.ts"
       },
+      "module-const-array-method-call": {
+        "description": "a method call on a module array const renders its result",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-array-method-call.ts"
+      },
       "module-const-arrow-helper": {
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-arrow-helper.ts"
@@ -9862,6 +10049,10 @@
       "module-const-destructure-default": {
         "description": "A destructure default reading a module-scope const renders that const in every read position, and…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-destructure-default.ts"
+      },
+      "module-const-inherited-key": {
+        "description": "a module const read with a key only its prototype has reads the inherited function",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key.ts"
       },
       "module-const-loop-source-computed": {
         "description": "A module-scope const computed via a function call refuses loudly (BF101) on every SSR template…",
@@ -10142,6 +10333,10 @@
       "map-opaque-projection-client": {
         "description": "A `.map()` projection calling an unlowered method, deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-opaque-projection-client.ts"
+      },
+      "module-const-inherited-key-client": {
+        "description": "a /* @client */ read of a module const key only its prototype has defers to the browser",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-client.ts"
       },
       "module-const-loop-source-computed-precomputed": {
         "description": "prop-precompute twin of module-const-loop-source-computed — computation moved to the caller, full…",
@@ -10593,6 +10788,30 @@
         "xslate"
       ]
     },
+    "const-literal-inherited-key": {
+      "title": "Literal const read with a key only its prototype has",
+      "kind": "refusal",
+      "given": "a module- or component-scope array or object literal const read with a literal key the literal does not list but its prototype does (`const REC = { k: 'v' }`, `REC['toString']`; `const QS = ['a']`, `QS['map']`)",
+      "expected": "the inherited function (`Object.prototype.toString`, `Array.prototype.map`), so a condition on the read is true",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "module-const-inherited-key"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
     "derived-object-literal-signal": {
       "title": "Derived object-literal signal initializer",
       "kind": "refusal",
@@ -10828,6 +11047,27 @@
       "actual": "renders nothing, or fails to render: the template reads the const as a variable that is never set",
       "fixtures": [
         "const-getter-read-loop-shadowed"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "module-const-array-method-call": {
+      "title": "A method call on a module array-literal const",
+      "kind": "silent",
+      "given": "a module-scope array literal const with a method called on it in a template position (`const QS = ['a', 'b']`, `QS.join('-')`, `QS.includes('a')`)",
+      "expected": "the method's result (`'a-b'`, `true`)",
+      "actual": "renders the result empty or false, or fails the render, since the call reads the const as a template variable the backend does not bind",
+      "fixtures": [
+        "module-const-array-method-call"
       ],
       "adapters": [
         "blade",
