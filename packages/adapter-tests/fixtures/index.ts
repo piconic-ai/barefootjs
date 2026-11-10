@@ -1386,6 +1386,11 @@ import { fixture as constStringConditionalTest } from './const-string-conditiona
 import { fixture as literalConstConditionalShapes } from './literal-const-conditional-shapes'
 import { fixture as stringConstQuoteNewline } from './string-const-quote-newline'
 import { fixture as moduleConstArrayLiteralIndex } from './module-const-array-literal-index'
+import { fixture as moduleConstArrayChildProp } from './module-const-array-child-prop'
+import { fixture as moduleConstRecordChildProp } from './module-const-record-child-prop'
+import { fixture as moduleConstObjectArrayChildProp } from './module-const-object-array-child-prop'
+import { fixture as moduleConstEmptyArrayChildProp } from './module-const-empty-array-child-prop'
+import { fixture as moduleConstArrayChildPropForwarded } from './module-const-array-child-prop-forwarded'
 import { fixture as moduleConstArrayNegativeZero } from './module-const-array-negative-zero'
 import { fixture as localConstLiteralIndex } from './local-const-literal-index'
 // Static text starting with `:` / `%` right after a ternary, or as a
@@ -2437,6 +2442,11 @@ export const jsxFixtures: JSXFixture[] = [
   literalConstConditionalShapes,
   stringConstQuoteNewline,
   moduleConstArrayLiteralIndex,
+  moduleConstArrayChildProp,
+  moduleConstRecordChildProp,
+  moduleConstObjectArrayChildProp,
+  moduleConstEmptyArrayChildProp,
+  moduleConstArrayChildPropForwarded,
   moduleConstArrayNegativeZero,
   localConstLiteralIndex,
   conditionalThenColonText,

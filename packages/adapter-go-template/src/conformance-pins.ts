@@ -330,4 +330,8 @@ export const conformancePins: ConformancePins = {
   'object-spread-prop-child': [{ code: 'BF101', severity: 'error', limitation: 'object-spread-onto-child-component', unescapable: true }],
   'body-rest-taken-key-read': [{ code: 'BF101', severity: 'error', limitation: 'body-rest-taken-key-read' }],
   'body-rest-props-name-shadowed': [{ code: 'BF101', severity: 'error', limitation: 'body-rest-props-name-shadowed' }],
+  // An array of object literals passed as a child prop (in place, or a
+  // const the IR passes as the literal) has no spelling as the child's
+  // prop value here; the server cannot render the child's rows.
+  'module-const-object-array-child-prop': [{ code: 'BF101', severity: 'error', limitation: 'object-array-literal-child-prop', unescapable: true }],
 }
