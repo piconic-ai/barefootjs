@@ -8124,15 +8124,9 @@
       "kinds": [
         "array-literal",
         "identifier",
-        "literal",
-        "member",
-        "object-literal"
+        "member"
       ],
-      "axes": [
-        "literal:null",
-        "literal:number",
-        "literal:string"
-      ],
+      "axes": [],
       "contexts": [
         "attribute",
         "loop",
