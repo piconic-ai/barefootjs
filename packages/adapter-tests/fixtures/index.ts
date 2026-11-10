@@ -744,6 +744,7 @@ import { fixture as templateLiteralMultiInterp } from './template-literal-multi-
 import { fixture as optionalChainingProp } from './optional-chaining-prop'
 import { fixture as numberToFixed } from './number-tofixed'
 import { fixture as mathMethods } from './math-methods'
+import { fixture as mathNumberOutput } from './math-number-output'
 import { fixture as stringLengthText } from './string-length-text'
 import { fixture as stringIndexMethods } from './string-index-methods'
 import { fixture as undefinedMethodResultAttr } from './undefined-method-result-attr'
@@ -1997,6 +1998,7 @@ export const jsxFixtures: JSXFixture[] = [
   optionalChainingProp,
   numberToFixed,
   mathMethods,
+  mathNumberOutput,
   stringLengthText,
   stringIndexMethods,
   undefinedMethodResultAttr,
