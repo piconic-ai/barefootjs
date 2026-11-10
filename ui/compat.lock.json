@@ -3248,6 +3248,70 @@
           ]
         }
       },
+      "const-object-child-prop-identity": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "const-object-child-prop-server-value"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "const-object-child-prop-server-value"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "const-object-child-prop-server-value"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "const-object-child-prop-server-value"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "const-object-child-prop-server-value"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "const-object-child-prop-server-value"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "const-object-child-prop-server-value"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "const-object-child-prop-server-value"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "const-object-child-prop-server-value"
+          ]
+        }
+      },
+      "const-object-prop-identity-hydrate": {
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "const-object-child-prop-server-value"
+          ]
+        }
+      },
       "date-method-uncatalogued": {
         "blade": {
           "kind": "refusal",
@@ -9683,6 +9747,14 @@
         "description": "A const reading a signal getter, read in a loop row that shadows the getter, keeps the signal value",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/const-getter-read-loop-shadowed.ts"
       },
+      "const-object-child-prop-identity": {
+        "description": "A non-reactive allocating const passed as a child prop renders its value in the child",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/const-object-child-prop-identity.ts"
+      },
+      "const-object-prop-identity-hydrate": {
+        "description": "A non-reactive allocating const passed as a child prop keeps one identity across reads after…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/const-object-prop-identity-hydrate.ts"
+      },
       "date-method-uncatalogued": {
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
@@ -10582,6 +10654,28 @@
       ],
       "adapters": [
         "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "const-object-child-prop-server-value": {
+      "title": "A const object or array passed as a child component prop",
+      "kind": "silent",
+      "given": "a component- or module-scope const holding an object or array literal (`const obj = { n: 1 }`, `const arr = [1, 2]`), passed bare as a child component prop (`<Show token={obj} />`) that the child reads (`props.token.n`, `props.items.length`)",
+      "expected": "the child renders the value the const holds (`1`, `2`)",
+      "actual": "renders the child with the prop absent (empty text, `0` for a length), or throws because the template never binds the const",
+      "fixtures": [
+        "const-object-child-prop-identity",
+        "const-object-prop-identity-hydrate"
+      ],
+      "adapters": [
         "blade",
         "erb",
         "go-template",

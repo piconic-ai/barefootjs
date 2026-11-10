@@ -27,6 +27,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // runtime's shape-check method, `java/.../Bf.java`) ahead of `call()`'s
 // generic fallback, so it never reaches the refusal at all.
 export const renderDivergences: RenderDivergences = {
+  // A component- or module-scope const holding an object or array, passed
+  // bare as a child component prop, reaches the child without its value.
+  'const-object-child-prop-identity': { limitation: 'const-object-child-prop-server-value' },
   // `props-object-non-props-name-operand-typing` used to sit here: a props
   // object not named `props` left its members untyped, and the native `+`
   // over them did not concatenate. Since the runtime carries `undefined`

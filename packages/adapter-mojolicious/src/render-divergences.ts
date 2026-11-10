@@ -27,6 +27,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 at compile time instead of silently crashing
 // Perl `strict`-mode template execution — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A component- or module-scope const holding an object or array, passed
+  // bare as a child component prop, reaches the child without its value.
+  'const-object-child-prop-identity': { limitation: 'const-object-child-prop-server-value' },
+  'const-object-prop-identity-hydrate': { limitation: 'const-object-child-prop-server-value' },
   // A `.map()` callback destructuring `length` off a string or array row
   // reads the row's field, which a string or list does not have.
   'destructure-length-in-map': { limitation: 'destructured-length-on-string-or-array-row' },
