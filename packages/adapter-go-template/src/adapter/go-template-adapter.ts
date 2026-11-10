@@ -75,7 +75,8 @@ import {
   type ContextConsumer,
   collectModuleStringConsts as collectModuleStringConstsShared,
   lookupLiteralConst,
-  lookupStaticArrayElement,
+  lookupStaticConstMember,
+  staticIndexKey,
   resolveStaticConstBinding,
   prepareLoweringMatchers,
   envSignalReaderFor,
@@ -424,7 +425,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     extractHtmlChildren: (children) => this.extractHtmlChildren(children),
     extractScopedHtmlChildren: (children) => this.extractScopedHtmlChildren(children),
     resolveStaticConstMember: (objectName, key) => this.resolveStaticConstMember(objectName, key),
-    staticArrayElement: (objectName, key) => this.staticArrayElement(objectName, key),
+    staticConstMember: (object, key) => this.staticConstMember(object, key),
   }
 
   /** Diagnostics from the current compile (backed by `CompileState`); `generate()` also merges these into `ir.errors`. */
@@ -5266,6 +5267,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+    // A literal key of a literal const (`QS[-1]`) is a compile-time read (#3813).
+    const key = staticIndexKey(index)
+    const element = key === null ? null : this.staticConstMember(object, key)
+    if (element !== null) return emit(element)
     // Go's builtin `index` is exact-case only, and the shared analyzer
     // types a dynamic index (e.g. a destructured .map() param used as a
     // key, `tone[k]`) as `{kind:'unknown'}` — there is no compile-time
@@ -6447,12 +6452,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * The element (or `length`) of a module array-literal const read with a
-   * literal key (`QS[0]`), as the typed `ParsedExpr` the caller spells in
-   * its own context (`lookupStaticArrayElement`), or null.
+   * The compile-time value of a literal const member read (`QS[0]`,
+   * `REC.k`, `NEST.a.c`; `undefined` for a key the literal lacks), as the
+   * typed `ParsedExpr` the caller spells in its own context
+   * (`lookupStaticConstMember`), or null.
    */
-  private staticArrayElement(objectName: string, key: string): ParsedExpr | null {
-    return lookupStaticArrayElement(objectName, key, this.state.localConstants, n => this.isLoopShadowedName(n))
+  private staticConstMember(object: ParsedExpr, key: string): ParsedExpr | null {
+    return lookupStaticConstMember(object, key, this.state.localConstants, n => this.isLoopShadowedName(n))
   }
 
   /**
@@ -7361,7 +7367,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this._emitPlus(leftExpr, rightExpr, leftRendered, rightRendered, callbackParams),
     resolveLiteralConstAsGo: (name) => this.resolveLiteralConstAsGo(name),
     resolveStaticConstMember: (objectName, key) => this.resolveStaticConstMember(objectName, key),
-    staticArrayElement: (objectName, key) => this.staticArrayElement(objectName, key),
+    staticConstMember: (object, key) => this.staticConstMember(object, key),
     isCurrentLoopItem: (name) => this.isCurrentLoopItem(name),
     currentLoopItemRef: () => this.currentLoopItemRef(),
     isOuterLoopParam: (name) => this.isOuterLoopParam(name),
@@ -7389,7 +7395,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     isMapRootedPropChain: (node) => this.isMapRootedPropChain(node),
     isMapSeededSignalChain: (node) => this.isMapSeededSignalChain(node),
     resolveStaticConstMember: (objectName, key) => this.resolveStaticConstMember(objectName, key),
-    staticArrayElement: (objectName, key) => this.staticArrayElement(objectName, key),
+    staticConstMember: (object, key) => this.staticConstMember(object, key),
     isCurrentLoopRecord: (name) => this.isCurrentLoopRecord(name),
     renderOptionalMember: (object, property) => this.renderOptionalMember(object, property),
     emitOperand: (n, emit) => this.emitOperand(n, emit),

@@ -65,7 +65,7 @@ import {
   collectContextConsumers,
   type ContextConsumer,
   lookupStaticRecordLiteral,
-  lookupStaticArrayElement,
+  lookupStaticConstMember,
   lookupLiteralConst,
   isLowerableLoopDestructure,
   childTemplateName,
@@ -1287,7 +1287,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
       _rootPropReadName: (name) => rootPropReadName(name, this.scope, this.rootPropAliases),
       _isRootPropsObject: (expr) => isRootPropsObject(expr, n => this.scope.isBound(n), this.scope.propsObject),
       _resolveStaticRecordLiteral: (o, k) => this._resolveStaticRecordLiteral(o, k),
-      _staticArrayElement: (o, k) => lookupStaticArrayElement(o, k, this.localConstants, n => this.scope.isBound(n)),
+      _staticConstMember: (o, k) => lookupStaticConstMember(o, k, this.localConstants, n => this.scope.isBound(n)),
       _isStringValueName: (name, property, path) => this._isStringValueName(name, property, path),
       _operandTyping: () => this.operandTypingAt(),
       _jsStringOutput: (parsed, kolon) => this.jsStringOutput(parsed, kolon),
@@ -1516,10 +1516,13 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
       const lit = lookupLiteralConst(parsed.name, this.localConstants, n => this.scope.isBound(n))
       return lit !== null && lit.kind !== 'null'
     }
-    if (parsed.kind === 'member' && parsed.object.kind === 'identifier') {
+    if (parsed.kind === 'member') {
       if (isRootPropsObject(parsed.object, n => this.scope.isBound(n), this.scope.propsObject)) return false
-      return this._resolveStaticRecordLiteral(parsed.object.name, parsed.property) !== null ||
-        lookupStaticArrayElement(parsed.object.name, parsed.property, this.localConstants, n => this.scope.isBound(n)) !== null
+      // A literal const member: a string or number, or `undefined` for a key
+      // the literal lacks (#3813).
+      const element = lookupStaticConstMember(parsed.object, parsed.property, this.localConstants, n => this.scope.isBound(n))
+      if (element !== null) return element.kind !== 'identifier'
+      return parsed.object.kind === 'identifier' && this._resolveStaticRecordLiteral(parsed.object.name, parsed.property) !== null
     }
     return false
   }

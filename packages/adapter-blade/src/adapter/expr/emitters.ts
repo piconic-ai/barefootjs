@@ -132,6 +132,7 @@ import {
   numberLiteralSpelling,
   plusSpelling,
   needsToString,
+  staticIndexKey,
 } from '@barefootjs/jsx'
 
 import type { BladeEmitContext } from '../emit-context.ts'
@@ -665,9 +666,9 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
     // (`variantClasses.ghost`, #1897) resolves at compile time — the
     // generic `data_get` lowering below would reference a context var that
     // doesn't exist server-side and resolve to `null`.
+    const element = this.ctx._staticConstMember(object, property)
+    if (element !== null) return emit(element)
     if (object.kind === 'identifier') {
-      const element = this.ctx._staticArrayElement(object.name, property)
-      if (element !== null) return emit(element)
       const staticValue = this.ctx._resolveStaticRecordLiteral(object.name, property)
       if (staticValue !== null) return staticValue
     }
@@ -681,6 +682,10 @@ export class BladeTopLevelEmitter implements ParsedExprEmitter {
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+    // A literal key of a literal const (`QS[-1]`) is a compile-time read (#3813).
+    const key = staticIndexKey(index)
+    const element = key === null ? null : this.ctx._staticConstMember(object, key)
+    if (element !== null) return emit(element)
     // `$bf->index` reads a list index or an own key, as JS does.
     // #1897 (data-table's `selected()[index]`).
     return bladeIndexAccess(emit(object), emit(index))

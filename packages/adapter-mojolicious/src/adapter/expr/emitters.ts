@@ -65,6 +65,7 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   isNeverNil,
   type NilTestHelper,
   type ScopedOperandTyping,
+  staticIndexKey,
 } from '@barefootjs/jsx'
 
 import type { MojoEmitContext } from '../emit-context.ts'
@@ -769,9 +770,9 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
     // (`variantClasses.ghost`, #1897) resolves at compile time — the
     // generic hash lowering below would dereference a Perl var that
     // doesn't exist server-side.
+    const element = this.ctx.staticConstMember(object, property)
+    if (element !== null) return emit(element)
     if (object.kind === 'identifier') {
-      const element = this.ctx.staticArrayElement(object.name, property)
-      if (element !== null) return emit(element)
       const staticValue = this.ctx.resolveStaticRecordLiteral(object.name, property)
       if (staticValue !== null) return staticValue
     }
@@ -791,6 +792,10 @@ export class MojoTopLevelEmitter implements ParsedExprEmitter {
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+    // A literal key of a literal const (`QS[-1]`) is a compile-time read (#3813).
+    const key = staticIndexKey(index)
+    const element = key === null ? null : this.ctx.staticConstMember(object, key)
+    if (element !== null) return emit(element)
     return emitIndexAccessPerl(object, index, emit, (n: string, property?: boolean, path?: readonly string[]) => this.ctx._isStringValueName(n, property, path))
   }
 

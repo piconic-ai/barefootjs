@@ -144,6 +144,7 @@ import {
   numberLiteralSpelling,
   plusSpelling,
   needsToString,
+  staticIndexKey,
 } from '@barefootjs/jsx'
 
 import type { PebbleEmitContext } from '../emit-context.ts'
@@ -669,9 +670,9 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
     // (`variantClasses.ghost`, #1897) resolves at compile time — the
     // generic dot lowering below would reference a context var that
     // doesn't exist server-side and silently resolve to Undefined.
+    const element = this.ctx._staticConstMember(object, property)
+    if (element !== null) return emit(element)
     if (object.kind === 'identifier') {
-      const element = this.ctx._staticArrayElement(object.name, property)
-      if (element !== null) return emit(element)
       const staticValue = this.ctx._resolveStaticRecordLiteral(object.name, property)
       if (staticValue !== null) return staticValue
     }
@@ -685,6 +686,10 @@ export class PebbleTopLevelEmitter implements ParsedExprEmitter {
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+    // A literal key of a literal const (`QS[-1]`) is a compile-time read (#3813).
+    const key = staticIndexKey(index)
+    const element = key === null ? null : this.ctx._staticConstMember(object, key)
+    if (element !== null) return emit(element)
     // See the file header, divergence 6.
     return `bf.get(${emit(object)}, ${emit(index)})`
   }

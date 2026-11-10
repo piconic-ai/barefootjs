@@ -20,6 +20,7 @@ import { freeIdentifiers, inlineBinding, mapParsedExpr, parseExpression, stringi
 import type { ConstantInfo, ExpressionAttr, IRMetadata, ParamInfo } from '../types.ts'
 import { componentBindings } from '../relocate.ts'
 import { PROPS_OBJECT_IDENTIFIER } from '../scope/binding-scope.ts'
+import { readLiteralMember } from '../static-const-member.ts'
 
 export interface ComputedConstContext {
   constants: IRMetadata['localConstants'] | undefined
@@ -447,7 +448,7 @@ function projectObjectReads(
     // left to the walk, which projects the inner read.
     if (base.kind !== 'object-literal') return null
     const values = literalValues(base)
-    const value = values === null ? undefined : e.kind === 'member' ? memberValue(values, e.property) : keyedValue(values, e.index, enclosing, ctx)
+    const value = values === null ? undefined : e.kind === 'member' ? memberValue(base, e.property) : keyedValue(values, e.index, enclosing, ctx)
     if (value === undefined) ok = false
     // An index whose keys are not known reads the literal itself, which no
     // template lowers: the adapter refuses it (BF101) instead of reading an
@@ -505,13 +506,13 @@ function literalValues(object: ObjectLiteral): Map<string, ParsedExpr> | null {
 
 /**
  * What `object.<key>` reads: the value the literal gives `key`, and
- * `undefined` for a key it does not list. `undefined` (no projection) for a
- * key `Object.prototype` holds, which JS reads from there.
+ * `undefined` for a key it does not list (`readLiteralMember`, the one
+ * decision every literal const member read takes). `undefined` (no
+ * projection) for a key `Object.prototype` holds, which JS reads from there.
  */
-function memberValue(values: ReadonlyMap<string, ParsedExpr>, key: string): ParsedExpr | undefined {
-  const value = values.get(key)
-  if (value) return value
-  return key in Object.prototype ? undefined : { kind: 'identifier', name: 'undefined' }
+function memberValue(object: ObjectLiteral, key: string): ParsedExpr | undefined {
+  const read = readLiteralMember(object, key)
+  return read?.kind === 'value' ? read.expr : undefined
 }
 
 /** {@link keyedValue}'s answer for an index whose keys are not all known. */

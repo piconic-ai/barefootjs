@@ -21,6 +21,7 @@ import {
   type ParsedExpr,
   type PrimitivePlan,
   type SourceLocation,
+  staticIndexKey,
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
@@ -84,8 +85,8 @@ export interface ConditionExprHost {
   resolveLiteralConstAsGo(name: string): string | null
   /** A static `Const.key` / `Const[0]` read of a module literal const, as Go, or null. */
   resolveStaticConstMember(objectName: string, key: string): string | null
-  /** The element (or `length`) of a module array-literal const at a literal key, as a typed `ParsedExpr`, or null. */
-  staticArrayElement(objectName: string, key: string): ParsedExpr | null
+  /** The compile-time value of a literal const member read (`undefined` for a key the literal lacks), as a typed `ParsedExpr`, or null. */
+  staticConstMember(object: ParsedExpr, key: string): ParsedExpr | null
   /** Whether `name` is the innermost loop's plain item param (Go's `.`). */
   isCurrentLoopItem(name: string): boolean
   /** The innermost loop item's reference (`.`, or a scalar wrapper row's field). */
@@ -584,6 +585,10 @@ export function renderConditionExpr(host: ConditionExprHost, original: ParsedExp
       return renderConditionMember(host, expr)
 
     case 'index-access': {
+      // A literal key of a literal const (`QS[-1]`) is a compile-time read (#3813).
+      const key = staticIndexKey(expr.index)
+      const element = key === null ? null : host.staticConstMember(expr.object, key)
+      if (element !== null) return renderConditionExpr(host, element)
       // `bf_get $arr $i`, as in value position: Go's `index` builtin
       // refuses a `float64` index (a TS `number` field) and fails on an
       // out-of-range one, where JS reads `undefined`. A multi-token operand
@@ -803,9 +808,9 @@ function renderConditionMember(
   // A module record or array literal const read with a literal key
   // (`REC.lf`, `QS[0]`) resolves at compile time, as in value position:
   // the template has no field of the const's name.
+  const element = host.staticConstMember(expr.object, expr.property)
+  if (element !== null) return renderConditionExpr(host, element)
   if (expr.object.kind === 'identifier') {
-    const element = host.staticArrayElement(expr.object.name, expr.property)
-    if (element !== null) return renderConditionExpr(host, element)
     const staticValue = host.resolveStaticConstMember(expr.object.name, expr.property)
     if (staticValue !== null) return plain(staticValue)
   }

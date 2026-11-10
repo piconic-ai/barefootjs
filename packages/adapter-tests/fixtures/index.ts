@@ -1376,6 +1376,7 @@ import { fixture as literalConstConditionalShapes } from './literal-const-condit
 import { fixture as stringConstQuoteNewline } from './string-const-quote-newline'
 import { fixture as moduleConstArrayLiteralIndex } from './module-const-array-literal-index'
 import { fixture as moduleConstArrayNegativeZero } from './module-const-array-negative-zero'
+import { fixture as moduleConstMissingKey } from './module-const-missing-key'
 import { fixture as undefinedLiteralElementPositions } from './undefined-literal-element-positions'
 import { fixture as moduleConstArrayMethodCall } from './module-const-array-method-call'
 import { fixture as localConstLiteralIndex } from './local-const-literal-index'
@@ -2422,6 +2423,7 @@ export const jsxFixtures: JSXFixture[] = [
   stringConstQuoteNewline,
   moduleConstArrayLiteralIndex,
   moduleConstArrayNegativeZero,
+  moduleConstMissingKey,
   undefinedLiteralElementPositions,
   moduleConstArrayMethodCall,
   localConstLiteralIndex,

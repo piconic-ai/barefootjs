@@ -13,9 +13,7 @@
 import ts from 'typescript'
 
 import type { ComponentIR, IRMetadata, IRNode, IRElement, IRTemplatePart, TypeInfo } from './types.ts'
-import type { ParsedExpr } from './expression-parser.ts'
 import { isBooleanAttr } from './html-constants.ts'
-import { literalMemberIndex } from './literal-member-index.ts'
 
 /**
  * A `const x = useContext(SomeContext)` consumer in a component body. SSR
@@ -474,7 +472,7 @@ type StaticConstants = IRMetadata['localConstants'] | undefined
  * The const declaration a read of `name` reaches, when its declared value
  * is what the read sees — the ONE decision behind every compile-time lookup
  * of a literal const's member (`lookupStaticRecordLiteral`,
- * `lookupStaticArrayElement`, the Go adapter's record lookup). Returns
+ * `lookupStaticConstMember`, the Go adapter's record lookup). Returns
  * `null` when the read must fall back to the generic lowering:
  *
  *   - `isShadowed(name)`: an enclosing loop callback's param, index,
@@ -515,8 +513,9 @@ export function resolveStaticConstBinding(
  * compile-time lookup (the icon registry's `strokePaths['chevron-down']`,
  * pagination's `variantClasses.ghost`; #1896 / #1897). Returns the
  * looked-up scalar, or `null` for any other shape so callers fall back
- * to their generic lowering. A module array-literal const read with a
- * literal index (`QS[0]`) goes through `lookupStaticArrayElement` instead.
+ * to their generic lowering. A read the literal const answers structurally
+ * (an array element, a key the literal lacks) goes through
+ * `lookupStaticConstMember` (`static-const-member.ts`) first.
  * Shared by all seven template-string adapters;
  * the prop-KEYED variant of the pattern lives in `parseRecordIndexAccess`.
  *
@@ -562,50 +561,6 @@ export function lookupStaticRecordLiteral(
       return { kind: 'string', text: v.text }
     }
     return null
-  }
-  return null
-}
-
-/**
- * The element at `key` of a module or component-local array-literal const
- * (`QS[0]`, `QS['1']`)
- * or its `length`, as the element's own typed `ParsedExpr`: a string or
- * number `literal`, or a unary `-` over a number literal. The caller emits
- * it through its own expression emitter, exactly as if the source had
- * written the element in place, so a value such as `-0` keeps its sign in
- * arithmetic and a comparison (`1 / QS[0] < 0`) and is spelled `0` only
- * where JS stringifies it. An index key must be canonical (`'01'` names no
- * element). A hole or spread at or before the element (either also makes
- * `length` unknown), an out-of-range index or any other element shape is
- * `null`, so the caller falls back to its generic lowering.
- *
- * `isShadowed` is REQUIRED for the same reason as in
- * `lookupStaticRecordLiteral`; which declaration the name reaches is
- * `resolveStaticConstBinding`'s decision.
- */
-export function lookupStaticArrayElement(
-  objectName: string,
-  key: string,
-  constants: StaticConstants,
-  isShadowed: (name: string) => boolean,
-): ParsedExpr | null {
-  const array = resolveStaticConstBinding(objectName, constants, isShadowed)?.parsed
-  if (array?.kind !== 'array-literal') return null
-  if (key === 'length') {
-    if (array.elements.some(e => e.kind === 'unsupported')) return null
-    return { kind: 'literal', value: array.elements.length, literalType: 'number', raw: String(array.elements.length) }
-  }
-  const index = literalMemberIndex(key)
-  if (index.kind !== 'literal' || typeof index.value !== 'number') return null
-  const upTo = array.elements.slice(0, index.value + 1)
-  if (upTo.length <= index.value || upTo.some(e => e.kind === 'unsupported')) return null
-  const element = upTo[index.value]
-  if (element.kind === 'literal' && (element.literalType === 'string' || element.literalType === 'number')) return element
-  if (
-    element.kind === 'unary' && element.op === '-' &&
-    element.argument.kind === 'literal' && element.argument.literalType === 'number'
-  ) {
-    return element
   }
   return null
 }
