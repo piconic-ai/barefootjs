@@ -27,6 +27,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // runtime's shape-check method, `java/.../Bf.java`) ahead of `call()`'s
 // generic fallback, so it never reaches the refusal at all.
 export const renderDivergences: RenderDivergences = {
+  // A method call on a module array-literal const reads the const as an
+  // unbound template variable.
+  'module-const-array-method-call': { limitation: 'module-const-array-method-call' },
   // `props-object-non-props-name-operand-typing` used to sit here: a props
   // object not named `props` left its members untyped, and the native `+`
   // over them did not concatenate. Since the runtime carries `undefined`
