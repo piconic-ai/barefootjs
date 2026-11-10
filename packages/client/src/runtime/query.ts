@@ -518,6 +518,20 @@ export function qsa(
   if (SLOT_SUFFIX_SELECTOR.test(selector)) {
     return qsaChildScope(el, selector)
   }
+  return qsaFromRoot(el, selector, receiverSlotIds, hostScopeId)
+}
+
+/**
+ * `qsa`'s search rooted at one element: `el` itself, then its descendants
+ * outside nested child scopes, then a parent-owned slot forwarded through
+ * receivers.
+ */
+function qsaFromRoot(
+  el: Element,
+  selector: string,
+  receiverSlotIds: readonly string[] | undefined,
+  hostScopeId: string | null | undefined,
+): Element | null {
   if (el.matches(selector)) return el
 
   // Fast path: the overwhelmingly common case has no nested-child-scope
