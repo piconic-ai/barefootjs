@@ -12,9 +12,9 @@ import { describe, expect, test } from 'bun:test'
 import { compileFixtureJSX } from '@barefootjs/adapter-tests/harness-program'
 import { GoTemplateAdapter } from '../adapter/go-template-adapter'
 
-function compileTypes(source: string): string {
+function compileTypes(source: string, expectedErrors: string[] = []): string {
   const result = compileFixtureJSX(source, 'component.tsx', { adapter: new GoTemplateAdapter() })
-  expect(result.errors).toEqual([])
+  expect(result.errors.map(e => `${e.code}: ${e.message}`)).toEqual(expectedErrors)
   return result.files.find(f => f.type === 'types')?.content ?? ''
 }
 
@@ -74,12 +74,16 @@ function Destructured({ count, rows }: { count?: number; rows: number[] }) {
 function PropsObject(props: { count?: number; rows: { count?: number }[] }) {
   return <ul>{props.rows.map((props, i) => <li key={i}><Show value={props.count} /></li>)}</ul>
 }
-export function Page(props: { objectRows: { count?: number }[] }) {
-  return <div><Destructured rows={[1]} /><PropsObject rows={props.objectRows} /></div>
+export function Page() {
+  return <div><Destructured rows={[1]} /><PropsObject rows={[{}]} /></div>
 }
-`)
-    // An array of object literals written in place is refused
-    // (`object-array-literal-child-prop`), so the object rows come in as a prop.
+`, [
+      // An array of object literals has no Go Input spelling: the constructor
+      // used to leave `Rows` empty, so the row never rendered (Hono renders
+      // one `<i>none</i>`). It is refused (`object-array-literal-child-prop`);
+      // the Input types below are emitted all the same.
+      "BF101: Prop 'rows' on <PropsObject> is a literal the Go template adapter can't build as the child's Input field",
+    ])
     // The prop itself is optional, so a `bf.Opt[float64]` either way; the
     // row's value is what reaches the child.
     expect(inputFieldType(types, 'Destructured', 'Count')).toBe('bf.Opt[float64]')
