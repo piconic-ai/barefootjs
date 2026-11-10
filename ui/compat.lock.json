@@ -1986,6 +1986,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
@@ -2013,6 +2014,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
@@ -2043,6 +2045,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
@@ -2070,6 +2073,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
@@ -2098,6 +2102,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
@@ -2125,6 +2130,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
@@ -2152,6 +2158,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
@@ -2180,6 +2187,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
@@ -6531,6 +6539,116 @@
           }
         }
       },
+      "module-const-object-array-child-prop": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "module-function-helper-chain": {
         "blade": {
           "kind": "refusal",
@@ -9939,6 +10057,10 @@
         "description": "A module-scope const computed via a function call refuses loudly (BF101) on every SSR template…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-loop-source-computed.ts"
       },
+      "module-const-object-array-child-prop": {
+        "description": "a module array-of-objects const passed whole as a child prop reaches the child",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-object-array-child-prop.ts"
+      },
       "module-function-helper-chain": {
         "description": "Module-level function helper calling another module-level function helper is referenced by name…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-function-helper-chain.ts"
@@ -11091,6 +11213,30 @@
       ],
       "adapters": [
         "go-template"
+      ]
+    },
+    "object-array-literal-child-prop": {
+      "title": "An array of object literals passed as a child component prop",
+      "kind": "refusal",
+      "given": "a child component prop whose value is an array of object literals, written in place (`items={[{ id: 'x' }]}`) or a const holding one (`items={ITEMS}`)",
+      "expected": "the child receives the array and renders each object's members",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "module-const-object-array-child-prop"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
       ]
     },
     "object-entries-typed-object-signal": {

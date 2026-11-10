@@ -4329,6 +4329,43 @@
         "text"
       ]
     },
+    "destructure-default-array-literal": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "destructure-default-array-literal-body": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "destructure-default-array-memo": {
       "kinds": [
         "call",
@@ -4771,6 +4808,25 @@
       ],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "destructure-default-number-array-literal": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
         "text"
       ]
     },
@@ -6367,6 +6423,23 @@
         "loop"
       ]
     },
+    "fragment-root-conditional-child-bool-props": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
     "fragment-root-conditional-loop-row": {
       "kinds": [
         "call",
@@ -6377,6 +6450,23 @@
       "contexts": [
         "condition",
         "loop",
+        "text"
+      ]
+    },
+    "fragment-root-conditional-reactive-attrs": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
         "text"
       ]
     },
@@ -7620,6 +7710,28 @@
       "axes": [
         "binary:===",
         "literal:null",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-item-conditional-reactive-attrs": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
         "literal:string"
       ],
       "contexts": [
@@ -9291,6 +9403,29 @@
         "text"
       ]
     },
+    "math-number-output": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal",
+        "unary"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string",
+        "unary:-"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "member-expression-tag": {
       "kinds": [
         "identifier",
@@ -9951,6 +10086,45 @@
         "text"
       ]
     },
+    "module-const-array-child-prop": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:+",
+        "literal:number",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-array-child-prop-forwarded": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "module-const-array-literal-index": {
       "kinds": [
         "array-literal",
@@ -10113,6 +10287,24 @@
         "text"
       ]
     },
+    "module-const-empty-array-child-prop": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "module-const-hop-loop-shadow": {
       "kinds": [
         "binary",
@@ -10248,6 +10440,43 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "module-const-object-array-child-prop": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-record-child-prop": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
         "text"
       ]
     },

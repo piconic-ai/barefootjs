@@ -47,7 +47,15 @@ function makeRegion(scope: Element | Comment): CondRegion {
     return { anchor, bindScope: proxyEl, parentScopeId }
   }
   const el = scope as Element
-  return { anchor: null, bindScope: el, parentScopeId: el.getAttribute(BF_SCOPE) }
+  // A fragment-root component's scope is a comment-scope proxy (its first
+  // top-level element), which carries no `bf-s` of its own. A branch's
+  // `renderChild()` must then stamp the comment scope's id as the child's
+  // host, as the SSR markup does, or the child gets a fresh random id and
+  // the branch's `$c()` lookup never finds it. An element that does carry
+  // `bf-s` keeps it: when a comment wrapper's proxy is a child component's
+  // own root, that child's own conditionals are hosted by the child.
+  const parentScopeId = el.getAttribute(BF_SCOPE) ?? commentScopeRegistry.get(el)?.scopeId ?? null
+  return { anchor: null, bindScope: el, parentScopeId }
 }
 
 /** Find the `[bf-c="id"]` element within a loop item's sibling range. */

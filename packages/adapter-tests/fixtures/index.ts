@@ -744,6 +744,7 @@ import { fixture as templateLiteralMultiInterp } from './template-literal-multi-
 import { fixture as optionalChainingProp } from './optional-chaining-prop'
 import { fixture as numberToFixed } from './number-tofixed'
 import { fixture as mathMethods } from './math-methods'
+import { fixture as mathNumberOutput } from './math-number-output'
 import { fixture as stringLengthText } from './string-length-text'
 import { fixture as stringIndexMethods } from './string-index-methods'
 import { fixture as undefinedMethodResultAttr } from './undefined-method-result-attr'
@@ -1243,6 +1244,13 @@ import { fixture as loopRowChildUntypedArrayMismatchedKeysTyped } from './loop-r
 // `child-listener-cleanup` scenario.
 import { fixture as conditionalChildListenerCleanup } from './conditional-child-listener-cleanup'
 import { fixture as fragmentChildInConditional } from './fragment-child-in-conditional'
+// Fragment-root component: reactive attributes inside conditional branches
+// that are direct children of the fragment (and a child given boolean props
+// there) keep updating after a CSR mount and after hydration.
+import { fixture as fragmentRootConditionalReactiveAttrs } from './fragment-root-conditional-reactive-attrs'
+import { fixture as fragmentRootConditionalChildBoolProps } from './fragment-root-conditional-child-bool-props'
+// The same lookup from a loop row that is itself a conditional.
+import { fixture as loopItemConditionalReactiveAttrs } from './loop-item-conditional-reactive-attrs'
 import { fixture as nestedChildNegatedProp } from './nested-child-negated-prop'
 // Diamond propagation: one signal read through two memos by one effect.
 // Regression test for glitch-free propagation — the effect runs once per
@@ -1282,6 +1290,9 @@ import { fixture as destructureDefaultLiteralSpelling } from './destructure-defa
 import { fixture as destructureDefaultLargeNumber } from './destructure-default-large-number'
 import { fixture as destructureDefaultBodyRenamedComputedArray } from './destructure-default-body-renamed-computed-array'
 import { fixture as destructureDefaultParamComputedArray } from './destructure-default-param-computed-array'
+import { fixture as destructureDefaultArrayLiteral } from './destructure-default-array-literal'
+import { fixture as destructureDefaultArrayLiteralBody } from './destructure-default-array-literal-body'
+import { fixture as destructureDefaultNumberArrayLiteral } from './destructure-default-number-array-literal'
 import { fixture as destructureDefaultBodyRenamedCallback } from './destructure-default-body-renamed-callback'
 import { fixture as destructureDefaultBodyRenamedCallbackPositions } from './destructure-default-body-renamed-callback-positions'
 import { fixture as destructureDefaultBodyRenamedCallbackChild } from './destructure-default-body-renamed-callback-child'
@@ -1375,6 +1386,11 @@ import { fixture as constStringConditionalTest } from './const-string-conditiona
 import { fixture as literalConstConditionalShapes } from './literal-const-conditional-shapes'
 import { fixture as stringConstQuoteNewline } from './string-const-quote-newline'
 import { fixture as moduleConstArrayLiteralIndex } from './module-const-array-literal-index'
+import { fixture as moduleConstArrayChildProp } from './module-const-array-child-prop'
+import { fixture as moduleConstRecordChildProp } from './module-const-record-child-prop'
+import { fixture as moduleConstObjectArrayChildProp } from './module-const-object-array-child-prop'
+import { fixture as moduleConstEmptyArrayChildProp } from './module-const-empty-array-child-prop'
+import { fixture as moduleConstArrayChildPropForwarded } from './module-const-array-child-prop-forwarded'
 import { fixture as moduleConstArrayNegativeZero } from './module-const-array-negative-zero'
 import { fixture as localConstLiteralIndex } from './local-const-literal-index'
 // Static text starting with `:` / `%` right after a ternary, or as a
@@ -1989,6 +2005,7 @@ export const jsxFixtures: JSXFixture[] = [
   optionalChainingProp,
   numberToFixed,
   mathMethods,
+  mathNumberOutput,
   stringLengthText,
   stringIndexMethods,
   undefinedMethodResultAttr,
@@ -2314,6 +2331,9 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildUntypedArrayMismatchedKeysTyped,
   conditionalChildListenerCleanup,
   fragmentChildInConditional,
+  fragmentRootConditionalReactiveAttrs,
+  fragmentRootConditionalChildBoolProps,
+  loopItemConditionalReactiveAttrs,
   nestedChildNegatedProp,
   diamondPropagation,
   onPrefixedDataProp,
@@ -2344,6 +2364,9 @@ export const jsxFixtures: JSXFixture[] = [
   destructureDefaultLargeNumber,
   destructureDefaultBodyRenamedComputedArray,
   destructureDefaultParamComputedArray,
+  destructureDefaultArrayLiteral,
+  destructureDefaultArrayLiteralBody,
+  destructureDefaultNumberArrayLiteral,
   destructureDefaultBodyRenamedCallback,
   destructureDefaultBodyRenamedCallbackPositions,
   destructureDefaultBodyRenamedCallbackChild,
@@ -2421,6 +2444,11 @@ export const jsxFixtures: JSXFixture[] = [
   literalConstConditionalShapes,
   stringConstQuoteNewline,
   moduleConstArrayLiteralIndex,
+  moduleConstArrayChildProp,
+  moduleConstRecordChildProp,
+  moduleConstObjectArrayChildProp,
+  moduleConstEmptyArrayChildProp,
+  moduleConstArrayChildPropForwarded,
   moduleConstArrayNegativeZero,
   localConstLiteralIndex,
   conditionalThenColonText,
