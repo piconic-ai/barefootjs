@@ -156,8 +156,12 @@ subtest 'min / max / abs — Math.* mirrors; propagate NaN' => sub {
     ok is_nan($bf->max('not', 5)), 'max: NaN in first arg propagates';
     ok is_nan($bf->max(5, 'not')), 'max: NaN in second arg propagates';
 
-    is $bf->abs(-7.6), 7.6, 'abs(-7.6) → 7.6';
-    is $bf->abs(7.6),  7.6, 'abs(7.6) → 7.6 (no-op)';
+    # The helpers answer a double, as JS does; on a perl built with
+    # -Duselongdouble a bare `7.6` is the wider NV, so compare both as
+    # doubles (#3445, #3872).
+    my $double = \&BarefootJS::Evaluator::_double;
+    is $double->($bf->abs(-7.6)), $double->(7.6), 'abs(-7.6) → 7.6';
+    is $double->($bf->abs(7.6)),  $double->(7.6), 'abs(7.6) → 7.6 (no-op)';
     is $bf->abs(0),    0,   'abs(0) → 0';
     ok is_nan($bf->abs('not')), 'abs: NaN propagates';
 };

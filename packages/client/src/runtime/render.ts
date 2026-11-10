@@ -8,6 +8,7 @@
 
 import { BF_SCOPE, BF_SCOPE_COMMENT_PREFIX, BF_SCOPE_COMMENT_END_PREFIX } from '@barefootjs/shared'
 import { setParentScopeId } from './component.ts'
+import { getRegisteredDef } from './hydrate.ts'
 import { hydratedScopes } from './hydration-state.ts'
 import { getComponentInit } from './registry.ts'
 import { commentScopeRegistry } from './scope.ts'
@@ -54,11 +55,13 @@ export function render(
   let name: string
   let init: InitFn | undefined
   let template: TemplateFn | undefined
+  let fragmentRoot: boolean
 
   if (typeof nameOrDef === 'string') {
     name = nameOrDef
     init = getComponentInit(name)
     template = getTemplate(name)
+    fragmentRoot = getRegisteredDef(name)?.fragmentRoot === true
 
     if (!init || !template) {
       throw new Error(
@@ -69,6 +72,7 @@ export function render(
   } else {
     init = nameOrDef.init
     template = nameOrDef.template
+    fragmentRoot = nameOrDef.fragmentRoot === true
     name = nameOrDef.name || init.name?.replace(/^init/, '') || 'Component'
 
     if (!template) {
@@ -105,7 +109,11 @@ export function render(
 
   container.innerHTML = ''
 
-  if (rootElements.length === 1) {
+  // A Fragment root keeps its comment range even when it renders a single
+  // element: its other top-level nodes (a conditional's `bf-cond-start` /
+  // `bf-cond-end` markers for a branch absent at mount) are part of the
+  // component and must stay in the DOM, or the branch can never be entered.
+  if (rootElements.length === 1 && !fragmentRoot) {
     const element = rootElements[0]
     if (!element.getAttribute(BF_SCOPE)) {
       element.setAttribute(BF_SCOPE, scopeId)
