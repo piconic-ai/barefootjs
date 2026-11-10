@@ -1390,6 +1390,10 @@ import { fixture as moduleConstArrayNegativeZero } from './module-const-array-ne
 import { fixture as moduleConstMissingKey } from './module-const-missing-key'
 import { fixture as moduleConstInheritedKey } from './module-const-inherited-key'
 import { fixture as moduleConstInheritedKeyClient } from './module-const-inherited-key-client'
+import { fixture as moduleConstInheritedKeyMemo } from './module-const-inherited-key-memo'
+import { fixture as moduleConstInheritedKeyMemoChain } from './module-const-inherited-key-memo-chain'
+import { fixture as moduleConstInheritedKeyMemoMixed } from './module-const-inherited-key-memo-mixed'
+import { fixture as moduleConstInheritedKeyMemoClient } from './module-const-inherited-key-memo-client'
 import { fixture as undefinedLiteralElementPositions } from './undefined-literal-element-positions'
 import { fixture as moduleConstArrayMethodCall } from './module-const-array-method-call'
 import { fixture as localConstLiteralIndex } from './local-const-literal-index'
@@ -2446,6 +2450,10 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstMissingKey,
   moduleConstInheritedKey,
   moduleConstInheritedKeyClient,
+  moduleConstInheritedKeyMemo,
+  moduleConstInheritedKeyMemoChain,
+  moduleConstInheritedKeyMemoMixed,
+  moduleConstInheritedKeyMemoClient,
   undefinedLiteralElementPositions,
   moduleConstArrayMethodCall,
   localConstLiteralIndex,
