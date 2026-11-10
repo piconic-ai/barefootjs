@@ -7668,16 +7668,31 @@ function isEffectFreeExpression(expr: ts.Expression): boolean {
  * handler name. `null` otherwise, and the spread stays a spread.
  */
 function expandStaticConstSpread(attr: ts.JsxSpreadAttribute, ctx: TransformContext): Array<{ key: string; text: string }> | null {
-  let expr: ts.Expression = attr.expression
+  const init = staticConstInitializerOf(attr.expression, ctx)
+  if (!init || !ts.isObjectLiteralExpression(init)) return null
+  return staticObjectSpreadEntries(init)
+}
+
+/**
+ * The initializer of the const a bare-name read `expr` reaches, when that
+ * const holds an array or object literal (`const QS = ['a', 'b']`,
+ * `const base = { label: 'x' }`): the read is the const's value, so the IR
+ * can carry the literal in its place. Which declaration the name reaches is
+ * `resolveStaticConstBinding`'s decision; a module const a component
+ * binding of the same name hides (`function C({ QS })`) is not reached.
+ * `null` for any other read or initializer.
+ */
+function staticConstInitializerOf(expr: ts.Expression, ctx: TransformContext): ts.ArrayLiteralExpression | ts.ObjectLiteralExpression | null {
   while (ts.isParenthesizedExpression(expr)) expr = expr.expression
   if (!ts.isIdentifier(expr)) return null
   const name = expr.text
   const constant = resolveStaticConstBinding(name, ctx.analyzer.localConstants, n => ctx.scope.isBound(n))
-  if (!constant || constant.parsed?.kind !== 'object-literal') return null
+  const kind = constant?.parsed?.kind
+  if (!constant || (kind !== 'object-literal' && kind !== 'array-literal')) return null
   if (constant.isModule && componentScopeNames(ctx.analyzer).has(name)) return null
   const init = parseConstInitializer(constant)
-  if (!init || !ts.isObjectLiteralExpression(init)) return null
-  return staticObjectSpreadEntries(init)
+  if (!init || !(ts.isObjectLiteralExpression(init) || ts.isArrayLiteralExpression(init))) return null
+  return init
 }
 
 /**
@@ -9527,65 +9542,74 @@ function processComponentProps(
       }
     }
 
-    let value = getAttributeValue(attr, ctx)
-    // Components receive props as runtime values, so collapse a structured
-    // template literal back into a JS expression — but keep the parsed
-    // parts in `parts` so template-based SSR adapters (Mojo, Go) can still
-    // emit structured lookups / ternaries instead of round-tripping a raw
-    // JS source through their expression pipelines. JS-runtime adapters
-    // (Hono) keep using `expr`. Boolean-attr is also promoted to
-    // shorthand (`<X disabled />` → `disabled={true}`).
-    if (value.kind === 'template') {
-      // Collapse using the raw part values, but also carry the
-      // template-variant projection (parts' `templateExpr` /
-      // `templateCondition` / `templateKey`, i.e. destructured-prop refs
-      // rewritten to `_p.X`) as `templateExpr`. Without it, the
-      // `templateExpr` derivation below walks the ORIGINAL initializer AST
-      // — for a const-resolved template (`className={classes}`) that AST is
-      // the bare `classes` identifier with no prop refs, so the rewrite
-      // no-ops and the module-scope registration template leaks bare
-      // destructured props into `renderChild(...)` (#2468).
-      const collapsed = templatePartsToJsExpr(value.parts)
-      const collapsedTemplate = templatePartsToJsExpr(value.parts, { useTemplate: true })
-      value = AttrValueOf.expression(collapsed, {
-        parts: value.parts,
-        ...(collapsedTemplate !== collapsed && { templateExpr: collapsedTemplate }),
-      })
-    } else if (value.kind === 'boolean-attr') {
-      value = AttrValueOf.booleanShorthand()
-    }
-
-    let clientOnly: boolean | undefined
-    if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
-      if (value.kind === 'expression' && value.templateExpr === undefined) {
-        const rewritten = rewriteBarePropRefs(value.expr, attr.initializer.expression, ctx)
-        if (rewritten !== value.expr) {
-          value = { ...value, templateExpr: rewritten }
-        }
-      }
-      // `/* @client */` in component-prop initializer position: defer
-      // to hydrate. Detection routed through the shared helper so it
-      // agrees with JSX-child / element-attr sites. Downstream:
-      // html-template strips the prop from `renderChild`; `initChild`'s
-      // `propsExpr` already runs in init scope so the value reaches
-      // the child component once init runs.
-      if (hasLeadingClientDirective(attr.initializer.expression, ctx.sourceFile)) {
-        clientOnly = true
-      }
-    }
-
-    const freeIdentifiers = attrFreeIdentifiers(attr)
-    props.push({
-      name,
-      value,
-      clientOnly,
-      loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
-      ...computeReactivityFlags(attr, ctx),
-      ...(freeIdentifiers !== undefined && { freeIdentifiers }),
-    })
+    props.push(valueComponentProp(attr, name, ctx))
   }
 
   return props
+}
+
+/**
+ * The `IRProp` for one JSX attribute of a component whose value is not a
+ * spread, a JSX element or a refused JSX-wrapping shape (those are
+ * `processComponentProps`'s own cases).
+ */
+function valueComponentProp(attr: ts.JsxAttribute, name: string, ctx: TransformContext): IRProp {
+  let value = getAttributeValue(attr, ctx)
+  // Components receive props as runtime values, so collapse a structured
+  // template literal back into a JS expression — but keep the parsed
+  // parts in `parts` so template-based SSR adapters (Mojo, Go) can still
+  // emit structured lookups / ternaries instead of round-tripping a raw
+  // JS source through their expression pipelines. JS-runtime adapters
+  // (Hono) keep using `expr`. Boolean-attr is also promoted to
+  // shorthand (`<X disabled />` → `disabled={true}`).
+  if (value.kind === 'template') {
+    // Collapse using the raw part values, but also carry the
+    // template-variant projection (parts' `templateExpr` /
+    // `templateCondition` / `templateKey`, i.e. destructured-prop refs
+    // rewritten to `_p.X`) as `templateExpr`. Without it, the
+    // `templateExpr` derivation below walks the ORIGINAL initializer AST
+    // — for a const-resolved template (`className={classes}`) that AST is
+    // the bare `classes` identifier with no prop refs, so the rewrite
+    // no-ops and the module-scope registration template leaks bare
+    // destructured props into `renderChild(...)` (#2468).
+    const collapsed = templatePartsToJsExpr(value.parts)
+    const collapsedTemplate = templatePartsToJsExpr(value.parts, { useTemplate: true })
+    value = AttrValueOf.expression(collapsed, {
+      parts: value.parts,
+      ...(collapsedTemplate !== collapsed && { templateExpr: collapsedTemplate }),
+    })
+  } else if (value.kind === 'boolean-attr') {
+    value = AttrValueOf.booleanShorthand()
+  }
+
+  let clientOnly: boolean | undefined
+  if (attr.initializer && ts.isJsxExpression(attr.initializer) && attr.initializer.expression) {
+    if (value.kind === 'expression' && value.templateExpr === undefined) {
+      const rewritten = rewriteBarePropRefs(value.expr, attr.initializer.expression, ctx)
+      if (rewritten !== value.expr) {
+        value = { ...value, templateExpr: rewritten }
+      }
+    }
+    // `/* @client */` in component-prop initializer position: defer
+    // to hydrate. Detection routed through the shared helper so it
+    // agrees with JSX-child / element-attr sites. Downstream:
+    // html-template strips the prop from `renderChild`; `initChild`'s
+    // `propsExpr` already runs in init scope so the value reaches
+    // the child component once init runs.
+    if (hasLeadingClientDirective(attr.initializer.expression, ctx.sourceFile)) {
+      clientOnly = true
+    }
+  }
+
+  const freeIdentifiers = attrFreeIdentifiers(attr)
+  return {
+    name,
+    value,
+    clientOnly,
+    loc: getSourceLocation(attr, ctx.sourceFile, ctx.filePath),
+    ...computeReactivityFlags(attr, ctx),
+    ...(freeIdentifiers !== undefined && { freeIdentifiers }),
+  }
 }
 
 // =============================================================================
