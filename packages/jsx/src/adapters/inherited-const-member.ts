@@ -75,7 +75,7 @@ function record(read: string, loc: SourceLocation, sink: NonPrimitiveEqualitySin
     loc,
     suggestion: {
       message: 'Read a key the literal lists, or defer the read to the client with /* @client */.',
-      escape: [{ kind: 'rewrite' }, { kind: 'client-directive' }],
+      escape: [{ kind: 'client-directive' }],
     },
   })
 }
