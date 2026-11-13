@@ -294,6 +294,9 @@ export const conformancePins: ConformancePins = {
   'markup-uninlinable-local-function-named-like-prop': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
   'memo-uninlinable-local-function-named-like-prop': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
   'signal-seed-uninlinable-local-function-named-like-prop': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'signal-seed-uninlinable-local-function-hides-module-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'signal-seed-const-from-uninlinable-local-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'signal-seed-wrapped-uninlinable-local-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
   // A signal seed is baked as the Input field path its prop member chain
   // lives at (`resolvePropMemberSeed`, `adapter/value/prop-member-seed.ts`).
   // A chain that reads a member of a non-struct value

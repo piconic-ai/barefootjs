@@ -1315,6 +1315,16 @@ import { fixture as signalSeedUninlinableLocalFunctionNamedLikeProp } from './si
 import { fixture as signalSeedUninlinableLocalFunctionNamedLikePropClient } from './signal-seed-uninlinable-local-function-named-like-prop-client'
 import { fixture as markupLocalFunctionReadNamedLikeProp } from './markup-local-function-read-named-like-prop'
 import { fixture as markupLocalFunctionNamedLikeProp } from './markup-local-function-named-like-prop'
+import { fixture as localFunctionHidesModuleFunction } from './local-function-hides-module-function'
+import { fixture as signalSeedUninlinableLocalFunctionHidesModuleFunction } from './signal-seed-uninlinable-local-function-hides-module-function'
+import { fixture as signalSeedUninlinableLocalFunctionHidesModuleFunctionClient } from './signal-seed-uninlinable-local-function-hides-module-function-client'
+import { fixture as moduleFunctionReadsModuleBinding } from './module-function-reads-module-binding'
+import { fixture as signalSeedConstFromUninlinableLocalFunction } from './signal-seed-const-from-uninlinable-local-function'
+import { fixture as signalSeedConstFromUninlinableLocalFunctionClient } from './signal-seed-const-from-uninlinable-local-function-client'
+import { fixture as signalSeedWrappedUninlinableLocalFunction } from './signal-seed-wrapped-uninlinable-local-function'
+import { fixture as signalSeedWrappedUninlinableLocalFunctionClient } from './signal-seed-wrapped-uninlinable-local-function-client'
+import { fixture as localFunctionCallThroughConstAndWrapper } from './local-function-call-through-const-and-wrapper'
+import { fixture as loopRowNamedLikeUninlinableMemo } from './loop-row-named-like-uninlinable-memo'
 import { fixture as destructureDefaultParamRenamedCallbackMemo } from './destructure-default-param-renamed-callback-memo'
 import { fixture as destructureDefaultBodyCallback } from './destructure-default-body-callback'
 import { fixture as destructureDefaultBodyCallbackShadow } from './destructure-default-body-callback-shadow'
@@ -2395,6 +2405,16 @@ export const jsxFixtures: JSXFixture[] = [
   signalSeedUninlinableLocalFunctionNamedLikePropClient,
   markupLocalFunctionReadNamedLikeProp,
   markupLocalFunctionNamedLikeProp,
+  localFunctionHidesModuleFunction,
+  signalSeedUninlinableLocalFunctionHidesModuleFunction,
+  signalSeedUninlinableLocalFunctionHidesModuleFunctionClient,
+  moduleFunctionReadsModuleBinding,
+  signalSeedConstFromUninlinableLocalFunction,
+  signalSeedConstFromUninlinableLocalFunctionClient,
+  signalSeedWrappedUninlinableLocalFunction,
+  signalSeedWrappedUninlinableLocalFunctionClient,
+  localFunctionCallThroughConstAndWrapper,
+  loopRowNamedLikeUninlinableMemo,
   destructureDefaultParamRenamedCallbackMemo,
   destructureDefaultBodyCallback,
   destructureDefaultBodyCallbackShadow,

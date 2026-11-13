@@ -7309,6 +7309,39 @@
         "text"
       ]
     },
+    "local-function-call-through-const-and-wrapper": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:number",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "local-function-hides-module-function": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "local-record-union-index": {
       "kinds": [
         "literal",
@@ -9017,6 +9050,22 @@
         "text"
       ]
     },
+    "loop-row-named-like-uninlinable-memo": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-nested-child-children-handler": {
       "kinds": [
         "array-literal",
@@ -10539,6 +10588,21 @@
       ],
       "axes": [
         "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-function-reads-module-binding": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
       ],
       "contexts": [
         "text"
@@ -15759,6 +15823,26 @@
         "text"
       ]
     },
+    "signal-seed-const-from-uninlinable-local-function": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "signal-seed-const-from-uninlinable-local-function-client": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "signal-seed-dependent-default-nullish-literal": {
       "kinds": [
         "binary",
@@ -15895,6 +15979,32 @@
         "text"
       ]
     },
+    "signal-seed-uninlinable-local-function-hides-module-function": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "signal-seed-uninlinable-local-function-hides-module-function-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "signal-seed-uninlinable-local-function-named-like-prop": {
       "kinds": [
         "call",
@@ -15906,6 +16016,26 @@
       ]
     },
     "signal-seed-uninlinable-local-function-named-like-prop-client": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "signal-seed-wrapped-uninlinable-local-function": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "signal-seed-wrapped-uninlinable-local-function-client": {
       "kinds": [
         "call",
         "identifier"

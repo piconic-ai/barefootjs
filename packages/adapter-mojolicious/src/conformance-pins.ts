@@ -219,6 +219,9 @@ export const conformancePins: ConformancePins = {
   'markup-uninlinable-local-function-named-like-prop': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
   'memo-uninlinable-local-function-named-like-prop': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
   'signal-seed-uninlinable-local-function-named-like-prop': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'signal-seed-uninlinable-local-function-hides-module-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'signal-seed-const-from-uninlinable-local-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'signal-seed-wrapped-uninlinable-local-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
   // A const record indexed by a prop whose keys are not known at compile
   // time reads inherited keys in JS (`labels['toString']`); no template
   // lookup does, so the read refuses rather than rendering `undefined`.

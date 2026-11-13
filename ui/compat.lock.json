@@ -8176,6 +8176,244 @@
           }
         }
       },
+      "signal-seed-const-from-uninlinable-local-function": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-const-from-uninlinable-local-function-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-const-from-uninlinable-local-function-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-const-from-uninlinable-local-function-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-const-from-uninlinable-local-function-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-const-from-uninlinable-local-function-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-const-from-uninlinable-local-function-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-const-from-uninlinable-local-function-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-const-from-uninlinable-local-function-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-const-from-uninlinable-local-function-client"
+          }
+        }
+      },
+      "signal-seed-uninlinable-local-function-hides-module-function": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-hides-module-function-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-hides-module-function-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-hides-module-function-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-hides-module-function-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-hides-module-function-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-hides-module-function-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-hides-module-function-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-hides-module-function-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-hides-module-function-client"
+          }
+        }
+      },
       "signal-seed-uninlinable-local-function-named-like-prop": {
         "blade": {
           "kind": "refusal",
@@ -8292,6 +8530,125 @@
           "escape": {
             "state": "escapable",
             "twin": "signal-seed-uninlinable-local-function-named-like-prop-client"
+          }
+        }
+      },
+      "signal-seed-wrapped-uninlinable-local-function": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-wrapped-uninlinable-local-function-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-wrapped-uninlinable-local-function-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-wrapped-uninlinable-local-function-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-wrapped-uninlinable-local-function-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-wrapped-uninlinable-local-function-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-wrapped-uninlinable-local-function-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-wrapped-uninlinable-local-function-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-wrapped-uninlinable-local-function-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-wrapped-uninlinable-local-function-client"
           }
         }
       },
@@ -10262,9 +10619,21 @@
         "description": "Signal initializer spreads a prop-derived object directly, in value position",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-object-spread-init.ts"
       },
+      "signal-seed-const-from-uninlinable-local-function": {
+        "description": "A signal seeded from a const initialized by a local function a template cannot inline refuses",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-const-from-uninlinable-local-function.ts"
+      },
+      "signal-seed-uninlinable-local-function-hides-module-function": {
+        "description": "A component function a template cannot inline hides the module function of its name, and refuses",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-uninlinable-local-function-hides-module-function.ts"
+      },
       "signal-seed-uninlinable-local-function-named-like-prop": {
         "description": "A signal seeded from a local function named like a typed prop that a template cannot inline refuses",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-uninlinable-local-function-named-like-prop.ts"
+      },
+      "signal-seed-wrapped-uninlinable-local-function": {
+        "description": "A signal seeded through an inlinable wrapper of a local function a template cannot inline refuses",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-wrapped-uninlinable-local-function.ts"
       },
       "some-typeof-predicate": {
         "description": "Off-subset `.some()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
@@ -10494,9 +10863,21 @@
         "description": "Signal initializer spreads a prop-derived object, reads deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-object-spread-init-client.ts"
       },
+      "signal-seed-const-from-uninlinable-local-function-client": {
+        "description": "The /* @client */ escape of a signal seeded from a const initialized by a local function a template…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-const-from-uninlinable-local-function-client.ts"
+      },
+      "signal-seed-uninlinable-local-function-hides-module-function-client": {
+        "description": "The /* @client */ escape of a component function a template cannot inline that hides a module…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-uninlinable-local-function-hides-module-function-client.ts"
+      },
       "signal-seed-uninlinable-local-function-named-like-prop-client": {
         "description": "The /* @client */ escape of a signal seeded from a local function a template cannot inline",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-uninlinable-local-function-named-like-prop-client.ts"
+      },
+      "signal-seed-wrapped-uninlinable-local-function-client": {
+        "description": "The /* @client */ escape of a signal seeded through an inlinable wrapper of a local function a…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-wrapped-uninlinable-local-function-client.ts"
       },
       "some-typeof-predicate-client": {
         "description": "Off-subset `.some()` predicate deferred to the client via /* @client */",
@@ -10828,6 +11209,28 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "client-binding-named-like-module-binding": {
+      "title": "A component binding named like a module binding, in the client script",
+      "kind": "silent",
+      "given": "a component-scope const or function named like a module-scope one that the component, or a module function it calls, also reads",
+      "expected": "each read resolves lexically: the component binding inside the component, the module binding inside the module function",
+      "actual": "emits both declarations into one scope of the client script, which then fails to load (a redeclared const) or calls the module function for the component one",
+      "fixtures": [
+        "local-function-hides-module-function"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "client-only-loop-in-static-loop": {
@@ -11709,13 +12112,16 @@
     "uninlinable-local-function-call": {
       "title": "Zero-argument call of a local function a template cannot inline",
       "kind": "refusal",
-      "given": "a zero-argument call of a component or module function that takes parameters or whose body is more than a single `return <expr>`, read on the server: in a template expression, a memo body or a signal seed",
+      "given": "a zero-argument call of a component or module function that takes parameters or whose body is more than a single `return <expr>`, read on the server: in a template expression, a memo body or a signal seed, directly or through a const initializer or a function the template inlines",
       "expected": "the function runs at render time and its result renders in the server HTML",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
         "markup-uninlinable-local-function-named-like-prop",
         "memo-uninlinable-local-function-named-like-prop",
-        "signal-seed-uninlinable-local-function-named-like-prop"
+        "signal-seed-const-from-uninlinable-local-function",
+        "signal-seed-uninlinable-local-function-hides-module-function",
+        "signal-seed-uninlinable-local-function-named-like-prop",
+        "signal-seed-wrapped-uninlinable-local-function"
       ],
       "adapters": [
         "blade",
