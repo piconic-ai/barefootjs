@@ -1985,6 +1985,7 @@
               "callback-outside-evaluator",
               "computed-const-loop-source",
               "const-literal-inherited-key",
+              "destructure-default-reads-component-state",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
               "object-array-literal-child-prop",
@@ -2015,6 +2016,7 @@
               "callback-outside-evaluator",
               "computed-const-loop-source",
               "const-literal-inherited-key",
+              "destructure-default-reads-component-state",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
               "object-array-literal-child-prop",
@@ -2048,6 +2050,7 @@
               "callback-outside-evaluator",
               "computed-const-loop-source",
               "const-literal-inherited-key",
+              "destructure-default-reads-component-state",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
               "object-array-literal-child-prop",
@@ -2078,6 +2081,7 @@
               "callback-outside-evaluator",
               "computed-const-loop-source",
               "const-literal-inherited-key",
+              "destructure-default-reads-component-state",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
               "object-array-literal-child-prop",
@@ -2109,6 +2113,7 @@
               "callback-outside-evaluator",
               "computed-const-loop-source",
               "const-literal-inherited-key",
+              "destructure-default-reads-component-state",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
               "object-array-literal-child-prop",
@@ -2139,6 +2144,7 @@
               "callback-outside-evaluator",
               "computed-const-loop-source",
               "const-literal-inherited-key",
+              "destructure-default-reads-component-state",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
               "object-array-literal-child-prop",
@@ -2169,6 +2175,7 @@
               "callback-outside-evaluator",
               "computed-const-loop-source",
               "const-literal-inherited-key",
+              "destructure-default-reads-component-state",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
               "object-array-literal-child-prop",
@@ -2200,6 +2207,7 @@
               "callback-outside-evaluator",
               "computed-const-loop-source",
               "const-literal-inherited-key",
+              "destructure-default-reads-component-state",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
               "object-array-literal-child-prop",
@@ -3450,6 +3458,14 @@
           ]
         }
       },
+      "destructure-default-local-const-signal-seed": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "body-destructure-computed-default-signal-seed"
+          ]
+        }
+      },
       "destructure-default-param-computed-array": {
         "go-template": {
           "kind": "refusal",
@@ -3461,6 +3477,125 @@
           ],
           "escape": {
             "state": "debt"
+          }
+        }
+      },
+      "destructure-default-reads-signal": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "destructure-default-reads-component-state"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-reads-signal-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "destructure-default-reads-component-state"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-reads-signal-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "destructure-default-reads-component-state"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-reads-signal-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "destructure-default-reads-component-state"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-reads-signal-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "destructure-default-reads-component-state"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-reads-signal-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "destructure-default-reads-component-state"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-reads-signal-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "destructure-default-reads-component-state"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-reads-signal-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "destructure-default-reads-component-state"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-reads-signal-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "destructure-default-reads-component-state"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-reads-signal-client"
           }
         }
       },
@@ -6469,118 +6604,6 @@
           "escape": {
             "state": "debt"
           }
-        }
-      },
-      "module-const-default-hydrate": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "module-const-destructure-default"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "module-const-destructure-default"
-          ]
-        },
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "module-const-destructure-default"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "module-const-destructure-default"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "module-const-destructure-default"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "module-const-destructure-default"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "module-const-destructure-default"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "module-const-destructure-default"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "module-const-destructure-default"
-          ]
-        }
-      },
-      "module-const-destructure-default": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "module-const-destructure-default"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "module-const-destructure-default"
-          ]
-        },
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "module-const-destructure-default"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "module-const-destructure-default"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "module-const-destructure-default"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "module-const-destructure-default"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "module-const-destructure-default"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "module-const-destructure-default"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "module-const-destructure-default"
-          ]
         }
       },
       "module-const-inherited-key": {
@@ -12181,9 +12204,17 @@
         "description": "A destructure default reading an earlier binding kept as a local reads that local…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-earlier-assignment.ts"
       },
+      "destructure-default-local-const-signal-seed": {
+        "description": "A default reading a component-local const seeds a signal with its value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-local-const-signal-seed.ts"
+      },
       "destructure-default-param-computed-array": {
         "description": "A parameter destructure default computing an array from an earlier binding takes the computed array",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-param-computed-array.ts"
+      },
+      "destructure-default-reads-signal": {
+        "description": "A destructure default reading a signal through a const is refused on the template adapters",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-reads-signal.ts"
       },
       "destructure-default-shared-array": {
         "description": "A destructure default reading an earlier binding kept as a local reads that local (shared-array)",
@@ -12344,14 +12375,6 @@
       "module-const-arrow-helper": {
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-arrow-helper.ts"
-      },
-      "module-const-default-hydrate": {
-        "description": "A module const read only through a destructure default is declared in the client module, so the…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-default-hydrate.ts"
-      },
-      "module-const-destructure-default": {
-        "description": "A destructure default reading a module-scope const renders that const in every read position, and…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-destructure-default.ts"
       },
       "module-const-inherited-key": {
         "description": "a module const read with a key only its prototype has reads the inherited function",
@@ -12620,6 +12643,10 @@
       "conditional-nested-loop-precomputed-reactivity": {
         "description": "precomputed escape for conditional nested const loops retains reactive row bindings",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-nested-loop-precomputed-reactivity.ts"
+      },
+      "destructure-default-reads-signal-client": {
+        "description": "The /* @client */ escape of a destructure default reading a signal through a const",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-reads-signal-client.ts"
       },
       "destructure-default-shared-array-client": {
         "description": "A destructure default reading an earlier binding kept as a local, deferred to the client via /*…",
@@ -12942,6 +12969,19 @@
         "BF056"
       ]
     },
+    "body-destructure-computed-default-signal-seed": {
+      "title": "A signal seeded from a body-destructured prop with a computed default",
+      "kind": "silent",
+      "given": "a `(props)`-arg component whose body destructure gives a prop a computed default (`const { b = 'z'.toUpperCase() } = props`, or one reading a component const) and seeds a signal from that binding (`createSignal(b)`)",
+      "expected": "the signal holds the default when the prop is omitted, and the passed value otherwise",
+      "actual": "emits a props constructor that does not compile: the prop's untyped field is assigned to the signal's typed field as is",
+      "fixtures": [
+        "destructure-default-local-const-signal-seed"
+      ],
+      "adapters": [
+        "go-template"
+      ]
+    },
     "body-destructure-without-const-form": {
       "title": "Component-body destructure with no const form",
       "kind": "refusal",
@@ -13124,10 +13164,11 @@
     "client-binding-named-like-module-binding": {
       "title": "A component binding named like a module binding, in the client script",
       "kind": "silent",
-      "given": "a component-scope const or function named like a module-scope one that the component, or a module function it calls, also reads",
-      "expected": "each read resolves lexically: the component binding inside the component, the module binding inside the module function",
-      "actual": "emits both declarations into one scope of the client script, which then fails to load (a redeclared const) or calls the module function for the component one",
+      "given": "a component-scope const or function named like a module-scope one that the component, a parameter default of it, or a module function it calls, also reads",
+      "expected": "each read resolves lexically: the component binding inside the component, the module binding inside the module function and in a parameter default",
+      "actual": "emits both declarations into one scope of the client script, which then fails to load (a redeclared const) or calls the module function for the component one; a parameter default reads the component const in the client template, and an undeclared name where the component const is unread",
       "fixtures": [
+        "destructure-default-param-body-const-same-name",
         "local-function-hides-module-function"
       ],
       "adapters": [
@@ -13204,13 +13245,14 @@
       ]
     },
     "const-alias-signature-default": {
-      "title": "A const alias of a prop whose signature destructure has a default",
+      "title": "A const reading a prop whose destructure has a default",
       "kind": "silent",
-      "given": "a component-scope const alias (`const a = label`) of a prop the signature destructures with a default (`{ label = 'd' }`), rendered with the prop omitted",
+      "given": "a component-scope const aliasing (`const a = label`) or computed from (`const L = a + '!'`) a prop destructured with a default (`{ label = 'd' }`), rendered with the prop omitted",
       "expected": "the read renders the default",
       "actual": "renders empty: the read takes the passed prop without its default",
       "fixtures": [
-        "const-alias-default-prop-loop-shadow"
+        "const-alias-default-prop-loop-shadow",
+        "destructure-default-local-const-prop-hop"
       ],
       "adapters": [
         "hono",
@@ -13347,6 +13389,30 @@
       ],
       "adapters": [
         "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "destructure-default-reads-component-state": {
+      "title": "A destructure default reading a component value no template computes",
+      "kind": "refusal",
+      "given": "a props destructure default that reads, directly or through a component const, a signal, a memo, a `let`, a reassigned const or a function that is not a single `return <expr>` with no parameters (`const L = s() + '!'`, `{ b = L }`), where the server render reads the prop",
+      "expected": "the omitted prop takes the value the default computes from the component state",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "destructure-default-reads-signal"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ],
       "diagnostics": [
         "BF101"
@@ -13551,28 +13617,6 @@
       "actual": "renders the result empty or false, or fails the render, since the call reads the const as a template variable the backend does not bind",
       "fixtures": [
         "module-const-array-method-call"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
-    "module-const-destructure-default": {
-      "title": "A destructure default that reads a module-scope const",
-      "kind": "silent",
-      "given": "a props destructure default that reads a module-scope const (`const DEFAULT_LABEL = 'm'`, `{ label = DEFAULT_LABEL }`; `const START = 2`, `{ start = START }`), with the prop omitted: read as text, an attribute, a template literal, a concatenation or a loop row, or seeding a signal (`createSignal(start)`) rendered as text",
-      "expected": "the omitted prop, and a signal seeded from it, take the const's value",
-      "actual": "renders the signal seeded from the omitted prop as an empty value; some backends also render the prop itself empty in every read position",
-      "fixtures": [
-        "module-const-default-hydrate",
-        "module-const-destructure-default"
       ],
       "adapters": [
         "blade",

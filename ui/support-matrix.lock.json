@@ -127,12 +127,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -296,12 +290,6 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -531,12 +519,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -733,12 +715,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -917,12 +893,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -1092,12 +1062,6 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -1285,12 +1249,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -1469,12 +1427,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -1644,12 +1596,6 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -1954,6 +1900,12 @@
               "fixture": "destructure-default-body-renamed-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-local-const-signal-seed",
+              "limitations": [
+                "body-destructure-computed-default-signal-seed"
               ]
             },
             {
@@ -3889,6 +3841,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3946,12 +3904,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -4043,6 +3995,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4088,12 +4046,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -4197,6 +4149,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-local-const-signal-seed",
+              "limitations": [
+                "body-destructure-computed-default-signal-seed"
+              ]
+            },
+            {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "embedded-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -4287,12 +4251,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "module-const-inherited-key-function-nested",
               "limitations": [
                 "const-literal-inherited-key"
@@ -4375,6 +4333,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4432,12 +4396,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -4523,6 +4481,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4580,12 +4544,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -4671,6 +4629,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4716,12 +4680,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -4813,6 +4771,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4870,12 +4834,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -4955,6 +4913,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5012,12 +4976,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -5109,6 +5067,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -5166,12 +5130,6 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -5342,6 +5300,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -5465,18 +5429,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -5742,6 +5694,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -5847,18 +5805,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -6136,6 +6082,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-local-const-signal-seed",
+              "limitations": [
+                "body-destructure-computed-default-signal-seed"
+              ]
+            },
+            {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -6289,18 +6247,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -6614,6 +6560,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -6737,18 +6689,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -7014,6 +6954,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -7137,18 +7083,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -7420,6 +7354,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -7525,18 +7465,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -7802,6 +7730,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -7919,18 +7853,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -8190,6 +8112,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -8313,18 +8241,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -8590,6 +8506,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -8707,18 +8629,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -10084,6 +9994,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -10243,18 +10159,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -10622,6 +10526,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -10763,18 +10673,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -11148,9 +11046,21 @@
               ]
             },
             {
+              "fixture": "destructure-default-local-const-signal-seed",
+              "limitations": [
+                "body-destructure-computed-default-signal-seed"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
               ]
             },
             {
@@ -11385,18 +11295,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -11812,6 +11710,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -11971,18 +11875,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -12344,6 +12236,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -12503,18 +12401,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -12882,6 +12768,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -13029,18 +12921,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -13408,6 +13288,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -13561,18 +13447,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -13922,6 +13796,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -14081,18 +13961,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -14460,6 +14328,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -14619,18 +14493,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -15171,6 +15033,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -15288,18 +15156,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -15577,6 +15433,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -15688,18 +15550,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -16001,9 +15851,21 @@
               ]
             },
             {
+              "fixture": "destructure-default-local-const-signal-seed",
+              "limitations": [
+                "body-destructure-computed-default-signal-seed"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
               ]
             },
             {
@@ -16166,18 +16028,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -16509,6 +16359,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -16626,18 +16482,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -16915,6 +16759,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -17032,18 +16882,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -17327,6 +17165,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -17438,18 +17282,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -17745,6 +17577,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -17856,18 +17694,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -18133,6 +17959,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -18250,18 +18082,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -18539,6 +18359,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -18650,18 +18476,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -18937,6 +18751,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -18952,18 +18772,6 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -18989,6 +18797,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -19004,18 +18818,6 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -19053,9 +18855,21 @@
               ]
             },
             {
+              "fixture": "destructure-default-local-const-signal-seed",
+              "limitations": [
+                "body-destructure-computed-default-signal-seed"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
               ]
             },
             {
@@ -19080,18 +18894,6 @@
               "fixture": "index-read-capitalised-key-only",
               "limitations": [
                 "index-read-capitalised-key-only"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -19123,6 +18925,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -19138,18 +18946,6 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -19175,6 +18971,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -19190,18 +18992,6 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -19227,6 +19017,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -19242,18 +19038,6 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -19285,6 +19069,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -19300,18 +19090,6 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -19337,6 +19115,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -19352,18 +19136,6 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -19389,6 +19161,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -19404,18 +19182,6 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -19561,6 +19327,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -19678,18 +19450,6 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -19949,6 +19709,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -20048,18 +19814,6 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -20313,9 +20067,21 @@
               ]
             },
             {
+              "fixture": "destructure-default-local-const-signal-seed",
+              "limitations": [
+                "body-destructure-computed-default-signal-seed"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
               ]
             },
             {
@@ -20502,18 +20268,6 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -20809,6 +20563,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -20926,18 +20686,6 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -21191,6 +20939,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -21308,18 +21062,6 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -21579,6 +21321,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -21684,18 +21432,6 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -21955,6 +21691,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -22072,18 +21814,6 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -22331,6 +22061,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -22448,18 +22184,6 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -22719,6 +22443,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -22836,18 +22566,6 @@
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -23096,12 +22814,6 @@
               ]
             },
             {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -23253,12 +22965,6 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -23431,12 +23137,6 @@
               "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -23618,12 +23318,6 @@
               ]
             },
             {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -23775,12 +23469,6 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -23941,12 +23629,6 @@
               "fixture": "const-object-prop-identity-hydrate",
               "limitations": [
                 "non-literal-const-child-prop-unbound"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -24116,12 +23798,6 @@
               ]
             },
             {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -24267,12 +23943,6 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -24427,12 +24097,6 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -24637,12 +24301,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "module-const-inherited-key-child-prop",
               "limitations": [
                 "const-literal-inherited-key"
@@ -24680,12 +24338,6 @@
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -24747,12 +24399,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "module-const-inherited-key-child-prop",
               "limitations": [
                 "const-literal-inherited-key"
@@ -24799,12 +24445,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "module-const-inherited-key-child-prop",
               "limitations": [
                 "const-literal-inherited-key"
@@ -24842,12 +24482,6 @@
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -24891,12 +24525,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "module-const-inherited-key-child-prop",
               "limitations": [
                 "const-literal-inherited-key"
@@ -24937,12 +24565,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "module-const-inherited-key-child-prop",
               "limitations": [
                 "const-literal-inherited-key"
@@ -24974,12 +24596,6 @@
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -25020,12 +24636,6 @@
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -27444,6 +27054,12 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "destructure-default-local-const-signal-seed",
+              "limitations": [
+                "body-destructure-computed-default-signal-seed"
+              ]
+            },
+            {
               "fixture": "loop-row-child-caller-rows-outer-state-key",
               "limitations": [
                 "loop-row-key-outer-state"
@@ -27947,9 +27563,9 @@
         "blade": {
           "gaps": [
             {
-              "fixture": "module-const-destructure-default",
+              "fixture": "destructure-default-reads-signal",
               "limitations": [
-                "module-const-destructure-default"
+                "destructure-default-reads-component-state"
               ]
             },
             {
@@ -27987,9 +27603,9 @@
         "erb": {
           "gaps": [
             {
-              "fixture": "module-const-destructure-default",
+              "fixture": "destructure-default-reads-signal",
               "limitations": [
-                "module-const-destructure-default"
+                "destructure-default-reads-component-state"
               ]
             },
             {
@@ -28033,6 +27649,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-local-const-signal-seed",
+              "limitations": [
+                "body-destructure-computed-default-signal-seed"
+              ]
+            },
+            {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "embedded-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -28048,12 +27676,6 @@
               "fixture": "loop-row-child-outer-state-key",
               "limitations": [
                 "loop-row-key-outer-state"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -28085,9 +27707,9 @@
         "jinja": {
           "gaps": [
             {
-              "fixture": "module-const-destructure-default",
+              "fixture": "destructure-default-reads-signal",
               "limitations": [
-                "module-const-destructure-default"
+                "destructure-default-reads-component-state"
               ]
             },
             {
@@ -28119,9 +27741,9 @@
         "minijinja": {
           "gaps": [
             {
-              "fixture": "module-const-destructure-default",
+              "fixture": "destructure-default-reads-signal",
               "limitations": [
-                "module-const-destructure-default"
+                "destructure-default-reads-component-state"
               ]
             },
             {
@@ -28153,9 +27775,9 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "module-const-destructure-default",
+              "fixture": "destructure-default-reads-signal",
               "limitations": [
-                "module-const-destructure-default"
+                "destructure-default-reads-component-state"
               ]
             },
             {
@@ -28193,9 +27815,9 @@
         "pebble": {
           "gaps": [
             {
-              "fixture": "module-const-destructure-default",
+              "fixture": "destructure-default-reads-signal",
               "limitations": [
-                "module-const-destructure-default"
+                "destructure-default-reads-component-state"
               ]
             },
             {
@@ -28227,9 +27849,9 @@
         "twig": {
           "gaps": [
             {
-              "fixture": "module-const-destructure-default",
+              "fixture": "destructure-default-reads-signal",
               "limitations": [
-                "module-const-destructure-default"
+                "destructure-default-reads-component-state"
               ]
             },
             {
@@ -28267,9 +27889,9 @@
         "xslate": {
           "gaps": [
             {
-              "fixture": "module-const-destructure-default",
+              "fixture": "destructure-default-reads-signal",
               "limitations": [
-                "module-const-destructure-default"
+                "destructure-default-reads-component-state"
               ]
             },
             {
@@ -29624,12 +29246,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -29649,12 +29265,6 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -29683,12 +29293,6 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -29738,12 +29342,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -29766,12 +29364,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -29791,12 +29383,6 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -29834,12 +29420,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -29862,12 +29442,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -29887,12 +29461,6 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -29940,12 +29508,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -29977,12 +29539,6 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -30038,12 +29594,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -30075,12 +29625,6 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -30118,12 +29662,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -30155,12 +29693,6 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -30204,12 +29736,6 @@
               ]
             },
             {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -30235,12 +29761,6 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -30275,12 +29795,6 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -30402,18 +29916,6 @@
               ]
             },
             {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -30562,18 +30064,6 @@
               ]
             },
             {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -30692,6 +30182,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-local-const-signal-seed",
+              "limitations": [
+                "body-destructure-computed-default-signal-seed"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
@@ -30761,18 +30257,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -30936,18 +30420,6 @@
               ]
             },
             {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -31093,18 +30565,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -31259,18 +30719,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -31434,18 +30882,6 @@
               ]
             },
             {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -31585,18 +31021,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -31745,18 +31169,6 @@
               "fixture": "module-const-arrow-helper",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -31915,6 +31327,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -32008,18 +31426,6 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -32225,6 +31631,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -32312,18 +31724,6 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -32547,6 +31947,18 @@
               ]
             },
             {
+              "fixture": "destructure-default-local-const-signal-seed",
+              "limitations": [
+                "body-destructure-computed-default-signal-seed"
+              ]
+            },
+            {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -32676,18 +32088,6 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -32935,6 +32335,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -33028,18 +32434,6 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -33245,6 +32639,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -33338,18 +32738,6 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -33561,6 +32949,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -33648,18 +33042,6 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -33883,6 +33265,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -33970,18 +33358,6 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -34181,6 +33557,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -34274,18 +33656,6 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -34491,6 +33861,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -34578,18 +33954,6 @@
               "fixture": "module-const-array-method-call",
               "limitations": [
                 "module-const-array-method-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -35025,6 +34389,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -35034,18 +34404,6 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -35071,6 +34429,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -35080,18 +34444,6 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -35129,9 +34481,21 @@
               ]
             },
             {
+              "fixture": "destructure-default-local-const-signal-seed",
+              "limitations": [
+                "body-destructure-computed-default-signal-seed"
+              ]
+            },
+            {
               "fixture": "destructure-default-param-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
+              ]
+            },
+            {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
               ]
             },
             {
@@ -35150,18 +34514,6 @@
               "fixture": "index-read-capitalised-key-only",
               "limitations": [
                 "index-read-capitalised-key-only"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -35193,6 +34545,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -35202,18 +34560,6 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -35239,6 +34585,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -35248,18 +34600,6 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -35285,6 +34625,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -35294,18 +34640,6 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -35331,6 +34665,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -35340,18 +34680,6 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -35377,6 +34705,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -35386,18 +34720,6 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
@@ -35423,6 +34745,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-reads-signal",
+              "limitations": [
+                "destructure-default-reads-component-state"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -35432,18 +34760,6 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
-              ]
-            },
-            {
-              "fixture": "module-const-default-hydrate",
-              "limitations": [
-                "module-const-destructure-default"
-              ]
-            },
-            {
-              "fixture": "module-const-destructure-default",
-              "limitations": [
-                "module-const-destructure-default"
               ]
             },
             {
