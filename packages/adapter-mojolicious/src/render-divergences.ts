@@ -109,8 +109,6 @@ export const renderDivergences: RenderDivergences = {
   // branch next to a non-boolean branch lowered to Perl `0`. Such branches
   // are now rewritten to `'true'` / `'false'` (`stringifyBooleanBranches`);
   // it renders like Hono.
-  'module-const-destructure-default': { limitation: 'module-const-destructure-default' },
-  'module-const-default-hydrate': { limitation: 'module-const-destructure-default' },
   // `awaits-undefined-plus-shapes`, `destructure-default-null-hydrate` and
   // the `undef-null-*` fixtures used to sit here: the runtime held
   // `undefined` and `null` as one nil. It now carries `$BarefootJS::UNDEF`

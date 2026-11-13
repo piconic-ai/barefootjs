@@ -254,6 +254,10 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // `_p.label` without the default, so an omitted prop renders empty (the
   // init body's `const a` keeps the default).
   'const-alias-default-prop-loop-shadow': { limitation: 'const-alias-signature-default' },
+  // `const L = a + '!'` over `{ a = 'x'.toUpperCase() }`, read through
+  // `{ b = L }`: the CSR template reads `L` as `_p.a + '!'`, without `a`'s
+  // default.
+  'destructure-default-local-const-prop-hop': { limitation: 'const-alias-signature-default' },
   // A JSX prop holding a nested component, read in a conditional arm or
   // forwarded to a grandchild: the CSR template stringifies the branded prop
   // in the arm (`[object Object]`) and resolves the forwarded element's scope
@@ -273,4 +277,8 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // declares both at module scope, where the first one wins, so the CSR
   // template calls the module function.
   'local-function-hides-module-function': { limitation: 'client-binding-named-like-module-binding' },
+  // A parameter default reading a module const (`{ b = DEF.toUpperCase() }`)
+  // beside a body const of the same name: the CSR template inlines the body
+  // const into the default.
+  'destructure-default-param-body-const-same-name': { limitation: 'client-binding-named-like-module-binding' },
 }

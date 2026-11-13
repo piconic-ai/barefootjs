@@ -848,6 +848,14 @@ import { fixture as restBindingShadowedByLoopRow } from './rest-binding-shadowed
 import { fixture as bodyRestMemberRead } from './body-rest-member-read'
 import { fixture as bodyDestructureRestNonPropsSource } from './body-destructure-rest-non-props-source'
 import { fixture as bodyDestructureNonLiteralDefault } from './body-destructure-non-literal-default'
+import { fixture as destructureDefaultLocalConst } from './destructure-default-local-const'
+import { fixture as destructureDefaultLocalConstReaders } from './destructure-default-local-const-readers'
+import { fixture as destructureDefaultLocalConstSignalSeed } from './destructure-default-local-const-signal-seed'
+import { fixture as destructureDefaultLocalConstPropHop } from './destructure-default-local-const-prop-hop'
+import { fixture as destructureDefaultParamModuleScope } from './destructure-default-param-module-scope'
+import { fixture as destructureDefaultParamBodyConstSameName } from './destructure-default-param-body-const-same-name'
+import { fixture as destructureDefaultReadsSignal } from './destructure-default-reads-signal'
+import { fixture as destructureDefaultReadsSignalClient } from './destructure-default-reads-signal-client'
 import { fixture as bodyDestructureNonIdentifierSource } from './body-destructure-non-identifier-source'
 import { fixture as bodyRestTakenKeyRead } from './body-rest-taken-key-read'
 import { fixture as bodyRestPropsNameShadowed } from './body-rest-props-name-shadowed'
@@ -2677,4 +2685,12 @@ export const jsxFixtures: JSXFixture[] = [
   optionalMemberSignalSeedJsValue,
   explicitRowFieldPropStaysPresent,
   defaultedArrayPropNullCoercion,
+  destructureDefaultLocalConst,
+  destructureDefaultLocalConstReaders,
+  destructureDefaultLocalConstSignalSeed,
+  destructureDefaultLocalConstPropHop,
+  destructureDefaultParamModuleScope,
+  destructureDefaultParamBodyConstSameName,
+  destructureDefaultReadsSignal,
+  destructureDefaultReadsSignalClient,
 ]

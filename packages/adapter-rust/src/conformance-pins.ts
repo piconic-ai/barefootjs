@@ -216,6 +216,9 @@ export const conformancePins: ConformancePins = {
   'signal-seed-uninlinable-local-function-hides-module-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
   'signal-seed-const-from-uninlinable-local-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
   'signal-seed-wrapped-uninlinable-local-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  // A destructure default reading a signal through a component const: no
+  // template has the signal's value when it applies the default (#3725).
+  'destructure-default-reads-signal': [{ code: 'BF101', severity: 'error', limitation: 'destructure-default-reads-component-state' }],
   // A const record indexed by a prop whose keys are not known at compile
   // time reads inherited keys in JS (`labels['toString']`); no template
   // lookup does, so the read refuses rather than rendering `undefined`.

@@ -15,6 +15,14 @@ export interface KnownHole {
 }
 
 export const KNOWN_UNDECLARED: Record<string, KnownHole> = {
+  // A parameter default reading a module const (`{ b = DEF.toUpperCase() }`)
+  // beside a body const of the same name: the reference graph takes the
+  // default's `DEF` for the body const, so the module const is not declared
+  // for the mount's read of the default.
+  'destructure-default-param-body-const-same-name': {
+    names: ['DEF'],
+    limitation: 'client-binding-named-like-module-binding',
+  },
   // #3531 (a destructure default reading an earlier param,
   // `{ off = false, on = off }`) is FIXED — the analyzer splits the default
   // at its reads of earlier bindings (`ParamInfo.defaultParts`) and

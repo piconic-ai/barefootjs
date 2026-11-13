@@ -280,8 +280,10 @@ export const renderDivergences: RenderDivergences = {
   // (`<Item>` → `Items` next to an `items` prop) took that field for its own
   // rows, so the `items` loop rendered empty. A loop's rows field is now
   // renamed when a different prop owns the plural (`nestedRowsFieldName`).
-  'module-const-destructure-default': { limitation: 'module-const-destructure-default' },
-  'module-const-default-hydrate': { limitation: 'module-const-destructure-default' },
+  // A signal seeded from a body-destructured prop with a computed default:
+  // the constructor assigns the prop's `interface{}` field to the signal's
+  // typed field (`S: in.B`), which does not compile.
+  'destructure-default-local-const-signal-seed': { limitation: 'body-destructure-computed-default-signal-seed' },
   // A default assigning an earlier binding (`b = (a = 2)`) never runs.
   'destructure-default-earlier-assignment': { limitation: 'destructure-default-assigns-earlier-binding' },
   // A `null` / `undefined` `style` object property renders `color:` with
