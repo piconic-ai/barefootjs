@@ -2768,6 +2768,22 @@
         "text"
       ]
     },
+    "component-spread-forwarded-reversed-order": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "component-spread-props-in-loop-row": {
       "kinds": [
         "binary",

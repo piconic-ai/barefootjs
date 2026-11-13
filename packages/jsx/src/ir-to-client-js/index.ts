@@ -96,7 +96,7 @@ export function generateClientJsWithSourceMap(
   // harness (`csr-render.ts`) and `analyzeClientNeeds` both do. Cleared
   // in `finally` so a thrown error never leaks the alias map into an
   // unrelated later compile.
-  setActiveImportAliases(buildImportAliasMap(ir.metadata.imports))
+  const outerAliases = setActiveImportAliases(buildImportAliasMap(ir.metadata.imports))
   try {
     const ctx = createContext(ir, scope, adapterCapabilities, profile)
     const siblingOffsets = computeLoopSiblingOffsets(ir.root)
@@ -125,7 +125,7 @@ export function generateClientJsWithSourceMap(
 
     return { code }
   } finally {
-    setActiveImportAliases(null)
+    setActiveImportAliases(outerAliases)
   }
 }
 

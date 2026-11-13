@@ -93,7 +93,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import { compileJSX, createAnchoredProgram } from '@barefootjs/jsx'
-import type { CompileOptionsWithAdapter, CompileResult } from '@barefootjs/jsx'
+import type { CompileOptionsWithAdapter, CompileResult, ComponentIR, TemplateAdapter } from '@barefootjs/jsx'
 
 /**
  * Directory a harness compile's relative filename is resolved against for
@@ -188,4 +188,28 @@ export function compileFixtureJSX(
   options: Omit<CompileOptionsWithAdapter, 'program'>,
 ): CompileResult {
   return compileJSX(source, filename, { ...options, program: harnessProgramFor(source, filename) })
+}
+
+/**
+ * Register the shape of every component a fixture's sibling `components`
+ * declare on `adapter` (`registerChildComponentShape`, Go template; a no-op
+ * on adapters without it) BEFORE any of them compiles for real (#3753). A
+ * sibling renders another sibling (`mid.tsx` renders `<Tag>`), so
+ * registering each one only after its own compile let the order the
+ * fixture lists them in decide what the earlier one knew of the later one.
+ * The IRs come from a throwaway compile of each sibling on `adapter`.
+ */
+export function registerFixtureSiblingShapes(
+  adapter: TemplateAdapter,
+  components: Record<string, string>,
+  options: Omit<CompileOptionsWithAdapter, 'program' | 'adapter' | 'outputIR'> = {},
+): void {
+  const register = (adapter as { registerChildComponentShape?: (ir: ComponentIR) => void }).registerChildComponentShape
+  if (typeof register !== 'function') return
+  for (const [filename, childSource] of Object.entries(components)) {
+    const result = compileFixtureJSX(childSource, filename, { ...options, adapter, outputIR: true })
+    for (const irFile of result.files.filter(f => f.type === 'ir')) {
+      register.call(adapter, JSON.parse(irFile.content) as ComponentIR)
+    }
+  }
 }

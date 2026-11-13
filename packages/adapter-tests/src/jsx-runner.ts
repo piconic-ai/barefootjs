@@ -8,8 +8,8 @@
 import { describe, expect } from 'bun:test'
 import { renderTest } from './render-test'
 import { canSkipRenderError } from './render-error-policy'
-import type { ComponentIR, CompilerError, TemplateAdapter } from '@barefootjs/jsx'
-import { compileFixtureJSX } from './harness-program'
+import type { CompilerError, TemplateAdapter } from '@barefootjs/jsx'
+import { compileFixtureJSX, registerFixtureSiblingShapes } from './harness-program'
 import { jsxFixtures } from '../fixtures'
 import type { ExpectedDiagnostic } from './types'
 import { normalizeHTML, stripConditionalMarkersForCrossAdapter } from './html-normalize'
@@ -83,23 +83,6 @@ export { normalizeHTML, stripConditionalMarkersForCrossAdapter }
  * surface adapter-emitted diagnostics without going through the
  * adapter's `render()` (which typically throws on errors).
  */
-/**
- * Register a child/sibling component's cross-component shape on the adapter
- * when it supports the optional `registerChildComponentShape` hook (Go
- * template — #checkbox). A no-op on adapters without it. Mirrors
- * `test-render.ts`'s identically-named helper: `compileJSX` alone never
- * calls this hook, so a diagnostic that depends on it (a prop routed into
- * a child's rest bag rather than a declared field, #2805) would silently
- * never fire under `collectFixtureDiagnostics`'s compile-only path without
- * this — the exact gap that let `jsx-element-prop-rest-bag-dynamic`'s
- * pinned BF101 go unreproduced in this runner despite reproducing correctly
- * under the real-render harness.
- */
-function registerChildShape(adapter: TemplateAdapter, ir: ComponentIR): void {
-  const hook = (adapter as { registerChildComponentShape?: (ir: ComponentIR) => void }).registerChildComponentShape
-  if (typeof hook === 'function') hook.call(adapter, ir)
-}
-
 function collectFixtureDiagnostics(args: {
   source: string
   components?: Record<string, string>
@@ -118,6 +101,13 @@ function collectFixtureDiagnostics(args: {
   // broken by construction regardless, so this isn't gated further.
   const siblingTemplatesRegistered = Boolean(args.components)
   if (args.components) {
+    // Every sibling's shape first, so a sibling that renders another one
+    // compiles the same whichever the fixture lists first (#3753).
+    registerFixtureSiblingShapes(
+      args.adapter,
+      Object.fromEntries(Object.entries(args.components).map(([f, s]) => [f, s.trimStart()])),
+      { siblingTemplatesRegistered },
+    )
     for (const [filename, childSource] of Object.entries(args.components)) {
       const r = compileFixtureJSX(childSource.trimStart(), filename, {
         adapter: args.adapter,
@@ -125,14 +115,6 @@ function collectFixtureDiagnostics(args: {
         siblingTemplatesRegistered,
       })
       all.push(...r.errors)
-      // Register every child's shape before the parent compiles below —
-      // same ordering `test-render.ts` uses, and for the same reason (a
-      // child that itself renders a sibling needs every shape registered
-      // first, though this diagnostics-only path never reaches that
-      // two-hop case in practice).
-      for (const irFile of r.files.filter(f => f.type === 'ir')) {
-        registerChildShape(args.adapter, JSON.parse(irFile.content) as ComponentIR)
-      }
     }
   }
   const result = compileFixtureJSX(args.source.trimStart(), 'component.tsx', {

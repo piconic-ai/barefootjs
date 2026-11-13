@@ -99,18 +99,25 @@ export function compileForCompat(
       const all: CompilerError[] = []
       const siblingTemplatesRegistered = Boolean(components)
       if (components) {
-        for (const [filename, childSource] of Object.entries(components)) {
+        const compileChild = (filename: string, childSource: string) => {
           const childTrimmed = childSource.trimStart()
-          const childResult = compileJSX(childTrimmed, filename, {
+          return compileJSX(childTrimmed, filename, {
             adapter,
             outputIR: true,
             siblingTemplatesRegistered,
             program: programFor?.(childTrimmed, filename),
           })
-          all.push(...childResult.errors)
-          for (const irFile of childResult.files.filter(f => f.type === 'ir')) {
+        }
+        // Every sibling's shape before any sibling compiles for real, as
+        // `collectFixtureDiagnostics` does (`registerFixtureSiblingShapes`),
+        // so the order `components` lists them in decides nothing (#3753).
+        for (const [filename, childSource] of Object.entries(components)) {
+          for (const irFile of compileChild(filename, childSource).files.filter(f => f.type === 'ir')) {
             registerChildShape(adapter, JSON.parse(irFile.content) as ComponentIR)
           }
+        }
+        for (const [filename, childSource] of Object.entries(components)) {
+          all.push(...compileChild(filename, childSource).errors)
         }
       }
       const trimmed = source.trimStart()
