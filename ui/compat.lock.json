@@ -5672,6 +5672,20 @@
           }
         }
       },
+      "loop-param-named-props-spread-child": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-spread-onto-child-component"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "loop-row-absent-optional-member-attr-module-const": {
         "go-template": {
           "kind": "refusal",
@@ -12431,6 +12445,10 @@
         "description": "A component loop row over a number array keyed by n.toString() renders data-key",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-key-to-string-number-component-row.ts"
       },
+      "loop-param-named-props-spread-child": {
+        "description": "A row binding named props is spread onto a child component as the row, not the component props",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-param-named-props-spread-child.ts"
+      },
       "loop-row-absent-optional-member-attr-module-const": {
         "description": "An absent or null member of a module-const row omits the attribute bound to it",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-absent-optional-member-attr-module-const.ts"
@@ -13967,10 +13985,11 @@
     "object-spread-onto-child-component": {
       "title": "An object other than the props spread onto a child component",
       "kind": "refusal",
-      "given": "a child component call that spreads an object other than the component's own props: a loop row (`rows.map((r) => <Chip key={r.id} {...r} />)`) or an object prop (`<Chip {...row} />`)",
+      "given": "a child component call that spreads an object other than the component's own props: a loop row (`rows.map((r) => <Chip key={r.id} {...r} />)`, also a row named like the props object: `rows.map((props) => <Chip {...props} />)`) or an object prop (`<Chip {...row} />`)",
       "expected": "every key of the object reaches the child, merged with the call's explicit props in source order",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
+        "loop-param-named-props-spread-child",
         "object-spread-branch-child",
         "object-spread-loop-row-child",
         "object-spread-prop-child"

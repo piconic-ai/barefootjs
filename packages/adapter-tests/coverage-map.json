@@ -8098,6 +8098,40 @@
         "text"
       ]
     },
+    "loop-param-named-props-spread-child": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-param-named-props-spread-custom-name": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop"
+      ]
+    },
+    "loop-param-named-props-spread-element": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop"
+      ]
+    },
     "loop-param-prop-alias-name-collision": {
       "kinds": [
         "identifier",

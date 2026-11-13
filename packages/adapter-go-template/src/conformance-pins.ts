@@ -359,6 +359,9 @@ export const conformancePins: ConformancePins = {
   'object-spread-branch-child': [{ code: 'BF101', severity: 'error', limitation: 'object-spread-onto-child-component', unescapable: true }],
   'object-spread-loop-row-child': [{ code: 'BF101', severity: 'error', limitation: 'object-spread-onto-child-component', unescapable: true }],
   'object-spread-prop-child': [{ code: 'BF101', severity: 'error', limitation: 'object-spread-onto-child-component', unescapable: true }],
+  // A loop row named like the props object is spread as the row, not as the
+  // component's props (#3727): an object other than the props.
+  'loop-param-named-props-spread-child': [{ code: 'BF101', severity: 'error', limitation: 'object-spread-onto-child-component', unescapable: true }],
   'body-rest-taken-key-read': [{ code: 'BF101', severity: 'error', limitation: 'body-rest-taken-key-read' }],
   'body-rest-props-name-shadowed': [{ code: 'BF101', severity: 'error', limitation: 'body-rest-props-name-shadowed' }],
   // An array of object literals passed as a child prop (in place, or a

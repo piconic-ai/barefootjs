@@ -11274,6 +11274,12 @@
               ]
             },
             {
+              "fixture": "loop-param-named-props-spread-child",
+              "limitations": [
+                "object-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "loop-row-absent-optional-member-attr-module-const",
               "limitations": [
                 "static-literal-loop-absent-row-field"
@@ -20430,6 +20436,12 @@
               "fixture": "loop-key-to-string-number-component-row",
               "limitations": [
                 "caller-rows-computed-key"
+              ]
+            },
+            {
+              "fixture": "loop-param-named-props-spread-child",
+              "limitations": [
+                "object-spread-onto-child-component"
               ]
             },
             {
