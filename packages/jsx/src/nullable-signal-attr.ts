@@ -242,6 +242,16 @@ export interface NullishAttrContext {
    * ToNumber unless both sides are strings, so its nil's reading decides the
    * comparison (`undefined < 1` is false, `null < 1` is true). */
   readonly nullableScalarProps?: ReadonlyMap<string, NullableScalarProp>
+  /**
+   * Whether the value a read names at the attribute site is declared to
+   * admit `undefined` / `null` (#3728): a loop row's optional member
+   * (`r.tone` where the element type has `tone?: string`, a destructured
+   * `tone`, `r.meta.tone`). The adapter answers it from the declared types
+   * through its live `BindingScope` (`declaredValueMayBeNil`). Consulted for
+   * the attribute's own reads only, never inside a memo body, whose names
+   * resolve where the memo is declared.
+   */
+  readonly declaredNil?: (expr: ParsedExpr) => boolean
 }
 
 /** A string or boolean prop's nil reading ({@link NullishAttrContext.nullableScalarProps}). */
@@ -360,42 +370,54 @@ export function attrValueMayBeNullish(
   // `shadowed` is the scope the expression is read in: the attribute site's
   // loop bindings at the top level, none inside a memo body — its getters
   // resolve where the memo is declared, not where it is read.
-  const walk = (expr: ParsedExpr, shadowed: (name: string) => boolean): boolean => {
+  // `atSite`: the expression is the attribute's own, read in the attribute
+  // site's scope, where the declared-type answer (`declaredNil`) applies.
+  const walk = (expr: ParsedExpr, shadowed: (name: string) => boolean, atSite = true): boolean => {
     if (readsUndefinedLeaf(expr, ctx, shadowed)) return true
+    if (atSite && ctx.declaredNil !== undefined && isPlainRead(expr) && ctx.declaredNil(expr)) return true
     switch (expr.kind) {
       case 'identifier':
         return expr.name === 'undefined'
       case 'literal':
         return expr.literalType === 'null'
-      case 'call': {
-        const getter = bareGetterCallName(expr)
-        if (getter === null || shadowed(getter)) return false
-        if (ctx.nullableSignals.has(getter)) return true
-        const memo = ctx.memos.get(getter)
-        if (!memo || visiting.has(getter)) return false
-        if (admitsNullish(memo.type)) return true
-        visiting.add(getter)
-        const result = memo.parsed !== undefined && walk(memo.parsed, () => false)
-        visiting.delete(getter)
-        return result
-      }
+      case 'call':
+        return getterMayBeNullish(expr, shadowed)
       // A computed key or an index (`pair[1]`, `row[key]`) reads `undefined`
       // when it is out of range or absent (#3497).
       case 'member':
-        return expr.optional || expr.computed || walk(expr.object, shadowed)
+        return expr.optional || expr.computed || walk(expr.object, shadowed, atSite)
       case 'index-access':
         return true
       case 'conditional':
-        return walk(expr.consequent, shadowed) || walk(expr.alternate, shadowed)
+        return walk(expr.consequent, shadowed, atSite) || walk(expr.alternate, shadowed, atSite)
       case 'logical':
         return expr.op === '&&'
-          ? walk(expr.left, shadowed) || walk(expr.right, shadowed)
-          : walk(expr.right, shadowed)
+          ? walk(expr.left, shadowed, atSite) || walk(expr.right, shadowed, atSite)
+          : walk(expr.right, shadowed, atSite)
       default:
         return false
     }
   }
+  // A nullable signal's getter, or a memo whose type or body can be nullish.
+  const getterMayBeNullish = (expr: ParsedExpr, shadowed: (name: string) => boolean): boolean => {
+    const getter = bareGetterCallName(expr)
+    if (getter === null || shadowed(getter)) return false
+    if (ctx.nullableSignals.has(getter)) return true
+    const memo = ctx.memos.get(getter)
+    if (!memo || visiting.has(getter)) return false
+    if (admitsNullish(memo.type)) return true
+    visiting.add(getter)
+    const result = memo.parsed !== undefined && walk(memo.parsed, () => false, false)
+    visiting.delete(getter)
+    return result
+  }
   return parsed !== undefined && walk(parsed, isShadowed)
+}
+
+/** A bare name or a non-computed member path over one (`tone`, `r.tone`, `r.meta.tone`). */
+function isPlainRead(expr: ParsedExpr): boolean {
+  if (expr.kind === 'identifier') return true
+  return expr.kind === 'member' && !expr.computed && isPlainRead(expr.object)
 }
 
 /** A method call that can miss (`methodMayReturnUndefined`), or a read of a prop that can be absent. */

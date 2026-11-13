@@ -1350,6 +1350,12 @@ import { fixture as loopRowScalarMemberLength } from './loop-row-scalar-member-l
 import { fixture as loopUndefinedElement } from './loop-undefined-element'
 import { fixture as absentOptionalPropClassAttr } from './absent-optional-prop-class-attr'
 import { fixture as loopRowChildAbsentOptionalFieldAttr } from './loop-row-child-absent-optional-field-attr'
+import { fixture as loopRowAbsentOptionalMemberAttr } from './loop-row-absent-optional-member-attr'
+import { fixture as loopRowAbsentOptionalMemberAttrSources } from './loop-row-absent-optional-member-attr-sources'
+import { fixture as loopRowAbsentOptionalMemberAttrModuleConst } from './loop-row-absent-optional-member-attr-module-const'
+import { fixture as loopRowAbsentOptionalMemberAttrModuleConstPrecomputed } from './loop-row-absent-optional-member-attr-module-const-precomputed'
+import { fixture as loopRowAbsentOptionalMemberAttrModuleConstClient } from './loop-row-absent-optional-member-attr-module-const-client'
+import { fixture as loopRowBooleanMemberAttr } from './loop-row-boolean-member-attr'
 import { fixture as undefinedIdentifierNullish } from './undefined-identifier-nullish'
 import { fixture as stringLengthUtf16Positions } from './string-length-utf16-positions'
 import { fixture as loopRowChildKeyShapes } from './loop-row-child-key-shapes'
@@ -2416,6 +2422,12 @@ export const jsxFixtures: JSXFixture[] = [
   loopUndefinedElement,
   absentOptionalPropClassAttr,
   loopRowChildAbsentOptionalFieldAttr,
+  loopRowAbsentOptionalMemberAttr,
+  loopRowAbsentOptionalMemberAttrSources,
+  loopRowAbsentOptionalMemberAttrModuleConst,
+  loopRowAbsentOptionalMemberAttrModuleConstPrecomputed,
+  loopRowAbsentOptionalMemberAttrModuleConstClient,
+  loopRowBooleanMemberAttr,
   undefinedIdentifierNullish,
   stringLengthUtf16Positions,
   loopRowChildKeyShapes,

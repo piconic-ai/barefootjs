@@ -20,6 +20,7 @@ import {
   isRuntimeNumberLiteral,
   arrayElementType,
   concatType,
+  declaredValueMayBeNil,
   loopValueTypeAt,
   isChildrenPropParam,
   loopRowType as sharedLoopRowType,
@@ -130,6 +131,16 @@ export function loopRowType(
   return declared ? declared as TypeInfo : null
 }
 
+/**
+ * Whether the value `expr` reads in `scope` is declared to admit `undefined`
+ * or `null` (#3728), from the shared declared-type answer
+ * (`declaredValueMayBeNil`), so the attribute nil guard matches the DSL
+ * adapters'.
+ */
+export function declaredNilRead(ctx: GoEmitContext, expr: ParsedExpr, scope: BindingScope): boolean {
+  return declaredValueMayBeNil(goDeclaredValueTypes(ctx), expr, scope)
+}
+
 /** The shared `DeclaredValueTypes` view of the component being compiled. */
 function goDeclaredValueTypes(ctx: GoEmitContext): DeclaredValueTypes {
   const state = ctx.state
@@ -138,6 +149,7 @@ function goDeclaredValueTypes(ctx: GoEmitContext): DeclaredValueTypes {
     signals: state.currentSignals,
     memos: state.currentMemos,
     propsObjectName: state.propsObjectName,
+    constants: state.localConstants,
     namedFields: name => state.currentTypeDefinitions.find(td => td.name === name)?.properties,
   }
 }
