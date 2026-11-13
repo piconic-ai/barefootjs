@@ -2403,6 +2403,17 @@ export interface ConstantInfo {
    */
   mutatedAfterDeclaration?: boolean
   /**
+   * When true, the initializer creates a new value each time it is evaluated
+   * (an object or array literal, `new X()`, a call, a function expression)
+   * and reads nothing reactive (no signal, memo, prop or `Reactive<T>`
+   * brand), so every read must see the one value the declaration created. A
+   * read site references the binding; it never re-evaluates the initializer
+   * in its place, which would hand each read a different object (#3868).
+   * Set by `markIdentityBoundConstants` (`const-identity.ts`). Consumed by
+   * `expandDynamicPropValue`, which builds a child component's prop getters.
+   */
+  identityBound?: boolean
+  /**
    * When true, this module-level const is shadowed inside the component: a
    * destructured prop, the props object, or a component-scope const,
    * function, signal or memo binds the same name, so a read of the name in

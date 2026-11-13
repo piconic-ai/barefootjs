@@ -30,6 +30,9 @@ export const renderDivergences: RenderDivergences = {
   // Markup reading, without calling it, a local function named like a typed
   // prop the body never binds: the template reads the prop of that name.
   'markup-local-function-read-named-like-prop': { limitation: 'local-function-read-named-like-prop' },
+  // A const object whose members read a signal, passed bare as a child
+  // component prop, reaches the child without its value.
+  'signal-const-object-child-prop': { limitation: 'signal-const-object-child-prop' },
   // `props-object-non-props-name-operand-typing` used to sit here: a props
   // object not named `props` left its members untyped, and the native `+`
   // over them did not concatenate. Since the runtime carries `undefined`

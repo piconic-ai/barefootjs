@@ -3614,6 +3614,43 @@
         "text"
       ]
     },
+    "const-object-child-prop-identity": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "const-object-prop-identity-hydrate": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "const-object-spread": {
       "kinds": [
         "identifier",
@@ -15359,6 +15396,21 @@
       ],
       "contexts": [
         "attribute"
+      ]
+    },
+    "signal-const-object-child-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
       ]
     },
     "signal-default-from-jsx": {
