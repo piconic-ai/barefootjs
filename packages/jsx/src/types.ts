@@ -1487,6 +1487,17 @@ export interface ExpressionAttr {
    * differ, and the adapter then falls back to `expr`.
    */
   typed?: TypedExprSource
+  /**
+   * Set on a component prop whose value is a bare read of a const holding a
+   * fully static array or object literal (`<Kid xs={QS} />` beside
+   * `const QS = ['a', 'b']`): that literal, as source text and parsed tree.
+   * A template receives the props, not the module's or the component's
+   * consts, so a template adapter passes the literal, as if the source had
+   * written it in place (`templatePropValue`). JS-runtime consumers (Hono,
+   * the client JS) keep `expr`, so the child receives the const's own value
+   * and its identity.
+   */
+  staticConstLiteral?: { expr: JsSourceText; parsed: ParsedExpr }
 }
 
 /** See {@link ExpressionAttr.typed}. */

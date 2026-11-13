@@ -51,9 +51,30 @@ function isNumberLiteralInitializer(expr: ParsedExpr | undefined): boolean {
   return literal?.kind === 'literal' && literal.literalType === 'number'
 }
 
+/** The JS builtins a template calls that always return a number. */
+const NUMBER_BUILTINS: ReadonlySet<string> = new Set(['Number'])
+const NUMBER_MATH_METHODS: ReadonlySet<string> = new Set(['abs', 'ceil', 'floor', 'max', 'min', 'round'])
+
+/**
+ * Whether a call's callee is a builtin whose result is a JS number:
+ * `Number(x)` or a non-computed `Math.<fn>` for a fixed `<fn>` set. Perl
+ * computes these in doubles (`BarefootJS::Evaluator::_double`), so printing
+ * the result with the host's own stringification drops digits
+ * (`Math.max(0.1 + 0.2, 0)` → `0.3` under `%.15g`) or adds them on a perl
+ * whose NV is wider than a double (`Math.abs(-7.6)` →
+ * `7.59999999999999964` under `-Duselongdouble`, #3872).
+ */
+function isNumberBuiltinCall(callee: ParsedExpr): boolean {
+  if (callee.kind === 'identifier') return NUMBER_BUILTINS.has(callee.name)
+  return callee.kind === 'member' && !callee.computed &&
+    callee.object.kind === 'identifier' && callee.object.name === 'Math' &&
+    NUMBER_MATH_METHODS.has(callee.property)
+}
+
 /**
  * Whether an expression yields a JS NUMBER: arithmetic
- * ({@link isNumericArithmeticResult}), a read of a name `isNumberName`
+ * ({@link isNumericArithmeticResult}), a call to a number-returning builtin
+ * (`Number(x)`, `Math.abs(x)`, …), a read of a name `isNumberName`
  * accepts — a zero-argument getter call, a `props.<key>` member, or a bare
  * identifier — a number literal that is not a safe integer, or a ternary
  * with such a branch. Backends whose own number
@@ -78,7 +99,10 @@ export function isNumberValuedExpr(
     return isNumberValuedExpr(expr.consequent, isStringName, isNumberName) ||
       isNumberValuedExpr(expr.alternate, isStringName, isNumberName)
   }
-  if (expr.kind === 'call') return expr.callee.kind === 'identifier' && expr.args.length === 0 && isNumberName(expr.callee.name)
+  if (expr.kind === 'call') {
+    if (isNumberBuiltinCall(expr.callee)) return true
+    return expr.callee.kind === 'identifier' && expr.args.length === 0 && isNumberName(expr.callee.name)
+  }
   if (expr.kind === 'member') {
     return !expr.computed && expr.object.kind === 'identifier' && expr.object.name === 'props' && isNumberName(expr.property, true)
   }

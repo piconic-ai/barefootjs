@@ -1986,6 +1986,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
@@ -2014,6 +2015,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
@@ -2045,6 +2047,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
@@ -2073,6 +2076,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
@@ -2102,6 +2106,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
@@ -2130,6 +2135,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
@@ -2158,6 +2164,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
@@ -2187,6 +2194,7 @@
               "computed-const-loop-source",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
@@ -5958,6 +5966,62 @@
           }
         }
       },
+      "markup-local-function-read-named-like-prop": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "local-function-read-named-like-prop"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "local-function-read-named-like-prop"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "local-function-read-named-like-prop"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "local-function-read-named-like-prop"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "local-function-read-named-like-prop"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "local-function-read-named-like-prop"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "local-function-read-named-like-prop"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "local-function-read-named-like-prop"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "local-function-read-named-like-prop"
+          ]
+        }
+      },
       "markup-uninlinable-local-function-named-like-prop": {
         "blade": {
           "kind": "refusal",
@@ -6074,6 +6138,125 @@
           "escape": {
             "state": "escapable",
             "twin": "markup-uninlinable-local-function-named-like-prop-client"
+          }
+        }
+      },
+      "memo-uninlinable-local-function-named-like-prop": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-uninlinable-local-function-named-like-prop-client"
           }
         }
       },
@@ -6415,6 +6598,116 @@
           "escape": {
             "state": "escapable",
             "twin": "module-const-loop-source-computed-precomputed"
+          }
+        }
+      },
+      "module-const-object-array-child-prop": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
           }
         }
       },
@@ -7880,6 +8173,125 @@
           "escape": {
             "state": "escapable",
             "twin": "signal-object-spread-init-client"
+          }
+        }
+      },
+      "signal-seed-uninlinable-local-function-named-like-prop": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-named-like-prop-client"
           }
         }
       },
@@ -9730,9 +10142,17 @@
         "description": "A `.map()` projection calling an unlowered method — DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-opaque-projection.ts"
       },
+      "markup-local-function-read-named-like-prop": {
+        "description": "Markup reading a local function named like a typed prop without calling it renders nothing, not the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/markup-local-function-read-named-like-prop.ts"
+      },
       "markup-uninlinable-local-function-named-like-prop": {
         "description": "Markup calling a local function named like a typed prop that a template cannot inline refuses…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/markup-uninlinable-local-function-named-like-prop.ts"
+      },
+      "memo-uninlinable-local-function-named-like-prop": {
+        "description": "A memo calling a local function named like a typed prop that a template cannot inline refuses",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-uninlinable-local-function-named-like-prop.ts"
       },
       "module-const-arrow-helper": {
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
@@ -9749,6 +10169,10 @@
       "module-const-loop-source-computed": {
         "description": "A module-scope const computed via a function call refuses loudly (BF101) on every SSR template…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-loop-source-computed.ts"
+      },
+      "module-const-object-array-child-prop": {
+        "description": "a module array-of-objects const passed whole as a child prop reaches the child",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-object-array-child-prop.ts"
       },
       "module-function-helper-chain": {
         "description": "Module-level function helper calling another module-level function helper is referenced by name…",
@@ -9837,6 +10261,10 @@
       "signal-object-spread-init": {
         "description": "Signal initializer spreads a prop-derived object directly, in value position",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-object-spread-init.ts"
+      },
+      "signal-seed-uninlinable-local-function-named-like-prop": {
+        "description": "A signal seeded from a local function named like a typed prop that a template cannot inline refuses",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-uninlinable-local-function-named-like-prop.ts"
       },
       "some-typeof-predicate": {
         "description": "Off-subset `.some()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
@@ -10026,6 +10454,10 @@
         "description": "The /* @client */ escape of a local function call a template cannot inline",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/markup-uninlinable-local-function-named-like-prop-client.ts"
       },
+      "memo-uninlinable-local-function-named-like-prop-client": {
+        "description": "The /* @client */ escape of a memo calling a local function a template cannot inline",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-uninlinable-local-function-named-like-prop-client.ts"
+      },
       "module-const-loop-source-computed-precomputed": {
         "description": "prop-precompute twin of module-const-loop-source-computed — computation moved to the caller, full…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-loop-source-computed-precomputed.ts"
@@ -10061,6 +10493,10 @@
       "signal-object-spread-init-client": {
         "description": "Signal initializer spreads a prop-derived object, reads deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-object-spread-init-client.ts"
+      },
+      "signal-seed-uninlinable-local-function-named-like-prop-client": {
+        "description": "The /* @client */ escape of a signal seeded from a local function a template cannot inline",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-uninlinable-local-function-named-like-prop-client.ts"
       },
       "some-typeof-predicate-client": {
         "description": "Off-subset `.some()` predicate deferred to the client via /* @client */",
@@ -10629,6 +11065,28 @@
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
     },
+    "local-function-read-named-like-prop": {
+      "title": "An uncalled read of a local function named like a typed prop",
+      "kind": "silent",
+      "given": "a (props)-arg component with a typed prop it never destructures (`props: { value?: number }`) and a local function of the same name that markup reads without calling it (`{value}`); the colliding prop supplied",
+      "expected": "the read renders nothing, as JS renders no function",
+      "actual": "renders the supplied prop on the server and the function source in the client template",
+      "fixtures": [
+        "markup-local-function-read-named-like-prop"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
     "loop-row-child-children-attrs-frozen": {
       "title": "A loop-row child component's forwarded JSX children can't reach an outer signal/memo at SSR",
       "kind": "refusal",
@@ -10855,6 +11313,30 @@
       ],
       "adapters": [
         "go-template"
+      ]
+    },
+    "object-array-literal-child-prop": {
+      "title": "An array of object literals passed as a child component prop",
+      "kind": "refusal",
+      "given": "a child component prop whose value is an array of object literals, written in place (`items={[{ id: 'x' }]}`) or a const holding one (`items={ITEMS}`)",
+      "expected": "the child receives the array and renders each object's members",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "module-const-object-array-child-prop"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
       ]
     },
     "object-entries-typed-object-signal": {
@@ -11227,11 +11709,13 @@
     "uninlinable-local-function-call": {
       "title": "Zero-argument call of a local function a template cannot inline",
       "kind": "refusal",
-      "given": "a template expression calling a component or module function with no arguments, where the function takes parameters or its body is more than a single `return <expr>`",
+      "given": "a zero-argument call of a component or module function that takes parameters or whose body is more than a single `return <expr>`, read on the server: in a template expression, a memo body or a signal seed",
       "expected": "the function runs at render time and its result renders in the server HTML",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
-        "markup-uninlinable-local-function-named-like-prop"
+        "markup-uninlinable-local-function-named-like-prop",
+        "memo-uninlinable-local-function-named-like-prop",
+        "signal-seed-uninlinable-local-function-named-like-prop"
       ],
       "adapters": [
         "blade",

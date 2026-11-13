@@ -8638,6 +8638,30 @@
       }
     }
   ],
+  "markup-local-function-read-named-like-prop": [
+    {
+      "name": "gen:value:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
+      }
+    }
+  ],
   "markup-uninlinable-local-function-named-like-prop": [
     {
       "name": "gen:value:absent",
@@ -9348,6 +9372,62 @@
           "a",
           "b"
         ]
+      }
+    }
+  ],
+  "memo-uninlinable-local-function-named-like-prop": [
+    {
+      "name": "gen:value:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
+      }
+    }
+  ],
+  "memo-uninlinable-local-function-named-like-prop-client": [
+    {
+      "name": "gen:value:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
+      }
+    }
+  ],
+  "module-const-array-child-prop-forwarded": [
+    {
+      "name": "gen:PS:empty",
+      "props": {
+        "PS": []
       }
     }
   ],
@@ -16637,6 +16717,54 @@
       "name": "gen:b:multibyte",
       "props": {
         "b": "日本語"
+      }
+    }
+  ],
+  "signal-seed-uninlinable-local-function-named-like-prop": [
+    {
+      "name": "gen:value:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
+      }
+    }
+  ],
+  "signal-seed-uninlinable-local-function-named-like-prop-client": [
+    {
+      "name": "gen:value:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
       }
     }
   ],

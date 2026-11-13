@@ -518,6 +518,78 @@ export function qsa(
   if (SLOT_SUFFIX_SELECTOR.test(selector)) {
     return qsaChildScope(el, selector)
   }
+  const hit = qsaFromRoot(el, selector, receiverSlotIds, hostScopeId)
+  if (hit) return hit
+  // A comment-scope proxy (a fragment-root component's first element, or a
+  // whole-item loop conditional's detached proxy) owns every top-level node
+  // of its comment range, not only its own subtree. A conditional branch
+  // that is a direct child of a Fragment root lands as a SIBLING of the
+  // proxy, so a branch binding looked up from the proxy (a reactive
+  // attribute's `qsa(__branchScope, '[bf="sN"]')`) has to search those
+  // siblings too, or the binding is silently never wired.
+  const commentInfo = commentScopeRegistry.get(el)
+  if (!commentInfo) return null
+  return qsaCommentRangeSiblings(el, commentInfo, selector, receiverSlotIds, hostScopeId ?? (commentInfo.scopeId || null))
+}
+
+/**
+ * Search the top-level elements of a comment scope's range other than the
+ * proxy `el` itself (`qsa` already searched it). A nested fragment-root
+ * child's own `<!--bf-scope:-->` range is skipped. A top-level element
+ * carrying its own `bf-s` (a child component's root) is never searched
+ * into, and is matched as a whole under the same rule `qsaFromRoot` applies
+ * to a child root among its descendants (`isChildRootSlotMarker`): a child
+ * root's own `bf="sN"` marker never answers the parent's slot lookup.
+ */
+function qsaCommentRangeSiblings(
+  el: Element,
+  commentInfo: CommentScopeInfo,
+  selector: string,
+  receiverSlotIds: readonly string[] | undefined,
+  hostScopeId: string | null,
+): Element | null {
+  for (const top of ownTopLevelElements(commentInfo.commentNode)) {
+    if (top === el) continue
+    if (top.hasAttribute(BF_SCOPE)) {
+      if (top.matches(selector) && !isChildRootSlotMarker(top, el, selector)) return top
+      continue
+    }
+    const hit = qsaFromRoot(top, selector, receiverSlotIds, hostScopeId)
+    if (hit) return hit
+  }
+  return null
+}
+
+/**
+ * The top-level elements of `commentNode`'s scope range, skipping every
+ * nested `<!--bf-scope:-->` … `<!--bf-/scope:-->` range inside it (the same
+ * depth walk as `isTopLevelCommentScopeNode`).
+ */
+function* ownTopLevelElements(commentNode: Comment): Generator<Element> {
+  const boundary = getCommentScopeBoundary(commentNode)
+  let depth = 0
+  for (let node = commentNode.nextSibling; node && node !== boundary; node = node.nextSibling) {
+    if (node.nodeType === Node.COMMENT_NODE) {
+      const value = (node as Comment).nodeValue ?? ''
+      if (value.startsWith(BF_SCOPE_COMMENT_PREFIX)) depth++
+      else if (value.startsWith(BF_SCOPE_COMMENT_END_PREFIX) && depth > 0) depth--
+    } else if (depth === 0 && node.nodeType === Node.ELEMENT_NODE) {
+      yield node as Element
+    }
+  }
+}
+
+/**
+ * `qsa`'s search rooted at one element: `el` itself, then its descendants
+ * outside nested child scopes, then a parent-owned slot forwarded through
+ * receivers.
+ */
+function qsaFromRoot(
+  el: Element,
+  selector: string,
+  receiverSlotIds: readonly string[] | undefined,
+  hostScopeId: string | null | undefined,
+): Element | null {
   if (el.matches(selector)) return el
 
   // Fast path: the overwhelmingly common case has no nested-child-scope
@@ -527,9 +599,9 @@ export function qsa(
   // rejected candidate to the next DOM-order match — when the first hit
   // actually turns out to belong to a nested child scope.
   const first = el.querySelector(selector)
-  if (!first || !isInsideNestedChildScope(first, el)) return first
+  if (!first || !isForeignCandidate(first, el, selector)) return first
   for (const candidate of el.querySelectorAll(selector)) {
-    if (candidate !== first && !isInsideNestedChildScope(candidate, el)) return candidate
+    if (candidate !== first && !isForeignCandidate(candidate, el, selector)) return candidate
   }
   // A parent-owned slot (`[bf="^sN"]`) is content `el` itself authored and
   // forwarded as a child component's `children`, so it legitimately renders
@@ -552,6 +624,30 @@ export function qsa(
     return findForwardedThroughReceivers(el, selector, receiverSlotIds, hostScopeId ?? el.getAttribute(BF_SCOPE))
   }
   return null
+}
+
+/**
+ * True when a `selector` match under `root` belongs to some other scope:
+ * it sits inside a nested child scope (`isInsideNestedChildScope`), or it is
+ * a nested child component's own root matched by its own slot marker
+ * (`isChildRootSlotMarker`).
+ */
+function isForeignCandidate(candidate: Element, root: Element, selector: string): boolean {
+  return isInsideNestedChildScope(candidate, root) || isChildRootSlotMarker(candidate, root, selector)
+}
+
+/**
+ * True when `candidate` is a child component's root (it carries its own
+ * `bf-s`) and `selector` is a plain slot-marker lookup (`[bf="sN"]` or
+ * `[bf="^sN"]`). That `bf` marker was written by the child's own template:
+ * slot ids are assigned per component file, so it can equal the slot the
+ * parent is looking for, and accepting it would bind the parent's binding
+ * to the child's element. A child root is still found by the child-scope
+ * selectors (`[bf-h="X"][bf-m="sN"]`, `[bf-s$="_sN"]`), and `root` itself
+ * still self-matches (a component looking up its own root slot).
+ */
+function isChildRootSlotMarker(candidate: Element, root: Element, selector: string): boolean {
+  return candidate !== root && candidate.hasAttribute(BF_SCOPE) && SLOT_MARKER_SELECTOR.test(selector)
 }
 
 /** The first `selector` match under `el` forwarded through receivers
@@ -623,6 +719,10 @@ function enclosingCommentScopeIds(node: Node): string[] {
 
 /** Selector form `[bf="^sN"]` — a compiler slot lookup for a parent-owned
  *  element (see `$()`). */
+/** Selector form `[bf="sN"]` / `[bf="^sN"]` — a compiler slot-marker
+ *  lookup (see `$()`), as opposed to a child-scope lookup. */
+const SLOT_MARKER_SELECTOR = new RegExp(`^\\[${BF_SLOT}="[^"]+"\\]$`)
+
 const PARENT_OWNED_SLOT_SELECTOR = new RegExp(`^\\[${BF_SLOT}="\\${BF_PARENT_OWNED_PREFIX}[^"]+"\\]$`)
 
 /** Split a CSS selector list on top-level commas, ignoring commas inside
