@@ -93,6 +93,33 @@ export function Host() {
     expect(js).toContain('get token() { return make() }')
   })
 
+  // Review finding on the PR: a reactive source reached through a local
+  // alias is still reactive, so the getter must keep re-evaluating.
+  test('an initializer reading a prop through a props alias still expands', () => {
+    const js = clientJsOf(hostWith('const p = props\n  const token = { n: p.n }', '<Child token={token} />', 'props: { n: number }'))
+    expect(js).not.toContain('get token() { return token }')
+  })
+
+  test('an initializer calling a signal through an alias still expands', () => {
+    const js = clientJsOf(hostWith('const get = count\n  const token = { n: get() }', '<Child token={token} />'))
+    expect(js).not.toContain('get token() { return token }')
+  })
+
+  test('an initializer reading a const derived from a signal still expands', () => {
+    const js = clientJsOf(hostWith('const half = count() / 2\n  const token = { n: half }', '<Child token={token} />'))
+    expect(js).not.toContain('get token() { return token }')
+  })
+
+  test('an alias of an alias is followed', () => {
+    const js = clientJsOf(hostWith('const p = props\n  const q = p\n  const token = { n: q.n }', '<Child token={token} />', 'props: { n: number }'))
+    expect(js).not.toContain('get token() { return token }')
+  })
+
+  test('a const reading only non-reactive consts keeps its identity', () => {
+    const js = clientJsOf(hostWith("const base = 3\n  const token = { n: base }", '<Child token={token} />'))
+    expect(js).toContain('get token() { return token }')
+  })
+
   test('a primitive const still expands as before', () => {
     const js = clientJsOf(hostWith("const token = 'x'", '<Child token={token} />'))
     expect(js).not.toContain('get token() { return token }')

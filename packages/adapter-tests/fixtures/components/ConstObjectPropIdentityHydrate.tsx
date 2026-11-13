@@ -25,6 +25,19 @@ function Same(props: { token: Token }) {
   )
 }
 
+// Reads the prop's `n` on click. A const that reaches reactive state through
+// a local alias (`const get = count`) is still reactive, so the read after
+// `bump` must see the new count.
+function Reads(props: { token: { n: number } }) {
+  const [result, setResult] = createSignal('unchecked')
+  return (
+    <span>
+      <button onClick={() => setResult(String(props.token.n))}>read</button>
+      <output>{result()}</output>
+    </span>
+  )
+}
+
 // Wrapped in an element: a component-rooted forwarder is a separate case.
 function Forward(props: { token: Token }) {
   return <i><Same token={props.token} /></i>
@@ -36,6 +49,9 @@ export function ConstObjectPropIdentityHydrate() {
   const arr = [1, 2]
   const made = new Map<string, number>()
   const fn = () => obj.n
+  const [count, setCount] = createSignal(0)
+  const get = count
+  const live = { n: get() }
   return (
     <div className="root">
       <p className="obj"><Same token={obj} /></p>
@@ -44,6 +60,8 @@ export function ConstObjectPropIdentityHydrate() {
       <p className="module"><Same token={MODULE_TOKEN} /></p>
       <p className="fn"><Same token={fn} /></p>
       <p className="forward"><Forward token={obj} /></p>
+      <p className="alias"><Reads token={live} /></p>
+      <button className="bump" onClick={() => setCount(count() + 1)}>bump</button>
       <button className="add" onClick={() => setRows([...rows(), { id: '3' }])}>add</button>
       <ul>{rows().map(r => <li key={r.id}><Same token={obj} /></li>)}</ul>
     </div>

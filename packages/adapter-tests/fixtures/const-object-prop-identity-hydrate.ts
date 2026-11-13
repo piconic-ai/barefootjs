@@ -7,7 +7,9 @@
  * initializer into the prop getter, so every read built a new object and the
  * child rendered `different`. Each child compares the two reads in a click
  * handler, so the server renders only `unchecked` and no backend compares
- * objects. The call shape (`const t = makeToken()`) is
+ * objects. A const that reaches a signal through a local alias
+ * (`const get = count; const live = { n: get() }`) stays live: the read after
+ * `bump` sees the new count. The call shape (`const t = makeToken()`) is
  * pinned on the emitted getter in `const-identity-child-prop.test.ts`; the
  * server-rendered values live in the `const-object-child-prop-identity`
  * conformance fixture.
@@ -33,6 +35,12 @@ export const spec: SharedFixtureSpec = {
       { type: 'click' as const, selector: `.root .${p} button` },
       { type: 'expectText' as const, selector: `.root .${p} output`, text: 'same' },
     ]),
+    // A const reading a signal through a local alias stays live.
+    { type: 'click', selector: '.root .alias button' },
+    { type: 'expectText', selector: '.root .alias output', text: '0' },
+    { type: 'click', selector: '.root .bump' },
+    { type: 'click', selector: '.root .alias button' },
+    { type: 'expectText', selector: '.root .alias output', text: '1' },
     { type: 'click', selector: '.root li:nth-of-type(1) button' },
     { type: 'expectText', selector: '.root li:nth-of-type(1) output', text: 'same' },
     // A row the client builds.

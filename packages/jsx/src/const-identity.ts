@@ -138,7 +138,28 @@ function reactiveSourceNames(ctx: AnalyzerContext): Set<string> {
     if (c.isModule) continue
     if (c.propsDestructure || c.isFunctionValue) names.add(c.name)
   }
+  addReactiveAliases(ctx, names)
   return names
+}
+
+/**
+ * A component const whose initializer reads a reactive source is one too:
+ * `const p = props` or `const get = count` aliases it, and
+ * `const half = count() / 2` derives from it. The client inlines such a
+ * const at each read, so a const that reads IT stays live as well. Runs
+ * to a fixpoint, since an alias may be declared through another alias.
+ */
+function addReactiveAliases(ctx: AnalyzerContext, names: Set<string>): void {
+  const consts = ctx.localConstants.filter(c => !c.isModule)
+  let grew = true
+  while (grew) {
+    grew = false
+    for (const c of consts) {
+      if (names.has(c.name) || !readsAny(c.freeIdentifiers, names)) continue
+      names.add(c.name)
+      grew = true
+    }
+  }
 }
 
 /**
