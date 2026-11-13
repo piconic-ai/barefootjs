@@ -19,6 +19,7 @@ export default defineLimitation({
     'module-const-inherited-key-iife',
     'module-const-inherited-key-signal-seed',
     'module-const-inherited-key-memo-const',
+    'module-const-inherited-key-memo-block',
     'module-const-inherited-key-memo-method',
     'module-const-inherited-key-child-prop',
   ],

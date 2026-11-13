@@ -10725,6 +10725,21 @@
         "text"
       ]
     },
+    "module-const-inherited-key-memo-block": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-const-inherited-key-memo-chain": {
       "kinds": [
         "binary",

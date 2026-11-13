@@ -25,14 +25,16 @@
  * const that only names another (`const A = R`) is read as that one.
  *
  * A block-bodied memo no single expression stands for has no server value
- * computed from its statements (it renders its static default whatever it
- * reads), so it is not read here.
+ * computed from its statements: it renders its static default. The browser
+ * still evaluates them for the same slot, so an inherited read in one of
+ * them (as far as the parse represents the block) is refused all the same;
+ * the block's own `const` / `let` names shadow the component's there.
  */
 
 import { parsedExprChildren } from '../action-accessor.ts'
 import { resolveStaticConstBinding } from '../augment-inherited-props.ts'
 import { isEventHandlerName } from '../event-handler-name.ts'
-import type { ParsedExpr } from '../expression-parser.ts'
+import type { ParsedExpr, ParsedStatement } from '../expression-parser.ts'
 import { localBindings, localCall, type LocalBindingResolver, type LocalScope } from '../local-call-body.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
 import { walkServerReads } from '../server-read-walk.ts'
@@ -63,9 +65,31 @@ export function refuseInheritedConstServerReads(ir: ComponentIR, sink: StaticCon
     refuseReads(expr, { scope: scope ?? component, from: 'component' }, { ...shared, place }, 'value')
   }, component)
   walkServerReads(ir, (read) => {
-    if (!read.expr) return
-    refuseReads(read.expr, { scope: shared.scopes[read.scope], from: read.scope }, { ...shared, place: { loc: read.loc } }, 'value')
+    const check = { ...shared, place: { loc: read.loc } }
+    const outer = shared.scopes[read.scope]
+    if (read.expr) refuseReads(read.expr, { scope: outer, from: read.scope }, check, 'value')
+    else if (read.block) {
+      const parts = blockParts(read.block)
+      const at = { scope: outer.enterCallback(parts.locals), from: read.scope }
+      for (const expr of parts.exprs) refuseReads(expr, at, check, 'value')
+    }
   })
+}
+
+/** The expressions parsed statements evaluate and the names they declare, nested `if` blocks included. */
+function blockParts(statements: readonly ParsedStatement[], into: { exprs: ParsedExpr[]; locals: string[] } = { exprs: [], locals: [] }) {
+  for (const s of statements) {
+    if (s.kind === 'var-decl') {
+      into.locals.push(s.name)
+      into.exprs.push(s.init)
+    } else if (s.kind === 'return') into.exprs.push(s.value)
+    else {
+      into.exprs.push(s.condition)
+      blockParts(s.consequent, into)
+      if (s.alternate) blockParts(s.alternate, into)
+    }
+  }
+  return into
 }
 
 interface Check {

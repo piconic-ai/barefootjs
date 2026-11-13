@@ -253,6 +253,7 @@ export const conformancePins: ConformancePins = {
   'module-const-inherited-key-iife': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
   'module-const-inherited-key-signal-seed': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
   'module-const-inherited-key-memo-const': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
+  'module-const-inherited-key-memo-block': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
   'module-const-inherited-key-memo-method': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
   'module-const-inherited-key-child-prop': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key', unescapable: true }],
   // A component-body destructure with no const form, and a read of a taken

@@ -7407,6 +7407,125 @@
           }
         }
       },
+      "module-const-inherited-key-memo-block": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-memo-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-memo-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-memo-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-memo-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-memo-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-memo-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-memo-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-memo-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-literal-inherited-key"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-inherited-key-memo-client"
+          }
+        }
+      },
       "module-const-inherited-key-memo-chain": {
         "blade": {
           "kind": "refusal",
@@ -12262,6 +12381,10 @@
         "description": "a memo reading an inherited const key, read at SSR, reads the inherited function",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-memo.ts"
       },
+      "module-const-inherited-key-memo-block": {
+        "description": "a block-bodied memo reading an inherited const key in a statement reads the inherited function",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-memo-block.ts"
+      },
       "module-const-inherited-key-memo-chain": {
         "description": "a memo reading an inherited const key, reached through another memo at SSR, reads the inherited…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-memo-chain.ts"
@@ -13116,6 +13239,7 @@
         "module-const-inherited-key-function-nested",
         "module-const-inherited-key-iife",
         "module-const-inherited-key-memo",
+        "module-const-inherited-key-memo-block",
         "module-const-inherited-key-memo-chain",
         "module-const-inherited-key-memo-const",
         "module-const-inherited-key-memo-method",

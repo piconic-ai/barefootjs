@@ -1436,6 +1436,7 @@ import { fixture as moduleConstInheritedKeyValueClient } from './module-const-in
 import { fixture as moduleConstInheritedKeyChildProp } from './module-const-inherited-key-child-prop'
 import { fixture as moduleConstInheritedKeyMemoMethod } from './module-const-inherited-key-memo-method'
 import { fixture as moduleConstInheritedKeyMemoConst } from './module-const-inherited-key-memo-const'
+import { fixture as moduleConstInheritedKeyMemoBlock } from './module-const-inherited-key-memo-block'
 import { fixture as moduleConstInheritedKeySignalSeed } from './module-const-inherited-key-signal-seed'
 import { fixture as moduleConstInheritedKeyObjectSafe } from './module-const-inherited-key-object-safe'
 import { fixture as undefinedLiteralElementPositions } from './undefined-literal-element-positions'
@@ -2543,6 +2544,7 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstInheritedKeyChildProp,
   moduleConstInheritedKeyMemoMethod,
   moduleConstInheritedKeyMemoConst,
+  moduleConstInheritedKeyMemoBlock,
   moduleConstInheritedKeySignalSeed,
   moduleConstInheritedKeyObjectSafe,
   undefinedLiteralElementPositions,
