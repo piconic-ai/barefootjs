@@ -10590,6 +10590,22 @@
         "text"
       ]
     },
+    "module-const-inherited-key-child-prop": {
+      "kinds": [
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-const-inherited-key-client": {
       "kinds": [
         "array-literal",
@@ -10626,6 +10642,7 @@
     "module-const-inherited-key-function-client": {
       "kinds": [
         "arrow",
+        "binary",
         "call",
         "conditional",
         "identifier",
@@ -10634,6 +10651,7 @@
         "object-literal"
       ],
       "axes": [
+        "binary:+",
         "literal:string"
       ],
       "contexts": [
@@ -10643,8 +10661,10 @@
     "module-const-inherited-key-function-direct": {
       "kinds": [
         "call",
+        "conditional",
         "identifier",
         "literal",
+        "member",
         "object-literal"
       ],
       "axes": [
@@ -10656,6 +10676,7 @@
     },
     "module-const-inherited-key-function-nested": {
       "kinds": [
+        "binary",
         "call",
         "conditional",
         "identifier",
@@ -10664,6 +10685,7 @@
         "object-literal"
       ],
       "axes": [
+        "binary:+",
         "literal:string"
       ],
       "contexts": [
@@ -10739,6 +10761,39 @@
         "text"
       ]
     },
+    "module-const-inherited-key-memo-const": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-inherited-key-memo-method": {
+      "kinds": [
+        "arrow",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-const-inherited-key-memo-mixed": {
       "kinds": [
         "call",
@@ -10805,6 +10860,39 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "module-const-inherited-key-signal-seed": {
+      "kinds": [
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-inherited-key-value-client": {
+      "kinds": [
+        "arrow",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
         "text"
       ]
     },
