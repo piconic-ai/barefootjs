@@ -1410,6 +1410,7 @@ import { fixture as moduleConstBooleanConditionalTest } from './module-const-boo
 import { fixture as constStringConditionalTest } from './const-string-conditional-test'
 import { fixture as literalConstConditionalShapes } from './literal-const-conditional-shapes'
 import { fixture as stringConstQuoteNewline } from './string-const-quote-newline'
+import { fixture as stringConstCarriageReturn } from './string-const-carriage-return'
 import { fixture as moduleConstArrayLiteralIndex } from './module-const-array-literal-index'
 import { fixture as moduleConstArrayChildProp } from './module-const-array-child-prop'
 import { fixture as moduleConstRecordChildProp } from './module-const-record-child-prop'
@@ -2494,6 +2495,7 @@ export const jsxFixtures: JSXFixture[] = [
   constStringConditionalTest,
   literalConstConditionalShapes,
   stringConstQuoteNewline,
+  stringConstCarriageReturn,
   moduleConstArrayLiteralIndex,
   moduleConstArrayChildProp,
   moduleConstRecordChildProp,

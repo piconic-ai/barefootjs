@@ -80,6 +80,9 @@ export function escapeRubySingleQuoted(s: string): string {
   return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
 }
 
+/** The escapes `rubyStringLiteral`'s double-quoted form spells as other than `\<char>`. */
+const RUBY_DOUBLE_QUOTED_ESCAPES: Readonly<Record<string, string>> = { '%': '\\x25', '\r': '\\r' }
+
 /**
  * Spell a string value as a Ruby string literal — the one door every
  * string value the adapter writes into template code goes through.
@@ -91,10 +94,14 @@ export function escapeRubySingleQuoted(s: string): string {
  * but no longer spells a delimiter), and `\` / `"` / `#` escaped against
  * interpolation. Any other value stays single-quoted. (`<%` inside a tag
  * is plain content to ERB.)
+ *
+ * A value holding a carriage return is written double-quoted too, with the
+ * CR spelled `\r`: Ruby reads a CRLF inside any string literal in its
+ * source as a lone LF, so a raw CR would not survive a `\r\n` pair.
  */
 export function rubyStringLiteral(s: string): string {
-  if (!s.includes('%>')) return `'${escapeRubySingleQuoted(s)}'`
-  return `"${s.replace(/[\\"#%]/g, ch => (ch === '%' ? '\\x25' : `\\${ch}`))}"`
+  if (!s.includes('%>') && !s.includes('\r')) return `'${escapeRubySingleQuoted(s)}'`
+  return `"${s.replace(/[\\"#%\r]/g, ch => RUBY_DOUBLE_QUOTED_ESCAPES[ch] ?? `\\${ch}`)}"`
 }
 
 /** A syntactically valid bare Ruby hash-key / symbol identifier. */

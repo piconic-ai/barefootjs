@@ -114,7 +114,7 @@ import {
 
 import type { TwigEmitContext } from '../emit-context.ts'
 import { TWIG_TEMPLATE_PRIMITIVES } from '../lib/constants.ts'
-import { twigIdent, escapeTwigSingleQuoted, twigHashKey } from '../lib/twig-naming.ts'
+import { twigIdent, twigStringLiteral, twigHashKey } from '../lib/twig-naming.ts'
 import {
   renderArrayMethod,
   renderSortMethod,
@@ -328,7 +328,7 @@ function memberRead(
   receiver: string,
   typing: ScopedOperandTyping,
 ): string {
-  const key = `'${escapeTwigSingleQuoted(property)}'`
+  const key = twigStringLiteral(property)
   if (optional) return `bf.get_opt(${receiver}, ${key})`
   const facts = operandFacts({ kind: 'member', object, property, computed: false, optional: false }, typing)
   return isNeverNil(facts) ? `${receiver}.${property}` : `bf.index(${receiver}, ${key})`
@@ -420,7 +420,7 @@ export class TwigFilterEmitter implements ParsedExprEmitter {
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType, plan: PrimitivePlan | null): string {
-    if (literalType === 'string') return `'${escapeTwigSingleQuoted(String(value))}'`
+    if (literalType === 'string') return twigStringLiteral(String(value))
     if (literalType === 'boolean') return value ? 'true' : 'false'
     if (literalType === 'null') return 'null'
     return numberLiteral(value, plan)
@@ -664,7 +664,7 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
   }
 
   literal(value: string | number | boolean | null, literalType: LiteralType, plan: PrimitivePlan | null): string {
-    if (literalType === 'string') return `'${escapeTwigSingleQuoted(String(value))}'`
+    if (literalType === 'string') return twigStringLiteral(String(value))
     if (literalType === 'boolean') return value ? 'true' : 'false'
     if (literalType === 'null') return 'null'
     return numberLiteral(value, plan)
@@ -926,7 +926,7 @@ export class TwigTopLevelEmitter implements ParsedExprEmitter {
     parts.forEach((part, i) => {
       if (part.type === 'string') {
         if (part.value !== '') {
-          terms.push(`'${escapeTwigSingleQuoted(part.value)}'`)
+          terms.push(twigStringLiteral(part.value))
         }
       } else {
         const grouped = groupBinaryOperand(part.expr, emit(part.expr))

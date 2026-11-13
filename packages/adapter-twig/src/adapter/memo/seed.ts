@@ -32,14 +32,14 @@ import {
 } from '@barefootjs/jsx'
 
 import type { TwigMemoContext } from '../emit-context.ts'
-import { twigIdent, escapeTwigSingleQuoted } from '../lib/twig-naming.ts'
+import { twigIdent, twigStringLiteral } from '../lib/twig-naming.ts'
 
 /** Twig literal for a context-consumer's `createContext` default. */
 export function contextDefaultTwig(c: ContextConsumer): string {
   const d = c.defaultValue
   if (d === undefined) return 'bf.undefined()'
   if (d === null) return 'null'
-  if (typeof d === 'string') return `'${escapeTwigSingleQuoted(d)}'`
+  if (typeof d === 'string') return twigStringLiteral(d)
   if (typeof d === 'boolean') return d ? 'true' : 'false'
   return String(d)
 }

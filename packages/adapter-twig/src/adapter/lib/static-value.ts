@@ -10,7 +10,7 @@
  * the caller falls back to its existing BF101 refusal instead of guessing.
  */
 
-import { escapeTwigSingleQuoted, twigHashKey } from './twig-naming.ts'
+import { twigStringLiteral, twigHashKey } from './twig-naming.ts'
 
 export function staticValueToTwig(value: unknown): string | null {
   // JS `undefined` is the runtime's `UNDEF` (`bf.undefined()`), `null` Twig's `null`.
@@ -18,7 +18,7 @@ export function staticValueToTwig(value: unknown): string | null {
   if (value === null) return 'null'
   if (typeof value === 'boolean') return value ? 'true' : 'false'
   if (typeof value === 'number') return String(value)
-  if (typeof value === 'string') return `'${escapeTwigSingleQuoted(value)}'`
+  if (typeof value === 'string') return twigStringLiteral(value)
   if (Array.isArray(value)) {
     const items: string[] = []
     for (const el of value) {
