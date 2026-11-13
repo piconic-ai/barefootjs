@@ -58,6 +58,8 @@ import {
   refuseNonPrimitiveStrictEquality,
   refuseInheritedConstServerReads,
   refuseUninlinableSeedCalls,
+  refuseUnappliedPropDefaults,
+  appliedPropDefaults,
   type ArithmeticCoercion,
   collectNullishAttrContext,
   isNativePlan,
@@ -849,6 +851,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.currentSignals = ir.metadata.signals ?? []
     this.state.currentTypeDefinitions = ir.metadata.typeDefinitions ?? []
     this.state.currentPropsParams = ir.metadata.propsParams ?? []
+    this.state.currentPropDefaults = appliedPropDefaults(ir.metadata)
     this.state.rowsFields = allocateRowsFields(
       findNestedComponents(ir.root),
       this.state.currentPropsParams,
@@ -961,6 +964,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     refuseInheritedConstServerReads(authoredIr, this.state)
     // A server-read signal seed or memo body calling a function no template can inline (#3721).
     refuseUninlinableSeedCalls(authoredIr, this.state)
+    // A server-read prop whose computed destructure default no template can apply (#3725).
+    refuseUnappliedPropDefaults(authoredIr, this.state)
     // A spread of an arbitrary object onto a child component (#3861).
     refuseObjectSpreadsOntoChildren(this.emitCtx, ir)
     this.state.stringValueNames = collectStringValueNames(ir)
@@ -2626,8 +2631,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * Apply each computed destructure default (one reading an earlier prop,
    * #3531, or any other non-literal one, `hasComputedDefault`) to the Input
    * before anything reads it (`dependentDefaultNormalization`), and refuse
-   * one reading an earlier prop that this adapter can't apply instead of
-   * rendering the prop without its default.
+   * one reading an earlier prop, a const or a function that this adapter
+   * can't apply instead of rendering the prop without its default.
    */
   private emitDependentDefaults(
     lines: string[],
@@ -2647,10 +2652,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       this.state.errors.push({
         code: 'BF101',
         severity: 'error',
-        message: `The default of prop '${name}' reads an earlier prop in a shape the Go template adapter can't apply in the props constructor`,
+        message: `The default of prop '${name}' reads an earlier prop, a const or a function in a shape the Go template adapter can't apply in the props constructor`,
         loc: this.makeLoc(),
         suggestion: {
-          message: `Destructure '${name}' without a default and compute its value from the earlier prop in the component body instead.`,
+          message: `Destructure '${name}' without a default and compute its value in the component body instead.`,
         },
       })
     }

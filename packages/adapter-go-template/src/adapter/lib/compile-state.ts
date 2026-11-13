@@ -25,6 +25,7 @@ import type {
   MemoInfo,
   NullishAttrContext,
   ParsedExpr,
+  PropDefaultApplication,
   SsrSeedPlan,
   TypeDefinition,
   TypeInfo,
@@ -170,6 +171,13 @@ export class CompileState {
    * (`resolvePropMemberSeed`, `value/prop-member-seed.ts`).
    */
   currentPropsParams: IRMetadata['propsParams'] = []
+
+  /**
+   * The current IR's computed destructure defaults, each as the expression
+   * it stands for, and the order the constructor applies them in
+   * (`appliedPropDefaults`, #3725).
+   */
+  currentPropDefaults: PropDefaultApplication = { order: [], defaults: new Map() }
 
   /**
    * Each child-component loop site's rows field and constructor local, by
