@@ -36,9 +36,9 @@ import type { ParsedExpr } from '../expression-parser.ts'
 import { localBindings, localCall, type LocalBindingResolver, type LocalScope } from '../local-call-body.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
 import { walkServerReads } from '../server-read-walk.ts'
-import { spellStaticConstMember, staticConstValue, staticIndexKey, type StaticConstMemberSink } from '../static-const-member.ts'
+import { spellStaticConstMember, staticConstValue, staticIndexKey, type InheritedReadPlace, type StaticConstMemberSink } from '../static-const-member.ts'
 import { walkTemplatePositions } from '../template-position-walk.ts'
-import type { ComponentIR, SourceLocation } from '../types.ts'
+import type { ComponentIR } from '../types.ts'
 
 type Constants = ComponentIR['metadata']['localConstants']
 
@@ -47,7 +47,7 @@ export function refuseInheritedConstServerReads(ir: ComponentIR, sink: StaticCon
   const constants = ir.metadata.localConstants ?? []
   if (constants.length === 0) return
   const component = BindingScope.forComponent(ir.metadata.propsObjectName ?? null)
-  const shared: Omit<Check, 'loc'> = {
+  const shared: Omit<Check, 'place'> = {
     // A module declaration's names are the module's: a component binding of a name does not hide them there.
     constants: { component: constants, module: constants.filter(c => c.isModule).map(c => ({ ...c, shadowedInComponent: false })) },
     scopes: { component, module: BindingScope.EMPTY },
@@ -55,13 +55,16 @@ export function refuseInheritedConstServerReads(ir: ComponentIR, sink: StaticCon
     sink,
     entered: new Set(),
   }
-  walkTemplatePositions(ir.root, ({ expr, scope, attrName, loc }) => {
+  // This pass runs before any emitter, so its record of a read is the one that stands.
+  walkTemplatePositions(ir.root, ({ expr, scope, attrName, loc, role }) => {
     if (attrName !== undefined && isEventHandlerName(attrName)) return
-    refuseReads(expr, { scope: scope ?? component, from: 'component' }, { ...shared, loc }, 'value')
+    // A component renders on the server whatever directive its prop carries.
+    const place = { loc, deferrable: role !== 'prop' }
+    refuseReads(expr, { scope: scope ?? component, from: 'component' }, { ...shared, place }, 'value')
   }, component)
   walkServerReads(ir, (read) => {
     if (!read.expr) return
-    refuseReads(read.expr, { scope: shared.scopes[read.scope], from: read.scope }, { ...shared, loc: read.loc }, 'value')
+    refuseReads(read.expr, { scope: shared.scopes[read.scope], from: read.scope }, { ...shared, place: { loc: read.loc } }, 'value')
   })
 }
 
@@ -71,7 +74,7 @@ interface Check {
   scopes: Record<LocalScope, BindingScope>
   resolve: LocalBindingResolver
   sink: StaticConstMemberSink
-  loc: SourceLocation
+  place: InheritedReadPlace
   /** The function bodies already entered, so one that calls itself ends. */
   entered: Set<ParsedExpr>
 }
@@ -96,7 +99,7 @@ function refuseReads(expr: ParsedExpr, at: At, check: Check, use: Use): void {
     const key = expr.kind === 'member' ? expr.property : staticIndexKey(expr.index)
     const isShadowed = (name: string): boolean => at.scope.isBound(name)
     const object = throughAliases(expr.object, check.constants[at.from], isShadowed)
-    if (key !== null) spellStaticConstMember(object, key, check.constants[at.from], isShadowed, check.sink, check.loc)
+    if (key !== null) spellStaticConstMember(object, key, check.constants[at.from], isShadowed, check.sink, check.place)
   }
   for (const child of parsedExprChildren(expr)) refuseReads(child.expr, at, check, childUse(expr, child.expr))
 }

@@ -89,6 +89,13 @@ export function lookupStaticConstMember(
   return read?.kind === 'value' ? read.expr : null
 }
 
+/** The place of an `inherited` read, as far as the caller of `spellStaticConstMember` knows it. */
+export interface InheritedReadPlace {
+  loc: SourceLocation
+  /** `false` when `/* @client *\/` cannot defer the read. */
+  deferrable?: boolean
+}
+
 /** Where a template adapter records the refusal of an `inherited` read. */
 export interface StaticConstMemberSink {
   readonly errors: CompilerError[]
@@ -104,7 +111,9 @@ export interface StaticConstMemberSink {
  * read through this, so the refusal fires exactly where a template would
  * spell the read: a position deferred with `/* @client *\/`, a method the
  * template never renders, or a name a binding shadows never reaches it.
- * `loc` is the declaration the read is in, when the caller knows it.
+ * `where` is what the caller knows about the read's place: its location,
+ * and whether `/* @client *\/` can defer it (a child component's prop
+ * cannot be: the component renders on the server either way).
  */
 export function spellStaticConstMember(
   object: ParsedExpr,
@@ -112,17 +121,17 @@ export function spellStaticConstMember(
   constants: StaticConstants,
   isShadowed: (name: string) => boolean,
   sink: StaticConstMemberSink,
-  loc?: SourceLocation,
+  where?: InheritedReadPlace,
 ): ParsedExpr | null {
   const read = readStaticConstMember(object, key, constants, isShadowed)
   if (read?.kind === 'inherited') {
-    recordInheritedRead(exprToString({ kind: 'member', object, property: key, computed: false, optional: false }), sink, loc)
+    recordInheritedRead(exprToString({ kind: 'member', object, property: key, computed: false, optional: false }), sink, where)
     return null
   }
   return read?.kind === 'value' ? read.expr : null
 }
 
-function recordInheritedRead(read: string, sink: StaticConstMemberSink, loc: SourceLocation | undefined): void {
+function recordInheritedRead(read: string, sink: StaticConstMemberSink, where: InheritedReadPlace | undefined): void {
   const message =
     `\`${read}\` reads a key the const's literal value does not have but its prototype does, so JS reads an inherited ` +
     'function there. A template holds the literal value without a prototype, so the server render cannot give the JS answer.'
@@ -131,11 +140,13 @@ function recordInheritedRead(read: string, sink: StaticConstMemberSink, loc: Sou
     code: 'BF101',
     severity: 'error',
     message,
-    loc: loc ?? { file: `${sink.componentName}.tsx`, start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
-    suggestion: {
-      message: 'Read a key the literal lists, or defer the read to the client with /* @client */.',
-      escape: [{ kind: 'client-directive' }],
-    },
+    loc: where?.loc ?? { file: `${sink.componentName}.tsx`, start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+    suggestion: where?.deferrable === false
+      ? { message: 'Read a key the literal lists.' }
+      : {
+          message: 'Read a key the literal lists, or defer the read to the client with /* @client */.',
+          escape: [{ kind: 'client-directive' }],
+        },
   })
 }
 

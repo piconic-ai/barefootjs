@@ -13,7 +13,7 @@ import type { CompilerError, ComponentIR } from '../types'
 const R = `const R = { k: 'v' }`
 const READ = `(R.toString ? 'y' : 'n')`
 
-function refused(body: string, preamble = ''): string[] {
+function irFor(body: string, preamble = ''): ComponentIR {
   const ctx = analyzeComponent(`
     'use client'
     import { createSignal, createMemo } from '@barefootjs/client'
@@ -23,11 +23,19 @@ function refused(body: string, preamble = ''): string[] {
       ${body}
     }
   `, 'C.tsx', 'C')
-  const ir: ComponentIR = { version: '0.1', metadata: buildMetadata(ctx), root: jsxToIR(ctx)!, errors: [] }
+  return { version: '0.1', metadata: buildMetadata(ctx), root: jsxToIR(ctx)!, errors: [] }
+}
+
+function refused(body: string, preamble = ''): string[] {
+  const ir = irFor(body, preamble)
+  return errorsOf(ir).map(e => e.message.slice(0, e.message.indexOf(' reads ')))
+}
+
+function errorsOf(ir: ComponentIR): CompilerError[] {
   const errors: CompilerError[] = []
   refuseInheritedConstServerReads(ir, { errors, componentName: 'C' })
   expect(errors.every(e => e.code === 'BF101')).toBe(true)
-  return errors.map(e => e.message.slice(0, e.message.indexOf(' reads ')))
+  return errors
 }
 
 describe('refuseInheritedConstServerReads', () => {
@@ -93,6 +101,13 @@ describe('refuseInheritedConstServerReads', () => {
 
   test('a method that calls itself ends', () => {
     expect(refused(`${R}; const H = { get: () => (R.toString ? H.get() : 'n') }; return <p>{H.get()}</p>`)).toEqual(['`R.toString`'])
+  })
+
+  test('only a read /* @client */ can defer claims that escape', () => {
+    const claims = (body: string) => errorsOf(irFor(body)).map(e => e.suggestion?.escape?.map(x => x.kind) ?? [])
+    expect(claims(`${R}; return <p>{${READ}}</p>`)).toEqual([['client-directive']])
+    expect(claims(`${R}; const m = createMemo(() => ${READ}); return <p>{m()}</p>`)).toEqual([['client-directive']])
+    expect(claims(`${R}; return <p><Child v={${READ}} /></p>`)).toEqual([[]])
   })
 
   test('a listed or provably missing key is not refused', () => {
