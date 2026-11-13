@@ -117,6 +117,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // in markup outside a `{{…}}` action, so a `"` no longer closes the
 // surrounding attribute.
 export const renderDivergences: RenderDivergences = {
+  // A method call on a module array-literal const reads the const as an
+  // unbound template variable.
+  'module-const-array-method-call': { limitation: 'module-const-array-method-call' },
   // Markup reading, without calling it, a local function named like a typed
   // prop the body never binds: the template reads the prop of that name.
   'markup-local-function-read-named-like-prop': { limitation: 'local-function-read-named-like-prop' },

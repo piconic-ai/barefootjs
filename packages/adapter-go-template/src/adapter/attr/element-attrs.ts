@@ -246,6 +246,10 @@ function emitNilGuardedAttr(host: ElementAttrHost, value: ExpressionAttr, nameTo
     const goExpr = ctx.convertExpressionToGo(value.expr, undefined, value.parsed)
     return `{{if ne (${goExpr}) nil}}${nameTok}="{{${host.numericTextExpression(goExpr, value.parsed)}}}"{{end}}`
   }
+  // A value that is `undefined` or `null` at compile time (written so, or a
+  // literal const member the literal lacks, #3813) omits the attribute, as
+  // Hono does. The generic lowering spells it `""`, which a nil guard keeps.
+  if (isNullishConstant(value.parsed)) return ''
   // Lower once; if the result is already a self-contained action block (e.g.
   // an inlined `sortClass(k)` → `{{if …}}…{{end}}`), embed it as-is rather
   // than double-wrapping it in another `{{…}}`.
@@ -466,4 +470,9 @@ function renderTemplateLiteralParts(host: ElementAttrHost, parts: IRTemplatePart
     }
   }
   return output
+}
+
+/** `undefined` or `null`, written as such. */
+function isNullishConstant(e: ParsedExpr | undefined): boolean {
+  return (e?.kind === 'identifier' && e.name === 'undefined') || (e?.kind === 'literal' && e.literalType === 'null')
 }

@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'bun:test'
-import { lookupStaticArrayElement, lookupStaticRecordLiteral } from '../augment-inherited-props.ts'
+import { lookupStaticRecordLiteral } from '../augment-inherited-props.ts'
+import { lookupStaticConstMember, readStaticConstMember, staticIndexKey } from '../static-const-member.ts'
 import { parseExpression } from '../expression-parser.ts'
 import { analyzeComponent } from '../analyzer.ts'
 import { buildMetadata } from '../compiler.ts'
@@ -11,7 +12,8 @@ function moduleConst(name: string, value: string, extra: Partial<ConstantInfo> =
   return {
     name,
     value: value as ConstantInfo['value'],
-    parsed: parseExpression(value),
+    // Parenthesised, as the analyzer parses it, so an object literal is not a block.
+    parsed: parseExpression(`(${value})`),
     declarationKind: 'const',
     isModule: true,
     type: null,
@@ -23,8 +25,12 @@ function moduleConst(name: string, value: string, extra: Partial<ConstantInfo> =
 const notShadowed = () => false
 const num = (value: number) => ({ kind: 'literal', value, literalType: 'number', raw: String(value) })
 const str = (value: string) => ({ kind: 'literal', value, literalType: 'string' })
+const UNDEFINED = { kind: 'identifier', name: 'undefined' }
+const ident = (name: string) => ({ kind: 'identifier' as const, name })
+const lookupStaticArrayElement = (name: string, key: string, constants: ConstantInfo[] | undefined, isShadowed: (n: string) => boolean) =>
+  lookupStaticConstMember(ident(name), key, constants, isShadowed)
 
-describe('lookupStaticArrayElement', () => {
+describe('lookupStaticConstMember: an array literal', () => {
   const QS = moduleConst('QS', `['a1', "b\\"c", \`m1\nm2\`, 1e3, 0x10, .5, -0, -1.5]`)
   const read = (key: string) => lookupStaticArrayElement('QS', key, [QS], notShadowed)
 
@@ -46,11 +52,17 @@ describe('lookupStaticArrayElement', () => {
     expect(read('length')).toEqual(num(8))
   })
 
-  test('a key that names no element falls back to the generic lowering', () => {
-    expect(read('01')).toBeNull()
-    expect(read('8')).toBeNull()
-    expect(read('-1')).toBeNull()
-    expect(read('x')).toBeNull()
+  test('a key that names no element reads undefined', () => {
+    expect(read('01')).toEqual(UNDEFINED)
+    expect(read('8')).toEqual(UNDEFINED)
+    expect(read('-1')).toEqual(UNDEFINED)
+    expect(read('x')).toEqual(UNDEFINED)
+  })
+
+  test('a key only Array.prototype has is inherited, not undefined', () => {
+    expect(read('map')).toBeNull()
+    expect(readStaticConstMember(ident('QS'), 'map', [QS], notShadowed)).toEqual({ kind: 'inherited', key: 'map' })
+    expect(readStaticConstMember(ident('QS'), 'constructor', [QS], notShadowed)).toEqual({ kind: 'inherited', key: 'constructor' })
   })
 
   test('a hole, a spread or a non-literal element is not resolved', () => {
@@ -58,8 +70,13 @@ describe('lookupStaticArrayElement', () => {
     expect(lookupStaticArrayElement('H', '0', [holes], notShadowed)).toEqual(str('a'))
     expect(lookupStaticArrayElement('H', '2', [holes], notShadowed)).toBeNull()
     expect(lookupStaticArrayElement('H', 'length', [holes], notShadowed)).toBeNull()
+    // Past the end is unknown once a hole or spread hides the length, but a
+    // non-index key is missing either way.
+    expect(lookupStaticArrayElement('H', '9', [holes], notShadowed)).toBeNull()
+    expect(lookupStaticArrayElement('H', '01', [holes], notShadowed)).toEqual(UNDEFINED)
     const spread = moduleConst('S', `[...xs, 'b']`)
     expect(lookupStaticArrayElement('S', '1', [spread], notShadowed)).toBeNull()
+    expect(lookupStaticArrayElement('S', '9', [spread], notShadowed)).toBeNull()
     const ref = moduleConst('R', `[other, 'b']`)
     expect(lookupStaticArrayElement('R', '0', [ref], notShadowed)).toBeNull()
     expect(lookupStaticArrayElement('R', '1', [ref], notShadowed)).toEqual(str('b'))
@@ -73,10 +90,64 @@ describe('lookupStaticArrayElement', () => {
     expect(lookupStaticArrayElement('QS', 'length', [mutated], notShadowed)).toBeNull()
   })
 
-  test('a record const is not an array, and the record lookup no longer reads arrays', () => {
-    const rec = moduleConst('REC', `{ lf: 'r1' }`)
-    expect(lookupStaticArrayElement('REC', 'lf', [rec], notShadowed)).toBeNull()
+  test('the record lookup does not read arrays', () => {
     expect(lookupStaticRecordLiteral('QS', '0', [QS], notShadowed)).toBeNull()
+  })
+})
+
+describe('lookupStaticConstMember: an object literal and a nested read', () => {
+  const REC = moduleConst('REC', `{ k: 'v', n: 3, k2: 'a', k2: 'b' }`)
+  const NEST = moduleConst('NEST', `{ a: { b: 1, q: ['x'] } }`)
+  const member = (object: Parameters<typeof lookupStaticConstMember>[0], key: string) =>
+    lookupStaticConstMember(object, key, [REC, NEST], notShadowed)
+  const nestA = { kind: 'member' as const, object: ident('NEST'), property: 'a', computed: false, optional: false }
+
+  test('a listed key reads its value, the last entry winning', () => {
+    expect(member(ident('REC'), 'k')).toEqual(str('v'))
+    expect(member(ident('REC'), 'n')).toEqual(num(3))
+    expect(member(ident('REC'), 'k2')).toEqual(str('b'))
+    expect(member(nestA, 'b')).toEqual(num(1))
+  })
+
+  test('a key the literal does not list reads undefined, nested too', () => {
+    expect(member(ident('REC'), 'nope')).toEqual(UNDEFINED)
+    expect(member(ident('REC'), 'length')).toEqual(UNDEFINED)
+    expect(member(nestA, 'c')).toEqual(UNDEFINED)
+    expect(member({ kind: 'member', object: nestA, property: 'q', computed: false, optional: false }, '1')).toEqual(UNDEFINED)
+  })
+
+  test('a key only Object.prototype has is inherited', () => {
+    for (const key of ['toString', 'constructor', 'hasOwnProperty', '__proto__']) {
+      expect(member(ident('REC'), key)).toBeNull()
+      expect(readStaticConstMember(ident('REC'), key, [REC], notShadowed)).toEqual({ kind: 'inherited', key })
+    }
+    expect(readStaticConstMember(nestA, 'toString', [NEST], notShadowed)).toEqual({ kind: 'inherited', key: 'toString' })
+  })
+
+  test('a spread or an __proto__ entry makes a missing key unknown', () => {
+    const spread = moduleConst('SP', `{ ...base, k: 'v' }`)
+    const proto = moduleConst('PR', `{ __proto__: base, k: 'v' }`)
+    expect(lookupStaticConstMember(ident('SP'), 'nope', [spread], notShadowed)).toBeNull()
+    expect(lookupStaticConstMember(ident('PR'), 'nope', [proto], notShadowed)).toBeNull()
+  })
+
+  test('a value that is not a string or number has no compile-time value', () => {
+    expect(member(ident('NEST'), 'a')).toBeNull()
+    expect(member(nestA, 'q')).toBeNull()
+  })
+
+  test('a shadowed root keeps the read live', () => {
+    expect(lookupStaticConstMember(ident('REC'), 'nope', [REC], name => name === 'REC')).toBeNull()
+  })
+})
+
+describe('staticIndexKey', () => {
+  test('a literal index is its JS property key', () => {
+    expect(staticIndexKey(num(1))).toBe('1')
+    expect(staticIndexKey(str('01'))).toBe('01')
+    expect(staticIndexKey({ kind: 'unary', op: '-', argument: num(1) } as never)).toBe('-1')
+    expect(staticIndexKey({ kind: 'unary', op: '-', argument: num(0) } as never)).toBe('0')
+    expect(staticIndexKey(ident('i'))).toBeNull()
   })
 })
 

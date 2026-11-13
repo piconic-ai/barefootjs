@@ -1418,6 +1418,29 @@ import { fixture as moduleConstObjectArrayChildProp } from './module-const-objec
 import { fixture as moduleConstEmptyArrayChildProp } from './module-const-empty-array-child-prop'
 import { fixture as moduleConstArrayChildPropForwarded } from './module-const-array-child-prop-forwarded'
 import { fixture as moduleConstArrayNegativeZero } from './module-const-array-negative-zero'
+import { fixture as moduleConstMissingKey } from './module-const-missing-key'
+import { fixture as moduleConstInheritedKey } from './module-const-inherited-key'
+import { fixture as moduleConstInheritedKeyClient } from './module-const-inherited-key-client'
+import { fixture as moduleConstInheritedKeyMemo } from './module-const-inherited-key-memo'
+import { fixture as moduleConstInheritedKeyMemoChain } from './module-const-inherited-key-memo-chain'
+import { fixture as moduleConstInheritedKeyMemoMixed } from './module-const-inherited-key-memo-mixed'
+import { fixture as moduleConstInheritedKeyMemoClient } from './module-const-inherited-key-memo-client'
+import { fixture as moduleConstInheritedKeyFunction } from './module-const-inherited-key-function'
+import { fixture as moduleConstInheritedKeyFunctionDirect } from './module-const-inherited-key-function-direct'
+import { fixture as moduleConstInheritedKeyFunctionNested } from './module-const-inherited-key-function-nested'
+import { fixture as moduleConstInheritedKeyObjectMethod } from './module-const-inherited-key-object-method'
+import { fixture as moduleConstInheritedKeyIife } from './module-const-inherited-key-iife'
+import { fixture as moduleConstInheritedKeyFunctionClient } from './module-const-inherited-key-function-client'
+import { fixture as moduleConstInheritedKeyRowShadow } from './module-const-inherited-key-row-shadow'
+import { fixture as moduleConstInheritedKeyValueClient } from './module-const-inherited-key-value-client'
+import { fixture as moduleConstInheritedKeyChildProp } from './module-const-inherited-key-child-prop'
+import { fixture as moduleConstInheritedKeyMemoMethod } from './module-const-inherited-key-memo-method'
+import { fixture as moduleConstInheritedKeyMemoConst } from './module-const-inherited-key-memo-const'
+import { fixture as moduleConstInheritedKeyMemoBlock } from './module-const-inherited-key-memo-block'
+import { fixture as moduleConstInheritedKeySignalSeed } from './module-const-inherited-key-signal-seed'
+import { fixture as moduleConstInheritedKeyObjectSafe } from './module-const-inherited-key-object-safe'
+import { fixture as undefinedLiteralElementPositions } from './undefined-literal-element-positions'
+import { fixture as moduleConstArrayMethodCall } from './module-const-array-method-call'
 import { fixture as localConstLiteralIndex } from './local-const-literal-index'
 // Static text starting with `:` / `%` right after a ternary, or as a
 // ternary branch — a template line the engine must not read as a line
@@ -2503,6 +2526,29 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstEmptyArrayChildProp,
   moduleConstArrayChildPropForwarded,
   moduleConstArrayNegativeZero,
+  moduleConstMissingKey,
+  moduleConstInheritedKey,
+  moduleConstInheritedKeyClient,
+  moduleConstInheritedKeyMemo,
+  moduleConstInheritedKeyMemoChain,
+  moduleConstInheritedKeyMemoMixed,
+  moduleConstInheritedKeyMemoClient,
+  moduleConstInheritedKeyFunction,
+  moduleConstInheritedKeyFunctionDirect,
+  moduleConstInheritedKeyFunctionNested,
+  moduleConstInheritedKeyObjectMethod,
+  moduleConstInheritedKeyIife,
+  moduleConstInheritedKeyFunctionClient,
+  moduleConstInheritedKeyRowShadow,
+  moduleConstInheritedKeyValueClient,
+  moduleConstInheritedKeyChildProp,
+  moduleConstInheritedKeyMemoMethod,
+  moduleConstInheritedKeyMemoConst,
+  moduleConstInheritedKeyMemoBlock,
+  moduleConstInheritedKeySignalSeed,
+  moduleConstInheritedKeyObjectSafe,
+  undefinedLiteralElementPositions,
+  moduleConstArrayMethodCall,
   localConstLiteralIndex,
   conditionalThenColonText,
   conditionalThenPercentText,

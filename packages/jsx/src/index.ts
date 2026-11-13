@@ -136,6 +136,7 @@ export { concatType, declaredValueMayBeNil, declaredValueTypes, loopRowType, typ
 export { collectNumberValueNames, isNumberValuedExpr, numberValuedSeedNames } from './adapters/number-value.ts'
 export { operandFacts, planPrimitive, planTest, spellTest, primitivesAt, isNativePlan, relationalHelper, isNativeToNumber, booleanValueSites, planTextDisplay, foldNegatedNumberLiteral, numberLiteralSpelling, isRuntimeNumberLiteral, plusSpelling, planToString, needsToString, strictEqSpelling, mayHoldObject, isNullishTest, isNilLiteralOperand, nilTestOperand, refuseUnspelledNilTest, NON_PRIMITIVE_EQUALITY_REASON } from './adapters/primitive-plan.ts'
 export { refuseNonPrimitiveStrictEquality, type NonPrimitiveEqualitySink } from './adapters/non-primitive-equality.ts'
+export { refuseInheritedConstServerReads } from './adapters/inherited-const-server-read.ts'
 export { refuseUninlinableSeedCalls, type UninlinableSeedCallSink } from './adapters/uninlinable-seed-call.ts'
 export { rewriteNilReadings, rewriteNilReadingsDeep, isNilReadingFallback, NAN_LITERAL } from './adapters/nil-reading.ts'
 export type { PrimitiveOp, Proof, NativeSafeClaims, NativeSafeTable, PrimitiveHelper, NilTestHelper, PrimitivePlan, PrimitiveInputs, TextDisplay, NumberLiteralSpelling, PlusSpelling, StrictEqSpelling } from './adapters/primitive-plan.ts'
@@ -497,8 +498,9 @@ export { BOOLEAN_ATTRS, isBooleanAttr } from './html-constants.ts'
 export { USE_CLIENT_DIRECTIVE, CLIENT_EXPRESSION_DIRECTIVE } from './directives.ts'
 
 // Shared props-object-pattern helpers for the Go / Mojo template adapters
-export { augmentInheritedPropAccesses, parseRecordIndexAccess, evalStringArrayJoin, collectModuleStringConsts, lookupStaticRecordLiteral, lookupStaticArrayElement, resolveStaticConstBinding, lookupLiteralConst, collectContextConsumers, contextConsumerSeed, type LiteralConst } from './augment-inherited-props.ts'
+export { augmentInheritedPropAccesses, parseRecordIndexAccess, evalStringArrayJoin, collectModuleStringConsts, lookupStaticRecordLiteral, resolveStaticConstBinding, lookupLiteralConst, collectContextConsumers, contextConsumerSeed, type LiteralConst } from './augment-inherited-props.ts'
 export type { RecordIndexAccess, RecordIndexEntry, ContextConsumer } from './augment-inherited-props.ts'
+export { lookupStaticConstMember, readStaticConstMember, spellStaticConstMember, staticIndexKey, type StaticConstMemberRead, type StaticConstMemberSink } from './static-const-member.ts'
 
 // HTML element attribute types
 export type {

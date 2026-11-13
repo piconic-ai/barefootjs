@@ -87,8 +87,8 @@ export interface ChildInputHost {
   extractScopedHtmlChildren(children: IRNode[]): string | null
   /** A static `Const.key` / `Const[0]` read of a module literal const, as a Go literal, or null. */
   resolveStaticConstMember(objectName: string, key: string): string | null
-  /** The element (or `length`) of a module array-literal const at a literal key, as a typed `ParsedExpr`, or null. */
-  staticArrayElement(objectName: string, key: string): ParsedExpr | null
+  /** The compile-time value of a literal const member read (`undefined` for a key the literal lacks), as a typed `ParsedExpr`, or null. */
+  staticConstMember(object: ParsedExpr, key: string): ParsedExpr | null
 }
 
 /**
@@ -333,20 +333,26 @@ function lowerExpressionChildProp(
       return true
     }
   }
-  // A module record or array literal const read with a literal key
-  // (`v={REC.lf}`, `v={QS[0]}`) is a compile-time value: the constructor
-  // has no binding of the const's name.
-  if (parsedValue?.kind === 'member' && parsedValue.object.kind === 'identifier') {
-    const element = site.host.staticArrayElement(parsedValue.object.name, parsedValue.property)
-    const goVal = element !== null
-      ? parsedLiteralToGo(site.host.ctx, element)
-      : site.host.resolveStaticConstMember(parsedValue.object.name, parsedValue.property)
-    if (goVal !== null) {
-      site.emit(prop.name, goVal)
-      return true
-    }
+  const constVal = parsedValue?.kind === 'member' ? staticConstMemberChildPropValue(site, parsedValue) : null
+  if (constVal !== null) {
+    site.emit(prop.name, constVal)
+    return true
   }
   return lowerResolvedChildProp(site, prop, exprText, parsedValue)
+}
+
+/**
+ * A module record or array literal const read with a literal key
+ * (`v={REC.lf}`, `v={QS[0]}`, `v={NEST.a.b}`) is a compile-time value: the
+ * constructor has no binding of the const's name. Its Go value, or null.
+ */
+function staticConstMemberChildPropValue(
+  site: ChildCallSite,
+  member: Extract<ParsedExpr, { kind: 'member' }>,
+): string | null {
+  const element = site.host.staticConstMember(member.object, member.property)
+  if (element !== null) return parsedLiteralToGo(site.host.ctx, element)
+  return member.object.kind === 'identifier' ? site.host.resolveStaticConstMember(member.object.name, member.property) : null
 }
 
 /**

@@ -220,6 +220,20 @@ export const conformancePins: ConformancePins = {
   // time reads inherited keys in JS (`labels['toString']`); no template
   // lookup does, so the read refuses rather than rendering `undefined`.
   'record-const-index-inherited-key': [{ code: 'BF101', severity: 'error', limitation: 'record-const-index-unknown-keys' }],
+  'module-const-inherited-key': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
+  'module-const-inherited-key-memo': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
+  'module-const-inherited-key-memo-chain': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
+  'module-const-inherited-key-memo-mixed': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
+  'module-const-inherited-key-function': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
+  'module-const-inherited-key-function-direct': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
+  'module-const-inherited-key-function-nested': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
+  'module-const-inherited-key-object-method': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
+  'module-const-inherited-key-iife': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
+  'module-const-inherited-key-signal-seed': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
+  'module-const-inherited-key-memo-const': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
+  'module-const-inherited-key-memo-block': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
+  'module-const-inherited-key-memo-method': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
+  'module-const-inherited-key-child-prop': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key', unescapable: true }],
   // A component-body destructure with no const form, and a read of a taken
   // key through a props-object body rest, are refused in the shared
   // analyzer, ahead of any adapter (#3854).

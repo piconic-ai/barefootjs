@@ -59,11 +59,12 @@ export interface ErbEmitContext {
   resolveStaticRecordLiteral(objectName: string, key: string): string | null
 
   /**
-   * The element (or `length`) of a module array-literal const read with a
-   * literal key (`QS[0]`), as a typed `ParsedExpr` the emitter spells in
-   * context, or null (`lookupStaticArrayElement`).
+   * The compile-time value of a literal const member read (`QS[0]`,
+   * `QS.length`, `REC.k`, `NEST.a.c`; `undefined` for a key the literal
+   * lacks), as a typed `ParsedExpr` the emitter spells in context, or null
+   * (`lookupStaticConstMember`).
    */
-  staticArrayElement(objectName: string, key: string): ParsedExpr | null
+  staticConstMember(object: ParsedExpr, key: string): ParsedExpr | null
 
   /**
    * Whether `name` currently names a bare Ruby local bound by an enclosing

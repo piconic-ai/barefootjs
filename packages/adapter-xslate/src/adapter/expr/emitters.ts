@@ -63,6 +63,7 @@ import { arithmeticHelper, groupBinaryOperand, groupUnaryOperand,
   isNeverNil,
   type NilTestHelper,
   type ScopedOperandTyping,
+  staticIndexKey,
 } from '@barefootjs/jsx'
 
 import type { XslateEmitContext } from '../emit-context.ts'
@@ -675,9 +676,9 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
     // (`variantClasses.ghost`, #1897) resolves at compile time — the
     // generic dot lowering below would reference a Kolon var that
     // doesn't exist server-side and silently render ''.
+    const element = this.ctx._staticConstMember(object, property)
+    if (element !== null) return emit(element)
     if (object.kind === 'identifier') {
-      const element = this.ctx._staticArrayElement(object.name, property)
-      if (element !== null) return emit(element)
       const staticValue = this.ctx._resolveStaticRecordLiteral(object.name, property)
       if (staticValue !== null) return staticValue
     }
@@ -692,6 +693,10 @@ export class XslateTopLevelEmitter implements ParsedExprEmitter {
   }
 
   indexAccess(object: ParsedExpr, index: ParsedExpr, emit: (e: ParsedExpr) => string, _plan: PrimitivePlan | null): string {
+    // A literal key of a literal const (`QS[-1]`) is a compile-time read (#3813).
+    const key = staticIndexKey(index)
+    const element = key === null ? null : this.ctx._staticConstMember(object, key)
+    if (element !== null) return emit(element)
     // Same receiver-aware, canonical-index lookup as the filter emitter.
     return `$bf.get(${emit(object)}, ${emit(index)})`
   }

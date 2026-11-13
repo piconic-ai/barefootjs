@@ -22,7 +22,7 @@
  * server) read nothing here.
  */
 
-import { freeIdentifiers, mapParsedExpr, type ParsedExpr } from './expression-parser.ts'
+import { freeIdentifiers, mapParsedExpr, type ParsedExpr, type ParsedStatement } from './expression-parser.ts'
 import { isEventHandlerName } from './event-handler-name.ts'
 import { localBindings, localCall, type LocalBinding, type LocalBindingResolver, type LocalScope } from './local-call-body.ts'
 import { BindingScope } from './scope/binding-scope.ts'
@@ -36,6 +36,18 @@ export interface ServerRead {
   /** The scope the declaration sits in. */
   scope: LocalScope
   loc: SourceLocation
+  /**
+   * The expression its value comes from (a called function's returned
+   * expression), read in `scope`. Unset for a declaration with no
+   * expression tree (a block-bodied memo no single expression stands for).
+   */
+  expr: ParsedExpr | undefined
+  /**
+   * The statements of a block-bodied memo with no `expr`, as far as its
+   * parse represents them. No server value is computed from them, but they
+   * are what the browser evaluates for the same slot.
+   */
+  block: readonly ParsedStatement[] | undefined
   /**
    * The functions its expression calls with no arguments that a template
    * cannot inline, by the name they are called under. Empty for a
@@ -55,6 +67,7 @@ interface Followed {
   kind: ServerRead['kind']
   loc: SourceLocation
   expr: ParsedExpr | undefined
+  block?: readonly ParsedStatement[]
   /** The names the declaration reads when its expression has no tree. */
   fallback: ReadonlySet<string> | undefined
 }
@@ -71,7 +84,7 @@ export function walkServerReads(ir: ComponentIR, visit: (read: ServerRead) => vo
     seen.add(binding)
     const reads = readsOf(followed.expr, followed.fallback)
     const refusedCalls = [...reads.called].filter(fn => localCall(resolve(fn, binding.scope))?.kind === 'refuse')
-    visit({ name, kind: followed.kind, scope: binding.scope, loc: followed.loc, refusedCalls })
+    visit({ name, kind: followed.kind, scope: binding.scope, loc: followed.loc, expr: followed.expr, block: followed.block, refusedCalls })
     pending.push({ reads, from: binding.scope })
   }
   const followReads = (reads: Reads, from: LocalScope, isBound: (name: string) => boolean): void => {
@@ -110,7 +123,9 @@ function followedDeclaration(binding: LocalBinding): Followed | null {
     }
     case 'memo': {
       const m = binding.info
-      return m.isModule ? null : { kind: 'memo', loc: m.loc, expr: m.parsed, fallback: m.computationFreeIdentifiers }
+      if (m.isModule) return null
+      const block = m.parsed ? undefined : m.parsedBlock
+      return { kind: 'memo', loc: m.loc, expr: m.parsed, block, fallback: m.computationFreeIdentifiers }
     }
     case 'const': {
       const c = binding.info
