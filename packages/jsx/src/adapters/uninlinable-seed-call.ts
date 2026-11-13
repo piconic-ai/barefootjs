@@ -124,7 +124,7 @@ function record(kind: 'signal' | 'memo', name: string, fn: string, loc: SourceLo
     loc,
     suggestion: {
       message: `Make '${fn}' a single 'return <expr>' with no parameters, or defer the reads of '${name}' to the client with /* @client */.`,
-      escape: [{ kind: 'rewrite' }, { kind: 'client-directive' }],
+      escape: [{ kind: 'client-directive' }],
     },
   })
 }
