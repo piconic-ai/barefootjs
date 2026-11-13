@@ -1426,6 +1426,7 @@ import { fixture as constAliasHopLoopShadow } from './const-alias-hop-loop-shado
 import { fixture as constAliasLoopShadowHydrate } from './const-alias-loop-shadow-hydrate'
 import { fixture as constObjectChildPropIdentity } from './const-object-child-prop-identity'
 import { fixture as constObjectPropIdentityHydrate } from './const-object-prop-identity-hydrate'
+import { fixture as signalConstObjectChildProp } from './signal-const-object-child-prop'
 import { fixture as constAliasDefaultPropLoopShadow } from './const-alias-default-prop-loop-shadow'
 import { fixture as constGetterReadLoopShadowed } from './const-getter-read-loop-shadowed'
 import { fixture as moduleConstHopLoopShadow } from './module-const-hop-loop-shadow'
@@ -2534,6 +2535,7 @@ export const jsxFixtures: JSXFixture[] = [
   constAliasLoopShadowHydrate,
   constObjectChildPropIdentity,
   constObjectPropIdentityHydrate,
+  signalConstObjectChildProp,
   constAliasDefaultPropLoopShadow,
   constGetterReadLoopShadowed,
   moduleConstHopLoopShadow,

@@ -1,47 +1,49 @@
-import { $, __bfSlot, createComponent, createSignal, escapeText, hydrate, insert, createEffect, initChild, ownScopeId, renderChild, $c, escapeAttr, mapArray, mountRowRoot, upsertChild } from '@barefootjs/client/runtime'
+import { $, createComponent, createEffect, createSignal, escapeTextOrMarkup, escapeTextOrNode, hydrate, lazySlots, $c, initChild, renderChild, escapeAttr, mapArray, mountRowRoot, upsertChild } from '@barefootjs/client/runtime'
 
 export function initSame(__scope, _p = {}) {
   if (!__scope) return
   const __scopeId = __scope.getAttribute('bf-s')
 
+  const [result, setResult] = createSignal('unchecked')
+
   const [_s0] = $(__scope, 's0')
 
-  insert(__scope, 's0', () => _p.token === _p.token, {
-    template: () => { const __slots = []; return { html: `<!--bf-cond-start:s0-->${__bfSlot('same', __slots)}<!--bf-cond-end:s0-->`, slots: __slots } },
-    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
-    }
-  }, {
-    template: () => { const __slots = []; return { html: `<!--bf-cond-start:s0-->${__bfSlot('different', __slots)}<!--bf-cond-end:s0-->`, slots: __slots } },
-    bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
-    }
+  const __bfw_s1 = lazySlots(__scope, [{ id: 's1', kind: 'markup', path: [] }])
+  createEffect(() => {
+    const __val = result()
+    __bfw_s1('s1', escapeTextOrNode(__val))
   })
 
+  if (_s0) _s0.addEventListener('click', () => setResult(_p.token === _p.token ? 'same' : 'different'))
 }
 
-hydrate('Same__bb81634c', { init: initSame, template: (_p) => `<output bf="s1">${_p.token === _p.token ? `<!--bf-cond-start:s0-->${escapeText('same')}<!--bf-cond-end:s0-->` : `<!--bf-cond-start:s0-->${escapeText('different')}<!--bf-cond-end:s0-->`}</output>`, name: 'Same' })
+hydrate('Same__bb81634c', { init: initSame, template: (_p) => `<span><button bf="s0">check</button><output bf="s2"><!--bf:s1-->${escapeTextOrMarkup(('unchecked'))}<!--/--></output></span>`, name: 'Same' })
 export function Same(_p, __bfKey) { return createComponent('Same__bb81634c', _p, __bfKey) }
 export function initForward(__scope, _p = {}) {
   if (!__scope) return
-  const __scopeId = ownScopeId(__scope)
+  const __scopeId = __scope.getAttribute('bf-s')
+
+  const [_s0] = $c(__scope, 's0')
 
 
   // Reactive child component props
   { const __l = []; const __m = []
   createEffect(() => {
-    if (__scope) {
+    const [__Same_s0El] = $c(__scope, 's0')
+    if (__Same_s0El) {
       { const __x = _p.token
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
-        if (__m[0] ??= __scope.hasAttribute('token')) { const __v = __x; if (__v != null) __scope.setAttribute('token', String(__v)); else __scope.removeAttribute('token') }
+        if (__m[0] ??= __Same_s0El.hasAttribute('token')) { const __v = __x; if (__v != null) __Same_s0El.setAttribute('token', String(__v)); else __Same_s0El.removeAttribute('token') }
       }
       __l[0] = __x }
     }
   }) }
 
   // Initialize child components with props
-  initChild('Same__bb81634c', __scope, { get token() { return _p.token } })
+  initChild('Same__bb81634c', _s0, { get token() { return _p.token } })
 }
 
-hydrate('Forward__bb81634c', { init: initForward, template: (_p) => `${renderChild('Same__bb81634c', {token: _p.token}, undefined, 's0')}`, comment: true, name: 'Forward' })
+hydrate('Forward__bb81634c', { init: initForward, template: (_p) => `<i>${renderChild('Same__bb81634c', {token: _p.token}, undefined, 's0')}</i>`, name: 'Forward' })
 export function Forward(_p, __bfKey) { return createComponent('Forward__bb81634c', _p, __bfKey) }
 export function initConstObjectPropIdentityHydrate(__scope, _p = {}) {
   if (!__scope) return

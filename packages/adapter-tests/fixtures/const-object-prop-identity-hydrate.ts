@@ -5,7 +5,9 @@
  * hydration and on a client mount, through a forwarding component and in a
  * loop row the client builds (`add`). The client used to splice the
  * initializer into the prop getter, so every read built a new object and the
- * child rendered `different`. The call shape (`const t = makeToken()`) is
+ * child rendered `different`. Each child compares the two reads in a click
+ * handler, so the server renders only `unchecked` and no backend compares
+ * objects. The call shape (`const t = makeToken()`) is
  * pinned on the emitted getter in `const-identity-child-prop.test.ts`; the
  * server-rendered values live in the `const-object-child-prop-identity`
  * conformance fixture.
@@ -27,10 +29,15 @@ export const spec: SharedFixtureSpec = {
   sourceRoot: 'fixture',
   description: 'A non-reactive allocating const passed as a child prop keeps one identity across reads after hydration, forwarding and client-built loop rows',
   interactions: [
-    ...positions.map(p => ({ type: 'expectText' as const, selector: `.root .${p} output`, text: 'same' })),
+    ...positions.flatMap(p => [
+      { type: 'click' as const, selector: `.root .${p} button` },
+      { type: 'expectText' as const, selector: `.root .${p} output`, text: 'same' },
+    ]),
+    { type: 'click', selector: '.root li:nth-of-type(1) button' },
     { type: 'expectText', selector: '.root li:nth-of-type(1) output', text: 'same' },
     // A row the client builds.
     { type: 'click', selector: '.root .add' },
+    { type: 'click', selector: '.root li:nth-of-type(3) button' },
     { type: 'expectText', selector: '.root li:nth-of-type(3) output', text: 'same' },
   ],
 }

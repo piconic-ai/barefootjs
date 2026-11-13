@@ -3601,7 +3601,6 @@
     "const-object-child-prop-identity": {
       "kinds": [
         "array-literal",
-        "call",
         "identifier",
         "literal",
         "member",
@@ -3619,7 +3618,6 @@
       "kinds": [
         "array-literal",
         "arrow",
-        "binary",
         "call",
         "identifier",
         "literal",
@@ -3628,13 +3626,11 @@
         "unsupported"
       ],
       "axes": [
-        "binary:===",
         "literal:number",
         "literal:string"
       ],
       "contexts": [
         "attribute",
-        "condition",
         "loop",
         "text"
       ]
@@ -15135,6 +15131,21 @@
       ],
       "contexts": [
         "attribute"
+      ]
+    },
+    "signal-const-object-child-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
       ]
     },
     "signal-default-from-jsx": {

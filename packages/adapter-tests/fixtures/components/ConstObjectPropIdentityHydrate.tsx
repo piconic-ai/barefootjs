@@ -5,24 +5,36 @@
 // module-scope object) and reads nothing reactive is one value: every read of
 // the child prop it is passed as sees that same value, after hydration, in a
 // row the client builds and through a component that forwards it. `Same`
-// renders `same` when two reads of its prop are the same value.
+// renders `same`, once its button is clicked, when two reads of its prop are
+// the same value.
 import { createSignal } from '@barefootjs/client'
 
 const MODULE_TOKEN = { n: 5 }
 
-function Same(props: { token: unknown }) {
-  return <output>{props.token === props.token ? 'same' : 'different'}</output>
+type Token = { n: number } | number[] | Map<string, number> | (() => number)
+
+// The comparison runs in the click handler, so the server renders only the
+// initial `unchecked` and no backend has to compare objects.
+function Same(props: { token: Token }) {
+  const [result, setResult] = createSignal('unchecked')
+  return (
+    <span>
+      <button onClick={() => setResult(props.token === props.token ? 'same' : 'different')}>check</button>
+      <output>{result()}</output>
+    </span>
+  )
 }
 
-function Forward(props: { token: unknown }) {
-  return <Same token={props.token} />
+// Wrapped in an element: a component-rooted forwarder is a separate case.
+function Forward(props: { token: Token }) {
+  return <i><Same token={props.token} /></i>
 }
 
 export function ConstObjectPropIdentityHydrate() {
   const [rows, setRows] = createSignal([{ id: '1' }, { id: '2' }])
   const obj = { n: 1 }
   const arr = [1, 2]
-  const made = new Map()
+  const made = new Map<string, number>()
   const fn = () => obj.n
   return (
     <div className="root">

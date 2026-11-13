@@ -31,12 +31,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -203,12 +197,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -372,12 +360,6 @@
               "fixture": "conditional-nested-loop-static-reactivity",
               "limitations": [
                 "conditional-nested-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -595,12 +577,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -764,12 +740,6 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -939,15 +909,9 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "const-object-prop-identity-hydrate",
               "limitations": [
-                "const-object-child-prop-server-value"
+                "non-literal-const-child-prop-unbound"
               ]
             },
             {
@@ -1117,12 +1081,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -1280,12 +1238,6 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -1452,12 +1404,6 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -3037,7 +2983,7 @@
             {
               "fixture": "const-object-prop-identity-hydrate",
               "limitations": [
-                "const-object-child-prop-server-value"
+                "non-literal-const-child-prop-unbound"
               ]
             },
             {
@@ -4221,12 +4167,6 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "const-object-prop-identity-hydrate",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -4850,12 +4790,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -5054,6 +4988,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -5157,12 +5097,6 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -5346,6 +5280,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -5455,12 +5395,6 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -5740,6 +5674,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -5858,12 +5798,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -6059,6 +5993,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -6168,12 +6108,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -6369,6 +6303,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -6478,15 +6418,9 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "const-object-prop-identity-hydrate",
               "limitations": [
-                "const-object-child-prop-server-value"
+                "non-literal-const-child-prop-unbound"
               ]
             },
             {
@@ -6667,6 +6601,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -6776,12 +6716,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -6974,6 +6908,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -7071,12 +7011,6 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -7275,6 +7209,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -7384,12 +7324,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -7579,6 +7513,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -8134,12 +8074,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -8404,6 +8338,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -8561,12 +8501,6 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -8798,6 +8732,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -8967,12 +8907,6 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -9348,6 +9282,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -9538,12 +9478,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -9799,6 +9733,12 @@
               "fixture": "reserved-name-filter-param-and-internal-prop",
               "limitations": [
                 "reserved-name-collides-with-internal-name"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -9962,12 +9902,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -10226,6 +10160,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -10386,15 +10326,9 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "const-object-prop-identity-hydrate",
               "limitations": [
-                "const-object-child-prop-server-value"
+                "non-literal-const-child-prop-unbound"
               ]
             },
             {
@@ -10632,6 +10566,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -10801,12 +10741,6 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -11062,6 +10996,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -11207,12 +11147,6 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -11480,6 +11414,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -11637,12 +11577,6 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -11889,6 +11823,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -12243,12 +12183,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -12435,6 +12369,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12544,12 +12484,6 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -12733,6 +12667,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12854,12 +12794,6 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -13139,6 +13073,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -13275,12 +13215,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -13464,6 +13398,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -13579,12 +13519,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -13771,6 +13705,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -13883,15 +13823,9 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "const-object-prop-identity-hydrate",
               "limitations": [
-                "const-object-child-prop-server-value"
+                "non-literal-const-child-prop-unbound"
               ]
             },
             {
@@ -14078,6 +14012,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -14205,12 +14145,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -14391,6 +14325,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -14488,12 +14428,6 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -14683,6 +14617,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -14792,12 +14732,6 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -14984,6 +14918,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -15709,12 +15649,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -15907,6 +15841,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -16010,12 +15950,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -16175,6 +16109,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -16278,12 +16218,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -16569,6 +16503,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -16699,12 +16639,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -16888,6 +16822,12 @@
               "fixture": "reserved-name-filter-param-and-internal-prop",
               "limitations": [
                 "reserved-name-collides-with-internal-name"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -16997,12 +16937,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -17189,6 +17123,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -17295,15 +17235,9 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "const-object-prop-identity-hydrate",
               "limitations": [
-                "const-object-child-prop-server-value"
+                "non-literal-const-child-prop-unbound"
               ]
             },
             {
@@ -17469,6 +17403,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -17584,12 +17524,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -17779,6 +17713,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -17876,12 +17816,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -18077,6 +18011,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -18180,12 +18120,6 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -18363,6 +18297,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -18482,12 +18422,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -18509,6 +18443,12 @@
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -18558,12 +18498,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -18585,6 +18519,12 @@
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -18625,12 +18565,6 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -18679,6 +18613,12 @@
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -18746,12 +18686,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -18773,6 +18707,12 @@
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -18822,12 +18762,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -18849,6 +18783,12 @@
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -18898,15 +18838,9 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "const-object-prop-identity-hydrate",
               "limitations": [
-                "const-object-child-prop-server-value"
+                "non-literal-const-child-prop-unbound"
               ]
             },
             {
@@ -18931,6 +18865,12 @@
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -18992,12 +18932,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -19019,6 +18953,12 @@
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -19062,12 +19002,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -19089,6 +19023,12 @@
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -19138,12 +19078,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -19165,6 +19099,12 @@
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -20152,7 +20092,7 @@
             {
               "fixture": "const-object-prop-identity-hydrate",
               "limitations": [
-                "const-object-child-prop-server-value"
+                "non-literal-const-child-prop-unbound"
               ]
             },
             {
@@ -23236,12 +23176,6 @@
         "mojolicious": {
           "gaps": [
             {
-              "fixture": "const-object-prop-identity-hydrate",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -24681,12 +24615,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -24786,6 +24714,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -24829,12 +24763,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -24937,6 +24865,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -24974,12 +24908,6 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -25127,6 +25055,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "static-loop-client-only-nested",
               "limitations": [
                 "client-only-loop-in-static-loop"
@@ -25179,12 +25113,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -25284,6 +25212,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -25327,12 +25261,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -25432,6 +25360,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -25475,15 +25409,9 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "const-object-prop-identity-hydrate",
               "limitations": [
-                "const-object-child-prop-server-value"
+                "non-literal-const-child-prop-unbound"
               ]
             },
             {
@@ -25586,6 +25514,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -25641,12 +25575,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -25746,6 +25674,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -25783,12 +25717,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -25888,6 +25816,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -25931,12 +25865,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -26036,6 +25964,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -26131,12 +26065,6 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -26345,12 +26273,6 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -26565,12 +26487,6 @@
               "fixture": "conditional-nested-loop-static-reactivity",
               "limitations": [
                 "conditional-nested-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -26860,12 +26776,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -27071,12 +26981,6 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -27288,15 +27192,9 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "const-object-prop-identity-hydrate",
               "limitations": [
-                "const-object-child-prop-server-value"
+                "non-literal-const-child-prop-unbound"
               ]
             },
             {
@@ -27520,12 +27418,6 @@
               ]
             },
             {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
-              ]
-            },
-            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -27719,12 +27611,6 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
@@ -27933,12 +27819,6 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
-              ]
-            },
-            {
-              "fixture": "const-object-child-prop-identity",
-              "limitations": [
-                "const-object-child-prop-server-value"
               ]
             },
             {
