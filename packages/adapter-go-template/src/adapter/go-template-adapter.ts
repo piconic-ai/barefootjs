@@ -56,7 +56,7 @@ import {
   collectNullableSignalGetters,
   arithmeticOperandCoercion,
   refuseNonPrimitiveStrictEquality,
-  refuseInheritedConstMemberReads,
+  refuseInheritedReadsInRenderedMemos,
   type ArithmeticCoercion,
   collectNullishAttrContext,
   isNativePlan,
@@ -76,7 +76,7 @@ import {
   type ContextConsumer,
   collectModuleStringConsts as collectModuleStringConstsShared,
   lookupLiteralConst,
-  lookupStaticConstMember,
+  spellStaticConstMember,
   staticIndexKey,
   resolveStaticConstBinding,
   prepareLoweringMatchers,
@@ -914,8 +914,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     ir = this.primeCompileState(ir)
     // `===` / `!==` over an object or array (#3774, #3824 step 8).
     refuseNonPrimitiveStrictEquality(ir, this.state.operandTyping, this.state)
-    // A literal const member only the prototype has (#3813).
-    refuseInheritedConstMemberReads(ir, this.state)
+    // An inherited literal-const read in a memo the template renders (#3813).
+    refuseInheritedReadsInRenderedMemos(ir, this.state)
     // A spread of an arbitrary object onto a child component (#3861).
     refuseObjectSpreadsOntoChildren(this.emitCtx, ir)
     this.state.stringValueNames = collectStringValueNames(ir)
@@ -6461,7 +6461,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * (`lookupStaticConstMember`), or null.
    */
   private staticConstMember(object: ParsedExpr, key: string): ParsedExpr | null {
-    return lookupStaticConstMember(object, key, this.state.localConstants, n => this.isLoopShadowedName(n))
+    return spellStaticConstMember(object, key, this.state.localConstants, n => this.isLoopShadowedName(n), this.state)
   }
 
   /**

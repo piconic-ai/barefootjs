@@ -1055,13 +1055,9 @@
     },
     "body-destructure-non-identifier-source": {
       "kinds": [
-        "identifier",
-        "literal",
-        "object-literal"
+        "identifier"
       ],
-      "axes": [
-        "literal:string"
-      ],
+      "axes": [],
       "contexts": [
         "text"
       ]
@@ -1511,7 +1507,6 @@
         "array-literal",
         "array-method",
         "arrow",
-        "binary",
         "call",
         "identifier",
         "index-access",
@@ -1519,19 +1514,14 @@
         "logical",
         "member",
         "object-literal",
-        "template-literal",
-        "unary",
-        "unsupported"
+        "template-literal"
       ],
       "axes": [
         "array-method:join",
-        "binary:===",
-        "binary:unknown",
         "literal:boolean",
         "literal:string",
         "logical:&&",
-        "logical:||",
-        "unary:!"
+        "logical:||"
       ],
       "contexts": [
         "attribute",
@@ -2451,12 +2441,10 @@
       "axes": [
         "array-method:includes",
         "array-method:join",
-        "array-method:slice",
         "array-method:toLowerCase",
         "binary:!==",
         "binary:===",
         "binary:>",
-        "binary:unknown",
         "literal:boolean",
         "literal:null",
         "literal:number",
@@ -2494,14 +2482,10 @@
       "axes": [
         "array-method:includes",
         "array-method:join",
-        "array-method:slice",
         "array-method:startsWith",
         "array-method:toLowerCase",
-        "array-method:trim",
-        "binary:!=",
         "binary:!==",
         "binary:===",
-        "binary:unknown",
         "literal:boolean",
         "literal:null",
         "literal:number",
@@ -5064,11 +5048,9 @@
     },
     "dialog": {
       "kinds": [
-        "array-method",
         "arrow",
         "binary",
         "call",
-        "conditional",
         "identifier",
         "literal",
         "logical",
@@ -5079,16 +5061,11 @@
         "unsupported"
       ],
       "axes": [
-        "array-method:trim",
-        "binary:!=",
         "binary:===",
         "literal:boolean",
-        "literal:null",
         "literal:number",
         "literal:string",
-        "logical:&&",
         "logical:??",
-        "logical:||",
         "unary:!",
         "unary:-"
       ],
@@ -5147,18 +5124,13 @@
       ],
       "axes": [
         "array-method:includes",
-        "array-method:trim",
-        "binary:!=",
         "binary:===",
         "literal:boolean",
         "literal:null",
         "literal:number",
         "literal:string",
-        "logical:&&",
         "logical:??",
-        "logical:||",
         "member:computed",
-        "unary:!",
         "unary:-"
       ],
       "contexts": [
@@ -7062,25 +7034,19 @@
         "array-literal",
         "array-method",
         "arrow",
-        "binary",
         "call",
         "identifier",
         "literal",
         "logical",
         "member",
-        "template-literal",
-        "unary",
-        "unsupported"
+        "template-literal"
       ],
       "axes": [
         "array-method:join",
-        "binary:===",
-        "binary:unknown",
         "literal:boolean",
         "literal:string",
         "logical:&&",
-        "logical:||",
-        "unary:!"
+        "logical:||"
       ],
       "contexts": [
         "attribute",
@@ -9696,12 +9662,9 @@
     "memo-local-function-named-like-prop": {
       "kinds": [
         "call",
-        "identifier",
-        "literal"
+        "identifier"
       ],
-      "axes": [
-        "literal:number"
-      ],
+      "axes": [],
       "contexts": [
         "text"
       ]
@@ -10331,7 +10294,6 @@
     "module-const-inherited-key-function-client": {
       "kinds": [
         "arrow",
-        "binary",
         "call",
         "conditional",
         "identifier",
@@ -10340,7 +10302,6 @@
         "object-literal"
       ],
       "axes": [
-        "binary:+",
         "literal:string"
       ],
       "contexts": [
@@ -10350,10 +10311,8 @@
     "module-const-inherited-key-function-direct": {
       "kinds": [
         "call",
-        "conditional",
         "identifier",
         "literal",
-        "member",
         "object-literal"
       ],
       "axes": [
@@ -10365,7 +10324,6 @@
     },
     "module-const-inherited-key-function-nested": {
       "kinds": [
-        "binary",
         "call",
         "conditional",
         "identifier",
@@ -10374,7 +10332,6 @@
         "object-literal"
       ],
       "axes": [
-        "binary:+",
         "literal:string"
       ],
       "contexts": [
@@ -10483,6 +10440,42 @@
         "text"
       ]
     },
+    "module-const-inherited-key-object-safe": {
+      "kinds": [
+        "arrow",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-inherited-key-row-shadow": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "module-const-loop-source": {
       "kinds": [
         "array-literal",
@@ -10517,14 +10510,10 @@
     },
     "module-const-loop-source-computed": {
       "kinds": [
-        "array-literal",
         "call",
-        "identifier",
-        "literal"
+        "identifier"
       ],
-      "axes": [
-        "literal:string"
-      ],
+      "axes": [],
       "contexts": [
         "attribute",
         "loop",
@@ -10533,14 +10522,10 @@
     },
     "module-const-loop-source-computed-client": {
       "kinds": [
-        "array-literal",
         "call",
-        "identifier",
-        "literal"
+        "identifier"
       ],
-      "axes": [
-        "literal:string"
-      ],
+      "axes": [],
       "contexts": [
         "attribute",
         "loop",
@@ -10641,13 +10626,11 @@
     },
     "module-function-helper-chain": {
       "kinds": [
-        "array-method",
         "call",
         "identifier",
         "literal"
       ],
       "axes": [
-        "array-method:toUpperCase",
         "literal:number"
       ],
       "contexts": [
@@ -10669,14 +10652,11 @@
     },
     "module-helper-boolcontext-call": {
       "kinds": [
-        "binary",
         "call",
         "identifier",
-        "literal",
-        "member"
+        "literal"
       ],
       "axes": [
-        "binary:>",
         "literal:number"
       ],
       "contexts": [
@@ -12677,14 +12657,12 @@
     },
     "opaque-local-accessor-call": {
       "kinds": [
-        "arrow",
         "call",
         "identifier",
         "literal"
       ],
       "axes": [
-        "literal:number",
-        "literal:string"
+        "literal:number"
       ],
       "contexts": [
         "text"
@@ -12692,14 +12670,12 @@
     },
     "opaque-local-accessor-call-client": {
       "kinds": [
-        "arrow",
         "call",
         "identifier",
         "literal"
       ],
       "axes": [
-        "literal:number",
-        "literal:string"
+        "literal:number"
       ],
       "contexts": [
         "text"
@@ -13235,11 +13211,8 @@
     },
     "popover": {
       "kinds": [
-        "array-method",
         "arrow",
-        "binary",
         "call",
-        "conditional",
         "identifier",
         "literal",
         "logical",
@@ -13250,17 +13223,10 @@
         "unsupported"
       ],
       "axes": [
-        "array-method:trim",
-        "binary:!=",
-        "binary:===",
         "literal:boolean",
-        "literal:null",
         "literal:number",
         "literal:string",
-        "logical:&&",
         "logical:??",
-        "logical:||",
-        "unary:!",
         "unary:-"
       ],
       "contexts": [
@@ -13653,8 +13619,7 @@
       "kinds": [
         "call",
         "identifier",
-        "literal",
-        "object-literal"
+        "literal"
       ],
       "axes": [
         "literal:number"
@@ -15923,12 +15888,9 @@
     "signal-seed-local-function-named-like-prop": {
       "kinds": [
         "call",
-        "identifier",
-        "literal"
+        "identifier"
       ],
-      "axes": [
-        "literal:number"
-      ],
+      "axes": [],
       "contexts": [
         "text"
       ]
@@ -17609,18 +17571,13 @@
     },
     "tagged-template-classname": {
       "kinds": [
-        "arrow",
-        "binary",
         "call",
         "identifier",
-        "index-access",
         "literal",
         "logical",
-        "member",
         "template-literal"
       ],
       "axes": [
-        "binary:+",
         "literal:string",
         "logical:??"
       ],
@@ -18005,7 +17962,6 @@
         "array-literal",
         "array-method",
         "arrow",
-        "binary",
         "call",
         "conditional",
         "identifier",
@@ -18015,20 +17971,16 @@
         "member",
         "object-literal",
         "template-literal",
-        "unary",
         "unsupported"
       ],
       "axes": [
         "array-method:join",
-        "binary:===",
-        "binary:unknown",
         "literal:boolean",
         "literal:number",
         "literal:string",
         "logical:&&",
         "logical:??",
-        "logical:||",
-        "unary:!"
+        "logical:||"
       ],
       "contexts": [
         "attribute",

@@ -30,7 +30,7 @@ import type {
   PreambleValueDeclaration,
 } from '../types.ts'
 import { refuseNonPrimitiveStrictEquality, type NonPrimitiveEqualitySink } from './non-primitive-equality.ts'
-import { refuseInheritedConstMemberReads } from './inherited-const-member.ts'
+import { refuseInheritedReadsInRenderedMemos } from './rendered-memo-inherited-read.ts'
 import { collectImportedLoopChildComponentErrors } from './component-tree.ts'
 import { computedConstContext, type ComputedConstContext } from './computed-const.ts'
 import { searchParamsLocalNames } from './env-signal.ts'
@@ -275,7 +275,7 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     return arithmeticOperandCoercion(op, operand, other, this.nullishAttrCtx, isShadowed)
   }
 
-  private errorSink(): NonPrimitiveEqualitySink {
+  protected errorSink(): NonPrimitiveEqualitySink {
     return { errors: this.errors, componentName: this.componentName }
   }
 
@@ -460,8 +460,8 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     }
     // `===` / `!==` over an object or array (#3774, #3824 step 8).
     refuseNonPrimitiveStrictEquality(ir, this.operandTyping, this.errorSink())
-    // A literal const member only the prototype has (#3813).
-    refuseInheritedConstMemberReads(ir, this.errorSink())
+    // An inherited literal-const read in a memo the template renders (#3813).
+    refuseInheritedReadsInRenderedMemos(ir, this.errorSink())
   }
 }
 

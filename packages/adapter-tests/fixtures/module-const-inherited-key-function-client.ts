@@ -1,8 +1,9 @@
 import { createFixture } from '../src/types'
 
 /**
- * Escape twin for the function- and method-indirected
- * `module-const-inherited-key-*` fixtures: a local function returning a memo
+ * Escape twin for `module-const-inherited-key-object-method` and
+ * `module-const-inherited-key-iife`, and the client side of the
+ * `-function*` fixtures: a local function returning a memo
  * that reads a key only a literal const's prototype has, a function reading
  * it directly, a function calling another, and an object const method, each
  * called only from a `/* @client *\/` position. The server render never

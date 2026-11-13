@@ -9,7 +9,7 @@
 import ts from 'typescript'
 import { foldRenderReassignmentsInSource } from './fold-render-reassignments.ts'
 import { CLIENT_DIRECTIVE_INTERIOR_RE, USE_CLIENT_DIRECTIVE, isUseClientDirectiveText } from './directives.ts'
-import type { ImportSpecifier, TypeInfo, ParamInfo, PropDefaultPart, PropDefaultRead, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation, SignalFactoryCall, MemoInfo, SignalInfo, FunctionInfo } from './types.ts'
+import type { ImportSpecifier, TypeInfo, ParamInfo, PropDefaultPart, PropDefaultRead, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation, SignalFactoryCall, MemoInfo, SignalInfo } from './types.ts'
 import { CALLBACK_METHODS, parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr, stringifyParsedExpr, type ParsedExpr } from './expression-parser.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { collectAssignmentTargets, rewriteBarePropRefs, splitScopedValueRefs } from './prop-rewrite.ts'
@@ -3446,25 +3446,8 @@ function collectFunction(
     isModule: _isModule || undefined,
     isJsxFunction: isJsxFunction || undefined,
     freeIdentifiers: extractFreeIdentifiersFromNode(node),
-    ...functionBodyStatements(node.body, isJsxFunction, ctx),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   })
-}
-
-/**
- * A function declaration's body statements as structure
- * (`FunctionInfo.parsedBlock`), and whether every statement is represented.
- * None for a JSX function, which is inlined into the IR instead, where its
- * reads are seen directly.
- */
-function functionBodyStatements(
-  body: ts.Block | undefined,
-  isJsxFunction: boolean,
-  ctx: AnalyzerContext,
-): Partial<Pick<FunctionInfo, 'parsedBlock' | 'parsedBlockComplete'>> {
-  if (!body || isJsxFunction) return {}
-  const parsedBlock = parseBlockBodyTolerant(body, ctx.sourceFile, n => ctx.getJS(n))
-  return { parsedBlock, parsedBlockComplete: parsedBlock.length === body.statements.length }
 }
 
 // =============================================================================

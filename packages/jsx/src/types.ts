@@ -2296,16 +2296,6 @@ export interface FunctionInfo {
    * body contains actual JSX syntax, not just JSX-like string literals.
    */
   isMultiReturnJsxHelper?: boolean
-  /**
-   * The function declaration's body statements, parsed best-effort at
-   * analysis time (tolerant: a statement the parser can't represent is
-   * omitted), as `MemoInfo.parsedBlock` is for a block-bodied memo. Lets a
-   * pass reason about what a call to the function reads without re-parsing
-   * `body` (`refuseInheritedConstMemberReads`). Unset for a JSX function.
-   */
-  parsedBlock?: ParsedStatement[]
-  /** Whether {@link parsedBlock} represents every statement of the body. Only set when `parsedBlock` is. */
-  parsedBlockComplete?: boolean
   loc: SourceLocation
 }
 

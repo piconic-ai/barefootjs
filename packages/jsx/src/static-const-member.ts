@@ -12,13 +12,14 @@
  * `undefined`, which every emitter already spells. A key the literal lacks
  * but its prototype has (`REC['toString']`, `QS['map']`) reads a function
  * in JS, which no template can render; that read is `inherited`, and
- * `refuseInheritedConstMemberReads` refuses it with BF101.
+ * `spellStaticConstMember` refuses it with BF101 where the adapter spells
+ * it.
  */
 
 import { resolveStaticConstBinding } from './augment-inherited-props.ts'
-import type { ObjectLiteralProperty, ParsedExpr } from './expression-parser.ts'
+import { exprToString, type ObjectLiteralProperty, type ParsedExpr } from './expression-parser.ts'
 import { literalMemberIndex } from './literal-member-index.ts'
-import type { IRMetadata } from './types.ts'
+import type { CompilerError, IRMetadata } from './types.ts'
 
 type StaticConstants = IRMetadata['localConstants'] | undefined
 
@@ -85,6 +86,54 @@ export function lookupStaticConstMember(
 ): ParsedExpr | null {
   const read = readStaticConstMember(object, key, constants, isShadowed)
   return read?.kind === 'value' ? read.expr : null
+}
+
+/** Where a template adapter records the refusal of an `inherited` read. */
+export interface StaticConstMemberSink {
+  readonly errors: CompilerError[]
+  readonly componentName: string
+}
+
+/**
+ * The value a template adapter spells for a literal const member read it is
+ * emitting, as `lookupStaticConstMember`; and, for a key only the literal's
+ * prototype has (`REC['toString']`, `QS['map']`), BF101 recorded in `sink`.
+ * Every template adapter's member and index emitters (value, condition and
+ * child-prop position, and a memo or constant body the adapter inlines)
+ * read through this, so the refusal fires exactly where a template would
+ * spell the read: a position deferred with `/* @client *\/`, a method the
+ * template never renders, or a name a binding shadows never reaches it.
+ */
+export function spellStaticConstMember(
+  object: ParsedExpr,
+  key: string,
+  constants: StaticConstants,
+  isShadowed: (name: string) => boolean,
+  sink: StaticConstMemberSink,
+): ParsedExpr | null {
+  const read = readStaticConstMember(object, key, constants, isShadowed)
+  if (read?.kind === 'inherited') {
+    recordInheritedRead(exprToString({ kind: 'member', object, property: key, computed: false, optional: false }), sink)
+    return null
+  }
+  return read?.kind === 'value' ? read.expr : null
+}
+
+function recordInheritedRead(read: string, sink: StaticConstMemberSink): void {
+  const message =
+    `\`${read}\` reads a key the const's literal value does not have but its prototype does, so JS reads an inherited ` +
+    'function there. A template holds the literal value without a prototype, so the server render cannot give the JS answer.'
+  if (sink.errors.some(e => e.code === 'BF101' && e.message === message)) return
+  sink.errors.push({
+    code: 'BF101',
+    severity: 'error',
+    message,
+    loc: { file: `${sink.componentName}.tsx`, start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+    suggestion: {
+      message: 'Read a key the literal lists, or defer the read to the client with /* @client */.',
+      escape: [{ kind: 'client-directive' }],
+    },
+  })
 }
 
 /** The literal (array / object / scalar) `expr` evaluates to, read through literal consts. */

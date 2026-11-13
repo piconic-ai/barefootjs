@@ -231,6 +231,9 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
  * and that the entry lists the fixture.
  */
 export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: string }>> = {
+  // An object const holding an arrow, read for a listed key in markup: the
+  // CSR template does not carry the const, so `{H.safe}` renders empty.
+  'module-const-inherited-key-object-safe': { limitation: 'csr-template-object-const-function-property' },
   // A boolean text child: the CSR template prints `true` / `false`; JSX
   // renders nothing.
   // `{ label = 'd' }` read through `const a = label`: the CSR template reads

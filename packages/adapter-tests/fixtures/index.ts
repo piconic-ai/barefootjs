@@ -1400,6 +1400,8 @@ import { fixture as moduleConstInheritedKeyFunctionNested } from './module-const
 import { fixture as moduleConstInheritedKeyObjectMethod } from './module-const-inherited-key-object-method'
 import { fixture as moduleConstInheritedKeyIife } from './module-const-inherited-key-iife'
 import { fixture as moduleConstInheritedKeyFunctionClient } from './module-const-inherited-key-function-client'
+import { fixture as moduleConstInheritedKeyRowShadow } from './module-const-inherited-key-row-shadow'
+import { fixture as moduleConstInheritedKeyObjectSafe } from './module-const-inherited-key-object-safe'
 import { fixture as undefinedLiteralElementPositions } from './undefined-literal-element-positions'
 import { fixture as moduleConstArrayMethodCall } from './module-const-array-method-call'
 import { fixture as localConstLiteralIndex } from './local-const-literal-index'
@@ -2466,6 +2468,8 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstInheritedKeyObjectMethod,
   moduleConstInheritedKeyIife,
   moduleConstInheritedKeyFunctionClient,
+  moduleConstInheritedKeyRowShadow,
+  moduleConstInheritedKeyObjectSafe,
   undefinedLiteralElementPositions,
   moduleConstArrayMethodCall,
   localConstLiteralIndex,

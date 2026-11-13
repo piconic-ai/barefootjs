@@ -136,7 +136,7 @@ export { concatType, declaredValueTypes, loopRowType, type DeclaredValueTypes } 
 export { collectNumberValueNames, isNumberValuedExpr, numberValuedSeedNames } from './adapters/number-value.ts'
 export { operandFacts, planPrimitive, planTest, spellTest, primitivesAt, isNativePlan, relationalHelper, isNativeToNumber, booleanValueSites, planTextDisplay, foldNegatedNumberLiteral, numberLiteralSpelling, isRuntimeNumberLiteral, plusSpelling, planToString, needsToString, strictEqSpelling, mayHoldObject, isNullishTest, isNilLiteralOperand, nilTestOperand, refuseUnspelledNilTest, NON_PRIMITIVE_EQUALITY_REASON } from './adapters/primitive-plan.ts'
 export { refuseNonPrimitiveStrictEquality, type NonPrimitiveEqualitySink } from './adapters/non-primitive-equality.ts'
-export { refuseInheritedConstMemberReads } from './adapters/inherited-const-member.ts'
+export { refuseInheritedReadsInRenderedMemos } from './adapters/rendered-memo-inherited-read.ts'
 export { rewriteNilReadings, rewriteNilReadingsDeep, isNilReadingFallback, NAN_LITERAL } from './adapters/nil-reading.ts'
 export type { PrimitiveOp, Proof, NativeSafeClaims, NativeSafeTable, PrimitiveHelper, NilTestHelper, PrimitivePlan, PrimitiveInputs, TextDisplay, NumberLiteralSpelling, PlusSpelling, StrictEqSpelling } from './adapters/primitive-plan.ts'
 export {
@@ -499,7 +499,7 @@ export { USE_CLIENT_DIRECTIVE, CLIENT_EXPRESSION_DIRECTIVE } from './directives.
 // Shared props-object-pattern helpers for the Go / Mojo template adapters
 export { augmentInheritedPropAccesses, parseRecordIndexAccess, evalStringArrayJoin, collectModuleStringConsts, lookupStaticRecordLiteral, resolveStaticConstBinding, lookupLiteralConst, collectContextConsumers, contextConsumerSeed, type LiteralConst } from './augment-inherited-props.ts'
 export type { RecordIndexAccess, RecordIndexEntry, ContextConsumer } from './augment-inherited-props.ts'
-export { lookupStaticConstMember, readStaticConstMember, staticIndexKey, type StaticConstMemberRead } from './static-const-member.ts'
+export { lookupStaticConstMember, readStaticConstMember, spellStaticConstMember, staticIndexKey, type StaticConstMemberRead, type StaticConstMemberSink } from './static-const-member.ts'
 
 // HTML element attribute types
 export type {
