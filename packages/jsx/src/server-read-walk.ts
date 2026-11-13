@@ -131,7 +131,8 @@ function followedDeclaration(binding: LocalBinding): Followed | null {
 /** {@link Reads} of `expr`, or of `fallback` (calling nothing) when it has no analyzable tree. */
 function readsOf(expr: ParsedExpr | undefined, fallback: ReadonlySet<string> | undefined): Reads {
   const names = expr && freeIdentifiers(expr)
-  if (!expr || !names) return { names: fallback ?? [], called: new Set() }
+  // An IR that went through JSON holds no `Set`: such a declaration reads nothing here.
+  if (!expr || !names) return { names: fallback instanceof Set ? fallback : [], called: new Set() }
   const called = new Set<string>()
   mapParsedExpr(expr, (e, enclosing) => {
     if (e.kind === 'call' && e.args.length === 0 && e.callee.kind === 'identifier' && !enclosing.has(e.callee.name)) {

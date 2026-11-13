@@ -14,7 +14,7 @@ import type { ComponentIR } from '../types'
 
 const UNINLINABLE = 'function value() { const x = 1; return x }'
 
-function reads(body: string, signature = '', preamble = ''): string[] {
+function irFor(body: string, signature = '', preamble = ''): ComponentIR {
   const ctx = analyzeComponent(`
     'use client'
     import { createSignal, createMemo } from '@barefootjs/client'
@@ -24,10 +24,17 @@ function reads(body: string, signature = '', preamble = ''): string[] {
       ${body}
     }
   `, 'C.tsx', 'C')
-  const ir: ComponentIR = { version: '0.1', metadata: buildMetadata(ctx), root: jsxToIR(ctx)!, errors: [] }
+  return { version: '0.1', metadata: buildMetadata(ctx), root: jsxToIR(ctx)!, errors: [] }
+}
+
+function readsOf(ir: ComponentIR): string[] {
   const out: string[] = []
   walkServerReads(ir, r => out.push(`${r.kind} ${r.name}@${r.scope}${r.refusedCalls.length ? ` !${r.refusedCalls.join(',')}` : ''}`))
   return out.sort()
+}
+
+function reads(body: string, signature = '', preamble = ''): string[] {
+  return readsOf(irFor(body, signature, preamble))
 }
 
 describe('walkServerReads', () => {
@@ -107,5 +114,12 @@ describe('walkServerReads', () => {
     expect(reads(`const [n] = createSignal(initial)
       return <p>{n()}</p>`, '', `${UNINLINABLE}\nconst initial = value()`))
       .toEqual(['const initial@module !value', 'signal n@component'])
+  })
+
+  test('an IR that went through JSON, whose block-bodied memo has no tree, is walked', () => {
+    const ir = irFor(`const [items] = createSignal([1, 2])
+      const visible = createMemo(() => { const out = []; for (const i of items()) out.push(i); return out })
+      return <p>{visible().length}</p>`)
+    expect(readsOf(JSON.parse(JSON.stringify(ir)))).toContain('memo visible@component')
   })
 })
