@@ -37,11 +37,15 @@ import type { LoopBindingPathSegment } from '@barefootjs/jsx'
 /**
  * Escape a string for a Jinja/Python single-quoted literal: backslash first
  * (so it doesn't double-escape the quote we add next), then the quote.
- * Python string-literal escaping treats `\\` / `\'` identically to Perl's,
- * so this is byte-identical to `escapeKolonSingleQuoted`.
+ * Python string-literal escaping treats `\\` / `\'` identically to Perl's.
+ *
+ * A carriage return is spelled `\r`. Jinja's lexer rewrites every line
+ * ending in the template source (`\r\n`, a lone `\r`) to `\n` before it
+ * decodes a string literal's escapes, so a raw CR would render as LF; the
+ * escape is decoded after that rewrite and stays a CR.
  */
 export function escapeJinjaSingleQuoted(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\r/g, '\\r')
 }
 
 /**

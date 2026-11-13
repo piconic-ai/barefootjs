@@ -17342,6 +17342,64 @@
       }
     }
   ],
+  "string-const-carriage-return": [
+    {
+      "name": "gen:got:absent",
+      "props": {
+        "rows": [
+          "k\rv",
+          "x\r\ny",
+          "z"
+        ]
+      }
+    },
+    {
+      "name": "gen:got:empty",
+      "props": {
+        "got": "",
+        "rows": [
+          "k\rv",
+          "x\r\ny",
+          "z"
+        ]
+      }
+    },
+    {
+      "name": "gen:got:markup",
+      "props": {
+        "got": "<b>&\"'</b>",
+        "rows": [
+          "k\rv",
+          "x\r\ny",
+          "z"
+        ]
+      }
+    },
+    {
+      "name": "gen:got:multibyte",
+      "props": {
+        "got": "日本語",
+        "rows": [
+          "k\rv",
+          "x\r\ny",
+          "z"
+        ]
+      }
+    },
+    {
+      "name": "gen:rows:absent",
+      "props": {
+        "got": "k\rv"
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "got": "k\rv",
+        "rows": []
+      }
+    }
+  ],
   "string-const-quote-newline": [
     {
       "name": "gen:on:true",

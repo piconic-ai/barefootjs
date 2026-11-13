@@ -317,8 +317,12 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
     // types.go — generated struct definitions
     await Bun.write(resolve(tempDir, 'types.go'), goTypes)
 
-    // template content as Go raw string
-    const escapedTemplate = template.replace(/`/g, '` + "`" + `')
+    // The template as its own file, embedded byte for byte (production
+    // reads `.tmpl` files the same way, with `ParseFiles` / `ParseGlob`).
+    // Not a Go raw string literal: the Go lexer discards every carriage
+    // return inside one, and rejects a NUL, so a template whose static
+    // text holds either would render differently here than in an app.
+    await Bun.write(resolve(tempDir, 'template.tmpl'), template)
 
     // Build props initialization (typed against the generated Input struct so
     // an array-of-objects prop emits e.g. `[]ToggleSetting{…}`, not `[]any`).
@@ -339,6 +343,7 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
     const mainGo = `package main
 
 import (
+	_ "embed"
 	"html/template"
 	"math/rand"
 	"os"
@@ -361,7 +366,8 @@ func bfTestFuncMap() template.FuncMap {
 	return funcMap
 }
 
-const tmplContent = \`${escapedTemplate}\`
+//go:embed template.tmpl
+var tmplContent string
 
 // randomID generates a random alphanumeric string of given length.
 // Required by generated NewXxxProps constructors.

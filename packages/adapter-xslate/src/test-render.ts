@@ -484,7 +484,7 @@ function perlArrayLiteral(jsonArray: string): string {
 function ssrDefaultsToPerl(defaults: Record<string, SsrDefault>): string {
   const entries: string[] = []
   for (const [name, d] of Object.entries(defaults)) {
-    entries.push(`${perlSingleQuote(name)} => ${ssrDefaultEntryToPerl(d)}`)
+    entries.push(`${perlStringLiteral(name)} => ${ssrDefaultEntryToPerl(d)}`)
   }
   return `{${entries.join(', ')}}`
 }
@@ -493,7 +493,7 @@ function ssrDefaultsToPerl(defaults: Record<string, SsrDefault>): string {
 function ssrDefaultEntryToPerl(d: SsrDefault): string {
   // A prop with no default has no `value`; the runtime reads it as undef.
   const parts: string[] = 'value' in d ? [`value => ${toPerlLiteral(d.value)}`] : []
-  if (d.propName !== undefined) parts.push(`propName => ${perlSingleQuote(d.propName)}`)
+  if (d.propName !== undefined) parts.push(`propName => ${perlStringLiteral(d.propName)}`)
   if (d.isRestProps) parts.push(`isRestProps => 1`)
   return `{${parts.join(', ')}}`
 }
@@ -601,7 +601,7 @@ function buildPerlProps(
   if (props) {
     for (const [key, value] of Object.entries(props)) {
       if (key.startsWith('__')) continue
-      userEntries.push(`${perlSingleQuote(key)} => ${toPerlLiteral(value)}`)
+      userEntries.push(`${perlStringLiteral(key)} => ${toPerlLiteral(value)}`)
     }
   }
   const userPropsPerl = `{${userEntries.join(', ')}}`
@@ -647,15 +647,23 @@ function rootSeedPerl(props: Record<string, unknown> | undefined, ir: ComponentI
     `# left out of them, never null-filled, so the seed decides — its default`,
     `# when it has one, \`UNDEF\` otherwise; an explicit \`null\` stays undef.`,
     `my %root_seed = BarefootJS::_derive_stash_from_defaults(${ssrDefaultsToPerl(manifestSsrDefaults(ir))}, ${toPerlLiteral(props ?? {})});`,
-    ...(rest ? [`delete $root_seed{${perlSingleQuote(rest)}};`] : []),
+    ...(rest ? [`delete $root_seed{${perlStringLiteral(rest)}};`] : []),
     `$props = { %$props, %root_seed };`,
     '',
   ].join('\n')
 }
 
-/** Perl single-quoted string escape: `'` AND `\` need escaping. */
-function perlSingleQuote(s: string): string {
-  return `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
+/**
+ * A string value as a Perl literal in this harness's render program:
+ * single-quoted (`'` AND `\` need escaping), or double-quoted with the CR
+ * spelled `\r` (and `\` / `"` / `$` / `@` escaped against interpolation)
+ * when it holds a carriage return. Perl reads a CRLF inside a raw literal in
+ * its source as a lone LF, so a prop holding one would not reach the
+ * template as the caller passed it.
+ */
+function perlStringLiteral(s: string): string {
+  if (!s.includes('\r')) return `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
+  return `"${s.replace(/[\\"$@\r]/g, ch => (ch === '\r' ? '\\r' : `\\${ch}`))}"`
 }
 
 function toPerlLiteral(value: unknown): string {
@@ -663,7 +671,7 @@ function toPerlLiteral(value: unknown): string {
   // the runtime's `UNDEF`; its `null` is `undef`.
   if (value === undefined) return '$BarefootJS::UNDEF'
   if (value === null) return 'undef'
-  if (typeof value === 'string') return perlSingleQuote(value)
+  if (typeof value === 'string') return perlStringLiteral(value)
   if (typeof value === 'number') return String(value)
   // JS booleans → JSON::PP sentinels so `spread_attrs` can detect them
   // via `ref()` and apply boolean-attr semantics.
@@ -675,7 +683,7 @@ function toPerlLiteral(value: unknown): string {
     // generic `value && typeof value === 'object'` branch below, which
     // would otherwise `Object.entries()` a Date's (non-enumerable)
     // internals into an empty hashref literal, silently erasing the value.
-    return perlSingleQuote(value.toISOString())
+    return perlStringLiteral(value.toISOString())
   }
   if (Array.isArray(value)) {
     return `[${value.map(toPerlLiteral).join(', ')}]`
@@ -683,7 +691,7 @@ function toPerlLiteral(value: unknown): string {
   if (value && typeof value === 'object') {
     const entries: string[] = []
     for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
-      entries.push(`${perlSingleQuote(key)} => ${toPerlLiteral(v)}`)
+      entries.push(`${perlStringLiteral(key)} => ${toPerlLiteral(v)}`)
     }
     return `{${entries.join(', ')}}`
   }

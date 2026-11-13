@@ -218,7 +218,7 @@ import { BF_SLOT, BF_COND, escapeHtml } from '@barefootjs/shared'
 
 import type { TwigRenderCtx } from './lib/types.ts'
 import { TWIG_PRIMITIVE_EMIT_MAP } from './lib/constants.ts'
-import { twigHashKey, twigIdent, escapeTwigSingleQuoted, twigLoopBindingAccessor } from './lib/twig-naming.ts'
+import { twigHashKey, twigIdent, twigStringLiteral, twigLoopBindingAccessor } from './lib/twig-naming.ts'
 import { renderSortMethod, EVAL_SPELLING } from './expr/array-method.ts'
 import { staticValueToTwig } from './lib/static-value.ts'
 import { TwigFilterEmitter, TwigTopLevelEmitter, truthyTest, CALLBACK_LOWERING, NATIVE_SAFE, numberLiteral } from './expr/emitters.ts'
@@ -240,7 +240,7 @@ import type { TwigAdapterOptions } from './lib/types.ts'
 const DESTRUCTURE_SPELLING: DestructureSpelling = {
   accessor: twigLoopBindingAccessor,
   slice: (parent, from) => `bf.slice(${parent}, ${from}, bf.undefined())`,
-  omit: (parent, keys) => `bf.omit(${parent}, [${keys.map((k) => `'${escapeTwigSingleQuoted(k)}'`).join(', ')}])`,
+  omit: (parent, keys) => `bf.omit(${parent}, [${keys.map((k) => twigStringLiteral(k)).join(', ')}])`,
 }
 
 /** The wording of the loop refusals the plan decides (BF104 / BF101). */
@@ -450,7 +450,7 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
     const v = valueProp.value
     if (v.kind === 'literal') {
       if (typeof v.value === 'string') {
-        return `'${escapeTwigSingleQuoted(v.value)}'`
+        return twigStringLiteral(v.value)
       }
       if (typeof v.value === 'boolean') return v.value ? 'true' : 'false'
       return String(v.value)
@@ -824,7 +824,7 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
    * set-block below, not threaded through the hash entry list.
    */
   private readonly componentPropEmitter: AttrValueEmitter = {
-    emitLiteral: (value, name) => `${twigHashKey(name)}: '${escapeTwigSingleQuoted(value.value)}'`,
+    emitLiteral: (value, name) => `${twigHashKey(name)}: ${twigStringLiteral(value.value)}`,
     emitExpression: (value, name) => {
       if (value.parts) {
         return `${twigHashKey(name)}: ${this.convertTemplateLiteralPartsToTwig(value.parts)}`
@@ -1128,8 +1128,8 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
     const entries = planStyleObject(value)
     if (!entries) return null
     const args = entries.flatMap(e => [
-      `'${escapeTwigSingleQuoted(e.cssKey)}'`,
-      e.kind === 'literal' ? `'${escapeTwigSingleQuoted(e.value)}'` : this.convertExpressionToTwig(e.expr, e.parsed),
+      twigStringLiteral(e.cssKey),
+      e.kind === 'literal' ? twigStringLiteral(e.value) : this.convertExpressionToTwig(e.expr, e.parsed),
     ])
     return `{{ bf.style_object(${args.join(', ')}) | raw }}`
   }
@@ -1193,7 +1193,7 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
     const parts: string[] = []
     for (const part of literalParts) {
       if (part.type === 'string') {
-        parts.push(`'${escapeTwigSingleQuoted(part.value)}'`)
+        parts.push(twigStringLiteral(part.value))
       } else if (part.type === 'expression') {
         parts.push(`bf.string(${this.convertExpressionToTwig(part.expr, part.parsed)})`)
       } else if (part.type === 'ternary') {
@@ -1201,7 +1201,7 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
         // Twig's symbolic ternary (see this file's header, divergence tied
         // to `expr/emitters.ts`'s divergence 1) — `(test ? a : b)`.
         parts.push(
-          `(${cond} ? '${escapeTwigSingleQuoted(part.whenTrue)}' : '${escapeTwigSingleQuoted(part.whenFalse)}')`,
+          `(${cond} ? ${twigStringLiteral(part.whenTrue)} : ${twigStringLiteral(part.whenFalse)})`,
         )
       } else if (part.type === 'lookup') {
         // `${MAP[KEY]}` against a Record<T, string> literal — emit a Twig
@@ -1213,7 +1213,7 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
         // is no array offset; #3848 U6).
         const keyExpr = this.convertExpressionToTwig(part.key)
         const entries = Object.entries(part.cases)
-          .map(([k, v]) => `${twigHashKey(k)}: '${escapeTwigSingleQuoted(v)}'`)
+          .map(([k, v]) => `${twigHashKey(k)}: ${twigStringLiteral(v)}`)
           .join(', ')
         parts.push(`bf.string(bf.index({${entries}}, ${keyExpr}))`)
       }
@@ -1425,7 +1425,7 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
     if (lit.kind === 'number') return numberLiteral(lit.value, null)
     if (lit.kind === 'boolean') return lit.text === 'true' ? 'true' : 'false'
     if (lit.kind === 'null') return 'null'
-    return `'${escapeTwigSingleQuoted(lit.text)}'`
+    return twigStringLiteral(lit.text)
   }
 
   /**
@@ -1449,7 +1449,7 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
     if (!hit) return null
     return hit.kind === 'number'
       ? hit.text
-      : `'${escapeTwigSingleQuoted(hit.text)}'`
+      : twigStringLiteral(hit.text)
   }
 
   private _resolveModuleStringConst(name: string): string | null {
@@ -1459,7 +1459,7 @@ export class TwigAdapter extends DslTemplateAdapter implements IRNodeEmitter<Twi
     if (this.inLoop) return null
     const value = this.moduleStringConsts.get(name)
     if (value === undefined) return null
-    return `'${escapeTwigSingleQuoted(value)}'`
+    return twigStringLiteral(value)
   }
 
   private _recordExprBF101(message: string, reason?: string): void {
@@ -1488,8 +1488,12 @@ export const twigAdapter = new TwigAdapter()
  * Static template text (an element's text run or a literal attribute value,
  * already HTML-escaped) with every brace that could open a Twig tag
  * (`{{`, `{%`, `{#`, or a trailing `{` before the adapter's next tag)
- * printed through an output tag, so Twig renders it as written.
+ * printed through an output tag, so Twig renders it as written. A carriage
+ * return is printed through an output tag too: Twig's lexer rewrites a
+ * `\r\n` or a lone `\r` in template text to `\n`. A brace right before a
+ * CR is printed through its tag as well, so it cannot join the CR's tag into
+ * a longer opener.
  */
 function escapeTwigStaticText(s: string): string {
-  return escapeBraceDelimiters(s, '{%#', "{{ '{' }}")
+  return escapeBraceDelimiters(s, '{%#\r', "{{ '{' }}").replaceAll('\r', `{{ ${twigStringLiteral('\r')} }}`)
 }

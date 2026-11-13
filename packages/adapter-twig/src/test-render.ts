@@ -743,8 +743,8 @@ function toSnakeCase(name: string): string {
  * strings support exactly two escapes (`\\` and `\'`) and pass everything
  * else through as raw bytes — since this file is written with `Bun.write`
  * (UTF-8), embedding non-ASCII text directly is safe and simpler than a
- * JSON-based escaper. Mirrors `escapeTwigSingleQuoted` /
- * `escapeJinjaSingleQuoted` / `escapeKolonSingleQuoted`'s escaping rule.
+ * JSON-based escaper. PHP keeps a raw carriage return in a literal, unlike
+ * Twig's lexer, so this needs none of `twigStringLiteral`'s CR handling.
  */
 function phpStr(s: string): string {
   return `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`

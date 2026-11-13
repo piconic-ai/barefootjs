@@ -10,6 +10,10 @@ import { compileFixtureJSX } from '@barefootjs/adapter-tests/harness-program'
 import type { ComponentIR, SsrDefault } from '@barefootjs/jsx'
 import { mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
+// Every string value this harness writes into its Perl render program goes
+// through the adapter's own literal speller: Perl reads a CRLF inside a raw
+// literal in its source as a lone LF, so a prop holding one is escaped.
+import { perlStringLiteral } from './adapter/lib/perl-naming.ts'
 
 const RENDER_TEMP_DIR = resolve(import.meta.dir, '../.render-temp')
 // Mojo-specific lib (BarefootJS::Backend::Mojo + the plugin) lives in this
@@ -697,7 +701,7 @@ function buildPerlProps(
         // A present `undefined` prop: the runtime's `UNDEF`.
         literal = '$BarefootJS::UNDEF'
       } else if (typeof value === 'string') {
-        literal = perlSingleQuote(value)
+        literal = perlStringLiteral(value)
       } else if (typeof value === 'number') {
         literal = `${value}`
       } else if (typeof value === 'boolean') {
@@ -824,7 +828,7 @@ function manifestSsrDefaults(ir: ComponentIR): Record<string, SsrDefault> {
  */
 function rootSeedPerl(props: Record<string, unknown> | undefined, ir: ComponentIR): string {
   const defaults = manifestSsrDefaults(ir)
-  const entries = Object.entries(defaults).map(([name, d]) => `${perlSingleQuote(name)} => ${ssrDefaultEntryToPerl(d)}`)
+  const entries = Object.entries(defaults).map(([name, d]) => `${perlStringLiteral(name)} => ${ssrDefaultEntryToPerl(d)}`)
   const rest = ir.metadata.restPropsName
   return [
     `# Every declared prop, signal and memo is seeded by the production`,
@@ -832,20 +836,10 @@ function rootSeedPerl(props: Record<string, unknown> | undefined, ir: ComponentI
     `# left out of them, never null-filled, so the seed decides — its default`,
     `# when it has one, \`UNDEF\` otherwise; an explicit \`null\` stays undef.`,
     `my %root_seed = BarefootJS::_derive_stash_from_defaults({${entries.join(', ')}}, ${toPerlLiteral(props ?? {})});`,
-    ...(rest ? [`delete $root_seed{${perlSingleQuote(rest)}};`] : []),
+    ...(rest ? [`delete $root_seed{${perlStringLiteral(rest)}};`] : []),
     `$props = { %$props, %root_seed };`,
     '',
   ].join('\n')
-}
-
-/**
- * Perl single-quoted string escape: `'` AND `\` need escaping.
- * Perl single quotes treat a trailing backslash as escaping the
- * closing quote (`'foo\'` is invalid), so values ending in `\`
- * must double the backslash (#1413 review).
- */
-function perlSingleQuote(s: string): string {
-  return `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
 }
 
 /**
@@ -859,7 +853,7 @@ function perlSingleQuote(s: string): string {
 function ssrDefaultEntryToPerl(d: SsrDefault): string {
   // A prop with no default has no `value`; the runtime reads it as undef.
   const parts: string[] = 'value' in d ? [`value => ${toPerlLiteral(d.value)}`] : []
-  if (d.propName !== undefined) parts.push(`propName => ${perlSingleQuote(d.propName)}`)
+  if (d.propName !== undefined) parts.push(`propName => ${perlStringLiteral(d.propName)}`)
   if (d.isRestProps) parts.push(`isRestProps => 1`)
   return `{${parts.join(', ')}}`
 }
@@ -869,7 +863,7 @@ function toPerlLiteral(value: unknown): string {
   // the runtime's `UNDEF`; its `null` is `undef`.
   if (value === undefined) return '$BarefootJS::UNDEF'
   if (value === null) return 'undef'
-  if (typeof value === 'string') return perlSingleQuote(value)
+  if (typeof value === 'string') return perlStringLiteral(value)
   if (typeof value === 'number') return String(value)
   // JS booleans → Mojo::JSON sentinel objects so `BarefootJS::spread_attrs`
   // can detect them via `ref()` and apply boolean-attr semantics
@@ -884,7 +878,7 @@ function toPerlLiteral(value: unknown): string {
     // generic `value && typeof value === 'object'` branch below, which
     // would otherwise `Object.entries()` a Date's (non-enumerable)
     // internals into an empty hashref literal, silently erasing the value.
-    return perlSingleQuote(value.toISOString())
+    return perlStringLiteral(value.toISOString())
   }
   // Array → Perl arrayref literal, recursing so element types are
   // serialised correctly. Previously this returned the literal `[]`
@@ -898,13 +892,13 @@ function toPerlLiteral(value: unknown): string {
   }
   // Plain object → Perl hashref literal. Used by the spread-bag
   // signal initial values (#1407 follow-up). Keys are quoted as
-  // Perl strings (escaped via `perlSingleQuote` so values
+  // Perl strings (escaped via `perlStringLiteral` so values
   // containing `\` or `'` round-trip safely); values recurse so
   // nested-but-simple shapes still work.
   if (value && typeof value === 'object') {
     const entries: string[] = []
     for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
-      entries.push(`${perlSingleQuote(key)} => ${toPerlLiteral(v)}`)
+      entries.push(`${perlStringLiteral(key)} => ${toPerlLiteral(v)}`)
     }
     return `{${entries.join(', ')}}`
   }
