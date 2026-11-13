@@ -22,7 +22,7 @@ import { parseRecordIndexAccess, stringifyParsedExpr, isLiteralIndex } from '@ba
 import type { ParsedExpr } from '@barefootjs/jsx'
 
 import type { TwigSpreadContext } from '../emit-context.ts'
-import { escapeTwigSingleQuoted, twigHashKey, twigIdent } from '../lib/twig-naming.ts'
+import { twigStringLiteral, twigHashKey, twigIdent } from '../lib/twig-naming.ts'
 
 /**
  * Lower a conditional inline-object spread
@@ -158,7 +158,7 @@ export function recordIndexAccessToTwig(ctx: TwigSpreadContext, val: ParsedExpr)
   if (!parsed) return null
   const entries = parsed.entries.map(e => {
     const mapVal =
-      e.value.kind === 'number' ? e.value.text : `'${escapeTwigSingleQuoted(e.value.text)}'`
+      e.value.kind === 'number' ? e.value.text : twigStringLiteral(e.value.text)
     return `${twigHashKey(e.key)}: ${mapVal}`
   })
   return `{${entries.join(', ')}}[${twigIdent(parsed.indexPropName)}]`

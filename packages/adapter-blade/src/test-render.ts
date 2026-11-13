@@ -748,7 +748,7 @@ function toSnakeCase(name: string): string {
  * else through as raw bytes — since this file is written with `Bun.write`
  * (UTF-8), embedding non-ASCII text directly is safe and simpler than a
  * JSON-based escaper. Mirrors `escapeBladeSingleQuoted` /
- * `escapeJinjaSingleQuoted` / `escapeKolonSingleQuoted`'s escaping rule.
+ * `escapeKolonSingleQuoted`'s escaping rule.
  */
 function phpStr(s: string): string {
   return `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`

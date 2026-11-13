@@ -22,7 +22,7 @@ import type {
   FlatDepth,
   CallbackEvalSpelling,
 } from '@barefootjs/jsx'
-import { escapeTwigSingleQuoted, twigHashKey } from '../lib/twig-naming.ts'
+import { twigStringLiteral, twigHashKey } from '../lib/twig-naming.ts'
 
 // The undefined literal is the `slice` end the source left out: the runtime's
 // `UNDEF` (`bf.undefined()`), which `bf.slice` reads as "to the length";
@@ -50,7 +50,7 @@ export function renderArrayMethod(
  */
 export const EVAL_SPELLING: CallbackEvalSpelling = {
   call: (helper, operands) => `bf.${helper}(${operands.join(', ')})`,
-  string: (value) => `'${escapeTwigSingleQuoted(value)}'`,
+  string: (value) => twigStringLiteral(value),
   boolean: (value) => (value ? 'true' : 'false'),
   env: (entries) =>
     `{${entries.map(([name, value]) => `${twigHashKey(name)}: ${value}`).join(', ')}}`,

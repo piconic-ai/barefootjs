@@ -27,14 +27,22 @@
 import type { LoopBindingPathSegment } from '@barefootjs/jsx'
 
 /**
- * Escape a string for a Twig single-quoted literal: backslash first (so it
- * doesn't double-escape the quote we add next), then the quote. Verified
- * empirically against Twig 3.x: `\'` and `\\` are Twig's only single-quoted
- * string escapes (same rule PHP itself uses for single-quoted strings), so
- * this is byte-identical to `escapeJinjaSingleQuoted` / `escapeKolonSingleQuoted`.
+ * Spell a string value as a Twig string literal — the one door every string
+ * value the adapter writes into template code goes through.
+ *
+ * A value is single-quoted, with `\\` and `\'` as its only escapes (Twig's
+ * single-quoted rule, the same as PHP's). Twig's lexer rewrites every line
+ * ending in the template source (`\r\n`, a lone `\r`) to `\n` before it
+ * reads a literal, and a single-quoted literal has no escape for a carriage
+ * return, so a value holding one is written double-quoted instead with the
+ * CR spelled `\r`: Twig decodes a double-quoted literal's escapes after that
+ * rewrite. `\\`, `"` and the `#` of a `#{` (which would open an
+ * interpolation) are escaped there; Twig 3.12+ deprecates escaping any other
+ * `#`.
  */
-export function escapeTwigSingleQuoted(s: string): string {
-  return s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")
+export function twigStringLiteral(s: string): string {
+  if (!s.includes('\r')) return `'${s.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
+  return `"${s.replace(/[\\"\r]|#(?=\{)/g, ch => (ch === '\r' ? '\\r' : `\\${ch}`))}"`
 }
 
 /**
@@ -44,7 +52,7 @@ export function escapeTwigSingleQuoted(s: string): string {
  * key.
  */
 export function twigHashKey(name: string): string {
-  return `'${escapeTwigSingleQuoted(name)}'`
+  return twigStringLiteral(name)
 }
 
 /**
@@ -101,7 +109,7 @@ export function twigLoopBindingAccessor(
 ): string {
   let acc = base
   for (const seg of segments) {
-    acc = `bf.index(${acc}, ${seg.kind === 'index' ? seg.index : `'${escapeTwigSingleQuoted(seg.key)}'`})`
+    acc = `bf.index(${acc}, ${seg.kind === 'index' ? seg.index : twigStringLiteral(seg.key)})`
   }
   return acc
 }
