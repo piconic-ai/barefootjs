@@ -1984,13 +1984,14 @@
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
-              "const-literal-inherited-key",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
               "record-const-index-unknown-keys",
+              "uninlinable-local-function-call",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
@@ -2012,13 +2013,14 @@
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
-              "const-literal-inherited-key",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
               "record-const-index-unknown-keys",
+              "uninlinable-local-function-call",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
@@ -2043,13 +2045,14 @@
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
-              "const-literal-inherited-key",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
               "record-const-index-unknown-keys",
+              "uninlinable-local-function-call",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
@@ -2071,13 +2074,14 @@
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
-              "const-literal-inherited-key",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
               "record-const-index-unknown-keys",
+              "uninlinable-local-function-call",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
@@ -2100,13 +2104,14 @@
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
-              "const-literal-inherited-key",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
               "record-const-index-unknown-keys",
+              "uninlinable-local-function-call",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
@@ -2128,13 +2133,14 @@
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
-              "const-literal-inherited-key",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
               "record-const-index-unknown-keys",
+              "uninlinable-local-function-call",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
@@ -2156,13 +2162,14 @@
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
-              "const-literal-inherited-key",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
               "record-const-index-unknown-keys",
+              "uninlinable-local-function-call",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
@@ -2185,13 +2192,14 @@
               "callback-index-param",
               "callback-outside-evaluator",
               "computed-const-loop-source",
-              "const-literal-inherited-key",
               "module-scope-helper-call",
               "nested-callback-in-filter-predicate",
+              "object-array-literal-child-prop",
               "object-equality-by-contents",
               "off-subset-callback-body",
               "opaque-local-accessor-call",
               "record-const-index-unknown-keys",
+              "uninlinable-local-function-call",
               "unlowerable-loop-filter-predicate",
               "unlowered-method-call"
             ]
@@ -3253,6 +3261,14 @@
           "kind": "render",
           "limitations": [
             "loop-shadowed-const-alias-hop"
+          ]
+        }
+      },
+      "const-object-prop-identity-hydrate": {
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "non-literal-const-child-prop-unbound"
           ]
         }
       },
@@ -5513,6 +5529,35 @@
           }
         }
       },
+      "loop-row-absent-optional-member-attr-module-const": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "static-literal-loop-absent-row-field"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "loop-row-absent-optional-member-attr-module-const-precomputed"
+          }
+        }
+      },
+      "loop-row-boolean-member-attr": {
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "loop-row-boolean-member-attr-value"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "loop-row-boolean-member-attr-value"
+          ]
+        }
+      },
       "loop-row-child-caller-rows-outer-state-key": {
         "go-template": {
           "kind": "refusal",
@@ -5958,236 +6003,298 @@
           }
         }
       },
-      "markup-local-function-named-like-prop": {
+      "markup-local-function-read-named-like-prop": {
         "blade": {
           "kind": "render",
           "limitations": [
-            "local-function-named-like-prop"
+            "local-function-read-named-like-prop"
           ]
         },
         "erb": {
           "kind": "render",
           "limitations": [
-            "local-function-named-like-prop"
+            "local-function-read-named-like-prop"
           ]
         },
         "go-template": {
           "kind": "render",
           "limitations": [
-            "local-function-named-like-prop"
+            "local-function-read-named-like-prop"
           ]
         },
         "jinja": {
           "kind": "render",
           "limitations": [
-            "local-function-named-like-prop"
+            "local-function-read-named-like-prop"
           ]
         },
         "minijinja": {
           "kind": "render",
           "limitations": [
-            "local-function-named-like-prop"
+            "local-function-read-named-like-prop"
           ]
         },
         "mojolicious": {
           "kind": "render",
           "limitations": [
-            "local-function-named-like-prop"
+            "local-function-read-named-like-prop"
           ]
         },
         "pebble": {
           "kind": "render",
           "limitations": [
-            "local-function-named-like-prop"
+            "local-function-read-named-like-prop"
           ]
         },
         "twig": {
           "kind": "render",
           "limitations": [
-            "local-function-named-like-prop"
+            "local-function-read-named-like-prop"
           ]
         },
         "xslate": {
           "kind": "render",
           "limitations": [
-            "local-function-named-like-prop"
+            "local-function-read-named-like-prop"
           ]
         }
       },
-      "memo-const-declared-after-named-like-prop": {
+      "markup-uninlinable-local-function-named-like-prop": {
         "blade": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "markup-uninlinable-local-function-named-like-prop-client"
+          }
         },
         "erb": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "markup-uninlinable-local-function-named-like-prop-client"
+          }
         },
         "go-template": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "markup-uninlinable-local-function-named-like-prop-client"
+          }
         },
         "jinja": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "markup-uninlinable-local-function-named-like-prop-client"
+          }
         },
         "minijinja": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "markup-uninlinable-local-function-named-like-prop-client"
+          }
         },
         "mojolicious": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "markup-uninlinable-local-function-named-like-prop-client"
+          }
         },
         "pebble": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "markup-uninlinable-local-function-named-like-prop-client"
+          }
         },
         "twig": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "markup-uninlinable-local-function-named-like-prop-client"
+          }
         },
         "xslate": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "markup-uninlinable-local-function-named-like-prop-client"
+          }
         }
       },
-      "memo-local-function-named-like-prop": {
+      "memo-uninlinable-local-function-named-like-prop": {
         "blade": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-uninlinable-local-function-named-like-prop-client"
+          }
         },
         "erb": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-uninlinable-local-function-named-like-prop-client"
+          }
         },
         "go-template": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-uninlinable-local-function-named-like-prop-client"
+          }
         },
         "jinja": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-uninlinable-local-function-named-like-prop-client"
+          }
         },
         "minijinja": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-uninlinable-local-function-named-like-prop-client"
+          }
         },
         "mojolicious": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-uninlinable-local-function-named-like-prop-client"
+          }
         },
         "pebble": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-uninlinable-local-function-named-like-prop-client"
+          }
         },
         "twig": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-uninlinable-local-function-named-like-prop-client"
+          }
         },
         "xslate": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
-        }
-      },
-      "memo-module-binding-named-like-prop": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "local-function-named-like-prop"
-          ]
-        }
-      },
-      "module-const-array-method-call": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "module-const-array-method-call"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "module-const-array-method-call"
-          ]
-        },
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "module-const-array-method-call"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "module-const-array-method-call"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "module-const-array-method-call"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "module-const-array-method-call"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "module-const-array-method-call"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "module-const-array-method-call"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "module-const-array-method-call"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "memo-uninlinable-local-function-named-like-prop-client"
+          }
         }
       },
       "module-const-arrow-helper": {
@@ -6412,888 +6519,6 @@
           ]
         }
       },
-      "module-const-inherited-key": {
-        "blade": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-client"
-          }
-        },
-        "erb": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-client"
-          }
-        },
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-client"
-          }
-        },
-        "jinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-client"
-          }
-        },
-        "minijinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-client"
-          }
-        },
-        "mojolicious": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-client"
-          }
-        },
-        "pebble": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-client"
-          }
-        },
-        "twig": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-client"
-          }
-        },
-        "xslate": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-client"
-          }
-        }
-      },
-      "module-const-inherited-key-function": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        }
-      },
-      "module-const-inherited-key-function-direct": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        }
-      },
-      "module-const-inherited-key-function-nested": {
-        "blade": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "erb": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "jinja": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "minijinja": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "pebble": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "twig": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "local-function-call-unbound"
-          ]
-        }
-      },
-      "module-const-inherited-key-iife": {
-        "blade": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-function-client"
-          }
-        },
-        "erb": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-function-client"
-          }
-        },
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-function-client"
-          }
-        },
-        "jinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-function-client"
-          }
-        },
-        "minijinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-function-client"
-          }
-        },
-        "mojolicious": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-function-client"
-          }
-        },
-        "pebble": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-function-client"
-          }
-        },
-        "twig": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-function-client"
-          }
-        },
-        "xslate": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-function-client"
-          }
-        }
-      },
-      "module-const-inherited-key-memo": {
-        "blade": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "erb": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "jinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "minijinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "mojolicious": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "pebble": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "twig": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "xslate": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        }
-      },
-      "module-const-inherited-key-memo-chain": {
-        "blade": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "erb": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "jinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "minijinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "mojolicious": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "pebble": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "twig": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "xslate": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        }
-      },
-      "module-const-inherited-key-memo-mixed": {
-        "blade": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "erb": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "jinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "minijinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "mojolicious": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "pebble": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "twig": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        },
-        "xslate": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-memo-client"
-          }
-        }
-      },
-      "module-const-inherited-key-object-method": {
-        "blade": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-function-client"
-          }
-        },
-        "erb": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-function-client"
-          }
-        },
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-function-client"
-          }
-        },
-        "jinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-function-client"
-          }
-        },
-        "minijinja": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-function-client"
-          }
-        },
-        "mojolicious": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-function-client"
-          }
-        },
-        "pebble": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-function-client"
-          }
-        },
-        "twig": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-function-client"
-          }
-        },
-        "xslate": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "const-literal-inherited-key"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "module-const-inherited-key-function-client"
-          }
-        }
-      },
       "module-const-loop-source-computed": {
         "blade": {
           "kind": "refusal",
@@ -7410,6 +6635,116 @@
           "escape": {
             "state": "escapable",
             "twin": "module-const-loop-source-computed-precomputed"
+          }
+        }
+      },
+      "module-const-object-array-child-prop": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-array-literal-child-prop"
+          ],
+          "escape": {
+            "state": "debt"
           }
         }
       },
@@ -8863,6 +8198,62 @@
           ]
         }
       },
+      "signal-const-object-child-prop": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "signal-const-object-child-prop"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "signal-const-object-child-prop"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "signal-const-object-child-prop"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "signal-const-object-child-prop"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "signal-const-object-child-prop"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "signal-const-object-child-prop"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "signal-const-object-child-prop"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "signal-const-object-child-prop"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "signal-const-object-child-prop"
+          ]
+        }
+      },
       "signal-object-spread-init": {
         "go-template": {
           "kind": "refusal",
@@ -8878,60 +8269,480 @@
           }
         }
       },
-      "signal-seed-local-function-named-like-prop": {
+      "signal-seed-const-from-uninlinable-local-function": {
         "blade": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-const-from-uninlinable-local-function-client"
+          }
         },
         "erb": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-const-from-uninlinable-local-function-client"
+          }
         },
         "go-template": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-const-from-uninlinable-local-function-client"
+          }
         },
         "jinja": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-const-from-uninlinable-local-function-client"
+          }
         },
         "minijinja": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-const-from-uninlinable-local-function-client"
+          }
         },
         "mojolicious": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-const-from-uninlinable-local-function-client"
+          }
         },
         "pebble": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-const-from-uninlinable-local-function-client"
+          }
         },
         "twig": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-const-from-uninlinable-local-function-client"
+          }
         },
         "xslate": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "local-function-named-like-prop"
-          ]
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-const-from-uninlinable-local-function-client"
+          }
+        }
+      },
+      "signal-seed-uninlinable-local-function-hides-module-function": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-hides-module-function-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-hides-module-function-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-hides-module-function-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-hides-module-function-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-hides-module-function-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-hides-module-function-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-hides-module-function-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-hides-module-function-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-hides-module-function-client"
+          }
+        }
+      },
+      "signal-seed-uninlinable-local-function-named-like-prop": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-named-like-prop-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-uninlinable-local-function-named-like-prop-client"
+          }
+        }
+      },
+      "signal-seed-wrapped-uninlinable-local-function": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-wrapped-uninlinable-local-function-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-wrapped-uninlinable-local-function-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-wrapped-uninlinable-local-function-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-wrapped-uninlinable-local-function-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-wrapped-uninlinable-local-function-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-wrapped-uninlinable-local-function-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-wrapped-uninlinable-local-function-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-wrapped-uninlinable-local-function-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "uninlinable-local-function-call"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "signal-seed-wrapped-uninlinable-local-function-client"
+          }
         }
       },
       "some-typeof-predicate": {
@@ -10629,6 +10440,10 @@
         "description": "A const reading a signal getter, read in a loop row that shadows the getter, keeps the signal value",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/const-getter-read-loop-shadowed.ts"
       },
+      "const-object-prop-identity-hydrate": {
+        "description": "A non-reactive allocating const passed as a child prop keeps one identity across reads after…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/const-object-prop-identity-hydrate.ts"
+      },
       "date-method-uncatalogued": {
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
@@ -10745,6 +10560,14 @@
         "description": "A component loop row over a number array keyed by n.toString() renders data-key",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-key-to-string-number-component-row.ts"
       },
+      "loop-row-absent-optional-member-attr-module-const": {
+        "description": "An absent or null member of a module-const row omits the attribute bound to it",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-absent-optional-member-attr-module-const.ts"
+      },
+      "loop-row-boolean-member-attr": {
+        "description": "A boolean loop-row member as an attribute value renders true / false and is omitted when absent",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-boolean-member-attr.ts"
+      },
       "loop-row-child-caller-rows-outer-state-key": {
         "description": "A component loop row with a computed prop, keyed by an expression reading outer state, carries its…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-caller-rows-outer-state-key.ts"
@@ -10781,25 +10604,17 @@
         "description": "A `.map()` projection calling an unlowered method — DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-opaque-projection.ts"
       },
-      "markup-local-function-named-like-prop": {
-        "description": "Markup calling a local function named like a typed prop calls the function, not the prop",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/markup-local-function-named-like-prop.ts"
+      "markup-local-function-read-named-like-prop": {
+        "description": "Markup reading a local function named like a typed prop without calling it renders nothing, not the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/markup-local-function-read-named-like-prop.ts"
       },
-      "memo-const-declared-after-named-like-prop": {
-        "description": "A memo reading a const declared after it and named like a typed prop reads the const, not the prop",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-const-declared-after-named-like-prop.ts"
+      "markup-uninlinable-local-function-named-like-prop": {
+        "description": "Markup calling a local function named like a typed prop that a template cannot inline refuses…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/markup-uninlinable-local-function-named-like-prop.ts"
       },
-      "memo-local-function-named-like-prop": {
-        "description": "A memo calling a local function named like a typed prop calls the function, not the prop",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-local-function-named-like-prop.ts"
-      },
-      "memo-module-binding-named-like-prop": {
-        "description": "A memo reading a module-scope binding named like a typed prop reads the binding, not the prop",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-module-binding-named-like-prop.ts"
-      },
-      "module-const-array-method-call": {
-        "description": "a method call on a module array const renders its result",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-array-method-call.ts"
+      "memo-uninlinable-local-function-named-like-prop": {
+        "description": "A memo calling a local function named like a typed prop that a template cannot inline refuses",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-uninlinable-local-function-named-like-prop.ts"
       },
       "module-const-arrow-helper": {
         "description": "Module-level arrow-valued const helper applied to a prop is referenced by name from the CSR…",
@@ -10813,45 +10628,13 @@
         "description": "A destructure default reading a module-scope const renders that const in every read position, and…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-destructure-default.ts"
       },
-      "module-const-inherited-key": {
-        "description": "a module const read with a key only its prototype has reads the inherited function",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key.ts"
-      },
-      "module-const-inherited-key-function": {
-        "description": "a local function returning a memo that reads an inherited const key, called at SSR, reads the…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-function.ts"
-      },
-      "module-const-inherited-key-function-direct": {
-        "description": "a local function reading an inherited const key, called at SSR, reads the inherited function",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-function-direct.ts"
-      },
-      "module-const-inherited-key-function-nested": {
-        "description": "a local function calling another that reads an inherited const key through a memo, called at SSR,…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-function-nested.ts"
-      },
-      "module-const-inherited-key-iife": {
-        "description": "an IIFE in markup reading an inherited const key reads the inherited function",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-iife.ts"
-      },
-      "module-const-inherited-key-memo": {
-        "description": "a memo reading an inherited const key, read at SSR, reads the inherited function",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-memo.ts"
-      },
-      "module-const-inherited-key-memo-chain": {
-        "description": "a memo reading an inherited const key, reached through another memo at SSR, reads the inherited…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-memo-chain.ts"
-      },
-      "module-const-inherited-key-memo-mixed": {
-        "description": "a memo reading an inherited const key, read at SSR and from /* @client */, reads the inherited…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-memo-mixed.ts"
-      },
-      "module-const-inherited-key-object-method": {
-        "description": "an object const method reading an inherited const key, called at SSR, reads the inherited function",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-object-method.ts"
-      },
       "module-const-loop-source-computed": {
         "description": "A module-scope const computed via a function call refuses loudly (BF101) on every SSR template…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-loop-source-computed.ts"
+      },
+      "module-const-object-array-child-prop": {
+        "description": "a module array-of-objects const passed whole as a child prop reaches the child",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-object-array-child-prop.ts"
       },
       "module-function-helper-chain": {
         "description": "Module-level function helper calling another module-level function helper is referenced by name…",
@@ -10937,13 +10720,29 @@
         "description": "A Map-typed prop used by client code (even via a method call, since BF021 never sees a handler…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/rich-prop-client-read.ts"
       },
+      "signal-const-object-child-prop": {
+        "description": "A const object that reads a signal, passed as a child prop, renders its value in the child",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-const-object-child-prop.ts"
+      },
       "signal-object-spread-init": {
         "description": "Signal initializer spreads a prop-derived object directly, in value position",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-object-spread-init.ts"
       },
-      "signal-seed-local-function-named-like-prop": {
-        "description": "A signal seed calling a local function named like a typed prop calls the function, not the prop",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-local-function-named-like-prop.ts"
+      "signal-seed-const-from-uninlinable-local-function": {
+        "description": "A signal seeded from a const initialized by a local function a template cannot inline refuses",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-const-from-uninlinable-local-function.ts"
+      },
+      "signal-seed-uninlinable-local-function-hides-module-function": {
+        "description": "A component function a template cannot inline hides the module function of its name, and refuses",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-uninlinable-local-function-hides-module-function.ts"
+      },
+      "signal-seed-uninlinable-local-function-named-like-prop": {
+        "description": "A signal seeded from a local function named like a typed prop that a template cannot inline refuses",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-uninlinable-local-function-named-like-prop.ts"
+      },
+      "signal-seed-wrapped-uninlinable-local-function": {
+        "description": "A signal seeded through an inlinable wrapper of a local function a template cannot inline refuses",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-wrapped-uninlinable-local-function.ts"
       },
       "some-typeof-predicate": {
         "description": "Off-subset `.some()` predicate (typeof) — JS-runtime faithful, DSL diagnostic",
@@ -11105,6 +10904,10 @@
         "description": "A component loop row over a number array keyed by n.toString(), deferred to the client via /*…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-key-to-string-number-component-row-client.ts"
       },
+      "loop-row-absent-optional-member-attr-module-const-precomputed": {
+        "description": "prop-precompute twin of loop-row-absent-optional-member-attr-module-const — the rows come in as…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-absent-optional-member-attr-module-const-precomputed.ts"
+      },
       "loop-row-child-caller-rows-outer-state-key-client": {
         "description": "A component loop row with a computed prop, keyed by an expression reading outer state, deferred to…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-caller-rows-outer-state-key-client.ts"
@@ -11129,17 +10932,13 @@
         "description": "A `.map()` projection calling an unlowered method, deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/map-opaque-projection-client.ts"
       },
-      "module-const-inherited-key-client": {
-        "description": "a /* @client */ read of a module const key only its prototype has defers to the browser",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-client.ts"
+      "markup-uninlinable-local-function-named-like-prop-client": {
+        "description": "The /* @client */ escape of a local function call a template cannot inline",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/markup-uninlinable-local-function-named-like-prop-client.ts"
       },
-      "module-const-inherited-key-function-client": {
-        "description": "local functions and methods reading an inherited const key, called only from /* @client */, defer…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-function-client.ts"
-      },
-      "module-const-inherited-key-memo-client": {
-        "description": "memos reading an inherited const key, read only from /* @client */ positions, defer to the browser",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-inherited-key-memo-client.ts"
+      "memo-uninlinable-local-function-named-like-prop-client": {
+        "description": "The /* @client */ escape of a memo calling a local function a template cannot inline",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-uninlinable-local-function-named-like-prop-client.ts"
       },
       "module-const-loop-source-computed-precomputed": {
         "description": "prop-precompute twin of module-const-loop-source-computed — computation moved to the caller, full…",
@@ -11176,6 +10975,22 @@
       "signal-object-spread-init-client": {
         "description": "Signal initializer spreads a prop-derived object, reads deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-object-spread-init-client.ts"
+      },
+      "signal-seed-const-from-uninlinable-local-function-client": {
+        "description": "The /* @client */ escape of a signal seeded from a const initialized by a local function a template…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-const-from-uninlinable-local-function-client.ts"
+      },
+      "signal-seed-uninlinable-local-function-hides-module-function-client": {
+        "description": "The /* @client */ escape of a component function a template cannot inline that hides a module…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-uninlinable-local-function-hides-module-function-client.ts"
+      },
+      "signal-seed-uninlinable-local-function-named-like-prop-client": {
+        "description": "The /* @client */ escape of a signal seeded from a local function a template cannot inline",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-uninlinable-local-function-named-like-prop-client.ts"
+      },
+      "signal-seed-wrapped-uninlinable-local-function-client": {
+        "description": "The /* @client */ escape of a signal seeded through an inlinable wrapper of a local function a…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/signal-seed-wrapped-uninlinable-local-function-client.ts"
       },
       "some-typeof-predicate-client": {
         "description": "Off-subset `.some()` predicate deferred to the client via /* @client */",
@@ -11509,6 +11324,28 @@
         "BF101"
       ]
     },
+    "client-binding-named-like-module-binding": {
+      "title": "A component binding named like a module binding, in the client script",
+      "kind": "silent",
+      "given": "a component-scope const or function named like a module-scope one that the component, or a module function it calls, also reads",
+      "expected": "each read resolves lexically: the component binding inside the component, the module binding inside the module function",
+      "actual": "emits both declarations into one scope of the client script, which then fails to load (a redeclared const) or calls the module function for the component one",
+      "fixtures": [
+        "local-function-hides-module-function"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
     "client-only-loop-in-static-loop": {
       "title": "Client-only nested loop inside a static loop row",
       "kind": "refusal",
@@ -11577,57 +11414,6 @@
       "actual": "renders empty: the read takes the passed prop without its default",
       "fixtures": [
         "const-alias-default-prop-loop-shadow"
-      ],
-      "adapters": [
-        "hono",
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
-    "const-literal-inherited-key": {
-      "title": "Literal const read with a key only its prototype has",
-      "kind": "refusal",
-      "given": "a module- or component-scope array or object literal const read with a literal key the literal does not list but its prototype does (`const REC = { k: 'v' }`, `REC['toString']`; `const QS = ['a']`, `QS['map']`), in a server-rendered position (an object const's arrow method or an IIFE it calls included), or in the body of a memo one reads",
-      "expected": "the inherited function (`Object.prototype.toString`, `Array.prototype.map`), so a condition on the read is true",
-      "actual": "the compiler refuses with BF101",
-      "fixtures": [
-        "module-const-inherited-key",
-        "module-const-inherited-key-iife",
-        "module-const-inherited-key-memo",
-        "module-const-inherited-key-memo-chain",
-        "module-const-inherited-key-memo-mixed",
-        "module-const-inherited-key-object-method"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ],
-      "diagnostics": [
-        "BF101"
-      ]
-    },
-    "csr-template-object-const-function-property": {
-      "title": "CSR template reading an object const that holds a function",
-      "kind": "silent",
-      "given": "a const object literal with an arrow-valued property (`const H = { safe: 'ok', get: () => … }`) read for another key in markup (`{H.safe}`), rendered client-side",
-      "expected": "the listed value (`'ok'`)",
-      "actual": "renders empty: the client template does not carry the const, so the read has nothing to resolve",
-      "fixtures": [
-        "module-const-inherited-key-object-safe"
       ],
       "adapters": [
         "hono",
@@ -11795,18 +11581,17 @@
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
     },
-    "local-function-call-unbound": {
-      "title": "Markup calling a local function that reads a component local",
+    "local-function-read-named-like-prop": {
+      "title": "An uncalled read of a local function named like a typed prop",
       "kind": "silent",
-      "given": "a template position calling a component-local function declaration (`function value() { return m() }`, `{value()}`) whose body reads a memo or a component const, directly or through another such function",
-      "expected": "the function's return value",
-      "actual": "renders empty, or fails the render, since the template reads the function name as a template variable nothing binds",
+      "given": "a (props)-arg component with a typed prop it never destructures (`props: { value?: number }`) and a local function of the same name that markup reads without calling it (`{value}`); the colliding prop supplied",
+      "expected": "the read renders nothing, as JS renders no function",
+      "actual": "renders the supplied prop on the server and the function source in the client template",
       "fixtures": [
-        "module-const-inherited-key-function",
-        "module-const-inherited-key-function-direct",
-        "module-const-inherited-key-function-nested"
+        "markup-local-function-read-named-like-prop"
       ],
       "adapters": [
+        "hono",
         "blade",
         "erb",
         "go-template",
@@ -11818,28 +11603,17 @@
         "xslate"
       ]
     },
-    "local-function-named-like-prop": {
-      "title": "A local or module binding named like a typed prop",
+    "loop-row-boolean-member-attr-value": {
+      "title": "Boolean loop-row member as an attribute value",
       "kind": "silent",
-      "given": "a (props)-arg component with a typed prop it never destructures (`props: { value?: number }`) and a binding of the same name it reads: a local function (`function value() { return 1 }`) called from a memo, a signal seed or markup, an ordinary const declared after the memo that reads it, or a module-scope const read by a memo; the colliding prop supplied",
-      "expected": "the read resolves to the binding",
-      "actual": "renders the supplied prop, or nothing, instead of the binding",
+      "given": "a loop row's boolean member bound to a non-boolean attribute (`data-off={r.off}`), read from a typed array prop",
+      "expected": "the attribute renders `true` / `false`, and is omitted on a row that lacks the member",
+      "actual": "renders `1` / `0` for a present member",
       "fixtures": [
-        "markup-local-function-named-like-prop",
-        "memo-const-declared-after-named-like-prop",
-        "memo-local-function-named-like-prop",
-        "memo-module-binding-named-like-prop",
-        "signal-seed-local-function-named-like-prop"
+        "loop-row-boolean-member-attr"
       ],
       "adapters": [
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
         "mojolicious",
-        "pebble",
-        "twig",
         "xslate"
       ]
     },
@@ -11900,27 +11674,6 @@
       "actual": "renders nothing, or fails to render: the template reads the const as a variable that is never set",
       "fixtures": [
         "const-getter-read-loop-shadowed"
-      ],
-      "adapters": [
-        "blade",
-        "erb",
-        "go-template",
-        "jinja",
-        "minijinja",
-        "mojolicious",
-        "pebble",
-        "twig",
-        "xslate"
-      ]
-    },
-    "module-const-array-method-call": {
-      "title": "A method call on a module array-literal const",
-      "kind": "silent",
-      "given": "a module-scope array literal const with a method called on it in a template position (`const QS = ['a', 'b']`, `QS.join('-')`, `QS.includes('a')`)",
-      "expected": "the method's result (`'a-b'`, `true`)",
-      "actual": "renders the result empty or false, or fails the render, since the call reads the const as a template variable the backend does not bind",
-      "fixtures": [
-        "module-const-array-method-call"
       ],
       "adapters": [
         "blade",
@@ -12090,6 +11843,43 @@
       ],
       "adapters": [
         "go-template"
+      ]
+    },
+    "non-literal-const-child-prop-unbound": {
+      "title": "A const with a non-literal initializer passed as a child component prop",
+      "kind": "silent",
+      "given": "a component-scope const whose initializer is not a static literal (`const made = new Map()`, `const fn = () => obj.n`), passed bare as a child component prop the child does not render",
+      "expected": "the page renders; the child markup does not depend on the prop",
+      "actual": "throws while rendering the parent, because the template reads the const as a variable it never declares",
+      "fixtures": [
+        "const-object-prop-identity-hydrate"
+      ],
+      "adapters": [
+        "mojolicious"
+      ]
+    },
+    "object-array-literal-child-prop": {
+      "title": "An array of object literals passed as a child component prop",
+      "kind": "refusal",
+      "given": "a child component prop whose value is an array of object literals, written in place (`items={[{ id: 'x' }]}`) or a const holding one (`items={ITEMS}`)",
+      "expected": "the child receives the array and renders each object's members",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "module-const-object-array-child-prop"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
       ]
     },
     "object-entries-typed-object-signal": {
@@ -12358,6 +12148,27 @@
       ],
       "reason": "Props cross the `bf-p` hydration boundary as `JSON.stringify` data with no type-aware revival, so these types lose their contents (`Map` / `Set` serialize to `{}`, `BigInt` throws, `Promise` / `Function` cannot cross a serialization boundary at all). A typed revival envelope was considered and rejected as a nine-adapter protocol change that still could not carry every listed type. The sound path is to pass a JSON-safe value and rebuild the rich value client-side."
     },
+    "signal-const-object-child-prop": {
+      "title": "A const object that reads a signal, passed as a child component prop",
+      "kind": "silent",
+      "given": "a component-scope const holding an object literal whose members read a signal (`const live = { n: count() }`), passed bare as a child component prop (`<Show live={live} />`) that the child reads (`props.live.n`)",
+      "expected": "the child renders the value the member has at render time",
+      "actual": "renders the child with the prop absent (empty text, or `0` where the backend has a zero value), or throws because the template never binds the const",
+      "fixtures": [
+        "signal-const-object-child-prop"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
     "signal-read-in-nested-static-loop": {
       "title": "Signal read inside a nested static loop row",
       "kind": "refusal",
@@ -12399,6 +12210,22 @@
       ],
       "diagnostics": [
         "BF021"
+      ]
+    },
+    "static-literal-loop-absent-row-field": {
+      "title": "Static literal loop array whose rows omit a field",
+      "kind": "refusal",
+      "given": "a `.map()` over a module- or function-scope `const` initialized with an array literal of objects, where some rows omit a field the row body reads",
+      "expected": "every row renders in the server HTML, with an attribute bound to the omitted field left out",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "loop-row-absent-optional-member-attr-module-const"
+      ],
+      "adapters": [
+        "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
       ]
     },
     "static-literal-loop-component-row": {
@@ -12457,6 +12284,35 @@
         "pebble",
         "twig",
         "xslate"
+      ]
+    },
+    "uninlinable-local-function-call": {
+      "title": "Zero-argument call of a local function a template cannot inline",
+      "kind": "refusal",
+      "given": "a zero-argument call of a component or module function that takes parameters or whose body is more than a single `return <expr>`, read on the server: in a template expression, a memo body or a signal seed, directly or through a const initializer or a function the template inlines",
+      "expected": "the function runs at render time and its result renders in the server HTML",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "markup-uninlinable-local-function-named-like-prop",
+        "memo-uninlinable-local-function-named-like-prop",
+        "signal-seed-const-from-uninlinable-local-function",
+        "signal-seed-uninlinable-local-function-hides-module-function",
+        "signal-seed-uninlinable-local-function-named-like-prop",
+        "signal-seed-wrapped-uninlinable-local-function"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
       ]
     },
     "unlowerable-loop-filter-predicate": {

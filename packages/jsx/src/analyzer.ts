@@ -9,7 +9,7 @@
 import ts from 'typescript'
 import { foldRenderReassignmentsInSource } from './fold-render-reassignments.ts'
 import { CLIENT_DIRECTIVE_INTERIOR_RE, USE_CLIENT_DIRECTIVE, isUseClientDirectiveText } from './directives.ts'
-import type { ImportSpecifier, TypeInfo, ParamInfo, PropDefaultPart, PropDefaultRead, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation, SignalFactoryCall, MemoInfo, SignalInfo } from './types.ts'
+import type { ImportSpecifier, TypeInfo, ParamInfo, PropDefaultPart, PropDefaultRead, ReactiveFactoryInfo, DeclinedReactiveFactory, RequiredFactoryImport, FactoryRenameSite, SourceLocation, SignalFactoryCall, MemoInfo, SignalInfo, ConstantInfo } from './types.ts'
 import { CALLBACK_METHODS, parseExpression, parseBlockBodyTolerant, foldBlockToExpr, tsNodeToParsedExpr, stringifyParsedExpr, type ParsedExpr } from './expression-parser.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { collectAssignmentTargets, rewriteBarePropRefs, splitScopedValueRefs } from './prop-rewrite.ts'
@@ -39,6 +39,7 @@ import { separateSignalPropBindings, programWithSeparatedSource } from './signal
 import { isAssignmentTargetIdentifier } from './assignment-target.ts'
 import { addSourceReplacement } from './strip-types.ts'
 import { walkWithScope } from './scope/lexical-scope-walk.ts'
+import { markIdentityBoundConstants, recordIdentityCandidate } from './const-identity.ts'
 
 // =============================================================================
 // TypeScript Program Creation
@@ -3429,6 +3430,8 @@ function collectFunction(
   // rewrite (the failure mode behind #1130) preserves the modifier from IR
   // rather than reconstructing it from text.
   const isGenerator = !!node.asteriskToken
+  // A body rewritten for branch-local names above no longer matches its tree.
+  const returnParsed = plainReturnParsed(node, body, isJsxFunction, ctx)
 
   ctx.localFunctions.push({
     name,
@@ -3444,10 +3447,42 @@ function collectFunction(
     isGenerator: isGenerator || undefined,
     declarationKind: 'function',
     isModule: _isModule || undefined,
+    inComponentBody: inComponentBody(node, ctx),
+    returnParsed,
     isJsxFunction: isJsxFunction || undefined,
     freeIdentifiers: extractFreeIdentifiersFromNode(node),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   })
+}
+
+/**
+ * The tree of the expression a parameterless, non-async, non-generator
+ * function whose body is one `return <expr>` statement returns; `undefined`
+ * for any other function, a body rewritten from its source (`body`), or an
+ * expression the parser does not support.
+ */
+function plainReturnParsed(
+  node: ts.FunctionDeclaration,
+  body: string,
+  isJsxFunction: boolean,
+  ctx: AnalyzerContext,
+): ParsedExpr | undefined {
+  if (node.parameters.length > 0 || !node.body || isJsxFunction || node.asteriskToken) return undefined
+  if (node.modifiers?.some(m => m.kind === ts.SyntaxKind.AsyncKeyword) || body !== ctx.getJS(node.body)) return undefined
+  const [statement, ...rest] = node.body.statements
+  if (!statement || rest.length > 0 || !ts.isReturnStatement(statement) || !statement.expression) return undefined
+  const parsed = parseExpression(ctx.getJS(statement.expression))
+  return parsed && parsed.kind !== 'unsupported' ? parsed : undefined
+}
+
+/** `FunctionInfo.inComponentBody`: `true` when `node` is nested inside the component function. */
+function inComponentBody(node: ts.Node, ctx: AnalyzerContext): true | undefined {
+  const component = ctx.componentNode
+  if (!component) return undefined
+  for (let current = node.parent; current; current = current.parent) {
+    if (current === component) return true
+  }
+  return undefined
 }
 
 // =============================================================================
@@ -4609,7 +4644,7 @@ function collectConstant(
       ? parseExpression(`(${value.trim()})`)
       : undefined
 
-  ctx.localConstants.push({
+  const constant: ConstantInfo = {
     name,
     value,
     parsed,
@@ -4633,7 +4668,9 @@ function collectConstant(
       scope: isModule ? 'module' : 'init',
       effect: 'pure',
     },
-  })
+  }
+  recordIdentityCandidate(constant, node.initializer, ctx.checker)
+  ctx.localConstants.push(constant)
 }
 
 // =============================================================================
@@ -5333,6 +5370,9 @@ function validateContext(ctx: AnalyzerContext): void {
   // downstream inlining never re-embeds their stale initializer text (#2910).
   markMutatedConstants(ctx)
   markWrittenBindings(ctx)
+  // A const whose initializer allocates and reads nothing reactive is read
+  // as the binding, never re-evaluated at a prop read (#3868).
+  markIdentityBoundConstants(ctx)
   writeTemplatePropReads(ctx)
 
   // BF052: init statements that write to an identifier with no visible

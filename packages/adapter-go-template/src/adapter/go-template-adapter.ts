@@ -35,7 +35,7 @@ import type {
   JsSourceText,
 } from '@barefootjs/jsx'
 import {
-  collectAbsentPropSeedReads, isElidedFactoryGetter, loopValueTypeAt, type LoopValueType } from '@barefootjs/jsx'
+  collectAbsentPropSeedReads, compileJSX, isElidedFactoryGetter, loopValueTypeAt, type LoopValueType } from '@barefootjs/jsx'
 import {
   BaseAdapter,
   type AdapterOutput,
@@ -57,6 +57,7 @@ import {
   arithmeticOperandCoercion,
   refuseNonPrimitiveStrictEquality,
   refuseInheritedReadsInRenderedMemos,
+  refuseUninlinableSeedCalls,
   type ArithmeticCoercion,
   collectNullishAttrContext,
   isNativePlan,
@@ -183,13 +184,13 @@ import {
 } from "./value/value-lowering.ts"
 import { numberLiteralTemplateGo, parsedLiteralToGo } from "./value/parsed-literal-to-go.ts"
 import { optFieldElemType, propertyInfoToGo, typeInfoToGo, withoutNilMembers } from "./type/type-codegen.ts"
-import { isKnownArray, isKnownNonNumber, loopRowType } from "./type/number-read.ts"
+import { declaredNilRead, isKnownArray, isKnownNonNumber, loopRowType } from "./type/number-read.ts"
 import { planSynthPropStructs } from "./type/synth-prop-structs.ts"
 import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, isPrimitiveLiteralArray, signalFieldGoType, signalLoopRows, signalSeedGo } from "./type/state-fields.ts"
 import { propsFieldName, propsFieldNames } from './lib/props-field-names.ts'
 import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
-import { computeMemoInitialValue, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evaluatedAsGoType, computedPropSeedGo } from "./memo/memo-compute.ts"
+import { computeMemoInitialValue, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evaluatedAsGoType, computedPropSeedGo, resolvedConstantSeedGo } from "./memo/memo-compute.ts"
 import { collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { refuseObjectSpreadsOntoChildren } from "./props/props-spread.ts"
@@ -204,6 +205,7 @@ import { renderConditionTest, renderFilterExpr, type ConditionExprHost } from ".
 import { PREDICATE_METHODS, renderArrayMethod, renderCallbackMethod, renderMember, type MemberAndMethodsHost } from "./expr/member-and-methods.ts"
 import { loopRowChildPropOverrides, renderLoop as renderLoopWithHost, type LoopRenderHost } from "./loop/render-loop.ts"
 import { collectBodyChildInstances, collectStaticChildInstances, type StaticChildrenHost } from "./children/static-children.ts"
+import { ensureCrossFileChildShapes, type CrossFileChildShapeHost } from './lib/cross-file-child-shapes.ts'
 import { buildLocalTypeTables, resolveNestedLoopItemTypes, synthesizeStructsFromElements, synthSliceTypeInfo, untypedSignalSeedRows, type TypeSynthesisHost } from "./type/type-synthesis.ts"
 
 export type { GoTemplateAdapterOptions } from "./lib/types.ts"
@@ -675,6 +677,40 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /** Absolute paths already scanned by `ensureCrossFileTypes` (#2992) — caps re-parsing a definer to once per build. */
   private scannedCrossFileSources: Set<string> = new Set()
 
+  /** Absolute path → the content `ensureCrossFileChildShapes` registered its components' shapes from (#3753). */
+  private scannedChildShapeSources: Map<string, string> = new Map()
+
+  /**
+   * False on the instance `compileComponentIrs` compiles a scanned child
+   * on: only its IR is kept, so it reads no further files.
+   */
+  private resolvesCrossFileChildShapes = true
+
+  /** See `ensureCrossFileChildShapes`. */
+  private readonly crossFileChildShapeHost: CrossFileChildShapeHost = {
+    scannedChildShapeSources: this.scannedChildShapeSources,
+    compileComponentIrs: (source, filePath) => {
+      const scratch = new GoTemplateAdapter(this.options)
+      scratch.resolvesCrossFileChildShapes = false
+      try {
+        const result = compileJSX(source, filePath, { adapter: scratch, outputIR: true, siblingTemplatesRegistered: true })
+        return result.files.filter(f => f.type === 'ir').map(f => JSON.parse(f.content) as ComponentIR)
+      } catch {
+        return []
+      }
+    },
+    registerChildComponentShape: (ir) => this.registerChildComponentShape(ir),
+  }
+
+  /**
+   * Register the shapes of the children `imports` brings in from other
+   * files, read from their own source, so what a parent knows of a child
+   * does not depend on which file compiled first (#3753).
+   */
+  private ensureCrossFileChildShapes(imports: IRMetadata['imports'] | undefined): void {
+    if (this.resolvesCrossFileChildShapes) ensureCrossFileChildShapes(this.crossFileChildShapeHost, imports)
+  }
+
   /**
    * Local alias -> declared/exported name for imported components (#2822,
    * the SSR-side counterpart of #2777's client-JS registry-key fix). A
@@ -865,7 +901,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.nillableSignalGetters = this.collectNillableSignalGetters(ir)
     ir = withInlinedMemoBodies(ir, bakesField)
     this.state.currentMemos = ir.metadata.memos
-    this.state.nullishAttrCtx = collectNullishAttrContext(ir)
+    this.state.nullishAttrCtx = {
+      ...collectNullishAttrContext(ir),
+      declaredNil: expr => declaredNilRead(this.emitCtx, expr, this.scope),
+    }
     // The primitive plans' typing (#3824), which `generateTypes` reads too:
     // the nil-reading rewrite of a memo body or child prop it evaluates.
     this.state.operandTyping = collectOperandTyping(ir.metadata, {
@@ -903,6 +942,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   /** A nullable signal seeded whole from a prop flipped to `interface{}` for it (#3323). */
   /** Generate template output for a component. */
   generate(ir: ComponentIR, options?: AdapterGenerateOptions): AdapterOutput {
+    this.ensureCrossFileChildShapes(ir.metadata.imports)
     this.state.componentName = ir.metadata.componentName
     this.state.errors = []
     this.state.referencedDerivedConsts = new Set()
@@ -911,11 +951,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.pendingChildrenDefines = []
     this.state.refusedLoopArrayConsts = new Set()
     this.scope = BindingScope.EMPTY
+    // Read before `primeCompileState` inlines the memo bodies, which turns
+    // such a call into an unsupported node.
+    const authoredIr = ir
     ir = this.primeCompileState(ir)
     // `===` / `!==` over an object or array (#3774, #3824 step 8).
     refuseNonPrimitiveStrictEquality(ir, this.state.operandTyping, this.state)
     // An inherited literal-const read in a memo the template renders (#3813).
     refuseInheritedReadsInRenderedMemos(ir, this.state)
+    // A server-read signal seed or memo body calling a function no template can inline (#3721).
+    refuseUninlinableSeedCalls(authoredIr, this.state)
     // A spread of an arbitrary object onto a child component (#3861).
     refuseObjectSpreadsOntoChildren(this.emitCtx, ir)
     this.state.stringValueNames = collectStringValueNames(ir)
@@ -1444,7 +1489,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           propTypeOverrides.get(p.name) ?? typeInfoToGo(this.emitCtx, p.type, p.defaultValue, p.parsed),
         ]),
     )
-    const nillableParamNames = this.probeNillableParamNames(ir)
+    // Probed on first read, not here: a param forwarded into a nillable
+    // field of the child's own child is nillable too, so the answer waits
+    // until that grandchild is registered, whichever is registered first.
+    let nillableParamNames: ReadonlySet<string> | undefined
+    const probeNillable = (): ReadonlySet<string> => (nillableParamNames ??= this.probeNillableParamNames(ir))
     const scalarArrayParamTypes = new Map(
       (ir.metadata.propsParams ?? [])
         .filter(p => !p.isRest && !propTypeOverrides.has(p.name) && isScalarArrayType(p.type))
@@ -1458,7 +1507,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       structTypedObjectParams,
       dataTypedParamNames,
       paramGoTypes,
-      nillableParamNames,
+      get nillableParamNames() {
+        return probeNillable()
+      },
       optParamNames: new Set((ir.metadata.propsParams ?? []).filter(isOptInputParam).map(p => p.sourceName ?? p.name)),
       scalarArrayParamTypes,
     })
@@ -1657,6 +1708,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * #2818).
    */
   generateTypes(ir: ComponentIR, preserveTemplateReadRootFields = false): string | null {
+    this.ensureCrossFileChildShapes(ir.metadata.imports)
     this.state.usesHtmlTemplate = false
     this.state.usesFmt = false
     if (!preserveTemplateReadRootFields) {
@@ -4321,7 +4373,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   ): string | null {
     // The seed plan's form, which reads through local consts and helper calls (#3562).
     const parsed = resolveSignalParsedThroughSeedPlan(this.state, signal)
-    const computed = computedPropSeedGo(this.emitCtx, parsed, [...propsParams], propFallbackVars)
+    const computed = computedPropSeedGo(this.emitCtx, parsed, [...propsParams], propFallbackVars) ??
+      resolvedConstantSeedGo(this.emitCtx, parsed, signal.parsed)
     if (computed === null) return null
     const propsParamMap = new Map(this.state.currentPropsParams.map(p => [p.name, p]))
     return evaluatedAsGoType(computed, signalFieldGoType(this.emitCtx, signal, propsParamMap, concreteDest))

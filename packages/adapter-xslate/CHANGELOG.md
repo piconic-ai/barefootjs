@@ -1,5 +1,15 @@
 # @barefootjs/xslate
 
+## 0.41.1
+
+### Patch Changes
+
+- 22ed84f: A module or component-local const holding a static array or object literal, passed whole as a child component prop (`<Kid xs={QS} />` beside `const QS = ['a', 'b']`), now reaches the child on every template adapter. Each one passes the literal as if the source had written it in place, where it used to hand the child an empty value. Hono and the client JS still pass the const itself, so the child keeps the const's identity. The IR records the literal on the prop (`ExpressionAttr.staticConstLiteral`), and `templatePropValue` is the one place that substitutes it.
+  
+  An array of object literals passed as a child prop is refused with BF101 on every template adapter, also when a const holds it (that used to render the child empty). Go used to drop such a prop silently, even when written in place. The gap is registered as `object-array-literal-child-prop`.
+- 77f1dca: The Mojolicious and Xslate adapters print the result of a number-returning builtin (`Number(x)`, `Math.abs` / `min` / `max` / `floor` / `ceil` / `round`) as JS does, in text, attributes, memos and loop rows (#3872). `isNumberValuedExpr` now counts these calls as number-valued, so their output goes through the runtime's `Number::toString` helper (`bf->string`) rather than Perl's own stringification. Before this change, Perl's `%.15g` dropped digits (`Math.max(0.1 + 0.2, 0)` rendered `0.3`, JS `0.30000000000000004`), and a perl built with `-Duselongdouble` added them (`Math.abs(-7.6)` rendered `7.59999999999999964`). `t/template_primitives.t` in the `BarefootJS` CPAN dist now compares the `abs` results as doubles, so it passes on a `-Duselongdouble` perl.
+- @barefootjs/shared@0.41.1
+
 ## 0.41.0
 
 ### Minor Changes

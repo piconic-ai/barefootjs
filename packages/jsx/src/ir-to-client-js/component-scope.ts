@@ -61,8 +61,19 @@ export function computeFileScope(entryPath: string): string {
  */
 let _activeScope: { fileScope: string; nonExportedSiblings: Set<string> } | null = null
 
-export function setActiveComponentScope(scope: { fileScope: string; nonExportedSiblings: Set<string> } | null): void {
+/**
+ * Install `scope` and return the scope it replaces. A compile restores the
+ * returned scope when it finishes instead of clearing to `null`: an adapter
+ * may compile another file from inside `generate()` (go-template reads a
+ * cross-file child's shape that way, #3753), and the outer compile's client
+ * JS is emitted after that nested compile returns.
+ */
+export function setActiveComponentScope(
+  scope: { fileScope: string; nonExportedSiblings: Set<string> } | null,
+): { fileScope: string; nonExportedSiblings: Set<string> } | null {
+  const previous = _activeScope
   _activeScope = scope
+  return previous
 }
 
 /**
@@ -101,8 +112,11 @@ export function buildImportAliasMap(imports: readonly ImportInfo[]): Map<string,
   return aliases
 }
 
-export function setActiveImportAliases(aliases: ReadonlyMap<string, string> | null): void {
+/** Install `aliases` and return the map it replaces (restored the same way as the component scope). */
+export function setActiveImportAliases(aliases: ReadonlyMap<string, string> | null): ReadonlyMap<string, string> | null {
+  const previous = _activeImportAliases
   _activeImportAliases = aliases
+  return previous
 }
 
 /**

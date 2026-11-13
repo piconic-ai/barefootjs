@@ -209,6 +209,13 @@ export const conformancePins: ConformancePins = {
   // Hono's real JS runtime evaluates this shape correctly and must keep
   // doing so.
   'opaque-local-accessor-call': [{ code: 'BF101', severity: 'error', limitation: 'opaque-local-accessor-call' }],
+  // A zero-argument call of a local function the template cannot inline.
+  'markup-uninlinable-local-function-named-like-prop': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'memo-uninlinable-local-function-named-like-prop': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'signal-seed-uninlinable-local-function-named-like-prop': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'signal-seed-uninlinable-local-function-hides-module-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'signal-seed-const-from-uninlinable-local-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'signal-seed-wrapped-uninlinable-local-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
   // A const record indexed by a prop whose keys are not known at compile
   // time reads inherited keys in JS (`labels['toString']`); no template
   // lookup does, so the read refuses rather than rendering `undefined`.
@@ -227,4 +234,8 @@ export const conformancePins: ConformancePins = {
   'body-destructure-non-identifier-source': [{ code: 'BF101', severity: 'error', limitation: 'body-destructure-without-const-form' }],
   'body-rest-taken-key-read': [{ code: 'BF101', severity: 'error', limitation: 'body-rest-taken-key-read' }],
   'body-rest-props-name-shadowed': [{ code: 'BF101', severity: 'error', limitation: 'body-rest-props-name-shadowed' }],
+  // An array of object literals passed as a child prop (in place, or a
+  // const the IR passes as the literal) has no spelling as the child's
+  // prop value here; the server cannot render the child's rows.
+  'module-const-object-array-child-prop': [{ code: 'BF101', severity: 'error', limitation: 'object-array-literal-child-prop', unescapable: true }],
 }

@@ -261,6 +261,7 @@ import { fixture as componentPropUndefinedLiteralSpread } from './component-prop
 import { fixture as componentPropUndefinedLiteralPositions } from './component-prop-undefined-literal-positions'
 import { fixture as componentSpreadForwardedAbsent } from './component-spread-forwarded-absent'
 import { fixture as componentSpreadForwardedNull } from './component-spread-forwarded-null'
+import { fixture as componentSpreadForwardedReversedOrder } from './component-spread-forwarded-reversed-order'
 import { fixture as nullishOperandArithmeticMatrix } from './nullish-operand-arithmetic-matrix'
 import { fixture as nullishOperandDivisionRemainder } from './nullish-operand-division-remainder'
 import { fixture as omittedOptionalNumberArithmetic } from './omitted-optional-number-arithmetic'
@@ -1306,7 +1307,25 @@ import { fixture as memoLocalFunctionNamedLikeProp } from './memo-local-function
 import { fixture as signalSeedLocalFunctionNamedLikeProp } from './signal-seed-local-function-named-like-prop'
 import { fixture as memoModuleBindingNamedLikeProp } from './memo-module-binding-named-like-prop'
 import { fixture as memoConstDeclaredAfterNamedLikeProp } from './memo-const-declared-after-named-like-prop'
+import { fixture as localBindingsNamedLikeProps } from './local-bindings-named-like-props'
+import { fixture as markupUninlinableLocalFunctionNamedLikeProp } from './markup-uninlinable-local-function-named-like-prop'
+import { fixture as markupUninlinableLocalFunctionNamedLikePropClient } from './markup-uninlinable-local-function-named-like-prop-client'
+import { fixture as memoUninlinableLocalFunctionNamedLikeProp } from './memo-uninlinable-local-function-named-like-prop'
+import { fixture as memoUninlinableLocalFunctionNamedLikePropClient } from './memo-uninlinable-local-function-named-like-prop-client'
+import { fixture as signalSeedUninlinableLocalFunctionNamedLikeProp } from './signal-seed-uninlinable-local-function-named-like-prop'
+import { fixture as signalSeedUninlinableLocalFunctionNamedLikePropClient } from './signal-seed-uninlinable-local-function-named-like-prop-client'
+import { fixture as markupLocalFunctionReadNamedLikeProp } from './markup-local-function-read-named-like-prop'
 import { fixture as markupLocalFunctionNamedLikeProp } from './markup-local-function-named-like-prop'
+import { fixture as localFunctionHidesModuleFunction } from './local-function-hides-module-function'
+import { fixture as signalSeedUninlinableLocalFunctionHidesModuleFunction } from './signal-seed-uninlinable-local-function-hides-module-function'
+import { fixture as signalSeedUninlinableLocalFunctionHidesModuleFunctionClient } from './signal-seed-uninlinable-local-function-hides-module-function-client'
+import { fixture as moduleFunctionReadsModuleBinding } from './module-function-reads-module-binding'
+import { fixture as signalSeedConstFromUninlinableLocalFunction } from './signal-seed-const-from-uninlinable-local-function'
+import { fixture as signalSeedConstFromUninlinableLocalFunctionClient } from './signal-seed-const-from-uninlinable-local-function-client'
+import { fixture as signalSeedWrappedUninlinableLocalFunction } from './signal-seed-wrapped-uninlinable-local-function'
+import { fixture as signalSeedWrappedUninlinableLocalFunctionClient } from './signal-seed-wrapped-uninlinable-local-function-client'
+import { fixture as localFunctionCallThroughConstAndWrapper } from './local-function-call-through-const-and-wrapper'
+import { fixture as loopRowNamedLikeUninlinableMemo } from './loop-row-named-like-uninlinable-memo'
 import { fixture as destructureDefaultParamRenamedCallbackMemo } from './destructure-default-param-renamed-callback-memo'
 import { fixture as destructureDefaultBodyCallback } from './destructure-default-body-callback'
 import { fixture as destructureDefaultBodyCallbackShadow } from './destructure-default-body-callback-shadow'
@@ -1350,6 +1369,12 @@ import { fixture as loopRowScalarMemberLength } from './loop-row-scalar-member-l
 import { fixture as loopUndefinedElement } from './loop-undefined-element'
 import { fixture as absentOptionalPropClassAttr } from './absent-optional-prop-class-attr'
 import { fixture as loopRowChildAbsentOptionalFieldAttr } from './loop-row-child-absent-optional-field-attr'
+import { fixture as loopRowAbsentOptionalMemberAttr } from './loop-row-absent-optional-member-attr'
+import { fixture as loopRowAbsentOptionalMemberAttrSources } from './loop-row-absent-optional-member-attr-sources'
+import { fixture as loopRowAbsentOptionalMemberAttrModuleConst } from './loop-row-absent-optional-member-attr-module-const'
+import { fixture as loopRowAbsentOptionalMemberAttrModuleConstPrecomputed } from './loop-row-absent-optional-member-attr-module-const-precomputed'
+import { fixture as loopRowAbsentOptionalMemberAttrModuleConstClient } from './loop-row-absent-optional-member-attr-module-const-client'
+import { fixture as loopRowBooleanMemberAttr } from './loop-row-boolean-member-attr'
 import { fixture as undefinedIdentifierNullish } from './undefined-identifier-nullish'
 import { fixture as stringLengthUtf16Positions } from './string-length-utf16-positions'
 import { fixture as loopRowChildKeyShapes } from './loop-row-child-key-shapes'
@@ -1386,6 +1411,11 @@ import { fixture as constStringConditionalTest } from './const-string-conditiona
 import { fixture as literalConstConditionalShapes } from './literal-const-conditional-shapes'
 import { fixture as stringConstQuoteNewline } from './string-const-quote-newline'
 import { fixture as moduleConstArrayLiteralIndex } from './module-const-array-literal-index'
+import { fixture as moduleConstArrayChildProp } from './module-const-array-child-prop'
+import { fixture as moduleConstRecordChildProp } from './module-const-record-child-prop'
+import { fixture as moduleConstObjectArrayChildProp } from './module-const-object-array-child-prop'
+import { fixture as moduleConstEmptyArrayChildProp } from './module-const-empty-array-child-prop'
+import { fixture as moduleConstArrayChildPropForwarded } from './module-const-array-child-prop-forwarded'
 import { fixture as moduleConstArrayNegativeZero } from './module-const-array-negative-zero'
 import { fixture as moduleConstMissingKey } from './module-const-missing-key'
 import { fixture as moduleConstInheritedKey } from './module-const-inherited-key'
@@ -1436,6 +1466,9 @@ import { fixture as childrenAliasLoopShadow } from './children-alias-loop-shadow
 import { fixture as childrenAliasHopShadowedIntermediate } from './children-alias-hop-shadowed-intermediate'
 import { fixture as constAliasHopLoopShadow } from './const-alias-hop-loop-shadow'
 import { fixture as constAliasLoopShadowHydrate } from './const-alias-loop-shadow-hydrate'
+import { fixture as constObjectChildPropIdentity } from './const-object-child-prop-identity'
+import { fixture as constObjectPropIdentityHydrate } from './const-object-prop-identity-hydrate'
+import { fixture as signalConstObjectChildProp } from './signal-const-object-child-prop'
 import { fixture as constAliasDefaultPropLoopShadow } from './const-alias-default-prop-loop-shadow'
 import { fixture as constGetterReadLoopShadowed } from './const-getter-read-loop-shadowed'
 import { fixture as moduleConstHopLoopShadow } from './module-const-hop-loop-shadow'
@@ -1606,6 +1639,7 @@ export const jsxFixtures: JSXFixture[] = [
   componentPropUndefinedLiteralPositions,
   componentSpreadForwardedAbsent,
   componentSpreadForwardedNull,
+  componentSpreadForwardedReversedOrder,
   nullishOperandArithmeticMatrix,
   nullishOperandDivisionRemainder,
   omittedOptionalNumberElementAccess,
@@ -2390,7 +2424,25 @@ export const jsxFixtures: JSXFixture[] = [
   signalSeedLocalFunctionNamedLikeProp,
   memoModuleBindingNamedLikeProp,
   memoConstDeclaredAfterNamedLikeProp,
+  localBindingsNamedLikeProps,
+  markupUninlinableLocalFunctionNamedLikeProp,
+  markupUninlinableLocalFunctionNamedLikePropClient,
+  memoUninlinableLocalFunctionNamedLikeProp,
+  memoUninlinableLocalFunctionNamedLikePropClient,
+  signalSeedUninlinableLocalFunctionNamedLikeProp,
+  signalSeedUninlinableLocalFunctionNamedLikePropClient,
+  markupLocalFunctionReadNamedLikeProp,
   markupLocalFunctionNamedLikeProp,
+  localFunctionHidesModuleFunction,
+  signalSeedUninlinableLocalFunctionHidesModuleFunction,
+  signalSeedUninlinableLocalFunctionHidesModuleFunctionClient,
+  moduleFunctionReadsModuleBinding,
+  signalSeedConstFromUninlinableLocalFunction,
+  signalSeedConstFromUninlinableLocalFunctionClient,
+  signalSeedWrappedUninlinableLocalFunction,
+  signalSeedWrappedUninlinableLocalFunctionClient,
+  localFunctionCallThroughConstAndWrapper,
+  loopRowNamedLikeUninlinableMemo,
   destructureDefaultParamRenamedCallbackMemo,
   destructureDefaultBodyCallback,
   destructureDefaultBodyCallbackShadow,
@@ -2425,6 +2477,12 @@ export const jsxFixtures: JSXFixture[] = [
   loopUndefinedElement,
   absentOptionalPropClassAttr,
   loopRowChildAbsentOptionalFieldAttr,
+  loopRowAbsentOptionalMemberAttr,
+  loopRowAbsentOptionalMemberAttrSources,
+  loopRowAbsentOptionalMemberAttrModuleConst,
+  loopRowAbsentOptionalMemberAttrModuleConstPrecomputed,
+  loopRowAbsentOptionalMemberAttrModuleConstClient,
+  loopRowBooleanMemberAttr,
   undefinedIdentifierNullish,
   stringLengthUtf16Positions,
   loopRowChildKeyShapes,
@@ -2454,6 +2512,11 @@ export const jsxFixtures: JSXFixture[] = [
   literalConstConditionalShapes,
   stringConstQuoteNewline,
   moduleConstArrayLiteralIndex,
+  moduleConstArrayChildProp,
+  moduleConstRecordChildProp,
+  moduleConstObjectArrayChildProp,
+  moduleConstEmptyArrayChildProp,
+  moduleConstArrayChildPropForwarded,
   moduleConstArrayNegativeZero,
   moduleConstMissingKey,
   moduleConstInheritedKey,
@@ -2554,6 +2617,9 @@ export const jsxFixtures: JSXFixture[] = [
   childrenAliasHopShadowedIntermediate,
   constAliasHopLoopShadow,
   constAliasLoopShadowHydrate,
+  constObjectChildPropIdentity,
+  constObjectPropIdentityHydrate,
+  signalConstObjectChildProp,
   constAliasDefaultPropLoopShadow,
   constGetterReadLoopShadowed,
   moduleConstHopLoopShadow,

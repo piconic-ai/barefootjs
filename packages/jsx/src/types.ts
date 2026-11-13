@@ -1487,6 +1487,17 @@ export interface ExpressionAttr {
    * differ, and the adapter then falls back to `expr`.
    */
   typed?: TypedExprSource
+  /**
+   * Set on a component prop whose value is a bare read of a const holding a
+   * fully static array or object literal (`<Kid xs={QS} />` beside
+   * `const QS = ['a', 'b']`): that literal, as source text and parsed tree.
+   * A template receives the props, not the module's or the component's
+   * consts, so a template adapter passes the literal, as if the source had
+   * written it in place (`templatePropValue`). JS-runtime consumers (Hono,
+   * the client JS) keep `expr`, so the child receives the const's own value
+   * and its identity.
+   */
+  staticConstLiteral?: { expr: JsSourceText; parsed: ParsedExpr }
 }
 
 /** See {@link ExpressionAttr.typed}. */
@@ -2287,6 +2298,20 @@ export interface FunctionInfo {
   freeIdentifiers?: ReadonlySet<string>
   /** When true, declared at module level (outside the component function). */
   isModule?: boolean
+  /**
+   * When true, the declaration sits inside the component function's body. A
+   * `function` declaration there is collected with `isModule` set too (the
+   * module walk is the one that reaches it, and client-JS scope placement
+   * demotes it later), so this is what says where its body's names resolve.
+   */
+  inComponentBody?: boolean
+  /**
+   * What a call with no arguments returns, for a function that takes no
+   * parameters and whose body is a single `return <expr>`: the returned
+   * expression's tree. A template inlines such a call (`value()` → `1`)
+   * where it reads the function (`localCallBodies`).
+   */
+  returnParsed?: ParsedExpr
   /** When true, this function returns JSX and is inlined at call sites (#569). */
   isJsxFunction?: boolean
   /**
@@ -2377,6 +2402,17 @@ export interface ConstantInfo {
    * was supposed to do.
    */
   mutatedAfterDeclaration?: boolean
+  /**
+   * When true, the initializer creates a new value each time it is evaluated
+   * (an object or array literal, `new X()`, a call, a function expression)
+   * and reads nothing reactive (no signal, memo, prop or `Reactive<T>`
+   * brand), so every read must see the one value the declaration created. A
+   * read site references the binding; it never re-evaluates the initializer
+   * in its place, which would hand each read a different object (#3868).
+   * Set by `markIdentityBoundConstants` (`const-identity.ts`). Consumed by
+   * `expandDynamicPropValue`, which builds a child component's prop getters.
+   */
+  identityBound?: boolean
   /**
    * When true, this module-level const is shadowed inside the component: a
    * destructured prop, the props object, or a component-scope const,

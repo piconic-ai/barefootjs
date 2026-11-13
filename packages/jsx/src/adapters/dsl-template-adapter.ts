@@ -17,7 +17,7 @@ import {
   type NullishAttrContext,
 } from '../nullable-signal-attr.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
-import { declaredValueType, declaredValueTypes, loopRowType, type DeclaredValueTypes } from './loop-row-type.ts'
+import { declaredValueMayBeNil, declaredValueType, declaredValueTypes, loopRowType, type DeclaredValueTypes } from './loop-row-type.ts'
 import { collectOperandTyping, EMPTY_OPERAND_TYPING, factsOfType, type OperandTyping, type ScopedOperandTyping } from './operand-typing.ts'
 import { rootPropAliasesForLoop, rootPropAliasNames } from '../scope/root-prop-alias.ts'
 import type {
@@ -31,6 +31,7 @@ import type {
 } from '../types.ts'
 import { refuseNonPrimitiveStrictEquality, type NonPrimitiveEqualitySink } from './non-primitive-equality.ts'
 import { refuseInheritedReadsInRenderedMemos } from './rendered-memo-inherited-read.ts'
+import { refuseUninlinableSeedCalls } from './uninlinable-seed-call.ts'
 import { collectImportedLoopChildComponentErrors } from './component-tree.ts'
 import { computedConstContext, type ComputedConstContext } from './computed-const.ts'
 import { searchParamsLocalNames } from './env-signal.ts'
@@ -424,9 +425,13 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     this.rootPropAliases = rootPropAliasNames(ir, this.propsParams.map(p => p.name))
     this.scope = BindingScope.forComponent(this.propsObjectName)
     this.nullableOptionalProps = collectNullableOptionalProps(ir)
-    this.nullishAttrCtx = collectNullishAttrContext(ir)
     this.stringValueNames = this.stringValueNamesFor(ir)
-    this.declaredTypes = declaredValueTypes(ir)
+    const declaredTypes = declaredValueTypes(ir)
+    this.declaredTypes = declaredTypes
+    this.nullishAttrCtx = {
+      ...collectNullishAttrContext(ir),
+      declaredNil: expr => declaredValueMayBeNil(declaredTypes, expr, this.scope),
+    }
     this.nullableSignalGetters = new Set([
       ...collectNullableSignalGetters(ir),
       ...memberSeededNilSignals(ir, this.declaredTypes, this.scope),
@@ -462,6 +467,8 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     refuseNonPrimitiveStrictEquality(ir, this.operandTyping, this.errorSink())
     // An inherited literal-const read in a memo the template renders (#3813).
     refuseInheritedReadsInRenderedMemos(ir, this.errorSink())
+    // A server-read signal seed or memo body calling a function no template can inline (#3721).
+    refuseUninlinableSeedCalls(ir, this.errorSink())
   }
 }
 

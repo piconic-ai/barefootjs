@@ -21,6 +21,8 @@ import type { ConstantInfo, ExpressionAttr, IRMetadata, ParamInfo } from '../typ
 import { componentBindings } from '../relocate.ts'
 import { PROPS_OBJECT_IDENTIFIER } from '../scope/binding-scope.ts'
 import { readLiteralMember } from '../static-const-member.ts'
+import { localCallBodies, uninlinableLocalCalls, type LocalCallBody } from '../local-call-body.ts'
+import { templatePropReadParams } from '../props-binding.ts'
 
 export interface ComputedConstContext {
   constants: IRMetadata['localConstants'] | undefined
@@ -39,6 +41,24 @@ export interface ComputedConstContext {
   propReads: ReadonlyMap<string, string>
   /** Component-scope local functions, which shadow a module const of the same name. */
   localFunctions: ReadonlySet<string>
+  /**
+   * The functions whose zero-argument call a template reads as the
+   * expression they return (`localCallBodies`, #3721).
+   */
+  calls: ReadonlyMap<string, LocalCallBody>
+  /**
+   * Typed props a template holds under their name although no component
+   * binding of that name is the prop: a `(props)`-arg component's prop the
+   * body never binds (`templatePropReadParams`). A const of such a name,
+   * read by its name, would read the prop, so it is always inlined.
+   */
+  propNamed: ReadonlySet<string>
+  /**
+   * The functions whose zero-argument call a template cannot inline
+   * (`uninlinableLocalCalls`): read as a getter, the call would render an
+   * unbound name or a prop of that name, so it is refused.
+   */
+  uninlinableCalls: ReadonlySet<string>
   /**
    * Names the component scope lexically binds (the props object, destructured
    * and rest props, its consts, local functions, signals, memos), which
@@ -75,12 +95,22 @@ export function computedConstContext(
     propsBindings: propsBindingNames(metadata),
     propReads: propReadKeys(metadata, bindings),
     localFunctions: new Set(metadata.localFunctions.filter(f => !f.isModule).map(f => f.name)),
+    calls: localCallBodies(metadata),
+    propNamed: propNamedBindings(metadata),
+    uninlinableCalls: uninlinableLocalCalls(metadata),
     componentNames: componentScopeNames(metadata),
     props: { params: metadata.propsParams, objectName: metadata.propsObjectName },
     isShadowed,
     isAdapterBound,
     isGlobal: name => !bindings.has(name) && name !== metadata.restPropsName && !isShadowed(name),
   }
+}
+
+/** {@link ComputedConstContext.propNamed}. */
+function propNamedBindings(metadata: IRMetadata): Set<string> {
+  if (metadata.propsObjectName === null) return new Set()
+  const inScope = new Set(templatePropReadParams(metadata).map(p => p.name))
+  return new Set(metadata.propsParams.filter(p => !p.isRest && !inScope.has(p.name)).map(p => p.name))
 }
 
 /**
@@ -166,7 +196,7 @@ const MAX_DEPTH = 16
  * repeated so a const read inside an initializer is replaced too.
  */
 export function inlineComputedConsts(expr: ParsedExpr, ctx: ComputedConstContext | null): ParsedExpr {
-  if (!ctx?.constants?.length) return expr
+  if (!ctx || (!ctx.constants?.length && ctx.calls.size === 0 && ctx.uninlinableCalls.size === 0)) return expr
   let current = expr
   for (let depth = 0; depth < MAX_DEPTH; depth++) {
     const next = inlineOnce(current, ctx)
@@ -181,6 +211,15 @@ function inlineOnce(expr: ParsedExpr, ctx: ComputedConstContext): ParsedExpr {
   if (!free) return expr
   let result = expr
   for (const name of free) {
+    const call = callBody(name, ctx)
+    if (call) {
+      result = inlineZeroArgCalls(result, name, call)
+      continue
+    }
+    if (ctx.uninlinableCalls.has(name) && !ctx.isShadowed(name)) {
+      result = inlineZeroArgCalls(result, name, uninlinableCall(name))
+      continue
+    }
     const object = objectConstInitializer(name, ctx)
     if (object) {
       result = projectObjectReads(result, name, object, ctx) ?? result
@@ -191,6 +230,43 @@ function inlineOnce(expr: ParsedExpr, ctx: ComputedConstContext): ParsedExpr {
     result = inlineBinding(result, name, init) ?? inlineUnderCallbacks(result, name, init, ctx) ?? result
   }
   return result
+}
+
+/**
+ * What a zero-argument call of `name` returns, resolved in the scope the
+ * function is declared in, or `null` when a call of it stays as written: a
+ * loop row or callback binds the name where the expression is read, or the
+ * adapter binds it itself.
+ */
+function callBody(name: string, ctx: ComputedConstContext): ParsedExpr | null {
+  const call = ctx.calls.get(name)
+  if (!call || ctx.isShadowed(name) || (ctx.isAdapterBound(name) && !ctx.propNamed.has(name))) return null
+  return resolveInitializer(call.body, ctx, n => ctx.isShadowed(n), call.scope)
+}
+
+/** The refusal a zero-argument call of the function `name` reads as ({@link ComputedConstContext.uninlinableCalls}). */
+function uninlinableCall(name: string): ParsedExpr {
+  return {
+    kind: 'unsupported',
+    raw: `${name}()`,
+    reason: `'${name}' is a function a template cannot call: only one that takes no parameters and whose body is a single 'return <expr>' is read in a template, as the expression it returns`,
+  }
+}
+
+/**
+ * `expr` with each zero-argument call of `name` replaced by `body`, except
+ * where an enclosing callback binds `name` (the call is the param's) or one
+ * of `body`'s free names (the substitution would read the param).
+ */
+function inlineZeroArgCalls(expr: ParsedExpr, name: string, body: ParsedExpr): ParsedExpr {
+  // A refusal reads nothing; any other body whose names are unknown stays out.
+  const bodyFree = body.kind === 'unsupported' ? new Set<string>() : freeIdentifiers(body)
+  if (!bodyFree) return expr
+  return mapParsedExpr(expr, (e, enclosing) => {
+    if (e.kind !== 'call' || e.args.length > 0 || e.callee.kind !== 'identifier' || e.callee.name !== name) return null
+    if (enclosing.has(name) || [...bodyFree].some(n => enclosing.has(n))) return null
+    return body
+  })
 }
 
 /**
@@ -308,7 +384,7 @@ function constValue(
   // A props destructure const is the component's; a module const of that name is not one.
   if (!constant || !init || (!constant.isModule && ctx.propsBindings.has(constant.name))) return null
   const literal = lookupLiteralConst(constant.name, [constant], () => false) !== null
-  if (!literal && !(isPlainComputedConst(constant, init) && callsOnlyGetters(init, constant.isModule ? new Set() : ctx.getters))) return null
+  if (!literal && !(isPlainComputedConst(constant, init) && callsOnlyReadable(init, constant, constant.isModule ? new Set() : ctx.getters, ctx))) return null
   return resolveInitializer(init, ctx, captured, constant.isModule ? 'module' : 'component', depth + 1)
 }
 
@@ -345,10 +421,13 @@ function inlinableInitializer(name: string, ctx: ComputedConstContext): ParsedEx
   const init = constant?.parsed
   if (!constant || !init || !isPlainComputedConst(constant, init)) return null
   if (ctx.isShadowed(name) || ctx.getters.has(name) || ctx.contextConsumers.has(name) || ctx.propsBindings.has(name)) return null
-  if (ctx.isAdapterBound(name)) return null
+  // Spelled by its name, a const named like a prop the template holds under
+  // that name would read the prop (#3721).
+  const readsAsProp = ctx.propNamed.has(name)
+  if (!readsAsProp && ctx.isAdapterBound(name)) return null
   // An adapter already inlines a literal const in its own syntax.
-  if (lookupLiteralConst(name, [constant], ctx.isShadowed) !== null) return null
-  if (!callsOnlyGetters(init, ctx.getters)) return null
+  if (!readsAsProp && lookupLiteralConst(name, [constant], ctx.isShadowed) !== null) return null
+  if (!callsOnlyReadable(init, constant, ctx.getters, ctx)) return null
   // A free name the read site rebinds would be captured by the substitution:
   // it is read as what it holds where the const is declared instead.
   return resolveInitializer(init, ctx, n => ctx.isShadowed(n), constant.isModule ? 'module' : 'component')
@@ -392,6 +471,22 @@ function callsOnlyGetters(init: ParsedExpr, getters: ReadonlySet<string>): boole
   }
   visit(init)
   return ok
+}
+
+/**
+ * {@link callsOnlyGetters} for the initializer of `constant`, also admitting
+ * a call of a local function a template inlines (`const initial = value()`,
+ * #3721): inlined with the initializer, the call is replaced by what the
+ * function returns. Only a name denoting the same function where the const
+ * is declared as in the component scope the markup reads it from: any
+ * inlinable function for a component const, a module one for a module const.
+ */
+function callsOnlyReadable(init: ParsedExpr, constant: ConstantInfo, getters: ReadonlySet<string>, ctx: ComputedConstContext): boolean {
+  const readable = new Set(getters)
+  for (const [name, call] of ctx.calls) {
+    if (!constant.isModule || call.scope === 'module') readable.add(name)
+  }
+  return callsOnlyGetters(init, readable)
 }
 
 /**

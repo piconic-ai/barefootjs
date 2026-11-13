@@ -304,12 +304,9 @@ describe('extractSsrDefaults', () => {
     // const-chain widening only ever ADDS prop references it finds by
     // actually walking through `props.X`, never invents one.
     //
-    // (The value resolves to `null`, not `'sig'`: `tryStaticEval` doesn't
-    // bind component-scope const locals into its evaluation `bindings` —
-    // see the signal loop's `bindings` comment above — so `mid` itself is
-    // unresolved for VALUE purposes independent of this fix; only the
-    // separate `propName`-detection walk this test is pinning follows the
-    // const chain.)
+    // (The value is `'sig'`: a component-scope const that evaluates without
+    // reading a prop is bound for the signal seeds and memo bodies, #3721.
+    // The `propName`-detection walk this test pins is independent of it.)
     const metadata = metadataFor(`
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -324,7 +321,7 @@ describe('extractSsrDefaults', () => {
     // prop (`separateSignalPropBindings`): the signal keeps a plain entry
     // under its own name, and the prop keeps its prop entry.
     const defaults = extractSsrDefaults(metadata)
-    expect(defaults?.bfSignal_label).toEqual({ value: null })
+    expect(defaults?.bfSignal_label).toEqual({ value: 'sig' })
     expect(defaults?.label).toEqual({ propName: 'label' })
   })
 
@@ -914,5 +911,68 @@ describe('deriveStashFromDefaults', () => {
       doubled: 0,
       rest: { extra: 'x' },
     })
+  })
+})
+
+// A called function's returned expression is evaluated in the scope the
+// function is declared in (#3721). Rendered by the conformance fixtures
+// `module-function-reads-module-binding` and
+// `signal-seed-uninlinable-local-function-hides-module-function`.
+describe('extractSsrDefaults: local function calls resolve lexically', () => {
+  const values = (source: string) =>
+    Object.fromEntries(Object.entries(extractSsrDefaults(metadataFor(source)) ?? {}).map(([k, d]) => [k, 'value' in d ? d.value : undefined]))
+
+  test("a module function reads the module's const beside a component const of the same name", () => {
+    expect(values(`
+      import { createSignal, createMemo } from '@barefootjs/client'
+      const label = 'module'
+      function value() { return label }
+      function C() {
+        const label = 'component'
+        const [n] = createSignal(value())
+        const m = createMemo(() => value() + label)
+        return <p>{n()}{m()}</p>
+      }
+    `)).toMatchObject({ n: 'module', m: 'modulecomponent' })
+  })
+
+  test('a component function reads the component const, and a module const the component shadows is not its value', () => {
+    expect(values(`
+      import { createSignal } from '@barefootjs/client'
+      const label = 'module'
+      function C(props: { x?: string }) {
+        const label = props.x
+        function value() { return label }
+        const [n] = createSignal(value())
+        const [l] = createSignal(label)
+        return <p>{n()}{l()}</p>
+      }
+    `)).toMatchObject({ n: null, l: null })
+  })
+
+  test('a component function a template cannot inline hides the module function of its name', () => {
+    expect(values(`
+      import { createSignal } from '@barefootjs/client'
+      function value() { return 1 }
+      function C() {
+        function value() { const two = 2; return two }
+        const [n] = createSignal(value())
+        return <p>{n()}</p>
+      }
+    `)).toMatchObject({ n: null })
+  })
+
+  test('a const initializer and a wrapper calling an inlinable function evaluate', () => {
+    expect(values(`
+      import { createSignal } from '@barefootjs/client'
+      function C() {
+        function value() { return 1 }
+        const wrap = () => value() + 1
+        const initial = value()
+        const [n] = createSignal(initial)
+        const [w] = createSignal(wrap())
+        return <p>{n()}{w()}</p>
+      }
+    `)).toMatchObject({ n: 1, w: 2 })
   })
 })

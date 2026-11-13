@@ -24,6 +24,8 @@ import {
   freeIdentifiers,
   isEventHandlerName,
   isFunctionShapedExpression,
+  isFullyStaticLiteral,
+  templatePropValue,
   type BindingScope,
   type ComponentIR,
   type IRNode,
@@ -156,7 +158,7 @@ export function lowerChildInputFields(
     // template time instead (`loopRowChildPropOverrides`), under the same
     // `isBound` question that delivery asks of the live scope.
     if (rowScope && propReadsRow(prop, rowScope)) continue
-    if (!lowerChildProp(site, prop)) unlowered.push(prop)
+    if (!lowerChildProp(site, { ...prop, value: templatePropValue(prop.value) })) unlowered.push(prop)
   }
   // Rest-bag entries → the child's open-ended bag field
   // (`Props: map[string]any{...}`).
@@ -494,6 +496,10 @@ function lowerResolvedChildProp(
     site.emit(prop.name, evaluatedValue)
     return true
   }
+  if (!prop.clientOnly && parsedValue && isUnbakedStaticLiteral(parsedValue)) {
+    refuseUnbakedStaticLiteral(site, prop)
+    return true
+  }
   if (parsedValue?.kind !== 'unary' || parsedValue.op !== '!') return false
   // #3174: a negated prop whose operand `resolveDynamicPropValue`'s
   // recursion still can't lower (e.g. a multi-arg call, a deep
@@ -512,6 +518,34 @@ function lowerResolvedChildProp(
     },
   })
   return true
+}
+
+/**
+ * A fully static array or object literal (`items={[{ id: 'x' }]}`, or a
+ * const holding one, which the IR passes as the literal) that no bake path
+ * turned into a Go value. It reads nothing at render time, so nothing
+ * delivers it later either: left out, the child would read its zero value.
+ * An empty array is not one: its zero value, the nil slice of the field's
+ * own type, is the empty array (`parsedLiteralToGo` leaves it nil on
+ * purpose), whatever the element type. A `/* @client *\/` prop is left out,
+ * as before.
+ */
+function isUnbakedStaticLiteral(parsedValue: ParsedExpr): boolean {
+  if (parsedValue.kind === 'array-literal' && parsedValue.elements.length === 0) return false
+  return (parsedValue.kind === 'array-literal' || parsedValue.kind === 'object-literal') && isFullyStaticLiteral(parsedValue)
+}
+
+/** BF101 for {@link isUnbakedStaticLiteral}'s prop, instead of a field silently left at its zero value. */
+function refuseUnbakedStaticLiteral(site: ChildCallSite, prop: IRProp): void {
+  site.host.ctx.state.errors.push({
+    code: 'BF101',
+    severity: 'error',
+    message: `Prop '${prop.name}' on <${site.child.name}> is a literal the Go template adapter can't build as the child's Input field`,
+    loc: prop.loc,
+    suggestion: {
+      message: `Pass '${prop.name}' in from the backend as a prop of the parent and forward it to <${site.child.name}>.`,
+    },
+  })
 }
 
 /**

@@ -2749,6 +2749,37 @@
       "props": {}
     }
   ],
+  "component-spread-forwarded-reversed-order": [
+    {
+      "name": "gen:label:union:1",
+      "props": {
+        "tone": "warm",
+        "label": null
+      }
+    },
+    {
+      "name": "gen:tone:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:tone:empty",
+      "props": {
+        "tone": ""
+      }
+    },
+    {
+      "name": "gen:tone:markup",
+      "props": {
+        "tone": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:tone:multibyte",
+      "props": {
+        "tone": "日本語"
+      }
+    }
+  ],
   "component-spread-props-in-loop-row": [
     {
       "name": "gen:items:empty",
@@ -7389,6 +7420,50 @@
       }
     }
   ],
+  "local-function-call-through-const-and-wrapper": [
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
+      }
+    }
+  ],
+  "local-function-hides-module-function": [
+    {
+      "name": "gen:value:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
+      }
+    }
+  ],
   "logical-and-absent-optional-attr": [
     {
       "name": "gen:on:true",
@@ -8441,6 +8516,58 @@
       }
     }
   ],
+  "loop-row-absent-optional-member-attr": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
+  "loop-row-absent-optional-member-attr-module-const-precomputed": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": [],
+        "raw": [
+          {
+            "id": 1,
+            "tone": "k"
+          },
+          {
+            "id": 2
+          },
+          {
+            "id": 3,
+            "tone": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:raw:empty",
+      "props": {
+        "rows": [
+          {
+            "id": 1,
+            "tone": "k"
+          },
+          {
+            "id": 2
+          }
+        ],
+        "raw": []
+      }
+    }
+  ],
+  "loop-row-boolean-member-attr": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "loop-row-child-absent-optional-field-attr": [
     {
       "name": "gen:rows:empty",
@@ -8619,6 +8746,78 @@
     }
   ],
   "markup-local-function-named-like-prop": [
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
+      }
+    }
+  ],
+  "markup-local-function-read-named-like-prop": [
+    {
+      "name": "gen:value:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
+      }
+    }
+  ],
+  "markup-uninlinable-local-function-named-like-prop": [
+    {
+      "name": "gen:value:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
+      }
+    }
+  ],
+  "markup-uninlinable-local-function-named-like-prop-client": [
+    {
+      "name": "gen:value:absent",
+      "props": {}
+    },
     {
       "name": "gen:value:zero",
       "props": {
@@ -9300,6 +9499,62 @@
           "a",
           "b"
         ]
+      }
+    }
+  ],
+  "memo-uninlinable-local-function-named-like-prop": [
+    {
+      "name": "gen:value:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
+      }
+    }
+  ],
+  "memo-uninlinable-local-function-named-like-prop-client": [
+    {
+      "name": "gen:value:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
+      }
+    }
+  ],
+  "module-const-array-child-prop-forwarded": [
+    {
+      "name": "gen:PS:empty",
+      "props": {
+        "PS": []
       }
     }
   ],
@@ -16589,6 +16844,102 @@
       "name": "gen:b:multibyte",
       "props": {
         "b": "日本語"
+      }
+    }
+  ],
+  "signal-seed-uninlinable-local-function-hides-module-function": [
+    {
+      "name": "gen:value:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
+      }
+    }
+  ],
+  "signal-seed-uninlinable-local-function-hides-module-function-client": [
+    {
+      "name": "gen:value:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
+      }
+    }
+  ],
+  "signal-seed-uninlinable-local-function-named-like-prop": [
+    {
+      "name": "gen:value:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
+      }
+    }
+  ],
+  "signal-seed-uninlinable-local-function-named-like-prop-client": [
+    {
+      "name": "gen:value:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:value:zero",
+      "props": {
+        "value": 0
+      }
+    },
+    {
+      "name": "gen:value:negative",
+      "props": {
+        "value": -7
+      }
+    },
+    {
+      "name": "gen:value:large",
+      "props": {
+        "value": 1234567890
       }
     }
   ],

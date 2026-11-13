@@ -177,6 +177,41 @@ describe('@barefootjs/go-template/vite: real vite build', () => {
       await rm(join(FIXTURE_ROOT, 'bf_assets_prod.go'), { force: true })
     }
   }, 60_000)
+
+  // #3753: the eager pass compiles components in file-name order onto one
+  // adapter. A child that sorts after its parent (`z-icon.tsx`) must reach
+  // the parent's constructor the same as one that sorts before it
+  // (`a-icon.tsx`): its rest bag receives the `data-slot` either way.
+  for (const iconFile of ['a-icon.tsx', 'z-icon.tsx']) {
+    test(`a child in ${iconFile} gets the attribute its rest bag collects, whichever file compiles first`, async () => {
+      const projectRoot = await mkdtemp(join(tmpdir(), 'barefoot-go-vite-order-'))
+      try {
+        await mkdir(join(projectRoot, 'components'))
+        await writeFile(join(projectRoot, 'entry.js'), 'export {}\n')
+        await writeFile(
+          join(projectRoot, 'components', iconFile),
+          'export function CheckIcon({ size, ...props }: { size?: string; [key: string]: unknown }) {\n' +
+            '  return <svg data-size={size} {...props}><path d="M0" /></svg>\n}\n',
+        )
+        await writeFile(
+          join(projectRoot, 'components', 'm-box.tsx'),
+          `import { CheckIcon } from './${iconFile.replace(/\.tsx$/, '')}'\n` +
+            'export function Box() {\n  return <span><CheckIcon data-slot="indicator" /></span>\n}\n',
+        )
+        await build({
+          configFile: false,
+          root: projectRoot,
+          logLevel: 'warn',
+          build: { outDir: join(projectRoot, 'dist'), emptyOutDir: true, rollupOptions: { input: { entry: join(projectRoot, 'entry.js') } } },
+          plugins: [barefoot({ components: ['components'], templates: 'views', packageName: 'main', typesOutputFile: 'components.go' })],
+        })
+        const componentsGo = await readFile(join(projectRoot, 'components.go'), 'utf8')
+        expect(componentsGo).toContain('Props: map[string]any{"data-slot": "indicator"},')
+      } finally {
+        await rm(projectRoot, { recursive: true, force: true })
+      }
+    }, 60_000)
+  }
 })
 
 describe('@barefootjs/go-template/vite: afterEmit → components.go, via direct hook calls', () => {

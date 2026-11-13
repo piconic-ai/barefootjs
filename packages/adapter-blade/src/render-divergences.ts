@@ -49,6 +49,12 @@ export const renderDivergences: RenderDivergences = {
   // A method call on a module array-literal const reads the const as an
   // unbound template variable.
   'module-const-array-method-call': { limitation: 'module-const-array-method-call' },
+  // Markup reading, without calling it, a local function named like a typed
+  // prop the body never binds: the template reads the prop of that name.
+  'markup-local-function-read-named-like-prop': { limitation: 'local-function-read-named-like-prop' },
+  // A const object whose members read a signal, passed bare as a child
+  // component prop, reaches the child without its value.
+  'signal-const-object-child-prop': { limitation: 'signal-const-object-child-prop' },
   // A `.map()` callback destructuring `length` off a string or array row
   // reads the row's field, which a string or list does not have.
   'destructure-length-in-map': { limitation: 'destructured-length-on-string-or-array-row' },
@@ -64,16 +70,6 @@ export const renderDivergences: RenderDivergences = {
   // lone surrogate, so it returns U+FFFD (halves compare equal, and
   // rejoining them renders `��` instead of the emoji).
   'string-at-lone-surrogate': { limitation: 'string-at-lone-surrogate' },
-  // A memo calling a local function named like a typed prop the body never
-  // destructures: the server render reads the prop for the call.
-  'memo-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
-  // The same shape from a signal seed and from markup: the server render
-  // reads the prop for the call.
-  'signal-seed-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
-  'markup-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
-  // A memo reading an ordinary const declared after it, named like a typed
-  // prop: the server render does not read the const.
-  'memo-const-declared-after-named-like-prop': { limitation: 'local-function-named-like-prop' },
   // A const reading a signal getter (`const b = count()`) read in a loop row
   // that binds the getter's name (`rows.map(count => …{b}…)`): the template
   // reads `b` as a variable that is never set.

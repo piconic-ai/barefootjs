@@ -4116,10 +4116,7 @@ export function initCommandFilterDemo(__scope, _p = {}) {
 
 
   // Initialize child components with props
-  upsertChild(__scope, 'Command', 's10', { get filter() { return (value, search) => {
-    if (!search) return true
-    return value.toLowerCase().startsWith(search.toLowerCase())
-  } }, className: "rounded-lg border shadow-md md:min-w-[450px]" })
+  upsertChild(__scope, 'Command', 's10', { get filter() { return prefixFilter }, className: "rounded-lg border shadow-md md:min-w-[450px]" })
   initChild('CommandInput', _s0, { placeholder: "Try prefix matching..." })
   initChild('CommandList', _s9, {})
   initChild('CommandEmpty', _s1, {})

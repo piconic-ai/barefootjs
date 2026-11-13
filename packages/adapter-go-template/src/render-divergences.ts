@@ -125,6 +125,12 @@ export const renderDivergences: RenderDivergences = {
   // A method call on a module array-literal const reads the const as an
   // unbound template variable.
   'module-const-array-method-call': { limitation: 'module-const-array-method-call' },
+  // Markup reading, without calling it, a local function named like a typed
+  // prop the body never binds: the template reads the prop of that name.
+  'markup-local-function-read-named-like-prop': { limitation: 'local-function-read-named-like-prop' },
+  // A const object whose members read a signal, passed bare as a child
+  // component prop, reaches the child without its value.
+  'signal-const-object-child-prop': { limitation: 'signal-const-object-child-prop' },
   // A `.map()` callback destructuring `length` off a string or array row
   // reads the row's field, which a string or list does not have.
   'destructure-length-in-map': { limitation: 'destructured-length-on-string-or-array-row' },
@@ -155,17 +161,6 @@ export const renderDivergences: RenderDivergences = {
   // by Go field names. A JS-keyed map holding only `Name` then answers a read
   // of `name`; the two map shapes cannot be told apart at runtime.
   'index-read-capitalised-key-only': { limitation: 'index-read-capitalised-key-only' },
-  // A memo calling a local function named like a typed prop the body never
-  // destructures: the server render reads the prop for the call.
-  'memo-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
-  // The same shape from markup: the server render reads the prop for the
-  // call. From a signal seed it renders nothing.
-  'markup-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
-  'signal-seed-local-function-named-like-prop': { limitation: 'local-function-named-like-prop' },
-  // A memo reading an ordinary const declared after it, or a module-scope
-  // binding, named like a typed prop: the server render reads the prop.
-  'memo-const-declared-after-named-like-prop': { limitation: 'local-function-named-like-prop' },
-  'memo-module-binding-named-like-prop': { limitation: 'local-function-named-like-prop' },
   // A signal seeded from the binding (`createSignal(local.length)`), and an
   // identity memo over it (`createMemo(() => local)`): the Go seed reads the
   // Input field without the default. A memo the runtime evaluator computes

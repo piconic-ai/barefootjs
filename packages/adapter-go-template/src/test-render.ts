@@ -5,7 +5,7 @@
  * Used by adapter-tests conformance runner.
  */
 
-import { compileFixtureJSX } from '@barefootjs/adapter-tests/harness-program'
+import { compileFixtureJSX, registerFixtureSiblingShapes } from '@barefootjs/adapter-tests/harness-program'
 import type { TemplateAdapter, ComponentIR, ParsedExpr } from '@barefootjs/jsx'
 import { GoTemplateAdapter } from './adapter/go-template-adapter.ts'
 import { deduplicateGoTypes } from './go-types.ts'
@@ -120,7 +120,11 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
     // attributes through the target's registered shape, so EVERY child's
     // shape must be registered before ANY child's types are generated —
     // otherwise processing order decides whether the attribute lands in
-    // the rest bag or becomes an invalid hyphenated Go field.
+    // the rest bag or becomes an invalid hyphenated Go field. The child
+    // files' own compiles below read those shapes too (`mid.tsx` renders
+    // `<Tag>` from `tag.tsx`), so they are registered from a first compile
+    // of every child before any of them compiles for real (#3753).
+    registerFixtureSiblingShapes(adapter, components)
     const compiledChildIrs: Array<{ ir: ComponentIR; defines: Map<string, string> }> = []
     for (const [filename, childSource] of Object.entries(components)) {
       const childResult = compileFixtureJSX(childSource, filename, { adapter, outputIR: true })
@@ -135,11 +139,6 @@ export async function renderGoTemplateComponent(options: RenderOptions): Promise
       const childIrFiles = childResult.files.filter(f => f.type === 'ir')
       for (const childIrFile of childIrFiles) {
         const childIR = JSON.parse(childIrFile.content) as ComponentIR
-        // (#checkbox) Register each child's cross-component shape so the
-        // parent's static-child-init codegen can route a non-param attribute
-        // (`<CheckIcon data-slot=.../>`) into the child's rest bag instead of
-        // an invalid hyphenated Go field. No-op on adapters without the hook.
-        registerChildShape(adapter, childIR)
         compiledChildIrs.push({ ir: childIR, defines: defineBlocks })
       }
     }

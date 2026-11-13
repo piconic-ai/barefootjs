@@ -127,6 +127,12 @@ export const conformancePins: ConformancePins = {
   'static-literal-loop-component-in-row': [
     { code: 'BF101', severity: 'error', limitation: 'static-literal-loop-component-row' },
   ],
+  // A static literal loop array whose rows omit a field the row reads: the
+  // compile-time unroll cannot read the missing field, so the loop refuses.
+  // Escape twins: `loop-row-absent-optional-member-attr-module-const-{precomputed,client}`.
+  'loop-row-absent-optional-member-attr-module-const': [
+    { code: 'BF101', severity: 'error', limitation: 'static-literal-loop-absent-row-field' },
+  ],
   // Untyped object-literal loop arrays with no single row shape: there is
   // no one Go struct to synthesize for the rows, so `resolveNestedLoopItemTypes`
   // refuses instead of baking the array to `nil` and dropping the loop.
@@ -290,6 +296,13 @@ export const conformancePins: ConformancePins = {
   // Hono's real JS runtime evaluates this shape correctly and must keep
   // doing so.
   'opaque-local-accessor-call': [{ code: 'BF101', severity: 'error', limitation: 'opaque-local-accessor-call' }],
+  // A zero-argument call of a local function the template cannot inline.
+  'markup-uninlinable-local-function-named-like-prop': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'memo-uninlinable-local-function-named-like-prop': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'signal-seed-uninlinable-local-function-named-like-prop': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'signal-seed-uninlinable-local-function-hides-module-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'signal-seed-const-from-uninlinable-local-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'signal-seed-wrapped-uninlinable-local-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
   // A signal seed is baked as the Input field path its prop member chain
   // lives at (`resolvePropMemberSeed`, `adapter/value/prop-member-seed.ts`).
   // A chain that reads a member of a non-struct value
@@ -336,4 +349,8 @@ export const conformancePins: ConformancePins = {
   'object-spread-prop-child': [{ code: 'BF101', severity: 'error', limitation: 'object-spread-onto-child-component', unescapable: true }],
   'body-rest-taken-key-read': [{ code: 'BF101', severity: 'error', limitation: 'body-rest-taken-key-read' }],
   'body-rest-props-name-shadowed': [{ code: 'BF101', severity: 'error', limitation: 'body-rest-props-name-shadowed' }],
+  // An array of object literals passed as a child prop (in place, or a
+  // const the IR passes as the literal) has no spelling as the child's
+  // prop value here; the server cannot render the child's rows.
+  'module-const-object-array-child-prop': [{ code: 'BF101', severity: 'error', limitation: 'object-array-literal-child-prop', unescapable: true }],
 }

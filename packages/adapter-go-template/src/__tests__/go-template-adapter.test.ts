@@ -1493,10 +1493,11 @@ export function List() {
       expect(types).toContain('Cols: []ListColsItem{ListColsItem{Label: "x"}}')
     })
 
-    test('keeps nil for non-literal array initial values (#1672)', () => {
-      // A signal whose array initial value is a function call / variable
-      // reference cannot be evaluated at codegen time — it must stay nil so
-      // the handler populates it (no behaviour change for these cases).
+    test('evaluates an array seed a zero-argument helper call returns (#1672, #3721)', () => {
+      // A signal seeded by a call of a function that takes no parameters and
+      // returns one expression reads that expression (the SSR seed plan
+      // inlines it), so the constructor evaluates it instead of baking nil:
+      // `build()` returning `['a']` would otherwise render no rows.
       const adapter = new GoTemplateAdapter()
       const ir = compileToIR(`
 "use client"
@@ -1509,7 +1510,7 @@ export function Dyn() {
 }
 `)
       const types = adapter.generate(ir).types!
-      expect(types).toContain('Items: nil,')
+      expect(types).toContain('Items: bf.EvalExpr(')
     })
 
     test('bakes a non-Go-identifier object key via a sanitized struct field (#1675 review, revised #2087)', () => {
