@@ -410,7 +410,7 @@ function compileMultipleComponents(
       nonExportedSiblings.add(componentIR.metadata.componentName)
     }
   }
-  setActiveComponentScope({ fileScope, nonExportedSiblings })
+  const outerScope = setActiveComponentScope({ fileScope, nonExportedSiblings })
   // Same adapter capabilities for every component compiled in this file
   // (#1187 phase 3).
   const multiAdapterCaps = {
@@ -482,7 +482,7 @@ function compileMultipleComponents(
     errors.push(...componentIR.errors)
   }
   } finally {
-    setActiveComponentScope(null)
+    setActiveComponentScope(outerScope)
   }
 
   if (allOutputs.length === 0) {
@@ -956,7 +956,7 @@ export function compileJSX(
       ? new Set<string>()
       : new Set([componentIR.metadata.componentName]),
   }
-  setActiveComponentScope(singleScope)
+  const outerScope = setActiveComponentScope(singleScope)
   // Adapter capabilities thread through to relocate's inline-safety
   // check so a registered template primitive escapes the bridged-arg /
   // zero-arg rejection (#1187 phase 3).
@@ -1000,7 +1000,7 @@ export function compileJSX(
       }
     }
   } finally {
-    setActiveComponentScope(null)
+    setActiveComponentScope(outerScope)
   }
 
   return { files, errors }

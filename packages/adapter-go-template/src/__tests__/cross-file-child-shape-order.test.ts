@@ -144,4 +144,32 @@ export function CheckIcon({ size }: { size?: string }) {
 `)
     expect(compileBox()).not.toContain('"data-slot": "indicator"')
   })
+
+  test("reading a child's shape keeps the parent's private-component registry keys file-scoped", () => {
+    // The parent's non-exported `Helper` is registered under a file-scoped
+    // key. Reading `icon.tsx` from inside the parent's `generate()` compiles
+    // that file; the parent's client JS, emitted afterwards, must still see
+    // the parent's scope, whether the child's shape is cached or not.
+    const files = {
+      'icon.tsx': `'use client'\nexport function Icon() { return <svg /> }\n`,
+      'page.tsx': `'use client'
+import { Icon } from './icon'
+function Helper() { return <b>private</b> }
+export function Page() { return <div><Helper /><Icon /></div> }
+`,
+    }
+    const paths = project(files)
+    const adapter = new GoTemplateAdapter()
+    const clientJs = () => {
+      const result = compileJSX(files['page.tsx'], paths['page.tsx'], { adapter, siblingTemplatesRegistered: true })
+      expect(result.errors).toEqual([])
+      return result.files.filter(f => f.type === 'clientJs').map(f => f.content).join('\n')
+    }
+    const cold = clientJs()
+    const warm = clientJs()
+    expect(cold).toBe(warm)
+    expect(cold).toContain('Helper__')
+    expect(cold).not.toContain("hydrate('Helper',")
+    expect(cold).not.toContain("renderChild('Helper',")
+  })
 })
