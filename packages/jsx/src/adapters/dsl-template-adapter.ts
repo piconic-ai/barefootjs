@@ -30,7 +30,7 @@ import type {
   PreambleValueDeclaration,
 } from '../types.ts'
 import { refuseNonPrimitiveStrictEquality, type NonPrimitiveEqualitySink } from './non-primitive-equality.ts'
-import { refuseInheritedReadsInRenderedMemos } from './rendered-memo-inherited-read.ts'
+import { refuseInheritedConstServerReads } from './inherited-const-server-read.ts'
 import { refuseUninlinableSeedCalls } from './uninlinable-seed-call.ts'
 import { collectImportedLoopChildComponentErrors } from './component-tree.ts'
 import { computedConstContext, type ComputedConstContext } from './computed-const.ts'
@@ -465,8 +465,8 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     }
     // `===` / `!==` over an object or array (#3774, #3824 step 8).
     refuseNonPrimitiveStrictEquality(ir, this.operandTyping, this.errorSink())
-    // An inherited literal-const read in a memo the template renders (#3813).
-    refuseInheritedReadsInRenderedMemos(ir, this.errorSink())
+    // An inherited literal-const read in a value the server render computes off the emitter (#3813).
+    refuseInheritedConstServerReads(ir, this.errorSink())
     // A server-read signal seed or memo body calling a function no template can inline (#3721).
     refuseUninlinableSeedCalls(ir, this.errorSink())
   }

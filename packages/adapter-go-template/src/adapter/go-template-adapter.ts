@@ -56,7 +56,7 @@ import {
   collectNullableSignalGetters,
   arithmeticOperandCoercion,
   refuseNonPrimitiveStrictEquality,
-  refuseInheritedReadsInRenderedMemos,
+  refuseInheritedConstServerReads,
   refuseUninlinableSeedCalls,
   type ArithmeticCoercion,
   collectNullishAttrContext,
@@ -957,8 +957,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     ir = this.primeCompileState(ir)
     // `===` / `!==` over an object or array (#3774, #3824 step 8).
     refuseNonPrimitiveStrictEquality(ir, this.state.operandTyping, this.state)
-    // An inherited literal-const read in a memo the template renders (#3813).
-    refuseInheritedReadsInRenderedMemos(ir, this.state)
+    // An inherited literal-const read in a value the server render computes off the emitter (#3813).
+    refuseInheritedConstServerReads(authoredIr, this.state)
     // A server-read signal seed or memo body calling a function no template can inline (#3721).
     refuseUninlinableSeedCalls(authoredIr, this.state)
     // A spread of an arbitrary object onto a child component (#3861).

@@ -37,6 +37,12 @@ export interface ServerRead {
   scope: LocalScope
   loc: SourceLocation
   /**
+   * The expression its value comes from (a called function's returned
+   * expression), read in `scope`. Unset for a declaration with no
+   * expression tree (a block-bodied memo no single expression stands for).
+   */
+  expr: ParsedExpr | undefined
+  /**
    * The functions its expression calls with no arguments that a template
    * cannot inline, by the name they are called under. Empty for a
    * declaration with no expression tree (a block-bodied memo).
@@ -71,7 +77,7 @@ export function walkServerReads(ir: ComponentIR, visit: (read: ServerRead) => vo
     seen.add(binding)
     const reads = readsOf(followed.expr, followed.fallback)
     const refusedCalls = [...reads.called].filter(fn => localCall(resolve(fn, binding.scope))?.kind === 'refuse')
-    visit({ name, kind: followed.kind, scope: binding.scope, loc: followed.loc, refusedCalls })
+    visit({ name, kind: followed.kind, scope: binding.scope, loc: followed.loc, expr: followed.expr, refusedCalls })
     pending.push({ reads, from: binding.scope })
   }
   const followReads = (reads: Reads, from: LocalScope, isBound: (name: string) => boolean): void => {

@@ -13,13 +13,14 @@
  * but its prototype has (`REC['toString']`, `QS['map']`) reads a function
  * in JS, which no template can render; that read is `inherited`, and
  * `spellStaticConstMember` refuses it with BF101 where the adapter spells
- * it.
+ * it; `refuseInheritedConstServerReads` does for a value the server render
+ * computes without an emitter.
  */
 
 import { resolveStaticConstBinding } from './augment-inherited-props.ts'
 import { exprToString, type ObjectLiteralProperty, type ParsedExpr } from './expression-parser.ts'
 import { literalMemberIndex } from './literal-member-index.ts'
-import type { CompilerError, IRMetadata } from './types.ts'
+import type { CompilerError, IRMetadata, SourceLocation } from './types.ts'
 
 type StaticConstants = IRMetadata['localConstants'] | undefined
 
@@ -99,10 +100,11 @@ export interface StaticConstMemberSink {
  * emitting, as `lookupStaticConstMember`; and, for a key only the literal's
  * prototype has (`REC['toString']`, `QS['map']`), BF101 recorded in `sink`.
  * Every template adapter's member and index emitters (value, condition and
- * child-prop position, and a memo or constant body the adapter inlines)
+ * child-prop position, and a constant or function body the adapter inlines)
  * read through this, so the refusal fires exactly where a template would
  * spell the read: a position deferred with `/* @client *\/`, a method the
  * template never renders, or a name a binding shadows never reaches it.
+ * `loc` is the declaration the read is in, when the caller knows it.
  */
 export function spellStaticConstMember(
   object: ParsedExpr,
@@ -110,16 +112,17 @@ export function spellStaticConstMember(
   constants: StaticConstants,
   isShadowed: (name: string) => boolean,
   sink: StaticConstMemberSink,
+  loc?: SourceLocation,
 ): ParsedExpr | null {
   const read = readStaticConstMember(object, key, constants, isShadowed)
   if (read?.kind === 'inherited') {
-    recordInheritedRead(exprToString({ kind: 'member', object, property: key, computed: false, optional: false }), sink)
+    recordInheritedRead(exprToString({ kind: 'member', object, property: key, computed: false, optional: false }), sink, loc)
     return null
   }
   return read?.kind === 'value' ? read.expr : null
 }
 
-function recordInheritedRead(read: string, sink: StaticConstMemberSink): void {
+function recordInheritedRead(read: string, sink: StaticConstMemberSink, loc: SourceLocation | undefined): void {
   const message =
     `\`${read}\` reads a key the const's literal value does not have but its prototype does, so JS reads an inherited ` +
     'function there. A template holds the literal value without a prototype, so the server render cannot give the JS answer.'
@@ -128,12 +131,25 @@ function recordInheritedRead(read: string, sink: StaticConstMemberSink): void {
     code: 'BF101',
     severity: 'error',
     message,
-    loc: { file: `${sink.componentName}.tsx`, start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
+    loc: loc ?? { file: `${sink.componentName}.tsx`, start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
     suggestion: {
       message: 'Read a key the literal lists, or defer the read to the client with /* @client */.',
       escape: [{ kind: 'client-directive' }],
     },
   })
+}
+
+/**
+ * The expression a literal const, or a member of one read by literal keys
+ * (`H.get`, `NEST.a[0]`), holds: whatever the literal lists there, a
+ * function included. `null` when no literal const answers the read.
+ */
+export function staticConstValue(
+  expr: ParsedExpr,
+  constants: StaticConstants,
+  isShadowed: (name: string) => boolean,
+): ParsedExpr | null {
+  return staticLiteralValue(expr, constants, isShadowed)
 }
 
 /** The literal (array / object / scalar) `expr` evaluates to, read through literal consts. */
