@@ -75,19 +75,21 @@ export type LocalBindingResolver = (name: string, from: LocalScope) => LocalBind
  */
 export function localBindings(b: LocalCallBindings): LocalBindingResolver {
   const scopes = { component: new Map<string, LocalBinding>(), module: new Map<string, LocalBinding>() }
-  const declare = (name: string, binding: LocalBinding): void => void scopes[binding.scope].set(name, binding)
-  for (const info of b.localFunctions) {
-    declare(info.name, { kind: 'function', scope: info.inComponentBody ? 'component' : 'module', info })
+  const bind = (name: string, binding: LocalBinding): void => {
+    scopes[binding.scope].set(name, binding)
   }
-  for (const info of b.localConstants) declare(info.name, { kind: 'const', scope: info.isModule ? 'module' : 'component', info })
-  for (const info of b.memos) declare(info.name, { kind: 'memo', scope: info.isModule ? 'module' : 'component', info })
+  for (const info of b.localFunctions) {
+    bind(info.name, { kind: 'function', scope: info.inComponentBody ? 'component' : 'module', info })
+  }
+  for (const info of b.localConstants) bind(info.name, { kind: 'const', scope: info.isModule ? 'module' : 'component', info })
+  for (const info of b.memos) bind(info.name, { kind: 'memo', scope: info.isModule ? 'module' : 'component', info })
   for (const info of b.signals) {
     const scope = info.isModule ? 'module' : 'component'
-    declare(info.getter, { kind: 'signal', scope, info })
-    if (info.setter) declare(info.setter, { kind: 'opaque', scope })
+    bind(info.getter, { kind: 'signal', scope, info })
+    if (info.setter) bind(info.setter, { kind: 'opaque', scope })
   }
   const props = [b.propsObjectName, b.restPropsName, ...templatePropReadParams(b).map(p => p.name)]
-  for (const name of props) if (name) declare(name, { kind: 'opaque', scope: 'component' })
+  for (const name of props) if (name) bind(name, { kind: 'opaque', scope: 'component' })
   return (name, from) => (from === 'component' ? scopes.component.get(name) : undefined) ?? scopes.module.get(name) ?? null
 }
 
