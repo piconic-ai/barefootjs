@@ -1562,6 +1562,15 @@ export interface SpreadAttr {
    * carry the caller's whole bag (`ClientAnalysis.readsCallerBag`, #3845).
    */
   callerBag?: 'props' | 'rest'
+  /**
+   * Set when the spread's identifier is spelled like the component's props
+   * object but a loop row, callback parameter, destructured field or
+   * preamble local binds that name at the spread (`rows.map((props) => <li
+   * {...props} />)`, #3727). It spreads that binding, not the props object, so
+   * `spreadsPropsObject` is false for it. Decided once in Phase 1; unset for
+   * every other spread.
+   */
+  shadowsPropsObject?: true
 }
 
 export interface JsxChildrenAttr {
