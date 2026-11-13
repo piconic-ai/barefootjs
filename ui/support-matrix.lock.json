@@ -459,6 +459,12 @@
               ]
             },
             {
+              "fixture": "loop-row-absent-optional-member-attr-module-const",
+              "limitations": [
+                "static-literal-loop-absent-row-field"
+              ]
+            },
+            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -9000,6 +9006,12 @@
               ]
             },
             {
+              "fixture": "loop-row-absent-optional-member-attr-module-const",
+              "limitations": [
+                "static-literal-loop-absent-row-field"
+              ]
+            },
+            {
               "fixture": "loop-row-child-caller-rows-outer-state-key",
               "limitations": [
                 "loop-row-key-outer-state"
@@ -10332,6 +10344,12 @@
               ]
             },
             {
+              "fixture": "loop-row-boolean-member-attr",
+              "limitations": [
+                "loop-row-boolean-member-attr-value"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -11574,6 +11592,12 @@
               ]
             },
             {
+              "fixture": "loop-row-boolean-member-attr",
+              "limitations": [
+                "loop-row-boolean-member-attr-value"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -12782,6 +12806,12 @@
               "fixture": "literal-index-own-key",
               "limitations": [
                 "non-identifier-literal-key"
+              ]
+            },
+            {
+              "fixture": "loop-row-absent-optional-member-attr-module-const",
+              "limitations": [
+                "static-literal-loop-absent-row-field"
               ]
             },
             {
@@ -16179,6 +16209,12 @@
               ]
             },
             {
+              "fixture": "loop-row-absent-optional-member-attr-module-const",
+              "limitations": [
+                "static-literal-loop-absent-row-field"
+              ]
+            },
+            {
               "fixture": "loop-row-child-caller-rows-outer-state-key",
               "limitations": [
                 "loop-row-key-outer-state"
@@ -17109,6 +17145,12 @@
               ]
             },
             {
+              "fixture": "loop-row-boolean-member-attr",
+              "limitations": [
+                "loop-row-boolean-member-attr-value"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -17985,6 +18027,12 @@
               ]
             },
             {
+              "fixture": "loop-row-boolean-member-attr",
+              "limitations": [
+                "loop-row-boolean-member-attr-value"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -18307,6 +18355,12 @@
               "fixture": "literal-index-own-key",
               "limitations": [
                 "non-identifier-literal-key"
+              ]
+            },
+            {
+              "fixture": "loop-row-absent-optional-member-attr-module-const",
+              "limitations": [
+                "static-literal-loop-absent-row-field"
               ]
             },
             {
@@ -23981,6 +24035,12 @@
               ]
             },
             {
+              "fixture": "loop-row-absent-optional-member-attr-module-const",
+              "limitations": [
+                "static-literal-loop-absent-row-field"
+              ]
+            },
+            {
               "fixture": "module-const-destructure-default",
               "limitations": [
                 "module-const-destructure-default"
@@ -24638,6 +24698,12 @@
               "fixture": "literal-index-own-key",
               "limitations": [
                 "non-identifier-literal-key"
+              ]
+            },
+            {
+              "fixture": "loop-row-absent-optional-member-attr-module-const",
+              "limitations": [
+                "static-literal-loop-absent-row-field"
               ]
             },
             {
@@ -26211,6 +26277,12 @@
               "fixture": "literal-index-own-key",
               "limitations": [
                 "non-identifier-literal-key"
+              ]
+            },
+            {
+              "fixture": "loop-row-absent-optional-member-attr-module-const",
+              "limitations": [
+                "static-literal-loop-absent-row-field"
               ]
             },
             {
@@ -28578,10 +28650,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L168"
       },
       "example": {
-        "fixture": "optional-chain-length-bare-text",
-        "description": "A bare optional-chained `.length` over an absent array renders empty",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-chain-length-bare-text.ts",
-        "code": "props.items?.length"
+        "fixture": "loop-row-absent-optional-member-attr",
+        "description": "An absent or null optional loop-row member bound to an attribute omits the attribute",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-absent-optional-member-attr.ts",
+        "code": "r.extra?.tone"
       }
     },
     "sort-direction:asc": {

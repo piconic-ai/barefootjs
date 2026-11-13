@@ -118,6 +118,9 @@ export const renderDivergences: RenderDivergences = {
   // A `null` / `undefined` `style` object property renders `color:` with
   // an empty value instead of being dropped.
   'style-object-nil-property': { limitation: 'style-object-nil-property' },
+  // A boolean loop-row member as an attribute value (`data-off={r.off}`)
+  // prints Perl's `1` / `0`, not `true` / `false`.
+  'loop-row-boolean-member-attr': { limitation: 'loop-row-boolean-member-attr-value' },
 }
 
 /**
