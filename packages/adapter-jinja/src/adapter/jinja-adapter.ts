@@ -1445,8 +1445,10 @@ export const jinjaAdapter = new JinjaAdapter()
  * (`{{`, `{%`, `{#`, or a trailing `{` before the adapter's next tag)
  * printed through an output tag, so Jinja renders it as written. A carriage
  * return is printed through an output tag too: Jinja's lexer rewrites a
- * `\r\n` or a lone `\r` in template text to `\n`.
+ * `\r\n` or a lone `\r` in template text to `\n`. A brace right before a
+ * CR is printed through its tag as well, so it cannot join the CR's tag into
+ * a longer opener.
  */
 function escapeJinjaStaticText(s: string): string {
-  return escapeBraceDelimiters(s, '{%#', "{{ '{' }}").replaceAll('\r', "{{ '\\r' }}")
+  return escapeBraceDelimiters(s, '{%#\r', "{{ '{' }}").replaceAll('\r', "{{ '\\r' }}")
 }

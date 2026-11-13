@@ -1490,8 +1490,10 @@ export const twigAdapter = new TwigAdapter()
  * (`{{`, `{%`, `{#`, or a trailing `{` before the adapter's next tag)
  * printed through an output tag, so Twig renders it as written. A carriage
  * return is printed through an output tag too: Twig's lexer rewrites a
- * `\r\n` or a lone `\r` in template text to `\n`.
+ * `\r\n` or a lone `\r` in template text to `\n`. A brace right before a
+ * CR is printed through its tag as well, so it cannot join the CR's tag into
+ * a longer opener.
  */
 function escapeTwigStaticText(s: string): string {
-  return escapeBraceDelimiters(s, '{%#', "{{ '{' }}").replaceAll('\r', `{{ ${twigStringLiteral('\r')} }}`)
+  return escapeBraceDelimiters(s, '{%#\r', "{{ '{' }}").replaceAll('\r', `{{ ${twigStringLiteral('\r')} }}`)
 }

@@ -39,6 +39,7 @@ export function StringConstCarriageReturn({ got = 'none', rows = [], pick = 'a' 
       <p>{CTRL}</p>
       <p>{CRLF}|{EDGE}|{LOCAL}|{'t\\ru'}|{ODD}</p>
       <p>{WS}</p>
+      <p title="&#123;&#13;x">&#123;&#13;x</p>
       <p data-eq={got === KEY ? 'same' : 'diff'}>{got === KEY ? 'same' : 'diff'}</p>
       <p>{got === 'k\\rv' && <b>lit-same</b>}</p>
       <p>{REC[pick] === 'r\\rs' ? 'rec-same' : 'rec-diff'}</p>
@@ -87,6 +88,7 @@ export function CrPropsChild(props: { text: string; want: string; got: string })
       <p>ab c</p>
       <p>x y| mid |l m|t u|#{x} %&gt; \\ &quot; &#39; !</p>
       <p>tab here ls ps</p>
+      <p title="{ x">{ x</p>
       <p bf="s1" data-eq="same"><!--bf-cond-start:s0-->same<!--bf-cond-end:s0--></p>
       <p bf="s3"><b bf-c="s2">lit-same</b></p>
       <p bf="s5"><!--bf-cond-start:s4-->rec-same<!--bf-cond-end:s4--></p>
