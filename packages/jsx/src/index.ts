@@ -136,6 +136,7 @@ export { concatType, declaredValueMayBeNil, declaredValueTypes, loopRowType, typ
 export { collectNumberValueNames, isNumberValuedExpr, numberValuedSeedNames } from './adapters/number-value.ts'
 export { operandFacts, planPrimitive, planTest, spellTest, primitivesAt, isNativePlan, relationalHelper, isNativeToNumber, booleanValueSites, planTextDisplay, foldNegatedNumberLiteral, numberLiteralSpelling, isRuntimeNumberLiteral, plusSpelling, planToString, needsToString, strictEqSpelling, mayHoldObject, isNullishTest, isNilLiteralOperand, nilTestOperand, refuseUnspelledNilTest, NON_PRIMITIVE_EQUALITY_REASON } from './adapters/primitive-plan.ts'
 export { refuseNonPrimitiveStrictEquality, type NonPrimitiveEqualitySink } from './adapters/non-primitive-equality.ts'
+export { refuseUninlinableSeedCalls, type UninlinableSeedCallSink } from './adapters/uninlinable-seed-call.ts'
 export { rewriteNilReadings, rewriteNilReadingsDeep, isNilReadingFallback, NAN_LITERAL } from './adapters/nil-reading.ts'
 export type { PrimitiveOp, Proof, NativeSafeClaims, NativeSafeTable, PrimitiveHelper, NilTestHelper, PrimitivePlan, PrimitiveInputs, TextDisplay, NumberLiteralSpelling, PlusSpelling, StrictEqSpelling } from './adapters/primitive-plan.ts'
 export {

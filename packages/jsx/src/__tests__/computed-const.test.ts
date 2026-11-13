@@ -19,7 +19,8 @@ describe('inlineComputedConsts (#3494)', () => {
     'use client'
     import { createSignal, useContext, createContext } from '@barefootjs/client'
     const Theme = createContext('light')
-    function makeLabel() { return 'x' }
+    function makeLabel() { const l = 'x'; return l }
+    function plainLabel() { return 'x' }
     export function C(props: { v: string; n: number; label?: string; labels: Record<string, string> }) {
       const [count] = createSignal(1)
       const cls = 'btn ' + props.v
@@ -30,6 +31,7 @@ describe('inlineComputedConsts (#3494)', () => {
       const keys = Object.keys(props.labels)
       const total = 5
       const opaque = makeLabel()
+      const plain = plainLabel() + '!'
       const theme = useContext(Theme)
       const format = (s: string) => s.trim()
       return <p class={wide}>{twice}{doubled}{fallback}{keys.length}{total}{opaque}{theme}{format('a')}</p>
@@ -41,6 +43,10 @@ describe('inlineComputedConsts (#3494)', () => {
     expect(inline('twice')).toBe('props.n * 2')
     expect(inline('wide')).toBe('"btn " + props.v + " w-full"')
     expect(inline('fallback')).toBe('props.label ?? "Default"')
+  })
+
+  test('a const initialized from a function a template inlines reads as what the function returns (#3721)', () => {
+    expect(inliner(source)('plain')).toBe('"x" + "!"')
   })
 
   test('a signal read stays a getter call inside the initializer', () => {

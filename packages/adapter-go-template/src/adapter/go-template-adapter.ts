@@ -56,6 +56,7 @@ import {
   collectNullableSignalGetters,
   arithmeticOperandCoercion,
   refuseNonPrimitiveStrictEquality,
+  refuseUninlinableSeedCalls,
   type ArithmeticCoercion,
   collectNullishAttrContext,
   isNativePlan,
@@ -187,7 +188,7 @@ import { collectPropFallbackVars, inferMemoType, isNillableSeedSignal, isPrimiti
 import { propsFieldName, propsFieldNames } from './lib/props-field-names.ts'
 import { propMemberSeedGoType } from "./value/prop-member-seed.ts"
 import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
-import { computeMemoInitialValue, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evaluatedAsGoType, computedPropSeedGo } from "./memo/memo-compute.ts"
+import { computeMemoInitialValue, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evaluatedAsGoType, computedPropSeedGo, resolvedConstantSeedGo } from "./memo/memo-compute.ts"
 import { collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
 import { refuseObjectSpreadsOntoChildren } from "./props/props-spread.ts"
@@ -948,9 +949,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     this.state.pendingChildrenDefines = []
     this.state.refusedLoopArrayConsts = new Set()
     this.scope = BindingScope.EMPTY
+    // Read before `primeCompileState` inlines the memo bodies, which turns
+    // such a call into an unsupported node.
+    const authoredIr = ir
     ir = this.primeCompileState(ir)
     // `===` / `!==` over an object or array (#3774, #3824 step 8).
     refuseNonPrimitiveStrictEquality(ir, this.state.operandTyping, this.state)
+    // A server-read signal seed or memo body calling a function no template can inline (#3721).
+    refuseUninlinableSeedCalls(authoredIr, this.state)
     // A spread of an arbitrary object onto a child component (#3861).
     refuseObjectSpreadsOntoChildren(this.emitCtx, ir)
     this.state.stringValueNames = collectStringValueNames(ir)
@@ -4363,7 +4369,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   ): string | null {
     // The seed plan's form, which reads through local consts and helper calls (#3562).
     const parsed = resolveSignalParsedThroughSeedPlan(this.state, signal)
-    const computed = computedPropSeedGo(this.emitCtx, parsed, [...propsParams], propFallbackVars)
+    const computed = computedPropSeedGo(this.emitCtx, parsed, [...propsParams], propFallbackVars) ??
+      resolvedConstantSeedGo(this.emitCtx, parsed, signal.parsed)
     if (computed === null) return null
     const propsParamMap = new Map(this.state.currentPropsParams.map(p => [p.name, p]))
     return evaluatedAsGoType(computed, signalFieldGoType(this.emitCtx, signal, propsParamMap, concreteDest))

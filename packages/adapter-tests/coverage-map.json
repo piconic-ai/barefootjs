@@ -7311,6 +7311,28 @@
         "text"
       ]
     },
+    "local-bindings-named-like-props": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "local-const-literal-index": {
       "kinds": [
         "array-literal",
@@ -7337,6 +7359,39 @@
         "attribute",
         "condition",
         "loop",
+        "text"
+      ]
+    },
+    "local-function-call-through-const-and-wrapper": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:number",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "local-function-hides-module-function": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
         "text"
       ]
     },
@@ -9137,6 +9192,22 @@
         "text"
       ]
     },
+    "loop-row-named-like-uninlinable-memo": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-nested-child-children-handler": {
       "kinds": [
         "array-literal",
@@ -9488,6 +9559,45 @@
         "text"
       ]
     },
+    "markup-local-function-read-named-like-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "markup-uninlinable-local-function-named-like-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "markup-uninlinable-local-function-named-like-prop-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "math-methods": {
       "kinds": [
         "call",
@@ -9804,9 +9914,12 @@
     "memo-local-function-named-like-prop": {
       "kinds": [
         "call",
-        "identifier"
+        "identifier",
+        "literal"
       ],
-      "axes": [],
+      "axes": [
+        "literal:number"
+      ],
       "contexts": [
         "text"
       ]
@@ -10187,6 +10300,26 @@
         "text"
       ]
     },
+    "memo-uninlinable-local-function-named-like-prop": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-uninlinable-local-function-named-like-prop-client": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-const-array-child-prop": {
       "kinds": [
         "array-literal",
@@ -10456,10 +10589,14 @@
     },
     "module-const-loop-source-computed": {
       "kinds": [
+        "array-literal",
         "call",
-        "identifier"
+        "identifier",
+        "literal"
       ],
-      "axes": [],
+      "axes": [
+        "literal:string"
+      ],
       "contexts": [
         "attribute",
         "loop",
@@ -10468,10 +10605,14 @@
     },
     "module-const-loop-source-computed-client": {
       "kinds": [
+        "array-literal",
         "call",
-        "identifier"
+        "identifier",
+        "literal"
       ],
-      "axes": [],
+      "axes": [
+        "literal:string"
+      ],
       "contexts": [
         "attribute",
         "loop",
@@ -10589,6 +10730,21 @@
       ],
       "axes": [
         "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-function-reads-module-binding": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
       ],
       "contexts": [
         "text"
@@ -12614,12 +12770,14 @@
     },
     "opaque-local-accessor-call": {
       "kinds": [
+        "arrow",
         "call",
         "identifier",
         "literal"
       ],
       "axes": [
-        "literal:number"
+        "literal:number",
+        "literal:string"
       ],
       "contexts": [
         "text"
@@ -12627,12 +12785,14 @@
     },
     "opaque-local-accessor-call-client": {
       "kinds": [
+        "arrow",
         "call",
         "identifier",
         "literal"
       ],
       "axes": [
-        "literal:number"
+        "literal:number",
+        "literal:string"
       ],
       "contexts": [
         "text"
@@ -15820,6 +15980,26 @@
         "text"
       ]
     },
+    "signal-seed-const-from-uninlinable-local-function": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "signal-seed-const-from-uninlinable-local-function-client": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "signal-seed-dependent-default-nullish-literal": {
       "kinds": [
         "binary",
@@ -15860,9 +16040,12 @@
     "signal-seed-local-function-named-like-prop": {
       "kinds": [
         "call",
-        "identifier"
+        "identifier",
+        "literal"
       ],
-      "axes": [],
+      "axes": [
+        "literal:number"
+      ],
       "contexts": [
         "text"
       ]
@@ -15950,6 +16133,72 @@
       ],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "signal-seed-uninlinable-local-function-hides-module-function": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "signal-seed-uninlinable-local-function-hides-module-function-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "signal-seed-uninlinable-local-function-named-like-prop": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "signal-seed-uninlinable-local-function-named-like-prop-client": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "signal-seed-wrapped-uninlinable-local-function": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
+    "signal-seed-wrapped-uninlinable-local-function-client": {
+      "kinds": [
+        "call",
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
         "text"
       ]
     },

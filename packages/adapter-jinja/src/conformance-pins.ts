@@ -208,6 +208,13 @@ export const conformancePins: ConformancePins = {
   // Hono's real JS runtime evaluates this shape correctly and must keep
   // doing so.
   'opaque-local-accessor-call': [{ code: 'BF101', severity: 'error', limitation: 'opaque-local-accessor-call' }],
+  // A zero-argument call of a local function the template cannot inline.
+  'markup-uninlinable-local-function-named-like-prop': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'memo-uninlinable-local-function-named-like-prop': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'signal-seed-uninlinable-local-function-named-like-prop': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'signal-seed-uninlinable-local-function-hides-module-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'signal-seed-const-from-uninlinable-local-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  'signal-seed-wrapped-uninlinable-local-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
   // A const record indexed by a prop whose keys are not known at compile
   // time reads inherited keys in JS (`labels['toString']`); no template
   // lookup does, so the read refuses rather than rendering `undefined`.

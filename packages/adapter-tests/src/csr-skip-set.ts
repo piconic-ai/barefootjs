@@ -40,6 +40,19 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // fixture-hydrate and oracle suites check the client.
   'destructure-default-shared-array',
   'destructure-default-shared-array-renamed',
+  // A const initialized by a local function call (`const initial = value()`)
+  // and an arrow const wrapping one live in the init body: the CSR template
+  // has no init to run, so the signals seeded through them render empty
+  // there. The server render is what these fixtures pin.
+  'signal-seed-const-from-uninlinable-local-function',
+  'local-function-call-through-const-and-wrapper',
+  // A component binding named like a module binding (limitation
+  // `client-binding-named-like-module-binding`): the client script declares
+  // both in one scope. `module-function-reads-module-binding` then throws on
+  // the redeclared const; the other calls the module function for the
+  // component one. The server render is what these fixtures pin.
+  'module-function-reads-module-binding',
+  'signal-seed-uninlinable-local-function-hides-module-function',
   // #1247: prop-derived static loops materialize children at init time, not
   // template-eval — CSR shape covered by `static-loop-csr-materialize.test.ts`.
   'static-array-from-props',
@@ -239,4 +252,11 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // A default assigning an earlier binding (`b = (a = 2)`): the CSR template
   // reads `c` as `_p.c ?? _p.a`, so the assignment never runs.
   'destructure-default-earlier-assignment': { limitation: 'destructure-default-assigns-earlier-binding' },
+  // An uncalled read of a local function: the CSR template prints the
+  // function's source text where JSX renders nothing.
+  'markup-local-function-read-named-like-prop': { limitation: 'local-function-read-named-like-prop' },
+  // A component function named like a module function: the client script
+  // declares both at module scope, where the first one wins, so the CSR
+  // template calls the module function.
+  'local-function-hides-module-function': { limitation: 'client-binding-named-like-module-binding' },
 }

@@ -30,6 +30,7 @@ import type {
   PreambleValueDeclaration,
 } from '../types.ts'
 import { refuseNonPrimitiveStrictEquality, type NonPrimitiveEqualitySink } from './non-primitive-equality.ts'
+import { refuseUninlinableSeedCalls } from './uninlinable-seed-call.ts'
 import { collectImportedLoopChildComponentErrors } from './component-tree.ts'
 import { computedConstContext, type ComputedConstContext } from './computed-const.ts'
 import { searchParamsLocalNames } from './env-signal.ts'
@@ -463,6 +464,8 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     }
     // `===` / `!==` over an object or array (#3774, #3824 step 8).
     refuseNonPrimitiveStrictEquality(ir, this.operandTyping, this.errorSink())
+    // A server-read signal seed or memo body calling a function no template can inline (#3721).
+    refuseUninlinableSeedCalls(ir, this.errorSink())
   }
 }
 
