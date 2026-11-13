@@ -11066,6 +11066,125 @@
           }
         }
       },
+      "strict-equality-destructure-default-distinct": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-equality-by-contents"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-equality-by-contents"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-equality-by-contents"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-equality-by-contents"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-equality-by-contents"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-equality-by-contents"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-equality-by-contents"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-equality-by-contents"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "object-equality-by-contents"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "strict-equality-reference-rewrite"
+          }
+        }
+      },
       "strict-equality-distinct-reference": {
         "blade": {
           "kind": "refusal",
@@ -12584,6 +12703,10 @@
         "description": "a ref callback and a signal-derived text inside a nested .map() under a static (non-signal) outer…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-nested-loop-ref.ts"
       },
+      "strict-equality-destructure-default-distinct": {
+        "description": "=== between a prop object and an equal-content object const in a destructure default is false",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/strict-equality-destructure-default-distinct.ts"
+      },
       "strict-equality-distinct-reference": {
         "description": "=== / !== between distinct objects or arrays with equal contents is false / true",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/strict-equality-distinct-reference.ts"
@@ -13819,10 +13942,11 @@
     "object-equality-by-contents": {
       "title": "Strict equality between distinct objects or arrays with the same contents",
       "kind": "refusal",
-      "given": "`===` / `!==` between two distinct objects or arrays whose contents are equal (two props holding `{ id: 1 }`, two elements of `[{ id: 1 }, { id: 1 }]`)",
+      "given": "`===` / `!==` between two distinct objects or arrays whose contents are equal (two props holding `{ id: 1 }`, two elements of `[{ id: 1 }, { id: 1 }]`, a prop and an object `const` read in a computed destructure default)",
       "expected": "the comparison is by reference, so `===` is false and `!==` is true",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
+        "strict-equality-destructure-default-distinct",
         "strict-equality-distinct-reference"
       ],
       "adapters": [

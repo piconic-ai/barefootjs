@@ -3949,6 +3949,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -4082,6 +4088,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -4287,6 +4299,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -4432,6 +4450,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -4583,6 +4607,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -4722,6 +4752,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -4873,6 +4909,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -5018,6 +5060,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -5172,6 +5220,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -10384,6 +10438,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -10877,6 +10937,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -11562,6 +11628,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -12094,6 +12166,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -12617,6 +12695,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -13146,6 +13230,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -13666,6 +13756,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -14183,6 +14279,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -14715,6 +14817,12 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -15333,6 +15441,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -15724,6 +15838,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -16259,6 +16379,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -16659,6 +16785,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -17056,6 +17188,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -17477,6 +17615,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -17871,6 +18015,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -18256,6 +18406,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -18671,6 +18827,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -18781,6 +18943,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -18824,6 +18992,12 @@
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -18909,6 +19083,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -18955,6 +19135,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -18998,6 +19184,12 @@
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -19053,6 +19245,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -19099,6 +19297,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -19142,6 +19346,12 @@
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -19194,6 +19404,12 @@
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -22928,6 +23144,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -23079,6 +23301,12 @@
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -23278,6 +23506,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -23432,6 +23666,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -23583,6 +23823,12 @@
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -23758,6 +24004,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -23912,6 +24164,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -24057,6 +24315,12 @@
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -24223,6 +24487,12 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -28133,6 +28403,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -28206,6 +28482,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -28321,6 +28603,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -28406,6 +28694,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -28497,6 +28791,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -28570,6 +28870,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -28661,6 +28967,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -28740,6 +29052,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -28828,6 +29146,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -29976,6 +30300,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -30121,6 +30451,12 @@
               "fixture": "signal-seed-uninlinable-local-function-hides-module-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -30332,6 +30668,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -30480,6 +30822,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -30625,6 +30973,12 @@
               "fixture": "signal-seed-uninlinable-local-function-hides-module-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -30794,6 +31148,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -30942,6 +31302,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -31081,6 +31447,12 @@
               "fixture": "signal-seed-uninlinable-local-function-hides-module-function",
               "limitations": [
                 "uninlinable-local-function-call"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -31241,6 +31613,12 @@
               "fixture": "static-loop-item-conditional",
               "limitations": [
                 "boolean-in-static-loop-item"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -31561,6 +31939,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -31856,6 +32240,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -32265,6 +32655,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -32569,6 +32965,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -32870,6 +33272,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -33195,6 +33603,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -33493,6 +33907,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -33788,6 +34208,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -34107,6 +34533,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -34413,6 +34845,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -34450,6 +34888,12 @@
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -34529,6 +34973,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -34566,6 +35016,12 @@
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -34609,6 +35065,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -34646,6 +35108,12 @@
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {
@@ -34689,6 +35157,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -34729,6 +35203,12 @@
               ]
             },
             {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -34766,6 +35246,12 @@
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "strict-equality-destructure-default-distinct",
+              "limitations": [
+                "object-equality-by-contents"
               ]
             },
             {

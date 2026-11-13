@@ -17369,6 +17369,34 @@
       }
     }
   ],
+  "strict-equality-destructure-default-distinct": [
+    {
+      "name": "gen:obj:object:minimal",
+      "props": {
+        "obj": {
+          "x": 0
+        }
+      }
+    },
+    {
+      "name": "gen:b:true",
+      "props": {
+        "obj": {
+          "x": 1
+        },
+        "b": true
+      }
+    },
+    {
+      "name": "gen:b:false",
+      "props": {
+        "obj": {
+          "x": 1
+        },
+        "b": false
+      }
+    }
+  ],
   "strict-equality-distinct-reference": [
     {
       "name": "gen:obj:object:minimal",

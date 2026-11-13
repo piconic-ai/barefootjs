@@ -822,3 +822,37 @@ export function C(props: { v?: number | null; n: number }) {
     expect(template).toContain('n - 1')
   })
 })
+
+// #3725: a computed destructure default is applied as the expression it
+// stands for, where each read of a const is spelled as its own literal. A
+// strict equality over an object there is refused like one in markup. The
+// distinct-object shape is the conformance fixture
+// `strict-equality-destructure-default-distinct`.
+describe('JinjaAdapter - strict equality over an object in a destructure default (#3725)', () => {
+  function errorsOf(source: string): { code: string; message: string }[] {
+    const result = compileJSX(source.trimStart(), 'test.tsx', { adapter: new JinjaAdapter() })
+    return result.errors ?? []
+  }
+
+  test('an object const compared with itself is refused', () => {
+    const errors = errorsOf(`
+export function T(props: { b?: boolean }) {
+  const DEF = { x: 1 }
+  const { b = DEF === DEF } = props
+  return <p>{String(b)}</p>
+}
+`)
+    expect(errors.some(e => e.code === 'BF101' && e.message.includes('compares an object or array'))).toBe(true)
+  })
+
+  test('a primitive const compared in a default is not refused', () => {
+    const errors = errorsOf(`
+export function T(props: { a?: string; b?: boolean }) {
+  const DEF = 'z'
+  const { a, b = a === DEF } = props
+  return <p>{b ? 'same' : 'different'}</p>
+}
+`)
+    expect(errors.filter(e => e.code === 'BF101')).toEqual([])
+  })
+})

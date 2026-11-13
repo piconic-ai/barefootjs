@@ -15,12 +15,17 @@
  * The primitive plan names the refusal per node (`mode: 'refuse'`), and
  * every emitter spells the runtime's `strict_eq` for it; the error itself
  * is recorded here, once per component, over every template position, each
- * read in its own scope, and over the memo bodies the adapters seed at SSR.
+ * read in its own scope, over the memo bodies the adapters seed at SSR, and
+ * over the computed destructure defaults a backend applies
+ * (`appliedPropDefaults`). A default is checked as the expression it stands
+ * for: a const it reads twice (`DEF === DEF`) is spelled there as two
+ * separate literals, which no runtime compares as one reference.
  */
 
 import { exprToString, type ParsedExpr } from '../expression-parser.ts'
 import { parsedExprChildren } from '../action-accessor.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
+import { appliedPropDefaults } from '../ssr-seed-plan.ts'
 import { walkTemplatePositions } from '../template-position-walk.ts'
 import type { ComponentIR, CompilerError, SourceLocation } from '../types.ts'
 import type { OperandTyping, ScopedOperandTyping } from './operand-typing.ts'
@@ -52,7 +57,8 @@ function refusedComparisons(expr: ParsedExpr, typing: ScopedOperandTyping, isObj
 
 /**
  * Record BF101 for every `===` / `!==` over an operand that may be an
- * object in `ir`'s template positions and memo bodies. One error per
+ * object in `ir`'s template positions, memo bodies and applied prop
+ * defaults. One error per
  * comparison text per compile.
  */
 export function refuseNonPrimitiveStrictEquality(ir: ComponentIR, typing: OperandTyping, sink: NonPrimitiveEqualitySink): void {
@@ -69,6 +75,9 @@ export function refuseNonPrimitiveStrictEquality(ir: ComponentIR, typing: Operan
   walkTemplatePositions(ir.root, ({ expr, loc, scope }) => check(expr, scope ?? component, loc), component)
   for (const memo of ir.metadata.memos ?? []) {
     if (memo.parsed) check(memo.parsed, component, ir.root.loc)
+  }
+  for (const resolved of appliedPropDefaults(ir.metadata).defaults.values()) {
+    if (resolved.blocked.length === 0) check(resolved.expr, component, resolved.loc ?? ir.root.loc)
   }
 }
 

@@ -24,6 +24,7 @@ export const conformancePins: ConformancePins = {
   'strict-equality-distinct-reference': [{ code: 'BF101', severity: 'error', limitation: 'object-equality-by-contents' }],
   'strict-equality-same-reference': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
   'strict-equality-preamble-reference': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
+  'strict-equality-destructure-default-distinct': [{ code: 'BF101', severity: 'error', limitation: 'object-equality-by-contents' }],
   'strict-equality-optional-array-element': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
   'strict-equality-nullable-array-element': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
   // The `omitted-optional-nullable-*` and `undef-null-number-coercion` /

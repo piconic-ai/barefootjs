@@ -4,8 +4,8 @@ export default defineLimitation({
   kind: 'refusal',
   title: 'Strict equality between distinct objects or arrays with the same contents',
   given:
-    '`===` / `!==` between two distinct objects or arrays whose contents are equal (two props holding `{ id: 1 }`, two elements of `[{ id: 1 }, { id: 1 }]`)',
+    '`===` / `!==` between two distinct objects or arrays whose contents are equal (two props holding `{ id: 1 }`, two elements of `[{ id: 1 }, { id: 1 }]`, a prop and an object `const` read in a computed destructure default)',
   expected: 'the comparison is by reference, so `===` is false and `!==` is true',
   diagnostic: 'BF101',
-  fixtures: ['strict-equality-distinct-reference'],
+  fixtures: ['strict-equality-distinct-reference', 'strict-equality-destructure-default-distinct'],
 })
