@@ -22,6 +22,7 @@
 
 import { resolveJsxChildrenProp } from '@barefootjs/shared'
 import type { AttrValue, IRComponent, IRNode, SpreadAttr } from '../types.ts'
+import { spreadsPropsObject } from './attr-plan.ts'
 import { derivesScopeFromSlot } from './child-scope.ts'
 
 /** One entry of the props hash. */
@@ -163,7 +164,7 @@ export function planComponentProps(
       // `children={<jsx/>}` is forwarded as the `children` entry below.
       if (p.name !== 'children') push({ kind: 'named-slot', name: p.name, children: p.value.children })
     } else if (p.value.kind === 'spread') {
-      if (options.propsObjectName !== null && options.propsObjectName === p.value.expr.trim()) {
+      if (spreadsPropsObject(p.value, options.propsObjectName)) {
         pushPropsSpread()
       } else {
         earlier.spread = true

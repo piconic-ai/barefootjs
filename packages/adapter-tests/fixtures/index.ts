@@ -1512,6 +1512,9 @@ import { fixture as loopParamNamedProps } from './loop-param-named-props'
 import { fixture as loopParamNamedPropsMember } from './loop-param-named-props-member'
 import { fixture as loopParamNamedPropsMemberPositions } from './loop-param-named-props-member-positions'
 import { fixture as loopParamNamedPropsMemberPropsObject } from './loop-param-named-props-member-props-object'
+import { fixture as loopParamNamedPropsSpreadCustomName } from './loop-param-named-props-spread-custom-name'
+import { fixture as loopParamNamedPropsSpreadChild } from './loop-param-named-props-spread-child'
+import { fixture as loopParamNamedPropsSpreadElement } from './loop-param-named-props-spread-element'
 import { fixture as loopKeyToString } from './loop-key-to-string'
 import { fixture as loopKeyToStringNumberComponentRow } from './loop-key-to-string-number-component-row'
 import { fixture as loopKeyToStringNumberComponentRowClient } from './loop-key-to-string-number-component-row-client'
@@ -2665,6 +2668,9 @@ export const jsxFixtures: JSXFixture[] = [
   loopParamNamedPropsMember,
   loopParamNamedPropsMemberPositions,
   loopParamNamedPropsMemberPropsObject,
+  loopParamNamedPropsSpreadCustomName,
+  loopParamNamedPropsSpreadChild,
+  loopParamNamedPropsSpreadElement,
   loopKeyToString,
   loopKeyToStringNumberComponentRow,
   loopKeyToStringNumberComponentRowClient,

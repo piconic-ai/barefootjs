@@ -8550,6 +8550,391 @@
       }
     }
   ],
+  "loop-param-named-props-spread-child": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "rows": [
+          {
+            "label": "a",
+            "title": "ta"
+          },
+          {
+            "label": "b",
+            "title": "tb"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "rows": [
+          {
+            "label": "a",
+            "title": "ta"
+          },
+          {
+            "label": "b",
+            "title": "tb"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "rows": [
+          {
+            "label": "a",
+            "title": "ta"
+          },
+          {
+            "label": "b",
+            "title": "tb"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "label": "ROOT",
+        "rows": []
+      }
+    }
+  ],
+  "loop-param-named-props-spread-custom-name": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "rows": [
+          {
+            "label": "a",
+            "title": "ta"
+          },
+          {
+            "label": "b",
+            "title": "tb"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "rows": [
+          {
+            "label": "a",
+            "title": "ta"
+          },
+          {
+            "label": "b",
+            "title": "tb"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "rows": [
+          {
+            "label": "a",
+            "title": "ta"
+          },
+          {
+            "label": "b",
+            "title": "tb"
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "label": "ROOT",
+        "rows": []
+      }
+    }
+  ],
+  "loop-param-named-props-spread-element": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "rows": [
+          {
+            "label": "a",
+            "title": "ta"
+          },
+          {
+            "label": "b",
+            "title": "tb"
+          }
+        ],
+        "groups": [
+          {
+            "id": "g1",
+            "props": {
+              "label": "x",
+              "title": "tx"
+            }
+          },
+          {
+            "id": "g2",
+            "props": {
+              "label": "y",
+              "title": "ty"
+            }
+          }
+        ],
+        "blocks": [
+          {
+            "id": "k1",
+            "rows": [
+              {
+                "label": "p",
+                "title": "tp"
+              }
+            ]
+          },
+          {
+            "id": "k2",
+            "rows": [
+              {
+                "label": "q",
+                "title": "tq"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "rows": [
+          {
+            "label": "a",
+            "title": "ta"
+          },
+          {
+            "label": "b",
+            "title": "tb"
+          }
+        ],
+        "groups": [
+          {
+            "id": "g1",
+            "props": {
+              "label": "x",
+              "title": "tx"
+            }
+          },
+          {
+            "id": "g2",
+            "props": {
+              "label": "y",
+              "title": "ty"
+            }
+          }
+        ],
+        "blocks": [
+          {
+            "id": "k1",
+            "rows": [
+              {
+                "label": "p",
+                "title": "tp"
+              }
+            ]
+          },
+          {
+            "id": "k2",
+            "rows": [
+              {
+                "label": "q",
+                "title": "tq"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "rows": [
+          {
+            "label": "a",
+            "title": "ta"
+          },
+          {
+            "label": "b",
+            "title": "tb"
+          }
+        ],
+        "groups": [
+          {
+            "id": "g1",
+            "props": {
+              "label": "x",
+              "title": "tx"
+            }
+          },
+          {
+            "id": "g2",
+            "props": {
+              "label": "y",
+              "title": "ty"
+            }
+          }
+        ],
+        "blocks": [
+          {
+            "id": "k1",
+            "rows": [
+              {
+                "label": "p",
+                "title": "tp"
+              }
+            ]
+          },
+          {
+            "id": "k2",
+            "rows": [
+              {
+                "label": "q",
+                "title": "tq"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "label": "ROOT",
+        "rows": [],
+        "groups": [
+          {
+            "id": "g1",
+            "props": {
+              "label": "x",
+              "title": "tx"
+            }
+          },
+          {
+            "id": "g2",
+            "props": {
+              "label": "y",
+              "title": "ty"
+            }
+          }
+        ],
+        "blocks": [
+          {
+            "id": "k1",
+            "rows": [
+              {
+                "label": "p",
+                "title": "tp"
+              }
+            ]
+          },
+          {
+            "id": "k2",
+            "rows": [
+              {
+                "label": "q",
+                "title": "tq"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:groups:empty",
+      "props": {
+        "label": "ROOT",
+        "rows": [
+          {
+            "label": "a",
+            "title": "ta"
+          },
+          {
+            "label": "b",
+            "title": "tb"
+          }
+        ],
+        "groups": [],
+        "blocks": [
+          {
+            "id": "k1",
+            "rows": [
+              {
+                "label": "p",
+                "title": "tp"
+              }
+            ]
+          },
+          {
+            "id": "k2",
+            "rows": [
+              {
+                "label": "q",
+                "title": "tq"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:blocks:empty",
+      "props": {
+        "label": "ROOT",
+        "rows": [
+          {
+            "label": "a",
+            "title": "ta"
+          },
+          {
+            "label": "b",
+            "title": "tb"
+          }
+        ],
+        "groups": [
+          {
+            "id": "g1",
+            "props": {
+              "label": "x",
+              "title": "tx"
+            }
+          },
+          {
+            "id": "g2",
+            "props": {
+              "label": "y",
+              "title": "ty"
+            }
+          }
+        ],
+        "blocks": []
+      }
+    }
+  ],
   "loop-param-prop-alias-name-collision": [
     {
       "name": "gen:values:empty",

@@ -160,10 +160,21 @@ export interface SpreadPlanContext {
   isBound(name: string): boolean
 }
 
+/**
+ * Whether `value` spreads the component's own props object whole. The one
+ * answer every adapter uses: the spread names `propsObjectName` and Phase 1
+ * did not find a binding of that name in scope at the spread
+ * (`SpreadAttr.shadowsPropsObject`, #3727), so `rows.map((props) => <li
+ * {...props} />)` spreads the row.
+ */
+export function spreadsPropsObject(value: SpreadAttr, propsObjectName: string | null): boolean {
+  return propsObjectName !== null && value.expr.trim() === propsObjectName && value.shadowsPropsObject !== true
+}
+
 /** Plan a `{...spread}` attribute. */
 export function planSpreadAttr(value: SpreadAttr, ctx: SpreadPlanContext): SpreadAttrPlan {
   const trimmed = value.expr.trim()
-  if (ctx.propsObjectName && ctx.propsObjectName === trimmed) {
+  if (spreadsPropsObject(value, ctx.propsObjectName)) {
     return { kind: 'props-object', params: ctx.propsParams.map((p) => p.name) }
   }
   const candidates: Array<ParsedExpr | undefined> = [value.parsed]

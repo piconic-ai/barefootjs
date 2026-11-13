@@ -13,6 +13,7 @@
 import {
   planComponentProps,
   resolveComponentPropKeys,
+  spreadsPropsObject,
   type ComponentIR,
   type ComponentPropsOptions,
   type IRNode,
@@ -28,7 +29,7 @@ function planOptions(ctx: GoEmitContext, ir: ComponentIR): ComponentPropsOptions
 
 /** Whether `prop` spreads the component's own props object (`{...props}`). */
 export function isPropsObjectSpread(prop: IRProp, propsObjectName: string | null): boolean {
-  return propsObjectName !== null && prop.value.kind === 'spread' && prop.value.expr.trim() === propsObjectName
+  return prop.value.kind === 'spread' && spreadsPropsObject(prop.value, propsObjectName)
 }
 
 /** A child call's props resolved one key at a time by the shared plan. */

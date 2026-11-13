@@ -7368,9 +7368,12 @@ function expandSpreadAttribute(
   const slotId = generateSpreadSlotId(ctx)
   const value = AttrValueOf.spread(spreadExpr, ctx.getTemplateJS(attr.expression), slotId)
   const callerBag = callerBagOfSpread(value, ctx)
+  const shadowsPropsObject = spreadShadowsPropsObject(attr, ctx)
   return [{
     name: '...',
-    value: callerBag ? { ...value, callerBag } : value,
+    value: callerBag || shadowsPropsObject
+      ? { ...value, ...(callerBag && { callerBag }), ...(shadowsPropsObject && { shadowsPropsObject: true as const }) }
+      : value,
     loc,
     freeIdentifiers: spreadFreeIdentifiers,
   }]
@@ -7725,6 +7728,19 @@ function staticObjectSpreadEntries(init: ts.ObjectLiteralExpression): Array<{ ke
     entries.set(key, astText(prop.initializer))
   }
   return [...entries].map(([key, text]) => ({ key, text }))
+}
+
+/**
+ * Whether `{...name}` spreads a binding spelled like the component's props
+ * object (`SpreadAttr.shadowsPropsObject`): a loop row or callback parameter
+ * of that name hides the props object at the spread (#3727).
+ */
+function spreadShadowsPropsObject(attr: ts.JsxSpreadAttribute, ctx: TransformContext): boolean {
+  const propsName = ctx.analyzer.propsObjectName
+  if (propsName === null) return false
+  let expr: ts.Expression = attr.expression
+  while (ts.isParenthesizedExpression(expr)) expr = expr.expression
+  return ts.isIdentifier(expr) && expr.text === propsName && ctx.scope.isBound(propsName)
 }
 
 /**
