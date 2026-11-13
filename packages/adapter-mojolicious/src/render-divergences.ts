@@ -27,11 +27,6 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 at compile time instead of silently crashing
 // Perl `strict`-mode template execution — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
-  // Markup calling a local function declaration that reads a component
-  // local: the template reads the function's name as an unbound variable.
-  'module-const-inherited-key-function': { limitation: 'local-function-call-unbound' },
-  'module-const-inherited-key-function-direct': { limitation: 'local-function-call-unbound' },
-  'module-const-inherited-key-function-nested': { limitation: 'local-function-call-unbound' },
   // A method call on a module array-literal const reads the const as an
   // unbound template variable.
   'module-const-array-method-call': { limitation: 'module-const-array-method-call' },

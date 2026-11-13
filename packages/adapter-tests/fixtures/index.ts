@@ -1431,6 +1431,11 @@ import { fixture as moduleConstInheritedKeyObjectMethod } from './module-const-i
 import { fixture as moduleConstInheritedKeyIife } from './module-const-inherited-key-iife'
 import { fixture as moduleConstInheritedKeyFunctionClient } from './module-const-inherited-key-function-client'
 import { fixture as moduleConstInheritedKeyRowShadow } from './module-const-inherited-key-row-shadow'
+import { fixture as moduleConstInheritedKeyValueClient } from './module-const-inherited-key-value-client'
+import { fixture as moduleConstInheritedKeyChildProp } from './module-const-inherited-key-child-prop'
+import { fixture as moduleConstInheritedKeyMemoMethod } from './module-const-inherited-key-memo-method'
+import { fixture as moduleConstInheritedKeyMemoConst } from './module-const-inherited-key-memo-const'
+import { fixture as moduleConstInheritedKeySignalSeed } from './module-const-inherited-key-signal-seed'
 import { fixture as moduleConstInheritedKeyObjectSafe } from './module-const-inherited-key-object-safe'
 import { fixture as undefinedLiteralElementPositions } from './undefined-literal-element-positions'
 import { fixture as moduleConstArrayMethodCall } from './module-const-array-method-call'
@@ -2532,6 +2537,11 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstInheritedKeyIife,
   moduleConstInheritedKeyFunctionClient,
   moduleConstInheritedKeyRowShadow,
+  moduleConstInheritedKeyValueClient,
+  moduleConstInheritedKeyChildProp,
+  moduleConstInheritedKeyMemoMethod,
+  moduleConstInheritedKeyMemoConst,
+  moduleConstInheritedKeySignalSeed,
   moduleConstInheritedKeyObjectSafe,
   undefinedLiteralElementPositions,
   moduleConstArrayMethodCall,

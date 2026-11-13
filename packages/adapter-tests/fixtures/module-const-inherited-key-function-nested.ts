@@ -4,13 +4,13 @@ import { createFixture } from '../src/types'
  * A local function called from a server-rendered position calls another
  * local function, whose body reads a memo that reads a key only a literal
  * const's prototype has.
- * The template reads the function name as an unbound template variable
- * instead (`local-function-call-unbound`); no emitter spells the inherited
- * read, so it is not refused.
+ * A template holds the literal without a prototype, so a template adapter
+ * refuses the read (BF101).
  */
 export const fixture = createFixture({
   id: 'module-const-inherited-key-function-nested',
   description: 'a local function calling another that reads an inherited const key through a memo, called at SSR, reads the inherited function',
+  escapes: [{ kind: 'client-directive', fixture: 'module-const-inherited-key-function-client' }],
   source: `
 'use client'
 import { createMemo } from '@barefootjs/client'
