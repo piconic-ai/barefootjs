@@ -50,6 +50,45 @@ describe('localCallBodies', () => {
   })
 })
 
+describe('lexical resolution', () => {
+  // The rendered refusal is `signal-seed-uninlinable-local-function-hides-module-function`.
+  test('a component function a template cannot inline hides the module function of its name', () => {
+    const m = metadataFor('function value() { const x = 2; return x }', 'props: { value?: number }', 'function value() { return 1 }')
+    expect(bodies(m)).toEqual({})
+    expect([...uninlinableLocalCalls(m)]).toEqual(['value'])
+    // A module function's body still calls the module's.
+    expect(Object.fromEntries([...localCallBodies(m, 'module')].map(([n, c]) => [n, stringifyParsedExpr(c.body)]))).toEqual({ value: '1' })
+  })
+
+  test('a component arrow const with a parameter hides the module function of its name', () => {
+    const m = metadataFor('const value = (a?: number) => 2', 'props: { value?: number }', 'function value() { return 1 }')
+    expect(bodies(m)).toEqual({})
+    expect([...uninlinableLocalCalls(m)]).toEqual(['value'])
+  })
+
+  test('a function declared inside a nested function hides nothing', () => {
+    const m = metadataFor("function inner() { function tag() { return 'X' } return tag() }", 'props: {}', "function tag() { return 'T' }")
+    expect(bodies(m)['tag@module']).toBe('"T"')
+  })
+
+  test("a module function's call of another function is the module's, inlined in module scope", () => {
+    const m = metadataFor("function inner() { return 'component' }", 'props: {}', "function inner() { return 'module' } function outer() { return inner() }")
+    expect(bodies(m)).toEqual({ 'inner@component': '"component"', 'outer@module': '"module"' })
+  })
+
+  test('a module function calling one a template cannot inline is not inlinable either', () => {
+    const m = metadataFor('', 'props: {}', 'function inner() { const x = 1; return x } function outer() { return inner() }')
+    expect(bodies(m)).toEqual({})
+    expect([...uninlinableLocalCalls(m)].sort()).toEqual(['inner', 'outer'])
+  })
+
+  test('a module function calling itself is not inlinable', () => {
+    const m = metadataFor('', 'props: {}', 'function loop(): number { return loop() }')
+    expect(bodies(m)).toEqual({})
+    expect([...uninlinableLocalCalls(m)]).toEqual(['loop'])
+  })
+})
+
 describe('uninlinableLocalCalls', () => {
   test('lists the functions a template cannot inline, not the ones it can', () => {
     const m = metadataFor('function a(n: number) { return n } function b() { const v = 1; return v } function c() { return 1 }')

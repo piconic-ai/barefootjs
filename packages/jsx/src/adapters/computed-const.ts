@@ -383,7 +383,7 @@ function constValue(
   // A props destructure const is the component's; a module const of that name is not one.
   if (!constant || !init || (!constant.isModule && ctx.propsBindings.has(constant.name))) return null
   const literal = lookupLiteralConst(constant.name, [constant], () => false) !== null
-  if (!literal && !(isPlainComputedConst(constant, init) && callsOnlyGetters(init, constant.isModule ? new Set() : ctx.getters))) return null
+  if (!literal && !(isPlainComputedConst(constant, init) && callsOnlyReadable(init, constant, constant.isModule ? new Set() : ctx.getters, ctx))) return null
   return resolveInitializer(init, ctx, captured, constant.isModule ? 'module' : 'component', depth + 1)
 }
 
@@ -426,7 +426,7 @@ function inlinableInitializer(name: string, ctx: ComputedConstContext): ParsedEx
   if (!readsAsProp && ctx.isAdapterBound(name)) return null
   // An adapter already inlines a literal const in its own syntax.
   if (!readsAsProp && lookupLiteralConst(name, [constant], ctx.isShadowed) !== null) return null
-  if (!callsOnlyGetters(init, ctx.getters)) return null
+  if (!callsOnlyReadable(init, constant, ctx.getters, ctx)) return null
   // A free name the read site rebinds would be captured by the substitution:
   // it is read as what it holds where the const is declared instead.
   return resolveInitializer(init, ctx, n => ctx.isShadowed(n), constant.isModule ? 'module' : 'component')
@@ -470,6 +470,22 @@ function callsOnlyGetters(init: ParsedExpr, getters: ReadonlySet<string>): boole
   }
   visit(init)
   return ok
+}
+
+/**
+ * {@link callsOnlyGetters} for the initializer of `constant`, also admitting
+ * a call of a local function a template inlines (`const initial = value()`,
+ * #3721): inlined with the initializer, the call is replaced by what the
+ * function returns. Only a name denoting the same function where the const
+ * is declared as in the component scope the markup reads it from: any
+ * inlinable function for a component const, a module one for a module const.
+ */
+function callsOnlyReadable(init: ParsedExpr, constant: ConstantInfo, getters: ReadonlySet<string>, ctx: ComputedConstContext): boolean {
+  const readable = new Set(getters)
+  for (const [name, call] of ctx.calls) {
+    if (!constant.isModule || call.scope === 'module') readable.add(name)
+  }
+  return callsOnlyGetters(init, readable)
 }
 
 /**

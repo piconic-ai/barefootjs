@@ -33,7 +33,7 @@ import ts from 'typescript'
 import { extractFreeIdentifiersFromNode } from './analyzer.ts'
 import { resolveGetterAliases, collectAliasableGetterNames } from './ir-to-client-js/csr-substitute.ts'
 import { resolveBodyDestructuredPropAliases, templatePropReadParams } from './props-binding.ts'
-import { localCallBodies } from './local-call-body.ts'
+import { localBindings, localCall, type LocalBindingResolver, type LocalScope } from './local-call-body.ts'
 import { stringifyParsedExpr } from './expression-parser.ts'
 import { computeSsrSeedPlan } from './ssr-seed-plan.ts'
 import type { IRMetadata } from './types.ts'
@@ -176,14 +176,20 @@ type EvalResult = unknown | typeof UNRESOLVED
 // distinct from `UNRESOLVED` (couldn't evaluate) so a falsy guard
 // (`if (!key) return X`) continues evaluation instead of bailing.
 const NO_RETURN = Symbol('no-return')
+/** A zero-argument call of a name nothing static is bound to. */
+const NOT_BOUND = Symbol('not-bound')
 
 interface EvalContext {
   /** Identifier name → previously-resolved value (signal getters, memos). */
   bindings: Record<string, EvalResult>
   /** Names whose `<name>.X` / `<name>[X]` reads should resolve to `undefined`. */
   propsLike: ReadonlySet<string>
-  /** Function name → what a call of it with no arguments returns (`localCallBodies`). */
-  calls?: Readonly<Record<string, EvalResult>>
+  /**
+   * What a call of `name` with no arguments returns, for a name that
+   * denotes a local function where this context's expression is written
+   * (`localCall`); `NOT_BOUND` for any other name.
+   */
+  calls?: (name: string) => EvalResult | typeof NOT_BOUND
 }
 
 /**
@@ -191,26 +197,62 @@ interface EvalContext {
  * scope by their bare name (`templatePropReadParams`, so a `(props)`-arg
  * component's typed prop the body never binds is not one) and the props
  * object, the component-scope consts that evaluate without reading a prop,
- * and the zero-argument calls whose returned expression evaluates the same
- * way. `bindings` (module consts) is extended in place.
+ * and the zero-argument calls of local functions.
+ *
+ * Each name is read in the scope it is written in (`localBindings`, #3721).
+ * `bindings` arrives holding the module consts and leaves as the component
+ * scope: a module const the component scope shadows is dropped, the
+ * component's consts are added. A called function's returned expression is
+ * evaluated against the bindings of the scope the function is declared in,
+ * so a module function reads the module's `label` beside a component const
+ * of that name.
  */
 function componentEvalScope(metadata: IRMetadata, bindings: Record<string, EvalResult>): Omit<EvalContext, 'bindings'> {
   const propsLike = new Set(templatePropReadParams(metadata).map(p => p.name))
   if (metadata.propsObjectName) propsLike.add(metadata.propsObjectName)
   const noProps: ReadonlySet<string> = new Set()
-  for (const c of metadata.localConstants ?? []) {
+  const constants = metadata.localConstants ?? []
+  const scopes: Record<LocalScope, Record<string, EvalResult>> = { component: bindings, module: { ...bindings } }
+  const calls = scopedCallEvaluator(localBindings({ ...metadata, localConstants: constants }), scopes, noProps)
+  for (const c of constants) {
+    if (c.isModule && c.shadowedInComponent) delete bindings[c.name]
+  }
+  for (const c of constants) {
     if (c.isModule || c.value === undefined || c.declarationKind !== 'const' || c.mutatedAfterDeclaration) continue
     // A function-valued const is not its return value; a call of it is (`calls`).
     if (propsLike.has(c.name) || c.containsArrow || c.isFunctionValue) continue
-    const v = tryStaticEval(c.value, { bindings, propsLike: noProps })
+    const v = tryStaticEval(c.value, { bindings, propsLike: noProps, calls: calls('component') })
     if (v !== UNRESOLVED) bindings[c.name] = v
   }
-  const calls: Record<string, EvalResult> = {}
-  for (const [name, { body }] of localCallBodies({ ...metadata, localConstants: metadata.localConstants ?? [] })) {
-    const v = tryStaticEval(stringifyParsedExpr(body), { bindings, propsLike: noProps })
-    if (v !== UNRESOLVED) calls[name] = v
+  return { propsLike, calls: calls('component') }
+}
+
+/**
+ * {@link EvalContext.calls} for an expression written in a given scope: the
+ * called name is resolved from that scope, and the returned expression is
+ * evaluated in the declaring scope's bindings, whose own calls resolve from
+ * there. A function a template cannot inline, and one that calls itself,
+ * have no static value.
+ */
+function scopedCallEvaluator(
+  resolve: LocalBindingResolver,
+  scopes: Readonly<Record<LocalScope, Record<string, EvalResult>>>,
+  propsLike: ReadonlySet<string>,
+): (from: LocalScope) => NonNullable<EvalContext['calls']> {
+  const running = new Set<unknown>()
+  const callsFrom = (from: LocalScope) => (name: string): EvalResult | typeof NOT_BOUND => {
+    const binding = resolve(name, from)
+    const call = localCall(binding)
+    if (!binding || !call) return NOT_BOUND
+    if (call.kind === 'refuse' || running.has(binding)) return UNRESOLVED
+    running.add(binding)
+    try {
+      return tryStaticEval(stringifyParsedExpr(call.body), { bindings: scopes[binding.scope], propsLike, calls: callsFrom(binding.scope) })
+    } finally {
+      running.delete(binding)
+    }
   }
-  return { propsLike, calls }
+  return callsFrom
 }
 
 /**
@@ -790,8 +832,6 @@ function parseExpression(expr: string): ts.Expression | null {
   return inner
 }
 
-const NOT_BOUND = Symbol('not-bound')
-
 /**
  * What a zero-argument call of a bound name returns: a function's result
  * (`ctx.calls`, #3721), or a binding's value, which resolves the signal
@@ -800,7 +840,8 @@ const NOT_BOUND = Symbol('not-bound')
 function zeroArgCallResult(node: ts.CallExpression, ctx: EvalContext): EvalResult | typeof NOT_BOUND {
   if (node.arguments.length > 0 || !ts.isIdentifier(node.expression)) return NOT_BOUND
   const name = node.expression.text
-  if (ctx.calls && name in ctx.calls) return ctx.calls[name]
+  const called = ctx.calls ? ctx.calls(name) : NOT_BOUND
+  if (called !== NOT_BOUND) return called
   return name in ctx.bindings ? ctx.bindings[name] : NOT_BOUND
 }
 

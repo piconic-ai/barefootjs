@@ -45,7 +45,7 @@ import {
   type ParsedExpr,
 } from './expression-parser.ts'
 import { templatePropReadParams } from './props-binding.ts'
-import { localCallBodies } from './local-call-body.ts'
+import { localCallBodies, type LocalCallBindings } from './local-call-body.ts'
 import type { IRMetadata, ParamInfo } from './types.ts'
 import { isElidedFactoryGetter } from './types.ts'
 
@@ -148,12 +148,33 @@ function localConstExprsByName(metadata: IRMetadata): ReadonlyMap<string, Parsed
   }
   // A zero-argument call of a function returning one expression reads that
   // expression (#3721): `inlineBinding` inlines a zero-param arrow's call as
-  // its body. A module function is listed only when its body reads nothing:
-  // its names resolve in module scope, which the plan's scope does not model.
-  for (const [name, { body, scope }] of localCallBodies({ ...metadata, localConstants: metadata.localConstants ?? [] })) {
-    if (out.has(name) || (scope === 'module' && freeIdentifiers(body)?.size !== 0)) continue
-    out.set(name, { kind: 'arrow', params: [], body })
+  // its body. The plan's scope is the component's, so a module function is
+  // listed as its body resolved in module scope, and only when nothing is
+  // left to read there.
+  const bindings = { ...metadata, localConstants: metadata.localConstants ?? [] }
+  const moduleScope = moduleScopeExprsByName(bindings)
+  for (const [name, { body, scope }] of localCallBodies(bindings)) {
+    if (out.has(name)) continue
+    const resolved = scope === 'module' ? resolveThroughLocalConsts(body, moduleScope) : body
+    if (scope === 'module' && freeIdentifiers(resolved)?.size !== 0) continue
+    out.set(name, { kind: 'arrow', params: [], body: resolved })
   }
+  return out
+}
+
+/**
+ * What each module-scope name a module function's body can be resolved
+ * through holds: a `const` no statement reassigns, and a function a
+ * template inlines, read from the module scope (so no component binding of
+ * the name stands in for it).
+ */
+function moduleScopeExprsByName(bindings: LocalCallBindings): ReadonlyMap<string, ParsedExpr> {
+  const out = new Map<string, ParsedExpr>()
+  for (const c of bindings.localConstants) {
+    if (!c.isModule || c.declarationKind !== 'const' || c.mutatedAfterDeclaration || !c.parsed) continue
+    out.set(c.name, c.parsed)
+  }
+  for (const [name, { body }] of localCallBodies(bindings, 'module')) out.set(name, { kind: 'arrow', params: [], body })
   return out
 }
 
