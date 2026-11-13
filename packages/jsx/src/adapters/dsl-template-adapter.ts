@@ -32,6 +32,7 @@ import type {
 import { refuseNonPrimitiveStrictEquality, type NonPrimitiveEqualitySink } from './non-primitive-equality.ts'
 import { refuseInheritedConstServerReads } from './inherited-const-server-read.ts'
 import { refuseUninlinableSeedCalls } from './uninlinable-seed-call.ts'
+import { refuseUnappliedPropDefaults } from './unapplied-prop-default.ts'
 import { collectImportedLoopChildComponentErrors } from './component-tree.ts'
 import { computedConstContext, type ComputedConstContext } from './computed-const.ts'
 import { searchParamsLocalNames } from './env-signal.ts'
@@ -469,6 +470,8 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     refuseInheritedConstServerReads(ir, this.errorSink())
     // A server-read signal seed or memo body calling a function no template can inline (#3721).
     refuseUninlinableSeedCalls(ir, this.errorSink())
+    // A server-read prop whose computed destructure default no template can apply (#3725).
+    refuseUnappliedPropDefaults(ir, this.errorSink())
   }
 }
 

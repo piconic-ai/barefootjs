@@ -39,7 +39,8 @@ export { resolveGetterAliases, collectAliasableGetterNames } from './ir-to-clien
 export { buildImportAliasMap } from './ir-to-client-js/component-scope.ts'
 
 // Backend-neutral SSR seed plan (in-template derived signal/memo seeding)
-export { computeSsrSeedPlan, hasComputedDefault, inDefaultReadOrder } from './ssr-seed-plan.ts'
+export { appliedPropDefaults, computeSsrSeedPlan, hasComputedDefault, inDefaultReadOrder, type PropDefaultApplication } from './ssr-seed-plan.ts'
+export type { ResolvedPropDefault } from './prop-default-resolution.ts'
 export type { SsrSeedPlan, SsrSeedStep } from './ssr-seed-plan.ts'
 
 // Pure IR types
@@ -138,6 +139,7 @@ export { operandFacts, planPrimitive, planTest, spellTest, primitivesAt, isNativ
 export { refuseNonPrimitiveStrictEquality, type NonPrimitiveEqualitySink } from './adapters/non-primitive-equality.ts'
 export { refuseInheritedConstServerReads } from './adapters/inherited-const-server-read.ts'
 export { refuseUninlinableSeedCalls, type UninlinableSeedCallSink } from './adapters/uninlinable-seed-call.ts'
+export { refuseUnappliedPropDefaults, type UnappliedPropDefaultSink } from './adapters/unapplied-prop-default.ts'
 export { rewriteNilReadings, rewriteNilReadingsDeep, isNilReadingFallback, NAN_LITERAL } from './adapters/nil-reading.ts'
 export type { PrimitiveOp, Proof, NativeSafeClaims, NativeSafeTable, PrimitiveHelper, NilTestHelper, PrimitivePlan, PrimitiveInputs, TextDisplay, NumberLiteralSpelling, PlusSpelling, StrictEqSpelling } from './adapters/primitive-plan.ts'
 export {

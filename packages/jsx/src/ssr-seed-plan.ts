@@ -46,6 +46,7 @@ import {
 } from './expression-parser.ts'
 import { templatePropReadParams } from './props-binding.ts'
 import { localCallBodies, type LocalCallBindings } from './local-call-body.ts'
+import { propDefaultResolver, type PropDefaultBindings, type ResolvedPropDefault } from './prop-default-resolution.ts'
 import type { IRMetadata, ParamInfo } from './types.ts'
 import { isElidedFactoryGetter } from './types.ts'
 
@@ -290,37 +291,78 @@ function isLiteralData(e: ParsedExpr): boolean {
 
 /**
  * A `derived` step per prop with a computed destructure default
- * ({@link hasComputedDefault}): `on ?? <default>`. A default reading an
- * earlier prop of the same pattern (`ParamInfo.defaultParts`, #3531) reads
- * the earlier props' template variables. Every prop is already in
- * `available` (baseScope), and the steps run in dependency order
- * ({@link inDefaultReadOrder}), so a chain (`{ a = 1, b = a, c = b }`) reads
+ * ({@link hasComputedDefault}): `on ?? <default>`, the default being the
+ * expression it stands for once the consts and functions it reads are
+ * resolved (`propDefaultResolver`, #3725): a component const for a body
+ * destructure, a module const for either form. A default reading an earlier
+ * prop of the same pattern (`ParamInfo.defaultParts`, #3531) reads the
+ * earlier props' template variables. Every prop is already in `available`
+ * (baseScope), and the steps run in dependency order
+ * ({@link appliedPropDefaults}), so a chain (`{ a = 1, b = a, c = b }`) reads
  * `b` after its own step re-bound it. A default the plan cannot lower adds
  * no step and keeps the static ssr-defaults seed.
  */
 function dependentPropDefaultSteps(metadata: IRMetadata, inlined: ReadonlySet<string>): SsrSeedStep[] {
-  const { readable, available, unshadowed } = propDefaultScope(metadata, inlined)
+  const { available, unshadowed } = propDefaultScope(metadata, inlined)
   const steps: SsrSeedStep[] = []
-  for (const p of inDefaultReadOrder(metadata.propsParams)) {
-    if (!hasComputedDefault(p) || !p.parsed || !readable.has(p.name)) continue
-    const parsed: ParsedExpr = { kind: 'logical', op: '??', left: { kind: 'identifier', name: p.name }, right: p.parsed }
-    const step = classify(p.name, 'prop', stringifyParsedExpr(parsed), parsed, available, unshadowed)
+  const { order, defaults } = appliedPropDefaults(metadata)
+  for (const param of order) {
+    const resolved = defaults.get(param.name)
+    if (!resolved || resolved.blocked.length > 0) continue
+    const { expr } = resolved
+    const parsed: ParsedExpr = { kind: 'logical', op: '??', left: { kind: 'identifier', name: param.name }, right: expr }
+    const step = classify(param.name, 'prop', stringifyParsedExpr(parsed), parsed, available, unshadowed)
     if (step.kind === 'derived') steps.push(step)
   }
   return steps
 }
 
+/** The computed destructure defaults of a component, as its backends apply them. */
+export interface PropDefaultApplication {
+  /**
+   * Every prop, each after the props its default reads: the order a backend
+   * applying the defaults one prop at a time takes.
+   */
+  order: readonly ParamInfo[]
+  /** By binding name, each computed default as the expression it stands for. */
+  defaults: ReadonlyMap<string, ResolvedPropDefault>
+}
+
+/**
+ * The computed destructure defaults ({@link hasComputedDefault}) of the
+ * props a template reads as their live prop (`templatePropReadParams`, so a
+ * binding that a local of the same name shadows has none), each as the
+ * expression it stands for (`propDefaultResolver`), and the order to apply
+ * them in. {@link inDefaultReadOrder} orders by the reads a default makes
+ * directly; a read through a const (`const L = a + '!'`, `{ b = L }`) shows
+ * only in the resolved expression, so the order follows those too.
+ */
+export function appliedPropDefaults(metadata: PropDefaultBindings): PropDefaultApplication {
+  const readable = new Set(templatePropReadParams({ ...metadata, localConstants: metadata.localConstants ?? [] }).map(p => p.name))
+  const resolveDefault = propDefaultResolver(metadata)
+  const defaults = new Map<string, ResolvedPropDefault>()
+  for (const param of metadata.propsParams) {
+    if (!hasComputedDefault(param) || !readable.has(param.name)) continue
+    const resolved = resolveDefault(param)
+    if (resolved) defaults.set(param.name, resolved)
+  }
+  const reads = (p: ParamInfo): Iterable<string> => {
+    const resolved = defaults.get(p.name)
+    return (resolved && freeIdentifiers(resolved.expr)) ?? []
+  }
+  return { order: inDefaultReadOrder(metadata.propsParams, reads), defaults }
+}
+
 /**
  * The names a prop default step may read: the props a template reads as
- * their live prop (`templatePropReadParams`, so a binding that a local of
- * the same name shadows gets no step), the props object, and the module
- * string consts no component-scope binding shadows (`const DEF = 'z'` in
- * the body hides a module `DEF`, whatever the declaration order).
+ * their live prop (`templatePropReadParams`), the props object, and the
+ * module string consts no component-scope binding shadows (`const DEF = 'z'`
+ * in the body hides a module `DEF`, whatever the declaration order).
  */
 function propDefaultScope(
   metadata: IRMetadata,
   inlined: ReadonlySet<string>,
-): { readable: ReadonlySet<string>; available: ReadonlySet<string>; unshadowed: ReadonlySet<string> } {
+): { available: ReadonlySet<string>; unshadowed: ReadonlySet<string> } {
   const readable = new Set(templatePropReadParams(metadata).map(p => p.name))
   const locals = new Set<string>()
   for (const c of metadata.localConstants ?? []) if (!c.isModule) locals.add(c.name)
@@ -333,7 +375,7 @@ function propDefaultScope(
   const unshadowed = new Set([...inlined].filter(name => !locals.has(name)))
   const available = new Set([...readable, ...unshadowed])
   if (metadata.propsObjectName) available.add(metadata.propsObjectName)
-  return { readable, available, unshadowed }
+  return { available, unshadowed }
 }
 
 /**
@@ -345,8 +387,13 @@ function propDefaultScope(
  * EARLIER binding of the same pattern, so they form no cycle; otherwise the
  * input order is kept. Every backend applying these defaults one prop at a
  * time (the in-template re-binds here, Go's constructor) uses this order.
+ * `alsoReads` names further props a default reads, which its parts do not
+ * show ({@link appliedPropDefaults}).
  */
-export function inDefaultReadOrder(params: readonly ParamInfo[]): ParamInfo[] {
+export function inDefaultReadOrder(
+  params: readonly ParamInfo[],
+  alsoReads?: (p: ParamInfo) => Iterable<string>,
+): ParamInfo[] {
   const byName = new Map(params.filter(p => !p.isRest).map(p => [p.name, p]))
   const ordered: ParamInfo[] = []
   const placed = new Set<ParamInfo>()
@@ -355,6 +402,10 @@ export function inDefaultReadOrder(params: readonly ParamInfo[]): ParamInfo[] {
     placed.add(p)
     for (const part of p.defaultParts ?? []) {
       const read = part.kind === 'param' ? byName.get(part.param.name) : undefined
+      if (read) place(read)
+    }
+    for (const name of alsoReads?.(p) ?? []) {
+      const read = byName.get(name)
       if (read) place(read)
     }
     ordered.push(p)
