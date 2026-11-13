@@ -117,6 +117,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // in markup outside a `{{…}}` action, so a `"` no longer closes the
 // surrounding attribute.
 export const renderDivergences: RenderDivergences = {
+  // A const object whose members read a signal, passed bare as a child
+  // component prop, reaches the child without its value.
+  'signal-const-object-child-prop': { limitation: 'signal-const-object-child-prop' },
   // A `.map()` callback destructuring `length` off a string or array row
   // reads the row's field, which a string or list does not have.
   'destructure-length-in-map': { limitation: 'destructured-length-on-string-or-array-row' },

@@ -915,6 +915,12 @@
               ]
             },
             {
+              "fixture": "const-object-prop-identity-hydrate",
+              "limitations": [
+                "non-literal-const-child-prop-unbound"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -2981,6 +2987,12 @@
               ]
             },
             {
+              "fixture": "const-object-prop-identity-hydrate",
+              "limitations": [
+                "non-literal-const-child-prop-unbound"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -4982,6 +4994,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -5265,6 +5283,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -5656,6 +5680,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -5972,6 +6002,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -6276,6 +6312,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -6379,6 +6421,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "const-object-prop-identity-hydrate",
+              "limitations": [
+                "non-literal-const-child-prop-unbound"
               ]
             },
             {
@@ -6559,6 +6607,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -6860,6 +6914,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -7158,6 +7218,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -7453,6 +7519,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -8272,6 +8344,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -8657,6 +8735,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -9210,6 +9294,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -9658,6 +9748,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -10076,6 +10172,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -10233,6 +10335,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "const-object-prop-identity-hydrate",
+              "limitations": [
+                "non-literal-const-child-prop-unbound"
               ]
             },
             {
@@ -10473,6 +10581,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -10900,6 +11014,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -11312,6 +11432,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-seed-local-function-named-like-prop",
               "limitations": [
                 "local-function-named-like-prop"
@@ -11721,6 +11847,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -12261,6 +12393,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -12550,6 +12688,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -12959,6 +13103,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -13281,6 +13431,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -13579,6 +13735,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -13688,6 +13850,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "const-object-prop-identity-hydrate",
+              "limitations": [
+                "non-literal-const-child-prop-unbound"
               ]
             },
             {
@@ -13874,6 +14042,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -14181,6 +14355,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -14464,6 +14644,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -14762,6 +14948,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -15679,6 +15871,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -15938,6 +16136,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -16335,6 +16539,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -16651,6 +16861,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -16943,6 +17159,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -17046,6 +17268,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "const-object-prop-identity-hydrate",
+              "limitations": [
+                "non-literal-const-child-prop-unbound"
               ]
             },
             {
@@ -17214,6 +17442,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -17518,6 +17752,12 @@
               "fixture": "reserved-name-filter-param-and-internal-prop",
               "limitations": [
                 "reserved-name-collides-with-internal-name"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -17813,6 +18053,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -18099,6 +18345,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -18242,6 +18494,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -18309,6 +18567,12 @@
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -18406,6 +18670,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "signal-object-spread-init",
               "limitations": [
                 "derived-object-literal-signal"
@@ -18494,6 +18764,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -18564,6 +18840,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -18610,6 +18892,12 @@
               ]
             },
             {
+              "fixture": "const-object-prop-identity-hydrate",
+              "limitations": [
+                "non-literal-const-child-prop-unbound"
+              ]
+            },
+            {
               "fixture": "module-const-default-hydrate",
               "limitations": [
                 "module-const-destructure-default"
@@ -18631,6 +18919,12 @@
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -18716,6 +19010,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -18777,6 +19077,12 @@
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -18847,6 +19153,12 @@
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -19831,6 +20143,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "const-object-prop-identity-hydrate",
+              "limitations": [
+                "non-literal-const-child-prop-unbound"
+              ]
+            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -24459,6 +24777,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -24598,6 +24922,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -24791,6 +25121,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "static-loop-client-only-nested",
               "limitations": [
                 "client-only-loop-in-static-loop"
@@ -24945,6 +25281,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -25087,6 +25429,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -25124,6 +25472,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "const-object-prop-identity-hydrate",
+              "limitations": [
+                "non-literal-const-child-prop-unbound"
               ]
             },
             {
@@ -25226,6 +25580,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -25383,6 +25743,12 @@
               ]
             },
             {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -25516,6 +25882,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -25658,6 +26030,12 @@
               "fixture": "reduce-typeof-body",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "signal-const-object-child-prop",
+              "limitations": [
+                "signal-const-object-child-prop"
               ]
             },
             {
@@ -26883,6 +27261,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "const-object-prop-identity-hydrate",
+              "limitations": [
+                "non-literal-const-child-prop-unbound"
               ]
             },
             {

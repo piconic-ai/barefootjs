@@ -118,6 +118,10 @@ export function expandDynamicPropValue(value: string, ctx: ClientJsContext, scop
   // Re-embedding it here would silently drop the mutation; keep the bare
   // reference instead so the emitted getter reads the LIVE binding.
   if (constant?.mutatedAfterDeclaration) return value
+  // An initializer that allocates and reads nothing reactive (#3868) would
+  // hand every prop read a new object; the getter returns the one value the
+  // declaration created instead (init declares the binding).
+  if (constant?.identityBound) return value
   if (constant && constant.value && !initializerCapturedBy(constant, scope)) {
     return constant.value
   }
