@@ -2749,6 +2749,37 @@
       "props": {}
     }
   ],
+  "component-spread-forwarded-reversed-order": [
+    {
+      "name": "gen:label:union:1",
+      "props": {
+        "tone": "warm",
+        "label": null
+      }
+    },
+    {
+      "name": "gen:tone:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:tone:empty",
+      "props": {
+        "tone": ""
+      }
+    },
+    {
+      "name": "gen:tone:markup",
+      "props": {
+        "tone": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:tone:multibyte",
+      "props": {
+        "tone": "日本語"
+      }
+    }
+  ],
   "component-spread-props-in-loop-row": [
     {
       "name": "gen:items:empty",
@@ -8482,6 +8513,58 @@
       "name": "gen:groups:empty",
       "props": {
         "groups": []
+      }
+    }
+  ],
+  "loop-row-absent-optional-member-attr": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
+  "loop-row-absent-optional-member-attr-module-const-precomputed": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": [],
+        "raw": [
+          {
+            "id": 1,
+            "tone": "k"
+          },
+          {
+            "id": 2
+          },
+          {
+            "id": 3,
+            "tone": null
+          }
+        ]
+      }
+    },
+    {
+      "name": "gen:raw:empty",
+      "props": {
+        "rows": [
+          {
+            "id": 1,
+            "tone": "k"
+          },
+          {
+            "id": 2
+          }
+        ],
+        "raw": []
+      }
+    }
+  ],
+  "loop-row-boolean-member-attr": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
       }
     }
   ],

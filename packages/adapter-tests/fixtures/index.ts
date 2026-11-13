@@ -261,6 +261,7 @@ import { fixture as componentPropUndefinedLiteralSpread } from './component-prop
 import { fixture as componentPropUndefinedLiteralPositions } from './component-prop-undefined-literal-positions'
 import { fixture as componentSpreadForwardedAbsent } from './component-spread-forwarded-absent'
 import { fixture as componentSpreadForwardedNull } from './component-spread-forwarded-null'
+import { fixture as componentSpreadForwardedReversedOrder } from './component-spread-forwarded-reversed-order'
 import { fixture as nullishOperandArithmeticMatrix } from './nullish-operand-arithmetic-matrix'
 import { fixture as nullishOperandDivisionRemainder } from './nullish-operand-division-remainder'
 import { fixture as omittedOptionalNumberArithmetic } from './omitted-optional-number-arithmetic'
@@ -1368,6 +1369,12 @@ import { fixture as loopRowScalarMemberLength } from './loop-row-scalar-member-l
 import { fixture as loopUndefinedElement } from './loop-undefined-element'
 import { fixture as absentOptionalPropClassAttr } from './absent-optional-prop-class-attr'
 import { fixture as loopRowChildAbsentOptionalFieldAttr } from './loop-row-child-absent-optional-field-attr'
+import { fixture as loopRowAbsentOptionalMemberAttr } from './loop-row-absent-optional-member-attr'
+import { fixture as loopRowAbsentOptionalMemberAttrSources } from './loop-row-absent-optional-member-attr-sources'
+import { fixture as loopRowAbsentOptionalMemberAttrModuleConst } from './loop-row-absent-optional-member-attr-module-const'
+import { fixture as loopRowAbsentOptionalMemberAttrModuleConstPrecomputed } from './loop-row-absent-optional-member-attr-module-const-precomputed'
+import { fixture as loopRowAbsentOptionalMemberAttrModuleConstClient } from './loop-row-absent-optional-member-attr-module-const-client'
+import { fixture as loopRowBooleanMemberAttr } from './loop-row-boolean-member-attr'
 import { fixture as undefinedIdentifierNullish } from './undefined-identifier-nullish'
 import { fixture as stringLengthUtf16Positions } from './string-length-utf16-positions'
 import { fixture as loopRowChildKeyShapes } from './loop-row-child-key-shapes'
@@ -1612,6 +1619,7 @@ export const jsxFixtures: JSXFixture[] = [
   componentPropUndefinedLiteralPositions,
   componentSpreadForwardedAbsent,
   componentSpreadForwardedNull,
+  componentSpreadForwardedReversedOrder,
   nullishOperandArithmeticMatrix,
   nullishOperandDivisionRemainder,
   omittedOptionalNumberElementAccess,
@@ -2449,6 +2457,12 @@ export const jsxFixtures: JSXFixture[] = [
   loopUndefinedElement,
   absentOptionalPropClassAttr,
   loopRowChildAbsentOptionalFieldAttr,
+  loopRowAbsentOptionalMemberAttr,
+  loopRowAbsentOptionalMemberAttrSources,
+  loopRowAbsentOptionalMemberAttrModuleConst,
+  loopRowAbsentOptionalMemberAttrModuleConstPrecomputed,
+  loopRowAbsentOptionalMemberAttrModuleConstClient,
+  loopRowBooleanMemberAttr,
   undefinedIdentifierNullish,
   stringLengthUtf16Positions,
   loopRowChildKeyShapes,

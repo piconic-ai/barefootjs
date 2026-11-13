@@ -2768,6 +2768,22 @@
         "text"
       ]
     },
+    "component-spread-forwarded-reversed-order": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "component-spread-props-in-loop-row": {
       "kinds": [
         "binary",
@@ -8136,6 +8152,95 @@
         "binary:+",
         "literal:number"
       ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-absent-optional-member-attr": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-absent-optional-member-attr-module-const": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:null",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-absent-optional-member-attr-module-const-client": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-absent-optional-member-attr-module-const-precomputed": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-absent-optional-member-attr-sources": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-boolean-member-attr": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
       "contexts": [
         "attribute",
         "loop",

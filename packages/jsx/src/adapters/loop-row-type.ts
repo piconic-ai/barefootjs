@@ -11,6 +11,7 @@
 
 import type { ParsedExpr } from '../expression-parser.ts'
 import type { ComponentIR, TypeInfo } from '../types.ts'
+import { factsOfType } from './operand-typing.ts'
 import {
   arrayElementType,
   loopValueTypeAt,
@@ -38,6 +39,12 @@ export interface DeclaredValueTypes {
   }[]
   readonly signals: readonly { readonly getter: string; readonly type: TypeInfo }[]
   readonly memos: readonly { readonly name: string; readonly type: TypeInfo }[]
+  /**
+   * The component's module- and function-scope consts with their declared
+   * types (`const ROWS: Row[] = […]`), read when no prop or loop binding
+   * holds the name (#3728). Optional: a view without them types no const.
+   */
+  readonly constants?: readonly { readonly name: string; readonly type: TypeInfo | null; readonly parsed?: ParsedExpr }[]
   /** The identifier the component reads its props object as (`props`); null for a destructured signature. */
   readonly propsObjectName: string | null
   readonly namedFields: NamedTypeFields
@@ -45,11 +52,12 @@ export interface DeclaredValueTypes {
 
 /** {@link DeclaredValueTypes} of a component. */
 export function declaredValueTypes(ir: ComponentIR): DeclaredValueTypes {
-  const { propsParams, signals, memos, typeDefinitions, propsObjectName } = ir.metadata
+  const { propsParams, signals, memos, typeDefinitions, propsObjectName, localConstants } = ir.metadata
   return {
     propsParams,
     signals,
     memos,
+    constants: localConstants,
     propsObjectName: propsObjectName ?? null,
     namedFields: name => typeDefinitions.find(td => td.name === name)?.properties,
   }
@@ -77,11 +85,22 @@ export function declaredValueType(types: DeclaredValueTypes, expr: ParsedExpr, s
   return valueType(types, expr, scope)
 }
 
+/**
+ * Whether the value `expr` reads in `scope` is declared to admit `undefined`
+ * or `null` (#3728): a loop row's optional field (`r.tone` with
+ * `tone?: string`), a destructured one, or a nullable union. The one answer
+ * every template adapter's nullish-attribute guard reads
+ * (`NullishAttrContext.declaredNil`). An undeclared value answers false.
+ */
+export function declaredValueMayBeNil(types: DeclaredValueTypes, expr: ParsedExpr, scope: BindingScope): boolean {
+  return factsOfType(valueType(types, expr, scope)).types.has('nil')
+}
+
 function valueType(types: DeclaredValueTypes, expr: ParsedExpr, scope: BindingScope): LoopValueType | null {
   switch (expr.kind) {
     case 'identifier': {
       const hit = scope.lookup(expr.name)
-      if (!hit) return propType(types, expr.name)
+      if (!hit) return propType(types, expr.name) ?? constType(types, expr.name)
       const row = hit.binding.row
       return row ? loopValueTypeAt(row.itemType, row.segments, types.namedFields) : null
     }
@@ -140,6 +159,54 @@ function callType(types: DeclaredValueTypes, expr: Extract<ParsedExpr, { kind: '
     return concatType(valueType(types, callee.object, scope), expr.args.map(arg => valueType(types, arg, scope)))
   }
   return SAME_ELEMENT_METHODS.has(callee.property) ? valueType(types, callee.object, scope) : null
+}
+
+/**
+ * A const's type: its declared one (`const ROWS: Row[] = […]`), or, for an
+ * untyped array of object literals (`unknown[]` carries no field types), the
+ * row shape the literal spells (`literalRowsType`).
+ */
+function constType(types: DeclaredValueTypes, name: string): LoopValueType | null {
+  const constant = types.constants?.find(c => c.name === name)
+  if (!constant) return null
+  const type = constant.type
+  if (type && type.kind !== 'unknown' && !(type.kind === 'array' && !type.elementType)) return type
+  return constant.parsed ? literalRowsType(constant.parsed) : null
+}
+
+/**
+ * The array type an array literal of plain object literals spells
+ * (`[{ id: 1, tone: 'k' }, { id: 2 }]`): one object row whose fields are
+ * every key a row has, typed by the literal values the rows hold, and
+ * optional when some row omits the key, as TypeScript infers it (#3728).
+ * A value that is not a scalar literal types its field `unknown`. Null for
+ * any other shape (a spread, a non-object element, an empty array).
+ */
+function literalRowsType(parsed: ParsedExpr): LoopValueType | null {
+  if (parsed.kind !== 'array-literal' || parsed.elements.length === 0) return null
+  const rows: Map<string, LoopValueType>[] = []
+  for (const element of parsed.elements) {
+    if (element.kind !== 'object-literal') return null
+    const row = new Map<string, LoopValueType>()
+    for (const p of element.properties) {
+      if (p.kind !== 'prop') return null
+      row.set(p.key, literalValueType(p.value))
+    }
+    rows.push(row)
+  }
+  const keys = [...new Set(rows.flatMap(row => [...row.keys()]))]
+  const properties = keys.map(key => {
+    const present = rows.flatMap(row => (row.has(key) ? [row.get(key)!] : []))
+    return { name: key, type: unionOfLoopValueTypes(present), optional: present.length < rows.length }
+  })
+  return { kind: 'array', elementType: { kind: 'object', properties } }
+}
+
+/** The type of a scalar literal (`'k'`, `1`, `true`, `null`, `undefined`); `unknown` otherwise. */
+function literalValueType(value: ParsedExpr): LoopValueType {
+  if (value.kind === 'literal') return { kind: 'primitive', primitive: value.literalType, raw: value.literalType }
+  if (value.kind === 'identifier' && value.name === 'undefined') return { kind: 'primitive', primitive: 'undefined', raw: 'undefined' }
+  return { kind: 'unknown' }
 }
 
 function propType(types: DeclaredValueTypes, name: string): LoopValueType | null {

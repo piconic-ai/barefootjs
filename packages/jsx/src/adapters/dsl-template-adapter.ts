@@ -17,7 +17,7 @@ import {
   type NullishAttrContext,
 } from '../nullable-signal-attr.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
-import { declaredValueType, declaredValueTypes, loopRowType, type DeclaredValueTypes } from './loop-row-type.ts'
+import { declaredValueMayBeNil, declaredValueType, declaredValueTypes, loopRowType, type DeclaredValueTypes } from './loop-row-type.ts'
 import { collectOperandTyping, EMPTY_OPERAND_TYPING, factsOfType, type OperandTyping, type ScopedOperandTyping } from './operand-typing.ts'
 import { rootPropAliasesForLoop, rootPropAliasNames } from '../scope/root-prop-alias.ts'
 import type {
@@ -424,9 +424,13 @@ export abstract class DslTemplateAdapter extends BaseAdapter {
     this.rootPropAliases = rootPropAliasNames(ir, this.propsParams.map(p => p.name))
     this.scope = BindingScope.forComponent(this.propsObjectName)
     this.nullableOptionalProps = collectNullableOptionalProps(ir)
-    this.nullishAttrCtx = collectNullishAttrContext(ir)
     this.stringValueNames = this.stringValueNamesFor(ir)
-    this.declaredTypes = declaredValueTypes(ir)
+    const declaredTypes = declaredValueTypes(ir)
+    this.declaredTypes = declaredTypes
+    this.nullishAttrCtx = {
+      ...collectNullishAttrContext(ir),
+      declaredNil: expr => declaredValueMayBeNil(declaredTypes, expr, this.scope),
+    }
     this.nullableSignalGetters = new Set([
       ...collectNullableSignalGetters(ir),
       ...memberSeededNilSignals(ir, this.declaredTypes, this.scope),
