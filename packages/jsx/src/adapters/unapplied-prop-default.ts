@@ -63,7 +63,7 @@ export function refuseUnappliedPropDefaults(ir: ComponentIR, sink: UnappliedProp
  * position, through a declaration it reads, or through another such prop's
  * default.
  */
-function propsReadFrom(
+export function propsReadFrom(
   ir: ComponentIR,
   defaults: PropDefaultApplication['defaults'],
   startsAt?: ServerReadWalkOptions['startsAt'],

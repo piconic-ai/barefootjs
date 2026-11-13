@@ -21,7 +21,7 @@ export function StrictEqualityDestructureDefaultDistinct({ obj, b = obj === DEF 
   props: { obj: { x: 1 } },
   escapes: [
     { kind: 'rewrite', fixture: 'strict-equality-reference-rewrite' },
-    { kind: 'client-directive', fixture: 'strict-equality-reference-client' },
+    { kind: 'client-directive', fixture: 'strict-equality-destructure-default-client' },
   ],
   expectedHtml: `
     <p bf-s="test" bf="s1"><!--bf-cond-start:s0-->different<!--bf-cond-end:s0--></p>

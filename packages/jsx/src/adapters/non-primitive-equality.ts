@@ -17,7 +17,8 @@
  * is recorded here, once per component, over every template position, each
  * read in its own scope, over the memo bodies the adapters seed at SSR, and
  * over the computed destructure defaults a backend applies
- * (`appliedPropDefaults`). A default is checked as the expression it stands
+ * (`appliedPropDefaults`) for a prop the server render reads. A default is
+ * checked as the expression it stands
  * for: a const it reads twice (`DEF === DEF`) is spelled there as two
  * separate literals, which no runtime compares as one reference.
  */
@@ -29,6 +30,7 @@ import { appliedPropDefaults } from '../ssr-seed-plan.ts'
 import { walkTemplatePositions } from '../template-position-walk.ts'
 import type { ComponentIR, CompilerError, SourceLocation } from '../types.ts'
 import type { OperandTyping, ScopedOperandTyping } from './operand-typing.ts'
+import { propsReadFrom } from './unapplied-prop-default.ts'
 import { isNullishTest, mayHoldObject } from './primitive-plan.ts'
 
 /** Where a template adapter records the refusal. */
@@ -76,8 +78,12 @@ export function refuseNonPrimitiveStrictEquality(ir: ComponentIR, typing: Operan
   for (const memo of ir.metadata.memos ?? []) {
     if (memo.parsed) check(memo.parsed, component, ir.root.loc)
   }
-  for (const resolved of appliedPropDefaults(ir.metadata).defaults.values()) {
-    if (resolved.blocked.length === 0) check(resolved.expr, component, resolved.loc ?? ir.root.loc)
+  // Only a default the server render reads: one whose prop every read
+  // defers with `/* @client */` is computed in the browser.
+  const { defaults } = appliedPropDefaults(ir.metadata)
+  const serverRead = defaults.size > 0 ? propsReadFrom(ir, defaults) : new Set<string>()
+  for (const [name, resolved] of defaults) {
+    if (serverRead.has(name) && resolved.blocked.length === 0) check(resolved.expr, component, resolved.loc ?? ir.root.loc)
   }
 }
 

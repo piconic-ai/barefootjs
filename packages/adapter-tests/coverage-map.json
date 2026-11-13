@@ -17434,6 +17434,25 @@
         "text"
       ]
     },
+    "strict-equality-destructure-default-client": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
     "strict-equality-destructure-default-distinct": {
       "kinds": [
         "binary",

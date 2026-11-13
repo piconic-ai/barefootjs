@@ -856,3 +856,34 @@ export function T(props: { a?: string; b?: boolean }) {
     expect(errors.filter(e => e.code === 'BF101')).toEqual([])
   })
 })
+
+describe('JinjaAdapter - a destructure default comparing objects read only on the client (#3725)', () => {
+  function bf101(source: string): string[] {
+    const result = compileJSX(source.trimStart(), 'test.tsx', { adapter: new JinjaAdapter() })
+    return (result.errors ?? []).filter(e => e.code === 'BF101').map(e => e.message)
+  }
+  const component = (read: string, extra = '') => `
+'use client'
+const DEF = { x: 1 }
+function Child(props: { v?: boolean }) { return <b>{props.v ? 'y' : 'n'}</b> }
+export function T({ obj, b = obj === DEF, c = b }: { obj: { x: number }; b?: boolean; c?: boolean }) {
+  return <p>${read}${extra}</p>
+}
+`
+
+  test('every read deferred with /* @client */: not refused', () => {
+    expect(bf101(component("{/* @client */ b ? 'same' : 'different'}"))).toEqual([])
+  })
+
+  test('one server read beside a deferred one: refused', () => {
+    expect(bf101(component("{/* @client */ b ? 'same' : 'different'}", "{b ? '1' : '0'}")).length).toBe(1)
+  })
+
+  test('read on the server through another prop default: refused', () => {
+    expect(bf101(component("{c ? 'same' : 'different'}")).length).toBe(1)
+  })
+
+  test('read by a child prop: refused', () => {
+    expect(bf101(component('<Child v={b} />')).length).toBe(1)
+  })
+})
