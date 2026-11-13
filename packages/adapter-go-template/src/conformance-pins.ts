@@ -23,6 +23,7 @@ export const conformancePins: ConformancePins = {
   'strict-equality-distinct-reference': [{ code: 'BF101', severity: 'error', limitation: 'object-equality-by-contents' }],
   'strict-equality-same-reference': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
   'strict-equality-preamble-reference': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
+  'strict-equality-destructure-default-distinct': [{ code: 'BF101', severity: 'error', limitation: 'object-equality-by-contents' }],
   'strict-equality-optional-array-element': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
   'strict-equality-nullable-array-element': [{ code: 'BF101', severity: 'error', limitation: 'array-self-equality' }],
   // The props constructor applies the default before any read, so a
@@ -303,6 +304,9 @@ export const conformancePins: ConformancePins = {
   'signal-seed-uninlinable-local-function-hides-module-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
   'signal-seed-const-from-uninlinable-local-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
   'signal-seed-wrapped-uninlinable-local-function': [{ code: 'BF101', severity: 'error', limitation: 'uninlinable-local-function-call' }],
+  // A destructure default reading a signal through a component const: no
+  // template has the signal's value when it applies the default (#3725).
+  'destructure-default-reads-signal': [{ code: 'BF101', severity: 'error', limitation: 'destructure-default-reads-component-state' }],
   // A signal seed is baked as the Input field path its prop member chain
   // lives at (`resolvePropMemberSeed`, `adapter/value/prop-member-seed.ts`).
   // A chain that reads a member of a non-struct value

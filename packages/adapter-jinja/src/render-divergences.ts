@@ -115,8 +115,6 @@ export const renderDivergences: RenderDivergences = {
   // graduated `nested-child-static-prop-text-slot-elided` marker bug),
   // so nobody re-ran them to notice. No divergence remains on this
   // adapter (verified against a real render of both fixtures).
-  'module-const-destructure-default': { limitation: 'module-const-destructure-default' },
-  'module-const-default-hydrate': { limitation: 'module-const-destructure-default' },
   // `awaits-undefined-plus-shapes` and the `undef-null-*` fixtures used to
   // sit here: the runtime held `undefined` and `null` as one nil. It now
   // carries `UNDEF` apart from `None` (#3848 U2), so each renders like Hono.

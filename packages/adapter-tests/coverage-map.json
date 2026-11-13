@@ -4808,6 +4808,96 @@
         "text"
       ]
     },
+    "destructure-default-local-const": {
+      "kinds": [
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "binary:+",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "destructure-default-local-const-prop-hop": {
+      "kinds": [
+        "array-method",
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "binary:+",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-local-const-readers": {
+      "kinds": [
+        "array-method",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "binary:*",
+        "binary:+",
+        "binary:===",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "destructure-default-local-const-signal-seed": {
+      "kinds": [
+        "array-method",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "binary:+",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "destructure-default-null-hydrate": {
       "kinds": [
         "call",
@@ -4842,6 +4932,23 @@
         "text"
       ]
     },
+    "destructure-default-param-body-const-same-name": {
+      "kinds": [
+        "array-method",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "destructure-default-param-chain-order": {
       "kinds": [
         "identifier",
@@ -4870,6 +4977,28 @@
         "logical:??"
       ],
       "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-param-module-scope": {
+      "kinds": [
+        "array-method",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "binary:*",
+        "binary:+",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
         "text"
       ]
     },
@@ -4944,6 +5073,42 @@
         "attribute",
         "condition",
         "loop",
+        "text"
+      ]
+    },
+    "destructure-default-reads-signal": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-reads-signal-client": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
         "text"
       ]
     },
@@ -17266,6 +17431,44 @@
       ],
       "axes": [],
       "contexts": [
+        "text"
+      ]
+    },
+    "strict-equality-destructure-default-client": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "strict-equality-destructure-default-distinct": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "condition",
         "text"
       ]
     },

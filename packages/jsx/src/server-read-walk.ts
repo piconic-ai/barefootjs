@@ -26,7 +26,7 @@ import { freeIdentifiers, mapParsedExpr, type ParsedExpr, type ParsedStatement }
 import { isEventHandlerName } from './event-handler-name.ts'
 import { localBindings, localCall, type LocalBinding, type LocalBindingResolver, type LocalScope } from './local-call-body.ts'
 import { BindingScope } from './scope/binding-scope.ts'
-import { walkTemplatePositions } from './template-position-walk.ts'
+import { walkTemplatePositions, type TemplatePosition } from './template-position-walk.ts'
 import type { ComponentIR, SourceLocation } from './types.ts'
 
 /** A declaration the server render reads. */
@@ -72,8 +72,20 @@ interface Followed {
   fallback: ReadonlySet<string> | undefined
 }
 
+/** What {@link walkServerReads} reports besides the declarations, and where it starts. */
+export interface ServerReadWalkOptions {
+  /**
+   * Sees each name read that has no declaration to follow: a prop in scope
+   * by its bare name, the props object, the rest props.
+   */
+  visitProp?: (name: string) => void
+  /** The positions the walk starts from; every position when unset. */
+  startsAt?: (position: TemplatePosition) => boolean
+}
+
 /** Visit each declaration the server render of `ir` reads, once. */
-export function walkServerReads(ir: ComponentIR, visit: (read: ServerRead) => void): void {
+export function walkServerReads(ir: ComponentIR, visit: (read: ServerRead) => void, options: ServerReadWalkOptions = {}): void {
+  const { visitProp, startsAt } = options
   const resolve = localBindings({ ...ir.metadata, localConstants: ir.metadata.localConstants ?? [] })
   const seen = new Set<LocalBinding>()
   const pending: Array<{ reads: Reads; from: LocalScope }> = []
@@ -91,13 +103,16 @@ export function walkServerReads(ir: ComponentIR, visit: (read: ServerRead) => vo
     for (const name of reads.names) {
       if (isBound(name)) continue
       const binding = resolve(name, from)
-      if (binding && isRead(binding, reads.called.has(name))) follow(name, binding)
+      if (binding?.kind === 'opaque') visitProp?.(name)
+      else if (binding && isRead(binding, reads.called.has(name))) follow(name, binding)
     }
   }
 
   const component = BindingScope.forComponent(ir.metadata.propsObjectName ?? null)
-  walkTemplatePositions(ir.root, ({ expr, scope, attrName }) => {
+  walkTemplatePositions(ir.root, (position) => {
+    const { expr, scope, attrName } = position
     if (attrName !== undefined && isEventHandlerName(attrName)) return
+    if (startsAt && !startsAt(position)) return
     followReads(readsOf(expr, undefined), 'component', name => (scope ?? component).isBound(name))
   }, component)
   for (let next = pending.pop(); next; next = pending.pop()) followReads(next.reads, next.from, () => false)

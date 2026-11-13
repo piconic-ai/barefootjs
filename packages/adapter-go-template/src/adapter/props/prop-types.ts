@@ -5,7 +5,7 @@
  * generators and the nillable-field set so they can't drift.
  */
 
-import type { ComponentIR, IRMetadata, ParsedExpr } from '@barefootjs/jsx'
+import type { ComponentIR, IRMetadata, ParsedExpr, ResolvedPropDefault } from '@barefootjs/jsx'
 import {
   BindingScope,
   arithmeticOperandCoercion,
@@ -303,9 +303,10 @@ export function defaultedBindingGo(
  * runtime evaluator, which takes a scalar, or anything into an `interface{}`
  * field. `rawLocals` keeps each caller value `bfCallerProps` reads
  * (`keepsCallerValue`), by Input field, and
- * `unsupported` names the props whose default reads an earlier prop and
- * can't be applied this way (the caller refuses them loudly); any other
- * computed default the evaluator can't build is left unapplied.
+ * `unsupported` names the props whose default reads an earlier prop, a
+ * const or a function and can't be applied this way (the caller refuses
+ * them loudly); any other computed default the evaluator can't build is
+ * left unapplied.
  */
 export function dependentDefaultNormalization(
   ctx: GoEmitContext,
@@ -316,7 +317,7 @@ export function dependentDefaultNormalization(
   const lines: string[] = []
   const rawLocals = new Map<string, string>()
   const unsupported: string[] = []
-  for (const param of inDefaultReadOrder(propsParams)) {
+  for (const param of defaultApplicationOrder(ctx, propsParams)) {
     if (param.isRest || !param.parsed || !appliesDefaultOnNil(param)) continue
     // A binding sharing its Input field with another one (a renamed body
     // destructure beside a raw `props.b` read) can't change `in`: the other
@@ -324,7 +325,7 @@ export function dependentDefaultNormalization(
     // `sharedDependentDefaultGo` instead, refused here like any other default
     // the constructor can't build.
     if (sharesInputField(param, propsParams)) {
-      if (param.defaultParts && sharedDependentDefaultGo(ctx, param, propsParams, propTypeOverrides) === null) unsupported.push(param.name)
+      if (readsBinding(ctx, param) && sharedDependentDefaultGo(ctx, param, propsParams, propTypeOverrides) === null) unsupported.push(param.name)
       continue
     }
     const field = capitalizeFieldName(param.sourceName ?? param.name)
@@ -334,10 +335,10 @@ export function dependentDefaultNormalization(
     if (!hasComputedDefault(param) && !isNillableGoType(goType)) continue
     const value = isNillableGoType(goType) ? dependentDefaultGo(ctx, param, goType, propsParams, propTypeOverrides) : null
     if (value === null) {
-      // A default reading an earlier prop is refused. Any other computed one
-      // the evaluator can't build (a callback, a module const) is left
-      // unapplied, as before, and tracked as a render divergence.
-      if (param.defaultParts) unsupported.push(param.name)
+      // A default reading an earlier prop, a const or a function is refused.
+      // Any other computed one the evaluator can't build (a callback) is
+      // left unapplied, as before.
+      if (readsBinding(ctx, param)) unsupported.push(param.name)
       continue
     }
     if (keepsCallerValue(param)) {
@@ -403,10 +404,44 @@ export function evaluatedDefaultBindingGo(
   const owner = propsParams.find(p => !p.isRest && (p.sourceName ?? p.name) === key) ?? param
   const ownerType = resolvePropGoType(ctx, owner, propTypeOverrides)
   if (!isNillableGoType(ownerType)) return null
-  const value = evalExprGo(ctx, param.parsed, [], propsParams, new Map(), new Set())
+  const value = evalExprGo(ctx, defaultExpr(ctx, param), [], propsParams, new Map(), new Set())
   if (value === null) return null
   const field = `in.${capitalizeFieldName(key)}`
   return `func() any { if ${goUndefinedTest(field, ownerType)} { return ${value} }; return ${field} }()`
+}
+
+/**
+ * The props in the order the constructor applies their defaults: the one
+ * the compiled component's defaults take (`appliedPropDefaults`), which
+ * follows a read made through a const, or the direct read order for any
+ * other list.
+ */
+function defaultApplicationOrder(ctx: GoEmitContext, propsParams: IRMetadata['propsParams']): readonly IRMetadata['propsParams'][number][] {
+  return propsParams === ctx.state.currentPropsParams ? ctx.state.currentPropDefaults.order : inDefaultReadOrder(propsParams)
+}
+
+/**
+ * `param`'s computed default as the expression it stands for: the consts
+ * and functions it reads resolved (`appliedPropDefaults`, #3725), or the
+ * default as written for a binding the resolution does not cover.
+ */
+function defaultExpr(ctx: GoEmitContext, param: IRMetadata['propsParams'][number]): ParsedExpr {
+  return resolvedDefault(ctx, param)?.expr ?? param.parsed!
+}
+
+/** `param`'s resolved default, when every declaration it reads has a value a template can compute. */
+function resolvedDefault(ctx: GoEmitContext, param: IRMetadata['propsParams'][number]): ResolvedPropDefault | undefined {
+  const resolved = ctx.state.currentPropsParams.includes(param) ? ctx.state.currentPropDefaults.defaults.get(param.name) : undefined
+  return resolved && resolved.blocked.length === 0 ? resolved : undefined
+}
+
+/**
+ * Whether `param`'s default reads an earlier prop (`ParamInfo.defaultParts`)
+ * or a const or function resolved into it ({@link defaultExpr}): a default
+ * the constructor has to apply, so one it can't build is refused.
+ */
+function readsBinding(ctx: GoEmitContext, param: IRMetadata['propsParams'][number]): boolean {
+  return param.defaultParts !== undefined || resolvedDefault(ctx, param)?.readsDeclaration === true
 }
 
 function isNillableGoType(goType: string): boolean {
@@ -421,9 +456,9 @@ function dependentDefaultGo(
   propsParams: IRMetadata['propsParams'],
   propTypeOverrides: Map<string, string>,
 ): string | null {
-  const parsed = param.parsed!
   // A literal default (`{ a = 'x' }`) is its own Go literal.
   if (!hasComputedDefault(param)) return propLiteralDefaultGo(param)
+  const parsed = defaultExpr(ctx, param)
   const ref = parsed.kind === 'identifier' ? propsParams.find(p => !p.isRest && p.name === parsed.name) : undefined
   if (ref) {
     const refType = resolvePropGoType(ctx, ref, propTypeOverrides)

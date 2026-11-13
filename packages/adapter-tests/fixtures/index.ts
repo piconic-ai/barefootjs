@@ -737,6 +737,8 @@ import { fixture as strictEqualityPositions } from './strict-equality-positions'
 import { fixture as strictEqualityReferenceRewrite } from './strict-equality-reference-rewrite'
 import { fixture as strictEqualityBoxedNumberTypedSignalChild } from './strict-equality-boxed-number-typed-signal-child'
 import { fixture as strictEqualityPreambleReference } from './strict-equality-preamble-reference'
+import { fixture as strictEqualityDestructureDefaultDistinct } from './strict-equality-destructure-default-distinct'
+import { fixture as strictEqualityDestructureDefaultClient } from './strict-equality-destructure-default-client'
 import { fixture as strictEqualityOptionalArrayElement } from './strict-equality-optional-array-element'
 import { fixture as strictEqualityNullableArrayElement } from './strict-equality-nullable-array-element'
 import { fixture as strictEqualityReferenceClient } from './strict-equality-reference-client'
@@ -848,6 +850,14 @@ import { fixture as restBindingShadowedByLoopRow } from './rest-binding-shadowed
 import { fixture as bodyRestMemberRead } from './body-rest-member-read'
 import { fixture as bodyDestructureRestNonPropsSource } from './body-destructure-rest-non-props-source'
 import { fixture as bodyDestructureNonLiteralDefault } from './body-destructure-non-literal-default'
+import { fixture as destructureDefaultLocalConst } from './destructure-default-local-const'
+import { fixture as destructureDefaultLocalConstReaders } from './destructure-default-local-const-readers'
+import { fixture as destructureDefaultLocalConstSignalSeed } from './destructure-default-local-const-signal-seed'
+import { fixture as destructureDefaultLocalConstPropHop } from './destructure-default-local-const-prop-hop'
+import { fixture as destructureDefaultParamModuleScope } from './destructure-default-param-module-scope'
+import { fixture as destructureDefaultParamBodyConstSameName } from './destructure-default-param-body-const-same-name'
+import { fixture as destructureDefaultReadsSignal } from './destructure-default-reads-signal'
+import { fixture as destructureDefaultReadsSignalClient } from './destructure-default-reads-signal-client'
 import { fixture as bodyDestructureNonIdentifierSource } from './body-destructure-non-identifier-source'
 import { fixture as bodyRestTakenKeyRead } from './body-rest-taken-key-read'
 import { fixture as bodyRestPropsNameShadowed } from './body-rest-props-name-shadowed'
@@ -2666,6 +2676,8 @@ export const jsxFixtures: JSXFixture[] = [
   strictEqualityReferenceRewrite,
   strictEqualityBoxedNumberTypedSignalChild,
   strictEqualityPreambleReference,
+  strictEqualityDestructureDefaultDistinct,
+  strictEqualityDestructureDefaultClient,
   strictEqualityOptionalArrayElement,
   strictEqualityNullableArrayElement,
   strictEqualityReferenceClient,
@@ -2677,4 +2689,12 @@ export const jsxFixtures: JSXFixture[] = [
   optionalMemberSignalSeedJsValue,
   explicitRowFieldPropStaysPresent,
   defaultedArrayPropNullCoercion,
+  destructureDefaultLocalConst,
+  destructureDefaultLocalConstReaders,
+  destructureDefaultLocalConstSignalSeed,
+  destructureDefaultLocalConstPropHop,
+  destructureDefaultParamModuleScope,
+  destructureDefaultParamBodyConstSameName,
+  destructureDefaultReadsSignal,
+  destructureDefaultReadsSignalClient,
 ]

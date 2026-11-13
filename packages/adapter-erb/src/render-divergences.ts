@@ -112,8 +112,6 @@ export const renderDivergences: RenderDivergences = {
   // graduated `nested-child-static-prop-text-slot-elided` marker bug),
   // so nobody re-ran them to notice. No divergence remains on this
   // adapter (verified against a real render of both fixtures).
-  'module-const-destructure-default': { limitation: 'module-const-destructure-default' },
-  'module-const-default-hydrate': { limitation: 'module-const-destructure-default' },
   // A default assigning an earlier binding (`b = (a = 2)`) never runs.
   'destructure-default-earlier-assignment': { limitation: 'destructure-default-assigns-earlier-binding' },
   // `awaits-undefined-plus-shapes`, `destructure-default-null-hydrate` and

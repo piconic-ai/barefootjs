@@ -68,6 +68,7 @@ describe('compileForCompat', () => {
           'const-literal-inherited-key',
           'derived-object-literal-signal',
           'destructure-default-computed-array',
+          'destructure-default-reads-component-state',
           'loop-row-child-children-attrs-frozen',
           'loop-row-child-scalar-row-nested-component',
           'loop-row-key-outer-state',
