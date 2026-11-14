@@ -505,19 +505,17 @@ describe('per-item conditional wrapping a dynamic attr/event element binds exact
   })
 
   test('a JSX-callback prop call as the WHOLE branch content does not get a nested text effect', () => {
-    // Regression pin for a fix-of-the-fix: the initial #2347 patch made
-    // `summarizeLoopChildBranch` collect reactive texts for any branch,
-    // which newly reached a per-item conditional whose branch is a single
-    // bare `expression` (no wrapping element) — e.g. a hoisted JSX-callback
-    // prop call (`renderNode={(n) => <Pill/>}`-shaped, #1211/#1213). That
-    // value is already fully re-evaluated and spliced via `__bfSlot`
-    // whenever insert() (re-)mounts the branch; wrapping it in an
-    // *additional* createEffect re-invokes the callback (producing a
-    // second, independent live element) on the very first run, and the
-    // loop-child arm's `$t()`-based anchor lookup can't cleanly displace an
-    // already-mounted Element — so the second instance renders beside the
-    // first instead of replacing it (surfaced via barefootjs-xyflow's
-    // renderNode reference page in CI).
+    // A per-item conditional whose branch is one bare `expression` calling
+    // a callback prop (a hoisted JSX-callback prop,
+    // `renderNode={(n) => <Pill/>}`, #1211/#1213). The value is an element
+    // the caller built, spliced via `__bfSlot` whenever insert() mounts the
+    // branch. An effect in the arm would call the callback again on the
+    // first run and on every change of the row's item, replacing the live
+    // element (and its state) each time; the xyflow `<Flow>` renderer
+    // would rebuild every custom node on each drag frame. Phase 1 marks the
+    // branch `callerCallbackResult` and the arm gets no text effect for it.
+    // A branch calling anything else does get one (#3894, pinned in
+    // `loop-branch-bare-expression-reactive-text.test.ts`).
     const source = `
       'use client'
       import { createSignal } from '@barefootjs/client'
@@ -541,8 +539,10 @@ describe('per-item conditional wrapping a dynamic attr/event element binds exact
     expect(result.errors).toHaveLength(0)
     const content = result.files.find(f => f.type === 'clientJs')!.content
 
-    // No nested createEffect re-invoking `props.renderNode(n)` — the
-    // conditional's own template()/insert() already owns this value.
-    expect(content).not.toMatch(/createEffect\(\(\) => \{ __rt_\w+ = __bfText\(__rt_\w+, \(?\s*props\.renderNode\(n\(\)\)/)
+    // The callback is called where the branch is built (the row template
+    // and the arm's `template()`), and in no effect.
+    expect(content).toContain('__bfSlot(_p.renderNode(n()), __slots)')
+    expect(content).not.toMatch(/create(Disposable)?Effect\(\(\) => \{[^}]*_p\.renderNode\(/)
+    expect(content).not.toContain('escapeTextOrNode(_p.renderNode(')
   })
 })
