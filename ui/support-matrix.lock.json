@@ -115,6 +115,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -278,6 +284,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -474,6 +486,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -709,6 +727,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -887,6 +911,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -1056,6 +1086,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -1243,6 +1279,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -1421,6 +1463,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -1590,6 +1638,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -2643,6 +2697,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -2764,6 +2824,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -2921,6 +2987,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -3060,6 +3132,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -3205,6 +3283,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -3332,6 +3416,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -3477,6 +3567,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -3619,6 +3715,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -3752,6 +3854,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -3913,6 +4021,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-function-nested",
               "limitations": [
                 "const-literal-inherited-key"
@@ -4058,6 +4172,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -4245,6 +4365,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "literal-index-own-key",
               "limitations": [
                 "non-identifier-literal-key"
@@ -4423,6 +4549,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-function-nested",
               "limitations": [
                 "const-literal-inherited-key"
@@ -4577,6 +4709,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-function-nested",
               "limitations": [
                 "const-literal-inherited-key"
@@ -4716,6 +4854,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -4879,6 +5023,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-function-nested",
               "limitations": [
                 "const-literal-inherited-key"
@@ -5024,6 +5174,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -5184,6 +5340,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -5459,6 +5621,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -5850,6 +6018,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -6277,6 +6451,12 @@
               "fixture": "index-read-capitalised-key-only",
               "limitations": [
                 "index-read-capitalised-key-only"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -6758,6 +6938,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -7158,6 +7344,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -7543,6 +7735,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -7940,6 +8138,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -8334,6 +8538,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -8725,6 +8935,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -10252,6 +10468,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -10793,6 +11015,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -11385,6 +11613,12 @@
               "fixture": "jsx-prop-nested-component-forwarded",
               "limitations": [
                 "nested-component-in-jsx-prop-forwarded"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -12070,6 +12304,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -12620,6 +12860,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -13155,6 +13401,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -13714,6 +13966,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -14249,6 +14507,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -14799,6 +15063,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -15507,6 +15777,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -15910,6 +16186,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -16370,6 +16652,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -16887,6 +17175,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -17299,6 +17593,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -17708,6 +18008,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -18135,6 +18441,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -18532,6 +18844,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -18938,6 +19256,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -20005,6 +20329,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -20384,6 +20714,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -20802,6 +21138,12 @@
               "fixture": "jsx-prop-nested-component-forwarded",
               "limitations": [
                 "nested-component-in-jsx-prop-forwarded"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -21307,6 +21649,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -21695,6 +22043,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -22068,6 +22422,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -22471,6 +22831,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -22850,6 +23216,12 @@
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -23241,6 +23613,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "loop-row-boolean-member-attr",
               "limitations": [
                 "loop-row-boolean-member-attr-value"
@@ -23522,6 +23900,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -23682,6 +24066,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -23833,6 +24223,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -24044,6 +24440,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -24201,6 +24603,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -24367,6 +24775,12 @@
               "fixture": "const-object-prop-identity-hydrate",
               "limitations": [
                 "non-literal-const-child-prop-unbound"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -24542,6 +24956,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key",
               "limitations": [
                 "const-literal-inherited-key"
@@ -24693,6 +25113,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -24853,6 +25279,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -25063,6 +25495,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-child-prop",
               "limitations": [
                 "const-literal-inherited-key"
@@ -25100,6 +25538,12 @@
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -25146,6 +25590,12 @@
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -25207,6 +25657,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-child-prop",
               "limitations": [
                 "const-literal-inherited-key"
@@ -25244,6 +25700,12 @@
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -25287,6 +25749,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-child-prop",
               "limitations": [
                 "const-literal-inherited-key"
@@ -25327,6 +25795,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-child-prop",
               "limitations": [
                 "const-literal-inherited-key"
@@ -25358,6 +25832,12 @@
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -25398,6 +25878,12 @@
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -28297,15 +28783,96 @@
     "binary:*": {
       "cells": {
         "hono": {},
-        "blade": {},
-        "erb": {},
-        "go-template": {},
-        "jinja": {},
-        "minijinja": {},
-        "mojolicious": {},
-        "pebble": {},
-        "twig": {},
-        "xslate": {}
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            }
+          ]
+        },
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            }
+          ]
+        },
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            }
+          ]
+        },
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            }
+          ]
+        },
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -28328,6 +28895,12 @@
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -28368,6 +28941,12 @@
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -28429,6 +29008,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "loop-row-child-caller-rows-outer-state-key",
               "limitations": [
                 "loop-row-key-outer-state"
@@ -28475,6 +29060,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-function-nested",
               "limitations": [
                 "const-literal-inherited-key"
@@ -28509,6 +29100,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-function-nested",
               "limitations": [
                 "const-literal-inherited-key"
@@ -28540,6 +29137,12 @@
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -28583,6 +29186,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "module-const-inherited-key-function-nested",
               "limitations": [
                 "const-literal-inherited-key"
@@ -28614,6 +29223,12 @@
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -28654,6 +29269,12 @@
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -28729,8 +29350,26 @@
     "binary:/": {
       "cells": {
         "hono": {},
-        "blade": {},
-        "erb": {},
+        "blade": {
+          "gaps": [
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            }
+          ]
+        },
+        "erb": {
+          "gaps": [
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            }
+          ]
+        },
         "go-template": {
           "gaps": [
             {
@@ -28738,15 +29377,75 @@
               "limitations": [
                 "destructure-default-callback-unseeded"
               ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
             }
           ]
         },
-        "jinja": {},
-        "minijinja": {},
-        "mojolicious": {},
-        "pebble": {},
-        "twig": {},
-        "xslate": {}
+        "jinja": {
+          "gaps": [
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            }
+          ]
+        },
+        "minijinja": {
+          "gaps": [
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            }
+          ]
+        },
+        "mojolicious": {
+          "gaps": [
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            }
+          ]
+        },
+        "pebble": {
+          "gaps": [
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            }
+          ]
+        },
+        "twig": {
+          "gaps": [
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            }
+          ]
+        },
+        "xslate": {
+          "gaps": [
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            }
+          ]
+        }
       },
       "source": {
         "file": "packages/adapter-tests/src/coverage-map.ts",
@@ -28883,6 +29582,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -28962,6 +29667,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -29071,6 +29782,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "literal-index-own-key",
               "limitations": [
                 "non-identifier-literal-key"
@@ -29177,6 +29894,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -29271,6 +29994,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -29350,6 +30079,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -29447,6 +30182,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -29532,6 +30273,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -29626,6 +30373,12 @@
               "fixture": "flatmap-typeof-projection",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -29713,6 +30466,12 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
             }
           ]
         },
@@ -29734,6 +30493,12 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             }
           ]
@@ -29757,6 +30522,12 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
             }
           ]
         },
@@ -29778,6 +30549,12 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             }
           ]
@@ -29801,6 +30578,12 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
             }
           ]
         },
@@ -29822,6 +30605,12 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             }
           ]
@@ -29845,6 +30634,12 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
             }
           ]
         },
@@ -29867,6 +30662,12 @@
               "limitations": [
                 "callback-outside-evaluator"
               ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
             }
           ]
         },
@@ -29888,6 +30689,12 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             }
           ]
@@ -30330,6 +31137,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -30361,6 +31174,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -30401,6 +31220,12 @@
               "fixture": "conditional-nested-loop-static-reactivity",
               "limitations": [
                 "conditional-nested-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -30462,6 +31287,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -30496,6 +31327,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -30527,6 +31364,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -30570,6 +31413,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -30595,6 +31444,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -30629,6 +31484,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -30729,6 +31590,12 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -30883,6 +31750,12 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -31070,6 +31943,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "literal-index-own-key",
               "limitations": [
                 "non-identifier-literal-key"
@@ -31254,6 +32133,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "markup-local-function-read-named-like-prop",
               "limitations": [
                 "local-function-read-named-like-prop"
@@ -31405,6 +32290,12 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -31565,6 +32456,12 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -31734,6 +32631,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "markup-local-function-read-named-like-prop",
               "limitations": [
                 "local-function-read-named-like-prop"
@@ -31879,6 +32782,12 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -32033,6 +32942,12 @@
               "fixture": "filter-opaque-predicate",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -32302,6 +33217,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -32612,6 +33533,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -32958,6 +33885,12 @@
               "fixture": "index-read-capitalised-key-only",
               "limitations": [
                 "index-read-capitalised-key-only"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -33367,6 +34300,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -33683,6 +34622,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -33996,6 +34941,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
@@ -34327,6 +35278,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -34637,6 +35594,12 @@
               ]
             },
             {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "map-opaque-projection",
               "limitations": [
                 "callback-outside-evaluator"
@@ -34944,6 +35907,12 @@
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
+              ]
+            },
+            {
+              "fixture": "keyed-row-branch-call",
+              "limitations": [
+                "module-scope-helper-call"
               ]
             },
             {
