@@ -312,6 +312,9 @@ export const renderDivergences: RenderDivergences = {
   // Same dropped spread (no `data-tone`). The children-seeded signal also
   // renders `missing` where the caller's `children` reaches the child.
   'open-rest-spread-child-children': { limitation: 'open-rest-spread-onto-child-component' },
+  // An array in child position: the template prints the array stringified
+  // where JSX renders its items one after another.
+  'array-text-child': { limitation: 'array-text-child' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches

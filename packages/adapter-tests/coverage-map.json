@@ -885,6 +885,15 @@
         "text"
       ]
     },
+    "array-text-child": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "array-toReversed": {
       "kinds": [
         "array-method",
@@ -2099,6 +2108,18 @@
         "logical:??"
       ],
       "contexts": [
+        "text"
+      ]
+    },
+    "children-element-read-into-state": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
         "text"
       ]
     },

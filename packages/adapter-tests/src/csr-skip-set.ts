@@ -285,4 +285,7 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // beside a body const of the same name: the CSR template inlines the body
   // const into the default.
   'destructure-default-param-body-const-same-name': { limitation: 'client-binding-named-like-module-binding' },
+  // An element child a component reads into a signal: the CSR template
+  // prints the signal's initial value as escaped text.
+  'children-element-read-into-state': { limitation: 'children-element-read-into-state' },
 }

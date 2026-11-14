@@ -126,6 +126,9 @@ export const renderDivergences: RenderDivergences = {
   // declare, so the spread leaves out `tone`.
   'open-body-rest-spread-child-omits-keys': { limitation: 'open-body-rest-declared-key' },
   'open-body-rest-spread-element': { limitation: 'open-body-rest-declared-key' },
+  // An array in child position: the template prints the array stringified
+  // where JSX renders its items one after another.
+  'array-text-child': { limitation: 'array-text-child' },
 }
 
 /**

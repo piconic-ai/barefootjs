@@ -591,6 +591,8 @@ import { fixture as openBodyRestSpreadChildOmitsKeys } from './open-body-rest-sp
 import { fixture as openRestSpreadChild } from './open-rest-spread-child'
 import { fixture as openBodyRestSpreadElement } from './open-body-rest-spread-element'
 import { fixture as openRestSpreadChildChildren } from './open-rest-spread-child-children'
+import { fixture as arrayTextChild } from './array-text-child'
+import { fixture as childrenElementReadIntoState } from './children-element-read-into-state'
 import { fixture as filterPredicateOnPrefixedProp } from './filter-predicate-on-prefixed-prop'
 import { fixture as filterPredicateRenamedDestructuredProp } from './filter-predicate-renamed-destructured-prop'
 import { fixture as filterPredicateBlockShadowedProp } from './filter-predicate-block-shadowed-prop'
@@ -1972,6 +1974,8 @@ export const jsxFixtures: JSXFixture[] = [
   openRestSpreadChild,
   openBodyRestSpreadElement,
   openRestSpreadChildChildren,
+  arrayTextChild,
+  childrenElementReadIntoState,
   filterPredicateOnPrefixedProp,
   filterPredicateRenamedDestructuredProp,
   filterPredicateBlockShadowedProp,
