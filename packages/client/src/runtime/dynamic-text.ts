@@ -47,6 +47,7 @@
 
 import { __bfReportOutput } from '@barefootjs/client/reactive'
 import { isSlotMarker } from '../slot.ts'
+import { childText } from './child-text.ts'
 
 const END_MARKER = '/'
 
@@ -105,7 +106,7 @@ export function __bfText(current: Node | null, value: unknown): Node | null {
   }
 
   // JSX renders no text for a nullish or boolean child (#3824 step 5).
-  const text = typeof value === 'boolean' ? '' : String(value ?? '')
+  const text = childText(value)
   if (current.nodeType === Node.TEXT_NODE) {
     const textChanged = current.nodeValue !== text
     current.nodeValue = text

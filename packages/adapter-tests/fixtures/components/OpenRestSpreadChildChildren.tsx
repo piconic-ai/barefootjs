@@ -24,6 +24,7 @@ function Taken({ children, ...rest }: PanelProps) {
       <p className="fallback"><Note {...rest}>{children ?? 'fallback'}</Note></p>
       <p className="bare"><Note {...rest}>{children}</Note></p>
       <p className="text"><Note {...rest}>text</Note></p>
+      <p className="list"><Note {...rest}>{children}!</Note></p>
     </section>
   )
 }

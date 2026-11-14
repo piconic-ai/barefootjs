@@ -9,6 +9,8 @@
  *     `<Note {...rest}>{children}</Note>`, where the component destructured
  *     `children` and the bag leaves it out, get the caller's `hello`;
  *   - `<Note {...rest}>text</Note>` gets `text`;
+ *   - `<Note {...rest}>{children}!</Note>` gets the two nodes, which print
+ *     one after another (`hello!`), not joined with a comma;
  *   - `<Note {...rest}>own</Note>`, where the bag carries the caller's
  *     `children`, gets the call's own `own`.
  *
@@ -31,6 +33,7 @@ export const spec: SharedFixtureSpec = {
     { type: 'expectText', selector: 'p.fallback b', text: 'hello' },
     { type: 'expectText', selector: 'p.bare b', text: 'hello' },
     { type: 'expectText', selector: 'p.text b', text: 'text' },
+    { type: 'expectText', selector: 'p.list b', text: 'hello!' },
     { type: 'expectText', selector: 'p.carried b', text: 'own' },
     { type: 'expectAttribute', selector: 'p.fallback b', attribute: 'data-tone', value: 'warm' },
     // The clicks prove the children hydrated with that state.

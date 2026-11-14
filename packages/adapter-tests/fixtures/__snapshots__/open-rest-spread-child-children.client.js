@@ -40,16 +40,17 @@ export function initTaken(__scope, _p = {}) {
 
   const children = _p.children
 
-  const [_s0, _s1, _s2] = $c(__scope, 's0', 's1', 's2')
+  const [_s0, _s1, _s2, _s3] = $c(__scope, 's0', 's1', 's2', 's3')
 
 
   // Initialize child components with props
   initChild('Note__8173d5d1', _s0, forwardProps(_p, { get children() { return children ?? 'fallback' } }, ["children"]))
   initChild('Note__8173d5d1', _s1, forwardProps(_p, { get children() { return children } }, ["children"]))
   initChild('Note__8173d5d1', _s2, forwardProps(_p, { get children() { return "text" } }, ["children"]))
+  initChild('Note__8173d5d1', _s3, forwardProps(_p, { get children() { return [children, "!"] } }, ["children"]))
 }
 
-hydrate('Taken__8173d5d1', { init: initTaken, template: (_p) => `<section><p class="fallback">${renderChild('Note__8173d5d1', {...forwardProps(_p, {}, ["children"]), children: `${_p.children == null ? escapeText(_p.children ?? 'fallback') : markupOrEmpty(_p.children)}`}, undefined, 's0')}</p><p class="bare">${renderChild('Note__8173d5d1', {...forwardProps(_p, {}, ["children"]), children: `${markupOrEmpty(_p.children)}`}, undefined, 's1')}</p><p class="text">${renderChild('Note__8173d5d1', {...forwardProps(_p, {}, ["children"]), children: `text`}, undefined, 's2')}</p></section>`, name: 'Taken' })
+hydrate('Taken__8173d5d1', { init: initTaken, template: (_p) => `<section><p class="fallback">${renderChild('Note__8173d5d1', {...forwardProps(_p, {}, ["children"]), children: `${_p.children == null ? escapeText(_p.children ?? 'fallback') : markupOrEmpty(_p.children)}`}, undefined, 's0')}</p><p class="bare">${renderChild('Note__8173d5d1', {...forwardProps(_p, {}, ["children"]), children: `${markupOrEmpty(_p.children)}`}, undefined, 's1')}</p><p class="text">${renderChild('Note__8173d5d1', {...forwardProps(_p, {}, ["children"]), children: `text`}, undefined, 's2')}</p><p class="list">${renderChild('Note__8173d5d1', {...forwardProps(_p, {}, ["children"]), children: `${markupOrEmpty(_p.children)}!`}, undefined, 's3')}</p></section>`, name: 'Taken' })
 export function Taken(_p, __bfKey) { return createComponent('Taken__8173d5d1', _p, __bfKey) }
 export function initCarried(__scope, _p = {}) {
   if (!__scope) return

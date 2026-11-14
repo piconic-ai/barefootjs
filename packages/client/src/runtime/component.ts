@@ -24,6 +24,7 @@ import {
   BF_SCOPE_COMMENT_END_PREFIX,
 } from '@barefootjs/shared'
 import type { ComponentDef } from './types.ts'
+import { childText } from './child-text.ts'
 
 // Parent scope ID context for renderChild() inside insert() branch templates.
 // When set, renderChild uses the parent's scope ID as prefix instead of a random ID,
@@ -991,7 +992,8 @@ export function escapeAttr(value: unknown): string {
 export function escapeText(value: unknown): string {
   // JSX renders no text for a boolean child either (#3824 step 5).
   if (value == null || typeof value === 'boolean') return ''
-  return escapeAttr(value)
+  // An array child renders its items one after another (`childText`).
+  return escapeAttr(Array.isArray(value) ? childText(value) : value)
 }
 
 /**
