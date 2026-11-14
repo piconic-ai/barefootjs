@@ -11,7 +11,7 @@ import { detectRootNamespaceWrapTag } from './control-flow/stringify/template-pa
 import { expandDynamicPropValue, expandConstantForReactivity, resolveRestSpreadOrigin, resolveRestSpreadNames } from './prop-handling.ts'
 import { extractFreeIdentifiersFromText } from './csr-substitute.ts'
 import { walkIR, stopAt } from './walker.ts'
-import { childPropsObjectExpr, codeSafeStringArray, isSpreadPropName, mergedExplicitPropExpr } from './child-props-object.ts'
+import { childPropsObjectExpr, codeSafeStringArray, isSpreadPropName, mergedExplicitPropExpr, spreadsCallerBag } from './child-props-object.ts'
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { classifyDOMProp } from '@barefootjs/shared'
 import type { BindingScope } from '../scope/binding-scope.ts'
@@ -540,7 +540,7 @@ function jsxChildrenContainComponent(nodes: IRNode[]): boolean {
  * and whether it is read through a getter (deferred, so reactive) or is a
  * plain data property.
  */
-function componentInitPropValue(prop: IRProp, ctx: ClientJsContext): { expr: string; getter: boolean } {
+function componentInitPropValue(prop: Pick<IRProp, 'name' | 'value'>, ctx: ClientJsContext): { expr: string; getter: boolean } {
   if (isEventHandlerName(prop.name)) {
     // Event handlers reach here only as `expression` variants.
     return { expr: attrValueToString(prop.value) ?? prop.name, getter: false }
@@ -596,19 +596,26 @@ function restKeyLiveRead(attr: IRElement['attrs'][number]): string {
 /** Build propsExpr for a child component from its IR props. */
 function buildComponentPropsExpr(comp: Pick<IRComponent, 'props' | 'children'>, ctx: ClientJsContext): string {
   return childPropsObjectExpr(comp.props, prop => componentInitPropValue(prop, ctx), {
-    passesOwnChildren: passesOwnChildren(comp.children),
+    trailing: callerBagCallChildrenEntry(comp, ctx),
   })
 }
 
 /**
- * Whether a child call's JSX children are exactly the component's own
- * `children` prop passed through (`<Slot>{children}</Slot>`), which Phase 1
- * decided from the binding (`IRExpression.childrenRead`). This builder
- * spells no `children` entry for a call's JSX children, so the child reads
- * the caller's own `children` off the forwarded props.
+ * The `children` entry of a call that spreads one of the component's own
+ * prop bags (`<Child {...rest}>…</Child>`, `<Child {...props}>…</Child>`)
+ * and has JSX children: the children, spelled as a `children={…}` prop is
+ * (`componentInitPropValue`), written last. JSX children are the call's
+ * last `children`, so they win over a `children` key the bag carries, and a
+ * bag that leaves `children` out (the component destructured it) still
+ * hands the child what the call wrote: `{children}`, `{children ?? 'x'}`,
+ * text or an element (#3714). Empty for a call without such a spread,
+ * which has no caller `children` to tell apart from its own.
  */
-function passesOwnChildren(children: readonly IRNode[]): boolean {
-  return children.length === 1 && children[0]!.type === 'expression' && children[0]!.childrenRead === 'bare'
+function callerBagCallChildrenEntry(comp: Pick<IRComponent, 'props' | 'children'>, ctx: ClientJsContext): string[] {
+  if (comp.children.length === 0 || !spreadsCallerBag(comp.props)) return []
+  if (comp.props.some(prop => prop.name === 'children')) return []
+  const value = componentInitPropValue({ name: 'children', value: { kind: 'jsx-children', children: comp.children } }, ctx)
+  return value.expr === "''" ? [] : [`get children() { return ${value.expr} }`]
 }
 
 /**

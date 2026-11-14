@@ -6460,6 +6460,12 @@
               ]
             },
             {
+              "fixture": "open-rest-spread-child-children",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -11622,6 +11628,12 @@
               ]
             },
             {
+              "fixture": "open-rest-spread-child-children",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "open-rest-spread-child-omits-keys",
               "limitations": [
                 "open-rest-spread-onto-child-component"
@@ -16505,6 +16517,12 @@
               ]
             },
             {
+              "fixture": "open-rest-spread-child-children",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "open-rest-spread-child-omits-keys",
               "limitations": [
                 "open-rest-spread-onto-child-component"
@@ -19335,6 +19353,12 @@
               ]
             },
             {
+              "fixture": "open-rest-spread-child-children",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -20902,6 +20926,12 @@
             },
             {
               "fixture": "open-rest-spread-child",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child-children",
               "limitations": [
                 "open-rest-spread-onto-child-component"
               ]
@@ -33039,6 +33069,12 @@
               ]
             },
             {
+              "fixture": "open-rest-spread-child-children",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "open-rest-spread-child-omits-keys",
               "limitations": [
                 "open-rest-spread-onto-child-component"
@@ -35436,6 +35472,12 @@
             },
             {
               "fixture": "open-rest-spread-child",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child-children",
               "limitations": [
                 "open-rest-spread-onto-child-component"
               ]

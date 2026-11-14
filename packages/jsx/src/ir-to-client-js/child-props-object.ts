@@ -123,19 +123,11 @@ export function isObjectSpreadProp(prop: ChildPropLike): boolean {
 export interface ChildPropsObjectOptions {
   /** Entries appended after the explicit props (e.g. a row's `children` getter). */
   trailing?: readonly string[]
-  /**
-   * The call's JSX children are the component's own `children` prop passed
-   * through (`<Slot {...rest}>{children}</Slot>`), and the caller spells no
-   * `children` entry for them. The child's `children` is then the caller's
-   * own, so a `{...rest}` bag keeps forwarding that key although the
-   * component destructured it.
-   */
-  passesOwnChildren?: boolean
 }
 
-/** The keys a rest bag leaves out for a call with `options`: see `passesOwnChildren`. */
-function restOmitFor(omit: readonly string[], options: ChildPropsObjectOptions): readonly string[] {
-  return options.passesOwnChildren ? omit.filter(key => key !== 'children') : omit
+/** Whether a child component call spreads one of the component's own prop bags (`callerBagSpreadOmit`). */
+export function spreadsCallerBag(props: readonly ChildPropLike[]): boolean {
+  return props.some(prop => callerBagSpreadOmit(prop.value) !== null)
 }
 
 /**
@@ -231,7 +223,7 @@ export function childPropsObjectExpr<P extends ChildPropLike>(
   entries.push(...(options.trailing ?? []))
   const object = objectLiteral(entries)
   if (bagsOmit === null) return object
-  const excluded = [...explicitNames, ...restOmitFor(bagsOmit, options).filter(key => !explicitNames.includes(key))]
+  const excluded = [...explicitNames, ...bagsOmit.filter(key => !explicitNames.includes(key))]
   return `forwardProps(${PROPS_PARAM}, ${object}, ${codeSafeStringArray(excluded)})`
 }
 
@@ -261,7 +253,7 @@ function spreadPartsExpr<P extends ChildPropLike>(
     const restOmit = callerBagSpreadOmit(prop.value)
     if (restOmit !== null) {
       flush()
-      parts.push(restBagExpr(restOmitFor(restOmit, options)))
+      parts.push(restBagExpr(restOmit))
       continue
     }
     if (isSpreadPropName(prop.name) && !isObjectSpreadProp(prop)) continue

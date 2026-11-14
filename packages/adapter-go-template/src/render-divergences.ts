@@ -309,6 +309,9 @@ export const renderDivergences: RenderDivergences = {
   // `<Child>Input{...}` literal is built from the call's explicit props only.
   'open-rest-spread-child-omits-keys': { limitation: 'open-rest-spread-onto-child-component' },
   'open-rest-spread-child': { limitation: 'open-rest-spread-onto-child-component' },
+  // Same dropped spread (no `data-tone`). The children-seeded signal also
+  // renders `missing` where the caller's `children` reaches the child.
+  'open-rest-spread-child-children': { limitation: 'open-rest-spread-onto-child-component' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches

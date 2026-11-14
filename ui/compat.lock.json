@@ -9107,6 +9107,14 @@
           ]
         }
       },
+      "open-rest-spread-child-children": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "open-rest-spread-onto-child-component"
+          ]
+        }
+      },
       "open-rest-spread-child-omits-keys": {
         "go-template": {
           "kind": "render",
@@ -12749,6 +12757,10 @@
         "description": "an open rest bag spread onto a child component leaves out the destructured keys and stays live…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/open-rest-spread-child.ts"
       },
+      "open-rest-spread-child-children": {
+        "description": "a call that spreads a rest bag onto a child hands the child's init its JSX children (#3714)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/open-rest-spread-child-children.ts"
+      },
       "open-rest-spread-child-omits-keys": {
         "description": "An open rest bag spread onto a child component leaves out the destructured keys",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/open-rest-spread-child-omits-keys.ts"
@@ -14230,6 +14242,7 @@
       "actual": "drops the spread: the child receives only the call's explicit props",
       "fixtures": [
         "open-rest-spread-child",
+        "open-rest-spread-child-children",
         "open-rest-spread-child-omits-keys"
       ],
       "adapters": [

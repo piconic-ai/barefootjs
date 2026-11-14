@@ -13426,6 +13426,23 @@
         "text"
       ]
     },
+    "open-rest-spread-child-children": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "open-rest-spread-child-omits-keys": {
       "kinds": [
         "identifier",

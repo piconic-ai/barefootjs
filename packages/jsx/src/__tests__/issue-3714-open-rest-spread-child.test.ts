@@ -149,25 +149,40 @@ describe('#3714 — the client reads a rest bag without the destructured keys', 
     expect(body).toContain(`applyRestAttrs(_s1, _p, ["title"])`)
   })
 
-  test("the call's own children passed through stay forwarded", () => {
-    // `<Slot {...rest}>{children}</Slot>`: this builder spells no `children`
-    // entry, so the child reads the caller's own off the forwarded props.
-    const passthrough = clientJs(`
+  test("a call that spreads a caller bag spells its JSX children as the last `children`", () => {
+    const kbd = (children: string, params = '{ className, children, ...rest }') => clientJs(`
       'use client'
       import { Slot } from './slot'
-      export function Kbd({ className, children, ...rest }: { className?: string; children?: unknown; [key: string]: unknown }) {
-        return <div><Slot className={className} {...rest}>{children}</Slot></div>
+      export function Kbd(${params}: { className?: string; children?: string; [key: string]: unknown }) {
+        return <div><Slot className={className} {...rest}>${children}</Slot></div>
       }
     `)
-    expect(passthrough).toContain(`}, ["className"]))`)
-    // Other children are the call's own, not the caller's.
-    const own = clientJs(`
+    // The bag leaves the destructured `children` out; the call's JSX
+    // children are written as its own entry, whatever they are.
+    expect(kbd('{children}')).toContain(`get children() { return children } }, ["className","children"]))`)
+    expect(kbd(`{children ?? 'fallback'}`)).toContain(`get children() { return children ?? 'fallback' } }, ["className","children"]))`)
+    expect(kbd('text')).toContain(`get children() { return "text" } }, ["className","children"]))`)
+    expect(kbd('<b>x</b>')).toContain('get children() { return `<b>x</b>` } }, ["className","children"]))')
+    // The bag carries the caller's `children`: the call's own still win,
+    // as an override `forwardProps` never replaces.
+    expect(kbd('own', '{ className, ...rest }')).toContain(`get children() { return "own" } }, ["className"]))`)
+    // The props object is a caller bag too.
+    expect(clientJs(`
       'use client'
       import { Slot } from './slot'
-      export function Kbd({ className, children, ...rest }: { className?: string; children?: unknown; [key: string]: unknown }) {
-        return <div title={String(children)}><Slot className={className} {...rest}><b>x</b></Slot></div>
+      export function Whole(props: { children?: string; [key: string]: unknown }) {
+        return <div><Slot {...props}>own</Slot></div>
       }
-    `)
-    expect(own).toContain(`}, ["className","children"]))`)
+    `)).toContain(`initChild('Slot', _s0, forwardProps(_p, { get children() { return "own" } }, []))`)
+  })
+
+  test('a call without a caller bag keeps its props object as written', () => {
+    expect(clientJs(`
+      'use client'
+      import { Slot } from './slot'
+      export function Plain({ children }: { children?: string }) {
+        return <div><Slot tone="a">{children}</Slot></div>
+      }
+    `)).toContain(`initChild('Slot', _s0, { tone: "a" })`)
   })
 })
