@@ -113,6 +113,10 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // Same `applyRestAttrs`-not-modeled harness class: each child spreads
   // its rest bag onto its root.
   'child-rest-bag-generated-field-name',
+  // Same `applyRestAttrs`-not-modeled harness class: `Badge` spreads its
+  // body rest onto its root. The real-browser fixture-hydrate and oracle
+  // suites check the client.
+  'open-body-rest-spread-element',
   // The harness now mounts the fixture's `componentName` (the #1467
   // multi-export class — `__lastComponent` rendering the last demo export
   // instead of the pinned basic demo — is gone; radio-group, tabs, dialog,

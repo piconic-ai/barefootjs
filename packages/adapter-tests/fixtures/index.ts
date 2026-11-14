@@ -586,6 +586,10 @@ import { fixture as objectSpreadBranchChild } from './object-spread-branch-child
 import { fixture as objectSpreadLoopRowChild } from './object-spread-loop-row-child'
 import { fixture as objectSpreadPropChild } from './object-spread-prop-child'
 import { fixture as restAliasSpreadChild } from './rest-alias-spread-child'
+import { fixture as openRestSpreadChildOmitsKeys } from './open-rest-spread-child-omits-keys'
+import { fixture as openBodyRestSpreadChildOmitsKeys } from './open-body-rest-spread-child-omits-keys'
+import { fixture as openRestSpreadChild } from './open-rest-spread-child'
+import { fixture as openBodyRestSpreadElement } from './open-body-rest-spread-element'
 import { fixture as filterPredicateOnPrefixedProp } from './filter-predicate-on-prefixed-prop'
 import { fixture as filterPredicateRenamedDestructuredProp } from './filter-predicate-renamed-destructured-prop'
 import { fixture as filterPredicateBlockShadowedProp } from './filter-predicate-block-shadowed-prop'
@@ -1962,6 +1966,10 @@ export const jsxFixtures: JSXFixture[] = [
   objectSpreadLoopRowChild,
   objectSpreadPropChild,
   restAliasSpreadChild,
+  openRestSpreadChildOmitsKeys,
+  openBodyRestSpreadChildOmitsKeys,
+  openRestSpreadChild,
+  openBodyRestSpreadElement,
   filterPredicateOnPrefixedProp,
   filterPredicateRenamedDestructuredProp,
   filterPredicateBlockShadowedProp,

@@ -394,6 +394,22 @@ const initChild = (name, _scope, props) => { __runInit(name, props) }
 const createComponent = () => null
 const createPortal = () => {}
 const applyRestAttrs = () => {}
+// Mirror @barefootjs/client's \`forwardProps\` (forward-props.ts): the
+// overrides, plus every source key not excluded, each read through a
+// getter. A registration template spreads a \`{...rest}\` bag onto a child
+// as \`...forwardProps(_p, {}, [<destructured keys>])\` (#3714).
+function forwardProps(source, overrides, excludeKeys) {
+  const result = {}
+  const descs = Object.getOwnPropertyDescriptors(overrides)
+  for (const key of Object.keys(descs)) {
+    Object.defineProperty(result, key, { ...descs[key], enumerable: true, configurable: true })
+  }
+  for (const key of Object.keys(source)) {
+    if (excludeKeys.includes(key) || key in result) continue
+    Object.defineProperty(result, key, { get: () => source[key], enumerable: true, configurable: true })
+  }
+  return result
+}
 // Mirror @barefootjs/client/runtime escapeAttr: HTML-escape an
 // interpolated attribute value (Hono's set: & " ' < >) so CSR template
 // output matches the SSR-escaped reference. The harness strips the

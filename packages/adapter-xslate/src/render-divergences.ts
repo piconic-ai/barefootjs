@@ -135,6 +135,11 @@ export const renderDivergences: RenderDivergences = {
   // A boolean loop-row member as an attribute value (`data-off={r.off}`)
   // prints Perl's `1` / `0`, not `true` / `false`.
   'loop-row-boolean-member-attr': { limitation: 'loop-row-boolean-member-attr-value' },
+  // A body rest over an open props type (`const { title, ...rest } = props`):
+  // the template's rest bag holds only the keys the props type does not
+  // declare, so the spread leaves out `tone`.
+  'open-body-rest-spread-child-omits-keys': { limitation: 'open-body-rest-declared-key' },
+  'open-body-rest-spread-element': { limitation: 'open-body-rest-declared-key' },
 }
 
 /**

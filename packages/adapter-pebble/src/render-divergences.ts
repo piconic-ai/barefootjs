@@ -97,6 +97,11 @@ export const renderDivergences: RenderDivergences = {
   // the `undef-null-*` fixtures used to sit here: the runtime held
   // `undefined` and `null` as one nil. It now carries `Undefined.INSTANCE`
   // apart from `null` (#3848 U7), so each renders like Hono.
+  // A body rest over an open props type (`const { title, ...rest } = props`):
+  // the template's rest bag holds only the keys the props type does not
+  // declare, so the spread leaves out `tone`.
+  'open-body-rest-spread-child-omits-keys': { limitation: 'open-body-rest-declared-key' },
+  'open-body-rest-spread-element': { limitation: 'open-body-rest-declared-key' },
 }
 
 /**

@@ -132,6 +132,11 @@ export const renderDivergences: RenderDivergences = {
   // the double: an accepted gap ("Decisions" (5) of
   // spec/js-primitive-semantics.md).
   'plus-beyond-safe-integer': { limitation: 'plus-beyond-safe-integer' },
+  // A body rest over an open props type (`const { title, ...rest } = props`):
+  // the template's rest bag holds only the keys the props type does not
+  // declare, so the spread leaves out `tone`.
+  'open-body-rest-spread-child-omits-keys': { limitation: 'open-body-rest-declared-key' },
+  'open-body-rest-spread-element': { limitation: 'open-body-rest-declared-key' },
 }
 
 /**
