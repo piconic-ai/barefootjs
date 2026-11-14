@@ -251,6 +251,13 @@ export const conformancePins: ConformancePins = {
   'module-helper-boolcontext-call': [
     { code: 'BF102', severity: 'error', limitation: 'module-scope-helper-call', unescapable: true },
   ],
+  // #3894: a keyed loop row whose conditional branch calls a module-scope
+  // helper in text position, the refusal of `module-const-arrow-helper`
+  // above. The fixture pins the client re-render of that branch on the
+  // reference adapter and declares `escapeNotOwed`.
+  'keyed-row-branch-call': [
+    { code: 'BF101', severity: 'error', limitation: 'module-scope-helper-call' },
+  ],
   // #3170: a static loop row that calls a child component, forwarding a
   // JSX element as `children`, where that element reads an OUTER
   // signal/memo (not just the row's own item). Used to compile clean and

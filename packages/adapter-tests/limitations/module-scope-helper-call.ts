@@ -6,5 +6,5 @@ export default defineLimitation({
   given: 'a template expression calling a module-scope helper by bare name (an arrow-valued `const`, a `function` declaration, or a chain of them), in text or boolean-test position',
   expected: 'the helper runs at render time and its result renders in the server HTML',
   diagnostic: ['BF101', 'BF102'],
-  fixtures: ['module-const-arrow-helper', 'module-function-helper-chain', 'module-helper-boolcontext-call'],
+  fixtures: ['module-const-arrow-helper', 'module-function-helper-chain', 'module-helper-boolcontext-call', 'keyed-row-branch-call'],
 })

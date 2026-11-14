@@ -1,32 +1,26 @@
 /**
- * Emission pin for the loop-branch-stale-text fix.
+ * Emission pin for the text effect of a loop-row conditional branch that is
+ * one bare expression (no wrapping element).
  *
- * `summarizeLoopChildBranch` (ir-to-client-js/collect-elements.ts) used to
- * collect NO `reactiveTexts` for ANY loop-row conditional branch whose whole
- * content is a bare `expression` (no wrapping element) — including a plain
- * property read like `row.label`, which can never construct a live DOM
- * node. That blanket skip meant a keyed row's branch text silently froze at
- * its mount-time value whenever the item changed without the conditional's
- * OWN condition flipping (`insert()`, runtime/insert.ts, correctly no-ops
- * when its condition is unchanged — branch-internal updates are the effect
- * system's job).
+ * `insert()` (runtime/insert.ts) leaves a branch alone while its condition
+ * is unchanged, so a keyed row reused with a new item only rewrites such a
+ * branch through an effect inside the arm. `summarizeLoopChildBranch`
+ * (ir-to-client-js/collect-elements.ts) takes the branch's text slots from
+ * `collectLoopChildReactiveTexts`, the collector every other row text goes
+ * through, so a branch gets the effect when it reads the row or a reactive
+ * source, or contains a call.
  *
- * The fix narrows the skip to `node.hasFunctionCalls` (jsx-to-ir.ts's
- * `exprHasFunctionCalls`, a recursive AST walk — catches a call nested
- * anywhere, not just a top-level one) — a call can return a live DOM node
- * (a hoisted `renderNode={(n) => <Pill/>}` callback lowered to a component
- * call, #1211/#1213, pinned by `nested-loop-conditional.test.ts`) and the
- * compiler cannot tell from syntax whether it does, so that shape must keep
- * the skip. Everything call-free is provably incapable of yielding a Node
- * and is now collected.
+ * A branch with a call in it used to be left out whatever it called
+ * (#3894): `cond ? fmt(row.wait) : '0s'` kept the value the row was built
+ * with, while the same call directly in the row, or in a conditional
+ * outside a loop, was re-evaluated. The one branch still left out is the
+ * one Phase 1 marks `IRExpression.callerCallbackResult`: its value can be
+ * an element a callback prop built, which the row keeps (see
+ * `nested-loop-conditional.test.ts`).
  *
- * The companion half of the fix lives in `transformConditionalBranch`
- * (jsx-to-ir.ts): a bare loop-item read like `row.label` previously got NO
- * `slotId` at all (`needsSlot` didn't consider a `render-item` free
- * reference), so even with the collect-elements.ts skip narrowed there was
- * nothing for the new effect — or the `<!--bf:sN-->` marker
- * `irToHtmlTemplate` emits for it — to attach to. Both are exercised here
- * together because neither half alone reproduces the fix.
+ * `transformConditionalBranch` (jsx-to-ir.ts) gives a bare branch reading
+ * the loop item its `slotId`, which the effect claims and which puts the
+ * `<!--bf:sN-->` marker in the template.
  */
 import { describe, test, expect } from 'bun:test'
 import { compileJSX } from '../compiler'
@@ -34,14 +28,27 @@ import { TestAdapter } from '../adapters/test-adapter'
 
 const adapter = new TestAdapter()
 
-function clientJsFor(branchTrue: string): string {
+const PROPS_TYPE = `{
+      format?: (s: string) => string
+      label?: (s: string) => string | number | null
+      render?: (row: Row) => unknown
+      cell?: (row: Row) => JSX.Element
+      untyped?: any
+      children?: (row: Row) => unknown
+      rows2: Row[]
+    }`
+
+/** Compile a keyed loop whose row is `row.done ? <branchTrue> : 'pending'`. */
+function clientJsFor(branchTrue: string, opts: { params?: string; body?: string } = {}): string {
   const source = `
     'use client'
     import { createSignal } from '@barefootjs/client'
-    type Props = { format?: (s: string) => string }
     type Row = { id: number; label: string; done: boolean }
-    export function C(_p: Props) {
+    type Props = ${PROPS_TYPE}
+    const fmt = (s: string) => s.trim()
+    export function C(${opts.params ?? '_p: Props'}) {
       const [rows] = createSignal<Row[]>([])
+      ${opts.body ?? ''}
       return <ul>{rows().map(row => <li key={row.id}>{row.done ? ${branchTrue} : 'pending'}</li>)}</ul>
     }
   `
@@ -51,48 +58,132 @@ function clientJsFor(branchTrue: string): string {
   return result.files.find(f => f.type === 'clientJs')!.content
 }
 
-describe('loop-branch-stale-text — reactiveTexts narrowing (collect-elements.ts)', () => {
-  test('a bare property-read branch (no call anywhere) gets its own text effect', () => {
+/** The arm's text effects, as the expression each one writes. */
+function armEffects(js: string): string[] {
+  const out: string[] = []
+  const open = "createDisposableEffect(() => { __bfw_"
+  for (let at = js.indexOf(open); at !== -1; at = js.indexOf(open, at + 1)) {
+    const start = js.indexOf('escapeTextOrNode(', at) + 'escapeTextOrNode('.length
+    out.push(js.slice(start, js.indexOf(')) })', start)))
+  }
+  return out
+}
+
+const ARM_WRITER = /lazySlots\(__branchScope, \[\{ id: 's\d+', kind: 'markup', path: \[\] \}\]\)/
+
+describe('loop-row conditional: a bare-expression branch gets its own text effect', () => {
+  test('a bare property read', () => {
     const js = clientJsFor('row.label')
-    expect(js).toContain("escapeTextOrNode(row().label)")
-    // And a slotId was actually allocated for it — `transformConditionalBranch`'s
-    // `refsLoopParam` half of the fix, without which the effect above would
-    // have nothing to `lazySlots(...)` claim.
-    expect(js).toMatch(/lazySlots\(__branchScope, \[\{ id: 's\d+', kind: 'markup', path: \[\] \}\]\)/)
+    expect(js).toContain("createDisposableEffect(() => { __bfw_s1('s1', escapeTextOrNode(row().label)) })")
+    expect(js).toMatch(ARM_WRITER)
   })
 
-  test('a template-literal branch built from property reads only (no call) also gets a text effect', () => {
+  test('a template literal built from property reads', () => {
     const js = clientJsFor('`[${row.label}]`')
     expect(js).toContain('escapeTextOrNode(`[${row().label}]`)')
   })
 
-  test('a branch with a call ANYWHERE (top-level) keeps the skip — no per-item text effect', () => {
-    const js = clientJsFor('_p.format(row.label)')
-    expect(js).not.toContain('escapeTextOrNode(_p.format(row().label))')
-    // bindEvents for that arm stays empty (mirrors the pre-fix shape exactly).
-    expect(js).toMatch(/bindEvents: \(__branchScope, \{ isFirstRun: __bfFirstRun = false \} = \{\}\) => \{\s*\}/m)
+  test('a call to a module-level function (#3894)', () => {
+    const js = clientJsFor('fmt(row.label)')
+    expect(js).toContain("createDisposableEffect(() => { __bfw_s1('s1', escapeTextOrNode(fmt(row().label))) })")
+    expect(js).toMatch(ARM_WRITER)
   })
 
-  test('a branch with a call NESTED inside a template literal also keeps the skip', () => {
-    // The call is not at the top level of the expression — `exprHasFunctionCalls`
-    // is a full recursive AST walk, so this must be caught too.
-    const js = clientJsFor('`${_p.format(row.label)}!`')
-    expect(js).not.toContain("escapeTextOrNode(`${_p.format(row().label)}!`)")
+  test('a call nested inside a template literal', () => {
+    const js = clientJsFor('`${fmt(row.label)}!`')
+    expect(js).toContain('escapeTextOrNode(`${fmt(row().label)}!`)')
   })
 
-  test('a branch with a call nested inside a sub-ternary keeps the skip', () => {
-    const js = clientJsFor("row.id > 0 ? _p.format(row.label) : row.label")
-    // The outer branch (itself a nested conditional) is unaffected by this
-    // narrowing — nested conditionals already get their own `insert()` via
-    // `collectLoopChildConditionals`, never through `reactiveTexts`. This
-    // case exists to confirm compilation succeeds and the call-bearing leaf
-    // still doesn't get a bare reactiveTexts effect wrapping the whole
-    // nested-ternary expression text.
-    expect(js).not.toContain('escapeTextOrNode(row.id > 0 ? _p.format(row().label) : row().label)')
+  test('a method call on the row value and a global call', () => {
+    expect(clientJsFor('row.label.toUpperCase()')).toContain('escapeTextOrNode(row().label.toUpperCase())')
+    expect(clientJsFor('String(row.id)')).toContain('escapeTextOrNode(String(row().id))')
   })
 
-  test('an inert literal branch (no loop-param ref, no call) stays exactly as before — no slotId, no effect', () => {
+  test('a call to a callback prop declared to return only primitives', () => {
+    expect(armEffects(clientJsFor('_p.format(row.label)'))).toEqual(['_p.format(row().label)'])
+    expect(armEffects(clientJsFor('_p.label(row.label)'))).toEqual(['_p.label(row().label)'])
+    // A destructured prop, through its declared type too.
+    const destructured = clientJsFor('format(row.label)', { params: '{ format }: Props' })
+    expect(armEffects(destructured)).toHaveLength(1)
+    expect(armEffects(destructured)[0]).toContain('format(row().label)')
+  })
+
+  test('a call in the leaf of a nested ternary binds inside the nested arm', () => {
+    const js = clientJsFor("row.id > 0 ? fmt(row.label) : row.label")
+    // The nested conditional has its own `insert()`; each of its leaves
+    // gets its own effect there, not one effect over the whole ternary.
+    expect(js).toContain('escapeTextOrNode(fmt(row().label))')
+    expect(js).toContain('escapeTextOrNode(row().label)')
+    expect(js).not.toContain('escapeTextOrNode(row().id > 0 ?')
+  })
+
+  test('a literal branch (no row read, no call) gets no slot and no effect', () => {
     const js = clientJsFor("'yes'")
     expect(js).not.toContain("escapeTextOrNode('yes')")
+    expect(js).not.toMatch(ARM_WRITER)
+  })
+})
+
+describe('loop-row conditional: a branch that may be a callback prop\'s element gets no text effect', () => {
+  const NO_EFFECT: Array<[string, string, { params?: string; body?: string }?]> = [
+    ['a callback prop returning unknown', '_p.render(row)'],
+    ['a callback prop returning an element', '_p.cell(row)'],
+    ['a prop with no function type', '_p.untyped(row)'],
+    ['children called as a function', '_p.children(row)'],
+    ['an optional call', '_p.render?.(row)'],
+    ['a non-null assertion on the callee', '_p.render!(row)'],
+    ['a parenthesized, cast call', '(_p.render(row) as string)'],
+    ['the value side of `&&`', 'row.id > 0 && _p.render(row)'],
+    ['either side of `??`', '_p.render(row) ?? row.label'],
+    ['a destructured callback prop', 'render(row)', { params: '{ render }: Props' }],
+    ['a renamed destructured callback prop', 'draw(row)', { params: '{ render: draw }: Props' }],
+    ['a const alias of a callback prop', 'draw(row)', { body: 'const draw = _p.render' }],
+    ['a body destructure of a callback prop', 'render(row)', { body: 'const { render } = _p' }],
+    ['a const alias of the props object', 'p.render(row)', { body: 'const p = _p' }],
+  ]
+  for (const [name, branch, opts] of NO_EFFECT) {
+    test(name, () => {
+      expect(armEffects(clientJsFor(branch, opts))).toEqual([])
+    })
+  }
+
+  test('the callback is still called where the branch is built', () => {
+    const js = clientJsFor('_p.render(row)')
+    expect(js).toContain('__bfSlot(_p.render(row()), __slots)')
+  })
+})
+
+describe('loop-row conditional: a callback prop outside the value position does not hold the effect back', () => {
+  test('inside a template literal, as an argument, or as an operand', () => {
+    expect(armEffects(clientJsFor('`${_p.render(row)}!`'))).toEqual(['`${_p.render(row())}!`'])
+    expect(armEffects(clientJsFor('fmt(String(_p.render(row)))'))).toEqual(['fmt(String(_p.render(row())))'])
+    expect(armEffects(clientJsFor("_p.render(row) + ''"))).toEqual(["_p.render(row()) + ''"])
+  })
+
+  test('a method of a prop value is not a callback prop', () => {
+    expect(armEffects(clientJsFor('_p.rows2.find(r => r.id === row.id)?.label'))).toHaveLength(1)
+    expect(armEffects(clientJsFor('String(_p.rows2.length + row.id)'))).toHaveLength(1)
+  })
+
+  test('a loop row named like the props object or a prop shadows it', () => {
+    const source = `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      type Cell = { id: number; done: boolean; render: (n: number) => string }
+      export function C(props: { render?: (c: Cell) => unknown }) {
+        const [cells] = createSignal<Cell[]>([])
+        return (
+          <div>
+            <ul>{cells().map(props => <li key={props.id}>{props.done ? props.render(props.id) : 'pending'}</li>)}</ul>
+            <ol>{cells().map(({ id, done, render }) => <li key={id}>{done ? render(id) : 'pending'}</li>)}</ol>
+          </div>
+        )
+      }
+    `
+    const result = compileJSX(source, 'C.tsx', { adapter })
+    expect(result.errors.filter(e => e.severity === 'error')).toEqual([])
+    const js = result.files.find(f => f.type === 'clientJs')!.content
+    // Both rows call the row's own `render`, so both branches get the effect.
+    expect(armEffects(js)).toHaveLength(2)
   })
 })

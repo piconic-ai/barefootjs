@@ -1832,54 +1832,32 @@ function summarizeLoopChildBranch(
     // on the branch root yields exactly this branch's direct bindings
     // without re-collecting what a nested arm already owns (#2347).
     reactiveAttrs: collectLoopChildReactiveAttrs(node, ctx, loopParam, loopParamBindings, true, preambleNames, loopIndex),
-    // Skip ONLY when the branch's entire content is a single bare
-    // `expression` (no wrapping element) that MAY yield a live DOM node —
-    // i.e. it contains a call anywhere (`node.hasFunctionCalls`, computed
-    // by the AST walk in `exprHasFunctionCalls`/jsx-to-ir.ts, recursively —
-    // catches a call nested in a template literal or a nested ternary, not
-    // just a top-level call). A call can return an Element (a hoisted
-    // `renderNode={(n) => <Pill/>}` callback lowered to a component call,
-    // #1211/#1213) and the compiler cannot tell from syntax whether it does
-    // — both `renderChild(...)` and `_p.renderCell(...)` are a
-    // `CallExpression` — so this stays conservative for ANY call, not just
-    // ones known to return JSX. Re-evaluating a non-idempotent call inside
-    // an *additional* nested createEffect (on top of the eval already done
-    // for the `__bfSlot`-wrapped splice whenever `insert()` (re-)mounts this
-    // branch) would call it again on every unrelated tick and discard the
-    // previous element's listeners/state.
+    // The branch's own text slots, decided by the collector every other row
+    // text goes through (`collectLoopChildReactiveTexts`): a slot whose
+    // expression reads the row or a reactive source, or contains a call
+    // (`decideWrapFromAstFlags`), gets an update effect inside this arm.
+    // `insert()` (runtime/insert.ts) leaves a branch alone while its
+    // condition is unchanged, so this effect is the only thing that
+    // rewrites the branch when a keyed row is reused with a new item.
     //
-    // Everything else — a property access (`row.label`), an identifier, a
-    // literal, a template literal, string concatenation, or a nested
-    // ternary of those — cannot itself construct a DOM node (only a JSX
-    // literal or a call can, and a JSX literal branch is never `type:
-    // 'expression'` in the first place — see `transformJsxExpression`), so
-    // it is safe to collect. This is the fix for the loop-branch-stale-text
-    // defect: a keyed loop row whose branch is e.g. `row.done ? row.label :
-    // 'pending'` previously had NO update path at all when `row.label`
-    // changed without `row.done` flipping — `insert()` (runtime/insert.ts)
-    // correctly no-ops when its condition is unchanged (branch-internal
-    // updates are deliberately the effect system's job, not DOM
-    // replacement's), but with reactiveTexts always `[]` for this shape,
-    // no effect existed either, so the branch was frozen at its mount-time
-    // value. The stale rationale in a prior version of this comment blamed
-    // "the loop-child arm's `$t()`-based anchor lookup", but `$t()` no
-    // longer exists — it was one of four content mechanisms deleted by the
-    // slot-unification work. The current claim door
-    // (`stringifyLoopChildArm` → `lazySlots(..., kind: 'markup')` →
-    // `writeMarkup`, runtime/claim-slots.ts) clears the claimed range and
-    // splices the Node by identity, so "lands beside the first" cannot
-    // happen through it; only the call's non-idempotence still applies, and
-    // that alone is why the skip narrows rather than disappears.
+    // That includes a branch that is one bare expression with a call in it
+    // (`cond ? fmt(row.wait) : '0s'`, #3894). Such a branch used to get no
+    // effect whatever it called, so the slot kept the value the row was
+    // built with, while the same call directly in the row, or in a
+    // conditional outside a loop, was re-evaluated.
     //
-    // Collecting here is necessary but not sufficient: `n.slotId` must also
-    // be set for `collectLoopChildReactiveTexts` (ir-to-client-js/
-    // reactivity.ts) to do anything — see `transformConditionalBranch`'s
-    // `refsLoopParam` check (jsx-to-ir.ts) for the matching half of this fix
-    // that gives a bare loop-item-reading branch a slotId at all, which also
-    // makes `irToHtmlTemplate` emit its `<!--bf:sN-->…<!--/-->` marker (the
-    // same call builds both the SSR and the CSR/hydration template, so the
-    // two can't disagree on shape).
-    reactiveTexts: node.type === 'expression' && node.hasFunctionCalls
+    // The one branch left without an effect is the one Phase 1 marks
+    // `callerCallbackResult`: its value can be an element a callback prop
+    // built (`props.renderNode ? props.renderNode(n) : <span/>`, #1211/
+    // #1213). That element owns its state, and calling the callback again
+    // on every change of the row's item would replace it each time, so the
+    // row keeps the element `insert()` mounted with the branch.
+    //
+    // `n.slotId` must be set for the collector to take a slot. See
+    // `transformConditionalBranch`'s `refsLoopParam` check (jsx-to-ir.ts),
+    // which gives a bare branch reading the loop item its slot and so the
+    // `<!--bf:sN-->` marker in both the SSR and the client template.
+    reactiveTexts: node.type === 'expression' && node.callerCallbackResult
       ? []
       : collectLoopChildReactiveTexts(node, ctx, loopParam, loopParamBindings, true, preambleNames, loopIndex),
   }
