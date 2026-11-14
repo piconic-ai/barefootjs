@@ -121,6 +121,14 @@ export const renderDivergences: RenderDivergences = {
   // A `null` / `undefined` `style` object property renders `color:` with
   // an empty value instead of being dropped.
   'style-object-nil-property': { limitation: 'style-object-nil-property' },
+  // A body rest over an open props type (`const { title, ...rest } = props`):
+  // the template's rest bag holds only the keys the props type does not
+  // declare, so the spread leaves out `tone`.
+  'open-body-rest-spread-child-omits-keys': { limitation: 'open-body-rest-declared-key' },
+  'open-body-rest-spread-element': { limitation: 'open-body-rest-declared-key' },
+  // An array in child position: the template prints the array stringified
+  // where JSX renders its items one after another.
+  'array-text-child': { limitation: 'array-text-child' },
 }
 
 /**

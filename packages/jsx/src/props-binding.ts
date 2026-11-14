@@ -620,6 +620,22 @@ export interface RestSpreadBindings {
 }
 
 /**
+ * The caller keys the component's rest bag (`...rest`) leaves out: the keys
+ * its destructure takes before the rest element, spelled as the caller
+ * passes them. A body destructure of the props object (`const { a, ...rest }
+ * = props`) records them itself (`restPropsOmittedKeys`); a signature rest
+ * takes every destructured param, by its source key (`{ value: v }` takes
+ * `value`). The one definition `SpreadAttr.restOmittedKeys` is built from.
+ */
+export function restBagOmittedKeys(bindings: {
+  propsParams: ReadonlyArray<{ name: string; sourceName?: string }>
+  restPropsOmittedKeys?: readonly string[] | null
+}): string[] {
+  if (bindings.restPropsOmittedKeys) return [...bindings.restPropsOmittedKeys]
+  return bindings.propsParams.map(p => p.sourceName ?? p.name)
+}
+
+/**
  * Walks a bare `const x__alias = <name>` hop chain recorded in
  * `constantValues` (name → initializer text) until `terminal` recognizes
  * the current name, returning what it recognized. `null` when the chain

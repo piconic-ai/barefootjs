@@ -300,6 +300,21 @@ export const renderDivergences: RenderDivergences = {
   // its JS value, and an optional scalar row field a `bf.Opt[T]` read
   // through `.V` (spec/js-undefined-value.md, U8).
   'object-entries-typed-object-signal': { limitation: 'object-entries-typed-object-signal' },
+  // A body rest over an open props type (`const { title, ...rest } = props`):
+  // the template's rest bag holds only the keys the props type does not
+  // declare, so the spread leaves out `tone`.
+  'open-body-rest-spread-child-omits-keys': { limitation: 'open-body-rest-declared-key' },
+  'open-body-rest-spread-element': { limitation: 'open-body-rest-declared-key' },
+  // An open `{...rest}` bag spread onto a child component: the child's
+  // `<Child>Input{...}` literal is built from the call's explicit props only.
+  'open-rest-spread-child-omits-keys': { limitation: 'open-rest-spread-onto-child-component' },
+  'open-rest-spread-child': { limitation: 'open-rest-spread-onto-child-component' },
+  // Same dropped spread (no `data-tone`). The children-seeded signal also
+  // renders `missing` where the caller's `children` reaches the child.
+  'open-rest-spread-child-children': { limitation: 'open-rest-spread-onto-child-component' },
+  // An array in child position: the template prints the array stringified
+  // where JSX renders its items one after another.
+  'array-text-child': { limitation: 'array-text-child' },
 }
 
 // #2943 graduated: a BODY-destructured prop's default now reaches

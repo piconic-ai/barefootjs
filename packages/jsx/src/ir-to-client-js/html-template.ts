@@ -19,7 +19,7 @@ import { interp, spliceChildValue, conditionalMarkup, renderChildCall, mappedRow
 import { markupSlotIdsOf } from './markup-slots.ts'
 import { isEventHandlerName } from '../event-handler-name.ts'
 import { writesAnyBinding } from '../props-binding.ts'
-import { isObjectSpreadProp } from './child-props-object.ts'
+import { callerBagSpreadOmit, isObjectSpreadProp, restBagExpr } from './child-props-object.ts'
 
 /** Static HTML is embedded in a JS template literal; dynamic expressions use interp(). */
 function escapeStaticTemplateHtml(text: string): string {
@@ -422,13 +422,14 @@ function renderTemplateAttrPart(
  * (#3688) — a later key overrides an earlier one, and the spread overrides
  * only the keys the caller passed. A spread of any other object
  * (`isObjectSpreadProp`: a loop row, an object prop, a local) is kept the
- * same way, so its keys reach the child in source order (#3861). A
- * `{...rest}` bag stays out: the init forwards it.
+ * same way, so its keys reach the child in source order (#3861). So is a
+ * `{...rest}` bag, spelled without the keys the component destructured
+ * (`restBagTemplateEntry`, #3714).
  */
 function keepsTemplateComponentProp(p: IRProp): boolean {
   if (p.name === 'key') return false
   if (p.name === '...' || p.name.startsWith('...')) {
-    return p.value.kind === 'spread' && (p.value.propsObject === true || isObjectSpreadProp(p))
+    return p.value.kind === 'spread' && (callerBagSpreadOmit(p.value) !== null || isObjectSpreadProp(p))
   }
   return true
 }
@@ -436,6 +437,19 @@ function keepsTemplateComponentProp(p: IRProp): boolean {
 /** One `renderChild(...)` props-object entry: `name: value`, or `...value` for a spread. */
 function templatePropEntry(p: IRProp, valueExpr: string): string {
   return p.name === '...' || p.name.startsWith('...') ? `...${valueExpr}` : `${quotePropName(p.name)}: ${valueExpr}`
+}
+
+/**
+ * The `renderChild(...)` props-object entry of a `{...rest}` bag spread
+ * (`SpreadAttr.callerBag === 'rest'`), or null when `p` is not one. The
+ * template holds the bag as the caller's whole props object (`_p`), so the
+ * entry spreads it without the keys the component destructured
+ * (`restBagExpr`, the spelling the init's props object uses), in the
+ * spread's source position (#3714).
+ */
+function restBagTemplateEntry(p: IRProp): string | null {
+  if (p.value.kind !== 'spread' || p.value.callerBag !== 'rest') return null
+  return `...${restBagExpr(p.value.restOmittedKeys ?? [])}`
 }
 
 /**
@@ -927,6 +941,8 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
         .map(p => {
           // `/* @client */` defers the prop to hydrate via initChild.
           if (p.clientOnly) return null
+          const restBagEntry = restBagTemplateEntry(p)
+          if (restBagEntry !== null) return restBagEntry
           switch (p.value.kind) {
             case 'jsx-children': {
               const hoistedRecurse = (n: IRNode): string => irToHtmlTemplate(n, restSpreadNames, loopDepth, loopParams, branchSlotsVar, true)
@@ -2094,6 +2110,8 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
         .map(p => {
           // `/* @client */` defers the prop to hydrate via initChild.
           if (p.clientOnly) return null
+          const restBagEntry = restBagTemplateEntry(p)
+          if (restBagEntry !== null) return restBagEntry
           switch (p.value.kind) {
             case 'jsx-children': {
               const hoistedRecurse = (n: IRNode): string => irToComponentTemplateWithOpts(n, { ...opts, inHoistedChildren: true })
@@ -2784,6 +2802,8 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
           // (built in collect-elements) reads the value once init
           // runs, mirroring the existing UNSAFE strip path below.
           if (p.clientOnly) return null
+          const restBagEntry = restBagTemplateEntry(p)
+          if (restBagEntry !== null) return restBagEntry
           switch (p.value.kind) {
             case 'jsx-children': {
               const hoistedRecurse = (n: IRNode): string => generateCsrTemplateWithOpts(n, { ...opts, inHoistedChildren: true })

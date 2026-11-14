@@ -650,6 +650,14 @@
       }
     }
   ],
+  "array-text-child": [
+    {
+      "name": "gen:xs:empty",
+      "props": {
+        "xs": []
+      }
+    }
+  ],
   "array-toReversed": [
     {
       "name": "gen:items:empty",
@@ -2355,6 +2363,30 @@
       "name": "gen:rows:empty",
       "props": {
         "rows": []
+      }
+    }
+  ],
+  "children-element-read-into-state": [
+    {
+      "name": "gen:tone:absent",
+      "props": {}
+    },
+    {
+      "name": "gen:tone:empty",
+      "props": {
+        "tone": ""
+      }
+    },
+    {
+      "name": "gen:tone:markup",
+      "props": {
+        "tone": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:tone:multibyte",
+      "props": {
+        "tone": "日本語"
       }
     }
   ],
@@ -13545,6 +13577,251 @@
       "name": "gen:present:multibyte",
       "props": {
         "present": "日本語"
+      }
+    }
+  ],
+  "open-body-rest-spread-child-omits-keys": [
+    {
+      "name": "gen:title:absent",
+      "props": {
+        "tone": "warm"
+      }
+    },
+    {
+      "name": "gen:title:empty",
+      "props": {
+        "title": "",
+        "tone": "warm"
+      }
+    },
+    {
+      "name": "gen:title:markup",
+      "props": {
+        "title": "<b>&\"'</b>",
+        "tone": "warm"
+      }
+    },
+    {
+      "name": "gen:title:multibyte",
+      "props": {
+        "title": "日本語",
+        "tone": "warm"
+      }
+    },
+    {
+      "name": "gen:tone:absent",
+      "props": {
+        "title": "T"
+      }
+    },
+    {
+      "name": "gen:tone:empty",
+      "props": {
+        "title": "T",
+        "tone": ""
+      }
+    },
+    {
+      "name": "gen:tone:markup",
+      "props": {
+        "title": "T",
+        "tone": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:tone:multibyte",
+      "props": {
+        "title": "T",
+        "tone": "日本語"
+      }
+    },
+    {
+      "name": "gen:size:empty",
+      "props": {
+        "title": "T",
+        "tone": "warm",
+        "size": ""
+      }
+    },
+    {
+      "name": "gen:size:markup",
+      "props": {
+        "title": "T",
+        "tone": "warm",
+        "size": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:size:multibyte",
+      "props": {
+        "title": "T",
+        "tone": "warm",
+        "size": "日本語"
+      }
+    }
+  ],
+  "open-rest-spread-child-omits-keys": [
+    {
+      "name": "gen:title:absent",
+      "props": {
+        "label": "L",
+        "kind": "K",
+        "tone": "warm",
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:title:empty",
+      "props": {
+        "title": "",
+        "label": "L",
+        "kind": "K",
+        "tone": "warm",
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:title:markup",
+      "props": {
+        "title": "<b>&\"'</b>",
+        "label": "L",
+        "kind": "K",
+        "tone": "warm",
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:title:multibyte",
+      "props": {
+        "title": "日本語",
+        "label": "L",
+        "kind": "K",
+        "tone": "warm",
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "title": "T",
+        "kind": "K",
+        "tone": "warm",
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "title": "T",
+        "label": "",
+        "kind": "K",
+        "tone": "warm",
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "title": "T",
+        "label": "<b>&\"'</b>",
+        "kind": "K",
+        "tone": "warm",
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "title": "T",
+        "label": "日本語",
+        "kind": "K",
+        "tone": "warm",
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:kind:absent",
+      "props": {
+        "title": "T",
+        "label": "L",
+        "tone": "warm",
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:kind:empty",
+      "props": {
+        "title": "T",
+        "label": "L",
+        "kind": "",
+        "tone": "warm",
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:kind:markup",
+      "props": {
+        "title": "T",
+        "label": "L",
+        "kind": "<b>&\"'</b>",
+        "tone": "warm",
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:kind:multibyte",
+      "props": {
+        "title": "T",
+        "label": "L",
+        "kind": "日本語",
+        "tone": "warm",
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "title": "T",
+        "label": "L",
+        "kind": "K",
+        "tone": "warm",
+        "items": []
       }
     }
   ],

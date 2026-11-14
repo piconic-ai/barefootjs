@@ -537,6 +537,12 @@
               ]
             },
             {
+              "fixture": "open-rest-spread-child",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -5588,6 +5594,12 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -5715,6 +5727,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-element-read-into-state",
+              "limitations": [
+                "children-element-read-into-state"
               ]
             },
             {
@@ -5961,6 +5979,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
               ]
             },
             {
@@ -6430,6 +6454,24 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child-children",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -6848,6 +6890,12 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -7242,6 +7290,12 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -7621,6 +7675,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
               ]
             },
             {
@@ -8012,6 +8072,12 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8400,6 +8466,12 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -8785,6 +8857,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
               ]
             },
             {
@@ -9970,6 +10048,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "array-text-child",
+              "limitations": [
+                "array-text-child"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -10336,6 +10420,18 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "plus-beyond-safe-integer",
               "limitations": [
                 "plus-beyond-safe-integer"
@@ -10508,6 +10604,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "array-text-child",
+              "limitations": [
+                "array-text-child"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -10547,6 +10649,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-element-read-into-state",
+              "limitations": [
+                "children-element-read-into-state"
               ]
             },
             {
@@ -10856,6 +10964,18 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -11009,6 +11129,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "array-text-child",
+              "limitations": [
+                "array-text-child"
+              ]
+            },
             {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
@@ -11514,6 +11640,36 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child-children",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -11710,6 +11866,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "array-text-child",
+              "limitations": [
+                "array-text-child"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -12073,6 +12235,18 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
               ]
             },
             {
@@ -12242,6 +12416,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "array-text-child",
+              "limitations": [
+                "array-text-child"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -12608,6 +12788,18 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -12773,6 +12965,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "array-text-child",
+              "limitations": [
+                "array-text-child"
+              ]
+            },
             {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
@@ -13134,6 +13332,18 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -13305,6 +13515,12 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "array-text-child",
+              "limitations": [
+                "array-text-child"
+              ]
+            },
             {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
@@ -13666,6 +13882,18 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -13819,6 +14047,12 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "array-text-child",
+              "limitations": [
+                "array-text-child"
+              ]
+            },
             {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
@@ -14186,6 +14420,18 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "plus-beyond-safe-integer",
               "limitations": [
                 "plus-beyond-safe-integer"
@@ -14357,6 +14603,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "array-text-child",
+              "limitations": [
+                "array-text-child"
+              ]
+            },
             {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
@@ -14721,6 +14973,18 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
               ]
             },
             {
@@ -15387,6 +15651,12 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -15784,6 +16054,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
               ]
             },
             {
@@ -16295,6 +16571,30 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child-children",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -16731,6 +17031,12 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -17137,6 +17443,12 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -17540,6 +17852,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
               ]
             },
             {
@@ -17961,6 +18279,12 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -18352,6 +18676,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
               ]
             },
             {
@@ -18755,6 +19085,12 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -19074,6 +19410,18 @@
               "fixture": "index-read-capitalised-key-only",
               "limitations": [
                 "index-read-capitalised-key-only"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child-children",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
               ]
             },
             {
@@ -19765,6 +20113,18 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "plus-beyond-safe-integer",
               "limitations": [
                 "plus-beyond-safe-integer"
@@ -19898,6 +20258,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "children-element-read-into-state",
+              "limitations": [
+                "children-element-read-into-state"
               ]
             },
             {
@@ -20126,6 +20492,18 @@
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
               ]
             },
             {
@@ -20607,6 +20985,36 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child-children",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -21007,6 +21415,18 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -21383,6 +21803,18 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -21750,6 +22182,18 @@
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
               ]
             },
             {
@@ -22135,6 +22579,18 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -22502,6 +22958,18 @@
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
               ]
             },
             {
@@ -22884,6 +23352,18 @@
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
               ]
             },
             {
@@ -29650,6 +30130,12 @@
               ]
             },
             {
+              "fixture": "open-rest-spread-child",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -29927,6 +30413,18 @@
               "fixture": "loop-row-absent-optional-member-attr-module-const",
               "limitations": [
                 "static-literal-loop-absent-row-field"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
               ]
             },
             {
@@ -31921,6 +32419,12 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -32222,6 +32726,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
               ]
             },
             {
@@ -32619,6 +33129,30 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child-children",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child-omits-keys",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
               "fixture": "optional-object-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -32947,6 +33481,12 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -33257,6 +33797,12 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -33564,6 +34110,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
               ]
             },
             {
@@ -33889,6 +34441,12 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -34193,6 +34751,12 @@
               ]
             },
             {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
+              ]
+            },
+            {
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
@@ -34494,6 +35058,12 @@
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
+              ]
+            },
+            {
+              "fixture": "open-body-rest-spread-element",
+              "limitations": [
+                "open-body-rest-declared-key"
               ]
             },
             {
@@ -34970,6 +35540,18 @@
               "fixture": "index-read-capitalised-key-only",
               "limitations": [
                 "index-read-capitalised-key-only"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
+              ]
+            },
+            {
+              "fixture": "open-rest-spread-child-children",
+              "limitations": [
+                "open-rest-spread-onto-child-component"
               ]
             },
             {

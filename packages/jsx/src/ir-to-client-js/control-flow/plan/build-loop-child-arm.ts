@@ -65,6 +65,7 @@ function wrapAttrValueExpression(value: AttrValue, wrap: (s: string) => string):
         ...AttrValueOf.spread(wrap(value.expr), value.templateExpr ? wrap(value.templateExpr) : undefined),
         ...(value.propsObject && { propsObject: true as const }),
         ...(value.callerBag !== undefined && { callerBag: value.callerBag }),
+        ...(value.restOmittedKeys !== undefined && { restOmittedKeys: value.restOmittedKeys }),
       }
   }
 }

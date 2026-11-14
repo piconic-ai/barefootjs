@@ -113,6 +113,10 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // Same `applyRestAttrs`-not-modeled harness class: each child spreads
   // its rest bag onto its root.
   'child-rest-bag-generated-field-name',
+  // Same `applyRestAttrs`-not-modeled harness class: `Badge` spreads its
+  // body rest onto its root. The real-browser fixture-hydrate and oracle
+  // suites check the client.
+  'open-body-rest-spread-element',
   // The harness now mounts the fixture's `componentName` (the #1467
   // multi-export class — `__lastComponent` rendering the last demo export
   // instead of the pinned basic demo — is gone; radio-group, tabs, dialog,
@@ -281,4 +285,7 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // beside a body const of the same name: the CSR template inlines the body
   // const into the default.
   'destructure-default-param-body-const-same-name': { limitation: 'client-binding-named-like-module-binding' },
+  // An element child a component reads into a signal: the CSR template
+  // prints the signal's initial value as escaped text.
+  'children-element-read-into-state': { limitation: 'children-element-read-into-state' },
 }

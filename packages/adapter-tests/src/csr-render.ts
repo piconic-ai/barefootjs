@@ -394,6 +394,22 @@ const initChild = (name, _scope, props) => { __runInit(name, props) }
 const createComponent = () => null
 const createPortal = () => {}
 const applyRestAttrs = () => {}
+// Mirror @barefootjs/client's \`forwardProps\` (forward-props.ts): the
+// overrides, plus every source key not excluded, each read through a
+// getter. A registration template spreads a \`{...rest}\` bag onto a child
+// as \`...forwardProps(_p, {}, [<destructured keys>])\` (#3714).
+function forwardProps(source, overrides, excludeKeys) {
+  const result = {}
+  const descs = Object.getOwnPropertyDescriptors(overrides)
+  for (const key of Object.keys(descs)) {
+    Object.defineProperty(result, key, { ...descs[key], enumerable: true, configurable: true })
+  }
+  for (const key of Object.keys(source)) {
+    if (excludeKeys.includes(key) || key in result) continue
+    Object.defineProperty(result, key, { get: () => source[key], enumerable: true, configurable: true })
+  }
+  return result
+}
 // Mirror @barefootjs/client/runtime escapeAttr: HTML-escape an
 // interpolated attribute value (Hono's set: & " ' < >) so CSR template
 // output matches the SSR-escaped reference. The harness strips the
@@ -410,7 +426,9 @@ const escapeAttr = (value) =>
 // value renders as empty text (JSX/Solid semantics; #2137) — otherwise a
 // bare \`{props.x}\` on an absent prop would surface literal "undefined".
 // A boolean child renders no text either (#3824 step 5).
-const escapeText = (value) => value == null || typeof value === 'boolean' ? '' : escapeAttr(value)
+// An array child renders its items one after another (\`childText\`).
+const childText = (value) => value == null || typeof value === 'boolean' ? '' : Array.isArray(value) ? value.map(childText).join('') : String(value)
+const escapeText = (value) => value == null || typeof value === 'boolean' ? '' : escapeAttr(Array.isArray(value) ? childText(value) : value)
 // Mirror @barefootjs/client/runtime escapeCommentText (#2795 follow-up): the
 // whole-item-conditional loop's \`bf-loop-i:<key>\` anchor comment neutralizes
 // \`-\` (the only character that matters inside an HTML comment — the literal

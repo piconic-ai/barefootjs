@@ -114,6 +114,7 @@ import { commentsInScope } from './query.ts'
 import { commentScopeRegistry, isOwnedByScope } from './scope.ts'
 import { relocatedRowElements } from './row-portal.ts'
 import { isSlotMarker, type SlotMarker } from '../slot.ts'
+import { childText } from './child-text.ts'
 
 /**
  * A slot's compile-time descriptor. `path` is the list of child indices
@@ -472,7 +473,7 @@ function writeText(slot: ClaimedTextSlot, value: unknown): void {
   const node = slot.ref.nodeType === Node.TEXT_NODE ? (slot.ref as Text) : materializeText(slot)
   if (!node) return
   // JSX renders no text for a nullish or boolean child (#3824 step 5).
-  node.nodeValue = typeof value === 'boolean' ? '' : String(value ?? '')
+  node.nodeValue = childText(value)
 }
 
 /**
@@ -504,7 +505,9 @@ export function textOrNode(value: unknown): string | Node | SlotMarker {
   // server-rendered DOM alone (see `escapeTextOrNode`).
   if (isSlotMarker(value)) return value
   // A boolean child renders no text (#3824 step 5).
-  return typeof value === 'boolean' ? '' : String(value)
+  if (typeof value === 'boolean') return ''
+  // An array child renders its items one after another (`childText`).
+  return Array.isArray(value) ? childText(value) : String(value)
 }
 
 /**

@@ -2227,6 +2227,62 @@
   "fixtureDivergences": {
     "note": "Render-conformance section: the shared conformance corpus (packages/adapter-tests) is rendered through every adapter’s REAL backend and byte-compared against the Hono reference. This answers, per fixture and per adapter, whether the construct WORKS — not just whether it compiles. A construct works either as written (✓) or with a documented `/* @client */` comment (✓†, a verified, supported escape — most refusals have one). Fixtures absent from the table below work on every adapter — most as written, some via that documented escape; the headline says how many of each. Listed fixtures need attention somewhere: a bare diagnostic code is still-open debt with no escape yet, a code led by ✗ owes no escape at all (by design), and ≠ means the fixture compiles clean but its rendered output diverges from the reference.",
     "fixtures": {
+      "array-text-child": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "array-text-child"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "array-text-child"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "array-text-child"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "array-text-child"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "array-text-child"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "array-text-child"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "array-text-child"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "array-text-child"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "array-text-child"
+          ]
+        }
+      },
       "body-destructure-non-identifier-source": {
         "blade": {
           "kind": "refusal",
@@ -2853,6 +2909,14 @@
           "kind": "render",
           "limitations": [
             "whole-props-spread-undeclared-prop"
+          ]
+        }
+      },
+      "children-element-read-into-state": {
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "children-element-read-into-state"
           ]
         }
       },
@@ -8987,6 +9051,142 @@
           }
         }
       },
+      "open-body-rest-spread-child-omits-keys": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "open-body-rest-declared-key"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "open-body-rest-declared-key"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "open-body-rest-declared-key"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "open-body-rest-declared-key"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "open-body-rest-declared-key"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "open-body-rest-declared-key"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "open-body-rest-declared-key"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "open-body-rest-declared-key"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "open-body-rest-declared-key"
+          ]
+        }
+      },
+      "open-body-rest-spread-element": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "open-body-rest-declared-key"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "open-body-rest-declared-key"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "open-body-rest-declared-key"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "open-body-rest-declared-key"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "open-body-rest-declared-key"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "open-body-rest-declared-key"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "open-body-rest-declared-key"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "open-body-rest-declared-key"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "open-body-rest-declared-key"
+          ]
+        }
+      },
+      "open-rest-spread-child": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "open-rest-spread-onto-child-component"
+          ]
+        }
+      },
+      "open-rest-spread-child-children": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "open-rest-spread-onto-child-component"
+          ]
+        }
+      },
+      "open-rest-spread-child-omits-keys": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "open-rest-spread-onto-child-component"
+          ]
+        }
+      },
       "optional-object-prop-member-signal-seed": {
         "go-template": {
           "kind": "refusal",
@@ -12261,6 +12461,10 @@
       }
     },
     "docs": {
+      "array-text-child": {
+        "description": "An array in child position renders its items one after another",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/array-text-child.ts"
+      },
       "body-destructure-non-identifier-source": {
         "description": "A body destructure of a member read or a call is refused",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-destructure-non-identifier-source.ts"
@@ -12288,6 +12492,10 @@
       "child-undeclared-prop-whole-props-spread": {
         "description": "Undeclared props reach a child that spreads its whole props object",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/child-undeclared-prop-whole-props-spread.ts"
+      },
+      "children-element-read-into-state": {
+        "description": "An element child a component reads into state renders as that element",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-element-read-into-state.ts"
       },
       "component-spread-props-in-static-loop-row": {
         "description": "A props spread onto a child component in a static-array loop row",
@@ -12608,6 +12816,26 @@
       "opaque-local-accessor-call": {
         "description": "Local accessor bound to an opaque helper call, invoked in text position, renders its result on the…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/opaque-local-accessor-call.ts"
+      },
+      "open-body-rest-spread-child-omits-keys": {
+        "description": "An open rest bag bound in the component body leaves out only the keys its destructure takes",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/open-body-rest-spread-child-omits-keys.ts"
+      },
+      "open-body-rest-spread-element": {
+        "description": "an open rest bag bound in the component body, spread onto an element, carries the declared keys its…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/open-body-rest-spread-element.ts"
+      },
+      "open-rest-spread-child": {
+        "description": "an open rest bag spread onto a child component leaves out the destructured keys and stays live…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/open-rest-spread-child.ts"
+      },
+      "open-rest-spread-child-children": {
+        "description": "a call that spreads a rest bag onto a child hands the child's init its JSX children (#3714)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/open-rest-spread-child-children.ts"
+      },
+      "open-rest-spread-child-omits-keys": {
+        "description": "An open rest bag spread onto a child component leaves out the destructured keys",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/open-rest-spread-child-omits-keys.ts"
       },
       "optional-object-prop-member-signal-seed": {
         "description": "a signal seeded from a member of an optional object prop renders its seed (or the fallback) at SSR",
@@ -13085,6 +13313,27 @@
         "BF101"
       ]
     },
+    "array-text-child": {
+      "title": "An array value in child position",
+      "kind": "silent",
+      "given": "an array prop interpolated as a child (`<p>{xs}</p>` with `xs: string[]`)",
+      "expected": "the items render one after another, with no separator (`ab`)",
+      "actual": "renders the array stringified: its items joined with commas (`a,b`), or the template runtime's own notation for an array",
+      "fixtures": [
+        "array-text-child"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
     "authored-format-date-call": {
       "title": "Authored call to formatDate",
       "kind": "refusal",
@@ -13300,6 +13549,28 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "children-element-read-into-state": {
+      "title": "An element child read into state by the component",
+      "kind": "silent",
+      "given": "a component that reads `props.children` into a signal and renders the signal (`const [value] = createSignal(props.children)`, `{value()}`), called with an element as its JSX children (`<Note><i>a</i></Note>`)",
+      "expected": "the element renders inside the component (`<b><i>a</i></b>`)",
+      "actual": "renders the element's markup as escaped text (`&lt;i&gt;a&lt;/i&gt;`)",
+      "fixtures": [
+        "children-element-read-into-state"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "client-binding-named-like-module-binding": {
@@ -14054,6 +14325,43 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "open-body-rest-declared-key": {
+      "title": "A declared key in a body rest over an open props type",
+      "kind": "silent",
+      "given": "the rest of a component-body destructure of the props object, whose type is open (`const { title, ...rest } = props` with `props: { title?: string; tone?: string; [key: string]: unknown }`), spread onto an element or a child component",
+      "expected": "the spread carries every key the caller passed except the ones the destructure takes, so a key the props type declares (`tone`) reaches the element or the child",
+      "actual": "drops the keys the props type declares from the spread: only the undeclared keys are carried",
+      "fixtures": [
+        "open-body-rest-spread-child-omits-keys",
+        "open-body-rest-spread-element"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "open-rest-spread-onto-child-component": {
+      "title": "An open rest bag spread onto a child component",
+      "kind": "silent",
+      "given": "a component whose props type is open (an index signature) spreads its destructured rest onto a child component (`function Card({ title, ...rest }: CardProps) { return <Tag {...rest} /> }`)",
+      "expected": "every key the rest carries reaches the child, merged with the call's explicit props in source order",
+      "actual": "drops the spread: the child receives only the call's explicit props",
+      "fixtures": [
+        "open-rest-spread-child",
+        "open-rest-spread-child-children",
+        "open-rest-spread-child-omits-keys"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "plus-beyond-safe-integer": {

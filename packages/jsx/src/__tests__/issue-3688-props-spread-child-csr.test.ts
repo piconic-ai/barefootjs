@@ -7,7 +7,8 @@
  * props, and reads an explicit prop written before it from the caller's
  * props first in `initChild`'s `forwardProps(...)` overrides, so both merge
  * like the JSX call does. A `{...rest}` bag is not the caller's props (it
- * leaves out the destructured keys) and is not marked.
+ * leaves out the destructured keys) and is not marked; it merges without
+ * those keys (#3714, `issue-3714-open-rest-spread-child.test.ts`).
  *
  * The end-to-end runtime check lives in
  * `packages/client/__tests__/runtime/issue-3688-props-spread-merge.test.ts`;
@@ -130,14 +131,18 @@ describe('#3688 — the client JS merges a props-object spread in source order',
     expect(js).not.toContain(`"tone" in _p`)
   })
 
-  test('an open rest bag stays out of the template props', () => {
+  test('an open rest bag is not merged as the props object', () => {
     const js = clientJs(`
       import { Tag } from './tag'
       export function Rest({ title, ...rest }: { title?: string; [key: string]: any }) {
         return <p title={title}><Tag title="x" {...rest} /></p>
       }
     `)
-    expect(js).toContain(`renderChild('Tag', {title: "x"}`)
+    // The bag leaves out the destructured `title` (#3714), so the template
+    // spreads the caller's props without it, never `..._p`, and the explicit
+    // `title` written before it stays as written.
+    expect(js).toContain(`renderChild('Tag', {title: "x", ...forwardProps(_p, {}, ["title"])}`)
+    expect(js).not.toContain(`..._p`)
     expect(js).not.toContain(`"title" in _p`)
   })
 })

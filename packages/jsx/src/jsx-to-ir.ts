@@ -59,7 +59,7 @@ import {
   collectAstPropRefs,
   rewriteScopedValueRefs,
 } from './prop-rewrite.ts'
-import { boundPropLocalNames, buildPropAliasMap, templatePropReadParams, resolveAliasOrigin, resolveRestSpreadOriginCore, livePropReadExpr } from './props-binding.ts'
+import { boundPropLocalNames, buildPropAliasMap, templatePropReadParams, resolveAliasOrigin, resolveRestSpreadOriginCore, restBagOmittedKeys, livePropReadExpr } from './props-binding.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
 import { walkIR } from './ir-to-client-js/walker.ts'
 import { resolveFreeRefs, rebindHelperParamRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
@@ -7372,7 +7372,12 @@ function expandSpreadAttribute(
   return [{
     name: '...',
     value: callerBag || shadowsPropsObject
-      ? { ...value, ...(callerBag && { callerBag }), ...(shadowsPropsObject && { shadowsPropsObject: true as const }) }
+      ? {
+          ...value,
+          ...(callerBag && { callerBag }),
+          ...(callerBag === 'rest' && { restOmittedKeys: restBagOmittedKeys(ctx.analyzer) }),
+          ...(shadowsPropsObject && { shadowsPropsObject: true as const }),
+        }
       : value,
     loc,
     freeIdentifiers: spreadFreeIdentifiers,
