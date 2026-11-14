@@ -1,5 +1,5 @@
 package BarefootJS::Undefined;
-our $VERSION = "0.41.1";
+our $VERSION = "0.41.2";
 use strict;
 use warnings;
 
