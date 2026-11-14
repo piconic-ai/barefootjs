@@ -1563,6 +1563,17 @@ export interface SpreadAttr {
    */
   callerBag?: 'props' | 'rest'
   /**
+   * The caller keys a `callerBag: 'rest'` spread leaves out: the keys the
+   * component destructured before the rest element, as the caller spells
+   * them (`{ title: t, ...rest }` omits `title`), from the signature or
+   * from a body destructure of the props object (`restBagOmittedKeys`).
+   * The client holds the rest bag as the caller's whole props object
+   * (`_p`), so every reader of the bag (the child props object, the
+   * registration template, `applyRestAttrs`) takes these keys out
+   * (#3714). Set exactly when `callerBag` is `'rest'`.
+   */
+  restOmittedKeys?: readonly string[]
+  /**
    * Set when the spread's identifier is spelled like the component's props
    * object but a loop row, callback parameter, destructured field or
    * preamble local binds that name at the spread (`rows.map((props) => <li

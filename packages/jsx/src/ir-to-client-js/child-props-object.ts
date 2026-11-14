@@ -5,16 +5,20 @@
  * Every call-site builder (top-level child, loop row, composite loop row,
  * conditional branch, static-array row) decides each explicit prop's own
  * value spelling, then hands the list here. This module is the one place
- * that decides how a spread of the component's own props object
- * (`SpreadAttr.propsObject`, set in Phase 1) merges with the explicit props
- * in source order (#3688, #3713):
+ * that decides how a spread of one of the component's own prop bags (the
+ * props object, `SpreadAttr.propsObject`, or its `...rest` binding,
+ * `SpreadAttr.callerBag === 'rest'`; both set in Phase 1) merges with the
+ * explicit props in source order (#3688, #3713, #3714):
  *
  *   - a spread prop never becomes an entry of its own;
- *   - an explicit prop written before the last props-object spread is only a
- *     default: the caller's own value wins when the caller passed that key;
+ *   - an explicit prop written before a bag spread that carries its key is
+ *     only a default: the caller's own value wins when the caller passed
+ *     that key;
  *   - an explicit prop written after it wins as written;
- *   - every key the caller passed and the call did not name is forwarded
- *     through `forwardProps`, as getters, so it stays reactive.
+ *   - every key the caller passed, the call did not name and a bag spread
+ *     carries is forwarded through `forwardProps`, as getters, so it stays
+ *     reactive. A rest bag does not carry the keys the component
+ *     destructured (`SpreadAttr.restOmittedKeys`).
  */
 
 import type { AttrValue } from '../types.ts'
@@ -38,25 +42,64 @@ export function isSpreadPropName(name: string): boolean {
 }
 
 /**
- * Index of the last spread of the component's own props object in a child
- * component call (`<Tag tone="first" {...props} />`), or -1. An explicit
- * prop written before it is only a default: the spread overrides it when
- * the caller passed that key, as in JS (#3688). Both the props object built
- * here and the top-level reactive DOM mirrors read this one decision, so an
- * overridden explicit expression can't overwrite the spread-selected value
- * on update.
+ * The caller keys a spread of one of the component's own prop bags leaves
+ * out, or null when `value` is not such a spread: none for the props object
+ * (`SpreadAttr.propsObject`), the destructured keys for a `{...rest}` bag
+ * (`SpreadAttr.restOmittedKeys`, #3714). The client holds either bag as the
+ * caller's whole props object (`_p`).
  */
-export function lastPropsObjectSpreadIndex(props: readonly ChildPropLike[]): number {
-  let at = -1
-  props.forEach((p, index) => {
-    if (p.value.kind === 'spread' && p.value.propsObject === true) at = index
-  })
-  return at
+export function callerBagSpreadOmit(value: AttrValue): readonly string[] | null {
+  if (value.kind !== 'spread') return null
+  if (value.propsObject === true) return []
+  return value.callerBag === 'rest' ? (value.restOmittedKeys ?? []) : null
 }
 
 /**
- * The value of an explicit prop a later props-object spread overrides (see
- * `lastPropsObjectSpreadIndex`): the caller's own value when it passed the
+ * Whether a caller-bag spread written after `index` in a child component
+ * call carries the key `name` (`<Tag tone="first" {...props} />`,
+ * `<Tag tone="first" {...rest} />`). The explicit prop at `index` is then
+ * only a default: the spread overrides it when the caller passed that key,
+ * as in JS (#3688). A rest bag never carries a key the component
+ * destructured, so `<Tag title="x" {...rest} />` keeps `title` as written
+ * (#3714). Both the props object built here and the top-level reactive DOM
+ * mirrors read this one decision, so an overridden explicit expression
+ * can't overwrite the spread-selected value on update.
+ */
+function laterCallerBagCarries(props: readonly ChildPropLike[], index: number, name: string): boolean {
+  for (let at = index + 1; at < props.length; at++) {
+    const omit = callerBagSpreadOmit(props[at]!.value)
+    if (omit !== null && !omit.includes(name)) return true
+  }
+  return false
+}
+
+/**
+ * The caller keys no caller-bag spread of the call carries, or null when
+ * the call spreads no caller bag: the keys every one of them leaves out.
+ */
+function callerBagsOmit(props: readonly ChildPropLike[]): string[] | null {
+  let omitted: string[] | null = null
+  for (const prop of props) {
+    const omit = callerBagSpreadOmit(prop.value)
+    if (omit === null) continue
+    omitted = omitted === null ? [...omit] : omitted.filter(key => omit.includes(key))
+  }
+  return omitted
+}
+
+/**
+ * A `{...rest}` bag as a props object: the caller's props without the keys
+ * the component destructured (`omit`), each read through a getter, so it
+ * stays live. The one spelling the child props object and the registration
+ * template share.
+ */
+export function restBagExpr(omit: readonly string[]): string {
+  return `forwardProps(${PROPS_PARAM}, {}, ${codeSafeStringArray(omit)})`
+}
+
+/**
+ * The value of an explicit prop a later caller-bag spread overrides (see
+ * `laterCallerBagCarries`): the caller's own value when it passed the
  * key, `expr` otherwise. `forwardProps` lets every override win, so the
  * merge is spelled into the value itself.
  */
@@ -70,8 +113,8 @@ export function callerFirstPropExpr(name: string, expr: string): string {
  * (`<Chip {...row} />`, a loop row `{...r}`): not one of the caller's own
  * prop bags (`SpreadAttr.callerBag`, decided in Phase 1). Its keys are
  * merged in source order through `spreadChildProps` (#3861). A caller-bag
- * spread is the props object (`propsObject`, merged by `forwardProps`) or a
- * `{...rest}` bag, which the top-level path forwards whole.
+ * spread is the props object or a `{...rest}` bag
+ * (`callerBagSpreadOmit`), merged by `forwardProps`.
  */
 export function isObjectSpreadProp(prop: ChildPropLike): boolean {
   return isSpreadPropName(prop.name) && prop.value.kind === 'spread' && prop.value.callerBag === undefined
@@ -81,17 +124,18 @@ export interface ChildPropsObjectOptions {
   /** Entries appended after the explicit props (e.g. a row's `children` getter). */
   trailing?: readonly string[]
   /**
-   * Forward the caller's props even without a props-object spread — the
-   * top-level path's `{...rest}` forwarding, which predates the marker.
+   * The call's JSX children are the component's own `children` prop passed
+   * through (`<Slot {...rest}>{children}</Slot>`), and the caller spells no
+   * `children` entry for them. The child's `children` is then the caller's
+   * own, so a `{...rest}` bag keeps forwarding that key although the
+   * component destructured it.
    */
-  forwardCaller?: boolean
-  /**
-   * The caller's `{...rest}` bag as a props object (the caller's props
-   * without the keys the component destructured), so a call that also
-   * spreads an object merges the bag in source order as one more part.
-   * Without it a rest bag spread is left to `forwardCaller`.
-   */
-  restBag?: string
+  passesOwnChildren?: boolean
+}
+
+/** The keys a rest bag leaves out for a call with `options`: see `passesOwnChildren`. */
+function restOmitFor(omit: readonly string[], options: ChildPropsObjectOptions): readonly string[] {
+  return options.passesOwnChildren ? omit.filter(key => key !== 'children') : omit
 }
 
 /**
@@ -120,9 +164,9 @@ export function lastObjectSpreadIndex(props: readonly ChildPropLike[]): number {
  * The value of the explicit prop at `index` for a reactive DOM mirror,
  * merged with every spread written after it, as the props object merges
  * them: a later object spread (`spreadOf` spells its value) wins when its
- * object has the key, and a later props-object spread wins when the caller
- * passed it (`callerFirstPropExpr`). `expr` as written when no spread
- * follows.
+ * object has the key, and a later caller-bag spread that carries the key
+ * (`callerBagSpreadOmit`) wins when the caller passed it
+ * (`callerFirstPropExpr`). `expr` as written when no spread follows.
  */
 export function mergedExplicitPropExpr<P extends ChildPropLike>(
   props: readonly P[],
@@ -133,11 +177,13 @@ export function mergedExplicitPropExpr<P extends ChildPropLike>(
   const name = props[index]!.name
   const key = codeSafeStringLiteral(name)
   let merged = expr
-  // The last spread kind applied: two props-object spreads in a row merge once.
+  // The last spread kind applied: two caller-bag spreads in a row merge once.
   let last: 'props' | 'object' | null = null
   for (let at = index + 1; at < props.length; at++) {
     const prop = props[at]!
-    if (prop.value.kind === 'spread' && prop.value.propsObject === true) {
+    const omit = callerBagSpreadOmit(prop.value)
+    if (omit !== null) {
+      if (omit.includes(name)) continue
       if (last !== 'props') merged = callerFirstPropExpr(name, merged)
       last = 'props'
     } else if (isObjectSpreadProp(prop)) {
@@ -154,13 +200,12 @@ export function mergedExplicitPropExpr<P extends ChildPropLike>(
  * also spells an object spread's value (`isObjectSpreadProp`).
  *
  * Without an object spread, the explicit props form one object literal,
- * wrapped in `forwardProps` for a props-object spread (or the caller
- * forwarding). With one, every part merges in source order through
- * `spreadChildProps` (#3861): each run of explicit props is an object
- * literal, an object spread a thunk of its value, and a props-object spread
- * the thunk `() => _p`, so a later part wins as in JS. A `{...rest}` bag is
- * a part too when the caller spells it (`restBag`); otherwise it is
- * forwarded off `_p` after the merge.
+ * wrapped in `forwardProps` for a caller-bag spread. With one, every part
+ * merges in source order through `spreadChildProps` (#3861): each run of
+ * explicit props is an object literal, an object spread a thunk of its
+ * value, a props-object spread the thunk `() => _p`, and a `{...rest}` bag
+ * the caller's props without the destructured keys (`restBagExpr`), so a
+ * later part wins as in JS.
  */
 export function childPropsObjectExpr<P extends ChildPropLike>(
   props: readonly P[],
@@ -168,7 +213,7 @@ export function childPropsObjectExpr<P extends ChildPropLike>(
   options: ChildPropsObjectOptions = {},
 ): string {
   if (lastObjectSpreadIndex(props) >= 0) return spreadPartsExpr(props, valueOf, options)
-  const spreadAt = lastPropsObjectSpreadIndex(props)
+  const bagsOmit = callerBagsOmit(props)
   const entries: string[] = []
   const explicitNames: string[] = []
   props.forEach((prop, index) => {
@@ -177,7 +222,7 @@ export function childPropsObjectExpr<P extends ChildPropLike>(
     if (!value) return
     explicitNames.push(prop.name)
     const key = quotePropName(prop.name)
-    if (index < spreadAt) {
+    if (laterCallerBagCarries(props, index, prop.name)) {
       entries.push(`get ${key}() { return ${callerFirstPropExpr(prop.name, value.expr)} }`)
     } else {
       entries.push(explicitEntry(key, value))
@@ -185,8 +230,9 @@ export function childPropsObjectExpr<P extends ChildPropLike>(
   })
   entries.push(...(options.trailing ?? []))
   const object = objectLiteral(entries)
-  if (spreadAt < 0 && !options.forwardCaller) return object
-  return `forwardProps(${PROPS_PARAM}, ${object}, ${codeSafeStringArray(explicitNames)})`
+  if (bagsOmit === null) return object
+  const excluded = [...explicitNames, ...restOmitFor(bagsOmit, options).filter(key => !explicitNames.includes(key))]
+  return `forwardProps(${PROPS_PARAM}, ${object}, ${codeSafeStringArray(excluded)})`
 }
 
 /** One explicit prop's object-literal entry: a getter or a data property. */
@@ -202,8 +248,6 @@ function spreadPartsExpr<P extends ChildPropLike>(
 ): string {
   const parts: string[] = []
   let entries: string[] = []
-  const explicitNames: string[] = []
-  let mergesCaller = false
   const flush = (): void => {
     if (entries.length > 0) parts.push(objectLiteral(entries))
     entries = []
@@ -212,13 +256,12 @@ function spreadPartsExpr<P extends ChildPropLike>(
     if (prop.value.kind === 'spread' && prop.value.propsObject === true) {
       flush()
       parts.push(`() => ${PROPS_PARAM}`)
-      mergesCaller = true
       continue
     }
-    if (prop.value.kind === 'spread' && prop.value.callerBag === 'rest' && options.restBag !== undefined) {
+    const restOmit = callerBagSpreadOmit(prop.value)
+    if (restOmit !== null) {
       flush()
-      parts.push(options.restBag)
-      mergesCaller = true
+      parts.push(restBagExpr(restOmitFor(restOmit, options)))
       continue
     }
     if (isSpreadPropName(prop.name) && !isObjectSpreadProp(prop)) continue
@@ -229,12 +272,9 @@ function spreadPartsExpr<P extends ChildPropLike>(
       parts.push(`() => (${value.expr})`)
       continue
     }
-    explicitNames.push(prop.name)
     entries.push(explicitEntry(quotePropName(prop.name), value))
   }
   entries.push(...(options.trailing ?? []))
   flush()
-  const merged = `spreadChildProps(${parts.join(', ')})`
-  if (!options.forwardCaller || mergesCaller) return merged
-  return `forwardProps(${PROPS_PARAM}, ${merged}, ${codeSafeStringArray(explicitNames)})`
+  return `spreadChildProps(${parts.join(', ')})`
 }

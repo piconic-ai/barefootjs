@@ -594,22 +594,21 @@ function restKeyLiveRead(attr: IRElement['attrs'][number]): string {
 }
 
 /** Build propsExpr for a child component from its IR props. */
-function buildComponentPropsExpr(props: IRProp[], ctx: ClientJsContext): string {
-  const knownSpreadProp = props.find(p => {
-    if (!isSpreadPropName(p.name)) return false
-    if (p.value.kind !== 'spread' && p.value.kind !== 'expression') return false
-    const expr = p.value.kind === 'spread' ? p.value.expr : p.value.expr
-    // #2723: resolve through any `const x__alias = x` hop onto the
-    // rest/props binding — see `resolveRestSpreadOrigin`'s docstring.
-    return resolveRestSpreadOrigin(ctx, expr) !== null
+function buildComponentPropsExpr(comp: Pick<IRComponent, 'props' | 'children'>, ctx: ClientJsContext): string {
+  return childPropsObjectExpr(comp.props, prop => componentInitPropValue(prop, ctx), {
+    passesOwnChildren: passesOwnChildren(comp.children),
   })
-  // The rest bag without the keys the component destructured, keyed the
-  // way they arrive on `_p` (the `applyRestAttrs` exclusion set).
-  const consumedKeys = ctx.propsParams.map(p => p.sourceName ?? p.name)
-  return childPropsObjectExpr(props, prop => componentInitPropValue(prop, ctx), {
-    forwardCaller: knownSpreadProp !== undefined,
-    restBag: `forwardProps(${PROPS_PARAM}, {}, ${codeSafeStringArray(consumedKeys)})`,
-  })
+}
+
+/**
+ * Whether a child call's JSX children are exactly the component's own
+ * `children` prop passed through (`<Slot>{children}</Slot>`), which Phase 1
+ * decided from the binding (`IRExpression.childrenRead`). This builder
+ * spells no `children` entry for a call's JSX children, so the child reads
+ * the caller's own `children` off the forwarded props.
+ */
+function passesOwnChildren(children: readonly IRNode[]): boolean {
+  return children.length === 1 && children[0]!.type === 'expression' && children[0]!.childrenRead === 'bare'
 }
 
 /**
@@ -666,13 +665,13 @@ function collectReactiveChildProps(node: IRComponent, ctx: ClientJsContext): voi
 
 /** Convert raw component info from IR traversal to ConditionalBranchChildComponent with built propsExpr. */
 function buildBranchChildComponents(
-  rawComponents: Array<{ name: string; slotId: string | null; props: IRProp[] }>,
+  rawComponents: Array<{ name: string; slotId: string | null; props: IRProp[]; children: IRNode[] }>,
   ctx: ClientJsContext,
 ): ConditionalBranchChildComponent[] {
   return rawComponents.map(comp => ({
     name: comp.name,
     slotId: comp.slotId,
-    propsExpr: buildComponentPropsExpr(comp.props, ctx),
+    propsExpr: buildComponentPropsExpr(comp, ctx),
   }))
 }
 
@@ -1063,7 +1062,7 @@ export function collectElements(
         ctx.childInits.push({
           name: c.name,
           slotId: c.slotId,
-          propsExpr: buildComponentPropsExpr(c.props, ctx),
+          propsExpr: buildComponentPropsExpr(c, ctx),
         })
       }
 
@@ -1147,8 +1146,8 @@ function collectFromElement(element: IRElement, ctx: ClientJsContext, insideCond
           // `applyRestAttrs` filters `Object.keys(_p)` — which is always
           // caller-keyed (#2524 CSR half) — so the exclude list must use
           // the caller-facing key too, not the local binding name.
-          const consumedKeys =
-            spreadOrigin === 'rest' ? ctx.propsParams.map(p => p.sourceName ?? p.name) : []
+          // Phase 1 lists them on the spread (`SpreadAttr.restOmittedKeys`).
+          const consumedKeys = (attr.value.kind === 'spread' && attr.value.restOmittedKeys) || []
           const staticAttrKeys = element.attrs
             .filter(a => a.name !== '...')
             .map(a => a.name)
