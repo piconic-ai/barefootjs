@@ -1,6 +1,0 @@
----
-"@barefootjs/jsx": patch
-"@barefootjs/go-template": patch
----
-
-A destructure default that reads a const is applied on SSR by every template adapter (#3725, #3791). Before, `const DEF = 'z'` with `const { b = DEF.toUpperCase() } = props` rendered `b` empty when the prop was omitted, where Hono renders `Z`; a parameter default reading a module number const (`{ start = START }`) left a signal seeded from it empty, and the Go template adapter did not apply a module-const default at all. The default is now resolved once, lexically, into the expression it stands for: a body destructure reads the component's consts (which hide a module const of the same name), a parameter default reads the module's, and a zero-argument call of a function returning one expression reads that expression. The SSR seed plan's prop steps and Go's props constructor both apply the resolved expression, after every prop it reads. A default that reads a signal, a memo, a `let`, a reassigned const or a function a template cannot inline is refused with BF101 where the server render reads the prop (a read deferred with `/* @client */` is not refused), instead of rendering the prop empty. The Go template adapter also refuses a default reading a const that its props constructor cannot build, as it already did for one reading an earlier prop.

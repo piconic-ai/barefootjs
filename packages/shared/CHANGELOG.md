@@ -1,5 +1,9 @@
 # @barefootjs/shared
 
+## 0.41.2
+
+No changes in this release.
+
 ## 0.41.1
 
 No changes in this release.
