@@ -4508,6 +4508,26 @@
         "text"
       ]
     },
+    "destructure-default-body-mutated-memo": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:!==",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "destructure-default-body-renamed": {
       "kinds": [
         "identifier",

@@ -4684,6 +4684,14 @@
       }
     }
   ],
+  "destructure-default-body-mutated-memo": [
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
+      }
+    }
+  ],
   "destructure-default-body-renamed": [
     {
       "name": "gen:a:empty",

@@ -117,6 +117,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // in markup outside a `{{…}}` action, so a `"` no longer closes the
 // surrounding attribute.
 export const renderDivergences: RenderDivergences = {
+  // A body statement mutating a destructure binding (`local.push('z')`),
+  // read through a memo: the server render runs no body statement, so it
+  // renders the value before the push.
+  'destructure-default-body-mutated-memo': { limitation: 'init-statement-mutation-unrun-on-server' },
   // A method call on a module array-literal const reads the const as an
   // unbound template variable.
   'module-const-array-method-call': { limitation: 'module-const-array-method-call' },
