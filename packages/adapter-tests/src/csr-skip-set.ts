@@ -249,6 +249,10 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
  * and that the entry lists the fixture.
  */
 export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: string }>> = {
+  // A body statement mutating a destructure binding (`local.push('z')`),
+  // read through a memo: the CSR template does not run the statement and
+  // cannot inline the memo over a mutated binding, so it renders empty.
+  'destructure-default-body-mutated-memo': { limitation: 'init-statement-mutation-unrun-on-server' },
   // An object const holding an arrow, read for a listed key in markup: the
   // CSR template does not carry the const, so `{H.safe}` renders empty.
   'module-const-inherited-key-object-safe': { limitation: 'csr-template-object-const-function-property' },
