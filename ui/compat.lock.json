@@ -5713,6 +5713,125 @@
           ]
         }
       },
+      "keyed-row-branch-call": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side re-render of a loop-row branch that hydration adopted from the server HTML. A '/* @client */' twin renders those branches on the client only, so nothing is adopted and the twin would pin a client-only mount instead. The module-scope helper refusal that DSL adapters raise here has its own fixtures (module-const-arrow-helper, module-function-helper-chain)."
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side re-render of a loop-row branch that hydration adopted from the server HTML. A '/* @client */' twin renders those branches on the client only, so nothing is adopted and the twin would pin a client-only mount instead. The module-scope helper refusal that DSL adapters raise here has its own fixtures (module-const-arrow-helper, module-function-helper-chain)."
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side re-render of a loop-row branch that hydration adopted from the server HTML. A '/* @client */' twin renders those branches on the client only, so nothing is adopted and the twin would pin a client-only mount instead. The module-scope helper refusal that DSL adapters raise here has its own fixtures (module-const-arrow-helper, module-function-helper-chain)."
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side re-render of a loop-row branch that hydration adopted from the server HTML. A '/* @client */' twin renders those branches on the client only, so nothing is adopted and the twin would pin a client-only mount instead. The module-scope helper refusal that DSL adapters raise here has its own fixtures (module-const-arrow-helper, module-function-helper-chain)."
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side re-render of a loop-row branch that hydration adopted from the server HTML. A '/* @client */' twin renders those branches on the client only, so nothing is adopted and the twin would pin a client-only mount instead. The module-scope helper refusal that DSL adapters raise here has its own fixtures (module-const-arrow-helper, module-function-helper-chain)."
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side re-render of a loop-row branch that hydration adopted from the server HTML. A '/* @client */' twin renders those branches on the client only, so nothing is adopted and the twin would pin a client-only mount instead. The module-scope helper refusal that DSL adapters raise here has its own fixtures (module-const-arrow-helper, module-function-helper-chain)."
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side re-render of a loop-row branch that hydration adopted from the server HTML. A '/* @client */' twin renders those branches on the client only, so nothing is adopted and the twin would pin a client-only mount instead. The module-scope helper refusal that DSL adapters raise here has its own fixtures (module-const-arrow-helper, module-function-helper-chain)."
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side re-render of a loop-row branch that hydration adopted from the server HTML. A '/* @client */' twin renders those branches on the client only, so nothing is adopted and the twin would pin a client-only mount instead. The module-scope helper refusal that DSL adapters raise here has its own fixtures (module-const-arrow-helper, module-function-helper-chain)."
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "module-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side re-render of a loop-row branch that hydration adopted from the server HTML. A '/* @client */' twin renders those branches on the client only, so nothing is adopted and the twin would pin a client-only mount instead. The module-scope helper refusal that DSL adapters raise here has its own fixtures (module-const-arrow-helper, module-function-helper-chain)."
+          }
+        }
+      },
       "literal-index-own-key": {
         "go-template": {
           "kind": "render",
@@ -12645,6 +12764,10 @@
         "description": "A named JSX prop holding a nested component, forwarded by the receiving component to a grandchild…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/jsx-prop-nested-component-forwarded.ts"
       },
+      "keyed-row-branch-call": {
+        "description": "keyed .map() row: a conditional branch that calls a function is re-rendered when the row is reused",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/keyed-row-branch-call.ts"
+      },
       "literal-index-own-key": {
         "description": "A literal non-identifier key reads the own key (obj['a.b'], obj['*'])",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/literal-index-own-key.ts"
@@ -14049,6 +14172,7 @@
       "expected": "the helper runs at render time and its result renders in the server HTML",
       "actual": "the compiler refuses with BF101 / BF102",
       "fixtures": [
+        "keyed-row-branch-call",
         "module-const-arrow-helper",
         "module-function-helper-chain",
         "module-helper-boolcontext-call"

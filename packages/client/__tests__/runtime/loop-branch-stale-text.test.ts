@@ -96,7 +96,10 @@ export function BareTernaryRows() {
 }
 `
 
-/** Unsafe shape: the true branch is a CallExpression — must keep the skip. */
+/**
+ * The true branch calls a callback prop declared to return a string: it can
+ * only yield text, so the branch is re-rendered like any other (#3894).
+ */
 const CALL_TERNARY = `
 'use client'
 import { createSignal } from '@barefootjs/client'
@@ -117,6 +120,12 @@ export function CallTernaryRows(_p: Props) {
   )
 }
 `
+
+/**
+ * Unsafe shape: the callback prop may return a live element, so the branch
+ * keeps the skip (#1211/#1213).
+ */
+const CALL_TERNARY_NODE = CALL_TERNARY.replace('(s: string) => string', '(s: string) => unknown')
 
 describe('loop-branch-stale-text — bare-expression conditional branch inside a keyed .map()', () => {
   beforeEach(() => { document.body.innerHTML = '' })
@@ -154,11 +163,29 @@ describe('loop-branch-stale-text — bare-expression conditional branch inside a
     expect(li()?.textContent).toBe('pending')
   })
 
-  test('a call-bearing branch keeps the OLD (skip) behavior — no per-item text effect', async () => {
+  test('a branch calling a string-returning callback prop updates on a same-key value change (#3894)', async () => {
     const js = await compileAndRegister(CALL_TERNARY, 'CallTernaryRows.tsx')
-    // The call-bearing branch must NOT get a nested createDisposableEffect
-    // re-invoking `_p.format(row().label)` — that would re-call a
-    // non-idempotence-unproven function on every unrelated tick.
+    // The callback is declared to return a string, so the branch gets its
+    // own per-item text effect.
+    expect(js).toContain('escapeTextOrNode(_p.format(row().label))')
+
+    const { createComponent } = await import('../../src/runtime')
+    const el = createComponent('CallTernaryRows', { format: (s: string) => `<${s}>` }) as Element
+    document.body.appendChild(el)
+    const li = () => el.querySelector('#list li')
+
+    ;(el.querySelector('#load') as HTMLElement).click()
+    expect(li()?.textContent).toBe('<AAA>')
+
+    // Same key, condition unchanged, value changed.
+    ;(el.querySelector('#bump') as HTMLElement).click()
+    expect(li()?.textContent).toBe('<BBB>')
+  })
+
+  test('a branch calling a callback prop that may return an element keeps the skip — no per-item text effect', async () => {
+    const js = await compileAndRegister(CALL_TERNARY_NODE, 'CallTernaryNodeRows.tsx')
+    // The call must NOT be re-invoked by a nested createDisposableEffect:
+    // an element it returned owns its listeners and state.
     expect(js).not.toContain('escapeTextOrNode(_p.format(row().label))')
 
     const { createComponent } = await import('../../src/runtime')
@@ -169,9 +196,8 @@ describe('loop-branch-stale-text — bare-expression conditional branch inside a
     ;(el.querySelector('#load') as HTMLElement).click()
     expect(li()?.textContent).toBe('<AAA>')
 
-    // Same key, condition unchanged, value changed — this shape is NOT
-    // fixed by this PR (out of scope: the skip stays for any call), so the
-    // row is expected to stay stale at its mount-time value.
+    // Same key, condition unchanged, value changed: the row keeps what the
+    // callback returned when the branch was mounted.
     ;(el.querySelector('#bump') as HTMLElement).click()
     expect(li()?.textContent).toBe('<AAA>')
   })

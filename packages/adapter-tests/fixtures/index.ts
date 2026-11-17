@@ -106,6 +106,11 @@ import { fixture as tagCloud } from './tag-cloud'
 // same-key updates must patch that region in place, not freeze it. DSL-
 // refused (BF021, preamble+JSX is jsRuntime-only) like tagCloud above.
 import { fixture as preambleCells } from './preamble-cells'
+// #3894: a keyed .map() row whose conditional branch is a bare expression
+// calling a function. A same-key reuse must re-render the branch. DSL
+// adapters refuse the module-scope helper call (BF101).
+import { fixture as keyedRowBranchCall } from './keyed-row-branch-call'
+import { fixture as keyedRowBranchMethodCall } from './keyed-row-branch-method-call'
 import { fixture as todoAppSsr } from './todo-app-ssr'
 import { fixture as aiChat } from './ai-chat'
 // #1467 Phase 2a: first `site/ui` source-root fixture (Button + its
@@ -1559,6 +1564,8 @@ export const jsxFixtures: JSXFixture[] = [
   todoApp,
   tagCloud,
   preambleCells,
+  keyedRowBranchCall,
+  keyedRowBranchMethodCall,
   todoAppSsr,
   aiChat,
   button,

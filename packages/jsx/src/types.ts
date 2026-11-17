@@ -562,6 +562,23 @@ export interface IRExpression {
    * is never flagged and stays escaped text.
    */
   loopRowPropRead?: true
+  /**
+   * Set on a conditional branch that contains a call and reads a value the
+   * component's caller supplied that may be, or may build, a live element:
+   * anything reached from the props other than a prop whose declared type
+   * holds data only (`caller-value-reach.ts` has the full rule). The read
+   * can be the callee (`props.renderNode(n)`, `props['renderNode'](n)`), an
+   * argument (`apply(props.renderNode, n)`), or a component declaration
+   * that reads one (`const draw = n => props.renderNode(n)`). Decided once
+   * in Phase 1 from the component's own declarations and the props type.
+   *
+   * Such a branch may hold an element the caller built
+   * (`renderNode={(n) => <Pill id={n.id} />}`), which owns its own state.
+   * A loop row keeps the element it got when the branch was mounted rather
+   * than evaluating the branch again each time the row's item changes, so
+   * the client gives this branch no update effect.
+   */
+  readsCallerValue?: true
   /** When true, expression calls signal getters or memos (has reactive `foo()` pattern). */
   callsReactiveGetters?: boolean
   /** When true, expression contains function call(s) — any `identifier()` pattern (computed from AST). */

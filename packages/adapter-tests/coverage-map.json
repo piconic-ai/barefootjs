@@ -7335,6 +7335,59 @@
         "text"
       ]
     },
+    "keyed-row-branch-call": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:/",
+        "binary:===",
+        "binary:>",
+        "literal:null",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "keyed-row-branch-method-call": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "label": {
       "kinds": [
         "identifier",

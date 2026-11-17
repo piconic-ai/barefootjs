@@ -75,6 +75,7 @@ import { reconstructAsSegments, reconstructWithoutTypes } from './strip-types.ts
 import { templatePartsToJsExpr } from './template-parts.ts'
 import { toHTMLAttrName, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs/shared'
 import { BindingScope } from './scope/binding-scope.ts'
+import { readsCallerValue } from './caller-value-reach.ts'
 import { identifierPattern, identifierCallPattern } from './identifier-pattern.ts'
 import { isEventHandlerName } from './event-handler-name.ts'
 import { seedActionAccessorReads } from './action-accessor.ts'
@@ -1224,6 +1225,20 @@ function isLoopRowPropRead(parsed: ParsedExpr, analyzer: AnalyzerContext, scope:
     !scope.isBound(parsed.object.name) &&
     isPropsValueMember(parsed, analyzer)
   )
+}
+
+/**
+ * Whether a conditional branch reads a value the caller supplied that may
+ * be or build a live element (`IRExpression.readsCallerValue`). A loop row's
+ * item, index and destructured names are the row's own data; any other name
+ * a row or callback binds (a `.map()` preamble local) is not known safe.
+ */
+function branchReadsCallerValue(node: ts.Expression, ctx: TransformContext): boolean {
+  return readsCallerValue(node, ctx.analyzer, name => {
+    const source = ctx.scope.lookup(name)?.binding.source
+    if (source === undefined) return undefined
+    return source === 'item' || source === 'index' || source === 'destructure'
+  })
 }
 
 /** Set `childrenRead` and `loopRowPropRead` on an expression child from its parse. */
@@ -3639,6 +3654,7 @@ function transformConditionalBranch(
     slotId,
     callsReactiveGetters: callsReactive || undefined,
     hasFunctionCalls: hasCalls || undefined,
+    ...(hasCalls && branchReadsCallerValue(node, ctx) && { readsCallerValue: true as const }),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
     origin: branchOrigin,
   }

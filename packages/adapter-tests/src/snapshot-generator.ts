@@ -32,6 +32,7 @@ import {
   type FixtureSourceRoot,
   type SharedFixtureSpec,
 } from '../fixtures/_helpers'
+import { spec as callbackElementSpec } from '../fixtures/_keyed-row-branch-callback-element'
 
 /**
  * Derive a stable 32-bit seed from a fixture id so each fixture's PRNG
@@ -381,10 +382,18 @@ export async function generateSharedComponentSnapshot(
   return generateSharedComponentSnapshotCore(spec)
 }
 
+/**
+ * Pages hydrated by their own browser spec instead of the conformance
+ * corpus (see each spec file for why). They are not found by
+ * `loadAllSharedSpecs`, and are regenerated here with the corpus so the
+ * fixture drift check keeps their committed snapshots current.
+ */
+const BROWSER_ONLY_SPECS: readonly SharedFixtureSpec[] = [callbackElementSpec]
+
 export async function generateAllSharedComponentSnapshots(
   filter?: { ids?: ReadonlyArray<string> },
 ): Promise<{ generated: number; specs: SharedFixtureSpec[] }> {
-  const all = await loadAllSharedSpecs()
+  const all = [...(await loadAllSharedSpecs()), ...BROWSER_ONLY_SPECS]
   const requested = filter?.ids
   const selected = requested
     ? all.filter(s => requested.includes(s.id))
