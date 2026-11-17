@@ -44,6 +44,33 @@ import type { ParamInfo, TypeInfo } from './types.ts'
 import { isValueReferenceIdentifier } from './value-references.ts'
 
 /**
+ * Whether the recorded property list of a type declaration is its whole
+ * member list. `PropertyInfo[]` keeps property signatures only: a method
+ * (`render(row): unknown`), an index signature (`[k: string]: Fn`) and a
+ * call signature are dropped, and an interface records its own members
+ * without those of an `extends` clause. A type with any of these, or with
+ * type parameters, cannot be proved data-only from the list, so it is not.
+ * `source` is the declaration text (`interface ...`, `type ... = {...}`),
+ * read with the TypeScript parser.
+ */
+function hasCompleteMembers(source: string): boolean {
+  const file = ts.createSourceFile('__members__.ts', source, ts.ScriptTarget.Latest, false)
+  const declaration = file.statements[0]
+  if (!declaration || file.statements.length !== 1) return false
+  let members: ts.NodeArray<ts.TypeElement>
+  if (ts.isInterfaceDeclaration(declaration)) {
+    if (declaration.heritageClauses?.length || declaration.typeParameters?.length) return false
+    members = declaration.members
+  } else if (ts.isTypeAliasDeclaration(declaration) && ts.isTypeLiteralNode(declaration.type)) {
+    if (declaration.typeParameters?.length) return false
+    members = declaration.type.members
+  } else {
+    return false
+  }
+  return members.every(ts.isPropertySignature)
+}
+
+/**
  * Whether a value of `type` is data all the way down: it is not an element
  * and calling anything it holds cannot produce one. A named type resolves
  * through the file's own type definitions; one declared elsewhere is unknown.
@@ -64,13 +91,18 @@ export function isDataOnlyType(
     case 'function':
       return isDataOnlyType(type.returnType, analyzer, seen)
     case 'object':
-      return type.properties !== undefined && type.properties.every(p => isDataOnlyType(p.type, analyzer, seen))
+      return type.properties !== undefined
+        && hasCompleteMembers(`type T = ${type.raw}`)
+        && type.properties.every(p => isDataOnlyType(p.type, analyzer, seen))
     case 'interface': {
       // A recursive type (`type Tree = { kids: Tree[] }`) is data when the
       // rest of it is.
       if (seen.has(type.raw)) return true
-      const definition = analyzer.typeDefinitions.find(d => d.name === type.raw)
-      if (!definition?.properties) return false
+      // Two declarations of one name merge (`interface X` twice); the
+      // recorded list is then partial.
+      const named = analyzer.typeDefinitions.filter(d => d.name === type.raw)
+      const definition = named.length === 1 ? named[0] : undefined
+      if (!definition?.properties || !hasCompleteMembers(definition.definition)) return false
       const next = new Set(seen).add(type.raw)
       return definition.properties.every(p => isDataOnlyType(p.type, analyzer, next))
     }

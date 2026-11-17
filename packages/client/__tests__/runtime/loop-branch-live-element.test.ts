@@ -63,15 +63,16 @@ interface Row { id: number; label: string; done: boolean }
  * A component whose row has two bare-expression branches: `branch`, which
  * reaches the caller's `render`, and a scalar one calling a module function.
  */
-function source(name: string, branch: string, body = ''): string {
+function source(name: string, branch: string, body = '', types = '', propsType = 'Props'): string {
   return `
 'use client'
 import { createSignal } from '@barefootjs/client'
 type Row = { id: number; label: string; done: boolean }
 type Props = { render: (row: Row) => unknown; slots: { cell: (row: Row) => unknown } }
+${types}
 const shout = (s: string) => s + '!'
 const apply = (f: (row: Row) => unknown, row: Row) => f(row)
-export function ${name}(props: Props) {
+export function ${name}(props: ${propsType}) {
   const [rows, setRows] = createSignal<Row[]>([])
   const load = () => setRows([{ id: 1, label: 'AAA', done: true }])
   const bump = () => setRows([{ id: 1, label: 'BBB', done: true }])
@@ -92,7 +93,7 @@ export function ${name}(props: Props) {
 `
 }
 
-const CASES: Array<{ name: string; component: string; branch: string; body?: string }> = [
+const CASES: Array<{ name: string; component: string; branch: string; body?: string; types?: string; propsType?: string }> = [
   { name: 'called directly', component: 'LiveDirect', branch: 'props.render(row)' },
   { name: 'called through a bracket access', component: 'LiveBracket', branch: "props['render'](row)" },
   {
@@ -103,6 +104,26 @@ const CASES: Array<{ name: string; component: string; branch: string; body?: str
   },
   { name: 'passed as an argument', component: 'LiveArgument', branch: 'apply(props.render, row)' },
   { name: 'reached through a deeper member', component: 'LiveMember', branch: 'props.slots.cell(row)' },
+  // Prop types whose recorded property list is not the whole member list.
+  {
+    name: 'declared as a method signature',
+    component: 'LiveMethodSig',
+    branch: 'props.slots.render(row)',
+    propsType: '{ render: (row: Row) => unknown; slots: { render(row: Row): unknown } }',
+  },
+  {
+    name: 'declared under an index signature',
+    component: 'LiveIndexSig',
+    branch: "props.slots['render'](row)",
+    propsType: '{ render: (row: Row) => unknown; slots: { [key: string]: (row: Row) => unknown } }',
+  },
+  {
+    name: 'declared on an inherited interface member',
+    component: 'LiveInherited',
+    branch: 'props.slots.render(row)',
+    types: 'interface Base { render: (row: Row) => unknown }\ninterface Slots extends Base { label: string }',
+    propsType: '{ render: (row: Row) => unknown; slots: Slots }',
+  },
 ]
 
 describe('a loop-row branch holding a caller-built element keeps it across a same-key reuse', () => {
@@ -110,7 +131,7 @@ describe('a loop-row branch holding a caller-built element keeps it across a sam
 
   for (const c of CASES) {
     test(`callback prop ${c.name}`, async () => {
-      await compileAndRegister(source(c.component, c.branch, c.body), `${c.component}.tsx`)
+      await compileAndRegister(source(c.component, c.branch, c.body, c.types, c.propsType), `${c.component}.tsx`)
       const { createComponent } = await import('../../src/runtime')
 
       let built = 0
@@ -120,7 +141,7 @@ describe('a loop-row branch holding a caller-built element keeps it across a sam
         input.value = row.label
         return input
       }
-      const el = createComponent(c.component, { render, slots: { cell: render } }) as Element
+      const el = createComponent(c.component, { render, slots: { cell: render, render } }) as Element
       document.body.appendChild(el)
 
       ;(el.querySelector('#load') as HTMLElement).click()
@@ -146,4 +167,27 @@ describe('a loop-row branch holding a caller-built element keeps it across a sam
       expect(el.querySelector('#list .scalar')?.textContent).toBe('BBB!')
     })
   }
+})
+
+describe('a loop-row branch reading a data-only prop object stays reactive', () => {
+  beforeEach(() => { document.body.innerHTML = '' })
+
+  test('an object of primitives does not keep the branch', async () => {
+    const component = 'DataObject'
+    const src = source(
+      component,
+      'shout(props.cfg.prefix + row.label)',
+      '',
+      '',
+      '{ render: (row: Row) => unknown; slots: { cell: (row: Row) => unknown }; cfg: { prefix: string; n: number } }',
+    )
+    await compileAndRegister(src, `${component}.tsx`)
+    const { createComponent } = await import('../../src/runtime')
+    const el = createComponent(component, { render: () => null, slots: { cell: () => null }, cfg: { prefix: '>', n: 1 } }) as Element
+    document.body.appendChild(el)
+    ;(el.querySelector('#load') as HTMLElement).click()
+    expect(el.querySelector('#list .live')?.textContent).toBe('>AAA!')
+    ;(el.querySelector('#bump') as HTMLElement).click()
+    expect(el.querySelector('#list .live')?.textContent).toBe('>BBB!')
+  })
 })
