@@ -1008,7 +1008,8 @@
         "literal:number"
       ],
       "contexts": [
-        "attribute"
+        "attribute",
+        "condition"
       ]
     },
     "awaits-undefined-plus-shapes": {
@@ -3278,23 +3279,31 @@
     },
     "conditional-class": {
       "kinds": [
-        "literal"
-      ],
-      "axes": [
-        "literal:boolean"
-      ],
-      "contexts": []
-    },
-    "conditional-class-modulo": {
-      "kinds": [
         "call",
         "identifier",
         "literal"
       ],
       "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "condition"
+      ]
+    },
+    "conditional-class-modulo": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:%",
+        "binary:===",
         "literal:number"
       ],
       "contexts": [
+        "condition",
         "text"
       ]
     },
@@ -3580,6 +3589,7 @@
       ],
       "axes": [
         "binary:!==",
+        "binary:===",
         "literal:null",
         "literal:number",
         "literal:string"
@@ -3594,6 +3604,7 @@
     "const-alias-loop-shadow-hydrate": {
       "kinds": [
         "array-literal",
+        "binary",
         "call",
         "identifier",
         "literal",
@@ -3601,6 +3612,7 @@
         "object-literal"
       ],
       "axes": [
+        "binary:===",
         "literal:null",
         "literal:string"
       ],
@@ -3613,12 +3625,15 @@
     },
     "const-boolean-conditional-test": {
       "kinds": [
+        "identifier",
         "literal"
       ],
       "axes": [
         "literal:boolean"
       ],
-      "contexts": []
+      "contexts": [
+        "condition"
+      ]
     },
     "const-getter-read-loop-shadowed": {
       "kinds": [
@@ -3705,12 +3720,17 @@
     },
     "const-string-conditional-test": {
       "kinds": [
+        "binary",
+        "identifier",
         "literal"
       ],
       "axes": [
+        "binary:===",
         "literal:string"
       ],
-      "contexts": []
+      "contexts": [
+        "condition"
+      ]
     },
     "context-provider": {
       "kinds": [
@@ -4061,7 +4081,8 @@
         "literal:boolean"
       ],
       "contexts": [
-        "attribute"
+        "attribute",
+        "condition"
       ]
     },
     "data-table": {
@@ -4138,7 +4159,8 @@
         "literal:string"
       ],
       "contexts": [
-        "attribute"
+        "attribute",
+        "condition"
       ]
     },
     "date-catalogued": {
@@ -6546,10 +6568,12 @@
       ],
       "axes": [
         "binary:*",
+        "binary:>",
         "literal:number"
       ],
       "contexts": [
         "attribute",
+        "condition",
         "loop",
         "text"
       ]
@@ -6561,11 +6585,19 @@
         "call",
         "identifier",
         "literal",
-        "member"
+        "member",
+        "unary"
       ],
       "axes": [
+        "binary:!==",
+        "binary:*",
+        "binary:<",
+        "binary:<=",
+        "binary:===",
         "binary:>",
-        "literal:number"
+        "binary:>=",
+        "literal:number",
+        "unary:-"
       ],
       "contexts": [
         "attribute",
@@ -6718,6 +6750,25 @@
       ],
       "axes": [],
       "contexts": [
+        "text"
+      ]
+    },
+    "function-const-literal-array-loop-param-names": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "conditional",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
         "text"
       ]
     },
@@ -7326,11 +7377,13 @@
       ],
       "axes": [
         "binary:+",
+        "binary:===",
         "literal:number",
         "literal:string"
       ],
       "contexts": [
         "attribute",
+        "condition",
         "loop",
         "text"
       ]
@@ -7338,6 +7391,7 @@
     "keyed-loop-pure-index-reorder": {
       "kinds": [
         "array-literal",
+        "binary",
         "call",
         "identifier",
         "literal",
@@ -7346,11 +7400,13 @@
         "unsupported"
       ],
       "axes": [
+        "binary:===",
         "literal:number",
         "literal:string"
       ],
       "contexts": [
         "attribute",
+        "condition",
         "loop",
         "text"
       ]
@@ -7486,6 +7542,7 @@
     "lazy-row-outer-class": {
       "kinds": [
         "array-literal",
+        "binary",
         "call",
         "identifier",
         "literal",
@@ -7493,11 +7550,13 @@
         "object-literal"
       ],
       "axes": [
+        "binary:===",
         "literal:number",
         "literal:string"
       ],
       "contexts": [
         "attribute",
+        "condition",
         "loop",
         "text"
       ]
@@ -7527,16 +7586,21 @@
     "literal-const-conditional-shapes": {
       "kinds": [
         "array-literal",
+        "binary",
         "identifier",
         "literal",
-        "logical"
+        "logical",
+        "unary"
       ],
       "axes": [
+        "binary:===",
+        "binary:>",
         "literal:boolean",
         "literal:null",
         "literal:number",
         "literal:string",
-        "logical:??"
+        "logical:??",
+        "unary:!"
       ],
       "contexts": [
         "attribute",
@@ -8664,6 +8728,7 @@
       ],
       "contexts": [
         "attribute",
+        "condition",
         "loop",
         "text"
       ]
@@ -9652,6 +9717,7 @@
       "axes": [],
       "contexts": [
         "attribute",
+        "condition",
         "loop",
         "text"
       ]
@@ -10779,12 +10845,15 @@
     },
     "module-const-boolean-conditional-test": {
       "kinds": [
+        "identifier",
         "literal"
       ],
       "axes": [
         "literal:boolean"
       ],
-      "contexts": []
+      "contexts": [
+        "condition"
+      ]
     },
     "module-const-default-hydrate": {
       "kinds": [
@@ -10896,6 +10965,7 @@
         "literal:string"
       ],
       "contexts": [
+        "condition",
         "text"
       ]
     },
@@ -11204,6 +11274,98 @@
         "text"
       ]
     },
+    "module-const-literal-array-loop": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-literal-array-loop-in-row": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "conditional",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-literal-array-loop-shapes": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "binary:>",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-literal-array-loop-signal": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:===",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:&&"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "module-const-loop-source": {
       "kinds": [
         "array-literal",
@@ -11448,6 +11610,7 @@
         "literal:number"
       ],
       "contexts": [
+        "condition",
         "text"
       ]
     },
@@ -11461,6 +11624,7 @@
         "literal:boolean"
       ],
       "contexts": [
+        "condition",
         "text"
       ]
     },
@@ -13175,13 +13339,27 @@
       ]
     },
     "omitted-optional-attr-ternary-relational": {
-      "kinds": [],
-      "axes": [],
-      "contexts": []
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:<",
+        "binary:===",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition"
+      ]
     },
     "omitted-optional-element-access-operands": {
       "kinds": [
         "binary",
+        "call",
         "identifier",
         "member"
       ],
@@ -13191,6 +13369,7 @@
         "member:optional"
       ],
       "contexts": [
+        "condition",
         "text"
       ]
     },
@@ -13235,6 +13414,7 @@
         "member"
       ],
       "axes": [
+        "binary:<",
         "binary:>=",
         "literal:number",
         "literal:string"
@@ -13272,7 +13452,9 @@
         "member"
       ],
       "axes": [
+        "binary:<",
         "binary:>=",
+        "literal:number",
         "literal:string"
       ],
       "contexts": [
@@ -13357,6 +13539,7 @@
         "member"
       ],
       "axes": [
+        "binary:<",
         "binary:>=",
         "literal:number",
         "literal:string"
@@ -13375,6 +13558,7 @@
         "unary"
       ],
       "axes": [
+        "binary:<",
         "binary:<=",
         "literal:number",
         "literal:string",
@@ -13412,6 +13596,7 @@
         "member"
       ],
       "axes": [
+        "binary:<",
         "binary:<=",
         "binary:>",
         "binary:>=",
@@ -13924,6 +14109,7 @@
       ],
       "axes": [
         "binary:!=",
+        "binary:==",
         "literal:null",
         "literal:string"
       ],
@@ -14485,6 +14671,7 @@
       ],
       "contexts": [
         "attribute",
+        "condition",
         "text"
       ]
     },
@@ -14971,6 +15158,7 @@
       ],
       "contexts": [
         "attribute",
+        "condition",
         "loop",
         "text"
       ]
@@ -14992,12 +15180,14 @@
         "array-method:join",
         "binary:%",
         "binary:/",
+        "binary:===",
         "literal:number",
         "literal:string",
         "unary:-"
       ],
       "contexts": [
         "attribute",
+        "condition",
         "text"
       ]
     },
@@ -15210,14 +15400,19 @@
     },
     "reserved-word-child-signal": {
       "kinds": [
+        "binary",
+        "call",
         "identifier",
         "literal",
         "member"
       ],
       "axes": [
+        "binary:===",
         "literal:string"
       ],
-      "contexts": []
+      "contexts": [
+        "condition"
+      ]
     },
     "rest-alias-spread-child": {
       "kinds": [
@@ -15322,11 +15517,13 @@
     },
     "rest-member-ternary": {
       "kinds": [
+        "binary",
         "identifier",
         "literal",
         "member"
       ],
       "axes": [
+        "binary:===",
         "literal:string"
       ],
       "contexts": [
@@ -15346,7 +15543,9 @@
       ],
       "axes": [
         "binary:===",
+        "binary:>",
         "literal:null",
+        "literal:number",
         "literal:string",
         "logical:??"
       ],
@@ -17635,11 +17834,17 @@
     },
     "strict-equality-boxed-number-typed-signal-child": {
       "kinds": [
+        "binary",
         "call",
-        "identifier"
+        "identifier",
+        "literal"
       ],
-      "axes": [],
+      "axes": [
+        "binary:===",
+        "literal:number"
+      ],
       "contexts": [
+        "condition",
         "text"
       ]
     },
@@ -18533,7 +18738,8 @@
         "logical:??"
       ],
       "contexts": [
-        "attribute"
+        "attribute",
+        "condition"
       ]
     },
     "table-dynamic-rows": {
@@ -18580,6 +18786,7 @@
       ],
       "contexts": [
         "attribute",
+        "condition",
         "text"
       ]
     },
@@ -18724,7 +18931,8 @@
         "logical:??"
       ],
       "contexts": [
-        "attribute"
+        "attribute",
+        "condition"
       ]
     },
     "template-literal-text-escape": {
@@ -18975,6 +19183,7 @@
       ],
       "contexts": [
         "attribute",
+        "condition",
         "text"
       ]
     },

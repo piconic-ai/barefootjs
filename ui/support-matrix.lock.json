@@ -408,18 +408,6 @@
               ]
             },
             {
-              "fixture": "conditional-nested-loop-signal-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "conditional-nested-loop-static-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -633,12 +621,6 @@
               "fixture": "static-loop-client-only-nested",
               "limitations": [
                 "client-only-loop-in-static-loop"
-              ]
-            },
-            {
-              "fixture": "static-nested-loop-ref",
-              "limitations": [
-                "signal-read-in-nested-static-loop"
               ]
             },
             {
@@ -4410,18 +4392,6 @@
         "go-template": {
           "gaps": [
             {
-              "fixture": "conditional-nested-loop-signal-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "conditional-nested-loop-static-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -6505,18 +6475,6 @@
               ]
             },
             {
-              "fixture": "conditional-nested-loop-signal-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "conditional-nested-loop-static-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
-            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -6958,12 +6916,6 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "static-nested-loop-ref",
-              "limitations": [
-                "signal-read-in-nested-static-loop"
               ]
             },
             {
@@ -11685,18 +11637,6 @@
               ]
             },
             {
-              "fixture": "conditional-nested-loop-signal-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "conditional-nested-loop-static-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
-            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -12288,12 +12228,6 @@
               "fixture": "static-loop-client-only-nested",
               "limitations": [
                 "client-only-loop-in-static-loop"
-              ]
-            },
-            {
-              "fixture": "static-nested-loop-ref",
-              "limitations": [
-                "signal-read-in-nested-static-loop"
               ]
             },
             {
@@ -16820,18 +16754,6 @@
               ]
             },
             {
-              "fixture": "conditional-nested-loop-signal-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "conditional-nested-loop-static-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
-            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -17297,12 +17219,6 @@
               "fixture": "static-loop-client-only-nested",
               "limitations": [
                 "client-only-loop-in-static-loop"
-              ]
-            },
-            {
-              "fixture": "static-nested-loop-ref",
-              "limitations": [
-                "signal-read-in-nested-static-loop"
               ]
             },
             {
@@ -21897,12 +21813,6 @@
               ]
             },
             {
-              "fixture": "static-nested-loop-ref",
-              "limitations": [
-                "signal-read-in-nested-static-loop"
-              ]
-            },
-            {
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
@@ -24880,12 +24790,6 @@
               ]
             },
             {
-              "fixture": "static-nested-loop-ref",
-              "limitations": [
-                "signal-read-in-nested-static-loop"
-              ]
-            },
-            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -26067,18 +25971,6 @@
               ]
             },
             {
-              "fixture": "conditional-nested-loop-signal-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "conditional-nested-loop-static-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
-            {
               "fixture": "filter-predicate-shape-loop",
               "limitations": [
                 "unlowerable-loop-filter-predicate"
@@ -26771,12 +26663,6 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "static-nested-loop-ref",
-              "limitations": [
-                "signal-read-in-nested-static-loop"
               ]
             },
             {
@@ -29533,18 +29419,6 @@
         "go-template": {
           "gaps": [
             {
-              "fixture": "conditional-nested-loop-signal-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "conditional-nested-loop-static-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
-            {
               "fixture": "destructure-default-local-const-signal-seed",
               "limitations": [
                 "body-destructure-computed-default-signal-seed"
@@ -30058,10 +29932,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "omitted-optional-number-unary-plus",
-        "description": "Unary plus over an omitted optional number prop (+undefined → NaN)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-number-unary-plus.ts",
-        "code": "+props.missing <= 0"
+        "fixture": "undef-null-relational",
+        "description": "< / <= compare null as 0 and undefined as NaN",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-relational.ts",
+        "code": "props.v <= 0"
       }
     },
     "binary:==": {
@@ -30083,10 +29957,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "undef-null-strict-equality",
-        "description": "=== undefined / === null tell null and undefined apart; == null does not",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/undef-null-strict-equality.ts",
-        "code": "props.n == null"
+        "fixture": "optional-object-nullish-compare",
+        "description": "An absent optional nested object loosely equals null and guards a member read",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/optional-object-nullish-compare.ts",
+        "code": "props.user == null"
       }
     },
     "binary:===": {
@@ -30282,18 +30156,6 @@
         },
         "go-template": {
           "gaps": [
-            {
-              "fixture": "conditional-nested-loop-signal-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "conditional-nested-loop-static-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -31286,10 +31148,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L156"
       },
       "example": {
-        "fixture": "omitted-optional-nullable-string-relational",
-        "description": "A comparison over an omitted optional prop typed string | null (undefined → NaN → false)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-nullable-string-relational.ts",
-        "code": "props.missing >= ''"
+        "fixture": "omitted-optional-nullable-number-relational",
+        "description": "A comparison over an omitted optional prop typed number | null (undefined → NaN → false)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/omitted-optional-nullable-number-relational.ts",
+        "code": "props.missing >= 1"
       }
     },
     "binary:unknown": {
@@ -31455,18 +31317,6 @@
         },
         "go-template": {
           "gaps": [
-            {
-              "fixture": "conditional-nested-loop-signal-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "conditional-nested-loop-static-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
             {
               "fixture": "jsx-element-prop-ternary",
               "limitations": [
@@ -31765,18 +31615,6 @@
         },
         "go-template": {
           "gaps": [
-            {
-              "fixture": "conditional-nested-loop-signal-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "conditional-nested-loop-static-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
             {
               "fixture": "keyed-row-branch-call",
               "limitations": [
@@ -32603,12 +32441,6 @@
               "fixture": "static-loop-client-only-nested",
               "limitations": [
                 "client-only-loop-in-static-loop"
-              ]
-            },
-            {
-              "fixture": "static-nested-loop-ref",
-              "limitations": [
-                "signal-read-in-nested-static-loop"
               ]
             },
             {
@@ -34338,18 +34170,6 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
-              ]
-            },
-            {
-              "fixture": "conditional-nested-loop-signal-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
-              ]
-            },
-            {
-              "fixture": "conditional-nested-loop-static-reactivity",
-              "limitations": [
-                "conditional-nested-const-loop-source"
               ]
             },
             {
@@ -36755,10 +36575,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/src/coverage-map.ts#L162"
       },
       "example": {
-        "fixture": "const-string-conditional-test",
-        "description": "A function-scope string-literal const compared in a ternary test renders the branch it selects",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/const-string-conditional-test.ts",
-        "code": "'a'"
+        "fixture": "children-local-nullable-attr",
+        "description": "An optional prop bound locally as children gates its attribute on its own value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/children-local-nullable-attr.ts",
+        "code": "'no'"
       }
     },
     "logical:&&": {

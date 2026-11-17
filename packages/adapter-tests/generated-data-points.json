@@ -6786,6 +6786,50 @@
       }
     }
   ],
+  "function-const-literal-array-loop-param-names": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "id": "P"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "id": "P"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "id": "P"
+      }
+    },
+    {
+      "name": "gen:id:empty",
+      "props": {
+        "label": "L",
+        "id": ""
+      }
+    },
+    {
+      "name": "gen:id:markup",
+      "props": {
+        "label": "L",
+        "id": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:id:multibyte",
+      "props": {
+        "label": "L",
+        "id": "日本語"
+      }
+    }
+  ],
   "if-statement": [
     {
       "name": "gen:variant:absent",
@@ -10453,6 +10497,94 @@
       "name": "gen:rows:empty",
       "props": {
         "rows": []
+      }
+    }
+  ],
+  "module-const-literal-array-loop": [
+    {
+      "name": "gen:on:false",
+      "props": {
+        "on": false,
+        "label": "L"
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "on": true,
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "on": true,
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "on": true,
+        "label": "日本語"
+      }
+    }
+  ],
+  "module-const-literal-array-loop-in-row": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
+  "module-const-literal-array-loop-shapes": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "count": 0,
+        "on": true
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "count": 0,
+        "on": true
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "count": 0,
+        "on": true
+      }
+    },
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "label": "L",
+        "count": -7,
+        "on": true
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "label": "L",
+        "count": 1234567890,
+        "on": true
+      }
+    },
+    {
+      "name": "gen:on:false",
+      "props": {
+        "label": "L",
+        "count": 0,
+        "on": false
       }
     }
   ],

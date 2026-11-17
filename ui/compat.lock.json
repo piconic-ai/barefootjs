@@ -3166,36 +3166,6 @@
           }
         }
       },
-      "conditional-nested-loop-signal-reactivity": {
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "conditional-nested-const-loop-source"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "conditional-nested-loop-precomputed-reactivity"
-          }
-        }
-      },
-      "conditional-nested-loop-static-reactivity": {
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "conditional-nested-const-loop-source"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "conditional-nested-loop-precomputed-reactivity"
-          }
-        }
-      },
       "conditional-return-fragment-branch": {
         "blade": {
           "kind": "refusal",
@@ -11446,21 +11416,6 @@
           }
         }
       },
-      "static-nested-loop-ref": {
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "signal-read-in-nested-static-loop"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "static-nested-loop-ref-precomputed"
-          }
-        }
-      },
       "strict-equality-destructure-default-distinct": {
         "blade": {
           "kind": "refusal",
@@ -12690,14 +12645,6 @@
         "description": "A computed const whose initializer has no template lowering refuses (BF101) instead of reading an…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/computed-const-read-unlowerable.ts"
       },
-      "conditional-nested-loop-signal-reactivity": {
-        "description": "Nested branch rows update attributes and text after selection and branch re-entry",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-nested-loop-signal-reactivity.ts"
-      },
-      "conditional-nested-loop-static-reactivity": {
-        "description": "Nested branch rows update attributes and text after selection and branch re-entry",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-nested-loop-static-reactivity.ts"
-      },
       "conditional-return-fragment-branch": {
         "description": "Conditional return whose default branch is fragment-wrapped now refuses to compile (BF029) instead…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-return-fragment-branch.ts"
@@ -13134,10 +13081,6 @@
         "description": "static array's .map() row conditional keyed off the item itself bakes to a per-item Go literal…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-item-conditional.ts"
       },
-      "static-nested-loop-ref": {
-        "description": "a ref callback and a signal-derived text inside a nested .map() under a static (non-signal) outer…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-nested-loop-ref.ts"
-      },
       "strict-equality-destructure-default-distinct": {
         "description": "=== between a prop object and an equal-content object const in a destructure default is false",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/strict-equality-destructure-default-distinct.ts"
@@ -13197,10 +13140,6 @@
       "computed-const-read-unlowerable-precomputed": {
         "description": "prop-precompute twin of computed-const-read-unlowerable — the keys arrive as a prop (#3494)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/computed-const-read-unlowerable-precomputed.ts"
-      },
-      "conditional-nested-loop-precomputed-reactivity": {
-        "description": "precomputed escape for conditional nested const loops retains reactive row bindings",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/conditional-nested-loop-precomputed-reactivity.ts"
       },
       "destructure-default-reads-signal-client": {
         "description": "The /* @client */ escape of a destructure default reading a signal through a const",
@@ -13405,10 +13344,6 @@
       "static-loop-item-conditional-precomputed": {
         "description": "prop-precompute twin of static-loop-item-conditional — items moved to a prop, full SSR (#2898,…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-item-conditional-precomputed.ts"
-      },
-      "static-nested-loop-ref-precomputed": {
-        "description": "prop-precompute twin of static-nested-loop-ref — items moved to a prop, full SSR (#2909)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-nested-loop-ref-precomputed.ts"
       },
       "strict-equality-reference-rewrite": {
         "description": "=== / !== over a primitive field of two objects or arrays instead of the objects themselves",
@@ -13823,23 +13758,6 @@
         "pebble",
         "twig",
         "xslate"
-      ],
-      "diagnostics": [
-        "BF101"
-      ]
-    },
-    "conditional-nested-const-loop-source": {
-      "title": "Const string arrays in conditional nested loops",
-      "kind": "refusal",
-      "given": "nested `.map()` rows inside a reactive conditional branch, with an inner module-scope const string-array source and a const or signal outer source",
-      "expected": "both levels of rows render in the server HTML",
-      "actual": "the compiler refuses with BF101",
-      "fixtures": [
-        "conditional-nested-loop-signal-reactivity",
-        "conditional-nested-loop-static-reactivity"
-      ],
-      "adapters": [
-        "go-template"
       ],
       "diagnostics": [
         "BF101"
@@ -14751,22 +14669,6 @@
         "pebble",
         "twig",
         "xslate"
-      ]
-    },
-    "signal-read-in-nested-static-loop": {
-      "title": "Signal read inside a nested static loop row",
-      "kind": "refusal",
-      "given": "a static (non-signal) array `.map()` whose row contains a nested `.map()` reading a signal or memo getter",
-      "expected": "both loop levels render in the server HTML with the signal initial value",
-      "actual": "the compiler refuses with BF101",
-      "fixtures": [
-        "static-nested-loop-ref"
-      ],
-      "adapters": [
-        "go-template"
-      ],
-      "diagnostics": [
-        "BF101"
       ]
     },
     "statement-body-callback": {

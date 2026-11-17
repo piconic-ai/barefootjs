@@ -1407,7 +1407,7 @@ export interface IRIfStatement {
 export type IRTemplatePart =
   | { type: 'string'; value: string }
   | { type: 'expression'; expr: JsSourceText; templateExpr?: JsSourceText; parsed: ParsedExpr }
-  | { type: 'ternary'; condition: string; templateCondition?: string; whenTrue: string; whenFalse: string }
+  | { type: 'ternary'; condition: string; templateCondition?: string; parsedCondition?: ParsedExpr; whenTrue: string; whenFalse: string }
   /**
    * `${MAP[KEY]}` indexed lookup against a `Record<T, string>` literal
    * (e.g. `${variantClasses[variant]}` where `variantClasses` is a

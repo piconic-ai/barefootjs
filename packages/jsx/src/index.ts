@@ -235,7 +235,7 @@ export type {
   LoopSortSpelling,
   SavedLoopBinding,
 } from './adapters/loop-plan.ts'
-export { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } from './static-literal.ts'
+export { evaluateStaticLiteral, foldStaticBindings, isFullyStaticLiteral, resolveStaticLoopSource } from './static-literal.ts'
 export {
   arithmeticOperandIsNull,
   arithmeticOperandIsUndefined,

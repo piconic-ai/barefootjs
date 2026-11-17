@@ -15,7 +15,7 @@
  * (`packages/adapter-<name>/src/adapter/lib/static-value.ts`).
  */
 
-import type { ParsedExpr } from './expression-parser.ts'
+import { freeIdentifiers, mapParsedExpr, type ParsedExpr } from './expression-parser.ts'
 import type { ConstantInfo } from './types.ts'
 
 /**
@@ -104,6 +104,60 @@ export function evaluateStaticLiteral(
       if (!base || !index || !Array.isArray(base.value) || typeof index.value !== 'number') return null
       return { value: base.value[index.value] }
     }
+    default:
+      return null
+  }
+}
+
+/**
+ * The expression a compile-time-unrolled loop row lowers, with every part
+ * that reads the row replaced by its value (#3798). `bindings` maps the
+ * unrolled loop parameters (outer to inner) to the row values the caller
+ * already resolved. Each maximal subtree that reads a bound name and
+ * evaluates ({@link evaluateStaticLiteral}) to a scalar becomes a `literal`
+ * node: `q` becomes `'x'` and `item.label` the label. A template literal keeps
+ * its shape and folds the parts inside its `${}`.
+ * The rest of the tree is left as is, so a backend lowers it through its
+ * ordinary path: `q === 'x' ? props.label : '0'` becomes
+ * `'x' === 'x' ? props.label : '0'`, which reads the component's own
+ * scope as it does outside a loop.
+ *
+ * Returns `null` when a bound name remains in the result: a row value that
+ * is not a scalar (an object read by something other than a static member
+ * chain), or a bound name the evaluator cannot resolve. The caller refuses
+ * rather than lower a name that has no `{{range}}` behind it. An arrow
+ * parameter named like a bound name shadows it.
+ */
+export function foldStaticBindings(
+  expr: ParsedExpr,
+  bindings: ReadonlyMap<string, unknown>,
+): ParsedExpr | null {
+  if (bindings.size === 0) return expr
+  const folded = mapParsedExpr(expr, (e, enclosing) => {
+    // A template literal keeps its node (only its `${}` parts fold): a
+    // backend lowers it to text interleaved with actions, not to one value.
+    if (e.kind === 'literal' || e.kind === 'unsupported' || e.kind === 'template-literal') return null
+    const visible = new Map([...bindings].filter(([name]) => !enclosing.has(name)))
+    const free = freeIdentifiers(e)
+    if (free === null || ![...free].some(name => visible.has(name))) return null
+    const resolved = evaluateStaticLiteral(e, visible)
+    return resolved === null ? null : scalarToLiteral(resolved.value)
+  })
+  const remaining = freeIdentifiers(folded)
+  if (remaining === null || [...remaining].some(name => bindings.has(name))) return null
+  return folded
+}
+
+/** A string, number, boolean or `null` value as a `literal` node, or `null` for anything else (an absent member reads `undefined`, which a backend lowers differently, so it is refused). */
+function scalarToLiteral(value: unknown): ParsedExpr | null {
+  if (value === null) return { kind: 'literal', value: null, literalType: 'null' }
+  switch (typeof value) {
+    case 'string':
+      return { kind: 'literal', value, literalType: 'string' }
+    case 'boolean':
+      return { kind: 'literal', value, literalType: 'boolean' }
+    case 'number':
+      return Number.isFinite(value) ? { kind: 'literal', value, literalType: 'number' } : null
     default:
       return null
   }

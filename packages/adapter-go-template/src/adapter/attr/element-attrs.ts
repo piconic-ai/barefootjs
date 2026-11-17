@@ -441,7 +441,7 @@ function renderTemplateLiteralParts(host: ElementAttrHost, parts: IRTemplatePart
     } else if (part.type === 'expression') {
       output += renderTemplateExpression(host, part.expr, part.parsed)
     } else if (part.type === 'ternary') {
-      const { condition: goCond, preamble } = host.ctx.convertConditionToGo(part.condition)
+      const { condition: goCond, preamble } = host.ctx.convertConditionToGo(part.condition, part.parsedCondition)
       output += `${preamble}{{if ${goCond}}}${escapeAttrText(part.whenTrue)}{{else}}${escapeAttrText(part.whenFalse)}{{end}}`
     } else if (part.type === 'lookup') {
       // `${MAP[KEY]}` against a Record<T, string> literal — emit a chained

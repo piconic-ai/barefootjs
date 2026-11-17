@@ -29,7 +29,7 @@
     },
     "packages/adapter-go-template/src/adapter/analysis/static-element-loop-bake.ts": {
       "allExpressionsFoldFor": [
-        50
+        37
       ]
     },
     "packages/adapter-go-template/src/adapter/go-template-adapter.ts": {
