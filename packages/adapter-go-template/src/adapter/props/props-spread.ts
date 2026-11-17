@@ -28,7 +28,7 @@ function planOptions(ctx: GoEmitContext, ir: ComponentIR): ComponentPropsOptions
 }
 
 /** Whether `prop` spreads the component's own props object (`{...props}`). */
-export function isPropsObjectSpread(prop: IRProp, propsObjectName: string | null): boolean {
+export function isPropsObjectSpread(prop: Pick<IRProp, 'value'>, propsObjectName: string | null): boolean {
   return prop.value.kind === 'spread' && spreadsPropsObject(prop.value, propsObjectName)
 }
 

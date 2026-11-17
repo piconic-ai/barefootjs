@@ -12,6 +12,7 @@ import type {
   IRConditional,
   IRLoop,
   IRLoopChildComponent,
+  IRProp,
   IRComponent,
   IRFragment,
   IRSlot,
@@ -174,7 +175,7 @@ import { routesToRestBag, restBagOverrideFields, isCertainlyDataType, isScalarAr
 import { GO_TEMPLATE_PRIMITIVES, SCALAR_ROW_GO_TYPES, SCALAR_ROW_ITEM_FIELD } from "./lib/constants.ts"
 import { CompileState, findModuleScopeConst, findValuedLocalConst, propsObjectKeyRead, resolveSignalParsedThroughSeedPlan } from "./lib/compile-state.ts"
 import { hasClientInteractivity, findNestedComponents, loopArraySignal } from "./analysis/component-tree.ts"
-import { analyzeBakeableStaticChildLoop, scalarToGoLiteral, type BakedStaticChildLoop } from "./analysis/static-child-loop-bake.ts"
+import { analyzeBakeableStaticChildLoop, bakedScalarAttr, scalarToGoLiteral, type BakedStaticChildItem, type BakedStaticChildLoop } from "./analysis/static-child-loop-bake.ts"
 import { analyzeBakeableStaticElementLoop, classifyBakedCondition } from "./analysis/static-element-loop-bake.ts"
 import type { GoEmitContext } from "./emit-context.ts"
 import { inlineLocalHelperCall } from "./expr/helper-inline.ts"
@@ -196,7 +197,7 @@ import { lowerCtorExpr } from "./memo/ctor-lowering.ts"
 import { computeMemoInitialValue, collectPropsReadByCtorInit, isBoxedNumericMemoBody, evaluatedAsGoType, computedPropSeedGo, resolvedConstantSeedGo } from "./memo/memo-compute.ts"
 import { collectNullableSeedStructFields } from "./value/prop-member-seed.ts"
 import { collectSpreadSlots, buildSpreadInitializer, collectRestBagSpreadFields } from "./spread/spread-codegen.ts"
-import { refuseObjectSpreadsOntoChildren } from "./props/props-spread.ts"
+import { isPropsObjectSpread, refuseObjectSpreadsOntoChildren } from "./props/props-spread.ts"
 import { buildPropTypeOverrides, dependentDefaultNormalization, optDefaultedInputRead, resolvePropGoType, collectNillablePropNames, collectNullableSignalSeedPropNames, seedPassthroughPropName } from "./props/prop-types.ts"
 import { collectStringValueNames } from "./props/prop-classes.ts"
 import { childInputFieldValue, goOptType, isOptInputParam, optElemGoType, optInputRead } from "./props/input-opt.ts"
@@ -2506,7 +2507,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (baked) {
         lines.push(`\t${varName} := make([]${declaredName}Props, ${baked.items.length})`)
         baked.items.forEach((item, i) => {
-          const fields = item.inputFields.map(f => this.childInputField(nested.name, f.goField, f.goValue)).join(', ')
+          const fields = this.bakedChildInputFields(ir, nested, item)
+            .map(f => this.childInputField(nested.name, f.goField, f.goValue, f.coerce)).join(', ')
           lines.push(`\t${varName}[${i}] = New${declaredName}Props(${declaredName}Input{${fields}})`)
           lines.push(`\t${varName}[${i}].BfParent = scopeID`)
           lines.push(`\t${varName}[${i}].BfMount = "${nested.slotId}"`)
@@ -6809,7 +6811,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // collects in its rest bag goes there, as at a non-loop call site
     // (`hasNoInputSlot`, `routesToRestBag`).
     const shape = this.childComponentShapes.get(this.resolveChildName(childComponent.name))
-    const props = childComponent.props.filter(p => !hasNoInputSlot(shape, p.name))
+    // A `{...props}` spread is not baked (it names no value at compile time):
+    // the constructor merges it in source order (`bakedChildInputFields`).
+    const props = childComponent.props.filter(
+      p => !hasNoInputSlot(shape, p.name) && !isPropsObjectSpread(p, this.state.propsObjectName),
+    )
     const restBag = shape?.restBagField
       ? { field: shape.restBagField, routes: (name: string) => routesToRestBag(shape, name) }
       : undefined
@@ -6820,6 +6826,32 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     )
     this.bakedStaticChildLoopCache.set(markerId, result)
     return result
+  }
+
+  /**
+   * The `<Child>Input` fields of one baked row (#2208). A call that spreads
+   * the props object (#3713) is re-lowered through the shared child-call
+   * lowering with each explicit prop replaced by its baked value, so the
+   * spread merges with them in source order as in JS. Any other call uses
+   * the fields the analysis already spelled.
+   */
+  private bakedChildInputFields(
+    ir: ComponentIR,
+    nested: NestedComponentInfo,
+    item: BakedStaticChildItem,
+  ): Array<{ goField: string; goValue: string; coerce?: boolean }> {
+    if (!nested.rowProps.some(p => isPropsObjectSpread(p, this.state.propsObjectName))) return item.inputFields
+    const props: IRProp[] = []
+    for (const prop of nested.rowProps) {
+      if (isPropsObjectSpread(prop, this.state.propsObjectName)) {
+        props.push(prop)
+        continue
+      }
+      const value = item.values.get(prop.name)
+      if (value === undefined) continue
+      props.push({ ...prop, value: bakedScalarAttr(value) })
+    }
+    return lowerChildInputFields(this.childInputHost, { name: nested.name, props }, ir, new Map()).fields
   }
 
   /**

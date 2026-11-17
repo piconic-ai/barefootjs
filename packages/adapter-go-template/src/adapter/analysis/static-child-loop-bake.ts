@@ -25,6 +25,13 @@ import { escapeGoString } from '../lib/go-emit.ts'
 
 export interface BakedStaticChildItem {
   inputFields: Array<{ goField: string; goValue: string }>
+  /**
+   * Each baked prop's scalar value by prop name (#3713). A call that spreads
+   * the props object cannot use `inputFields`: which of its keys win depends
+   * on the spread's position, so the constructor re-lowers the call from
+   * these values instead.
+   */
+  values: ReadonlyMap<string, string | number | boolean>
   dataKey: string | null
 }
 
@@ -46,6 +53,16 @@ export function scalarToGoLiteral(value: unknown): string | null {
   if (typeof value === 'number') return String(value)
   if (typeof value === 'boolean') return value ? 'true' : 'false'
   return null
+}
+
+/** A baked scalar as the attribute value it came from, for re-lowering a call (#3713). */
+export function bakedScalarAttr(value: string | number | boolean): IRProp['value'] {
+  const literalType = typeof value === 'string' ? 'string' : typeof value === 'number' ? 'number' : 'boolean'
+  return {
+    kind: 'expression',
+    expr: (typeof value === 'string' ? JSON.stringify(value) : String(value)),
+    parsed: { kind: 'literal', value, literalType },
+  }
 }
 
 /**
@@ -80,8 +97,8 @@ export function analyzeBakeableStaticChildLoop(
   const items: BakedStaticChildItem[] = []
   for (const item of staticItemsResult) {
     const bindings = new Map<string, unknown>([[nested.loopParam, item]])
-    const inputFields = bakeItemInputFields(nested.props, bindings, opts?.restBag)
-    if (inputFields === null) return null
+    const baked = bakeItemInputFields(nested.props, bindings, opts?.restBag)
+    if (baked === null) return null
     let dataKey: string | null = null
     if (nested.loopKey) {
       const keyExpr = parseExpression(nested.loopKey)
@@ -89,7 +106,7 @@ export function analyzeBakeableStaticChildLoop(
       if (keyResolved === null) return null
       dataKey = String(keyResolved.value)
     }
-    items.push({ inputFields, dataKey })
+    items.push({ inputFields: baked.inputFields, values: baked.values, dataKey })
   }
   return { items }
 }
@@ -104,8 +121,9 @@ function bakeItemInputFields(
   props: ReadonlyArray<{ name: string; value: IRProp['value']; isEventHandler: boolean }>,
   bindings: ReadonlyMap<string, unknown>,
   restBag: { field: string; routes: (name: string) => boolean } | undefined,
-): Array<{ goField: string; goValue: string }> | null {
+): { inputFields: Array<{ goField: string; goValue: string }>; values: Map<string, string | number | boolean> } | null {
   const inputFields: Array<{ goField: string; goValue: string }> = []
+  const values = new Map<string, string | number | boolean>()
   const bagEntries: string[] = []
   for (const prop of props) {
     if (prop.isEventHandler) continue
@@ -118,13 +136,14 @@ function bakeItemInputFields(
     // doesn't bake still is, rather than costing the whole loop its bake.
     if (goValue === null && hyphenated) continue
     if (goValue === null) return null
+    values.set(prop.name, resolved as string | number | boolean)
     if (toBag) bagEntries.push(`${JSON.stringify(prop.name)}: ${goValue}`)
     else inputFields.push({ goField: capitalizeFieldName(prop.name), goValue })
   }
   if (restBag && bagEntries.length > 0) {
     inputFields.push({ goField: restBag.field, goValue: `map[string]any{${bagEntries.join(', ')}}` })
   }
-  return inputFields
+  return { inputFields, values }
 }
 
 /** Resolves a prop's `AttrValue` to a plain JS value, or `undefined` if unresolvable. */

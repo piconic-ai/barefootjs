@@ -402,12 +402,6 @@
               ]
             },
             {
-              "fixture": "component-spread-props-in-static-loop-row",
-              "limitations": [
-                "props-spread-static-loop-row"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -11619,12 +11613,6 @@
               ]
             },
             {
-              "fixture": "component-spread-props-in-static-loop-row",
-              "limitations": [
-                "props-spread-static-loop-row"
-              ]
-            },
-            {
               "fixture": "computed-const-loop-source-parenthesized",
               "limitations": [
                 "computed-const-loop-source"
@@ -16742,12 +16730,6 @@
               ]
             },
             {
-              "fixture": "component-spread-props-in-static-loop-row",
-              "limitations": [
-                "props-spread-static-loop-row"
-              ]
-            },
-            {
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
@@ -21318,12 +21300,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "component-spread-props-in-static-loop-row",
-              "limitations": [
-                "props-spread-static-loop-row"
               ]
             },
             {
@@ -34158,12 +34134,6 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
-              ]
-            },
-            {
-              "fixture": "component-spread-props-in-static-loop-row",
-              "limitations": [
-                "props-spread-static-loop-row"
               ]
             },
             {

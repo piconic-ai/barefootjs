@@ -256,6 +256,7 @@ import { fixture as componentSpreadExplicitThenProps } from './component-spread-
 import { fixture as componentSpreadPropsInLoopRow } from './component-spread-props-in-loop-row'
 import { fixture as componentRestSpreadInLoopRow } from './component-rest-spread-in-loop-row'
 import { fixture as componentSpreadPropsInStaticLoopRow } from './component-spread-props-in-static-loop-row'
+import { fixture as componentSpreadPropsInStaticLoopRowScalars } from './component-spread-props-in-static-loop-row-scalars'
 import { fixture as componentSpreadPropsSubset } from './component-spread-props-subset'
 import { fixture as componentChildTemplateLiteralModuleLines } from './component-child-template-literal-module-lines'
 import { fixture as componentSpreadPropsRestBag } from './component-spread-props-rest-bag'
@@ -1669,6 +1670,7 @@ export const jsxFixtures: JSXFixture[] = [
   componentSpreadPropsInLoopRow,
   componentRestSpreadInLoopRow,
   componentSpreadPropsInStaticLoopRow,
+  componentSpreadPropsInStaticLoopRowScalars,
   componentSpreadPropsSubset,
   componentChildTemplateLiteralModuleLines,
   componentSpreadPropsRestBag,
