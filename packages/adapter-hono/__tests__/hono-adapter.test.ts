@@ -10,6 +10,7 @@ import { HonoAdapter } from '../src/adapter'
 import { runAdapterConformanceTests } from '@barefootjs/adapter-tests'
 import { renderHonoComponent } from '@barefootjs/hono/test-render'
 import { conformancePins } from '../src/conformance-pins'
+import { renderDivergences } from '../src/render-divergences'
 
 runAdapterConformanceTests({
   name: 'hono',
@@ -19,6 +20,7 @@ runAdapterConformanceTests({
   // every conformance case. `conformancePins` is empty (no pins) but
   // still wired through for uniformity with the other 7 adapters.
   expectedDiagnostics: conformancePins,
+  skipJsx: Object.keys(renderDivergences),
   skipMarkerConformance: new Set<string>([
     // TodoApp's keyed `.map` carries a `/* @client */` marker, which
     // the compiler intentionally elides on the SSR side (loop body

@@ -55,6 +55,10 @@ const SKIP_AUTO_UPDATE = new Set<string>([
   // #2685 review: same reasoning, one hop of const indirection removed.
   // See the fixture file's docstring for the full mechanism.
   'signal-prop-same-name-via-const-derived',
+  // Hand-authored to the JS value (`2`): the reference render skips the body
+  // statement `local.push('z')` and renders `1`. The reference is the broken
+  // side (limitation `init-statement-mutation-unrun-on-server`).
+  'destructure-default-body-mutated-memo',
 ])
 
 async function main() {

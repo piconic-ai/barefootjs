@@ -5,10 +5,14 @@ import { createFixture } from '../src/types'
  * (`local.push('z')`) and read through a memo (`createMemo(() => local.length)`).
  * In JS the memo sees the pushed element (`2`). A top-level body statement
  * runs only on the client at mount (the server render is a snapshot of the
- * declarations), so the reference renders `1` here and the hydrated client
- * shows `2`: the limitation `init-statement-mutation-unrun-on-server`. The
- * CSR template cannot run the statement or inline the memo over a mutated
- * binding, and renders empty.
+ * declarations), so every server render, Hono included, gives `1` while the
+ * hydrated client shows `2`: the limitation
+ * `init-statement-mutation-unrun-on-server`. `expectedHtml` is hand-authored
+ * to the JS value (`SKIP_AUTO_UPDATE`), and every adapter that renders `1`
+ * is pinned in its `renderDivergences`. The CSR template cannot run the
+ * statement or inline the memo over a mutated binding, and renders empty
+ * (`CSR_RENDER_DIVERGENCES`). Emitting the statement on the server graduates
+ * the fixture: delete the pins and the limitation entry.
  */
 export const fixture = createFixture({
   id: 'destructure-default-body-mutated-memo',
@@ -25,6 +29,6 @@ export function DestructureDefaultBodyMutatedMemo(props: { b?: string[] }) {
 `,
   props: {},
   expectedHtml: `
-    <p bf-s="test" bf="s1"><!--bf:s0-->1<!--/--></p>
+    <p bf-s="test" bf="s1"><!--bf:s0-->2<!--/--></p>
   `,
 })

@@ -3444,6 +3444,68 @@
           ]
         }
       },
+      "destructure-default-body-mutated-memo": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "init-statement-mutation-unrun-on-server"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "init-statement-mutation-unrun-on-server"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "init-statement-mutation-unrun-on-server"
+          ]
+        },
+        "hono": {
+          "kind": "render",
+          "limitations": [
+            "init-statement-mutation-unrun-on-server"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "init-statement-mutation-unrun-on-server"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "init-statement-mutation-unrun-on-server"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "init-statement-mutation-unrun-on-server"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "init-statement-mutation-unrun-on-server"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "init-statement-mutation-unrun-on-server"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "init-statement-mutation-unrun-on-server"
+          ]
+        }
+      },
       "destructure-default-body-renamed-callback-memo-chain": {
         "go-template": {
           "kind": "render",
@@ -12652,6 +12714,10 @@
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
       },
+      "destructure-default-body-mutated-memo": {
+        "description": "A body destructure binding mutated after its declaration, read through a memo, renders the mutated…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-mutated-memo.ts"
+      },
       "destructure-default-body-renamed-callback-memo-chain": {
         "description": "A renamed body destructure default holding a callback, read through a memo of a memo, renders its…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback-memo-chain.ts"
@@ -14015,7 +14081,7 @@
       "title": "A component-body statement that mutates a binding, read by rendered output",
       "kind": "silent",
       "given": "a top-level statement in the component body that mutates a binding after its declaration (`local.push('z')` over `const { b: local = [...] } = props`), with the binding read in rendered output through a memo (`createMemo(() => local.length)`)",
-      "expected": "the rendered output reads the mutated binding (the memo is `2`), and the server HTML and the hydrated DOM agree",
+      "expected": "the rendered output reads the mutated binding (the memo is `2`), as JS does, and the server HTML and the hydrated DOM agree",
       "actual": "renders the value before the statement ran (`1`) in the server HTML, since a body statement runs only on the client at mount, and renders the memo empty in the client template",
       "fixtures": [
         "destructure-default-body-mutated-memo"

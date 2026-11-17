@@ -15,7 +15,16 @@
   "kinds": {
     "array-literal": {
       "cells": {
-        "hono": {},
+        "hono": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            }
+          ]
+        },
         "blade": {
           "gaps": [
             {
@@ -28,6 +37,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -215,6 +230,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -396,6 +417,12 @@
               "fixture": "conditional-nested-loop-static-reactivity",
               "limitations": [
                 "conditional-nested-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -643,6 +670,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -824,6 +857,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -1017,6 +1056,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -1201,6 +1246,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -1376,6 +1427,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -1560,6 +1617,12 @@
               "fixture": "child-undeclared-prop-whole-props-spread",
               "limitations": [
                 "whole-props-spread-undeclared-prop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -2621,13 +2684,28 @@
     },
     "arrow": {
       "cells": {
-        "hono": {},
+        "hono": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            }
+          ]
+        },
         "blade": {
           "gaps": [
             {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -2779,6 +2857,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -2906,6 +2990,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -3069,6 +3159,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3214,6 +3310,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -3371,6 +3473,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3498,6 +3606,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -3649,6 +3763,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -3794,6 +3914,12 @@
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -3945,9 +4071,24 @@
     },
     "binary": {
       "cells": {
-        "hono": {},
+        "hono": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            }
+          ]
+        },
         "blade": {
           "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
             {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
@@ -4115,6 +4256,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -4272,6 +4419,12 @@
               "fixture": "conditional-nested-loop-static-reactivity",
               "limitations": [
                 "conditional-nested-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -4477,6 +4630,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -4636,6 +4795,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
             {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
@@ -4797,6 +4962,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -4951,6 +5122,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -5104,6 +5281,12 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
             {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
@@ -5270,6 +5453,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
             {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
@@ -5464,6 +5653,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
@@ -5519,6 +5714,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -5934,6 +6135,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -6325,6 +6532,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -6836,6 +7049,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -7239,6 +7458,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -7654,6 +7879,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -8039,6 +8270,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -8433,6 +8670,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -8839,6 +9082,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -10236,6 +10485,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
@@ -10339,6 +10594,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -10910,6 +11171,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -11445,6 +11712,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -12178,6 +12451,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -12731,6 +13010,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -13296,6 +13581,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -13846,6 +14137,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -14381,6 +14678,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -14943,6 +15246,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -15623,6 +15932,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
@@ -15672,6 +15987,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -16090,6 +16411,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -16514,6 +16841,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -17073,6 +17406,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -17488,6 +17827,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -17915,6 +18260,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -18345,6 +18696,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -18742,6 +19099,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -19160,6 +19523,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -19569,9 +19938,24 @@
     },
     "logical": {
       "cells": {
-        "hono": {},
+        "hono": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            }
+          ]
+        },
         "blade": {
           "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
             {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
@@ -19625,6 +20009,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -19676,6 +20066,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
             {
               "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
@@ -19777,6 +20173,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -19829,6 +20231,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -19880,6 +20288,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
             {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
@@ -19939,6 +20353,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -19991,6 +20411,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -20042,6 +20468,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
             {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
@@ -20145,6 +20577,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "jsx-element-prop-array",
               "limitations": [
                 "jsx-wrapped-in-non-children-prop"
@@ -20212,6 +20650,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -20621,6 +21065,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -20982,6 +21432,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -21535,6 +21991,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -21926,6 +22388,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -22329,6 +22797,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -22717,6 +23191,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -23102,6 +23582,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -23502,6 +23988,12 @@
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -28537,9 +29029,24 @@
     },
     "binary:!==": {
       "cells": {
-        "hono": {},
+        "hono": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            }
+          ]
+        },
         "blade": {
           "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
             {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
@@ -28563,6 +29070,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -28584,6 +29097,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
             {
               "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
@@ -28613,6 +29132,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -28634,6 +29159,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
             {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
@@ -28657,6 +29188,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -28678,6 +29215,12 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
             {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
@@ -28701,6 +29244,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -28722,6 +29271,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
             {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
@@ -33096,6 +33651,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
@@ -33127,6 +33688,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -33449,6 +34016,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -33777,6 +34350,12 @@
               "fixture": "conditional-nested-loop-static-reactivity",
               "limitations": [
                 "conditional-nested-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -34210,6 +34789,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -34529,6 +35114,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -34857,6 +35448,12 @@
               "fixture": "const-object-prop-identity-hydrate",
               "limitations": [
                 "non-literal-const-child-prop-unbound"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -35194,6 +35791,12 @@
               ]
             },
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-reads-signal",
               "limitations": [
                 "destructure-default-reads-component-state"
@@ -35501,6 +36104,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -35823,6 +36432,12 @@
               "fixture": "computed-const-read-unlowerable",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
               ]
             },
             {
@@ -36362,9 +36977,24 @@
     },
     "logical:??": {
       "cells": {
-        "hono": {},
+        "hono": {
+          "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            }
+          ]
+        },
         "blade": {
           "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
             {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
@@ -36412,6 +37042,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -36457,6 +37093,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
             {
               "fixture": "destructure-default-body-renamed-callback-memo-chain",
               "limitations": [
@@ -36552,6 +37194,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -36597,6 +37245,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
             {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
@@ -36644,6 +37298,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -36689,6 +37349,12 @@
         },
         "pebble": {
           "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
             {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
@@ -36736,6 +37402,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
                 "destructure-default-assigns-earlier-binding"
@@ -36781,6 +37453,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
             {
               "fixture": "destructure-default-earlier-assignment",
               "limitations": [
