@@ -93,6 +93,7 @@ import {
   resolveStaticLoopSource,
   collectLoopBoundNames,
   evaluateStaticLiteral,
+  foldStaticBindings,
   BindingScope,
   type ScopeFrame,
   buildImportAliasMap,
@@ -4751,6 +4752,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * thin wrapper so existing call sites keep working.
    */
   private renderParsedExpr(expr: ParsedExpr): string {
+    // Inside an unrolled static loop row (#2224) no `{{range}}` binds the row
+    // param, so its reads fold into literals before emission (#3798). The
+    // analysis has cleared every expression of the body, so a failed fold is
+    // the same invariant violation `convertExpressionToGo` reports.
+    if (this.staticLoopItemStack.length > 0) {
+      const folded = foldStaticBindings(expr, this.staticLoopBindings())
+      if (folded === null) {
+        this.staticLoopBakeFailed = true
+        return '""'
+      }
+      return emitParsedExpr(folded, this)
+    }
     return emitParsedExpr(expr, this)
   }
 
@@ -6365,7 +6378,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // reference with no range context behind it.
     if (this.staticLoopItemStack.length > 0) {
       const parsedForBake = preParsed ?? parseExpression(trimmed)
-      const resolved = evaluateStaticLiteral(parsedForBake, this.staticLoopBindings())
+      const bindings = this.staticLoopBindings()
+      const resolved = evaluateStaticLiteral(parsedForBake, bindings)
       const literal = resolved !== null ? scalarToGoLiteral(resolved.value) : null
       if (literal !== null) {
         // Deliberately leave `out.parsed` unset — a `template-literal`-kind
@@ -6375,6 +6389,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
         // quote characters raw into the HTML).
         return literal
       }
+      // #3798: an expression that mixes the row with the component's own
+      // scope (`q === 'x' ? '1' : '0'`, `props.label`) lowers with the row's
+      // values folded in, through the ordinary path below.
+      const folded = foldStaticBindings(parsedForBake, bindings)
+      if (folded !== null) return this.lowerParsedExprToGo(folded, trimmed, out)
       this.staticLoopBakeFailed = true
       return '""'
     }
@@ -6446,8 +6465,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // expression (template literal vs. not) off this single `parseExpression`,
     // with no extra `ts.createSourceFile` on the `bf build` hot path and no
     // parse at all for the early-return shapes.
+    return this.lowerParsedExprToGo(preParsed ?? parseExpression(trimmed), trimmed, out)
+  }
+
+  /**
+   * Lower a parsed expression through the support gate and the ParsedExpr
+   * emitter. `trimmed` is its source text, for the diagnostic only.
+   */
+  private lowerParsedExprToGo(parsedExpr: ParsedExpr, trimmed: string, out?: { parsed?: ParsedExpr }): string {
     // A computed const reads as its initializer (#3494).
-    const parsed = inlineComputedConsts(preParsed ?? parseExpression(trimmed), this.state.computedConsts)
+    const parsed = inlineComputedConsts(parsedExpr, this.state.computedConsts)
     const support = isSupported(parsed)
 
     if (!support.supported) {
@@ -6701,9 +6728,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (classified.kind === 'literal') {
         return { condition: classified.go, preamble: '' }
       }
+      // #3798: lower the condition with the row's values folded in.
+      if (classified.kind === 'folded') return this.lowerCondition(classified.expr, trimmed)
       // 'independent' — fall through to the normal lowering below.
     }
 
+    return this.lowerCondition(parsed, trimmed)
+  }
+
+  private lowerCondition(parsed: ParsedExpr, trimmed: string): { condition: string; preamble: string } {
     const support = isSupported(parsed)
 
     if (!support.supported) {

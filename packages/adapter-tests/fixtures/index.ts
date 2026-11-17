@@ -1432,6 +1432,11 @@ import { fixture as constBooleanConditionalTest } from './const-boolean-conditio
 import { fixture as moduleConstBooleanConditionalTest } from './module-const-boolean-conditional-test'
 import { fixture as constStringConditionalTest } from './const-string-conditional-test'
 import { fixture as literalConstConditionalShapes } from './literal-const-conditional-shapes'
+import { fixture as moduleConstLiteralArrayLoop } from './module-const-literal-array-loop'
+import { fixture as functionConstLiteralArrayLoopParamNames } from './function-const-literal-array-loop-param-names'
+import { fixture as moduleConstLiteralArrayLoopInRow } from './module-const-literal-array-loop-in-row'
+import { fixture as moduleConstLiteralArrayLoopSignal } from './module-const-literal-array-loop-signal'
+import { fixture as moduleConstLiteralArrayLoopShapes } from './module-const-literal-array-loop-shapes'
 import { fixture as stringConstQuoteNewline } from './string-const-quote-newline'
 import { fixture as stringConstCarriageReturn } from './string-const-carriage-return'
 import { fixture as moduleConstArrayLiteralIndex } from './module-const-array-literal-index'
@@ -2553,6 +2558,11 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstBooleanConditionalTest,
   constStringConditionalTest,
   literalConstConditionalShapes,
+  moduleConstLiteralArrayLoop,
+  functionConstLiteralArrayLoopParamNames,
+  moduleConstLiteralArrayLoopShapes,
+  moduleConstLiteralArrayLoopSignal,
+  moduleConstLiteralArrayLoopInRow,
   stringConstQuoteNewline,
   stringConstCarriageReturn,
   moduleConstArrayLiteralIndex,

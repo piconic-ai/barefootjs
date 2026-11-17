@@ -67,21 +67,23 @@
  *     markers/content out would desync from `renderConditional`'s
  *     slot-marker pairing.
  *   - Every element attribute is `literal` / `boolean-attr` /
- *     `boolean-shorthand`, or a plain `expression` whose parsed kind is one
- *     of `identifier` / `member` / `index-access` / `literal`. An attribute
- *     `template-literal` or `conditional` bypasses the Go adapter's normal
- *     `convertExpressionToGo` emission path in its own attribute emitter
- *     (it calls `renderParsedExpr` directly and splices the result assuming
- *     adapter-specific self-wrapping conventions) — baking those would need
- *     separate handling, deferred. `spread` / `jsx-children` attrs bail.
- *   - Every dynamic text `expression` node (any parsed kind, INCLUDING
- *     `template-literal` — text always funnels through
- *     `convertExpressionToGo` uniformly, no bypass) resolves via
+ *     `boolean-shorthand`, a `template` attribute (#3798: literal text, a
+ *     ternary between two literal strings, `${expr}` parts; a `Record` lookup
+ *     part bails), or a plain `expression` whose parsed kind is one of
+ *     `identifier` / `member` / `index-access` / `literal` / `conditional` /
+ *     `template-literal` / `binary` / `logical`. `spread` / `jsx-children`
+ *     attrs bail.
+ *   - Every dynamic `expression` node and attribute expression folds for
+ *     EVERY item (#3798). It either resolves via
  *     `evaluateStaticLiteral(expr.parsed, itemBindings)` to a scalar
- *     (string/number/boolean) for EVERY item. A signal/memo call, a
- *     reference to any non-item-static local (props, outer consts, an
- *     enclosing loop's own param), an unresolvable nested method chain, or
- *     a non-scalar (array/object) result bails the whole loop.
+ *     (string/number/boolean), or `foldStaticBindings` replaces its
+ *     row-reading parts with literals and leaves a tree that reads only the
+ *     component's own scope (a prop, an outer const): `q === 'x' ? props.label
+ *     : '0'`. The adapter lowers that tree through its ordinary path, since
+ *     an unrolled body has no `{{range}}` and so reads the component's dot
+ *     as outside a loop. A signal/memo call is lowered the same way. A row
+ *     value that is not a scalar and is not read through a static member
+ *     chain (`fn(item)`), or a non-scalar result, bails the whole loop.
  *
  * Analysis only (mirrors `static-child-loop-bake.ts`): this module never
  * emits Go syntax. `go-template-adapter.ts`'s `renderLoop` re-runs the SAME
@@ -93,6 +95,7 @@
 
 import {
   evaluateStaticLiteral,
+  foldStaticBindings,
   freeIdentifiers,
   parseExpression,
   resolveStaticLoopSource,
@@ -100,6 +103,7 @@ import {
   type IRElement,
   type IRLoop,
   type IRNode,
+  type IRTemplatePart,
   type ParsedExpr,
 } from '@barefootjs/jsx'
 import { scalarToGoLiteral } from './static-child-loop-bake.ts'
@@ -113,6 +117,12 @@ const ALLOWED_ATTR_EXPRESSION_KINDS: ReadonlySet<ParsedExpr['kind']> = new Set([
   'member',
   'index-access',
   'literal',
+  // #3798: these lower through `renderParsedExpr` / `convertExpressionToGo`,
+  // which fold the row's values in first (`foldStaticBindings`).
+  'conditional',
+  'template-literal',
+  'binary',
+  'logical',
 ])
 
 type LoopShape = Pick<
@@ -289,9 +299,28 @@ function isFoldableAttrs(element: IRElement): boolean {
       case 'expression':
         if (!attr.value.parsed || !ALLOWED_ATTR_EXPRESSION_KINDS.has(attr.value.parsed.kind)) return false
         continue
+      case 'template':
+        // #3798: literal text, a ternary between two literal strings, and
+        // `${expr}` parts. A `Record` lookup carries only its key's source
+        // text, so it still refuses.
+        if (attr.value.parts.some(part => part.type === 'lookup')) return false
+        continue
       default:
-        // 'template' / 'spread' / 'jsx-children'
+        // 'spread' / 'jsx-children'
         return false
+    }
+  }
+  return true
+}
+
+/** Every dynamic attribute of `element` folds for this row (#3798). */
+function attrsFoldFor(element: IRElement, bindings: ReadonlyMap<string, unknown>): boolean {
+  for (const attr of element.attrs) {
+    if (attr.clientOnly) continue
+    if (attr.value.kind === 'template') {
+      if (!attr.value.parts.every(part => templatePartFoldsFor(part, bindings))) return false
+    } else if (attr.value.kind === 'expression') {
+      if (!attr.value.parsed || !resolvesToScalar(attr.value.parsed, bindings)) return false
     }
   }
   return true
@@ -311,11 +340,7 @@ function allExpressionsFoldFor(
       continue
     }
     if (node.type === 'element') {
-      for (const attr of node.attrs) {
-        if (attr.clientOnly) continue
-        if (attr.value.kind !== 'expression') continue
-        if (!attr.value.parsed || !resolvesToScalar(attr.value.parsed, bindings)) return false
-      }
+      if (!attrsFoldFor(node, bindings)) return false
       if (!allExpressionsFoldFor(node.children, bindings, localConstants, opts)) return false
       continue
     }
@@ -341,10 +366,24 @@ function allExpressionsFoldFor(
   return true
 }
 
+/** One part of a template attribute resolves for this row (#3798): a ternary's condition classifies, an `${expr}` part lowers. */
+function templatePartFoldsFor(part: IRTemplatePart, bindings: ReadonlyMap<string, unknown>): boolean {
+  if (part.type === 'ternary') {
+    return part.parsedCondition !== undefined && classifyBakedCondition(part.parsedCondition, bindings) !== null
+  }
+  return part.type !== 'expression' || resolvesToScalar(part.parsed, bindings)
+}
+
+/**
+ * An expression the unrolled row can lower: it resolves to a scalar for this
+ * row, or (#3798) folding the row's values into it leaves a tree that reads
+ * only the component's own scope (a prop, an outer const), which the ordinary
+ * lowering handles as outside a loop.
+ */
 function resolvesToScalar(expr: ParsedExpr, bindings: ReadonlyMap<string, unknown>): boolean {
   const resolved = evaluateStaticLiteral(expr, bindings)
-  if (resolved === null) return false
-  return scalarToGoLiteral(resolved.value) !== null
+  if (resolved !== null) return scalarToGoLiteral(resolved.value) !== null
+  return foldStaticBindings(expr, bindings) !== null
 }
 
 /**
@@ -358,16 +397,21 @@ function resolvesToScalar(expr: ParsedExpr, bindings: ReadonlyMap<string, unknow
  *     adapter's normal `renderConditionExpr` lowering unmodified, since that
  *     path never depends on the unrolled body's missing `{{range}}` dot
  *     context in the first place.
- *   - `null` (unclassifiable): the condition mixes item-bound and
- *     item-independent names, `freeIdentifiers` can't analyze its shape, OR
- *     it's item-bound but not literal-resolvable (e.g. `item.count > 0`,
- *     `binary`/`logical` shapes `evaluateStaticLiteral` doesn't evaluate) —
- *     the caller must bail (loud refusal, not a guess) rather than guess a
- *     value. Not tracked as a separate capability gap: it's the same
- *     `evaluateStaticLiteral` coverage boundary every other item-literal
- *     bake in this module already accepts (`resolvesToScalar`, above).
+ *   - `folded` (#3798): the condition mixes item-bound names with others
+ *     (`props.on && q === 'q'`) or is item-bound but not literal-resolvable
+ *     (`q === 'x'`, `item.count > 0`). `foldStaticBindings` has replaced the
+ *     item-bound parts with literals, and the caller lowers the carried tree
+ *     through the normal condition path.
+ *   - `null` (unclassifiable): `freeIdentifiers` can't analyze the shape, or
+ *     an item-bound name survives the fold (an object row read by something
+ *     other than a static member chain) — the caller must bail (loud
+ *     refusal, not a guess) rather than guess a value.
  */
-export type BakedCondition = { kind: 'literal'; go: string } | { kind: 'independent' }
+export type BakedCondition =
+  | { kind: 'literal'; go: string }
+  | { kind: 'independent' }
+  /** #3798: the condition with the row's values folded in (`foldStaticBindings`); lower this tree, not the source. */
+  | { kind: 'folded'; expr: ParsedExpr }
 
 export function classifyBakedCondition(
   expr: ParsedExpr,
@@ -383,8 +427,7 @@ export function classifyBakedCondition(
   }
   const free = freeIdentifiers(expr)
   if (free === null) return null
-  for (const name of bindings.keys()) {
-    if (free.has(name)) return null
-  }
-  return { kind: 'independent' }
+  if ([...bindings.keys()].every(name => !free.has(name))) return { kind: 'independent' }
+  const folded = foldStaticBindings(expr, bindings)
+  return folded === null ? null : { kind: 'folded', expr: folded }
 }

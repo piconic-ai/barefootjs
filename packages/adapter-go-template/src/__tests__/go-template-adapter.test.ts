@@ -7138,7 +7138,7 @@ export function List() {
     expect(template).toContain(':= .ListItems}}')
   })
 
-  test('gate: a body expression that cannot fold against the item (a signal-shaped call) keeps the BF101 refusal', () => {
+  test('gate: a body call with no Go binding keeps the BF101 refusal (#3798: raised by the ordinary lowering)', () => {
     const result = compileJSX(
       `
 export function List() {
@@ -7149,9 +7149,7 @@ export function List() {
       'test.tsx',
       { adapter: new GoTemplateAdapter() },
     )
-    expect(result.errors?.some(e => e.code === 'BF101')).toBe(true)
-    const template = result.files.find(f => f.type === 'markedTemplate')?.content ?? ''
-    expect(template).not.toContain('{{"Alpha"}}')
+    expect(result.errors?.some(e => e.code === 'BF101' && e.message.includes('Date.now()'))).toBe(true)
   })
 
   test('gate: an index-param reference keeps the BF101 refusal (index is deliberately not folded)', () => {
@@ -7185,6 +7183,49 @@ export function List() {
     expect(template).toContain('{{"y"}}')
     // No `{{range}}` anywhere — both levels unroll to literal Go template text.
     expect(template).not.toContain('{{range')
+  })
+
+  test('#3798: object rows and a nested loop fold the row into a ternary that also reads a prop', () => {
+    const result = compileJSX(
+      `
+export function List(props: { label: string }) {
+  const items = [{ id: 'a', on: true, tags: ['t1', 't2'] }, { id: 'b', on: false, tags: ['t3'] }]
+  return (
+    <ul>
+      {items.map(item => (
+        <li key={item.id} data-on={item.on ? props.label : 'off'}>
+          {item.on ? props.label : item.id}
+          {item.tags.map(t => <em key={t} data-t={t === 't1' ? props.label : item.id}>{t}</em>)}
+        </li>
+      ))}
+    </ul>
+  )
+}
+`,
+      'test.tsx',
+      { adapter: new GoTemplateAdapter() },
+    )
+    expect(result.errors ?? []).toEqual([])
+    const template = result.files.find(f => f.type === 'markedTemplate')!.content
+    expect(template).not.toContain('{{range')
+    // The row's own values are literals; the prop read stays a field read.
+    expect(template).toContain('{{"a"}}')
+    expect(template).toContain('.Label')
+    expect(template).not.toMatch(/\bitem\b|\$item|\.Item/)
+  })
+
+  test('#3798: a row handed whole to a call keeps the BF101 refusal', () => {
+    const result = compileJSX(
+      `
+export function List(props: { label: string }) {
+  const items = [{ id: 'a' }]
+  return <ul>{items.map(item => <li key={item.id} data-x={String(item) === props.label ? '1' : '0'}>{item.id}</li>)}</ul>
+}
+`,
+      'test.tsx',
+      { adapter: new GoTemplateAdapter() },
+    )
+    expect(result.errors?.some(e => e.code === 'BF101')).toBe(true)
   })
 
   test('gate: a non-scalar item field (array/object) keeps the BF101 refusal', () => {

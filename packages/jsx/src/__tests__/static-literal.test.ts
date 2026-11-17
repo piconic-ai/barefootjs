@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test'
-import { parseExpression } from '../expression-parser'
-import { evaluateStaticLiteral, isFullyStaticLiteral, resolveStaticLoopSource } from '../static-literal'
+import { parseExpression, stringifyParsedExpr } from '../expression-parser'
+import { evaluateStaticLiteral, foldStaticBindings, isFullyStaticLiteral, resolveStaticLoopSource } from '../static-literal'
 import type { ConstantInfo } from '../types'
 
 // #2208: a local const whose initializer is fully known at compile time (no
@@ -157,5 +157,50 @@ describe('resolveStaticLoopSource (#2208)', () => {
   test('a static value that is not an array refuses', () => {
     const locals = [constant({ name: 'obj', parsed: parseExpression("{ a: 1 }") })]
     expect(resolveStaticLoopSource(parseExpression('obj'), locals)).toBeNull()
+  })
+})
+
+// #3798: the row of a compile-time-unrolled loop folds into an expression
+// that otherwise reads the component's own scope.
+describe('foldStaticBindings (#3798)', () => {
+  const fold = (src: string, bindings: Record<string, unknown>) =>
+    foldStaticBindings(parseExpression(src), new Map(Object.entries(bindings)))
+  const text = (e: ReturnType<typeof fold>) => (e === null ? null : stringifyParsedExpr(e))
+
+  test('a bound name becomes a literal and the rest of the tree is kept', () => {
+    expect(text(fold("q === 'x' ? props.label : '0'", { q: 'x' }))).toBe('"x" === "x" ? props.label : "0"')
+  })
+
+  test('a static member chain off an object row folds to its value', () => {
+    expect(text(fold('item.on ? props.a : item.id', { item: { on: false, id: 'b' } }))).toBe('false ? props.a : "b"')
+  })
+
+  test('a template literal keeps its shape and folds the parts inside it', () => {
+    expect(text(fold('`${q}-${props.a}`', { q: 'x' }))).toBe('`${"x"}-${props.a}`')
+    expect(fold('`${q}x`', { q: 'x' })?.kind).toBe('template-literal')
+  })
+
+  test('a number row keeps its value, including 0 and a fraction', () => {
+    expect(text(fold('n === 0 ? props.a : n', { n: 0 }))).toBe('0 === 0 ? props.a : 0')
+    expect(text(fold('n > 1 ? 1 : 2', { n: 1.5 }))).toBe('1.5 > 1 ? 1 : 2')
+  })
+
+  test('a string that spells the bound name is not a reference', () => {
+    expect(text(fold("q === 'q' ? 'q' : props.q", { q: 'q' }))).toBe('"q" === "q" ? "q" : props.q')
+  })
+
+  test('an arrow parameter named like a bound name shadows it', () => {
+    expect(text(fold('props.xs.some(q => q === 1) && q', { q: 'x' }))).toBe('props.xs.some(q => q === 1) && "x"')
+    expect(fold('props.xs.some(q => q === 1)', { q: 'x' })).not.toBeNull()
+  })
+
+  test('an object row read other than through a static member chain refuses', () => {
+    expect(fold('fn(item)', { item: { a: 1 } })).toBeNull()
+    expect(fold('item.missing.deeper', { item: { a: 1 } })).toBeNull()
+  })
+
+  test('no bindings returns the expression itself', () => {
+    const expr = parseExpression('props.a')
+    expect(foldStaticBindings(expr, new Map())).toBe(expr)
   })
 })

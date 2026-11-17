@@ -1265,6 +1265,7 @@ function attachParsedAttrValues(
     if (value.kind === 'template' || value.kind === 'expression') {
       for (const part of value.parts ?? []) {
         if (part.type === 'expression') part.parsed = resolve(part.parsed)
+        else if (part.type === 'ternary' && part.condition.trim()) part.parsedCondition = parse(part.condition.trim())
       }
     }
     if (value.kind === 'expression' || (spreads && value.kind === 'spread')) {
