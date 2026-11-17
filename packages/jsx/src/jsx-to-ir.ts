@@ -75,6 +75,7 @@ import { reconstructAsSegments, reconstructWithoutTypes } from './strip-types.ts
 import { templatePartsToJsExpr } from './template-parts.ts'
 import { toHTMLAttrName, decodeEntities, BF_KEY, keyAttrName } from '@barefootjs/shared'
 import { BindingScope } from './scope/binding-scope.ts'
+import { readsCallerValue } from './caller-value-reach.ts'
 import { identifierPattern, identifierCallPattern } from './identifier-pattern.ts'
 import { isEventHandlerName } from './event-handler-name.ts'
 import { seedActionAccessorReads } from './action-accessor.ts'
@@ -1227,81 +1228,16 @@ function isLoopRowPropRead(parsed: ParsedExpr, analyzer: AnalyzerContext, scope:
 }
 
 /**
- * The calls whose result can be the value of `node`: `node` itself, and the
- * value side of a nested `?:`, `&&`, `||`, `??` or comma. A call nested
- * anywhere else (an argument, a template literal span, an operand of `+`)
- * only feeds the value another expression builds.
+ * Whether a conditional branch reads a value the caller supplied that may
+ * be or build a live element (`IRExpression.readsCallerValue`). A loop row's
+ * item, index and destructured names are the row's own data; any other name
+ * a row or callback binds (a `.map()` preamble local) is not known safe.
  */
-function valuePositionCalls(node: ts.Expression, out: ts.CallExpression[] = []): ts.CallExpression[] {
-  const expr = unwrapTransparentTsWrappers(node)
-  if (ts.isCallExpression(expr)) {
-    out.push(expr)
-  } else if (ts.isConditionalExpression(expr)) {
-    valuePositionCalls(expr.whenTrue, out)
-    valuePositionCalls(expr.whenFalse, out)
-  } else if (ts.isBinaryExpression(expr)) {
-    const op = expr.operatorToken.kind
-    // The left of `&&` is the value only when it is falsy, never an element.
-    if (op === ts.SyntaxKind.BarBarToken || op === ts.SyntaxKind.QuestionQuestionToken) {
-      valuePositionCalls(expr.left, out)
-    }
-    if (
-      op === ts.SyntaxKind.BarBarToken ||
-      op === ts.SyntaxKind.QuestionQuestionToken ||
-      op === ts.SyntaxKind.AmpersandAmpersandToken ||
-      op === ts.SyntaxKind.CommaToken
-    ) {
-      valuePositionCalls(expr.right, out)
-    }
-  }
-  return out
-}
-
-/** Whether `type` is only strings, numbers, booleans, `null` and `undefined`. */
-function isPrimitiveOnlyType(type: TypeInfo | undefined): boolean {
-  if (type?.kind === 'union') return (type.unionTypes ?? []).every(isPrimitiveOnlyType)
-  return type?.kind === 'primitive'
-}
-
-/**
- * The declared type of the prop a call's callee names, when the callee is
- * one of the component's own props: `<props object>.name(...)` or a bound
- * prop name called directly. `null` when the callee is not a prop of this
- * component; `undefined` when it is one whose declaration is not known (a
- * const alias, a props type the analyzer cannot resolve).
- */
-function calledPropType(call: ts.CallExpression, ctx: TransformContext): TypeInfo | null | undefined {
-  const analyzer = ctx.analyzer
-  const callee = unwrapTransparentTsWrappers(call.expression)
-  if (ts.isIdentifier(callee)) {
-    const name = callee.text
-    if (ctx.scope.isBound(name)) return null
-    if (!isPropValueBinding(name, analyzer) && !isChildrenBinding(name, analyzer)) return null
-    return declaredParamType(analyzer.propsParams.find(p => p.name === name))
-  }
-  if (!ts.isPropertyAccessExpression(callee)) return null
-  const object = unwrapTransparentTsWrappers(callee.expression)
-  if (!ts.isIdentifier(object) || ctx.scope.isBound(object.text)) return null
-  if (!isPropsObjectBinding(object.text, analyzer)) return null
-  const propName = callee.name.text
-  return declaredParamType(analyzer.propsParams.find(p => (p.sourceName ?? p.name) === propName))
-}
-
-/** A props param's declared type: `declaredType` where a destructured binding carries it apart from `type`. */
-function declaredParamType(param: ParamInfo | undefined): TypeInfo | undefined {
-  return param?.declaredType ?? param?.type
-}
-
-/**
- * Whether the value of `node` can be the result of calling a function the
- * component received from its caller (`IRExpression.callerCallbackResult`),
- * other than one declared to return only primitives.
- */
-function isCallerCallbackResult(node: ts.Expression, ctx: TransformContext): boolean {
-  return valuePositionCalls(node).some(call => {
-    const type = calledPropType(call, ctx)
-    if (type === null) return false
-    return !(type?.kind === 'function' && isPrimitiveOnlyType(type.returnType))
+function branchReadsCallerValue(node: ts.Expression, ctx: TransformContext): boolean {
+  return readsCallerValue(node, ctx.analyzer, name => {
+    const source = ctx.scope.lookup(name)?.binding.source
+    if (source === undefined) return undefined
+    return source === 'item' || source === 'index' || source === 'destructure'
   })
 }
 
@@ -3718,7 +3654,7 @@ function transformConditionalBranch(
     slotId,
     callsReactiveGetters: callsReactive || undefined,
     hasFunctionCalls: hasCalls || undefined,
-    ...(hasCalls && isCallerCallbackResult(node, ctx) && { callerCallbackResult: true as const }),
+    ...(hasCalls && branchReadsCallerValue(node, ctx) && { readsCallerValue: true as const }),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
     origin: branchOrigin,
   }

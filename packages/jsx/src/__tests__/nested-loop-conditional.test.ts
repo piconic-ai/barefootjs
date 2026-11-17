@@ -513,7 +513,7 @@ describe('per-item conditional wrapping a dynamic attr/event element binds exact
     // first run and on every change of the row's item, replacing the live
     // element (and its state) each time; the xyflow `<Flow>` renderer
     // would rebuild every custom node on each drag frame. Phase 1 marks the
-    // branch `callerCallbackResult` and the arm gets no text effect for it.
+    // branch `readsCallerValue` and the arm gets no text effect for it.
     // A branch calling anything else does get one (#3894, pinned in
     // `loop-branch-bare-expression-reactive-text.test.ts`).
     const source = `

@@ -1847,17 +1847,18 @@ function summarizeLoopChildBranch(
     // conditional outside a loop, was re-evaluated.
     //
     // The one branch left without an effect is the one Phase 1 marks
-    // `callerCallbackResult`: its value can be an element a callback prop
-    // built (`props.renderNode ? props.renderNode(n) : <span/>`, #1211/
-    // #1213). That element owns its state, and calling the callback again
-    // on every change of the row's item would replace it each time, so the
-    // row keeps the element `insert()` mounted with the branch.
+    // `readsCallerValue`: it has a call and reads something the caller
+    // supplied that may be or build a live element, such as a callback prop
+    // (`props.renderNode ? props.renderNode(n) : <span/>`, #1211/#1213).
+    // That element owns its state, and evaluating the branch again on every
+    // change of the row's item would replace it each time, so the row keeps
+    // the element `insert()` mounted with the branch.
     //
     // `n.slotId` must be set for the collector to take a slot. See
     // `transformConditionalBranch`'s `refsLoopParam` check (jsx-to-ir.ts),
     // which gives a bare branch reading the loop item its slot and so the
     // `<!--bf:sN-->` marker in both the SSR and the client template.
-    reactiveTexts: node.type === 'expression' && node.callerCallbackResult
+    reactiveTexts: node.type === 'expression' && node.readsCallerValue
       ? []
       : collectLoopChildReactiveTexts(node, ctx, loopParam, loopParamBindings, true, preambleNames, loopIndex),
   }
