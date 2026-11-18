@@ -41,6 +41,11 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // The loop's own first run corrects the rows on a real mount, which the
   // real-browser fixture-hydrate and oracle suites check.
   'static-loop-conditional-function-helper',
+  // #3913: the row preamble reads an outer signal (`row.name + suffix()`).
+  // The CSR template is evaluated without the component's init, so `suffix`
+  // is not defined there. The real-browser fixture-hydrate and oracle suites
+  // check the client, and per-adapter render conformance pins the SSR HTML.
+  'keyed-row-branch-preamble-signal',
   // #3737: each component reads a const computed with `[…].includes(prop)`.
   // That initializer has no CSR-template form (`populateCsrInlinable`'s
   // post-substitution check refuses it), so the template reads the const as
