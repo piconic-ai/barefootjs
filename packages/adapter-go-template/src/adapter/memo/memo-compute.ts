@@ -1295,7 +1295,15 @@ function propReadArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
 function destructuredPropReadArm(env: SeedEmitEnv, body: ParsedExpr): SeedArmResult {
   if (body.kind !== 'identifier') return undefined
   const param = env.propsParams.find(p => p.name === body.name)
-  return param ? `in.${capitalizeFieldName(param.sourceName ?? body.name)}` : undefined
+  if (!param) return undefined
+  // The binding's own value: its destructure default applied (#3691), the
+  // same entry the evaluator's environment takes (`evalEnvValueGo`).
+  const binding = env.ctx.state.currentPropsParams.find(p => p.name === body.name)
+  const defaulted = binding
+    ? (defaultedBindingGo(env.ctx, binding, env.ctx.state.currentPropsParams, env.ctx.state.propTypeOverrides) ??
+      evaluatedDefaultBindingGo(env.ctx, binding, env.ctx.state.currentPropsParams, env.ctx.state.propTypeOverrides))
+    : null
+  return defaulted ?? `in.${capitalizeFieldName(param.sourceName ?? body.name)}`
 }
 
 /**
