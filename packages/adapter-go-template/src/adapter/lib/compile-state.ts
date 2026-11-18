@@ -45,6 +45,14 @@ export class CompileState {
   referencedDerivedConsts: Set<string> = new Set()
 
   /**
+   * {@link referencedDerivedConsts} as each component's own `generate()` left
+   * it, by component name. Never reset: a standalone `generateTypes(ir)` runs
+   * after other components have rendered, and reads its own component's
+   * consts from here instead of the last render's (#3737).
+   */
+  derivedConstReadsByComponent: Map<string, ReadonlySet<string>> = new Map()
+
+  /**
    * Root-scope field names (signal getters, memo names, props, derived
    * consts) the SSR template actually READ while rendering — recorded by
    * `rootFieldRef`, the single door every such read passes through

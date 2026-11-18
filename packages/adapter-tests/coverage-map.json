@@ -4430,6 +4430,42 @@
         "text"
       ]
     },
+    "derived-string-const-child-files": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "conditional",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:includes",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "derived-string-const-sibling-component": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "conditional",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:includes",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "destructure-array-index-in-map": {
       "kinds": [
         "array-literal",
