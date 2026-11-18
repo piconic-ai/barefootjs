@@ -178,6 +178,13 @@ type EvalResult = unknown | typeof UNRESOLVED
 const NO_RETURN = Symbol('no-return')
 /** A zero-argument call of a name nothing static is bound to. */
 const NOT_BOUND = Symbol('not-bound')
+/**
+ * An object member that holds a function (`{ get: () => … }`, `{ get() {…} }`).
+ * Its body is never evaluated here, so the member has no static value: the
+ * object's other members still resolve, a read or call of this one does not,
+ * and an object that still holds one never reaches a seed (`resultToJsonable`).
+ */
+const FUNCTION_MEMBER = Symbol('function-member')
 
 interface EvalContext {
   /** Identifier name → previously-resolved value (signal getters, memos). */
@@ -220,7 +227,8 @@ function componentEvalScope(metadata: IRMetadata, bindings: Record<string, EvalR
   for (const c of constants) {
     if (c.isModule || c.value === undefined || c.declarationKind !== 'const' || c.mutatedAfterDeclaration) continue
     // A function-valued const is not its return value; a call of it is (`calls`).
-    if (propsLike.has(c.name) || c.containsArrow || c.isFunctionValue) continue
+    if (propsLike.has(c.name) || c.isFunctionValue) continue
+    if (c.containsArrow && !functionsOnlyAsObjectMembers(c.value)) continue
     const v = tryStaticEval(c.value, { bindings, propsLike: noProps, calls: calls('component') })
     if (v !== UNRESOLVED) bindings[c.name] = v
   }
@@ -753,7 +761,56 @@ function collectPropRefsTransitive(
 function resultToJsonable(v: EvalResult): unknown {
   if (v === UNRESOLVED) return null
   if (v === undefined) return null
+  if (holdsFunctionMember(v)) return null
   return v
+}
+
+/** Whether an object member is a function (`get: () => …`, `get: function () {…}`, `get() {…}`) whose body is never run here. */
+function isFunctionMember(prop: ts.ObjectLiteralElementLike): boolean {
+  if (ts.isMethodDeclaration(prop)) return true
+  if (!ts.isPropertyAssignment(prop)) return false
+  let init = prop.initializer
+  while (ts.isParenthesizedExpression(init) || ts.isAsExpression(init) || ts.isSatisfiesExpression(init)) init = init.expression
+  return ts.isArrowFunction(init) || ts.isFunctionExpression(init)
+}
+
+/**
+ * A plain object's own member by key: `undefined` when absent (JS reads it
+ * so), {@link UNRESOLVED} for a function member, whose value is the function
+ * and not anything a template holds.
+ */
+function ownMember(base: object, key: string): EvalResult {
+  if (!Object.prototype.hasOwnProperty.call(base, key)) return undefined
+  const member = (base as Record<string, unknown>)[key]
+  return member === FUNCTION_MEMBER ? UNRESOLVED : member
+}
+
+function holdsFunctionMember(v: unknown): boolean {
+  if (v === FUNCTION_MEMBER) return true
+  if (Array.isArray(v)) return v.some(holdsFunctionMember)
+  return v !== null && typeof v === 'object' && Object.values(v).some(holdsFunctionMember)
+}
+
+/**
+ * Whether every function in a const's initializer is an object member (see
+ * {@link FUNCTION_MEMBER}): evaluating the initializer never runs one, so a
+ * const that holds an arrow only as such a member still has a static value.
+ * A function anywhere else (`cond ? () => a : b`, a callback argument) is
+ * not one this evaluator models.
+ */
+function functionsOnlyAsObjectMembers(value: string): boolean {
+  const root = parseExpression(value)
+  if (!root) return false
+  // `forEachChild` stops at the first truthy result, so a child that fails
+  // the check answers `true` to stop the walk.
+  const visit = (node: ts.Node): boolean => {
+    if (ts.isObjectLiteralExpression(node)) {
+      return node.properties.every(p => isFunctionMember(p) || (ts.isPropertyAssignment(p) && visit(p.initializer)))
+    }
+    if (ts.isArrowFunction(node) || ts.isFunctionExpression(node) || ts.isMethodDeclaration(node)) return false
+    return !ts.forEachChild(node, n => !visit(n))
+  }
+  return visit(root)
 }
 
 function tryStaticEval(expr: string, ctx: EvalContext): EvalResult {
@@ -900,7 +957,7 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
   if (ts.isObjectLiteralExpression(node)) {
     const obj: Record<string, unknown> = {}
     for (const prop of node.properties) {
-      if (!ts.isPropertyAssignment(prop)) return UNRESOLVED
+      if (!ts.isPropertyAssignment(prop) && !ts.isMethodDeclaration(prop)) return UNRESOLVED
       let key: string
       if (ts.isIdentifier(prop.name) || ts.isStringLiteralLike(prop.name)) {
         key = prop.name.text
@@ -909,7 +966,7 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
       } else {
         return UNRESOLVED
       }
-      const v = evalNode(prop.initializer, ctx)
+      const v = isFunctionMember(prop) ? FUNCTION_MEMBER : evalNode((prop as ts.PropertyAssignment).initializer, ctx)
       if (v === UNRESOLVED) return UNRESOLVED
       // An `undefined` member is a present key holding `undefined`; the
       // manifest carries it as `{"$undef": true}` (`encodeUndefinedMembers`).
@@ -941,9 +998,7 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
     if (key === UNRESOLVED || key === undefined || key === null) return UNRESOLVED
     const k = String(key as string | number)
     // Missing key → JS `undefined` (the `??`/`||` defaulting flows through it).
-    return Object.prototype.hasOwnProperty.call(base, k)
-      ? (base as Record<string, unknown>)[k]
-      : undefined
+    return ownMember(base, k)
   }
 
   if (ts.isPropertyAccessExpression(node)) {
@@ -965,10 +1020,7 @@ function evalNode(node: ts.Expression, ctx: EvalContext): EvalResult {
     // `.map()` callback param bound to one element (#2696's `t.a`). Missing
     // key → JS `undefined`, mirroring `isElementAccessExpression`'s own
     // missing-key handling above.
-    const key = node.name.text
-    return Object.prototype.hasOwnProperty.call(baseResult, key)
-      ? (baseResult as Record<string, unknown>)[key]
-      : undefined
+    return ownMember(baseResult, node.name.text)
   }
 
   if (ts.isCallExpression(node)) {

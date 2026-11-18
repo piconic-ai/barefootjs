@@ -976,3 +976,51 @@ describe('extractSsrDefaults: local function calls resolve lexically', () => {
     `)).toMatchObject({ n: 1, w: 2 })
   })
 })
+
+describe('extractSsrDefaults: an object const holding a function member', () => {
+  const values = (source: string) =>
+    Object.fromEntries(Object.entries(extractSsrDefaults(metadataFor(source)) ?? {}).map(([k, d]) => [k, 'value' in d ? d.value : undefined]))
+
+  const component = (members: string, read: string, scope: 'component' | 'module') => `
+    import { createMemo } from '@barefootjs/client'
+    ${scope === 'module' ? `const R = { k: 'v' }\nconst H = ${members}` : ''}
+    function C() {
+      ${scope === 'component' ? `const R = { k: 'v' }\n      const H = ${members}` : ''}
+      const m = createMemo(() => ${read})
+      return <p>{m()}</p>
+    }
+  `
+
+  for (const scope of ['component', 'module'] as const) {
+    for (const members of [
+      "{ safe: 'ok', get: () => (R.toString ? 'y' : 'n') }",
+      "{ safe: 'ok', get: function () { return R.toString ? 'y' : 'n' } }",
+      "{ safe: 'ok', get() { return R.toString ? 'y' : 'n' } }",
+    ]) {
+      test(`${scope} scope: a plain key beside \`${members.slice(15, 30)}…\` reads its value`, () => {
+        expect(values(component(members, 'H.safe', scope))).toEqual({ m: 'ok' })
+      })
+
+      test(`${scope} scope: the function member itself has no static value`, () => {
+        expect(values(component(members, 'H.get', scope))).toEqual({ m: null })
+        expect(values(component(members, "H['get']", scope))).toEqual({ m: null })
+        expect(values(component(members, 'H.get()', scope))).toEqual({ m: null })
+      })
+
+      test(`${scope} scope: the object read whole is not a static value`, () => {
+        expect(values(component(members, 'H', scope))).toEqual({ m: null })
+      })
+    }
+  }
+
+  test('a function anywhere but an object member keeps the const out of the evaluation', () => {
+    expect(values(`
+      import { createMemo } from '@barefootjs/client'
+      function C() {
+        const H = true ? () => 'a' : 'b'
+        const m = createMemo(() => H)
+        return <p>{m()}</p>
+      }
+    `)).toEqual({ m: null })
+  })
+})
