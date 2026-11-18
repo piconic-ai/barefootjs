@@ -11173,6 +11173,12 @@
               ]
             },
             {
+              "fixture": "spread-overrides-literal-attr",
+              "limitations": [
+                "later-spread-overrides-literal-attr"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -11720,6 +11726,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-overrides-literal-attr",
+              "limitations": [
+                "later-spread-overrides-literal-attr"
               ]
             },
             {
@@ -12429,6 +12441,12 @@
               ]
             },
             {
+              "fixture": "spread-overrides-literal-attr",
+              "limitations": [
+                "later-spread-overrides-literal-attr"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -13027,6 +13045,12 @@
               ]
             },
             {
+              "fixture": "spread-overrides-literal-attr",
+              "limitations": [
+                "later-spread-overrides-literal-attr"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -13601,6 +13625,12 @@
               ]
             },
             {
+              "fixture": "spread-overrides-literal-attr",
+              "limitations": [
+                "later-spread-overrides-literal-attr"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -14154,6 +14184,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-overrides-literal-attr",
+              "limitations": [
+                "later-spread-overrides-literal-attr"
               ]
             },
             {
@@ -14737,6 +14773,12 @@
               ]
             },
             {
+              "fixture": "spread-overrides-literal-attr",
+              "limitations": [
+                "later-spread-overrides-literal-attr"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -15305,6 +15347,12 @@
               ]
             },
             {
+              "fixture": "spread-overrides-literal-attr",
+              "limitations": [
+                "later-spread-overrides-literal-attr"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -15864,6 +15912,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "spread-overrides-literal-attr",
+              "limitations": [
+                "later-spread-overrides-literal-attr"
               ]
             },
             {

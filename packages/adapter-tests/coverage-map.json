@@ -18110,6 +18110,15 @@
         "text"
       ]
     },
+    "spread-overrides-literal-attr": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "stateless-rest-spread-forward": {
       "kinds": [
         "identifier"

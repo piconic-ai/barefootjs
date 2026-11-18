@@ -263,6 +263,9 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
  * and that the entry lists the fixture.
  */
 export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: string }>> = {
+  // A literal attribute followed by a spread whose keys are unknown at compile
+  // time that supplies the same key: the CSR template keeps the literal.
+  'spread-overrides-literal-attr': { limitation: 'later-spread-overrides-literal-attr' },
   // A body statement mutating a destructure binding (`local.push('z')`),
   // read through a memo: the CSR template does not run the statement and
   // cannot inline the memo over a mutated binding, so it renders empty.
