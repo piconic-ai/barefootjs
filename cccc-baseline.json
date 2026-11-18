@@ -39,9 +39,6 @@
       "checkImportedLoopChildComponents/visit": [
         32
       ],
-      "convertExpressionToGo": [
-        27
-      ],
       "isStringExpr": [
         29
       ],
@@ -337,13 +334,10 @@
     },
     "packages/jsx/src/adapters/jsx-adapter.ts": {
       "generateModuleScopeDeclarations": [
-        44
+        42
       ],
       "generateSignalInitializers": [
         99
-      ],
-      "moduleScopeDeclarationNames": [
-        44
       ]
     },
     "packages/jsx/src/adapters/loop-bound-names.ts": {
@@ -632,11 +626,6 @@
     "packages/jsx/src/ir-to-client-js/declaration-sort.ts": {
       "sortDeclarations": [
         46
-      ]
-    },
-    "packages/jsx/src/ir-to-client-js/emit-module-level.ts": {
-      "emitModuleLevelDeclarations": [
-        26
       ]
     },
     "packages/jsx/src/ir-to-client-js/emit-reactive.ts": {

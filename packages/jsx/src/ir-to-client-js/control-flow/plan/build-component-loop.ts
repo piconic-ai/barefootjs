@@ -161,6 +161,9 @@ export function buildComponentLoopPlan(elem: TopLevelLoop, profileComponentName?
     outerLoopParam: elem.param,
     outerLoopParamBindings: elem.paramBindings,
     outerLoopIndex: elem.index,
+    // #3731: nothing else initialises a component inside an inner loop of
+    // the forwarded children (the outer pass above takes `loopDepth` 0 only).
+    components: (elem.nestedComponents ?? []).filter(c => !!c.loopDepth),
   })
 
   return {

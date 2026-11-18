@@ -8844,7 +8844,8 @@ function tryResolveTemplateSpanFromConst(
  * declarations take precedence over module-level declarations of the
  * same name (matching JS scoping); among multiple function-scope
  * consts with the same name we pick the last analyzer entry, which
- * corresponds to the latest binding in source order.
+ * corresponds to the latest binding in source order. A module const a
+ * prop, a signal or a memo of the same name hides is not returned.
  *
  * Returns undefined when no const matches.
  */
@@ -8854,8 +8855,14 @@ function findLocalConst(name: string, analyzer: AnalyzerContext) {
   // Prefer the innermost (non-module) binding; fall back to whatever's
   // there if every match is at module scope.
   const fnScoped = matches.filter(c => !c.isModule)
-  const pool = fnScoped.length > 0 ? fnScoped : matches
-  return pool[pool.length - 1]
+  if (fnScoped.length > 0) return fnScoped[fnScoped.length - 1]
+  // Every match is a module const. A prop, a signal or a memo of the name
+  // hides it too, so the read is that binding and no const at all (#3739).
+  // A FUNCTION of the name is left to the callers that pair this lookup with
+  // `findLocalFunction`: they refuse a const and a function of one name as
+  // ambiguous (#2090, #2206), and that refusal is theirs to keep.
+  const hiddenByComponent = componentScopeNames(analyzer).has(name) && !analyzer.localFunctions.some(f => f.name === name)
+  return hiddenByComponent ? undefined : matches[matches.length - 1]
 }
 
 /**

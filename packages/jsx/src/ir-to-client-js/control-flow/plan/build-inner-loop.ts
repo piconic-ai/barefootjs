@@ -223,19 +223,23 @@ function buildReactiveEmit(
     ? wrapLoopParamAsAccessor(inner.key, inner.param, inner.paramBindings, inner.index)
     : null
 
-  // Inner-wrap children IR recursively so nested component props (e.g.,
+  // Wrap children IR recursively so nested component props (e.g.,
   // `<Select><SelectContent>{items.map(item => ...)}` deep) all see the
-  // inner accessor form.
+  // accessor form of the inner row AND every enclosing row (#3731: a handler
+  // prop two loops deep reads the outermost row's item). Wrapping is
+  // idempotent, so the immediate-parent rewrite `emitComponentAndEventSetup`
+  // still applies leaves an already-wrapped read alone.
+  const wrapRows = (expr: string) => wrapBoth(expr)
   const wrapIRNode = (node: IRNode): IRNode => {
     if (node.type === 'component') {
       return {
         ...node,
-        props: node.props.map(p => ({ ...p, value: wrapAttrValueExpression(p.value, wrapInner) })),
+        props: node.props.map(p => ({ ...p, value: wrapAttrValueExpression(p.value, wrapRows) })),
         children: node.children?.map(wrapIRNode),
       }
     }
     if (node.type === 'expression' && node.expr) {
-      return { ...node, expr: wrapInner(node.expr) }
+      return { ...node, expr: wrapRows(node.expr) }
     }
     if ('children' in node && Array.isArray((node as { children?: IRNode[] }).children)) {
       return {
@@ -247,7 +251,7 @@ function buildReactiveEmit(
   }
   const components: IRLoopChildComponent[] = level.comps.map(comp => ({
     ...comp,
-    props: comp.props.map(p => ({ ...p, value: wrapAttrValueExpression(p.value, wrapInner) })),
+    props: comp.props.map(p => ({ ...p, value: wrapAttrValueExpression(p.value, wrapRows) })),
     children: comp.children?.map(wrapIRNode),
   }))
   // Resolved against every enclosing row, like the texts below (#3694): an
@@ -356,6 +360,13 @@ export interface BuildForwardedInnerLoopsArgs {
   outerLoopParam?: string
   outerLoopParamBindings?: readonly LoopParamBinding[]
   outerLoopIndex?: string | null
+  /**
+   * The row's nested child components (`TopLevelLoop.nestedComponents`), when
+   * this row is the one that initialises the components inside its inner
+   * loops (#3731). Omit it when another pass already does (a static array's
+   * `ComponentRootedInnerLoopInitPlan`), so none is initialised twice.
+   */
+  components?: readonly IRLoopChildComponent[]
 }
 
 /**
@@ -368,29 +379,32 @@ export interface BuildForwardedInnerLoopsArgs {
  * claims the rendered inner rows and attaches the handlers with the inner
  * and the outer bindings resolved the same way as on a composite row.
  *
- * Only inner loops that carry an event, and the enclosing loops they need,
- * are planned; the others keep their output unchanged. Child components
- * inside an inner loop are left to their existing pass (`comps` empty), so
+ * Only inner loops that carry an event or a child component, and the
+ * enclosing loops they need, are planned; the others keep their output
+ * unchanged. Child components inside an inner loop are initialised here only
+ * when the caller passes `components` (#3731: the signal-array row owns
+ * them); otherwise `comps` stays empty and the caller's own pass does it, so
  * none is initialised twice.
  */
 export function buildForwardedInnerLoopsPlan(args: BuildForwardedInnerLoopsArgs): InnerLoopsPlan {
-  const { innerLoops, events, parentElVar, outerLoopParam, outerLoopParamBindings, outerLoopIndex } = args
+  const { innerLoops, events, parentElVar, outerLoopParam, outerLoopParamBindings, outerLoopIndex, components } = args
   if (!innerLoops || innerLoops.length === 0) return []
-  const levels = buildDepthLevels([...innerLoops], [], [...events])
-  const kept = levels.filter((_, i) => levelCarriesEvent(levels, i))
+  const levels = buildDepthLevels([...innerLoops], [...(components ?? [])], [...events])
+  const kept = levels.filter((_, i) => levelCarriesWiring(levels, i))
   if (kept.length === 0) return []
   return buildInnerLoopsPlan({ levels: kept, parentElVar, outerLoopParam, outerLoopParamBindings, outerLoopIndex })
 }
 
 /**
  * Whether `levels[i]` or a loop nested inside it (the deeper levels right
- * after it) carries an event, on its row or inside a conditional of its row.
+ * after it) carries an event or a child component to initialise, on its row
+ * or (for an event) inside a conditional of its row.
  */
-function levelCarriesEvent(levels: readonly DepthLevel[], i: number): boolean {
+function levelCarriesWiring(levels: readonly DepthLevel[], i: number): boolean {
   const depth = levels[i].loopInfo?.depth ?? 0
   for (let j = i; j < levels.length; j++) {
     if (j > i && (levels[j].loopInfo?.depth ?? 0) <= depth) break
-    if (levels[j].events.length > 0) return true
+    if (levels[j].events.length > 0 || levels[j].comps.length > 0) return true
     if (conditionalsCarryEvent(levels[j].loopInfo?.bindings.conditionals ?? [])) return true
   }
   return false

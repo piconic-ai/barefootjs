@@ -9097,6 +9097,26 @@
         "text"
       ]
     },
+    "loop-row-child-children-inner-loop-component": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-child-children-inner-loop-handler": {
       "kinds": [
         "array-literal",
@@ -11278,6 +11298,22 @@
         "condition"
       ]
     },
+    "module-const-declared-after-component": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "module-const-default-hydrate": {
       "kinds": [
         "call",
@@ -11320,6 +11356,24 @@
         "attribute",
         "condition",
         "loop",
+        "text"
+      ]
+    },
+    "module-const-destructure-default-component-const": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
         "text"
       ]
     },
@@ -11951,6 +12005,42 @@
         "text"
       ]
     },
+    "module-const-mutated-object-hidden-read": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-mutated-object-read": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-const-named-like-object-prop": {
       "kinds": [
         "binary",
@@ -11985,6 +12075,21 @@
         "text"
       ]
     },
+    "module-const-reads-global-named-like-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "module-const-record-child-prop": {
       "kinds": [
         "binary",
@@ -12002,6 +12107,74 @@
       "contexts": [
         "attribute",
         "condition",
+        "text"
+      ]
+    },
+    "module-const-shadow-sibling-component": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-shadowed-by-component-const": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:===",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "condition",
+        "text"
+      ]
+    },
+    "module-const-shadowed-by-prop": {
+      "kinds": [
+        "binary",
+        "conditional",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:boolean",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "text"
+      ]
+    },
+    "module-const-shadowed-by-signal": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
         "text"
       ]
     },

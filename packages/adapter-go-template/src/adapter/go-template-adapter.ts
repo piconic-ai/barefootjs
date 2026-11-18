@@ -5225,11 +5225,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * The single module-const lookup shared by `resolveModuleConstAsGo` —
    * kept as its own method (rather than inlined) so a second `.find(` isn't
    * added elsewhere, growing `binding-scope-ratchet.test.ts`'s shrink-only
-   * floor for this file (already at 5).
+   * floor for this file (already at 5). The lookup answers a read in the
+   * component, so a module const a component binding hides
+   * (`shadowedInComponent`) is not found (#3739).
    */
   private findModuleConst(name: string): ConstantInfo | undefined {
     return this.state.localConstants.find(
-      (k) => k.name === name && k.isModule && !k.containsArrow,
+      (k) => k.name === name && k.isModule && !k.containsArrow && !k.shadowedInComponent,
     )
   }
 
@@ -6500,16 +6502,16 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // `const count = 7`, the occurrence inside the loop body must resolve to
     // the range value (via the normal parse-and-lower fallthrough), not the
     // outer literal.
+    //
+    // Which declaration the name reads, and whether it holds a literal, is
+    // the shared `lookupLiteralConst` (#3739): a component const hides a
+    // module const of its name, and a prop or signal hides it too.
     if (!this.isLoopShadowedName(trimmed) && /^[A-Za-z_$][\w$]*$/.test(trimmed)) {
-      const litConst = (this.state.localConstants ?? []).find(c => c.name === trimmed)
-      if (litConst?.value !== undefined) {
-        const v = litConst.value.trim()
-        // A number spells through the plan (#3824 step 6): `-0` and a
-        // literal past 2^53 are not Go template literals.
-        if (/^-?\d+(\.\d+)?$/.test(v)) return this.literal(Number(v), 'number', null)
-        const strLit = /^'([^'\\]*)'$/.exec(v) ?? /^"([^"\\]*)"$/.exec(v)
-        if (strLit) return JSON.stringify(strLit[1])
-      }
+      const lit = lookupLiteralConst(trimmed, this.state.localConstants, () => false)
+      // A number spells through the plan (#3824 step 6): `-0` and a
+      // literal past 2^53 are not Go template literals.
+      if (lit?.kind === 'number') return this.literal(lit.value, 'number', null)
+      if (lit?.kind === 'string') return JSON.stringify(lit.text)
     }
 
     // Registered call lowerings (#2057) — e.g. `queryHref(base, { … })` (#2042)
