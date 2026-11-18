@@ -36,7 +36,7 @@ import {
 import type { GoEmitContext } from '../emit-context.ts'
 import { loopArraySignal } from '../analysis/component-tree.ts'
 import { findModuleScopeConst, findValuedLocalConst } from '../lib/compile-state.ts'
-import { GO_IDENTIFIER, capitalizeFieldName } from '../lib/go-naming.ts'
+import { capitalizeFieldName, goFieldNameForKey, isSynthStructFieldKey } from '../lib/go-naming.ts'
 import type { NestedComponentInfo } from '../lib/types.ts'
 import { resolveBlockBodyMemoModuleConst } from '../memo/memo-value.ts'
 import { planSynthPropStructs } from './synth-prop-structs.ts'
@@ -121,9 +121,23 @@ export function synthesizeStructsFromElements(
 
   for (const key of order) {
     const shape = shapes.get(key)!
+    // One name mapping for every key, identifier or not (`'a.b'` → `AB`):
+    // the one the destructure and member emitters read the field by.
+    const goName = goFieldNameForKey(key)
     if (shape.kind === 'scalar') {
-      fields.push({ tsName: key, goName: capitalizeFieldName(key), goType: shape.goType })
+      fields.push({ tsName: key, goName, goType: shape.goType })
       properties.push({ name: key, type: scalarGoTypeToTypeInfo(shape.goType), optional: false, readonly: false })
+      continue
+    }
+    if (shape.kind === 'object') {
+      // A nested object (`meta: { x: 1 }`) is a struct of its own, shaped
+      // from every row's object for this key.
+      const nestedName = `${name}${goName}`
+      const nested = synthesizeStructsFromElements(ctx, nestedElements.get(key)!, nestedName)
+      if (!nested) return null
+      nestedStructs.push(...nested)
+      fields.push({ tsName: key, goName, goType: nestedName })
+      properties.push({ name: key, type: { kind: 'interface', raw: nestedName }, optional: false, readonly: false })
       continue
     }
     // Every row's array for this key was empty — no row's data to infer
@@ -135,19 +149,25 @@ export function synthesizeStructsFromElements(
       // A scalar array (`tags: ['a', 'b']`) types its field the way a
       // declared `string[]` property does, so its literal bakes as that slice.
       const type = scalarArrayTypeInfo(shape.element)
-      fields.push({ tsName: key, goName: capitalizeFieldName(key), goType: typeInfoToGo(ctx, type) })
+      fields.push({ tsName: key, goName, goType: typeInfoToGo(ctx, type) })
       properties.push({ name: key, type, optional: false, readonly: false })
       continue
     }
-    const nestedName = `${name}${capitalizeFieldName(key)}Item`
+    const nestedName = `${name}${goName}Item`
     const nested = synthesizeStructsFromElements(ctx, nestedElements.get(key)!, nestedName)
     if (!nested) return null
     nestedStructs.push(...nested)
-    fields.push({ tsName: key, goName: capitalizeFieldName(key), goType: `[]${nestedName}` })
+    fields.push({ tsName: key, goName, goType: `[]${nestedName}` })
     properties.push({ name: key, type: synthSliceTypeInfo(nestedName), optional: false, readonly: false })
   }
 
-  return [...nestedStructs, { name, fields, properties }]
+  // Two keys spelled as one Go field (`a` and `A`), or two nested structs
+  // given one name (`x: [{…}]` beside `xItem: {…}`), have no struct.
+  const structs = [...nestedStructs, { name, fields, properties }]
+  if (new Set(fields.map(f => f.goName)).size !== fields.length) return null
+  if (new Set(structs.map(s => s.name)).size !== structs.length) return null
+
+  return structs
 }
 
 /**
@@ -190,8 +210,9 @@ function isUntypedObjectArrayType(type: TypeInfo | null | undefined): boolean {
  * A key's shape across the rows. An array's `element` is `'object'` for an
  * array of object literals, a scalar Go type (`string` / `float64` / `bool`)
  * for an array of scalar literals, or null while every row's array was empty.
+ * `object` is a nested object literal.
  */
-type PropShape = { kind: 'scalar'; goType: string } | { kind: 'array'; element: string | null }
+type PropShape = { kind: 'scalar'; goType: string } | { kind: 'array'; element: string | null } | { kind: 'object' }
 
 /** The per-key shapes `collectRowShapes` reads off the rows, in first-row key order. */
 type RowShapes = {
@@ -224,7 +245,7 @@ function collectRowShapes(elements: ParsedExpr[]): RowShapes | null {
       if (prop.kind === 'spread') return null
       if (prop.shorthand) return null
       const key = prop.key
-      if (!GO_IDENTIFIER.test(key)) return null
+      if (!isSynthStructFieldKey(key)) return null
       seen.add(key)
 
       if (!recordPropShape(rowShapes, i, key, prop.value)) return null
@@ -243,6 +264,7 @@ function collectRowShapes(elements: ParsedExpr[]): RowShapes | null {
 function recordPropShape(rowShapes: RowShapes, i: number, key: string, value: ParsedExpr): boolean {
   const { order, shapes } = rowShapes
   if (value.kind === 'array-literal') return recordArrayShape(rowShapes, i, key, value.elements)
+  if (value.kind === 'object-literal') return recordObjectShape(rowShapes, i, key, value)
 
   const goType = scalarParsedGoType(value)
   if (!goType) return false
@@ -256,6 +278,25 @@ function recordPropShape(rowShapes: RowShapes, i: number, key: string, value: Pa
   } else {
     if (prevShape.goType !== goType) return false
   }
+  return true
+}
+
+/**
+ * Record one row's nested object for `key`: every row must hold an object
+ * there, and each contributes to the nested struct's shape.
+ */
+function recordObjectShape(rowShapes: RowShapes, i: number, key: string, value: ParsedExpr): boolean {
+  const { order, shapes, nestedElements } = rowShapes
+  const prevShape = shapes.get(key)
+  if (prevShape === undefined) {
+    if (i !== 0) return false
+    order.push(key)
+    shapes.set(key, { kind: 'object' })
+    nestedElements.set(key, [])
+  } else if (prevShape.kind !== 'object') {
+    return false
+  }
+  nestedElements.get(key)!.push(value)
   return true
 }
 
@@ -714,7 +755,7 @@ function resolveUntypedConstLoopItemType(
       code: 'BF101',
       severity: 'error',
       message: sharedKeys
-        ? `Loop array \`${directConst.name}\` is an object-literal array with a field the Go template adapter can't give one Go type across its rows (for example a nested object, a \`null\`, a non-identifier key, an empty nested array, or a value whose type differs between rows), so it can't render its rows at SSR.`
+        ? `Loop array \`${directConst.name}\` is an object-literal array with a field the Go template adapter can't give one Go type across its rows (for example a \`null\`, an empty nested array, or a value whose type differs between rows), so it can't render its rows at SSR.`
         : `Loop array \`${directConst.name}\` is an object-literal array whose rows don't share one shape, so the Go template adapter can't infer an element type to render its rows at SSR.`,
       loc: host.makeLoc(),
       suggestion: {

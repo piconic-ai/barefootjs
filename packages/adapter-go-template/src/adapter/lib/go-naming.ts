@@ -93,6 +93,30 @@ export function goFieldNameForKey(key: string): string {
 }
 
 /**
+ * The punctuation a non-identifier key of a synthesized struct may hold:
+ * what Go's `encoding/json` accepts in a struct tag name, without `$`.
+ */
+const SYNTH_KEY_PUNCTUATION = '!#%&()*+-./:;<=>?@[]^_{|}~ '
+
+/**
+ * Whether a SYNTHESIZED struct can carry the source key `key` as a field
+ * that every read finds again. A Go identifier is read by its field name
+ * (`row.id` → `.ID`). Any other key (`'a.b'`, `'*'`, `0`) is read by
+ * `bf_get row "a.b"`, which matches the field's JSON tag, so the key has to
+ * survive as that tag unchanged: ASCII letters, digits and the punctuation
+ * `encoding/json` accepts in a tag name, not `-` (the tag that hides a
+ * field), and no leading capital, which the tag spelling lowers. `$` and
+ * non-ASCII letters stay out: such a key can be a JS identifier
+ * (`row.$id`), which is read as a field path Go cannot spell.
+ */
+export function isSynthStructFieldKey(key: string): boolean {
+  if (GO_IDENTIFIER.test(key)) return true
+  if (key === '' || key === '-') return false
+  if (/^[A-Z]/.test(key)) return false
+  return [...key].every(ch => SYNTH_KEY_PUNCTUATION.includes(ch) || /^[A-Za-z0-9]$/.test(ch))
+}
+
+/**
  * Source-key → Go-field-name pairs for a struct's properties, deduped
  * first-wins on the Go name (two source keys that sanitize to the same Go
  * identifier can't both get a field). The name-only half of

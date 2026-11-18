@@ -138,10 +138,7 @@ export const conformancePins: ConformancePins = {
   // Untyped object-literal loop arrays with no single row shape: there is
   // no one Go struct to synthesize for the rows, so `resolveNestedLoopItemTypes`
   // refuses instead of baking the array to `nil` and dropping the loop.
-  // Escape twins (an explicit element type): the `-typed` fixtures.
-  'loop-row-child-untyped-array-nested-field': [
-    { code: 'BF101', severity: 'error', limitation: 'untyped-loop-array-no-row-struct' },
-  ],
+  // Escape twin (an explicit element type): the `-typed` fixture.
   'loop-row-child-untyped-array-mismatched-keys': [
     { code: 'BF101', severity: 'error', limitation: 'untyped-loop-array-no-row-struct' },
   ],
