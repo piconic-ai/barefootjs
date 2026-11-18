@@ -8,6 +8,7 @@ import { attrValueToString, freeIdsFromRefs, PROPS_PARAM, toHtmlAttrName, rowBou
 import { classifyReactivity, needsEffectWrapper, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectConditionalBranchComponentNodes, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings, buildLoopRowScope, anyNameIn } from './reactivity.ts'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, jsxChildrenPropGetterExpr, buildLoopSkeletonTemplate, computeSkeletonSlotPaths, renderFlatMapClientBody, renderFlatMapProjectionClientBody, flatMapCallbackHasKeyedLeaf, type SkeletonSlotPaths } from './html-template.ts'
 import { detectRootNamespaceWrapTag } from './control-flow/stringify/template-parse.ts'
+import { branchNeedsLiveRow, reachesReactiveThroughLocalHelper, readsBeyondLoopScope } from './loop-scope-reads.ts'
 import { expandDynamicPropValue, expandConstantForReactivity, resolveRestSpreadOrigin, resolveRestSpreadNames } from './prop-handling.ts'
 import { extractFreeIdentifiersFromText } from './csr-substitute.ts'
 import { walkIR, stopAt } from './walker.ts'
@@ -846,10 +847,15 @@ export function collectElements(
       // init already tolerates an absent-this-row child component). Only a
       // condition that can ITSELF change value later (`flag()`, or a mixed
       // `item.x && flag()`) needs the escalation #2897 actually fixed.
+      //
+      // #3911: the same holds for what the branches contain. A condition
+      // fixed for the row still leaves a branch that reads a signal, or
+      // carries an event handler or a ref, with nothing to wire it on the
+      // static path (`branchesNeedLiveRow`).
       const staticRowHasConditional = !projectionInner && l.isStaticArray && !l.childComponent
-        && bindings.conditionals.some(c => c.reactiveBeyondLoopScope)
+        && bindings.conditionals.some(rowConditionalIsLive)
       const staticInnerLoopHasConditional = !projectionInner && l.isStaticArray && !l.childComponent
-        && (innerLoops ?? []).some(il => il.bindings.conditionals.some(c => c.reactiveBeyondLoopScope))
+        && (innerLoops ?? []).some(il => il.bindings.conditionals.some(rowConditionalIsLive))
       const hasInnerStructure = (l.nestedComponents?.length ?? 0) > 0 || (innerLoops?.length ?? 0) > 0
       // An own-row conditional alone needs no inner structure to reconcile —
       // it falls through (via `clientIsStaticArray` below) straight to the
@@ -1667,6 +1673,15 @@ export function collectLoopChildBindings(
   return bindings
 }
 
+/**
+ * Whether a row conditional keeps a static array's row from being baked
+ * once: its condition can change after first render, or a branch holds
+ * something only the conditional's own live binding wires.
+ */
+function rowConditionalIsLive(c: LoopChildConditional): boolean {
+  return c.reactiveBeyondLoopScope || c.branchesNeedLiveRow
+}
+
 export function collectLoopChildConditionals(
   node: IRNode,
   ctx: ClientJsContext,
@@ -1738,7 +1753,14 @@ export function collectLoopChildConditionals(
       const refsLoopParamInSource = refsAnyBindingViaFreeIds(sourceFreeIds)
       // Pre-gate using AST `reactive` flag on the source condition before
       // paying for constant expansion — matches the legacy short-circuit.
-      if (!n.reactive && !refsLoopParamInSource) return
+      //
+      // A condition that names neither a row binding nor a reactive source
+      // itself may still reach one through a component-local helper
+      // (`isOn()` with `function isOn() { return n() > 0 }`, #3912). That
+      // reach keeps it past this gate and the classifier gate below, which
+      // would both drop it before the helper is ever followed.
+      const reachesThroughHelper = reachesReactiveThroughLocalHelper(sourceFreeIds, scope, ctx)
+      if (!n.reactive && !refsLoopParamInSource && !reachesThroughHelper) return
       const expanded = expandConstantForReactivity(n.condition, ctx, sourceFreeIds, scope)
       // A `.map()` callback preamble local (#2596, twin of
       // `collectLoopChildReactiveAttrs`'s `readsPreamble` #2447). Phase 1
@@ -1756,7 +1778,7 @@ export function collectLoopChildConditionals(
       // Loop-param/loop-index conditionals are reactive via per-item signal
       // accessors; classifyReactivity sees all three paths (signal/memo/prop
       // + loop-param + loop-index, #2861).
-      if (!readsPreamble && classifyReactivity(expanded.expr, ctx, scope, expanded.freeIds).kind === 'none') return
+      if (!readsPreamble && !reachesThroughHelper && classifyReactivity(expanded.expr, ctx, scope, expanded.freeIds).kind === 'none') return
       // #2897 follow-up: does the condition read anything beyond the loop
       // item/index? `classifyReactivity`'s `kind` can't answer this — it
       // reports `'loop-param'` first whenever a loop-bound name appears,
@@ -1767,7 +1789,19 @@ export function collectLoopChildConditionals(
       // ask "can this branch decision change after first render" instead
       // of "does this touch the loop param at all" — see
       // `LoopChildConditional.reactiveBeyondLoopScope`'s doc comment.
-      const reactiveBeyondLoopScope = n.reactive || readsPreamble || needsEffectWrapper(expanded.expr, ctx, expanded.freeIds)
+      //
+      // #3912: a read reached through a component-local helper counts too.
+      // `isSel(item.id)` with `function isSel(id) { return sel() === id }`
+      // names only the helper, which `needsEffectWrapper` does not follow
+      // (a `function` declaration is not a constant, and a function-valued
+      // constant is skipped), so `readsBeyondLoopScope` walks the helper's
+      // own free identifiers.
+      const reactiveBeyondLoopScope = n.reactive || readsPreamble
+        || needsEffectWrapper(expanded.expr, ctx, expanded.freeIds)
+        || reachesThroughHelper
+        || readsBeyondLoopScope(expanded.freeIds, scope, ctx)
+      // #3911: the condition may be fixed for the row while a branch is not.
+      const branchesNeedLiveRow = branchNeedsLiveRow(n.whenTrue, scope, ctx) || branchNeedsLiveRow(n.whenFalse, scope, ctx)
 
       const loopParamsForCond =
         loopParams ?? (loopParam ? [{ param: loopParam, bindings: loopParamBindings, index: loopIndex }] : undefined)
@@ -1787,6 +1821,7 @@ export function collectLoopChildConditionals(
         ...(expanded.freeIds !== undefined && { conditionFreeIdentifiers: expanded.freeIds }),
         ...(readsPreamble && { readsPreamble: true }),
         reactiveBeyondLoopScope,
+        branchesNeedLiveRow,
       })
     },
   })

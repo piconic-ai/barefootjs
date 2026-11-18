@@ -297,9 +297,11 @@ import { fixture as numberPropNamedLength } from './number-prop-named-length'
 import { fixture as remainderNegativeZeroQuotient } from './remainder-negative-zero-quotient'
 import { fixture as computedIndexOwnKey } from './computed-index-own-key'
 import { fixture as literalIndexOwnKey } from './literal-index-own-key'
+import { fixture as untypedRowsLiteralKeyNestedObject } from './untyped-rows-literal-key-nested-object'
 import { fixture as indexKeyCanonicalForm } from './index-key-canonical-form'
 import { fixture as indexKeyCanonicalFormCallback } from './index-key-canonical-form-callback'
 import { fixture as indexReadPositions } from './index-read-positions'
+import { fixture as indexReadMemberChain } from './index-read-member-chain'
 import { fixture as relationalPositions } from './relational-positions'
 import { fixture as relationalOmittedNumberMemo } from './relational-omitted-number-memo'
 // `+` and ToString at every position (#3740, #3824 step 4).
@@ -803,6 +805,9 @@ import { fixture as staticNestedLoopShadowedParam } from './static-nested-loop-s
 import { fixture as staticLoopConditional } from './static-loop-conditional'
 import { fixture as staticLoopConditionalPrecomputed } from './static-loop-conditional-precomputed'
 import { fixture as staticLoopConditionalClient } from './static-loop-conditional-client'
+import { fixture as staticLoopConditionalFunctionHelper } from './static-loop-conditional-function-helper'
+import { fixture as staticLoopConditionalRowIndependentHelper } from './static-loop-conditional-row-independent-helper'
+import { fixture as staticLoopRowConditionalBranchSignal } from './static-loop-row-conditional-branch-signal'
 import { fixture as staticLoopItemConditional } from './static-loop-item-conditional'
 import { fixture as staticLoopItemConditionalPrecomputed } from './static-loop-item-conditional-precomputed'
 import { fixture as staticLoopItemConditionalClient } from './static-loop-item-conditional-client'
@@ -1718,9 +1723,11 @@ export const jsxFixtures: JSXFixture[] = [
   remainderNegativeZeroQuotient,
   computedIndexOwnKey,
   literalIndexOwnKey,
+  untypedRowsLiteralKeyNestedObject,
   indexKeyCanonicalForm,
   indexKeyCanonicalFormCallback,
   indexReadPositions,
+  indexReadMemberChain,
   relationalPositions,
   relationalOmittedNumberMemo,
   plusTostringPositions,
@@ -2155,6 +2162,9 @@ export const jsxFixtures: JSXFixture[] = [
   staticLoopConditional,
   staticLoopConditionalPrecomputed,
   staticLoopConditionalClient,
+  staticLoopConditionalFunctionHelper,
+  staticLoopConditionalRowIndependentHelper,
+  staticLoopRowConditionalBranchSignal,
   staticLoopItemConditional,
   staticLoopItemConditionalPrecomputed,
   staticLoopItemConditionalClient,

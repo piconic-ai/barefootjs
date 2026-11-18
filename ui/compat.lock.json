@@ -1983,6 +1983,7 @@
               "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
+              "component-scope-helper-call",
               "computed-const-loop-source",
               "const-literal-inherited-key",
               "destructure-default-reads-component-state",
@@ -2014,6 +2015,7 @@
               "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
+              "component-scope-helper-call",
               "computed-const-loop-source",
               "const-literal-inherited-key",
               "destructure-default-reads-component-state",
@@ -2048,6 +2050,7 @@
               "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
+              "component-scope-helper-call",
               "computed-const-loop-source",
               "const-literal-inherited-key",
               "destructure-default-reads-component-state",
@@ -2079,6 +2082,7 @@
               "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
+              "component-scope-helper-call",
               "computed-const-loop-source",
               "const-literal-inherited-key",
               "destructure-default-reads-component-state",
@@ -2111,6 +2115,7 @@
               "boolean-in-static-loop-item",
               "callback-index-param",
               "callback-outside-evaluator",
+              "component-scope-helper-call",
               "computed-const-loop-source",
               "const-literal-inherited-key",
               "destructure-default-reads-component-state",
@@ -2142,6 +2147,7 @@
               "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
+              "component-scope-helper-call",
               "computed-const-loop-source",
               "const-literal-inherited-key",
               "destructure-default-reads-component-state",
@@ -2173,6 +2179,7 @@
               "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
+              "component-scope-helper-call",
               "computed-const-loop-source",
               "const-literal-inherited-key",
               "destructure-default-reads-component-state",
@@ -2205,6 +2212,7 @@
               "boolean-in-static-loop-item",
               "callback-index-param",
               "callback-outside-evaluator",
+              "component-scope-helper-call",
               "computed-const-loop-source",
               "const-literal-inherited-key",
               "destructure-default-reads-component-state",
@@ -5856,14 +5864,6 @@
           }
         }
       },
-      "literal-index-own-key": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "non-identifier-literal-key"
-          ]
-        }
-      },
       "loop-key-to-string-number-component-row": {
         "go-template": {
           "kind": "refusal",
@@ -5978,21 +5978,6 @@
           "escape": {
             "state": "escapable",
             "twin": "loop-row-child-untyped-array-mismatched-keys-typed"
-          }
-        }
-      },
-      "loop-row-child-untyped-array-nested-field": {
-        "go-template": {
-          "kind": "refusal",
-          "codes": [
-            "BF101"
-          ],
-          "limitations": [
-            "untyped-loop-array-no-row-struct"
-          ],
-          "escape": {
-            "state": "escapable",
-            "twin": "loop-row-child-untyped-array-nested-field-typed"
           }
         }
       },
@@ -11394,6 +11379,125 @@
           }
         }
       },
+      "static-loop-conditional-function-helper": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "component-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side branch switch of static-array rows that hydration adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted and the twin would pin a client-only mount instead."
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "component-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side branch switch of static-array rows that hydration adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted and the twin would pin a client-only mount instead."
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF102"
+          ],
+          "limitations": [
+            "component-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side branch switch of static-array rows that hydration adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted and the twin would pin a client-only mount instead."
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "component-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side branch switch of static-array rows that hydration adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted and the twin would pin a client-only mount instead."
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "component-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side branch switch of static-array rows that hydration adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted and the twin would pin a client-only mount instead."
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "component-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side branch switch of static-array rows that hydration adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted and the twin would pin a client-only mount instead."
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "component-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side branch switch of static-array rows that hydration adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted and the twin would pin a client-only mount instead."
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "component-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side branch switch of static-array rows that hydration adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted and the twin would pin a client-only mount instead."
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "component-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side branch switch of static-array rows that hydration adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted and the twin would pin a client-only mount instead."
+          }
+        }
+      },
       "static-loop-item-boolean-attr": {
         "mojolicious": {
           "kind": "refusal",
@@ -12825,10 +12929,6 @@
         "description": "keyed .map() row: a conditional branch that calls a function is re-rendered when the row is reused",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/keyed-row-branch-call.ts"
       },
-      "literal-index-own-key": {
-        "description": "A literal non-identifier key reads the own key (obj['a.b'], obj['*'])",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/literal-index-own-key.ts"
-      },
       "loop-key-to-string-number-component-row": {
         "description": "A component loop row over a number array keyed by n.toString() renders data-key",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-key-to-string-number-component-row.ts"
@@ -12860,10 +12960,6 @@
       "loop-row-child-untyped-array-mismatched-keys": {
         "description": "A loop row calling a child component over an untyped object-literal array const whose rows have…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-untyped-array-mismatched-keys.ts"
-      },
-      "loop-row-child-untyped-array-nested-field": {
-        "description": "A loop row calling a child component over an untyped object-literal array const whose rows carry a…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-untyped-array-nested-field.ts"
       },
       "map-array-builder-body": {
         "description": "imperative array-builder .map() body — JS-runtime verbatim, DSL refuses (BF021)",
@@ -13117,6 +13213,10 @@
         "description": "A /* @client */ nested .map() inside a static outer loop row renders the outer rows with an empty…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-client-only-nested.ts"
       },
+      "static-loop-conditional-function-helper": {
+        "description": "a static array row conditional that reads a signal through an arrow, block-arrow or…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-conditional-function-helper.ts"
+      },
       "static-loop-item-boolean-attr": {
         "description": "static array's .map() row boolean attribute keyed off the item itself renders per item (#2898)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-item-boolean-attr.ts"
@@ -13272,10 +13372,6 @@
       "loop-row-child-untyped-array-mismatched-keys-typed": {
         "description": "An explicit element type with an optional field lets a loop row calling a child component render…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-untyped-array-mismatched-keys-typed.ts"
-      },
-      "loop-row-child-untyped-array-nested-field-typed": {
-        "description": "An explicit element type lets a loop row calling a child component render over rows with a…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-untyped-array-nested-field-typed.ts"
       },
       "map-array-builder-body-client": {
         "description": "Array-builder .map() body deferred to the client via /* @client */ — DSL BF021 suppressed",
@@ -13782,6 +13878,31 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "component-scope-helper-call": {
+      "title": "Component-scope helper called with arguments from a template position",
+      "kind": "refusal",
+      "given": "a template expression calling a component-body helper (an arrow-valued `const` or a `function` declaration) with arguments, in boolean-test position",
+      "expected": "the helper runs at render time and its result renders in the server HTML",
+      "actual": "the compiler refuses with BF101 / BF102",
+      "fixtures": [
+        "static-loop-conditional-function-helper"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101",
+        "BF102"
       ]
     },
     "computed-const-loop-source": {
@@ -14345,19 +14466,6 @@
         "xslate"
       ]
     },
-    "non-identifier-literal-key": {
-      "title": "A literal object key that is not an identifier, in a loop row",
-      "kind": "silent",
-      "given": "a loop over rows whose object keys are not identifiers (`createSignal([{ 'a.b': 1, '*': 3 }])`), read by a literal key (`row['a.b']`) or through a destructured row param (`({ 'a.b': ab, '*': star }) =>`)",
-      "expected": "the value of each row's own key of that name (`row['a.b']` is the own `\"a.b\"` key, not the nested `a.b`)",
-      "actual": "renders no rows: the rows are not baked into the server-side state, and a destructured param reads a field name derived from the key (`.AB` for `'a.b'`)",
-      "fixtures": [
-        "literal-index-own-key"
-      ],
-      "adapters": [
-        "go-template"
-      ]
-    },
     "non-literal-const-child-prop-unbound": {
       "title": "A const with a non-literal initializer passed as a child component prop",
       "kind": "silent",
@@ -14914,12 +15022,11 @@
     "untyped-loop-array-no-row-struct": {
       "title": "Untyped object-literal loop array with no single row shape",
       "kind": "refusal",
-      "given": "a `.map()` whose rows call a child component, over an unannotated module-scope `const` array of object literals whose rows do not share one set of fields with one plain type each: for example the rows have different keys, or a field is a nested object, a `null`, a non-identifier key, an empty nested array, or a value whose type differs between rows",
+      "given": "a `.map()` whose rows call a child component, over an unannotated module-scope `const` array of object literals whose rows do not share one set of fields with one plain type each: for example the rows have different keys, or a field is a `null`, an empty nested array, or a value whose type differs between rows",
       "expected": "the rows render in the server HTML",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
-        "loop-row-child-untyped-array-mismatched-keys",
-        "loop-row-child-untyped-array-nested-field"
+        "loop-row-child-untyped-array-mismatched-keys"
       ],
       "adapters": [
         "go-template"

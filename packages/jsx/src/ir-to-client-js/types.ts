@@ -690,6 +690,16 @@ export interface LoopChildConditional {
    * reactive there, so `bindings.conditionals` itself is never filtered.
    */
   reactiveBeyondLoopScope: boolean
+  /**
+   * A branch holds something a row that never changes still needs wired
+   * (#3911): a text, attribute, nested condition or nested loop source that
+   * reads beyond the loop row, or an event handler or `ref`
+   * (`branchNeedsLiveRow`, `loop-scope-reads.ts`). `reactiveBeyondLoopScope`
+   * answers for the condition; this answers for the branches, which the
+   * static-array path does not bind at all. Read together with it by the
+   * same static-array escalation, and by nothing else.
+   */
+  branchesNeedLiveRow: boolean
 }
 
 export interface TopLevelLoop extends LoopCore {

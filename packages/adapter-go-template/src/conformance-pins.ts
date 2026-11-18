@@ -138,10 +138,7 @@ export const conformancePins: ConformancePins = {
   // Untyped object-literal loop arrays with no single row shape: there is
   // no one Go struct to synthesize for the rows, so `resolveNestedLoopItemTypes`
   // refuses instead of baking the array to `nil` and dropping the loop.
-  // Escape twins (an explicit element type): the `-typed` fixtures.
-  'loop-row-child-untyped-array-nested-field': [
-    { code: 'BF101', severity: 'error', limitation: 'untyped-loop-array-no-row-struct' },
-  ],
+  // Escape twin (an explicit element type): the `-typed` fixture.
   'loop-row-child-untyped-array-mismatched-keys': [
     { code: 'BF101', severity: 'error', limitation: 'untyped-loop-array-no-row-struct' },
   ],
@@ -253,6 +250,14 @@ export const conformancePins: ConformancePins = {
   // reference adapter and declares `escapeNotOwed`.
   'keyed-row-branch-call': [
     { code: 'BF101', severity: 'error', limitation: 'module-scope-helper-call' },
+  ],
+  // #3912: a static array row whose conditional calls a component-scope
+  // helper (arrow, block arrow and `function` declaration) with the row's
+  // id, which Go refuses as a user-defined predicate (BF102). The fixture
+  // pins the client's branch switch over rows hydration adopted from the
+  // reference adapter's HTML and declares `escapeNotOwed`.
+  'static-loop-conditional-function-helper': [
+    { code: 'BF102', severity: 'error', limitation: 'component-scope-helper-call' },
   ],
   // #3170: a static loop row that calls a child component, forwarding a
   // JSX element as `children`, where that element reads an OUTER

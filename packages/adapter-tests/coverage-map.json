@@ -6921,6 +6921,37 @@
         "text"
       ]
     },
+    "index-read-member-chain": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "logical",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "binary:>",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:computed",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "index-read-positions": {
       "kinds": [
         "arrow",
@@ -17651,6 +17682,27 @@
         "text"
       ]
     },
+    "static-loop-conditional-function-helper": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop"
+      ]
+    },
     "static-loop-conditional-precomputed": {
       "kinds": [
         "call",
@@ -17666,6 +17718,28 @@
         "condition",
         "loop",
         "text"
+      ]
+    },
+    "static-loop-conditional-row-independent-helper": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop"
       ]
     },
     "static-loop-item-boolean-attr": {
@@ -17758,6 +17832,33 @@
       ],
       "axes": [
         "literal:null"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "static-loop-row-conditional-branch-signal": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:===",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:??"
       ],
       "contexts": [
         "attribute",
@@ -20106,6 +20207,35 @@
         "literal:null",
         "literal:number",
         "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "untyped-rows-literal-key-nested-object": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "binary:>",
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:computed"
       ],
       "contexts": [
         "attribute",

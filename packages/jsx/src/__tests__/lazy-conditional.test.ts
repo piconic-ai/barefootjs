@@ -31,6 +31,7 @@ function cond(over: Partial<LoopChildConditional> = {}): LoopChildConditional {
     whenFalse: bare(),
     conditionFreeIdentifiers: new Set(['row']),
     reactiveBeyondLoopScope: true,
+    branchesNeedLiveRow: false,
     ...over,
   }
 }
