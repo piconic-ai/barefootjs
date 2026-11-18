@@ -35,7 +35,31 @@ export function isRawTextHostTag(tag: string): boolean {
 }
 
 /** Where a host sits, which decides whether an element-level update is wired. */
-type HostScope = 'component-body' | 'row-or-children'
+type HostPlace = 'component-body' | 'row-or-children'
+
+/**
+ * The walk state: the place, and whether the element's children parse as
+ * foreign content. Only HTML-namespace tags are hosts: inside `<svg>` /
+ * `<math>`, `style` / `script` hold ordinary foreign content (comments are
+ * read) and an SVG `title` is an HTML integration point, so the slot markers
+ * stay valid there (#3265 row work relies on it).
+ */
+interface HostScope {
+  place: HostPlace
+  foreign: boolean
+}
+
+/** Foreign-content elements whose children parse as HTML again. */
+const HTML_INTEGRATION_POINTS: ReadonlySet<string> = new Set([
+  'foreignObject', 'desc', 'title', 'annotation-xml', 'mi', 'mo', 'mn', 'ms', 'mtext',
+])
+
+/** The scope an element's children are walked in. */
+function childScope(tag: string, scope: HostScope): HostScope {
+  if (tag === 'svg' || tag === 'math') return { ...scope, foreign: true }
+  if (scope.foreign && HTML_INTEGRATION_POINTS.has(tag)) return { ...scope, foreign: false }
+  return scope
+}
 
 /**
  * The expressions among `children` (fragments flattened), or the first child
@@ -73,7 +97,7 @@ function refusal(el: IRElement, node: IRNode, why: string): CompilerError {
   })
 }
 
-function lowerHost(el: IRElement, scope: HostScope, errors: CompilerError[]): void {
+function lowerHost(el: IRElement, scope: HostPlace, errors: CompilerError[]): void {
   const expressions: IRExpression[] = []
   const foreign = splitHostChildren(el.children, expressions)
   if (foreign) {
@@ -97,15 +121,16 @@ function lowerHost(el: IRElement, scope: HostScope, errors: CompilerError[]): vo
 
 /** Lowers every raw-text host in `root` (see the file header). */
 export function lowerRawTextHosts(root: IRNode, errors: CompilerError[]): void {
-  walkIR<HostScope>(root, 'component-body', {
+  walkIR<HostScope>(root, { place: 'component-body', foreign: false }, {
     element: ({ node, scope, descend }) => {
-      if (isRawTextHostTag(node.tag)) lowerHost(node, scope, errors)
-      descend()
+      if (!scope.foreign && isRawTextHostTag(node.tag)) lowerHost(node, scope.place, errors)
+      descend(childScope(node.tag, scope))
     },
-    loop: ({ descend }) => descend('row-or-children'),
-    component: ({ descend, descendJsxChildren }) => {
-      descend('row-or-children')
-      descendJsxChildren('row-or-children')
+    loop: ({ scope, descend }) => descend({ ...scope, place: 'row-or-children' }),
+    component: ({ scope, descend, descendJsxChildren }) => {
+      const inner: HostScope = { ...scope, place: 'row-or-children' }
+      descend(inner)
+      descendJsxChildren(inner)
     },
   })
 }

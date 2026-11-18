@@ -9567,6 +9567,20 @@
           }
         }
       },
+      "raw-text-host-svg-style": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "dynamic-text-in-style-script-element"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "record-const-index-inherited-key": {
         "blade": {
           "kind": "refusal",
@@ -13176,6 +13190,10 @@
         "description": "A dynamic child of <style> and <script> renders without slot markers",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-host-style-script.ts"
       },
+      "raw-text-host-svg-style": {
+        "description": "A dynamic child of an SVG <style> keeps its slot markers",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-host-svg-style.ts"
+      },
       "record-const-index-inherited-key": {
         "description": "a const record indexed by a prop of unknown keys reads inherited keys too",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/record-const-index-inherited-key.ts"
@@ -14168,6 +14186,7 @@
       "fixtures": [
         "raw-text-host-reactive",
         "raw-text-host-style-script",
+        "raw-text-host-svg-style",
         "style-script-text-dynamic"
       ],
       "adapters": [

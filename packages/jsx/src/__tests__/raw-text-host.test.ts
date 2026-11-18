@@ -72,3 +72,22 @@ describe('raw-text host shapes that are refused', () => {
     expect(refusals(compile(`<div>{props.items.map(i => <style key={i}>{i + n()}</style>)}</div>`)).length).toBe(1)
   })
 })
+
+describe('raw-text host is HTML-namespace only', () => {
+  test('SVG <title> / <style> keep their slot markers and are not refused', () => {
+    const r = compile(`<svg><title>{n()}</title><style>{'a' + n()}</style></svg>`)
+    expect(r.errors).toEqual([])
+    expect(clientJs(r)).toContain('lazySlots')
+    expect(clientJs(r)).not.toContain('.innerHTML = String(')
+  })
+
+  test('a loop row under an SVG <title> is allowed', () => {
+    const r = compile(`<svg><title>{props.items.map(i => <b key={i}>{i}</b>)}</title></svg>`)
+    expect(refusals(r)).toEqual([])
+  })
+
+  test('<style> inside <foreignObject> is an HTML host again', () => {
+    const r = compile(`<svg><foreignObject><style>{'a' + n()}</style></foreignObject></svg>`)
+    expect(clientJs(r)).toContain('.innerHTML = String(')
+  })
+})

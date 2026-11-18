@@ -15492,6 +15492,15 @@
         "text"
       ]
     },
+    "raw-text-host-svg-style": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "reactive-factory-object-return": {
       "kinds": [
         "call",

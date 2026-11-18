@@ -20,6 +20,7 @@ export const conformancePins: ConformancePins = {
   'style-script-text-dynamic': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
   'raw-text-host-style-script': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
   'raw-text-host-reactive': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
+  'raw-text-host-svg-style': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
   'fill-unsupported': [{ code: 'BF101', severity: 'error', limitation: 'array-fill' }],
   // `===` / `!==` over an object or array: JS compares by reference, which
   // no template runtime can tell from equal contents (#3824 step 8).

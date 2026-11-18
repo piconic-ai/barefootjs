@@ -12387,6 +12387,12 @@
               ]
             },
             {
+              "fixture": "raw-text-host-svg-style",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"

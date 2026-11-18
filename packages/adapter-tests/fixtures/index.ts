@@ -928,6 +928,7 @@ import { fixture as templateDelimiterContextualEscape } from './template-delimit
 import { fixture as styleScriptTextDynamic } from './style-script-text-dynamic'
 import { fixture as rawTextHostDynamic } from './raw-text-host-dynamic'
 import { fixture as rawTextHostStyleScript } from './raw-text-host-style-script'
+import { fixture as rawTextHostSvgStyle } from './raw-text-host-svg-style'
 import { fixture as rawTextHostReactive } from './raw-text-host-reactive'
 import { fixture as templateDelimiterStaticTextPropsObject } from './template-delimiter-static-text-props-object'
 import { fixture as percentDelimiterStringLiteral } from './percent-delimiter-string-literal'
@@ -2284,6 +2285,7 @@ export const jsxFixtures: JSXFixture[] = [
   styleScriptTextDynamic,
   rawTextHostDynamic,
   rawTextHostStyleScript,
+  rawTextHostSvgStyle,
   rawTextHostReactive,
   templateDelimiterStaticTextPropsObject,
   percentDelimiterStringLiteral,

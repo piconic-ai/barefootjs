@@ -16134,6 +16134,26 @@
       }
     }
   ],
+  "raw-text-host-svg-style": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
   "reassigned-prop-counter": [
     {
       "name": "gen:start:absent",
