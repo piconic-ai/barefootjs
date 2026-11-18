@@ -9539,6 +9539,14 @@
           ]
         }
       },
+      "raw-text-host-annotation-xml-encodings": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "foreign-title-slot-markers-escaped"
+          ]
+        }
+      },
       "raw-text-host-reactive": {
         "go-template": {
           "kind": "refusal",
@@ -13182,6 +13190,10 @@
         "description": "A props object named p types its string, number and boolean props in +, || and attribute positions",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/props-object-non-props-name-operand-typing.ts"
       },
+      "raw-text-host-annotation-xml-encodings": {
+        "description": "A title under a MathML annotation-xml keeps its slot markers without an HTML encoding and renders…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-host-annotation-xml-encodings.ts"
+      },
       "raw-text-host-reactive": {
         "description": "Signal-driven text in <style>, <script>, <textarea> and <title> renders without slot markers and…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-host-reactive.ts"
@@ -14216,6 +14228,19 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "foreign-title-slot-markers-escaped": {
+      "title": "A dynamic child of a title that is not an HTML element, on the Go template adapter",
+      "kind": "silent",
+      "given": "a `<title>` with a dynamic child inside foreign content (an SVG, or a MathML `annotation-xml` without an HTML `encoding`), where the slot markers are comment nodes around the value",
+      "expected": "the slot markers stay comment nodes around the value, as in the Hono reference",
+      "actual": "emits the slot markers as HTML-escaped text inside the title, because html/template treats every `title` as RCDATA",
+      "fixtures": [
+        "raw-text-host-annotation-xml-encodings"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "fragment-wrapped-conditional-return-branch-scope": {
