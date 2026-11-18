@@ -884,6 +884,7 @@ import { fixture as atSignBeforeDynamicTextPropsObject } from './at-sign-before-
 import { fixture as atSignBesideBrace } from './at-sign-beside-brace'
 import { fixture as templateDelimiterStaticText } from './template-delimiter-static-text'
 import { fixture as templateDelimiterContextualEscape } from './template-delimiter-contextual-escape'
+import { fixture as styleScriptTextDynamic } from './style-script-text-dynamic'
 import { fixture as templateDelimiterStaticTextPropsObject } from './template-delimiter-static-text-props-object'
 import { fixture as percentDelimiterStringLiteral } from './percent-delimiter-string-literal'
 import { fixture as percentDelimiterStringLiteralPropsObject } from './percent-delimiter-string-literal-props-object'
@@ -2211,6 +2212,7 @@ export const jsxFixtures: JSXFixture[] = [
   atSignBesideBrace,
   templateDelimiterStaticText,
   templateDelimiterContextualEscape,
+  styleScriptTextDynamic,
   templateDelimiterStaticTextPropsObject,
   percentDelimiterStringLiteral,
   percentDelimiterStringLiteralPropsObject,

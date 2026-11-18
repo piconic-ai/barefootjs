@@ -19322,6 +19322,26 @@
       }
     }
   ],
+  "style-script-text-dynamic": [
+    {
+      "name": "gen:color:empty",
+      "props": {
+        "color": ""
+      }
+    },
+    {
+      "name": "gen:color:markup",
+      "props": {
+        "color": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:color:multibyte",
+      "props": {
+        "color": "日本語"
+      }
+    }
+  ],
   "switch": [
     {
       "name": "gen:defaultChecked:true",

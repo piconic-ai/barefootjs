@@ -12267,6 +12267,12 @@
               ]
             },
             {
+              "fixture": "style-script-text-dynamic",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"

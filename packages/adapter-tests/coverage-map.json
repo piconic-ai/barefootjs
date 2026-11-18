@@ -18707,6 +18707,15 @@
       "axes": [],
       "contexts": []
     },
+    "style-script-text-dynamic": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "text"
+      ]
+    },
     "svg-icon": {
       "kinds": [
         "literal"

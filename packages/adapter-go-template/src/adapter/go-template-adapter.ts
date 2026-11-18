@@ -175,6 +175,7 @@ import { routesToRestBag, restBagOverrideFields, isCertainlyDataType, isScalarAr
 import { GO_TEMPLATE_PRIMITIVES, SCALAR_ROW_GO_TYPES, SCALAR_ROW_ITEM_FIELD } from "./lib/constants.ts"
 import { CompileState, findModuleScopeConst, findValuedLocalConst, propsObjectKeyRead, resolveSignalParsedThroughSeedPlan } from "./lib/compile-state.ts"
 import { hasClientInteractivity, findNestedComponents, loopArraySignal } from "./analysis/component-tree.ts"
+import { findDynamicRawTextChild, isRawTextTag } from "./analysis/raw-text-element.ts"
 import { analyzeBakeableStaticChildLoop, bakedScalarAttr, scalarToGoLiteral, type BakedStaticChildItem, type BakedStaticChildLoop } from "./analysis/static-child-loop-bake.ts"
 import { analyzeBakeableStaticElementLoop, classifyBakedCondition } from "./analysis/static-element-loop-bake.ts"
 import type { GoEmitContext } from "./emit-context.ts"
@@ -4448,8 +4449,28 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     return this.renderAsync(node)
   }
 
+  /**
+   * #3810: `html/template` escapes an action inside `<style>` / `<script>`
+   * as CSS / JS (`ZgotmplZ`, quoted strings), so a dynamic child cannot print
+   * as it does in JSX. Refuse it rather than render the wrong text.
+   */
+  private refuseDynamicRawText(element: IRElement): void {
+    const dynamic = findDynamicRawTextChild(element.children)
+    if (!dynamic) return
+    this.state.errors.push({
+      code: 'BF101',
+      severity: 'error',
+      message: `A dynamic value in the text of <${element.tag}> can't render on the Go template adapter: html/template escapes it as ${element.tag === 'style' ? 'CSS' : 'JS'} (\`ZgotmplZ\` or a quoted string), not as the JSX text.`,
+      loc: 'loc' in dynamic ? dynamic.loc : this.makeLoc(),
+      suggestion: {
+        message: `Write the ${element.tag} text as a literal.`,
+      },
+    })
+  }
+
   renderElement(element: IRElement): string {
     const tag = element.tag
+    if (isRawTextTag(tag)) this.refuseDynamicRawText(element)
     const attrs = renderElementAttributes(element, this.elementAttrEmitter)
     const dangerousHtml = this.renderDangerousInnerHtml(element)
     const children = dangerousHtml !== null ? dangerousHtml : this.renderChildren(element.children)
