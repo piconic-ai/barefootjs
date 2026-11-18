@@ -73,11 +73,16 @@ type ViewMetadata = Pick<
   'propsObjectName' | 'propsParams' | 'restPropsName' | 'localConstants' | 'localFunctions' | 'signals' | 'memos'
 >
 
-/** A module const the replica can declare: a plain value the component never writes. */
+/**
+ * A module const the replica can declare: a plain value the component never
+ * reassigns. One the component only mutates (`box.n = 2`) is declared there
+ * too: the component reads the same object through `<replica>.<name>`, so
+ * its writes and the replica's reads share one storage.
+ */
 function replicaCanDeclare(c: ConstantInfo): boolean {
   return c.value !== undefined && c.value !== ''
     && !c.isJsx && !c.isJsxFunction && !c.systemConstructKind
-    && !c.reassigned && !c.mutatedAfterDeclaration
+    && !c.reassigned
 }
 
 function freeIdentifiersOfConstant(c: ConstantInfo): ReadonlySet<string> {
@@ -142,11 +147,12 @@ function scopeSensitiveClosure(
 /**
  * Remove from `closure` every member that reads, directly or through another
  * member, a module const the replica cannot declare (one the component
- * writes, `replicaCanDeclare`). Such a const's storage is shared with the
- * component's writes, so it must stay a module-level declaration of the
- * client script; a replica member reading it would find no binding. The
- * removed member stays in the component's view, where it is emitted next to
- * the const it reads.
+ * reassigns, `replicaCanDeclare`). A reassigned binding has one storage per
+ * scope, so it must stay where the component writes it; a replica member
+ * reading it would find no binding. The removed member stays in the
+ * component's view, where it is emitted next to the const it reads. (A
+ * removed member that also reads a name the component hides resolves that
+ * name to the component's binding: a known gap.)
  */
 function dropUndeclarableMembers(
   closure: Set<string>,

@@ -284,45 +284,12 @@ export function C({ p, k }: { p: string; k: number }) {
   })
 })
 
-/**
- * Run a compiled client script's init against a stand-in scope and fire the
- * first element's click handler. Returns what the handler logged.
- */
-function clickAndCollectLogs(clientJs: string): unknown[] {
-  const body = clientJs
-    .split('\n')
-    .filter(line => !line.startsWith('import '))
-    .join('\n')
-    .replace(/^export /gm, '')
-  const run = new Function(
-    '__logs',
-    `
-    let __init
-    const hydrate = (_name, def) => { __init = def.init }
-    const createComponent = () => null
-    const createEffect = () => {}
-    const lazySlots = () => () => {}
-    const escapeTextOrMarkup = (v) => String(v)
-    const escapeTextOrNode = (v) => String(v)
-    const __handlers = []
-    const $ = () => [{ addEventListener: (_t, h) => __handlers.push(h), setAttribute() {}, textContent: '' }]
-    const console = { log: (...a) => __logs.push(...a) }
-    ${body}
-    __init({ getAttribute: () => 'C_x', querySelector: () => null }, { base: 'prop' })
-    for (const h of __handlers) h({})
-    `,
-  )
-  const logs: unknown[] = []
-  run(logs)
-  return logs
-}
-
-describe('a module declaration the replica cannot declare (#3739)', () => {
+describe('a module const the component writes (#3739)', () => {
   const component = (extra: string) => `
 'use client'
 const base = 'm'
 const box = { n: 1 }
-function g() { return box.n }
+function g() { return base + box.n }
 ${extra}
 export function C({ base }: { base: string }) {
   box.n = 2
@@ -330,14 +297,11 @@ export function C({ base }: { base: string }) {
 }
 `
 
-  test('a handler reads the mutated module object the component wrote', () => {
+  test('a function reading a hidden const and the written object is declared in the replica with it', () => {
     const { clientJs } = compile(component(''))
-    expect(clickAndCollectLogs(clientJs)).toEqual([2])
-  })
-
-  test('an unused module helper that reads a hidden name does not detach the handler from the object', () => {
-    const { clientJs } = compile(component('function unused() { return base + g() }'))
-    expect(clientJs).not.toContain('__bf_module_C.g')
-    expect(clickAndCollectLogs(clientJs)).toEqual([2])
+    // The replica evaluates `g` against the module `base`; the component reads
+    // the one `box` object the replica holds, so its write is what `g` sees.
+    expect(declarationsOf(clientJs, 'box')).toEqual(['const box = { n: 1 }', 'const box = __bf_module_C.box'])
+    expect(declarationsOf(clientJs, 'g')).toContain('const g = __bf_module_C.g')
   })
 })

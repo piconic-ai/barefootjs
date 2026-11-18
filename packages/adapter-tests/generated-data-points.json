@@ -10853,6 +10853,52 @@
       }
     }
   ],
+  "module-const-mutated-object-hidden-read": [
+    {
+      "name": "gen:base:empty",
+      "props": {
+        "base": "",
+        "__instanceId": "ModuleConstMutatedObjectHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:base:markup",
+      "props": {
+        "base": "<b>&\"'</b>",
+        "__instanceId": "ModuleConstMutatedObjectHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:base:multibyte",
+      "props": {
+        "base": "日本語",
+        "__instanceId": "ModuleConstMutatedObjectHiddenRead_test"
+      }
+    }
+  ],
+  "module-const-mutated-object-read": [
+    {
+      "name": "gen:base:empty",
+      "props": {
+        "base": "",
+        "__instanceId": "ModuleConstMutatedObjectRead_test"
+      }
+    },
+    {
+      "name": "gen:base:markup",
+      "props": {
+        "base": "<b>&\"'</b>",
+        "__instanceId": "ModuleConstMutatedObjectRead_test"
+      }
+    },
+    {
+      "name": "gen:base:multibyte",
+      "props": {
+        "base": "日本語",
+        "__instanceId": "ModuleConstMutatedObjectRead_test"
+      }
+    }
+  ],
   "module-const-named-like-object-prop": [
     {
       "name": "gen:label:absent",
