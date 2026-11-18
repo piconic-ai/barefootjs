@@ -10760,6 +10760,23 @@
         "text"
       ]
     },
+    "memo-module-object-const-arrow-sibling-key": {
+      "kinds": [
+        "arrow",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "memo-multi-statement-block": {
       "kinds": [
         "binary",
@@ -10879,6 +10896,23 @@
         "attribute",
         "condition",
         "loop",
+        "text"
+      ]
+    },
+    "memo-object-const-arrow-sibling-key": {
+      "kinds": [
+        "arrow",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
         "text"
       ]
     },
