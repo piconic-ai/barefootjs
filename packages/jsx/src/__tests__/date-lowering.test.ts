@@ -309,6 +309,31 @@ describe('Date members inherited through extends / intersection (#3914)', () => 
     ).toBe(false)
   })
 
+  test('a parenthesized and nested intersection arm still contributes its members', () => {
+    expect(
+      matches(
+        `interface Base { at: Date }
+         type Props = ((Base) & { n: number }) & { label: string }
+         export function Foo(props: Props) { return <p>{props.at.getTime()}</p> }`,
+        'props.at.getTime()',
+      ),
+    ).toBe(true)
+  })
+
+  test.each([
+    ['Base & { at: Date }', 'type Props = Base & { at: Date }'],
+    ['{ at: Date } & Base', 'type Props = { at: Date } & Base'],
+  ])('an intersection refines unknown to Date regardless of arm order: %s', (_name, alias) => {
+    expect(
+      matches(
+        `interface Base { at: unknown }
+         ${alias}
+         export function Foo(props: Props) { return <p>{props.at.getTime()}</p> }`,
+        'props.at.getTime()',
+      ),
+    ).toBe(true)
+  })
+
   function refusals(src: string): string[] {
     const result = compileJSX(src.trimStart(), 'T.tsx', { adapter: new TestAdapter() })
     return result.errors.filter((e) => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN).map((e) => e.message)
@@ -353,5 +378,50 @@ describe('Date members inherited through extends / intersection (#3914)', () => 
         export function Foo(props: Props) { return <p>{props.at.getUTCFullYear()}</p> }
       `),
     ).toHaveLength(0)
+  })
+
+  test('an intersection whose arms declare irreconcilable types for the prop is refused, in either order', () => {
+    for (const alias of ['Base & { at: Date }', '{ at: Date } & Base']) {
+      const messages = refusals(`
+        interface Base { at: string }
+        type Props = ${alias}
+        export function Foo(props: Props) { return <p>{props.at.getUTCFullYear()}</p> }
+      `)
+      expect(messages).toHaveLength(1)
+      expect(messages[0]).toContain('cannot be reconciled')
+    }
+  })
+
+  test('an own member overrides a conflicting inherited one on interface extends (no refusal)', () => {
+    expect(
+      refusals(`
+        interface Base { at: string }
+        interface Props extends Base { at: Date }
+        export function Foo(props: Props) { return <p>{props.at.getUTCFullYear()}</p> }
+      `),
+    ).toHaveLength(0)
+  })
+
+  test('a call claimed by a registered lowering plugin is not refused (#3914)', () => {
+    const claim: LoweringPlugin = {
+      name: 'claim-inherited-date',
+      prepare: () => (callee) =>
+        callee.kind === 'member' && callee.property === 'getUTCFullYear'
+          ? { kind: 'helper-call', helper: 'date', args: [callee.object, { kind: 'literal', value: callee.property, literalType: 'string' }] }
+          : null,
+    }
+    const saved = getLoweringPlugins()
+    registerLoweringPlugin(claim)
+    try {
+      expect(
+        refusals(`
+          import type { Base } from './base'
+          interface Props extends Base { label: string }
+          export function Foo(props: Props) { return <p>{props.at.getUTCFullYear()}</p> }
+        `),
+      ).toHaveLength(0)
+    } finally {
+      __resetLoweringPluginsForTest(saved)
+    }
   })
 })

@@ -2504,6 +2504,14 @@ export interface TypeDefinition {
    */
   inherits?: TypeInfo[]
   /**
+   * How `inherits` combines with `properties`: `'extends'` (an interface's
+   * `extends` list: an own member overrides a base member of the same name)
+   * or `'intersection'` (an alias `A & B`: a member's type is the
+   * intersection of the constituents' member types, independent of order).
+   * Present exactly when `inherits` is.
+   */
+  inheritance?: 'extends' | 'intersection'
+  /**
    * The members of a type alias whose type is a string literal or a union of
    * string literals only (`type Mode = 'light' | 'dark'`, in any quoting or
    * layout). Absent for every other definition, a union mixing in a

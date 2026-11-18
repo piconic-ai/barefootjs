@@ -1036,6 +1036,9 @@ import { fixture as computedConstLoopSourceParenthesizedPrecomputed } from './co
 import { fixture as computedConstLoopSourceParenthesizedClient } from './computed-const-loop-source-parenthesized-client'
 import { fixture as dateMethodUncatalogued } from './date-method-uncatalogued'
 import { fixture as dateClientRevival } from './date-client-revival'
+import { fixture as dateInheritedPropParenthesized } from './date-inherited-prop-parenthesized'
+import { fixture as dateIntersectionRefineBaseFirst } from './date-intersection-refine-base-first'
+import { fixture as dateIntersectionRefineBaseLast } from './date-intersection-refine-base-last'
 import { fixture as dateClientCatalogued } from './date-client-catalogued'
 import { fixture as dateClientAttrCatalogued } from './date-client-attr-catalogued'
 import { fixture as dateCataloguedAttr } from './date-catalogued-attr'
@@ -2359,6 +2362,9 @@ export const jsxFixtures: JSXFixture[] = [
   dateCatalogued,
   dateInheritedProp,
   dateInheritedPropIntersection,
+  dateInheritedPropParenthesized,
+  dateIntersectionRefineBaseFirst,
+  dateIntersectionRefineBaseLast,
   richPropClientRead,
   richPropPrecompute,
   formatDate,

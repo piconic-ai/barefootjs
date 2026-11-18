@@ -74,6 +74,7 @@ import {
   resolvePropDeclaredType,
   jsonUnsafeTypeName,
   hasUnresolvedBase,
+  inheritedMemberConflicts,
   receiverRootPropName,
 } from './rich-type-evidence.ts'
 import { DATE_METHODS } from './date-lowering.ts'
@@ -296,7 +297,7 @@ function checkExpr(
     case 'call': {
       if (expr.callee.kind === 'member') {
         const receiverType = resolveReceiverType(expr.callee.object, meta, bindings)
-        checkUnresolvedInheritedReceiver(expr.callee, expr.args, receiverType, loc, meta, bindings, errors, seen)
+        checkUnresolvedInheritedReceiver(expr.callee, expr.args, receiverType, loc, meta, bindings, matchers, errors, seen)
         if (receiverType && receiverType.kind === 'interface') {
           const typeName = baseTypeName(receiverType.raw)
           const inFileShadow = meta.typeDefinitions.some((d) => d.name === typeName)
@@ -368,13 +369,16 @@ function checkExpr(
 }
 
 /**
- * #3914: a catalogued `Date` method called on a prop whose declaration this
- * file cannot see. When the props type inherits from a base declared
- * elsewhere (`interface Props extends ImportedBase`), a prop missing from
- * the visible members may well be a `Date` declared on that base, and the
- * date lowering would silently skip the call (an empty render on most
- * template adapters). Refuse instead of guessing; a prop that IS visible
- * with some other type is a different receiver and stays untouched.
+ * #3914: a catalogued `Date` method called on a prop whose type this file
+ * cannot determine from the props type's inheritance. Two shapes:
+ *   - the props type inherits from a base declared elsewhere and the prop is
+ *     not visible on it, so it may be a `Date` declared on that base;
+ *   - the prop is declared by several intersection arms whose types cannot
+ *     be reconciled (`Base & { at: Date }` with `Base.at: string`).
+ * The date lowering skips both (an empty render on most template adapters),
+ * so refuse instead of guessing. A call a registered lowering plugin claims
+ * is exempt, like the refusal above. A prop that IS visible with a single
+ * resolved type is a different receiver and stays untouched.
  */
 function checkUnresolvedInheritedReceiver(
   callee: Extract<ParsedExpr, { kind: 'member' }>,
@@ -383,24 +387,31 @@ function checkUnresolvedInheritedReceiver(
   loc: SourceLocation,
   meta: IRMetadata,
   bindings: Bindings,
+  matchers: readonly LoweringMatcher[],
   errors: CompilerError[],
   seen: Set<string>,
 ): void {
-  if (receiverType || callee.computed || args.length !== 0 || !DATE_METHODS.has(callee.property)) return
-  if (!hasUnresolvedBase(meta.propsType, meta)) return
+  if (callee.computed || args.length !== 0 || !DATE_METHODS.has(callee.property)) return
   const propName = receiverRootPropName(callee.object, meta, bindings)
-  if (propName === null || resolvePropDeclaredType(propName, meta)) return
+  if (propName === null) return
+  const conflicting = inheritedMemberConflicts(meta.propsType, meta).has(propName)
+  const hidden = !receiverType && hasUnresolvedBase(meta.propsType, meta) && !resolvePropDeclaredType(propName, meta)
+  if (!conflicting && !hidden) return
+  if (isLoweringClaimed(matchers, callee, args)) return
   const receiverPath = describeReceiverPath(callee.object)
-  const key = `${loc.start.line}:${loc.start.column}:${receiverPath}.${callee.property}:unresolved-base`
+  const key = `${loc.start.line}:${loc.start.column}:${receiverPath}.${callee.property}:inherited`
   if (seen.has(key)) return
   seen.add(key)
+  const why = conflicting
+    ? `prop '${propName}' is declared with types that cannot be reconciled across the intersection arms of the props type`
+    : `prop '${propName}' is not declared on the props type in this file, and the props type inherits from a base type that is not declared here, so the prop may be a Date declared on that base`
   errors.push({
     code: ErrorCodes.UNSUPPORTED_JSX_PATTERN,
     severity: 'error',
-    message: `Expression cannot be compiled to marked template: the type of '${receiverPath}' is unknown, so '.${callee.property}()' cannot be lowered. Prop '${propName}' is not declared on the props type in this file, and the props type inherits from a base type that is not declared here, so the prop may be a Date declared on that base.`,
+    message: `Expression cannot be compiled to marked template: the type of '${receiverPath}' is unknown, so '.${callee.property}()' cannot be lowered. ${why[0].toUpperCase()}${why.slice(1)}.`,
     loc,
     suggestion: {
-      message: `Declare '${propName}' (for example '${propName}: Date') on the props type in this file, or declare the base type in this file so its members are visible. Alternatively pre-compute the value server-side and pass it as a prop.`,
+      message: `Declare '${propName}' (for example '${propName}: Date') with one type on the props type in this file, or declare the base type in this file so its members are visible. Alternatively pre-compute the value server-side and pass it as a prop.`,
       escape: [{ kind: 'rewrite' }, { kind: 'prop-precompute' }],
     },
   })

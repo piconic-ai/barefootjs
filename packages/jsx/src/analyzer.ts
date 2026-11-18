@@ -2856,7 +2856,7 @@ function collectInterfaceDefinition(
     name: node.name.text,
     definition: node.getText(ctx.sourceFile),
     properties: membersToProperties(node.members, ctx.sourceFile),
-    ...inheritsField(interfaceBaseTypes(node, ctx.sourceFile)),
+    ...inheritsField(interfaceBaseTypes(node, ctx.sourceFile), 'extends'),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   })
 }
@@ -2871,28 +2871,36 @@ function interfaceBaseTypes(node: ts.InterfaceDeclaration, sourceFile: ts.Source
   return bases
 }
 
-/**
- * The constituents of an alias that inherits members: each arm of an
- * intersection, or the referenced type of a plain alias (`type Props = Base`).
- * Empty for every other alias (object literal, union, primitive, ...).
- */
-function aliasInheritedTypes(type: ts.TypeNode, sourceFile: ts.SourceFile): TypeInfo[] {
-  if (ts.isParenthesizedTypeNode(type)) return aliasInheritedTypes(type.type, sourceFile)
-  if (ts.isIntersectionTypeNode(type)) {
-    return type.types.flatMap((arm) => {
-      const info = typeNodeToTypeInfo(arm, sourceFile)
-      return info && (info.kind === 'interface' || info.kind === 'object') ? [info] : []
-    })
-  }
-  if (ts.isTypeReferenceNode(type)) {
-    const info = typeNodeToTypeInfo(type, sourceFile)
-    return info?.kind === 'interface' ? [info] : []
-  }
-  return []
+/** Strip any number of enclosing parentheses: `((Base))` -> `Base`. */
+function unwrapParenthesizedType(type: ts.TypeNode): ts.TypeNode {
+  return ts.isParenthesizedTypeNode(type) ? unwrapParenthesizedType(type.type) : type
 }
 
-function inheritsField(types: TypeInfo[]): { inherits?: TypeInfo[] } {
-  return types.length > 0 ? { inherits: types } : {}
+/** The leaf arms of an intersection, parentheses and nested intersections flattened. */
+function intersectionArms(type: ts.TypeNode): ts.TypeNode[] {
+  const inner = unwrapParenthesizedType(type)
+  return ts.isIntersectionTypeNode(inner) ? inner.types.flatMap(intersectionArms) : [inner]
+}
+
+/**
+ * The constituents of an alias that inherits members: each leaf arm of an
+ * intersection, or the referenced type of a plain alias (`type Props = Base`).
+ * An arm that is neither a named reference nor an object literal (a union, a
+ * mapped type, ...) is kept as `unknown` so consumers know the member set is
+ * incomplete rather than silently missing it. Empty for every other alias
+ * (object literal, union, primitive, ...).
+ */
+function aliasInheritedTypes(type: ts.TypeNode, sourceFile: ts.SourceFile): TypeInfo[] {
+  const inner = unwrapParenthesizedType(type)
+  const arms = ts.isIntersectionTypeNode(inner) ? intersectionArms(inner) : ts.isTypeReferenceNode(inner) ? [inner] : []
+  return arms.map((arm) => {
+    const info = typeNodeToTypeInfo(arm, sourceFile)
+    return info && (info.kind === 'interface' || info.kind === 'object') ? info : { kind: 'unknown', raw: arm.getText(sourceFile) }
+  })
+}
+
+function inheritsField(types: TypeInfo[], inheritance: 'extends' | 'intersection'): { inherits?: TypeInfo[]; inheritance?: 'extends' | 'intersection' } {
+  return types.length > 0 ? { inherits: types, inheritance } : {}
 }
 
 function collectTypeAliasDefinition(
@@ -2910,7 +2918,7 @@ function collectTypeAliasDefinition(
     name: node.name.text,
     definition: node.getText(ctx.sourceFile),
     properties,
-    ...inheritsField(aliasInheritedTypes(node.type, ctx.sourceFile)),
+    ...inheritsField(aliasInheritedTypes(node.type, ctx.sourceFile), 'intersection'),
     ...(stringLiteralUnion ? { stringLiteralUnion } : {}),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   })
