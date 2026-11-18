@@ -5908,20 +5908,6 @@
           }
         }
       },
-      "loop-row-boolean-member-attr": {
-        "mojolicious": {
-          "kind": "render",
-          "limitations": [
-            "loop-row-boolean-member-attr-value"
-          ]
-        },
-        "xslate": {
-          "kind": "render",
-          "limitations": [
-            "loop-row-boolean-member-attr-value"
-          ]
-        }
-      },
       "loop-row-child-caller-rows-outer-state-key": {
         "go-template": {
           "kind": "refusal",
@@ -9030,6 +9016,62 @@
           "kind": "render",
           "limitations": [
             "object-entries-typed-object-signal"
+          ]
+        }
+      },
+      "object-prop-member-boolean-text-child": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "object-prop-member-boolean-text-child"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "object-prop-member-boolean-text-child"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "object-prop-member-boolean-text-child"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "object-prop-member-boolean-text-child"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "object-prop-member-boolean-text-child"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "object-prop-member-boolean-text-child"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "object-prop-member-boolean-text-child"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "object-prop-member-boolean-text-child"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "object-prop-member-boolean-text-child"
           ]
         }
       },
@@ -12914,10 +12956,6 @@
         "description": "An absent or null member of a module-const row omits the attribute bound to it",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-absent-optional-member-attr-module-const.ts"
       },
-      "loop-row-boolean-member-attr": {
-        "description": "A boolean loop-row member as an attribute value renders true / false and is omitted when absent",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-boolean-member-attr.ts"
-      },
       "loop-row-child-caller-rows-outer-state-key": {
         "description": "A component loop row with a computed prop, keyed by an expression reading outer state, carries its…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/loop-row-child-caller-rows-outer-state-key.ts"
@@ -13053,6 +13091,10 @@
       "object-entries-typed-object-signal": {
         "description": "Object.entries over a signal typed with a named object type lists its members",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/object-entries-typed-object-signal.ts"
+      },
+      "object-prop-member-boolean-text-child": {
+        "description": "A boolean member of an object-typed prop renders nothing as a text child",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/object-prop-member-boolean-text-child.ts"
       },
       "object-spread-branch-child": {
         "description": "an object spread inside an untaken early-return branch is not evaluated at init (#3861)",
@@ -14232,20 +14274,6 @@
         "xslate"
       ]
     },
-    "loop-row-boolean-member-attr-value": {
-      "title": "Boolean loop-row member as an attribute value",
-      "kind": "silent",
-      "given": "a loop row's boolean member bound to a non-boolean attribute (`data-off={r.off}`), read from a typed array prop",
-      "expected": "the attribute renders `true` / `false`, and is omitted on a row that lacks the member",
-      "actual": "renders `1` / `0` for a present member",
-      "fixtures": [
-        "loop-row-boolean-member-attr"
-      ],
-      "adapters": [
-        "mojolicious",
-        "xslate"
-      ]
-    },
     "loop-row-child-children-attrs-frozen": {
       "title": "A loop-row child component's forwarded JSX children can't reach an outer signal/memo at SSR",
       "kind": "refusal",
@@ -14550,6 +14578,27 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "object-prop-member-boolean-text-child": {
+      "title": "Boolean member of an object-typed prop as a text child",
+      "kind": "silent",
+      "given": "a boolean member of an object-typed prop as a text child, read directly (`{props.cfg.on}`), behind `??` (`{props.cfg.off ?? 'none'}`), or through a memo over either",
+      "expected": "the child renders nothing, as a boolean child does",
+      "actual": "renders the boolean as text: `true` / `false`, or `1` / `0`",
+      "fixtures": [
+        "object-prop-member-boolean-text-child"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
       ]
     },
     "object-spread-onto-child-component": {

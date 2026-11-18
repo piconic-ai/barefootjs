@@ -23,6 +23,7 @@ import {
   exprToString,
   refuseUnspelledNilTest,
   strictEqSpelling,
+  withProvenStoredTypes,
   type IRMetadata,
   type NativeSafeTable,
   type OperandFacts,
@@ -451,12 +452,15 @@ describe('defaults, from analyzed components', () => {
     expect(plan("text ?? 'fallback'", NON_NIL_NULLISH, at)).toBe('native nullish non-nil')
   })
 
-  test('`||` and `&&` initializers prove nothing (a falsy non-nil left side survives `||`)', () => {
+  test('`||` and `&&` initializers prove either operand, as the expression read inline does (#3789)', () => {
     const at = analyzed(
-      "export function Foo(props: { label?: string | null; n: number }) { const a = props.label || 'none'; const b = props.n && 'x'; return <div>{a}{b}</div> }",
+      "export function Foo(props: { label?: string | null; n: number; x: any }) { const a = props.label || 'none'; const b = props.n && 'x'; const c = props.x || 'none'; return <div>{a}{b}{c}</div> }",
     )
-    expect(factsOf('a', at)).toBe('unknown')
-    expect(factsOf('b', at)).toBe('unknown')
+    expect(factsOf('a', at)).toBe('nil|string (either)')
+    expect(factsOf("props.label || 'none'", at)).toBe('nil|string (either)')
+    expect(factsOf('b', at)).toBe('number|string')
+    expect(factsOf("props.n && 'x'", at)).toBe('number|string')
+    expect(factsOf('c', at)).toBe('unknown')
   })
 
   test('a default that may be nil, or proves nothing, does not prove non-nil', () => {
@@ -490,5 +494,93 @@ describe('array element evidence through a union (#3824 step 8)', () => {
 
   test('a primitive element array is still not refused', () => {
     expect(mayHoldObject(parseExpression('rows[0]'), withRows(array(prim('number')), true), isRow)).toBe(false)
+  })
+})
+
+describe('stored values read through their initializer (#3789)', () => {
+  const SRC = `
+'use client'
+import { createMemo, createSignal } from '@barefootjs/client'
+type Cfg = { flag?: boolean }
+export function C(props: { no?: boolean | string; label?: string; n: number; on?: boolean; cfg: Cfg; x: any }) {
+  const [flag] = createSignal(false)
+  const [seeded] = createSignal(props.no ?? 'x')
+  const [text] = createSignal(props.label ?? 'x')
+  const local = props.no ?? 'x'
+  const annotated: string = props.x ?? 'x'
+  const shown = createMemo(() => props.no ?? 'x')
+  const again = createMemo(() => shown())
+  const viaLocal = createMemo(() => local)
+  const early = createMemo(() => late)
+  const and = createMemo(() => props.on && 'y')
+  const or = createMemo(() => props.no || 'y')
+  const pick = createMemo(() => flag() ? 'a' : false)
+  const big = createMemo(() => props.n > 1)
+  const count = createMemo(() => props.n ?? 5)
+  const typed = createMemo<boolean | string>(() => props.cfg.flag ?? 'x')
+  const deep = createMemo(() => props.cfg.flag ?? 'x')
+  const opaque = createMemo(() => props.x ?? 'x')
+  const late = props.no ?? 'x'
+  return <p>{shown()}</p>
+}
+`
+  const analyzed = buildMetadata(analyzeComponent(SRC, 'c.tsx'))
+  const typing = collectOperandTyping(analyzed).at(BindingScope.forComponent(analyzed.propsObjectName))
+  const types = (name: string) => [...typing.name(name).types].sort()
+
+  test('a ?? initializer proves the left operand without its nil, or the fallback', () => {
+    expect(types('shown')).toEqual(['boolean', 'string'])
+    expect(types('seeded')).toEqual(['boolean', 'string'])
+    expect(types('local')).toEqual(['boolean', 'string'])
+    expect(types('text')).toEqual(['string'])
+    expect(types('count')).toEqual(['number'])
+  })
+
+  test('a getter read, &&, || and a ternary prove what their operands do', () => {
+    expect(types('again')).toEqual(['boolean', 'string'])
+    expect(types('and')).toEqual(['boolean', 'nil', 'string'])
+    expect(types('or')).toEqual(['boolean', 'nil', 'string'])
+    expect(types('pick')).toEqual(['boolean', 'string'])
+    expect(types('big')).toEqual(['boolean'])
+  })
+
+  test('an initializer reads the names declared before it', () => {
+    expect(types('viaLocal')).toEqual(['boolean', 'string'])
+    // `late` is declared after the memo that reads it.
+    expect(types('early')).toEqual(['unknown'])
+    expect(types('late')).toEqual(['boolean', 'string'])
+  })
+
+  test('a declared type and an unprovable initializer keep the analyzer type', () => {
+    expect(types('annotated')).toEqual(['string'])
+    expect(types('typed')).toEqual(['boolean', 'string'])
+    // The operand typing proves nothing about a member of an object prop.
+    expect(types('deep')).toEqual(['string'])
+    expect(types('opaque')).toEqual(['string'])
+  })
+
+  test('withProvenStoredTypes replaces a primitive type its facts contradict', () => {
+    const proven = withProvenStoredTypes(analyzed)
+    const memoType = (name: string) => proven.memos.find(m => m.name === name)?.type.raw
+    const signalType = (getter: string) => proven.signals.find(s => s.getter === getter)?.type.raw
+    expect(analyzed.memos.find(m => m.name === 'shown')?.type.raw).toBe('string')
+    expect(memoType('shown')).toBe('string | boolean')
+    expect(signalType('seeded')).toBe('string | boolean')
+    expect(signalType('text')).toBe('string')
+    expect(memoType('count')).toBe('number')
+    expect(memoType('deep')).toBe('string')
+    expect(proven.memos.find(m => m.name === 'count')).toBe(analyzed.memos.find(m => m.name === 'count'))
+  })
+
+  test('withProvenStoredTypes returns the metadata itself when every type holds', () => {
+    const plain = buildMetadata(analyzeComponent(`
+'use client'
+import { createMemo, createSignal } from '@barefootjs/client'
+export function C(props: { n?: number }) {
+  const [count] = createSignal(props.n ?? 0)
+  const double = createMemo(() => count() * 2)
+  return <p>{double()}</p>
+}`, 'c.tsx'))
+    expect(withProvenStoredTypes(plain)).toBe(plain)
   })
 })

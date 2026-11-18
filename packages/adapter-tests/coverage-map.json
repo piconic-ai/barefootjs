@@ -9939,6 +9939,42 @@
         "loop"
       ]
     },
+    "loop-row-union-member-attr": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-union-member-attr-destructured": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-set-bound-param-shadow": {
       "kinds": [
         "call",
@@ -13742,6 +13778,22 @@
       "contexts": [
         "attribute",
         "condition",
+        "text"
+      ]
+    },
+    "object-prop-member-boolean-text-child": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
         "text"
       ]
     },
@@ -18471,6 +18523,59 @@
         "text"
       ]
     },
+    "stored-boolean-value-outputs": {
+      "kinds": [
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "stored-boolean-value-outputs-destructured": {
+      "kinds": [
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "strict-equality-boxed-number-typed-signal-child": {
       "kinds": [
         "binary",
@@ -20503,6 +20608,43 @@
         "member"
       ],
       "axes": [],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "union-prop-zero-fallback-signal-seed": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "union-prop-zero-fallback-signal-seed-destructured": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
       "contexts": [
         "attribute",
         "text"

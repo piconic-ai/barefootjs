@@ -367,6 +367,13 @@ import { fixture as numberDivisionZeroDivisor } from './number-division-zero-div
 import { fixture as memoDivisionZeroDivisor } from './memo-division-zero-divisor'
 import { fixture as memoNumberOutputPositions } from './memo-number-output-positions'
 import { fixture as memoNumberOutputPositionsDestructured } from './memo-number-output-positions-destructured'
+import { fixture as unionPropZeroFallbackSignalSeed } from './union-prop-zero-fallback-signal-seed'
+import { fixture as unionPropZeroFallbackSignalSeedDestructured } from './union-prop-zero-fallback-signal-seed-destructured'
+import { fixture as storedBooleanValueOutputs } from './stored-boolean-value-outputs'
+import { fixture as storedBooleanValueOutputsDestructured } from './stored-boolean-value-outputs-destructured'
+import { fixture as loopRowUnionMemberAttr } from './loop-row-union-member-attr'
+import { fixture as loopRowUnionMemberAttrDestructured } from './loop-row-union-member-attr-destructured'
+import { fixture as objectPropMemberBooleanTextChild } from './object-prop-member-boolean-text-child'
 import { fixture as nullishBooleanOutputPositions } from './nullish-boolean-output-positions'
 import { fixture as nullishBooleanOutputPositionsDestructured } from './nullish-boolean-output-positions-destructured'
 import { fixture as booleanTextChild } from './boolean-text-child'
@@ -1812,6 +1819,13 @@ export const jsxFixtures: JSXFixture[] = [
   memoDivisionZeroDivisor,
   memoNumberOutputPositions,
   memoNumberOutputPositionsDestructured,
+  unionPropZeroFallbackSignalSeed,
+  unionPropZeroFallbackSignalSeedDestructured,
+  storedBooleanValueOutputs,
+  storedBooleanValueOutputsDestructured,
+  loopRowUnionMemberAttr,
+  loopRowUnionMemberAttrDestructured,
+  objectPropMemberBooleanTextChild,
   nullishBooleanOutputPositions,
   nullishBooleanOutputPositionsDestructured,
   booleanTextChild,

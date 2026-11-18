@@ -42,6 +42,7 @@ import type {
 } from '@barefootjs/jsx'
 import {
   collectBooleanValueNames,
+  withProvenStoredTypes,
   DslTemplateAdapter,
   type IRNodeEmitter,
   type EmitIRNode,
@@ -245,7 +246,9 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
   }
 
   protected override resetAdapterState(ir: ComponentIR): void {
-    this.booleanValueNames = collectBooleanValueNames(ir.metadata)
+    // A signal or memo is a boolean name by the type a read of it proves, not
+    // by its initializer's last operand (`createSignal(props.x ?? false)`, #3789).
+    this.booleanValueNames = collectBooleanValueNames(withProvenStoredTypes(ir.metadata))
     this.numberValueNames = collectNumberValueNames(ir)
     this.booleanCarrierNames = collectBooleanCarrierNames(ir.metadata)
     this.numberSeedNames = numberValuedSeedNames(
@@ -1419,7 +1422,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
    */
   private jsStringOutput(parsed: ParsedExpr | null | undefined, kolon: string): string {
     const isNumber = isNumberValuedExpr(parsed, (n, c, path) => this._isStringValueName(n, c, path), (n, c) => this._isNumberOutputName(n, c))
-    return isNumber || mayYieldBooleanCarrier(parsed, (n, c) => this._isBooleanCarrierName(n, c))
+    return isNumber || mayYieldBooleanCarrier(parsed, (n, c) => this._isBooleanCarrierName(n, c), this.operandTypingAt())
       ? `$bf.string(${kolon})`
       : kolon
   }

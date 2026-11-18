@@ -409,6 +409,14 @@ export interface PropFallbackVar {
    */
   assertType?: string
   /**
+   * Set when the prop's field is an `interface{}` holding its JS value and
+   * the hoisted local keeps that type (a `boolean | string` prop, #3789):
+   * the fallback applies on a nullish value, as `??` does. The zero-value
+   * check compares the boxed value with the fallback type's zero literal,
+   * which an absent prop (nil) never equals and a passed `''` does.
+   */
+  boxed?: true
+  /**
    * #2683: set when this fallback var was hoisted from a signal's
    * COLLISION-DERIVATION initializer (`(props.X ?? <lit>) <op> <int>`, where
    * the signal's Go field name collides with prop X's) rather than a plain

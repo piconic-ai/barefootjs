@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'bun:test'
 import { collectBooleanCarrierNames, mayYieldBooleanCarrier } from '../adapters/boolean-carrier'
 import { parseExpression } from '../expression-parser'
+import { analyzeComponent, BindingScope, buildMetadata, collectOperandTyping } from '../index'
 import type { TypeInfo } from '../types'
 
 const bool: TypeInfo = { kind: 'primitive', raw: 'boolean', primitive: 'boolean' }
@@ -70,5 +71,24 @@ describe('mayYieldBooleanCarrier (#3783)', () => {
     expect(yields("fmt(off)")).toBe(false)
     expect(yields("props['off'] ?? 'none'")).toBe(false)
     expect(yields("flag(1) ?? 'none'")).toBe(false)
+  })
+
+  test('with a typing, a read whose facts admit a boolean yields it (#3789)', () => {
+    const metadata = buildMetadata(analyzeComponent(`
+'use client'
+import { createMemo } from '@barefootjs/client'
+export function C(props: { no?: boolean | string; label?: string }) {
+  const shown = createMemo(() => props.no ?? 'x')
+  const text = createMemo(() => props.label ?? 'x')
+  return <p>{shown()}</p>
+}`, 'c.tsx'))
+    const typing = collectOperandTyping(metadata).at(BindingScope.forComponent(metadata.propsObjectName))
+    const none = () => false
+    const typed = (src: string) => mayYieldBooleanCarrier(parseExpression(src)!, none, typing)
+    expect(typed('shown()')).toBe(true)
+    expect(typed("label ?? shown()")).toBe(true)
+    expect(typed('text()')).toBe(false)
+    expect(typed('unknown()')).toBe(false)
+    expect(mayYieldBooleanCarrier(parseExpression('shown()')!, none)).toBe(false)
   })
 })
