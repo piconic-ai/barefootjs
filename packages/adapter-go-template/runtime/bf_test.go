@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"math"
 	"reflect"
+	"regexp"
 	"runtime/debug"
 	"strings"
 	"testing"
@@ -3234,6 +3235,55 @@ func TestWithProps(t *testing.T) {
 		copy := got.(HTMLProps)
 		if copy.Body != template.HTML("<b>hi</b>") {
 			t.Errorf("copy.Body = %q, want %q", copy.Body, "<b>hi</b>")
+		}
+	})
+}
+
+// A loop row whose row component renders from its one slot instance takes a
+// scope of its own per row: bf_row_scope mints "<name>_<random>" on a copy.
+func TestRowScope(t *testing.T) {
+	type BadgeProps struct {
+		ScopeID  string
+		BfParent string
+		Label    string
+	}
+	scopeID := regexp.MustCompile(`^Badge_[a-z0-9]{6}$`)
+
+	t.Run("mints a fresh scope on a copy and leaves the instance untouched", func(t *testing.T) {
+		slot := BadgeProps{ScopeID: "test_s0", BfParent: "test", Label: "a"}
+		first, ok := RowScope(slot, "Badge").(BadgeProps)
+		if !ok {
+			t.Fatalf("RowScope returned %T, want BadgeProps", RowScope(slot, "Badge"))
+		}
+		second := RowScope(slot, "Badge").(BadgeProps)
+		if !scopeID.MatchString(first.ScopeID) || !scopeID.MatchString(second.ScopeID) {
+			t.Errorf("ScopeIDs = %q, %q, want Badge_<6 lowercase alphanumerics>", first.ScopeID, second.ScopeID)
+		}
+		if first.ScopeID == second.ScopeID {
+			t.Errorf("two rows share the scope %q", first.ScopeID)
+		}
+		if first.BfParent != "test" || first.Label != "a" {
+			t.Errorf("copy = %+v, want the other fields unchanged", first)
+		}
+		if slot.ScopeID != "test_s0" {
+			t.Errorf("slot.ScopeID = %q, want unchanged %q", slot.ScopeID, "test_s0")
+		}
+	})
+
+	t.Run("accepts a pointer and returns the struct value", func(t *testing.T) {
+		got, ok := RowScope(&BadgeProps{ScopeID: "test_s0"}, "Badge").(BadgeProps)
+		if !ok || !scopeID.MatchString(got.ScopeID) {
+			t.Errorf("RowScope(pointer) = %#v, want a BadgeProps with a fresh scope", got)
+		}
+	})
+
+	t.Run("returns a value without a string ScopeID field unchanged", func(t *testing.T) {
+		type NoScope struct{ Label string }
+		if got := RowScope(NoScope{Label: "a"}, "Badge"); got != (NoScope{Label: "a"}) {
+			t.Errorf("RowScope(struct without ScopeID) = %#v, want it unchanged", got)
+		}
+		if got := RowScope("row", "Badge"); got != "row" {
+			t.Errorf("RowScope(non-struct) = %#v, want it unchanged", got)
 		}
 	})
 }

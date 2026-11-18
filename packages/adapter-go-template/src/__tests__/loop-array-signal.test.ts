@@ -51,13 +51,13 @@ describe('loopArraySignal', () => {
     expect(sourceSignals(ir, new Map([['alias', 'rows']]))).toEqual(['rows'])
   })
 
-  test('an enclosing loop binding that shadows the getter is not the signal', () => {
+  test("a loop inside another loop's row is no rows-field site, so an enclosing binding cannot shadow the getter", () => {
     const ir = compileIR(`export function C() {
   const [rows] = createSignal([{ id: 'a' }])
   const [groups] = createSignal([{ g: 'x', rows: () => [{ id: 'q' }] }])
   return <div>{groups().map(({ g, rows }) => <section key={g}>{rows().map((o) => <Chip key={o.id}><b>{o.id}</b></Chip>)}</section>)}</div>
 }`)
-    expect(sourceSignals(ir)).toEqual([null])
+    expect(sourceSignals(ir)).toEqual([])
   })
 
   test("the loop's own row binding of the same name does not shadow its array", () => {

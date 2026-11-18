@@ -12237,6 +12237,12 @@
               ]
             },
             {
+              "fixture": "nested-loop-child-component-rest-own-child",
+              "limitations": [
+                "nested-loop-row-child-own-child-no-rebuild"
+              ]
+            },
+            {
               "fixture": "object-entries-typed-object-signal",
               "limitations": [
                 "object-entries-typed-object-signal"
@@ -16071,10 +16077,10 @@
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/jsx/src/expression-parser.ts#L174"
       },
       "example": {
-        "fixture": "unlowered-global-call",
-        "description": "A zero-arg call on a JavaScript global refuses (BF101) instead of rendering a member read (#3505)",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/unlowered-global-call.ts",
-        "code": "Date[props.method]"
+        "fixture": "nested-loop-child-component-record-cell",
+        "description": "A child-component loop inside another loop's row passes the child the outer row object and the inner row",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-loop-child-component-record-cell.ts",
+        "code": "props.row[props.field]"
       }
     },
     "literal": {
@@ -21936,6 +21942,12 @@
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
+              ]
+            },
+            {
+              "fixture": "nested-loop-child-component-rest-own-child",
+              "limitations": [
+                "nested-loop-row-child-own-child-no-rebuild"
               ]
             },
             {

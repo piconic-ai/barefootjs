@@ -172,9 +172,9 @@ import type {
   GoTemplateAdapterOptions,
 } from "./lib/types.ts"
 import { routesToRestBag, restBagOverrideFields, isCertainlyDataType, isScalarArrayType, hasNoInputSlot, restBagBinding, restBagField } from "./lib/types.ts"
-import { GO_TEMPLATE_PRIMITIVES, SCALAR_ROW_GO_TYPES, SCALAR_ROW_ITEM_FIELD } from "./lib/constants.ts"
+import { GO_TEMPLATE_PRIMITIVES, SCALAR_ROW_GO_TYPES, SCALAR_ROW_ITEM_FIELD, WRAPPER_ROW_ROOT_VAR } from "./lib/constants.ts"
 import { CompileState, findModuleScopeConst, findValuedLocalConst, propsObjectKeyRead, resolveSignalParsedThroughSeedPlan } from "./lib/compile-state.ts"
-import { hasClientInteractivity, findNestedComponents, loopArraySignal } from "./analysis/component-tree.ts"
+import { hasChildComponents, hasClientInteractivity, findNestedComponents, loopArraySignal } from "./analysis/component-tree.ts"
 import { findDynamicRawTextChild, isRawTextTag } from "./analysis/raw-text-element.ts"
 import { analyzeBakeableStaticChildLoop, bakedScalarAttr, scalarToGoLiteral, type BakedStaticChildItem, type BakedStaticChildLoop } from "./analysis/static-child-loop-bake.ts"
 import { analyzeBakeableStaticElementLoop, classifyBakedCondition } from "./analysis/static-element-loop-bake.ts"
@@ -208,7 +208,7 @@ import { resolveLocalGetterAsGo } from "./value/child-prop-value.ts"
 import { emitParsedExpressionAttr, emitSpreadAttr, emitStyleOrPresenceAttr, emitLiteralAttr, emitTemplateAttr, type ElementAttrHost } from "./attr/element-attrs.ts"
 import { renderConditionTest, renderFilterExpr, type ConditionExprHost } from "./expr/condition-expr.ts"
 import { PREDICATE_METHODS, renderArrayMethod, renderCallbackMethod, renderMember, type MemberAndMethodsHost } from "./expr/member-and-methods.ts"
-import { loopRowChildPropOverrides, renderLoop as renderLoopWithHost, type LoopRenderHost } from "./loop/render-loop.ts"
+import { loopRowChildPropOverrides, rangedRowKeyArgs, renderLoop as renderLoopWithHost, type LoopRenderHost } from "./loop/render-loop.ts"
 import { collectBodyChildInstances, collectStaticChildInstances, type StaticChildrenHost } from "./children/static-children.ts"
 import { ensureCrossFileChildShapes, type CrossFileChildShapeHost } from './lib/cross-file-child-shapes.ts'
 import { buildLocalTypeTables, resolveNestedLoopItemTypes, synthesizeStructsFromElements, synthSliceTypeInfo, untypedSignalSeedRows, type TypeSynthesisHost } from "./type/type-synthesis.ts"
@@ -520,6 +520,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * Innermost last.
    */
   private loopWrapperStack: boolean[] = []
+  /** The row component of the innermost loop when that loop has no rows field (`isRowsFieldLoop`). */
+  private rangedRowRoot: IRNode | null = null
   private loopVarRefCount: Map<string, number> = new Map()
   /** Stack of destructure-param binding maps (binding name → Go accessor on the
    *  range var, e.g. `id` → `$__bf_item0.Id`, `rest` → `$__bf_item0`, an
@@ -1299,6 +1301,14 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private childRepropsReady: Map<string, RepropsSpec> = new Map()
 
   /**
+   * Components that render a child component of their own
+   * (`hasChildComponents`), by declared name: their constructor derives those
+   * instances from its scope id, so a row that takes a fresh scope
+   * (`rangedRowInstance`) has to re-run it. Registered with the child's shape.
+   */
+  private childrenWithOwnChildren: Set<string> = new Set()
+
+  /**
    * child component name -> the component whose type block carries its
    * rebuilder registration. First parent to need the child wins, so two
    * parents overriding the same child don't both emit an `init()` for it.
@@ -1415,6 +1425,8 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     // adding them first keeps every set here keyed by the same param list,
     // so `hasNoInputSlot` never drops a prop the child's Input declares.
     augmentInheritedPropAccesses(ir as ComponentIR)
+    if (hasChildComponents(ir.root)) this.childrenWithOwnChildren.add(name)
+    else this.childrenWithOwnChildren.delete(name)
     for (const key of collectNullableSeedStructFields(ir.metadata, ir.root)) this.fileNullableSeedStructFields.add(key)
     // Both sets on `ChildComponentShape` are looked up by a PARENT against the
     // name it wrote at the JSX call site, so they are keyed by
@@ -1810,7 +1822,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     nestedComponents: NestedComponentInfo[],
     spreadSlots: SpreadSlotInfo[],
   ): void {
-    if (!this.childDerivedFieldDeps.has(componentName)) return
+    if (!this.childDerivedFieldDeps.has(componentName) && !this.childrenWithOwnChildren.has(componentName)) return
 
     const params = ir.metadata.propsParams ?? []
     const takenInput = new Set(this.propParamFieldNamesUnion(ir.metadata.propsParams ?? []))
@@ -2260,7 +2272,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   ): void {
     const wrapperName = this.loopBodyWrapperName(parentComponentName, nested)
     const datumFields = this.resolveLoopDatumFields(nested.loopItemType)
-    const bodyChildInstances = collectBodyChildInstances(this.staticChildrenHost, nested.bodyChildren!)
+    const bodyChildInstances = collectBodyChildInstances(this.staticChildrenHost, nested.bodyChildren!, ir.metadata.propsParams, nested.rowScope)
     // #2822 follow-up: this is a Go EMBEDDED (anonymous) field — its field
     // name IS its type name, so unlike `child.fieldName` the alias-keyed
     // field name can't be kept separate from the type here. The whole
@@ -2927,6 +2939,13 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * child on Go is a separate, unsolved capability gap (#3164 fixes the
    * array-source scope only), not something this check attempts to
    * resolve.
+   *
+   * A wrapper row's define does read the component's own data now, through
+   * the root the call site hands it (`rootRefPrefix`): that is how a prop
+   * read renders, and a signal read in a signal array's rows
+   * (`emitDynamicBodyWrappers`, which never had this guard). The refusal
+   * here still stands for these constructor-baked rows until that reach is
+   * covered for them by its own fixtures.
    */
   private bodyChildrenReferenceOuterReactiveState(nodes: readonly IRNode[], scalarRow = false): boolean {
     for (const node of nodes) {
@@ -3908,9 +3927,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * (`renderWrapperRowDefine`), so a nested prop or text reading them lowers
    * exactly as it does in the calling template. A scalar row's define that
    * reads them gets the wrapper too instead of the bare value
-   * (`wrapperRowScalar`). Null otherwise.
+   * (`wrapperRowScalar`). `rootUsed`: a define read a field of the
+   * component's own data, which the call site hands over the same way
+   * (`rootRefPrefix`). Null otherwise.
    */
-  private wrapperRowVars: { names: ReadonlySet<string>; used: Set<string> } | null = null
+  private wrapperRowVars: { names: ReadonlySet<string>; used: Set<string>; rootUsed: boolean } | null = null
   /**
    * While a wrapper-row forwarded-children define renders: the calling
    * loop's synthetic destructure range variable (`__bf_item0`), which every
@@ -3937,6 +3958,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private wrapperRowReads: Set<string> | null = null
   /** Per wrapper-row forwarded-children define: the row variables it (or a define it calls) reads. */
   private wrapperRowVarsByDefine = new Map<string, readonly string[]>()
+  /** Per forwarded-children define of a component in a ranged row: the data its call site executes it with (`queueRangeRowChildrenDefine`). */
+  private rangeRowDefineData = new Map<string, string>()
+  /** The wrapper-row forwarded-children defines that (or a define they call) read the component's own data. */
+  private wrapperRowRootDefines = new Set<string>()
+  /** Whether the define currently being rendered (`renderWrapperRowDefine`) read the component's own data. */
+  private wrapperRowRootRead = false
 
   private extractScopedHtmlChildren(children: IRNode[]): string | null {
     if (children.length === 0) return null
@@ -5040,14 +5067,30 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
+   * The prefix a field of the component's own data is read through. Outside
+   * any loop the data is the dot (`.Field`); inside a `{{range}}`
+   * (`inRange`, or `inLoop`) the dot is the row, and the data is Go
+   * template's `$`. A wrapper row's forwarded-children define is a separate
+   * template whose `.` and `$` are both the row wrapper, so it reads the
+   * component's data through a variable it rebinds from the wrapper's
+   * `BfRowVars` (`renderWrapperRowDefine`), which the call site fills.
+   */
+  private rootRefPrefix(inRange = this.inLoop): string {
+    if (this.renderingWrapperRowChildren) {
+      this.wrapperRowRootRead = true
+      return `$${WRAPPER_ROW_ROOT_VAR}.`
+    }
+    return inRange ? '$.' : '.'
+  }
+
+  /**
    * Root field reference for a read of the props object's own key
    * (`props.<key>`): the field the prop with that caller-facing key is held
    * in (`CompileState.propKeyFields`), not a local alias of the same name.
    */
   private propKeyFieldRef(key: string): string {
     this.state.templateReadRootFields.add(key)
-    const prefix = this.inLoop ? '$.' : '.'
-    return `${prefix}${this.state.propKeyFields.get(key) ?? capitalizeFieldName(key)}`
+    return `${this.rootRefPrefix()}${this.state.propKeyFields.get(key) ?? capitalizeFieldName(key)}`
   }
 
   /**
@@ -5060,7 +5103,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   private rootFieldRef(name: string): string {
     const resolved = this.resolveRootFieldAlias(name)
     this.state.templateReadRootFields.add(resolved)
-    const prefix = this.inLoop ? '$.' : '.'
+    const prefix = this.rootRefPrefix()
     // The rest bag's field is `restBagField`'s, not always `Capitalize(name)`.
     const field = this.state.restBagField && resolved === this.state.restPropsName
       ? this.state.restBagField
@@ -5094,7 +5137,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private filterRootFieldRef(name: string): string {
     this.rootFieldRef(name)
-    return `$.${capitalizeFieldName(this.resolveRootFieldAlias(name))}`
+    return `${this.rootRefPrefix(true)}${capitalizeFieldName(this.resolveRootFieldAlias(name))}`
   }
 
   /**
@@ -7022,19 +7065,15 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   }
 
   /**
-   * Queue a companion define for a loop body component's JSX children. Like
-   * `queueDynamicChildrenDefine` but temporarily exits the `inLoop` context so
-   * nested component calls render with the normal `.NameSlotN` field-access
-   * pattern (the fields live on the wrapper struct that the
-   * companion define receives as its data context). The loop param stack
-   * stays intact so datum-field references (`payment.id` → `.Id`) still
-   * resolve.
+   * Queue a companion define for the JSX children of a component in a loop
+   * row, and return its name (null when the children are empty or stay on
+   * the constructor-baked `Children` value).
    *
-   * `wrapperRow`: the define runs with a wrapper-slice row as its data (the
-   * loop body IS `comp`), so a nested component's `.NameSlotN` is the ONE
-   * instance the constructor built for every row
-   * (`emitLoopRowBodyChildInstances`) and a prop reading the row must be
-   * re-applied per row — see `renderingWrapperRowChildren`.
+   * `wrapperRow`: the loop ranges over its rows field and the row IS `comp`,
+   * so the define runs with the row wrapper as its data
+   * (`queueWrapperRowChildrenDefine`). Otherwise `comp` sits in a row of a
+   * loop that ranges over its own array, and the define is that row's
+   * fragment moved out of the `{{range}}` (`queueRangeRowChildrenDefine`).
    */
   private queueLoopBodyChildrenDefine(comp: IRComponent, wrapperRow: boolean): string | null {
     const effectiveChildren = comp.children.length > 0
@@ -7048,39 +7087,76 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (!wrapperRow && this.hasBakedStaticChildren(effectiveChildren)) return null
     const name = `${this.state.componentName}__loop_children_${comp.slotId}`
     if (!this.state.pendingChildrenDefines.some(d => d.name === name)) {
-      const wasInLoop = this.inLoop
-      const wasWrapperRow = this.renderingWrapperRowChildren
-      const wasRowVars = this.wrapperRowVars
-      const wasDestructureVar = this.wrapperRowDestructureVar
-      const wasRowFrame = this.wrapperRowFrame
-      const wasScalarCallSite = this.scalarWrapperRowCallSite
-      const wasRowScalar = this.wrapperRowScalar
-      this.inLoop = false
-      this.renderingWrapperRowChildren = wrapperRow
-      this.scalarWrapperRowCallSite = false
-      const scalarRow = this.loopScalarItemStack[this.loopScalarItemStack.length - 1] ?? false
-      this.wrapperRowScalar = wrapperRow && scalarRow
-      const rowVarNames = wrapperRow ? this.innermostRowVarNames() : []
-      this.wrapperRowVars = rowVarNames.length > 0 ? { names: new Set(rowVarNames), used: new Set() } : null
-      this.wrapperRowDestructureVar = wrapperRow ? this.innermostDestructureRangeVar : null
-      this.wrapperRowFrame = wrapperRow ? this.innermostRowFrame() : null
-      try {
-        const content = this.renderWrapperRowDefine(effectiveChildren)
-        this.state.pendingChildrenDefines.push({ name, content })
-        const used = this.wrapperRowVars ? rowVarNames.filter(v => this.wrapperRowVars!.used.has(v)) : []
-        if (used.length > 0) this.wrapperRowVarsByDefine.set(name, used)
-        else this.wrapperRowVarsByDefine.delete(name)
-      } finally {
-        this.inLoop = wasInLoop
-        this.renderingWrapperRowChildren = wasWrapperRow
-        this.wrapperRowVars = wasRowVars
-        this.wrapperRowDestructureVar = wasDestructureVar
-        this.wrapperRowFrame = wasRowFrame
-        this.scalarWrapperRowCallSite = wasScalarCallSite
-        this.wrapperRowScalar = wasRowScalar
-      }
+      if (wrapperRow) this.queueWrapperRowChildrenDefine(name, effectiveChildren)
+      else this.queueRangeRowChildrenDefine(name, effectiveChildren)
     }
     return name
+  }
+
+  /**
+   * The forwarded-children define of a wrapper-slice row. It temporarily
+   * exits the `inLoop` context so nested component calls render with the
+   * normal `.NameSlotN` field-access pattern (the fields live on the wrapper
+   * struct the define receives as its data). The loop param stack stays
+   * intact so datum-field references (`payment.id` → `.Id`) still resolve.
+   * A nested component's `.NameSlotN` is the ONE instance the constructor
+   * built for every row (`emitLoopRowBodyChildInstances`), and a prop
+   * reading the row is re-applied per row — see `renderingWrapperRowChildren`.
+   */
+  private queueWrapperRowChildrenDefine(name: string, children: IRNode[]): void {
+    const wasInLoop = this.inLoop
+    const wasWrapperRow = this.renderingWrapperRowChildren
+    const wasRowVars = this.wrapperRowVars
+    const wasDestructureVar = this.wrapperRowDestructureVar
+    const wasRowFrame = this.wrapperRowFrame
+    const wasScalarCallSite = this.scalarWrapperRowCallSite
+    const wasRowScalar = this.wrapperRowScalar
+    this.inLoop = false
+    this.renderingWrapperRowChildren = true
+    this.scalarWrapperRowCallSite = false
+    this.wrapperRowScalar = this.loopScalarItemStack[this.loopScalarItemStack.length - 1] ?? false
+    const rowVarNames = this.innermostRowVarNames()
+    const rowVars = { names: new Set(rowVarNames), used: new Set<string>(), rootUsed: false }
+    this.wrapperRowVars = rowVars
+    this.wrapperRowDestructureVar = this.innermostDestructureRangeVar
+    this.wrapperRowFrame = this.innermostRowFrame()
+    try {
+      const content = this.renderWrapperRowDefine(children)
+      this.state.pendingChildrenDefines.push({ name, content })
+      const used = rowVarNames.filter(v => rowVars.used.has(v))
+      if (used.length > 0) this.wrapperRowVarsByDefine.set(name, used)
+      else this.wrapperRowVarsByDefine.delete(name)
+      if (rowVars.rootUsed) this.wrapperRowRootDefines.add(name)
+      else this.wrapperRowRootDefines.delete(name)
+    } finally {
+      this.inLoop = wasInLoop
+      this.renderingWrapperRowChildren = wasWrapperRow
+      this.wrapperRowVars = wasRowVars
+      this.wrapperRowDestructureVar = wasDestructureVar
+      this.wrapperRowFrame = wasRowFrame
+      this.scalarWrapperRowCallSite = wasScalarCallSite
+      this.wrapperRowScalar = wasRowScalar
+    }
+  }
+
+  /**
+   * The forwarded-children define of a component in a row of a loop that
+   * ranges over its own array. The children render where they are written,
+   * inside the `{{range}}`, and the fragment then moves into the define the
+   * way a row's portal element does (`wrapLoopRowSsrPortalElement`):
+   * `bf_portal_scope` hands over the calling template's root (every bare `$`
+   * in the fragment is renamed to `$__bfRoot`), each variable the fragment
+   * reads without declaring it (`freeTemplateVars`: an enclosing row's
+   * range variable, its index, a callback local), and the row as `.`
+   * through a one-element `range`. So a read of the component's own data, a
+   * nested component's slot instance and an enclosing row all resolve as
+   * they do in the calling template.
+   */
+  private queueRangeRowChildrenDefine(name: string, children: IRNode[]): void {
+    const { free, body } = freeTemplateVars(this.renderChildren(children), '__bfRoot')
+    const prelude = ['{{$__bfRoot := index . "root"}}', ...free.map(v => `{{$${v} := index . "${v}"}}`)].join('')
+    this.state.pendingChildrenDefines.push({ name, content: `${prelude}{{range index . "dot"}}${body}{{end}}` })
+    this.rangeRowDefineData.set(name, `(bf_portal_scope $ .${free.map(v => ` "${v}" $${v}`).join('')})`)
   }
 
   /**
@@ -7120,13 +7196,18 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    */
   private renderWrapperRowDefine(children: IRNode[]): string {
     const wasReads = this.wrapperRowReads
+    const wasRootRead = this.wrapperRowRootRead
     const reads = new Set<string>()
     this.wrapperRowReads = this.renderingWrapperRowChildren ? reads : null
+    this.wrapperRowRootRead = false
     let content: string
+    let rootRead: boolean
     try {
       content = this.renderChildren(children)
+      rootRead = this.wrapperRowRootRead
     } finally {
       this.wrapperRowReads = wasReads
+      this.wrapperRowRootRead = wasRootRead
     }
     if (!this.renderingWrapperRowChildren) return content
     let prefix = ''
@@ -7147,6 +7228,12 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const v of rowVars ? [...rowVars.names].filter(name => reads.has(name)) : []) {
       rowVars!.used.add(v)
       varsPrefix += `{{$${v} := index .BfRowVars ${JSON.stringify(v)}}}`
+    }
+    // The component's own data, read where `.` and `$` are the row wrapper
+    // (`rootRefPrefix`).
+    if (rootRead && rowVars) {
+      rowVars.rootUsed = true
+      varsPrefix += `{{$${WRAPPER_ROW_ROOT_VAR} := index .BfRowVars ${JSON.stringify(WRAPPER_ROW_ROOT_VAR)}}}`
     }
     // A scalar row's define reads the bare value as `.`. Handed the wrapper
     // instead so it can rebind the row variables above, it ranges once over
@@ -7202,15 +7289,93 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     overrides: ReturnType<typeof loopRowChildPropOverrides>,
   ): string {
     let out = base
-    if (overrides?.args) {
-      out = overrides.helper === 'bf_reprops'
-        ? `(bf_reprops ${JSON.stringify(declaredName)} ${out} ${overrides.args})`
-        : `(bf_with_props ${out} ${overrides.args})`
+    if (overrides?.helper === 'bf_reprops' && overrides.args !== null) {
+      out = `(bf_reprops ${[JSON.stringify(declaredName), out, overrides.args].filter(Boolean).join(' ')})`
+    } else if (overrides?.args) {
+      out = `(bf_with_props ${out} ${overrides.args})`
     }
     for (const entry of overrides?.bagEntries ?? []) {
       out = `(bf_with_bag ${out} ${JSON.stringify(entry.bagField)} ${JSON.stringify(entry.key)} ${entry.go})`
     }
     return out
+  }
+
+  /**
+   * The per-row props value of `comp`, a component in a row of a loop that
+   * ranges over its own array, from its once-built slot instance `slot`:
+   * the instance with the row's props re-applied (`overrides`).
+   *
+   * The row component of a child-component loop (`rangedRowRoot`) is a row
+   * of its own as well. A row the constructor builds has a scope id of its
+   * own and its key as `BfDataKey`; this row gets the same at
+   * template-execution time: `bf_row_scope` mints the scope, the row's
+   * props are re-applied, and the key is set last. A child that renders
+   * components of its own builds them under its scope id, so its
+   * constructor is re-run (`bf_reprops`) under the new one; without a
+   * rebuilder that row would nest the slot instance's scope ids, and the
+   * loop is refused.
+   */
+  private rangedRowInstance(
+    comp: IRComponent,
+    slot: string,
+    declaredName: string,
+    overrides: ReturnType<typeof loopRowChildPropOverrides>,
+  ): string {
+    if (comp !== this.rangedRowRoot) return this.wrapLoopRowPropOverrides(slot, declaredName, overrides)
+    let rowOverrides = overrides
+    if (this.childrenWithOwnChildren.has(declaredName)) {
+      if (this.childRepropsReady.has(declaredName)) {
+        if (!this.repropsOwner.has(declaredName)) this.repropsOwner.set(declaredName, this.state.componentName)
+        rowOverrides = { args: overrides?.args ?? '', helper: 'bf_reprops', bagEntries: overrides?.bagEntries ?? [] }
+      } else {
+        this.state.errors.push({
+          code: 'BF101',
+          severity: 'error',
+          message: `Loop-row child component '${comp.name}' is the row of a loop nested inside another loop's row and renders child components of its own. The Go template adapter renders such a row from one shared instance and cannot rebuild '${comp.name}' per row.`,
+          loc: comp.loc ?? this.makeLoc(),
+          suggestion: {
+            message: 'Mark the inner loop /* @client */ so it renders in the browser, or move the outer row into its own component that renders the inner loop.',
+            escape: [{ kind: 'client-directive' }],
+          },
+        })
+      }
+    }
+    const scoped = `(bf_row_scope ${slot} ${JSON.stringify(declaredName)})`
+    const row = this.wrapLoopRowPropOverrides(scoped, declaredName, rowOverrides)
+    const keyArgs = rangedRowKeyArgs(this.loopRenderHost, comp)
+    return keyArgs === null ? row : `(bf_with_props ${row} ${keyArgs})`
+  }
+
+  /**
+   * The props value a wrapper-slice row hands its row component. A row with
+   * forwarded children hands the wrapper's embedded `<Name>Props`, with the
+   * row's props re-applied (`loopRowChildPropOverrides`), never the wrapper
+   * itself: handed the wrapper, the child would read a row datum field in
+   * place of its own prop of the same name (`.Tone` of a row with a `tone`
+   * field, for a `tone` the call never passes), since Go resolves the outer
+   * field first. A bare child row is its own `<Name>Props` (`.`).
+   */
+  private wrapperRowChildProps(comp: IRComponent, declaredName: string): string {
+    if (comp.children.length === 0) return '.'
+    return this.wrapLoopRowPropOverrides(`.${declaredName}Props`, declaredName, loopRowChildPropOverrides(this.loopRenderHost, comp))
+  }
+
+  /**
+   * The data a wrapper-slice row's call site executes its forwarded-children
+   * define with. An object row's define reads the wrapper (`.`), whose
+   * embedded fields the body reads as `.Field`; a scalar row's reads the
+   * bare range value (`.BfLoopItem`), so `{n}` → `{{.}}` renders it. A
+   * define that reads the loop's index, a callback local or the component's
+   * own data gets them in the wrapper's `BfRowVars`
+   * (`renderWrapperRowDefine`); a scalar row's define then gets the wrapper
+   * too, and ranges over its `BfLoopItem` itself. The calling template is
+   * the component's own, whose `$` is the component's data.
+   */
+  private wrapperRowDefineData(define: string): string {
+    const rowVars = (this.wrapperRowVarsByDefine.get(define) ?? []).map(v => `${JSON.stringify(v)} $${v}`)
+    if (this.wrapperRowRootDefines.has(define)) rowVars.push(`${JSON.stringify(WRAPPER_ROW_ROOT_VAR)} $`)
+    if (rowVars.length > 0) return `(bf_with_props . "BfRowVars" (bf_map ${rowVars.join(' ')}))`
+    return this.loopScalarItemStack[this.loopScalarItemStack.length - 1] ? `.${SCALAR_ROW_ITEM_FIELD}` : '.'
   }
 
   renderComponent(comp: IRComponent, ctx?: { isRootOfClientComponent?: boolean }): string {
@@ -7261,26 +7426,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // Only a row with forwarded children has the wrapper (and its
       // embedded `<Name>Props`); a bare child row is its own `<Name>Props`,
       // built per row from its full Input (`loopRowChildInputFields`).
-      const overrides = comp.children.length > 0 ? loopRowChildPropOverrides(this.loopRenderHost, comp) : null
-      const base = overrides
-        ? this.wrapLoopRowPropOverrides(`.${declaredName}Props`, declaredName, overrides)
-        : '.'
+      const base = this.wrapperRowChildProps(comp, declaredName)
       const loopBodyDefine = this.queueLoopBodyChildrenDefine(comp, true)
       if (loopBodyDefine) {
-        // Scalar-item loop: feed the body define the wrapper's `.BfLoopItem` (the
-        // bare range value) so `{n}` → `{{.}}` renders it; object loops keep `.`
-        // (the wrapper, whose embedded fields the body reads as `.Field`).
-        // A define reading the loop's index or a callback local gets them in
-        // the wrapper's `BfRowVars` (`renderWrapperRowDefine`).
-        // A scalar row's define that reads them gets the wrapper too, and
-        // ranges over its `BfLoopItem` itself.
-        const rowVars = this.wrapperRowVarsByDefine.get(loopBodyDefine) ?? []
-        const bodyData = rowVars.length > 0
-          ? `(bf_with_props . "BfRowVars" (bf_map ${rowVars.map(v => `${JSON.stringify(v)} $${v}`).join(' ')}))`
-          : this.loopScalarItemStack[this.loopScalarItemStack.length - 1]
-            ? `.${SCALAR_ROW_ITEM_FIELD}`
-            : '.'
-        templateCall = `{{template "${declaredName}" (bf_with_children ${base} (bf_tmpl "${loopBodyDefine}" ${bodyData}))}}`
+        templateCall = `{{template "${declaredName}" (bf_with_children ${base} (bf_tmpl "${loopBodyDefine}" ${this.wrapperRowDefineData(loopBodyDefine)}))}}`
       } else {
         templateCall = `{{template "${declaredName}" ${base}}}`
       }
@@ -7306,9 +7455,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       // component name; `bf_with_props` patches fields and doesn't (#2448).
       // Either way the props helper stays INNER — `bf_with_children` applies
       // the row's children last, on the rebuilt value.
-      const base = this.wrapLoopRowPropOverrides(`$.${comp.name}${suffix}`, declaredName, overrides)
+      const base = this.rangedRowInstance(comp, `$.${comp.name}${suffix}`, declaredName, overrides)
       templateCall = loopBodyDefine
-        ? `{{template "${declaredName}" (bf_with_children ${base} (bf_tmpl "${loopBodyDefine}" .))}}`
+        ? `{{template "${declaredName}" (bf_with_children ${base} (bf_tmpl "${loopBodyDefine}" ${this.rangeRowDefineData.get(loopBodyDefine)}))}}`
         : `{{template "${declaredName}" ${base}}}`
     } else if (this.inLoop) {
       // Loop-nested component without a slotId: no parent field to route
@@ -7576,6 +7725,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     loopRestExcludeStack: () => this.loopRestExcludeStack,
     loopScalarItemStack: () => this.loopScalarItemStack,
     loopWrapperStack: () => this.loopWrapperStack,
+    rootRefPrefix: () => this.rootRefPrefix(true),
+    rangedRowRoot: () => this.rangedRowRoot,
+    setRangedRowRoot: node => {
+      this.rangedRowRoot = node
+    },
     staticLoopItemStack: () => this.staticLoopItemStack,
     wrapperRowVarNames: () => this.wrapperRowVars?.names,
     getBakedStaticChildLoop: (markerId, childComponent, arrayParsed, param, key) =>

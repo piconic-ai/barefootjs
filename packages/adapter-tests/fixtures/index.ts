@@ -876,6 +876,33 @@ import { fixture as destructureDefaultParamModuleScope } from './destructure-def
 import { fixture as destructureDefaultParamBodyConstSameName } from './destructure-default-param-body-const-same-name'
 import { fixture as destructureDefaultReadsSignal } from './destructure-default-reads-signal'
 import { fixture as destructureDefaultReadsSignalClient } from './destructure-default-reads-signal-client'
+import { fixture as componentSpreadPropsInNestedLoopRow } from './component-spread-props-in-nested-loop-row'
+import { fixture as nestedLoopChildComponentRestOwnChildClient } from './nested-loop-child-component-rest-own-child-client'
+import { fixture as nestedLoopChildComponentKeyShapes } from './nested-loop-child-component-key-shapes'
+import { fixture as nestedLoopChildComponentLiteralArray } from './nested-loop-child-component-literal-array'
+import { fixture as loopRowChildChildrenOuterSignal } from './loop-row-child-children-outer-signal'
+import { fixture as nestedLoopChildComponentSignalRows } from './nested-loop-child-component-signal-rows'
+import { fixture as nestedLoopChildComponentRowArray } from './nested-loop-child-component-row-array'
+import { fixture as nestedLoopChildComponentForwardedChildren } from './nested-loop-child-component-forwarded-children'
+import { fixture as nestedLoopChildComponentRecordCell } from './nested-loop-child-component-record-cell'
+import { fixture as nestedLoopChildComponentOwnChild } from './nested-loop-child-component-own-child'
+import { fixture as nestedLoopChildComponentRowChildren } from './nested-loop-child-component-row-children'
+import { fixture as nestedLoopChildComponentDerivedIndex } from './nested-loop-child-component-derived-index'
+import { fixture as nestedLoopChildComponentThreeLevels } from './nested-loop-child-component-three-levels'
+import { fixture as nestedLoopChildComponentChildrenFilter } from './nested-loop-child-component-children-filter'
+import { fixture as nestedLoopChildComponentChildrenBothRows } from './nested-loop-child-component-children-both-rows'
+import { fixture as nestedLoopChildComponentRestOwnChild } from './nested-loop-child-component-rest-own-child'
+import { fixture as loopRowChildChildrenOuterProp } from './loop-row-child-children-outer-prop'
+import { fixture as loopRowChildChildrenOuterPropModuleConst } from './loop-row-child-children-outer-prop-module-const'
+import { fixture as loopRowChildChildrenOuterPropPositions } from './loop-row-child-children-outer-prop-positions'
+import { fixture as loopElementRowChildChildrenOuterScope } from './loop-element-row-child-children-outer-scope'
+import { fixture as loopElementRowChildChildrenDestructuredRow } from './loop-element-row-child-children-destructured-row'
+import { fixture as loopElementRowChildChildrenNestedComponent } from './loop-element-row-child-children-nested-component'
+import { fixture as loopRowChildOmittedPropRowField } from './loop-row-child-omitted-prop-row-field'
+import { fixture as loopRowChildOmittedPropRowFieldModuleConst } from './loop-row-child-omitted-prop-row-field-module-const'
+import { fixture as loopRowChildOmittedPropRowFieldShapes } from './loop-row-child-omitted-prop-row-field-shapes'
+import { fixture as childSignalArrayTypedProp } from './child-signal-array-typed-prop'
+import { fixture as childSignalArrayTypedPropShapes } from './child-signal-array-typed-prop-shapes'
 import { fixture as bodyDestructureNonIdentifierSource } from './body-destructure-non-identifier-source'
 import { fixture as bodyRestTakenKeyRead } from './body-rest-taken-key-read'
 import { fixture as bodyRestPropsNameShadowed } from './body-rest-props-name-shadowed'
@@ -2752,4 +2779,31 @@ export const jsxFixtures: JSXFixture[] = [
   destructureDefaultParamBodyConstSameName,
   destructureDefaultReadsSignal,
   destructureDefaultReadsSignalClient,
+  nestedLoopChildComponentSignalRows,
+  nestedLoopChildComponentRowArray,
+  nestedLoopChildComponentForwardedChildren,
+  nestedLoopChildComponentRecordCell,
+  nestedLoopChildComponentOwnChild,
+  nestedLoopChildComponentRowChildren,
+  nestedLoopChildComponentDerivedIndex,
+  nestedLoopChildComponentThreeLevels,
+  nestedLoopChildComponentChildrenFilter,
+  nestedLoopChildComponentChildrenBothRows,
+  nestedLoopChildComponentRestOwnChild,
+  loopRowChildChildrenOuterProp,
+  loopRowChildChildrenOuterPropModuleConst,
+  loopRowChildChildrenOuterPropPositions,
+  loopElementRowChildChildrenOuterScope,
+  loopElementRowChildChildrenDestructuredRow,
+  loopElementRowChildChildrenNestedComponent,
+  loopRowChildOmittedPropRowField,
+  loopRowChildOmittedPropRowFieldModuleConst,
+  loopRowChildOmittedPropRowFieldShapes,
+  childSignalArrayTypedProp,
+  childSignalArrayTypedPropShapes,
+  nestedLoopChildComponentRestOwnChildClient,
+  nestedLoopChildComponentKeyShapes,
+  nestedLoopChildComponentLiteralArray,
+  loopRowChildChildrenOuterSignal,
+  componentSpreadPropsInNestedLoopRow,
 ]

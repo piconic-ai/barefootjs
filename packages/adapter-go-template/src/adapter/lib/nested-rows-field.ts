@@ -5,8 +5,22 @@
  * four can never name it differently.
  */
 
-import type { ParsedExpr } from '@barefootjs/jsx'
+import type { BindingScope, ParsedExpr } from '@barefootjs/jsx'
 import { capitalizeFieldName } from './go-naming.ts'
+
+/**
+ * Whether a loop's rows are a slice the constructor builds into one
+ * Input/Props field (`<Name>s`): its body is a single child component and no
+ * other loop's row encloses it (`enclosing`, the scope the loop itself sits
+ * in). A child-component loop inside another loop's row has no such field:
+ * its rows differ per enclosing row, and the constructor builds one slice
+ * per loop site. It ranges over its own array instead, and its row
+ * component renders like one nested in an element row, through the
+ * once-built slot instance with the row's props and key applied per row.
+ */
+export function isRowsFieldLoop(loop: { readonly childComponent?: unknown }, enclosing: BindingScope): boolean {
+  return loop.childComponent !== undefined && !enclosing.insideLoopRow()
+}
 
 interface PropsParamLike {
   readonly name: string
