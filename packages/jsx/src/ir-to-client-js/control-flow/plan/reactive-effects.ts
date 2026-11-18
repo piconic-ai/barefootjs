@@ -71,6 +71,8 @@ export interface NestedConditionalPlan {
    * `insert()`; the local isn't otherwise in scope there.
    */
   readsPreamble?: boolean
+  /** A branch reads a preamble local (#3913): see `LoopChildConditional.branchesReadPreamble`. */
+  branchesReadPreamble?: boolean
 }
 
 export interface ReactiveEffectsPlan {

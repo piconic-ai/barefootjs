@@ -37,6 +37,11 @@ export interface QuarantineEntry {
 }
 
 export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
+  'keyed-row-branch-preamble-signal': {
+    oracles: ['three-point', 'idempotence'],
+    reason: 'the row preamble reads an outer signal (`row.name + suffix()`); the csr-mount leg copies it into the module-scope template, where `suffix` is not declared, and throws a ReferenceError',
+    limitation: 'csr-template-preamble-signal-read',
+  },
   'jsx-prop-nested-component-conditional': {
     oracles: ['snap', 'three-point'],
     reason: 'a conditional arm re-renders the JSX prop on the client: the nested component takes the receiving component scope, and a client-mounted && arm renders [object Object]',

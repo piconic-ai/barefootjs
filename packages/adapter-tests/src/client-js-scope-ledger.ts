@@ -15,6 +15,12 @@ export interface KnownHole {
 }
 
 export const KNOWN_UNDECLARED: Record<string, KnownHole> = {
+  // A signal read in a `.map()` row preamble (`row.name + suffix()`) is copied
+  // into the module-scope CSR template lambda, where the getter is not declared.
+  'keyed-row-branch-preamble-signal': {
+    names: ['suffix'],
+    limitation: 'csr-template-preamble-signal-read',
+  },
   // A parameter default reading a module const (`{ b = DEF.toUpperCase() }`)
   // beside a body const of the same name: the component's view of the file
   // hides the module const behind the body const, so no binding is declared

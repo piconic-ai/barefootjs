@@ -264,6 +264,22 @@ export function conditionGetterExpr(
     : `() => ${wrappedCondition}`
 }
 
+/**
+ * The row preamble re-run at the top of a branch's `template()` closure
+ * (#3913). `insert()` calls `template()` on each swap into the branch, long
+ * after the row was built, and a preamble local is a plain per-row `const`,
+ * so the closure would otherwise read the value of the row's first render.
+ * Re-running the preamble there builds the branch from the row's current
+ * item and index, as the row's own effects do. ONE implementation for the
+ * outer (`emitOuterConditional`, reactive-effects.ts) and nested levels.
+ */
+export function branchTemplatePreamble(
+  branchesReadPreamble: boolean | undefined,
+  mapPreambleWrapped: string | undefined,
+): string {
+  return branchesReadPreamble && mapPreambleWrapped ? `${mapPreambleWrapped} ` : ''
+}
+
 function stringifyLoopChildConditional(
   lines: string[],
   cond: LoopChildConditionalPlan,
@@ -277,12 +293,12 @@ function stringifyLoopChildConditional(
   // the parsed fragment instead of being stringified by the surrounding
   // template literal (#1213).
   lines.push(`${indent}insert(${cond.scopeVar}, '${cond.slotId}', ${conditionGetterExpr(cond.wrappedCondition, cond.readsPreamble, mapPreambleWrapped)}, {`)
-  lines.push(`${indent}  template: () => { const __slots = []; return { html: \`${cond.whenTrueTemplateHtml}\`, slots: __slots } },`)
+  lines.push(`${indent}  template: () => { ${branchTemplatePreamble(cond.branchesReadPreamble, mapPreambleWrapped)}const __slots = []; return { html: \`${cond.whenTrueTemplateHtml}\`, slots: __slots } },`)
   lines.push(`${indent}  bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {`)
   stringifyLoopChildArm(lines, cond.whenTrueArm, armIndent, pc, mapPreambleWrapped)
   lines.push(`${indent}  }`)
   lines.push(`${indent}}, {`)
-  lines.push(`${indent}  template: () => { const __slots = []; return { html: \`${cond.whenFalseTemplateHtml}\`, slots: __slots } },`)
+  lines.push(`${indent}  template: () => { ${branchTemplatePreamble(cond.branchesReadPreamble, mapPreambleWrapped)}const __slots = []; return { html: \`${cond.whenFalseTemplateHtml}\`, slots: __slots } },`)
   lines.push(`${indent}  bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {`)
   stringifyLoopChildArm(lines, cond.whenFalseArm, armIndent, pc, mapPreambleWrapped)
   lines.push(`${indent}  }`)
