@@ -2843,6 +2843,25 @@
         "text"
       ]
     },
+    "component-spread-props-in-static-loop-row-scalars": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "component-spread-props-rest-bag": {
       "kinds": [
         "identifier"

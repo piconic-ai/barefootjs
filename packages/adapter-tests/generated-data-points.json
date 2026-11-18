@@ -3059,6 +3059,85 @@
       }
     }
   ],
+  "component-spread-props-in-static-loop-row-scalars": [
+    {
+      "name": "gen:tone:absent",
+      "props": {
+        "flag": true,
+        "count": 99
+      }
+    },
+    {
+      "name": "gen:tone:empty",
+      "props": {
+        "tone": "",
+        "flag": true,
+        "count": 99
+      }
+    },
+    {
+      "name": "gen:tone:markup",
+      "props": {
+        "tone": "<b>&\"'</b>",
+        "flag": true,
+        "count": 99
+      }
+    },
+    {
+      "name": "gen:tone:multibyte",
+      "props": {
+        "tone": "日本語",
+        "flag": true,
+        "count": 99
+      }
+    },
+    {
+      "name": "gen:flag:absent",
+      "props": {
+        "tone": "warm",
+        "count": 99
+      }
+    },
+    {
+      "name": "gen:flag:false",
+      "props": {
+        "tone": "warm",
+        "flag": false,
+        "count": 99
+      }
+    },
+    {
+      "name": "gen:count:absent",
+      "props": {
+        "tone": "warm",
+        "flag": true
+      }
+    },
+    {
+      "name": "gen:count:zero",
+      "props": {
+        "tone": "warm",
+        "flag": true,
+        "count": 0
+      }
+    },
+    {
+      "name": "gen:count:negative",
+      "props": {
+        "tone": "warm",
+        "flag": true,
+        "count": -7
+      }
+    },
+    {
+      "name": "gen:count:large",
+      "props": {
+        "tone": "warm",
+        "flag": true,
+        "count": 1234567890
+      }
+    }
+  ],
   "component-spread-props-rest-bag": [
     {
       "name": "gen:label:absent",
