@@ -25,7 +25,7 @@ import {
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
-import { goBinaryHelperCall, goNumberLiteral, goStrictEqConst, GO_REMEDIATION_OPTIONS, isLiteralKeyRead, lowerJsLogicalTest, lowerJsLogicalValue, lowerJsNullishValue, lowerAbsentAsNil, lowerJsToNumber, lowerJsTruthyTest, lowerUndefinedOperand, wrapIfMultiToken, type NullishSpelling } from '../lib/go-emit.ts'
+import { goBinaryHelperCall, goNumberLiteral, goStrictEqConst, GO_REMEDIATION_OPTIONS, isLiteralKeyRead, readsThroughIndex, lowerJsLogicalTest, lowerJsLogicalValue, lowerJsNullishValue, lowerAbsentAsNil, lowerJsToNumber, lowerJsTruthyTest, lowerUndefinedOperand, wrapIfMultiToken, type NullishSpelling } from '../lib/go-emit.ts'
 import { isPropsObjectName } from '../lib/compile-state.ts'
 import { capitalizeFieldName } from '../lib/go-naming.ts'
 import type { HigherOrderShape } from '../lib/types.ts'
@@ -843,8 +843,9 @@ function renderConditionMember(
   // `.Meta` (#3275). `bf_get` also preserves optional-chain behavior
   // when the object itself is absent.
   // A member of a source-keyed signal seed map (#3353) uses the same
-  // getter, as `member()` does in value position.
-  if (expr.optional || keyRead || host.isMapSeededSignalChain(expr.object)) {
+  // getter, as `member()` does in value position, and so does a member of
+  // what an index read yields (`rows[1].n`, `readsThroughIndex`).
+  if (expr.optional || keyRead || readsThroughIndex(expr.object) || host.isMapSeededSignalChain(expr.object)) {
     return {
       preamble: obj.preamble,
       expr: host.renderOptionalMember(obj.expr, expr.property),

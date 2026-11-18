@@ -1319,17 +1319,75 @@ export function List() {
       expect(adapter.generate(ir).types!).toContain('Items: nil,')
     })
 
-    test('keeps nil for an untyped object array with non-scalar values (#1680)', () => {
-      // A nested object value has no scalar Go type to infer, so the shape
-      // can't be synthesised — bail to nil.
+    test('keeps nil for an untyped object array with a null value (#1680)', () => {
+      // A `null` value has no scalar Go type to infer, so the shape can't
+      // be synthesised — bail to nil.
       const adapter = new GoTemplateAdapter()
       const ir = compileToIR(`
 "use client"
 import { createSignal } from "@barefootjs/client"
 
 export function List() {
-  const [items] = createSignal([{ id: "a", meta: { n: 1 } }])
+  const [items] = createSignal([{ id: "a", meta: null }])
   return <ul>{items().map((t) => <li key={t.id}>{t.id}</li>)}</ul>
+}
+`)
+      expect(adapter.generate(ir).types!).toContain('Items: nil,')
+    })
+
+    test('types a nested object field as a struct of its own and bakes it (#3795)', () => {
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function List() {
+  const [items] = createSignal([{ id: "a", meta: { n: 1 } }, { id: "b", meta: { n: 2 } }])
+  return <ul>{items().map((t) => <li key={t.id}>{t.meta.n}</li>)}</ul>
+}
+`)
+      const types = adapter.generate(ir).types!
+      expect(types).toContain('type ListItemsItemMeta struct')
+      expect(types).toContain('Meta ListItemsItemMeta')
+      expect(types).toContain('Items: []ListItemsItem{ListItemsItem{ID: "a", Meta: ListItemsItemMeta{N: 1}}, ListItemsItem{ID: "b", Meta: ListItemsItemMeta{N: 2}}},')
+    })
+
+    test('gives a non-identifier key a field read by its JSON tag (#3795)', () => {
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function List() {
+  const [items] = createSignal([{ 'a.b': 1, '*': 3 }])
+  return <ul>{items().map((t) => <li key={t['*']}>{t['a.b']}</li>)}</ul>
+}
+`)
+      const types = adapter.generate(ir).types!
+      expect(types).toContain('AB float64 `json:"a.b"`')
+      expect(types).toContain('Field float64 `json:"*"`')
+      expect(types).toContain('Items: []ListItemsItem{ListItemsItem{AB: 1, Field: 3}},')
+    })
+
+    test.each([
+      ['two keys spelled as one Go field', `{ a: 1, A: 2 }`],
+      ['two non-identifier keys spelled as one Go field', `{ 'a.b': 1, 'a-b': 2 }`],
+      ['a key the JSON tag cannot carry', `{ 'a"b': 1 }`],
+      ['a non-identifier key the JSON tag would lower', `{ 'A.b': 1 }`],
+      ['the key that hides a field', `{ '-': 1 }`],
+      ['a JS identifier that is no Go identifier', `{ $id: 1 }`],
+      ['a non-ASCII key', `{ 'é.b': 1 }`],
+      ['an empty key', `{ '': 1 }`],
+      ['a nested array beside a nested object of one struct name', `{ x: [{ n: 1 }], xItem: { n: 1 } }`],
+    ])('keeps nil for rows with %s (#3795)', (_label, row) => {
+      const adapter = new GoTemplateAdapter()
+      const ir = compileToIR(`
+"use client"
+import { createSignal } from "@barefootjs/client"
+
+export function List() {
+  const [items] = createSignal([${row}])
+  return <ul>{items().map(() => <li>x</li>)}</ul>
 }
 `)
       expect(adapter.generate(ir).types!).toContain('Items: nil,')
@@ -2753,9 +2811,18 @@ export function Demo() {
       expect(bf101[0].message).toContain('computed value')
     })
 
+    test('rows with a nested object field synthesize a struct for it (#3795)', () => {
+      const { types, bf101 } = compileLoop(
+        `const opts = [{ id: 'a', label: 'A', meta: { x: 1 } }, { id: 'b', label: 'B', meta: { x: 2 } }]`,
+      )
+      expect(types).toContain('type DemoOptsItemMeta struct')
+      expect(types).toContain('Meta DemoOptsItemMeta')
+      expect(bf101).toHaveLength(0)
+    })
+
     test('rows with the same keys but an untypeable field name the field, not the shape', () => {
       const { bf101 } = compileLoop(
-        `const opts = [{ id: 'a', label: 'A', meta: { x: 1 } }, { id: 'b', label: 'B', meta: { x: 2 } }]`,
+        `const opts = [{ id: 'a', label: 'A', meta: null }, { id: 'b', label: 'B', meta: null }]`,
       )
       expect(bf101).toHaveLength(1)
       expect(bf101[0].message).toContain("with a field the Go template adapter can't give one Go type across its rows")
