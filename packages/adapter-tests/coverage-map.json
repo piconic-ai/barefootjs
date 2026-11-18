@@ -11471,7 +11471,8 @@
         "identifier",
         "literal",
         "member",
-        "object-literal"
+        "object-literal",
+        "unsupported"
       ],
       "axes": [
         "array-method:toUpperCase",

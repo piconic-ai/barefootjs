@@ -3573,9 +3573,15 @@ export function extractFreeIdentifiersFromNode(node: ts.Node): Set<string> {
       const names: string[] = []
       for (const p of n.parameters) addBindingNames(p.name, names)
       if (ts.isFunctionExpression(n) && n.name) names.push(n.name.text)
+      // A computed member name (`{ [key](key) {} }`) is evaluated in the
+      // enclosing scope, so visit it before the parameters are bound.
+      const computedName = ts.isMethodDeclaration(n) || ts.isGetAccessorDeclaration(n) || ts.isSetAccessorDeclaration(n)
+        ? (ts.isComputedPropertyName(n.name) ? n.name : undefined)
+        : undefined
+      if (computedName) visit(computedName)
       const added = names.filter(name => !boundNames.has(name))
       for (const name of added) boundNames.add(name)
-      ts.forEachChild(n, visit)
+      ts.forEachChild(n, child => { if (child !== computedName) visit(child) })
       for (const name of added) boundNames.delete(name)
       return
     }

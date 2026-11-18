@@ -8,6 +8,8 @@ export function initModuleConstMemberKeyHydrate(__scope, _p = {}) {
   const __scopeId = __scope.getAttribute('bf-s')
 
   const base = 'b'
+  const key = 'run'
+  const OPS = { [key](key) { return key + 1 } }
   const D = { label: 'm', tag: base, shown: 's' }
   const LABEL = D.label
   const [count, setCount] = createSignal(0)
@@ -20,7 +22,7 @@ export function initModuleConstMemberKeyHydrate(__scope, _p = {}) {
     __bfw_s0('s0', escapeTextOrNode(__val))
   })
 
-  if (_s1) _s1.addEventListener('click', () => setCount(count() + NAMES.length * TEXTS.length))
+  if (_s1) _s1.addEventListener('click', () => setCount(count() + NAMES.length * TEXTS.length * OPS.run(0)))
 }
 
 hydrate('ModuleConstMemberKeyHydrate', { init: initModuleConstMemberKeyHydrate, template: (_p) => `<div><p data-slot="label">${escapeText((({ label: 'm', tag: ('b'), shown: 's' }).label))}</p><p data-slot="tag">${escapeText(({ label: 'm', tag: ('b'), shown: 's' }).shown)}</p><button bf="s1"><!--bf:s0-->${escapeTextOrMarkup((0))}<!--/--></button></div>` })

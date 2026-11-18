@@ -63,6 +63,11 @@ describe('module const dependencies come from the initializer AST', () => {
     expect(js).not.toContain('process')
   })
 
+  test('a computed method name keeps the declaration its own parameter shadows', () => {
+    const js = clientJs(component(`const key = 'run'\nconst O = { [key](key: number) { return key + 1 } }`, 'O'))
+    expect(js).toContain(`const key = 'run'`)
+  })
+
   test('a real read of the same name is still declared', () => {
     const js = clientJs(component(`const D = { v: label }`, 'D.v'))
     expect(js).toContain('process.env.SERVER_ONLY')
@@ -88,6 +93,22 @@ describe('extractFreeIdentifiersFromNode binds function parameters', () => {
 
   test('a name bound by an outer function stays bound after an inner one ends', () => {
     expect(freeOf(`function (a) { [1].map(function (a) { return a }); return a }`)).toEqual([])
+  })
+
+  test('a computed method name is read in the enclosing scope, not the method\'s', () => {
+    expect(freeOf(`{ [key](key) { return key + 1 } }`)).toEqual(['key'])
+  })
+
+  test('a computed accessor name is read in the enclosing scope', () => {
+    expect(freeOf(`{ get [key]() { return 1 }, set [k2](k2) {} }`)).toEqual(['k2', 'key'])
+  })
+
+  test('a computed property name is a read', () => {
+    expect(freeOf(`{ [key]: 1 }`)).toEqual(['key'])
+  })
+
+  test('parameters still shadow inside the method body', () => {
+    expect(freeOf(`{ [key](a) { return a + b } }`)).toEqual(['b', 'key'])
   })
 
   test('a parameter binds only inside its own function', () => {
