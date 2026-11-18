@@ -8,7 +8,7 @@ import { attrValueToString, freeIdsFromRefs, PROPS_PARAM, toHtmlAttrName, rowBou
 import { classifyReactivity, needsEffectWrapper, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectConditionalBranchComponentNodes, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings, buildLoopRowScope, anyNameIn } from './reactivity.ts'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, jsxChildrenPropGetterExpr, buildLoopSkeletonTemplate, computeSkeletonSlotPaths, renderFlatMapClientBody, renderFlatMapProjectionClientBody, flatMapCallbackHasKeyedLeaf, type SkeletonSlotPaths } from './html-template.ts'
 import { detectRootNamespaceWrapTag } from './control-flow/stringify/template-parse.ts'
-import { branchNeedsLiveRow, reachesReactiveThroughLocalHelper, readsBeyondLoopScope } from './loop-scope-reads.ts'
+import { branchNeedsLiveRow, branchReadsPreambleLocal, reachesReactiveThroughLocalHelper, readsBeyondLoopScope } from './loop-scope-reads.ts'
 import { expandDynamicPropValue, expandConstantForReactivity, resolveRestSpreadOrigin, resolveRestSpreadNames } from './prop-handling.ts'
 import { extractFreeIdentifiersFromText } from './csr-substitute.ts'
 import { walkIR, stopAt } from './walker.ts'
@@ -1820,6 +1820,7 @@ export function collectLoopChildConditionals(
         whenFalse: summarizeLoopChildBranch(n.whenFalse, ctx, siblingOffsets, loopParam, loopParamBindings, preambleNames, loopIndex),
         ...(expanded.freeIds !== undefined && { conditionFreeIdentifiers: expanded.freeIds }),
         ...(readsPreamble && { readsPreamble: true }),
+        ...((branchReadsPreambleLocal(n.whenTrue, preambleNames) || branchReadsPreambleLocal(n.whenFalse, preambleNames)) && { branchesReadPreamble: true }),
         reactiveBeyondLoopScope,
         branchesNeedLiveRow,
       })
