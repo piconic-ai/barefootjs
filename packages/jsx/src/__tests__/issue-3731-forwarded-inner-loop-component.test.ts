@@ -51,4 +51,18 @@ describe('component in an inner loop of a component-root row (#3731)', () => {
     expect(js).toContain('Initialize component-rooted inner-loop components')
     expect(js).not.toContain('upsertChild(')
   })
+
+  test('a handler two inner loops deep reads every enclosing row as an accessor', () => {
+    const js = clientJsOf(`${prelude}
+      export function Comp() {
+        const [rows] = createSignal([{ id: 'a', groups: [{ id: 'b', tags: ['x'] }] }])
+        const pick = (a: string) => {}
+        return <div>{rows().map((o) => (
+          <Chip key={o.id}><ul>{o.groups.map((g) => (
+            <li key={g.id}><ol>{g.tags.map((t) => <li key={t}><Btn onPick={() => pick(o.id + g.id + t)} /></li>)}</ol></li>
+          ))}</ul></Chip>
+        ))}</div>`)
+    expect(js).toContain('pick(o().id + g().id + t())')
+    expect(js).not.toMatch(/pick\(o\.id/)
+  })
 })

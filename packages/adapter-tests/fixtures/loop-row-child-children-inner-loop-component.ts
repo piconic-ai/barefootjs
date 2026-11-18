@@ -36,6 +36,14 @@ export const spec: SharedFixtureSpec = {
     { type: 'expectText', selector: '.picked', text: 'c-q@0.1' },
     { type: 'click', selector: '.live > .chip:nth-child(3) li:nth-child(1) .pick' },
     { type: 'expectText', selector: '.picked', text: 'b-z@2.0' },
+    // Two inner loops: the handler reads the outermost row, the middle and the inner item.
+    { type: 'click', selector: '.deep > .chip:nth-child(1) .pick' },
+    { type: 'expectText', selector: '.picked', text: 'abx' },
+    { type: 'click', selector: '.add-deep' },
+    { type: 'click', selector: '.deep > .chip:nth-child(1) .pick' },
+    { type: 'expectText', selector: '.picked', text: 'cdy' },
+    { type: 'click', selector: '.deep > .chip:nth-child(2) .pick' },
+    { type: 'expectText', selector: '.picked', text: 'abx' },
   ],
 }
 

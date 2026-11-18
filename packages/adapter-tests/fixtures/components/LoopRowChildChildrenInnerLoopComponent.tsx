@@ -21,6 +21,7 @@ function Btn({ label, onPick }: { label: string; onPick: () => void }) {
 }
 
 type Row = { id: string; tags: string[] }
+type Deep = { id: string; groups: { id: string; tags: string[] }[] }
 
 const ROWS: Row[] = [
   { id: 'a', tags: ['x', 'y'] },
@@ -32,12 +33,16 @@ export function LoopRowChildChildrenInnerLoopComponent() {
     { id: 'a', tags: ['x', 'y'] },
     { id: 'b', tags: ['z'] },
   ])
+  const [deep, setDeep] = createSignal<Deep[]>([{ id: 'a', groups: [{ id: 'b', tags: ['x'] }] }])
   const [picked, setPicked] = createSignal('none')
   return (
     <div>
       <p className="picked">{picked()}</p>
       <button type="button" className="add" onClick={() => setRows([{ id: 'c', tags: ['p', 'q'] }, ...rows()])}>
         add
+      </button>
+      <button type="button" className="add-deep" onClick={() => setDeep([{ id: 'c', groups: [{ id: 'd', tags: ['y'] }] }, ...deep()])}>
+        add deep
       </button>
       <div className="rows">
         {ROWS.map((o) => (
@@ -59,6 +64,25 @@ export function LoopRowChildChildrenInnerLoopComponent() {
               {o.tags.map((tag, j) => (
                 <li key={tag}>
                   <Btn label={tag} onPick={() => setPicked(`${o.id}-${tag}@${i}.${j}`)} />
+                </li>
+              ))}
+            </ul>
+          </Chip>
+        ))}
+      </div>
+      <div className="deep">
+        {deep().map((o) => (
+          <Chip key={o.id}>
+            <ul>
+              {o.groups.map((g) => (
+                <li key={g.id}>
+                  <ol>
+                    {g.tags.map((t) => (
+                      <li key={t}>
+                        <Btn label={t} onPick={() => setPicked(`${o.id}${g.id}${t}`)} />
+                      </li>
+                    ))}
+                  </ol>
                 </li>
               ))}
             </ul>

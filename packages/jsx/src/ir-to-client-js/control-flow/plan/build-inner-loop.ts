@@ -223,19 +223,23 @@ function buildReactiveEmit(
     ? wrapLoopParamAsAccessor(inner.key, inner.param, inner.paramBindings, inner.index)
     : null
 
-  // Inner-wrap children IR recursively so nested component props (e.g.,
+  // Wrap children IR recursively so nested component props (e.g.,
   // `<Select><SelectContent>{items.map(item => ...)}` deep) all see the
-  // inner accessor form.
+  // accessor form of the inner row AND every enclosing row (#3731: a handler
+  // prop two loops deep reads the outermost row's item). Wrapping is
+  // idempotent, so the immediate-parent rewrite `emitComponentAndEventSetup`
+  // still applies leaves an already-wrapped read alone.
+  const wrapRows = (expr: string) => wrapBoth(expr)
   const wrapIRNode = (node: IRNode): IRNode => {
     if (node.type === 'component') {
       return {
         ...node,
-        props: node.props.map(p => ({ ...p, value: wrapAttrValueExpression(p.value, wrapInner) })),
+        props: node.props.map(p => ({ ...p, value: wrapAttrValueExpression(p.value, wrapRows) })),
         children: node.children?.map(wrapIRNode),
       }
     }
     if (node.type === 'expression' && node.expr) {
-      return { ...node, expr: wrapInner(node.expr) }
+      return { ...node, expr: wrapRows(node.expr) }
     }
     if ('children' in node && Array.isArray((node as { children?: IRNode[] }).children)) {
       return {
@@ -247,7 +251,7 @@ function buildReactiveEmit(
   }
   const components: IRLoopChildComponent[] = level.comps.map(comp => ({
     ...comp,
-    props: comp.props.map(p => ({ ...p, value: wrapAttrValueExpression(p.value, wrapInner) })),
+    props: comp.props.map(p => ({ ...p, value: wrapAttrValueExpression(p.value, wrapRows) })),
     children: comp.children?.map(wrapIRNode),
   }))
   // Resolved against every enclosing row, like the texts below (#3694): an
