@@ -816,6 +816,20 @@ export function isLiteralKeyRead(computed: boolean): boolean {
 }
 
 /**
+ * Whether `node` is read through an index read: the read itself (`rows[k]`,
+ * `rows[1]`, `obj['a.b']`) or a member chain off one (`rows[1].meta`). What
+ * such a read yields has no Go type the emitter knows: a generated struct
+ * for a typed row, a map keyed by the JS names for decoded data. A member
+ * read off it (`rows[1].n`) therefore goes through `bf_get`, which reads
+ * either, as a member of a map-rooted prop chain does; a field path
+ * (`.N`) finds nothing in the map.
+ */
+export function readsThroughIndex(node: ParsedExpr): boolean {
+  if (node.kind === 'index-access') return true
+  return node.kind === 'member' && (isLiteralKeyRead(node.computed) || readsThroughIndex(node.object))
+}
+
+/**
  * A number literal as a Go template action, spelled from its primitive plan
  * (#3824 step 6): a safe integer is a template literal; any other literal is
  * `bf_number` over its JS spelling (`1e20` overflows the template's integer

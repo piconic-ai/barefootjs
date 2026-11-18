@@ -32,6 +32,7 @@ import {
   emitSortEval,
   GO_REMEDIATION_OPTIONS,
   isLiteralKeyRead,
+  readsThroughIndex,
   wrapIfMultiToken,
 } from '../lib/go-emit.ts'
 import { isPropsObjectName } from '../lib/compile-state.ts'
@@ -315,8 +316,10 @@ function renderFieldMemberRead(
   // below that would `MapIndex("ID")` a `"id"` map and render empty. Placed
   // after the `length` special case so it only intercepts the otherwise-
   // untyped dot access. A literal key takes the same getter (see
-  // `keyRead` above).
-  if (optional || keyRead || host.isMapRootedPropChain(object) || host.isMapSeededSignalChain(object)) {
+  // `keyRead` above), and so does a member of what an index read yields
+  // (`rows[1].n`, `readsThroughIndex`): `bf_get .Rows "1".N` would read `.N`
+  // off the key, and does not parse.
+  if (optional || keyRead || readsThroughIndex(object) || host.isMapRootedPropChain(object) || host.isMapSeededSignalChain(object)) {
     return host.renderOptionalMember(obj, property)
   }
   return host.optFieldRead(object, property, `${obj}.${goFieldNameForKey(property)}`)
