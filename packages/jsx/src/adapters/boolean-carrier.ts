@@ -11,6 +11,8 @@
 
 import type { ParsedExpr } from '../expression-parser.ts'
 import type { IRMetadata, TypeInfo } from '../types.ts'
+import type { ScopedOperandTyping } from './operand-typing.ts'
+import { operandFacts } from './primitive-plan.ts'
 
 /** Whether a declared type admits a boolean: `boolean`, a boolean literal, or a union with such a member. */
 function admitsBoolean(type: TypeInfo | null | undefined): boolean {
@@ -53,23 +55,33 @@ export function collectBooleanCarrierNames(
  * accepts — a zero-argument getter call, a `props.<key>` member or a bare
  * identifier — read directly, as an operand of `??` / `||` / `&&` (JS
  * returns an operand, not a coerced boolean), or as a ternary branch.
+ *
+ * With `typing`, a read whose operand facts admit a boolean is one too: a
+ * loop row's member (`r.v` typed `string | boolean`), and a memo, signal or
+ * local constant whose value is a boolean only through its initializer
+ * (`createMemo(() => props.no ?? 'x')`), which no declared type names.
  */
 export function mayYieldBooleanCarrier(
   expr: ParsedExpr | null | undefined,
   isCarrierName: (name: string, componentProperty?: boolean) => boolean,
+  typing?: ScopedOperandTyping,
 ): boolean {
   if (!expr) return false
+  const readsBoolean = () => typing !== undefined && operandFacts(expr, typing).types.has('boolean')
   switch (expr.kind) {
     case 'logical':
-      return mayYieldBooleanCarrier(expr.left, isCarrierName) || mayYieldBooleanCarrier(expr.right, isCarrierName)
+      return mayYieldBooleanCarrier(expr.left, isCarrierName, typing) || mayYieldBooleanCarrier(expr.right, isCarrierName, typing)
     case 'conditional':
-      return mayYieldBooleanCarrier(expr.consequent, isCarrierName) || mayYieldBooleanCarrier(expr.alternate, isCarrierName)
+      return mayYieldBooleanCarrier(expr.consequent, isCarrierName, typing) || mayYieldBooleanCarrier(expr.alternate, isCarrierName, typing)
     case 'call':
-      return expr.callee.kind === 'identifier' && expr.args.length === 0 && isCarrierName(expr.callee.name)
+      return (expr.callee.kind === 'identifier' && expr.args.length === 0 && isCarrierName(expr.callee.name)) || readsBoolean()
     case 'member':
-      return !expr.computed && expr.object.kind === 'identifier' && expr.object.name === 'props' && isCarrierName(expr.property, true)
+      return (
+        (!expr.computed && expr.object.kind === 'identifier' && expr.object.name === 'props' && isCarrierName(expr.property, true)) ||
+        readsBoolean()
+      )
     case 'identifier':
-      return isCarrierName(expr.name)
+      return isCarrierName(expr.name) || readsBoolean()
     default:
       return false
   }

@@ -5921,6 +5921,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -6318,6 +6324,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -6772,6 +6784,12 @@
               "fixture": "object-entries-typed-object-signal",
               "limitations": [
                 "object-entries-typed-object-signal"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -7235,6 +7253,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -7647,6 +7671,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -8044,6 +8074,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -8453,6 +8489,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -8859,6 +8901,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -9262,6 +9310,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -10843,6 +10897,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -11396,6 +11456,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -12051,6 +12117,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "object-spread-branch-child",
               "limitations": [
                 "object-spread-onto-child-component"
@@ -12679,6 +12751,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -13241,6 +13319,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -13629,12 +13713,6 @@
               ]
             },
             {
-              "fixture": "loop-row-boolean-member-attr",
-              "limitations": [
-                "loop-row-boolean-member-attr-value"
-              ]
-            },
-            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -13794,6 +13872,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -14359,6 +14443,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -14909,6 +14999,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -15309,12 +15405,6 @@
               ]
             },
             {
-              "fixture": "loop-row-boolean-member-attr",
-              "limitations": [
-                "loop-row-boolean-member-attr-value"
-              ]
-            },
-            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -15474,6 +15564,12 @@
               "fixture": "namespace-import-primitive",
               "limitations": [
                 "namespace-import-primitive-without-program"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -16170,6 +16266,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -16585,6 +16687,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -17078,6 +17186,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "object-spread-branch-child",
               "limitations": [
                 "object-spread-onto-child-component"
@@ -17562,6 +17676,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -17983,6 +18103,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -18410,6 +18536,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -18846,6 +18978,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -19255,6 +19393,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -19673,6 +19817,12 @@
               "fixture": "module-helper-boolcontext-call",
               "limitations": [
                 "module-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -19891,6 +20041,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -19946,6 +20102,12 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -20037,6 +20199,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "open-rest-spread-child",
               "limitations": [
                 "open-rest-spread-onto-child-component"
@@ -20113,6 +20281,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -20171,6 +20345,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -20226,6 +20406,12 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -20293,6 +20479,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -20351,6 +20543,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -20406,6 +20604,12 @@
               "fixture": "filter-native-nested-index",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -20788,6 +20992,12 @@
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -21182,6 +21392,12 @@
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -21663,6 +21879,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "object-spread-branch-child",
               "limitations": [
                 "object-spread-onto-child-component"
@@ -22117,6 +22339,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "open-body-rest-spread-child-omits-keys",
               "limitations": [
                 "open-body-rest-declared-key"
@@ -22517,6 +22745,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "open-body-rest-spread-child-omits-keys",
               "limitations": [
                 "open-body-rest-declared-key"
@@ -22797,12 +23031,6 @@
               ]
             },
             {
-              "fixture": "loop-row-boolean-member-attr",
-              "limitations": [
-                "loop-row-boolean-member-attr-value"
-              ]
-            },
-            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -22908,6 +23136,12 @@
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -23317,6 +23551,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "open-body-rest-spread-child-omits-keys",
               "limitations": [
                 "open-body-rest-declared-key"
@@ -23711,6 +23951,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "open-body-rest-spread-child-omits-keys",
               "limitations": [
                 "open-body-rest-declared-key"
@@ -24003,12 +24249,6 @@
               ]
             },
             {
-              "fixture": "loop-row-boolean-member-attr",
-              "limitations": [
-                "loop-row-boolean-member-attr-value"
-              ]
-            },
-            {
               "fixture": "map-array-builder-body",
               "limitations": [
                 "statement-body-callback"
@@ -24114,6 +24354,12 @@
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -33715,6 +33961,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -34034,6 +34286,12 @@
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -34410,6 +34668,12 @@
               "fixture": "object-entries-typed-object-signal",
               "limitations": [
                 "object-entries-typed-object-signal"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -34795,6 +35059,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -35123,6 +35393,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -35448,6 +35724,12 @@
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -35791,6 +36073,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -36113,6 +36401,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "opaque-local-accessor-call",
               "limitations": [
                 "opaque-local-accessor-call"
@@ -36432,6 +36726,12 @@
               "fixture": "module-const-object-array-child-prop",
               "limitations": [
                 "object-array-literal-child-prop"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -36816,6 +37116,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -36865,6 +37171,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -36950,6 +37262,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "open-rest-spread-child",
               "limitations": [
                 "open-rest-spread-onto-child-component"
@@ -37020,6 +37338,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -37069,6 +37393,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -37124,6 +37454,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -37173,6 +37509,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {
@@ -37228,6 +37570,12 @@
               ]
             },
             {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
@@ -37277,6 +37625,12 @@
               "fixture": "destructure-default-shared-array-renamed",
               "limitations": [
                 "unlowered-method-call"
+              ]
+            },
+            {
+              "fixture": "object-prop-member-boolean-text-child",
+              "limitations": [
+                "object-prop-member-boolean-text-child"
               ]
             },
             {

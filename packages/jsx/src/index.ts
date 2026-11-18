@@ -144,6 +144,7 @@ export { rewriteNilReadings, rewriteNilReadingsDeep, isNilReadingFallback, NAN_L
 export type { PrimitiveOp, Proof, NativeSafeClaims, NativeSafeTable, PrimitiveHelper, NilTestHelper, PrimitivePlan, PrimitiveInputs, TextDisplay, NumberLiteralSpelling, PlusSpelling, StrictEqSpelling } from './adapters/primitive-plan.ts'
 export {
   collectOperandTyping,
+  withProvenStoredTypes,
   EMPTY_OPERAND_TYPING,
   UNKNOWN_FACTS,
   factsOf,

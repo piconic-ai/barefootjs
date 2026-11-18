@@ -9639,6 +9639,42 @@
         "loop"
       ]
     },
+    "loop-row-union-member-attr": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-row-union-member-attr-destructured": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-set-bound-param-shadow": {
       "kinds": [
         "call",
@@ -13235,6 +13271,22 @@
       "contexts": [
         "attribute",
         "condition",
+        "text"
+      ]
+    },
+    "object-prop-member-boolean-text-child": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
         "text"
       ]
     },
@@ -17870,6 +17922,59 @@
       ],
       "contexts": [
         "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "stored-boolean-value-outputs": {
+      "kinds": [
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "stored-boolean-value-outputs-destructured": {
+      "kinds": [
+        "binary",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "logical",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "logical:&&",
+        "logical:??",
+        "logical:||"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
         "loop",
         "text"
       ]

@@ -96,7 +96,7 @@
     },
     "packages/adapter-go-template/src/adapter/type/state-fields.ts": {
       "collectPropFallbackVars": [
-        45
+        43
       ]
     },
     "packages/adapter-go-template/src/adapter/type/type-codegen.ts": {

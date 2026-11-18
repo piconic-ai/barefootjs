@@ -507,6 +507,16 @@ export function planPrimitive(node: ParsedExpr, typing: ScopedOperandTyping, tar
   `collectBooleanValueNames`. Note that `collectNumberValueNames` admits an
   optional `number` prop today (it tests `p.type` only); the new typing
   does not, because an omitted prop is nil.
+- A signal, memo or local constant without a declared type carries the type
+  the analyzer read off the end of its initializer's text. For an
+  initializer that yields one of several operands (`l ?? r`, `l && r`,
+  `l || r`, `c ? a : b`) that names the last operand alone
+  (`createMemo(() => props.no ?? 'x')` reads as `string`), so the typing
+  reads what the operands prove instead, in declaration order, and keeps the
+  analyzer type only when they prove nothing. An untyped stored value
+  (`createMemo(() => n > 1)`, `createMemo(() => flag())`) is typed the same
+  way. `withProvenStoredTypes` hands a typed target (Go) the metadata with
+  each signal and memo `type` that those facts contradict replaced.
 - `ScopedOperandTyping` is that typing seen through a `BindingScope`
   (`typing.at(scope)`): a loop binding shadows outer names, and a row read
   takes its type from `ScopeBinding.row` through `loopValueTypeAt`, as

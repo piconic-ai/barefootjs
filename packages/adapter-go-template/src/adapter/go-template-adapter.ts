@@ -47,6 +47,7 @@ import {
   type NilTestHelper,
   type PrimitiveInputs,
   collectOperandTyping,
+  withProvenStoredTypes,
   type HigherOrderMethod,
   type ArrayMethod,
   type LiteralType,
@@ -772,6 +773,10 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * `propsObjectName` is set first because the inherited-attr scan keys off it.
    */
   private primeCompileState(ir: ComponentIR): ComponentIR {
+    // A signal or memo field takes the type a read of the value proves, not
+    // the type of its initializer's last operand (#3789).
+    const metadata = withProvenStoredTypes(ir.metadata)
+    if (metadata !== ir.metadata) ir = { ...ir, metadata }
     this.state.propsObjectName = ir.metadata.propsObjectName
     this.state.restPropsName = ir.metadata.restPropsName ?? null
     this.state.restBagField = restBagField(ir.metadata)

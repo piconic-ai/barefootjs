@@ -1419,7 +1419,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
    */
   private jsStringOutput(parsed: ParsedExpr | null | undefined, kolon: string): string {
     const isNumber = isNumberValuedExpr(parsed, (n, c, path) => this._isStringValueName(n, c, path), (n, c) => this._isNumberOutputName(n, c))
-    return isNumber || mayYieldBooleanCarrier(parsed, (n, c) => this._isBooleanCarrierName(n, c))
+    return isNumber || mayYieldBooleanCarrier(parsed, (n, c) => this._isBooleanCarrierName(n, c), this.operandTypingAt())
       ? `$bf.string(${kolon})`
       : kolon
   }

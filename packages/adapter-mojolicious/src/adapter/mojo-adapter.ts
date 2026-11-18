@@ -1436,7 +1436,7 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
    */
   private jsStringOutput(parsed: ParsedExpr | null | undefined, perl: string): string {
     const isNumber = isNumberValuedExpr(parsed, (n, c, path) => this._isStringValueName(n, c, path), (n, c) => this._isNumberOutputName(n, c))
-    return isNumber || mayYieldBooleanCarrier(parsed, (n, c) => this._isBooleanCarrierName(n, c))
+    return isNumber || mayYieldBooleanCarrier(parsed, (n, c) => this._isBooleanCarrierName(n, c), this.operandTypingAt())
       ? `bf->string(${perl})`
       : perl
   }

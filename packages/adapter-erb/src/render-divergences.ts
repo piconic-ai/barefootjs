@@ -133,6 +133,9 @@ export const renderDivergences: RenderDivergences = {
   // An array in child position: the template prints the array stringified
   // where JSX renders its items one after another.
   'array-text-child': { limitation: 'array-text-child' },
+  // A boolean member of an object-typed prop as a text child (`{props.cfg.on}`)
+  // prints the boolean where JSX renders nothing.
+  'object-prop-member-boolean-text-child': { limitation: 'object-prop-member-boolean-text-child' },
   // An element child a component reads into a signal: the signal's text
   // slot escapes the captured markup.
   'children-element-read-into-state': { limitation: 'children-element-read-into-state' },
