@@ -159,7 +159,6 @@ export const renderDivergences: RenderDivergences = {
   // identity memo over it (`createMemo(() => local)`): the Go seed reads the
   // Input field without the default. A memo the runtime evaluator computes
   // (`createMemo(() => local.length)`) applies it.
-  'destructure-default-body-renamed-callback-memo-chain': { limitation: 'destructure-default-callback-unseeded' },
   // `omitted-optional-number-arithmetic` used to sit here: an omitted
   // optional number prop read as `0` in arithmetic. A prop that can only be
   // absent now reads its nil as `undefined`, giving `NaN` (#3533).
