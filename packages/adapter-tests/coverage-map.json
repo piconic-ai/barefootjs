@@ -8281,6 +8281,24 @@
         "loop"
       ]
     },
+    "loop-element-row-nested-children-click": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-item-conditional": {
       "kinds": [
         "array-literal",
