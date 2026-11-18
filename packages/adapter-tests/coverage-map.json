@@ -11461,6 +11461,29 @@
         "text"
       ]
     },
+    "module-const-member-key-hydrate": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-const-missing-key": {
       "kinds": [
         "array-literal",
