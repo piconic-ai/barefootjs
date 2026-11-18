@@ -11131,6 +11131,12 @@
             "later-spread-overrides-literal-attr"
           ]
         },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "later-spread-overrides-literal-attr"
+          ]
+        },
         "jinja": {
           "kind": "render",
           "limitations": [

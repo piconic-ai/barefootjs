@@ -12441,6 +12441,12 @@
               ]
             },
             {
+              "fixture": "spread-overrides-literal-attr",
+              "limitations": [
+                "later-spread-overrides-literal-attr"
+              ]
+            },
+            {
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
