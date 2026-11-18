@@ -8,6 +8,8 @@
 import type {
   AttrValue,
   ComponentIR,
+  ConstantInfo,
+  FunctionInfo,
   IRNode,
   IRTemplatePart,
   ImportSpecifier,
@@ -21,6 +23,8 @@ import { ENV_SIGNAL_CLIENT_FACTORY } from './env-signal.ts'
 import { formatParamWithType, closeOverWritersOfMutableBindings } from '../module-exports.ts'
 import { extractFreeIdentifiersFromText } from '../ir-to-client-js/csr-substitute.ts'
 import { identifierPattern } from '../identifier-pattern.ts'
+import { componentScopeNames } from './computed-const.ts'
+import { isModuleLexicalConstant, isModuleLexicalFunction } from '../module-scope.ts'
 
 export interface JsxAdapterConfig {
   /** Use typed versions (typedInitialValue, etc.) for type-safe .tsx output */
@@ -240,12 +244,12 @@ export abstract class JsxAdapter extends BaseAdapter {
     // they're emitted at module scope by `generateModuleScopeDeclarations`
     // so module-scope types that reference them (via `typeof`) keep
     // resolving, matching the client bundle's `emitModuleLevelDeclarations`
-    // (#2570). `moduleScopeDeclarationNames` — not the raw `isModule` flag
+    // (#2570). `moduleScopeDeclarations` — not the raw `isModule` flag
     // — decides the split; see its docstring.
-    const moduleScopeNames = this.moduleScopeDeclarationNames(ir)
+    const moduleScope = this.moduleScopeDeclarations(ir)
     for (const constant of ir.metadata.localConstants) {
       if (constant.isExported) continue
-      if (moduleScopeNames.has(constant.name)) continue
+      if (moduleScope.has(constant)) continue
       const keyword = constant.declarationKind ?? 'const'
       if (!constant.value) {
         // No initializer (e.g. `let emblaApi: EmblaCarouselType | undefined`)
@@ -287,7 +291,7 @@ export abstract class JsxAdapter extends BaseAdapter {
     // handlers). Genuinely module-scope functions stay at module scope,
     // same as constants above.
     for (const func of localFunctions) {
-      if (moduleScopeNames.has(func.name)) continue
+      if (moduleScope.has(func)) continue
       if (!reachable.has(func.name)) continue
       // Prefer the source-verbatim signature when types are preserved so
       // type-predicate annotations (`element is { tag: unknown; … }`) and
@@ -314,15 +318,23 @@ export abstract class JsxAdapter extends BaseAdapter {
   // ===========================================================================
 
   /**
-   * Names that genuinely live at module scope in the emitted template.
+   * The declarations that genuinely live at module scope in the emitted
+   * template.
    *
-   * The analyzer's `isModule` flag is NOT a lexical-scope oracle: the
-   * module walker recurses into component bodies, so a component-body
-   * helper (calendar's `renderMonthGrid`, xyflow's edge handlers) can
-   * carry `isModule: true` while closing over component state. Hoisting
-   * such a helper breaks every reference (TS2304/TS2552 — and worse,
-   * wrong runtime scope). So candidates are demoted by a forward-
-   * reachability fixpoint, mirroring the client bundle's
+   * A module const, and a `function` declared outside the component, are
+   * lexically module-scoped (`module-scope.ts`) and stay there whatever
+   * names they read: inside a module declaration a name the component also
+   * binds is the module's own binding, an import or a global, never the
+   * component's. Moving such a declaration into the component body because
+   * it reads a name the component binds made it read the component's value
+   * (#3739).
+   *
+   * A `function` declared INSIDE the component body is collected with
+   * `isModule` set too (the module walk is the one that reaches it), so that
+   * flag alone is not a lexical-scope oracle. Such a helper (calendar's
+   * `renderMonthGrid`, xyflow's edge handlers) is hoisted only when it
+   * closes over nothing of the component: candidates are demoted by a
+   * forward-reachability fixpoint, mirroring the client bundle's
    * `computeDeclarationScopes` (`ir-to-client-js/compute-scope.ts`): a
    * candidate that references component scope — a signal getter/setter, a
    * memo, a prop, a body const/function, or an already-demoted candidate
@@ -330,80 +342,62 @@ export abstract class JsxAdapter extends BaseAdapter {
    * nodes from a TS AST walk (`extractFreeIdentifiersFromText`), not text
    * matches — a component-scope name occurring inside a candidate's
    * string literal (`[data-state="open"]` vs a body const `open`) is not
-   * a reference and must not demote it.
+   * a reference and must not demote it. A candidate named like a module
+   * declaration stays in the body: hoisted, it would redeclare that name.
    *
-   * EXPORTED candidates are never demoted: `export` is only legal at
-   * module top level, so an exported declaration is lexically module-
-   * scoped by construction — and a spurious demotion would make it
-   * vanish entirely (the body loop skips exported declarations and
-   * `generateModuleExports` is told to skip value declarations).
+   * EXPORTED declarations are module-scoped by construction: `export` is
+   * only legal at module top level.
+   *
+   * The answer is a set of DECLARATIONS, not of names: a component const or
+   * function named like a module one is a second declaration, emitted in
+   * the body while the module one is emitted at module scope.
    *
    * Memoized per IR: `generateModuleScopeDeclarations` (module emission)
    * and `generateSignalInitializers` (body emission) must agree on the
    * split or a declaration is emitted twice or not at all.
    */
-  private readonly moduleScopeNamesCache = new WeakMap<ComponentIR, Set<string>>()
+  private readonly moduleScopeCache = new WeakMap<ComponentIR, ReadonlySet<ConstantInfo | FunctionInfo>>()
 
-  protected moduleScopeDeclarationNames(ir: ComponentIR): Set<string> {
-    const cached = this.moduleScopeNamesCache.get(ir)
+  protected moduleScopeDeclarations(ir: ComponentIR): ReadonlySet<ConstantInfo | FunctionInfo> {
+    const cached = this.moduleScopeCache.get(ir)
     if (cached) return cached
 
-    const componentScope = new Set<string>()
-    for (const sig of ir.metadata.signals) {
-      if (sig.isModule) continue
-      componentScope.add(sig.getter)
-      if (sig.setter) componentScope.add(sig.setter)
-    }
-    for (const memo of ir.metadata.memos) {
-      if (!memo.isModule) componentScope.add(memo.name)
-    }
-    for (const p of ir.metadata.propsParams) componentScope.add(p.name)
-    if (ir.metadata.propsObjectName) componentScope.add(ir.metadata.propsObjectName)
-    if (ir.metadata.restPropsName) componentScope.add(ir.metadata.restPropsName)
+    const moduleScope = new Set<ConstantInfo | FunctionInfo>()
+    const moduleNames = new Set<string>()
     for (const c of ir.metadata.localConstants) {
-      if (!c.isModule) componentScope.add(c.name)
-    }
-    for (const f of ir.metadata.localFunctions) {
-      if (!f.isModule) componentScope.add(f.name)
-    }
-
-    // Exported declarations join the emit set unconditionally (see the
-    // docstring); only non-exported candidates enter the demotion
-    // fixpoint, each carrying its REAL free-identifier set.
-    const exported = new Set<string>()
-    const candidates = new Map<string, ReadonlySet<string>>()
-    for (const c of ir.metadata.localConstants) {
-      if (!c.isModule) continue
       // JSX-valued consts are inlined at their usage sites at IR level
       // (#547/#569) — same skip as the client's `classifyConstant`.
-      if (c.isJsx || c.isJsxFunction) continue
-      if (c.isExported) {
-        exported.add(c.name)
-        continue
-      }
-      // The analyzer precomputes the value's free identifiers; fall back
-      // to the same AST walk for values it didn't cover.
-      candidates.set(c.name, c.freeIdentifiers ?? extractFreeIdentifiersFromText(c.value ?? ''))
+      if (!isModuleLexicalConstant(c) || c.isJsx || c.isJsxFunction) continue
+      moduleScope.add(c)
+      moduleNames.add(c.name)
     }
-    for (const f of ir.metadata.localFunctions) {
-      if (!f.isModule) continue
-      // JSX-returning helpers (single- and multi-return) are inlined at
-      // their call sites (#569/#932); emitting them too would resurrect
-      // them as dead module-scope declarations — and the multi-return
-      // bodies carry raw source JSX that must not reach the template
-      // verbatim. Same skips as the client's `computeDeclarationScopes`.
-      if (f.isJsxFunction || f.isMultiReturnJsxHelper) continue
-      if (f.isExported) {
-        exported.add(f.name)
-        continue
-      }
+    // JSX-returning helpers (single- and multi-return) are inlined at
+    // their call sites (#569/#932); emitting them too would resurrect
+    // them as dead module-scope declarations — and the multi-return
+    // bodies carry raw source JSX that must not reach the template
+    // verbatim. Same skips as the client's `computeDeclarationScopes`.
+    const functions = ir.metadata.localFunctions.filter(f => f.isModule && !f.isJsxFunction && !f.isMultiReturnJsxHelper)
+    for (const f of functions) {
+      if (!f.isExported && !isModuleLexicalFunction(f)) continue
+      moduleScope.add(f)
+      moduleNames.add(f.name)
+    }
+
+    // Component-body helpers: hoisted unless they reach component scope.
+    const componentScope = componentScopeNames(ir.metadata)
+    const candidates = new Map<string, { declaration: FunctionInfo; refs: ReadonlySet<string> }>()
+    for (const f of functions) {
+      if (moduleScope.has(f) || moduleNames.has(f.name)) continue
+      // Its own name is a component binding like any other; what the
+      // fixpoint asks is whether it reads one.
+      componentScope.delete(f.name)
       // Wrap as an ARROW so the extractor's parameter shadowing applies
       // (it tracks arrow params only) — param references then don't count
       // as free, matching the client fixpoint's `refs.delete(p.name)`.
       const params = f.typedParams !== undefined
         ? f.typedParams
         : f.params.map(formatParamWithType).join(', ')
-      candidates.set(f.name, extractFreeIdentifiersFromText(`(${params}) => ${f.body}`))
+      candidates.set(f.name, { declaration: f, refs: extractFreeIdentifiersFromText(`(${params}) => ${f.body}`) })
     }
 
     const referencesAny = (refs: ReadonlySet<string>, names: ReadonlySet<string>): boolean => {
@@ -415,18 +409,18 @@ export abstract class JsxAdapter extends BaseAdapter {
     let changed = true
     while (changed) {
       changed = false
-      for (const [name, refs] of candidates) {
-        if (referencesAny(refs, componentScope)) {
+      for (const [name, candidate] of candidates) {
+        if (referencesAny(candidate.refs, componentScope)) {
           candidates.delete(name)
           componentScope.add(name)
           changed = true
         }
       }
     }
+    for (const candidate of candidates.values()) moduleScope.add(candidate.declaration)
 
-    const result = new Set([...exported, ...candidates.keys()])
-    this.moduleScopeNamesCache.set(ir, result)
-    return result
+    this.moduleScopeCache.set(ir, moduleScope)
+    return moduleScope
   }
 
   /**
@@ -467,7 +461,7 @@ export abstract class JsxAdapter extends BaseAdapter {
    */
   protected generateModuleScopeDeclarations(ir: ComponentIR): string {
     const { preserveTypes } = this.jsxConfig
-    const moduleNames = this.moduleScopeDeclarationNames(ir)
+    const moduleScope = this.moduleScopeDeclarations(ir)
     const entries: Array<{ line: number, text: string }> = []
 
     for (const t of ir.metadata.typeDefinitions) {
@@ -475,7 +469,7 @@ export abstract class JsxAdapter extends BaseAdapter {
     }
 
     for (const c of ir.metadata.localConstants) {
-      if (!c.isModule || !moduleNames.has(c.name)) continue
+      if (!moduleScope.has(c)) continue
       const keyword = c.declarationKind ?? 'const'
       const exportKw = c.isExported ? 'export ' : ''
       if (!c.value) {
@@ -504,7 +498,7 @@ export abstract class JsxAdapter extends BaseAdapter {
     }
 
     for (const f of ir.metadata.localFunctions) {
-      if (!f.isModule || !moduleNames.has(f.name)) continue
+      if (!moduleScope.has(f)) continue
       const params = preserveTypes && f.typedParams !== undefined
         ? f.typedParams
         : f.params.map(formatParamWithType).join(', ')

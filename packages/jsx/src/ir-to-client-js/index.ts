@@ -25,6 +25,8 @@ import { nameForRegistryRef, buildImportAliasMap, setActiveImportAliases } from 
 import { resolveRestSpreadNames } from './prop-handling.ts'
 import { IMPORT_PLACEHOLDER, RUNTIME_MODULE, detectUsedImports, collectExternalImports, runtimeNameCollisions } from './imports.ts'
 import { isInlinableInTemplate } from '../relocate.ts'
+import { moduleScopeView } from '../module-scope.ts'
+import { emitModuleScopeReplica } from './emit-module-level.ts'
 import { buildSourceMapFromIR, type SourceMapV3 } from './source-map.ts'
 import { resolvePropDeclaredType, baseTypeName } from '../rich-type-evidence.ts'
 import { isHydrationPayloadPropName } from '../event-handler-name.ts'
@@ -257,6 +259,10 @@ function createContext(
   adapterCapabilities?: AdapterCapabilities,
   profile?: boolean,
 ): ClientJsContext {
+  // The component scope's view of the file's constants (#3739): a module
+  // const the component hides is not in it, and one whose value depends on
+  // a name the component binds reads the module-scope replica.
+  const view = moduleScopeView(ir.metadata, `__bf_module_${nameForRegistryRef(ir.metadata.componentName)}`)
   return {
     componentName: ir.metadata.componentName,
     fileScope: scope?.fileScope ?? '',
@@ -267,8 +273,9 @@ function createContext(
     effects: ir.metadata.effects,
     onMounts: ir.metadata.onMounts,
     initStatements: ir.metadata.initStatements ?? [],
-    localFunctions: ir.metadata.localFunctions,
-    localConstants: ir.metadata.localConstants,
+    localFunctions: view.localFunctions,
+    localConstants: view.localConstants,
+    moduleScopeReplica: view.replica,
     imports: ir.metadata.imports,
     propsParams: ir.metadata.propsParams,
     propsObjectName: ir.metadata.propsObjectName,
@@ -399,6 +406,10 @@ function generateTemplateOnlyMount(ir: ComponentIR, ctx: ClientJsContext): strin
 
   lines.push(IMPORT_PLACEHOLDER)
   lines.push('')
+  // The template reads a module-scope replica member by name, so the
+  // replica is declared here as it is on the init path (#3739).
+  const replicaCode = emitModuleScopeReplica(ctx.moduleScopeReplica, graphUsedIdentifiers(graph))
+  if (replicaCode) lines.push(replicaCode)
   const initName = initFunctionName(name)
   lines.push(`function ${initName}() {}`)
   lines.push('')

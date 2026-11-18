@@ -1554,6 +1554,15 @@ import { fixture as signalConstObjectChildProp } from './signal-const-object-chi
 import { fixture as constAliasDefaultPropLoopShadow } from './const-alias-default-prop-loop-shadow'
 import { fixture as constGetterReadLoopShadowed } from './const-getter-read-loop-shadowed'
 import { fixture as moduleConstHopLoopShadow } from './module-const-hop-loop-shadow'
+import { fixture as moduleConstShadowedByComponentConst } from './module-const-shadowed-by-component-const'
+import { fixture as moduleConstShadowedByProp } from './module-const-shadowed-by-prop'
+import { fixture as moduleConstMutatedObjectRead } from './module-const-mutated-object-read'
+import { fixture as moduleConstMutatedObjectHiddenRead } from './module-const-mutated-object-hidden-read'
+import { fixture as moduleConstShadowedBySignal } from './module-const-shadowed-by-signal'
+import { fixture as moduleConstDeclaredAfterComponent } from './module-const-declared-after-component'
+import { fixture as moduleConstDestructureDefaultComponentConst } from './module-const-destructure-default-component-const'
+import { fixture as moduleConstShadowSiblingComponent } from './module-const-shadow-sibling-component'
+import { fixture as moduleConstReadsGlobalNamedLikeProp } from './module-const-reads-global-named-like-prop'
 import { fixture as moduleConstNamedLikeObjectProp } from './module-const-named-like-object-prop'
 import { fixture as childrenNamedLoopRowKey } from './children-named-loop-row-key'
 import { fixture as childrenLocalNullableAttr } from './children-local-nullable-attr'
@@ -2748,6 +2757,15 @@ export const jsxFixtures: JSXFixture[] = [
   constAliasDefaultPropLoopShadow,
   constGetterReadLoopShadowed,
   moduleConstHopLoopShadow,
+  moduleConstShadowedByComponentConst,
+  moduleConstShadowedByProp,
+  moduleConstMutatedObjectRead,
+  moduleConstMutatedObjectHiddenRead,
+  moduleConstShadowedBySignal,
+  moduleConstDeclaredAfterComponent,
+  moduleConstDestructureDefaultComponentConst,
+  moduleConstShadowSiblingComponent,
+  moduleConstReadsGlobalNamedLikeProp,
   moduleConstNamedLikeObjectProp,
   childrenNamedLoopRowKey,
   childrenLocalNullableAttr,
