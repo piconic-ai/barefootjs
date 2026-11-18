@@ -935,6 +935,7 @@ import { fixture as rawTextHostDynamic } from './raw-text-host-dynamic'
 import { fixture as rawTextHostStyleScript } from './raw-text-host-style-script'
 import { fixture as rawTextHostSvgStyle } from './raw-text-host-svg-style'
 import { fixture as rawTextHostReactive } from './raw-text-host-reactive'
+import { fixture as rawTextHostAnnotationXml } from './raw-text-host-annotation-xml'
 import { fixture as rawTextHostTextareaLeadingNewline } from './raw-text-host-textarea-leading-newline'
 import { fixture as templateDelimiterStaticTextPropsObject } from './template-delimiter-static-text-props-object'
 import { fixture as percentDelimiterStringLiteral } from './percent-delimiter-string-literal'
@@ -2296,6 +2297,7 @@ export const jsxFixtures: JSXFixture[] = [
   rawTextHostStyleScript,
   rawTextHostSvgStyle,
   rawTextHostReactive,
+  rawTextHostAnnotationXml,
   rawTextHostTextareaLeadingNewline,
   templateDelimiterStaticTextPropsObject,
   percentDelimiterStringLiteral,

@@ -15517,6 +15517,24 @@
         "text"
       ]
     },
+    "raw-text-host-annotation-xml": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "raw-text-host-dynamic": {
       "kinds": [
         "identifier",
