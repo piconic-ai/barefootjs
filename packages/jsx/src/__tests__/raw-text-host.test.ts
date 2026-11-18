@@ -141,6 +141,13 @@ describe('<annotation-xml> is an HTML integration point only for HTML encodings'
     expect(clientJs(r)).toContain('.innerHTML = String(')
   })
 
+  test('an encoding that may come from an attribute spread is treated as HTML', () => {
+    const r = inMath(' {...props.attrs}')
+    expect(r.errors).toEqual([])
+    expect(clientJs(r)).toContain('.innerHTML = String(')
+    expect(clientJs(r)).not.toContain('lazySlots')
+  })
+
   test('a conditional child under an HTML annotation-xml is refused, under a foreign one it is not', () => {
     const html = compile(`<math><annotation-xml encoding="text/html"><title>{n() ? 'a' : 'b'}</title></annotation-xml></math>`)
     expect(refusals(html).length).toBe(1)

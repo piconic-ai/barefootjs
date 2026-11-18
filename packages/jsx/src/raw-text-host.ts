@@ -77,14 +77,18 @@ const HTML_INTEGRATION_POINTS: ReadonlySet<string> = new Set([
 /**
  * `<annotation-xml>` is an HTML integration point only when its `encoding`
  * attribute is `text/html` or `application/xhtml+xml` (ASCII case-insensitive).
- * A literal value is decided exactly; an `encoding` that is not a literal
- * cannot be known, so it is treated as HTML — the host rules (bare value,
+ * A literal value is decided exactly; an `encoding` that is not a literal (or
+ * that an attribute spread may supply) cannot be known, so it is treated as HTML — the host rules (bare value,
  * refusal of shapes that cannot update) are also valid on the foreign side,
  * where the opposite guess would leave comment markers in raw text.
  */
 function isAnnotationXmlHtml(el: IRElement): boolean {
   const encoding = el.attrs.find(a => a.name === 'encoding')
-  if (!encoding) return false
+  // An attribute spread may supply (or override) `encoding` at runtime, so an
+  // element that spreads one cannot be classified; treat it as HTML like any
+  // other non-literal value.
+  const hasSpread = el.attrs.some(a => a.name === '...')
+  if (!encoding) return hasSpread
   if (encoding.value.kind !== 'literal') return true
   const value = encoding.value.value.toLowerCase()
   return value === 'text/html' || value === 'application/xhtml+xml'
