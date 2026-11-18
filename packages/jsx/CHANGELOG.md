@@ -1,5 +1,15 @@
 # @barefootjs/jsx
 
+## 0.41.3
+
+### Patch Changes
+
+- 8f89504: go-template now renders a `.map()` over a module- or function-scope array of literals when the row body mixes the row with the component's own scope. `QS.map(q => <li data-on={q === 'x' ? '1' : '0'} data-label={props.label}>{q}</li>)` was refused with BF101 ("computed value") as soon as the row held a ternary, a `` `${q}-${props.label}` `` attribute, a conditional on the row or a prop read; only a row of plain `{q}` unrolled. The unrolled row now folds the row's values into each expression (`q` becomes `'x'`, `item.on` its value) and lowers what is left through the ordinary path, so props are read as outside a loop. The same fold lets a nested static loop read a signal in its row, so the `signal-read-in-nested-static-loop` and `conditional-nested-const-loop-source` limitations are fixed. A `Record` lookup keyed by the row inside a template attribute is still refused. `@barefootjs/jsx` adds `foldStaticBindings` and a `parsedCondition` on a template attribute's ternary part (#3798).
+- e900b5c: A conditional branch of a `.map()` row that calls a function now updates when the row is reused with a new item under the same key. In `{rows().map(row => <li key={row.id}>{row.wait === 0 ? '0s' : fmt(row.wait)}</li>)}` the branch `fmt(row.wait)` kept the value the row was first rendered with, while the same call directly in the row (`<li>{fmt(row.wait)}</li>`) updated. It affected any call in a branch that is a bare expression: a module, imported or component function, a method (`row.label.toUpperCase()`), a global (`String(row.n)`), a call inside a template literal, the right side of `&&`, and a signal read through a call (`fmt(scale())`) (#3894).
+  
+  One kind of branch is still not re-run, as before: one that can reach a value the component's caller supplied that may be, or may build, an element (`props.renderNode ? props.renderNode(node) : <Default />`). Such an element has its own state, so the row keeps the one it got when the branch was mounted. This holds however the value is reached: a bracket access (`props['renderNode'](node)`), a deeper member, the prop passed as an argument, or a component function or const that reads it (`const draw = n => props.renderNode(n)`). A prop whose declared type holds data only (a string, number or boolean, an array or object of those, or a function returning one, such as `format: (n: number) => string`; an object type with a method, index signature, call signature, `extends` clause or type parameters is not proved data-only) does not count, so a branch calling or reading it is re-run like any other.
+- @barefootjs/shared@0.41.3
+
 ## 0.41.2
 
 ### Patch Changes

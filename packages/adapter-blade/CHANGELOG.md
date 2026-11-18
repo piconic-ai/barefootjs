@@ -1,5 +1,12 @@
 # @barefootjs/blade
 
+## 0.41.3
+
+### Patch Changes
+
+- 7c2ca7a: Register a known limitation: a component-body statement that mutates a binding (`local.push('z')`) and is read through a memo renders the value from before the statement in the server HTML, because the statement runs only on the client at mount. No rendering changes; the fixture and the per-adapter pins only record the gap (#3719).
+- @barefootjs/shared@0.41.3
+
 ## 0.41.2
 
 ### Patch Changes

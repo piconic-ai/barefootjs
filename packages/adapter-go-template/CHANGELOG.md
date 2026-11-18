@@ -1,5 +1,15 @@
 # @barefootjs/go-template
 
+## 0.41.3
+
+### Patch Changes
+
+- 8f89504: go-template now renders a `.map()` over a module- or function-scope array of literals when the row body mixes the row with the component's own scope. `QS.map(q => <li data-on={q === 'x' ? '1' : '0'} data-label={props.label}>{q}</li>)` was refused with BF101 ("computed value") as soon as the row held a ternary, a `` `${q}-${props.label}` `` attribute, a conditional on the row or a prop read; only a row of plain `{q}` unrolled. The unrolled row now folds the row's values into each expression (`q` becomes `'x'`, `item.on` its value) and lowers what is left through the ordinary path, so props are read as outside a loop. The same fold lets a nested static loop read a signal in its row, so the `signal-read-in-nested-static-loop` and `conditional-nested-const-loop-source` limitations are fixed. A `Record` lookup keyed by the row inside a template attribute is still refused. `@barefootjs/jsx` adds `foldStaticBindings` and a `parsedCondition` on a template attribute's ternary part (#3798).
+- 0257705: go-template now passes a `{...props}` spread onto a child component in a `.map()` over a local constant array through to each row. `fixed.map((it) => <Child key={it} size="s" {...props} label={it} />)` dropped the spread, so each row's child received only the call's explicit props. The constructor bakes each row's explicit props as before and merges the spread with them in source order: a key the caller passed wins over an explicit prop written before the spread, and an explicit prop written after it wins over the caller's. The `props-spread-static-loop-row` limitation is removed (#3713).
+- a1309fd: Refuse a dynamic value in the text of a `<style>` or `<script>` element with BF101 instead of rendering `ZgotmplZ`. `html/template` escapes these elements as CSS / JS, so the JSX text cannot be reproduced without a `template.CSS` / `template.JS` pass-through, which would make the value an injection point (#3810).
+- 7c2ca7a: Register a known limitation: a component-body statement that mutates a binding (`local.push('z')`) and is read through a memo renders the value from before the statement in the server HTML, because the statement runs only on the client at mount. No rendering changes; the fixture and the per-adapter pins only record the gap (#3719).
+- @barefootjs/shared@0.41.3
+
 ## 0.41.2
 
 ### Patch Changes
