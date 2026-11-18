@@ -36,7 +36,13 @@ function hostContentExpression(element: IRElement): string | null {
   const pieces = parts.map(p =>
     p.type === 'text' ? codeSafeStringLiteral(escapeHtml(p.value)) : `escapeText(${(p as IRExpression).expr})`,
   )
-  return `[${pieces.join(', ')}].join('')`
+  const joined = `[${pieces.join(', ')}].join('')`
+  // The HTML parser drops ONE leading line feed of a `<textarea>`'s content
+  // (start-tag handling), so SSR and the CSR template — both parsed with the
+  // start tag — never carry it. `innerHTML` on the existing element is a
+  // fragment parse with no start tag and would keep it: strip it here so the
+  // hydrated and updated value match the server-rendered one.
+  return element.tag === 'textarea' ? `${joined}.replace(/^\\n/, '')` : joined
 }
 
 /** Registers the host's content update on `ctx` (top level only). */

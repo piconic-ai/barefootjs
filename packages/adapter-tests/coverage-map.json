@@ -15569,6 +15569,19 @@
         "text"
       ]
     },
+    "raw-text-host-textarea-leading-newline": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "reactive-factory-object-return": {
       "kinds": [
         "call",

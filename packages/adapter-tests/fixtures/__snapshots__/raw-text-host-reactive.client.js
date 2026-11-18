@@ -41,7 +41,7 @@ export function initRawTextHostReactive(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s5) {
-      { const __x = [escapeText('v' + n())].join('')
+      { const __x = [escapeText('v' + n())].join('').replace(/^\n/, '')
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         _s5.innerHTML = String(__x)
       }

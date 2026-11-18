@@ -91,3 +91,60 @@ describe('raw-text host is HTML-namespace only', () => {
     expect(clientJs(r)).toContain('.innerHTML = String(')
   })
 })
+
+describe('raw-text host update wiring is refused where it is not wired', () => {
+  for (const tag of ['style', 'script', 'textarea', 'title']) {
+    test(`reactive <${tag}> content in a conditional branch`, () => {
+      const r = compile(`<div>{n() > 0 ? <${tag}>{'x' + n()}</${tag}> : <span>off</span>}</div>`)
+      expect(refusals(r).length).toBe(1)
+    })
+  }
+
+  test('static <textarea> content in a conditional branch renders bare', () => {
+    const r = compile(`<div>{n() > 0 ? <textarea>{'static'}</textarea> : <span>off</span>}</div>`)
+    expect(r.errors).toEqual([])
+  })
+
+  test('a loop row value, even with no signal read (same-key replacement)', () => {
+    const r = compile(`<div>{props.items.map(i => <textarea key={i}>{i}</textarea>)}</div>`)
+    expect(refusals(r).length).toBe(1)
+  })
+})
+
+describe('<annotation-xml> is an HTML integration point only for HTML encodings', () => {
+  const inMath = (attrs: string) =>
+    compile(`<math><annotation-xml${attrs}><title>{'x' + n()}</title></annotation-xml></math>`)
+
+  test('no encoding: foreign, markers retained, no refusal', () => {
+    const r = inMath('')
+    expect(r.errors).toEqual([])
+    expect(clientJs(r)).toContain('lazySlots')
+  })
+
+  test('a non-HTML encoding: foreign, markers retained', () => {
+    const r = inMath(' encoding="application/x-tex"')
+    expect(r.errors).toEqual([])
+    expect(clientJs(r)).toContain('lazySlots')
+  })
+
+  for (const enc of ['text/html', 'Application/XHTML+xml']) {
+    test(`encoding="${enc}": HTML host, markers removed`, () => {
+      const r = inMath(` encoding="${enc}"`)
+      expect(r.errors).toEqual([])
+      expect(clientJs(r)).toContain('.innerHTML = String(')
+      expect(clientJs(r)).not.toContain('lazySlots')
+    })
+  }
+
+  test('a dynamic encoding is treated as HTML (the host rules are valid on both sides)', () => {
+    const r = inMath(' encoding={props.v}')
+    expect(clientJs(r)).toContain('.innerHTML = String(')
+  })
+
+  test('a conditional child under an HTML annotation-xml is refused, under a foreign one it is not', () => {
+    const html = compile(`<math><annotation-xml encoding="text/html"><title>{n() ? 'a' : 'b'}</title></annotation-xml></math>`)
+    expect(refusals(html).length).toBe(1)
+    const foreign = compile(`<math><annotation-xml><title>{n() ? 'a' : 'b'}</title></annotation-xml></math>`)
+    expect(foreign.errors).toEqual([])
+  })
+})
