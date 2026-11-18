@@ -18234,6 +18234,35 @@
       }
     }
   ],
+  "static-loop-row-conditional-branch-signal": [
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "__instanceId": "StaticLoopRowConditionalBranchSignal_test"
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "__instanceId": "StaticLoopRowConditionalBranchSignal_test"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "__instanceId": "StaticLoopRowConditionalBranchSignal_test"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "__instanceId": "StaticLoopRowConditionalBranchSignal_test"
+      }
+    }
+  ],
   "static-nested-loop-conditional-precomputed": [
     {
       "name": "gen:rows:empty",

@@ -202,6 +202,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -377,6 +383,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -606,6 +618,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -793,6 +811,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -986,6 +1010,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -1167,6 +1197,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -1366,6 +1402,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -1556,6 +1598,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -1737,6 +1785,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -2805,6 +2859,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -2938,6 +2998,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -3107,6 +3173,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -3258,6 +3330,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -3415,6 +3493,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -3554,6 +3638,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -3711,6 +3801,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -3865,6 +3961,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "tag-cloud",
               "limitations": [
                 "statement-body-callback"
@@ -4010,6 +4112,12 @@
               "fixture": "sort-opaque-comparator",
               "limitations": [
                 "callback-outside-evaluator"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -4174,6 +4282,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -4325,6 +4439,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -4530,6 +4650,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -4693,6 +4819,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -4862,6 +4994,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -5019,6 +5157,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -5188,6 +5332,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -5351,6 +5501,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -5523,6 +5679,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -5993,6 +6155,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -6390,6 +6558,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -6889,6 +7063,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -7298,6 +7478,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -7713,6 +7899,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -8110,6 +8302,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -8519,6 +8717,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -8925,6 +9129,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -9328,6 +9538,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -10939,6 +11155,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -11474,6 +11696,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -12183,6 +12411,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -12757,6 +12991,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -13319,6 +13559,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -13866,6 +14112,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -14437,6 +14689,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -14993,6 +15251,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -15546,6 +15810,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -16206,6 +16476,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -16621,6 +16897,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -17162,6 +17444,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -17586,6 +17874,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -18007,6 +18301,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -18440,6 +18740,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "static-loop-item-boolean-attr",
               "limitations": [
                 "boolean-in-static-loop-item"
@@ -18870,6 +19176,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -19279,6 +19591,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -19703,6 +20021,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -20827,6 +21151,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
@@ -21200,6 +21530,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -21735,6 +22071,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
@@ -22132,6 +22474,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -22535,6 +22883,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
@@ -22920,6 +23274,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -23332,6 +23692,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -23735,6 +24101,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
@@ -24129,6 +24501,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "static-loop-item-boolean-attr",
               "limitations": [
                 "boolean-in-static-loop-item"
@@ -24344,6 +24722,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -24507,6 +24891,12 @@
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -24700,6 +25090,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -24866,6 +25262,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -25029,6 +25431,12 @@
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -25201,6 +25609,12 @@
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -25382,6 +25796,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -25539,6 +25959,12 @@
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -25705,6 +26131,12 @@
               "fixture": "static-array-from-props",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -29933,6 +30365,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -30018,6 +30456,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -30127,6 +30571,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -30224,6 +30674,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -30327,6 +30783,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -30412,6 +30874,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -30515,6 +30983,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -30606,6 +31080,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -30706,6 +31186,12 @@
               "fixture": "some-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -33655,6 +34141,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -33974,6 +34466,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -34395,6 +34893,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -34723,6 +35227,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -35048,6 +35558,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -35385,6 +35901,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "static-loop-item-boolean-attr",
               "limitations": [
                 "boolean-in-static-loop-item"
@@ -35719,6 +36241,12 @@
               ]
             },
             {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -36038,6 +36566,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
@@ -36366,6 +36900,12 @@
               "fixture": "static-array-from-props-with-component",
               "limitations": [
                 "computed-const-loop-source"
+              ]
+            },
+            {
+              "fixture": "static-loop-conditional-function-helper",
+              "limitations": [
+                "component-scope-helper-call"
               ]
             },
             {
