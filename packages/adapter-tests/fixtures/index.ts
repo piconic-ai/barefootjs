@@ -111,6 +111,11 @@ import { fixture as preambleCells } from './preamble-cells'
 // adapters refuse the module-scope helper call (BF101).
 import { fixture as keyedRowBranchCall } from './keyed-row-branch-call'
 import { fixture as keyedRowBranchMethodCall } from './keyed-row-branch-method-call'
+// #3913: a preamble local read by both branches of a keyed row's conditional
+// must be current when the row is reused and the branch swaps.
+import { fixture as keyedRowBranchPreamble } from './keyed-row-branch-preamble'
+import { fixture as keyedRowBranchPreambleIndex } from './keyed-row-branch-preamble-index'
+import { fixture as keyedRowBranchPreambleSignal } from './keyed-row-branch-preamble-signal'
 import { fixture as todoAppSsr } from './todo-app-ssr'
 import { fixture as aiChat } from './ai-chat'
 // #1467 Phase 2a: first `site/ui` source-root fixture (Button + its
@@ -1627,6 +1632,9 @@ export const jsxFixtures: JSXFixture[] = [
   tagCloud,
   preambleCells,
   keyedRowBranchCall,
+  keyedRowBranchPreamble,
+  keyedRowBranchPreambleIndex,
+  keyedRowBranchPreambleSignal,
   keyedRowBranchMethodCall,
   todoAppSsr,
   aiChat,

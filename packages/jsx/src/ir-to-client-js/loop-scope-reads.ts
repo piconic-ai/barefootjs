@@ -239,3 +239,70 @@ function elementAttrsReadBeyond(el: IRElement, scope: BindingScope | undefined, 
   if (!el.slotId) return false
   return el.attrs.some(a => isDynamicAttr(a) && readsBeyondLoopScope(a.freeIdentifiers, scope, ctx))
 }
+
+/**
+ * Whether a branch of a row conditional reads a `.map()` callback preamble
+ * local (#3913): in a text, an attribute, a child component's props, a
+ * nested condition or a nested loop's source or body.
+ *
+ * The branch's template closure is built from the row's first render, so a
+ * local it reads has to be recomputed there against the row's current item
+ * and index. A name the nested loop binds itself can shadow a preamble local
+ * of the same name; the walk does not track that, so it can answer `true`
+ * where the local is not read. That costs one redundant recomputation, never
+ * a stale value.
+ *
+ * FAIL-SAFE: an expression or attribute whose identifier set Phase 1 did not
+ * record is "unknown", not "reads nothing", and answers `true`.
+ */
+export function branchReadsPreambleLocal(
+  root: IRNode,
+  preambleNames: ReadonlySet<string> | undefined,
+): boolean {
+  if (!preambleNames || preambleNames.size === 0) return false
+  const reads = (free: ReadonlySet<string> | null | undefined): boolean => {
+    if (!free) return true
+    for (const name of free) if (preambleNames.has(name)) return true
+    return false
+  }
+  let found = false
+  walkIR<null>(root, null, {
+    expression: ({ node }) => {
+      if (!found && reads(originFreeIds(node))) found = true
+    },
+    conditional: ({ node, descend }) => {
+      if (found) return
+      if (reads(originFreeIds(node))) {
+        found = true
+        return
+      }
+      descend()
+    },
+    element: ({ node, descend }) => {
+      if (found) return
+      if (node.attrs.some(a => isDynamicAttr(a) && reads(a.freeIdentifiers))) {
+        found = true
+        return
+      }
+      descend()
+    },
+    component: ({ node, descend, descendJsxChildren }) => {
+      if (found) return
+      if (node.props.some(p => (p.value.kind === 'expression' || p.value.kind === 'template' || p.value.kind === 'spread') && reads(p.freeIdentifiers))) {
+        found = true
+        return
+      }
+      descend()
+      descendJsxChildren()
+    },
+    loop: ({ node, descend }) => {
+      if (found) return
+      if (reads(node.arrayFreeIdentifiers)) {
+        found = true
+        return
+      }
+      descend()
+    },
+  })
+  return found
+}

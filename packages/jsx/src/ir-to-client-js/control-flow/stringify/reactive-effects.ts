@@ -33,7 +33,7 @@
 
 import { varSlotId, profileBindingId } from '../../utils.ts'
 import { emitDedupedAttrUpdate, DEDUP_STORE_DECL } from '../../emit-reactive.ts'
-import { stringifyLoopChildArm, conditionGetterExpr } from './loop-child-arm.ts'
+import { stringifyLoopChildArm, conditionGetterExpr, branchTemplatePreamble } from './loop-child-arm.ts'
 import { claimPlanLiteral, claimWriterVarName, rowTextSlotKind, rowTextSlotValue, type ClaimSlotSpec } from './claim-plan.ts'
 import type {
   NestedConditionalPlan,
@@ -369,12 +369,12 @@ function emitOuterConditional(
   // (`emitAttrUpdate`'s callers) get ahead of their own write.
   const conditionGetter = conditionGetterExpr(cond.wrappedCondition, cond.readsPreamble, mapPreambleWrapped)
   lines.push(`${indent}insert(${elVar}, '${cond.slotId}', ${conditionGetter}, {`)
-  lines.push(`${indent}  template: () => { const __slots = []; return { html: \`${cond.whenTrueTemplateHtml}\`, slots: __slots } },`)
+  lines.push(`${indent}  template: () => { ${branchTemplatePreamble(cond.branchesReadPreamble, mapPreambleWrapped)}const __slots = []; return { html: \`${cond.whenTrueTemplateHtml}\`, slots: __slots } },`)
   lines.push(`${indent}  bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {`)
   stringifyLoopChildArm(lines, cond.whenTrueArm, armIndent, pc, mapPreambleWrapped)
   lines.push(`${indent}  }`)
   lines.push(`${indent}}, {`)
-  lines.push(`${indent}  template: () => { const __slots = []; return { html: \`${cond.whenFalseTemplateHtml}\`, slots: __slots } },`)
+  lines.push(`${indent}  template: () => { ${branchTemplatePreamble(cond.branchesReadPreamble, mapPreambleWrapped)}const __slots = []; return { html: \`${cond.whenFalseTemplateHtml}\`, slots: __slots } },`)
   lines.push(`${indent}  bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {`)
   stringifyLoopChildArm(lines, cond.whenFalseArm, armIndent, pc, mapPreambleWrapped)
   lines.push(`${indent}  }`)

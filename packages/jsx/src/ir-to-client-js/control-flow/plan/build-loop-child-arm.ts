@@ -455,6 +455,7 @@ export function buildLoopChildConditionalsPlan(
         condId: cond.slotId,
       }),
       ...(cond.readsPreamble && { readsPreamble: true }),
+      ...(cond.branchesReadPreamble && { branchesReadPreamble: true }),
     })
   }
   return plans
