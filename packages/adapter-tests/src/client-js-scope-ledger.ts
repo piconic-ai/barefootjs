@@ -16,8 +16,8 @@ export interface KnownHole {
 
 export const KNOWN_UNDECLARED: Record<string, KnownHole> = {
   // A parameter default reading a module const (`{ b = DEF.toUpperCase() }`)
-  // beside a body const of the same name: the reference graph takes the
-  // default's `DEF` for the body const, so the module const is not declared
+  // beside a body const of the same name: the component's view of the file
+  // hides the module const behind the body const, so no binding is declared
   // for the mount's read of the default.
   'destructure-default-param-body-const-same-name': {
     names: ['DEF'],

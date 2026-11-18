@@ -61,13 +61,13 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // there. The server render is what these fixtures pin.
   'signal-seed-const-from-uninlinable-local-function',
   'local-function-call-through-const-and-wrapper',
-  // A component binding named like a module binding (limitation
-  // `client-binding-named-like-module-binding`): the client script declares
-  // both in one scope. `module-function-reads-module-binding` then throws on
-  // the redeclared const; the other calls the module function for the
-  // component one. The server render is what these fixtures pin.
+  // A module function calling another module function that reads a module
+  // const the component hides (`outer()` → `inner()` → `label`): the client
+  // script keeps `outer` in the init body, which the CSR template has no
+  // init to declare, so the template renders the two `outer()` reads empty
+  // (the same not-modeled-init class as the entries above). The mount fills
+  // them, and the server render is what this fixture pins.
   'module-function-reads-module-binding',
-  'signal-seed-uninlinable-local-function-hides-module-function',
   // #1247: prop-derived static loops materialize children at init time, not
   // template-eval — CSR shape covered by `static-loop-csr-materialize.test.ts`.
   'static-array-from-props',
@@ -235,12 +235,6 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   'loop-row-child-children-nested-client-prop',
   'loop-row-child-children-nested-client-row-prop',
   'loop-element-row-child-client-row-prop',
-  // A component const named like a module const the component reads
-  // (`const x = 'module'` beside a component `const x = 'local'`): the
-  // client JS copies the module consts into the init body next to the
-  // component's own, so loading it throws `"x" has already been declared`.
-  // Per-adapter render conformance pins the SSR contract (#3696).
-  'module-const-hop-loop-shadow',
   // Markup, or a memo it reads, calling a local function or an object
   // const's method that reads a component local (a memo, a literal const):
   // the `template` lambda this harness evaluates is module scope, so it
@@ -296,10 +290,6 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // An uncalled read of a local function: the CSR template prints the
   // function's source text where JSX renders nothing.
   'markup-local-function-read-named-like-prop': { limitation: 'local-function-read-named-like-prop' },
-  // A component function named like a module function: the client script
-  // declares both at module scope, where the first one wins, so the CSR
-  // template calls the module function.
-  'local-function-hides-module-function': { limitation: 'client-binding-named-like-module-binding' },
   // A parameter default reading a module const (`{ b = DEF.toUpperCase() }`)
   // beside a body const of the same name: the CSR template inlines the body
   // const into the default.

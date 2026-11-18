@@ -13889,14 +13889,13 @@
       ]
     },
     "client-binding-named-like-module-binding": {
-      "title": "A component binding named like a module binding, in the client script",
+      "title": "A parameter default reading a module binding a body const hides, in the client script",
       "kind": "silent",
-      "given": "a component-scope const or function named like a module-scope one that the component, a parameter default of it, or a module function it calls, also reads",
-      "expected": "each read resolves lexically: the component binding inside the component, the module binding inside the module function and in a parameter default",
-      "actual": "emits both declarations into one scope of the client script, which then fails to load (a redeclared const) or calls the module function for the component one; a parameter default reads the component const in the client template, and an undeclared name where the component const is unread",
+      "given": "a destructured parameter whose default reads a module-scope const, in a component whose body declares a const of the same name",
+      "expected": "the default reads the module binding: a parameter list is evaluated before the body, so the body const is not in scope there",
+      "actual": "emits the body const inlined into the default in the client template, and the mount reads the name where the client script declares no binding for it",
       "fixtures": [
-        "destructure-default-param-body-const-same-name",
-        "local-function-hides-module-function"
+        "destructure-default-param-body-const-same-name"
       ],
       "adapters": [
         "hono",

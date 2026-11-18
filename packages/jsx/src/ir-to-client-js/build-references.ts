@@ -39,6 +39,7 @@ import { preambleAnalysisText, type ConstantInfo } from '../types.ts'
 import type { IRVisitor as WalkerVisitor } from './walker.ts'
 import { attrValueToString } from './utils.ts'
 import type { ClientJsContext } from './types.ts'
+import { usedReplicaDeclarations, type ModuleScopeReplica } from '../module-scope.ts'
 import { extractIdentifiers, extractTemplateIdentifiers, isKeywordOrGlobal } from './identifiers.ts'
 import { walkIR } from './walker.ts'
 import { signalSecondBinding } from '../signal-initializer.ts'
@@ -244,6 +245,7 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
   // identifiers.ts L179-181
   addConstantEdges(ctx.localConstants, ctx.propsObjectName, edges)
 
+
   // identifiers.ts L183-185
   for (const child of ctx.childInits) {
     addExprEdges(ROOT_SOURCE, child.propsExpr, 'template-closure')
@@ -404,6 +406,9 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
 
   addPropDefaultEdges(ctx, edges, propNames)
 
+  // Last: which replica declarations are emitted depends on every read above.
+  addModuleScopeReplicaEdges(ctx.moduleScopeReplica, edges)
+
   return { edges, declaredNames, propNames }
 }
 
@@ -488,6 +493,36 @@ function addConstantEdges(
     for (const name of names) {
       if (!isKeywordOrGlobal(name)) edges.push({ from: { kind: 'constant', name: constant.name }, to: name, context: 'init-body' })
     }
+  }
+}
+
+/**
+ * The references of the module-scope replica's declarations. They are not in
+ * `ctx.localConstants` / `ctx.localFunctions` (those hold the reads of its
+ * members, #3739), so what they reference is recorded here: a module-level
+ * declaration only the replica reads (a `createContext()` const, a helper)
+ * must still be emitted.
+ *
+ * Only the declarations the script emits count (`usedReplicaDeclarations`
+ * over the reads recorded so far), and only their reads of names the replica
+ * does not declare itself, which resolve outside it.
+ */
+function addModuleScopeReplicaEdges(replica: ModuleScopeReplica | null, edges: ReferenceEdge[]): void {
+  if (!replica) return
+  const used = new Set<string>()
+  for (const edge of edges) if (edge.context !== 'assignment-target') used.add(edge.to)
+  const emitted = usedReplicaDeclarations(replica, used)
+  if (!emitted) return
+  const declared = new Set([...replica.constants, ...replica.functions].map(d => d.name))
+  const replicaEdges: ReferenceEdge[] = []
+  addConstantEdges(emitted.constants, null, replicaEdges)
+  for (const fn of emitted.functions) {
+    const names = new Set<string>()
+    extractIdentifiers(fn.body, names)
+    for (const name of names) replicaEdges.push({ from: ROOT_SOURCE, to: name, context: 'init-body' })
+  }
+  for (const edge of replicaEdges) {
+    if (!declared.has(edge.to)) edges.push({ ...edge, from: ROOT_SOURCE })
   }
 }
 

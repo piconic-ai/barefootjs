@@ -611,6 +611,18 @@ function isFunctionScope(node: ts.Node): boolean {
     || ts.isConstructorDeclaration(node)
 }
 
+/**
+ * Whether `node`, a statement the module walk reached, is outside the
+ * component. Before the component is found every statement the walk reaches
+ * is. After it, only a top-level statement is known to be: the walk also
+ * descends into the component's own body. A top-level statement below the
+ * component is module scope like one above it (#3739) — the component runs
+ * once the module has been evaluated, so it reads a const declared there.
+ */
+function isModuleScopeStatement(node: ts.Node, ctx: AnalyzerContext): boolean {
+  return !ctx.componentNode || ts.isSourceFile(node.parent)
+}
+
 function visit(
   node: ts.Node,
   ctx: AnalyzerContext,
@@ -737,7 +749,7 @@ function visit(
   const isDeclareStatement =
     ts.isVariableStatement(node) &&
     (node.modifiers?.some(m => m.kind === ts.SyntaxKind.DeclareKeyword) ?? false)
-  if (ts.isVariableStatement(node) && !ctx.componentNode && !isDeclareStatement) {
+  if (ts.isVariableStatement(node) && isModuleScopeStatement(node, ctx) && !isDeclareStatement) {
     const isExported = node.modifiers?.some(m => m.kind === ts.SyntaxKind.ExportKeyword) ?? false
     const isLet = (node.declarationList.flags & ts.NodeFlags.Let) !== 0
     const isModuleClientDirective = hasLeadingClientDirectiveOnStatement(node, ctx.sourceFile)

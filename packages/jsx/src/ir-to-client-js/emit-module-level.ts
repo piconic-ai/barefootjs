@@ -27,6 +27,7 @@ import {
   detectUsedImports,
 } from './imports.ts'
 import { signalFactoryInitializer, signalSecondBinding } from '../signal-initializer.ts'
+import { usedReplicaDeclarations, type ModuleScopeReplica } from '../module-scope.ts'
 
 /**
  * Build the module-level code block that replaces `MODULE_CONSTANTS_PLACEHOLDER`.
@@ -60,14 +61,7 @@ export function emitModuleLevelDeclarations(
     lines.push(`var ${constant.name} = ${constant.name} ?? ${value}`)
   }
   for (const fn of moduleLevelFunctions) {
-    const paramStr = fn.params.map(p => {
-      const rest = p.isRest ? '...' : ''
-      return p.defaultValue !== undefined ? `${rest}${p.name} = ${p.defaultValue}` : `${rest}${p.name}`
-    }).join(', ')
-    const asyncKw = fn.isAsync ? 'async ' : ''
-    // Generator functions (`function*`) can't be arrows — preserve `*`.
-    const genStar = fn.isGenerator ? '*' : ''
-    lines.push(`var ${fn.name} = ${fn.name} ?? ${asyncKw}function${genStar}(${paramStr}) ${fn.body}`)
+    lines.push(`var ${fn.name} = ${fn.name} ?? ${functionExpressionText(fn)}`)
   }
   for (const signal of moduleLevelSignals) {
     const tupleVar = `__bf_m_${signal.getter}_tuple`
@@ -91,6 +85,45 @@ export function emitModuleLevelDeclarations(
     }
   }
   return lines.length > 0 ? lines.join('\n') + '\n' : ''
+}
+
+/** `fn` as an anonymous function expression: `async function*(a, ...b) { … }`. */
+function functionExpressionText(fn: FunctionInfo): string {
+  const paramStr = fn.params.map(p => {
+    const rest = p.isRest ? '...' : ''
+    return p.defaultValue !== undefined ? `${rest}${p.name} = ${p.defaultValue}` : `${rest}${p.name}`
+  }).join(', ')
+  const asyncKw = fn.isAsync ? 'async ' : ''
+  // Generator functions (`function*`) can't be arrows — preserve `*`.
+  const genStar = fn.isGenerator ? '*' : ''
+  return `${asyncKw}function${genStar}(${paramStr}) ${fn.body}`
+}
+
+/**
+ * The module-scope replica of a component (`moduleScopeView`, #3739): the
+ * module consts whose value depends on a name the component binds, evaluated
+ * once at module level, where those names are the module's own. Declares
+ * only what the members named in `usedNames` need, and returns `''` when the
+ * component reads none of them.
+ *
+ * The replica is a function scope, so its declarations keep their source
+ * names without meeting the module-level names of another file inlined into
+ * the same bundle. `var X = X ?? …` makes a second copy of the same
+ * component's script a no-op, as it does for the declarations above.
+ */
+export function emitModuleScopeReplica(
+  replica: ModuleScopeReplica | null,
+  usedNames: ReadonlySet<string>,
+): string {
+  if (!replica) return ''
+  const used = usedReplicaDeclarations(replica, usedNames)
+  if (!used) return ''
+  const lines: string[] = [`var ${replica.name} = ${replica.name} ?? (() => {`]
+  for (const fn of used.functions) lines.push(`  const ${fn.name} = ${functionExpressionText(fn)}`)
+  for (const c of used.constants) lines.push(`  ${c.declarationKind} ${c.name} = ${c.value}`)
+  lines.push(`  return { ${used.exported.join(', ')} }`)
+  lines.push('})()')
+  return lines.join('\n') + '\n'
 }
 
 /**
