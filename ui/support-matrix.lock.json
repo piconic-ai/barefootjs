@@ -420,12 +420,6 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo-chain",
-              "limitations": [
-                "destructure-default-callback-unseeded"
-              ]
-            },
-            {
               "fixture": "destructure-default-shared-array",
               "limitations": [
                 "unlowered-method-call"
@@ -2032,12 +2026,6 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo-chain",
-              "limitations": [
-                "destructure-default-callback-unseeded"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-renamed-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
@@ -3026,12 +3014,6 @@
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-memo-chain",
-              "limitations": [
-                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -4497,12 +4479,6 @@
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-memo-chain",
-              "limitations": [
-                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -6658,12 +6634,6 @@
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-memo-chain",
-              "limitations": [
-                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -11919,12 +11889,6 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo-chain",
-              "limitations": [
-                "destructure-default-callback-unseeded"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-renamed-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
@@ -17120,12 +17084,6 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo-chain",
-              "limitations": [
-                "destructure-default-callback-unseeded"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-renamed-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
@@ -20421,12 +20379,6 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo-chain",
-              "limitations": [
-                "destructure-default-callback-unseeded"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-renamed-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
@@ -21846,12 +21798,6 @@
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-memo-chain",
-              "limitations": [
-                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -28261,12 +28207,6 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo-chain",
-              "limitations": [
-                "destructure-default-callback-unseeded"
-              ]
-            },
-            {
               "fixture": "fill-unsupported",
               "limitations": [
                 "array-fill"
@@ -29584,12 +29524,6 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo-chain",
-              "limitations": [
-                "destructure-default-callback-unseeded"
-              ]
-            },
-            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -30395,12 +30329,6 @@
         },
         "go-template": {
           "gaps": [
-            {
-              "fixture": "destructure-default-body-renamed-callback-memo-chain",
-              "limitations": [
-                "destructure-default-callback-unseeded"
-              ]
-            },
             {
               "fixture": "keyed-row-branch-call",
               "limitations": [
@@ -32912,12 +32840,6 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-renamed-callback-memo-chain",
-              "limitations": [
-                "destructure-default-callback-unseeded"
-              ]
-            },
-            {
               "fixture": "destructure-default-body-renamed-computed-array",
               "limitations": [
                 "destructure-default-computed-array"
@@ -34818,12 +34740,6 @@
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-memo-chain",
-              "limitations": [
-                "destructure-default-callback-unseeded"
               ]
             },
             {
@@ -37643,12 +37559,6 @@
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
-              ]
-            },
-            {
-              "fixture": "destructure-default-body-renamed-callback-memo-chain",
-              "limitations": [
-                "destructure-default-callback-unseeded"
               ]
             },
             {

@@ -3476,14 +3476,6 @@
           ]
         }
       },
-      "destructure-default-body-renamed-callback-memo-chain": {
-        "go-template": {
-          "kind": "render",
-          "limitations": [
-            "destructure-default-callback-unseeded"
-          ]
-        }
-      },
       "destructure-default-body-renamed-computed-array": {
         "go-template": {
           "kind": "refusal",
@@ -12828,10 +12820,6 @@
         "description": "A body destructure binding mutated after its declaration, read through a memo, renders the mutated…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-mutated-memo.ts"
       },
-      "destructure-default-body-renamed-callback-memo-chain": {
-        "description": "A renamed body destructure default holding a callback, read through a memo of a memo, renders its…",
-        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-callback-memo-chain.ts"
-      },
       "destructure-default-body-renamed-computed-array": {
         "description": "A renamed body destructure default computing an array from an earlier binding takes the computed…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-body-renamed-computed-array.ts"
@@ -14072,19 +14060,6 @@
         "pebble",
         "twig",
         "xslate"
-      ]
-    },
-    "destructure-default-callback-unseeded": {
-      "title": "A destructure default that calls a callback and reads no earlier prop",
-      "kind": "silent",
-      "given": "a props destructure default that passes a callback to a call and reads no earlier binding of the pattern (`{ b = ['y', ''].filter((x) => x !== '') }`), in the parameter, body or renamed body destructure, with the prop omitted: read directly, or through a memo or signal seed that the backend computes from the binding (`createMemo(() => local.length)`, `createSignal(local.length)`)",
-      "expected": "the omitted prop takes the default value",
-      "actual": "renders the omitted prop as an empty value, without its default",
-      "fixtures": [
-        "destructure-default-body-renamed-callback-memo-chain"
-      ],
-      "adapters": [
-        "go-template"
       ]
     },
     "destructure-default-computed-array": {
