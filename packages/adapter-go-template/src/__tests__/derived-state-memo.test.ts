@@ -290,6 +290,54 @@ export function P(props: { count: number }) {
   })
 })
 
+describe('Derived string-const fields in a multi-component file (#3737)', () => {
+  // `generateTypes(ir)` called on its own, after every component of the file
+  // has rendered, used to take the derived consts of the LAST rendered
+  // component: every other component lost its field.
+  const SRC = `
+export function Card(props: { base: string }) {
+  const root = props.base.replace(/\\/+$/, '') || '/'
+  return <a href={root}><Badge label={props.base} /></a>
+}
+function Badge(props: { label: string }) {
+  const tag = props.label.replace(/\\/+$/, '') || 'none'
+  return <em title={tag}>{tag}</em>
+}
+`
+  function compile() {
+    const adapter = new GoTemplateAdapter()
+    const result = compileJSX(SRC.trimStart(), 'T.tsx', { adapter, outputIR: true })
+    const irs = result.files.filter(f => f.type === 'ir').map(f => JSON.parse(f.content) as ComponentIR)
+    const byName = (name: string) => {
+      const ir = irs.find(i => i.metadata.componentName === name)
+      if (!ir) throw new Error(`no IR for ${name}`)
+      return ir
+    }
+    return { adapter, result, card: byName('Card'), badge: byName('Badge') }
+  }
+
+  test('the compiled types file carries each component its own field', () => {
+    const types = compile().result.files.find(f => f.path.endsWith('.types'))?.content ?? ''
+    expect(types).toContain('Root string `json:"-"`')
+    expect(types).toContain('Tag string `json:"-"`')
+  })
+
+  test('a standalone generateTypes() reads the consts of the component it is given', () => {
+    const { adapter, card, badge } = compile()
+    // `Badge` rendered last; `Card` is asked first.
+    const cardTypes = adapter.generateTypes(card) ?? ''
+    expect(cardTypes).toContain('Root string `json:"-"`')
+    expect(cardTypes).toContain('Root: func() string { v := strings.TrimRight(in.Base, "/"); if v != "" { return v }; return "/" }(),')
+    expect(cardTypes).not.toContain('Tag string')
+    const badgeTypes = adapter.generateTypes(badge) ?? ''
+    expect(badgeTypes).toContain('Tag string `json:"-"`')
+    expect(badgeTypes).not.toContain('Root string')
+    // Asking again, in the other order, gives the same answer.
+    expect(adapter.generateTypes(badge)).toBe(badgeTypes)
+    expect(adapter.generateTypes(card)).toBe(cardTypes)
+  })
+})
+
 describe('Capability D: array-memo .length → handler-filled loop slice count', () => {
   test('visible().length lowers to len .<Slice>, not the nil memo field', () => {
     const src = `

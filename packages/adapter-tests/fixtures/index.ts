@@ -615,6 +615,8 @@ import { fixture as jsxSpreadPropsObject } from './jsx-spread-props-object'
 import { fixture as taggedTemplateClassname } from './tagged-template-classname'
 import { fixture as memberExpressionTag } from './member-expression-tag'
 import { fixture as arrowComponent } from './arrow-component'
+import { fixture as derivedStringConstSiblingComponent } from './derived-string-const-sibling-component'
+import { fixture as derivedStringConstChildFiles } from './derived-string-const-child-files'
 import { fixture as childrenJsxExpression } from './children-jsx-expression'
 import { fixture as fragmentWrappedChildrenJsxExpression } from './fragment-wrapped-children-jsx-expression'
 import { fixture as restDestructureObjectInMap } from './rest-destructure-object-in-map'
@@ -2766,4 +2768,6 @@ export const jsxFixtures: JSXFixture[] = [
   destructureDefaultParamBodyConstSameName,
   destructureDefaultReadsSignal,
   destructureDefaultReadsSignalClient,
+  derivedStringConstSiblingComponent,
+  derivedStringConstChildFiles,
 ]
