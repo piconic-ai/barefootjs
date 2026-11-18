@@ -3506,6 +3506,34 @@ function extractValueBranches(node: ts.Expression, ctx: AnalyzerContext): string
   return [ctx.getJS(node)]
 }
 
+/** A node that binds its parameters for its own extent (arrow, `function`, method, accessor, constructor). */
+function isParameterScope(n: ts.Node): n is ts.SignatureDeclaration & { parameters: ts.NodeArray<ts.ParameterDeclaration> } {
+  return ts.isArrowFunction(n) || ts.isFunctionExpression(n) || ts.isFunctionDeclaration(n)
+    || ts.isMethodDeclaration(n) || ts.isConstructorDeclaration(n)
+    || ts.isGetAccessorDeclaration(n) || ts.isSetAccessorDeclaration(n)
+}
+
+/** `name` is the declared name of a class/object member (`{ label() {} }`), not a read of a binding. */
+function isPropertyNameOfMember(parent: ts.Node, name: ts.Identifier): boolean {
+  return (ts.isMethodDeclaration(parent) || ts.isPropertyDeclaration(parent)
+    || ts.isGetAccessorDeclaration(parent) || ts.isSetAccessorDeclaration(parent))
+    && parent.name === name
+}
+
+/**
+ * `id` is a name an expression declares or uses as a key, not a read of a
+ * binding: a member name (`a.id`), an object key, a parameter or variable
+ * declaration name, a member declaration name or a destructuring key.
+ */
+function isDeclaredOrKeyName(id: ts.Identifier): boolean {
+  const parent = id.parent
+  if (!parent) return false
+  if (ts.isPropertyAccessExpression(parent) || ts.isPropertyAssignment(parent)
+    || ts.isParameter(parent) || ts.isVariableDeclaration(parent)) return parent.name === id
+  if (ts.isBindingElement(parent)) return parent.propertyName === id
+  return isPropertyNameOfMember(parent, id)
+}
+
 /**
  * Extract free identifier references from an AST node by walking the tree.
  * Skips property keys, member access properties, bound parameter names,
@@ -3533,21 +3561,28 @@ export function extractFreeIdentifiersFromNode(node: ts.Node): Set<string> {
     // here.
     if (ts.isTypeNode(n)) return
     if (ts.isIdentifier(n)) {
-      const parent = n.parent
-      if (parent && ts.isPropertyAccessExpression(parent) && parent.name === n) return
-      if (parent && ts.isPropertyAssignment(parent) && parent.name === n) return
-      if (parent && ts.isParameter(parent) && parent.name === n) return
-      if (parent && ts.isVariableDeclaration(parent) && parent.name === n) return
+      if (isDeclaredOrKeyName(n)) return
       if (boundNames.has(n.text)) return
       ids.add(n.text)
       return
     }
-    if (ts.isArrowFunction(n)) {
-      const params: string[] = []
-      for (const p of n.parameters) addBindingNames(p.name, params)
-      for (const name of params) boundNames.add(name)
-      ts.forEachChild(n, visit)
-      for (const name of params) boundNames.delete(name)
+    if (isParameterScope(n)) {
+      // Bind the parameters (and a function expression's own name) for the
+      // function's extent. A name an outer scope already bound stays bound
+      // after this function ends, so only the names added here are removed.
+      const names: string[] = []
+      for (const p of n.parameters) addBindingNames(p.name, names)
+      if (ts.isFunctionExpression(n) && n.name) names.push(n.name.text)
+      // A computed member name (`{ [key](key) {} }`) is evaluated in the
+      // enclosing scope, so visit it before the parameters are bound.
+      const computedName = ts.isMethodDeclaration(n) || ts.isGetAccessorDeclaration(n) || ts.isSetAccessorDeclaration(n)
+        ? (ts.isComputedPropertyName(n.name) ? n.name : undefined)
+        : undefined
+      if (computedName) visit(computedName)
+      const added = names.filter(name => !boundNames.has(name))
+      for (const name of added) boundNames.add(name)
+      ts.forEachChild(n, child => { if (child !== computedName) visit(child) })
+      for (const name of added) boundNames.delete(name)
       return
     }
     ts.forEachChild(n, visit)
@@ -6862,8 +6897,8 @@ interface ModuleCaptureResult {
  * injection text.
  *
  * Known accepted limitation: `extractFreeIdentifiersFromNode` only scope-
- * tracks arrow-function parameters, not nested `function` declarations'
- * parameters or nested-block declarations — a body-nested binding that
+ * tracks function parameters (arrow, `function`, method), not nested-block
+ * declarations — a body-nested binding that
  * happens to shadow a helper-module binding could false-positive into
  * BF112 or `importedRefs`/`importedTypeRefs`. Acceptable: the failure
  * direction is always a loud build error (BF112/BF113) or a
