@@ -122,9 +122,6 @@ export const renderDivergences: RenderDivergences = {
   // A `null` / `undefined` `style` object property renders `color:` with
   // an empty value instead of being dropped.
   'style-object-nil-property': { limitation: 'style-object-nil-property' },
-  // A boolean loop-row member as an attribute value (`data-off={r.off}`)
-  // prints Perl's `1` / `0`, not `true` / `false`.
-  'loop-row-boolean-member-attr': { limitation: 'loop-row-boolean-member-attr-value' },
   // A body rest over an open props type (`const { title, ...rest } = props`):
   // the template's rest bag holds only the keys the props type does not
   // declare, so the spread leaves out `tone`.
@@ -133,6 +130,9 @@ export const renderDivergences: RenderDivergences = {
   // An array in child position: the template prints the array stringified
   // where JSX renders its items one after another.
   'array-text-child': { limitation: 'array-text-child' },
+  // A boolean member of an object-typed prop as a text child (`{props.cfg.on}`)
+  // prints the boolean where JSX renders nothing.
+  'object-prop-member-boolean-text-child': { limitation: 'object-prop-member-boolean-text-child' },
 }
 
 /**

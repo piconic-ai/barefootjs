@@ -11,7 +11,7 @@
  * expression-level classifier is `operandFacts` (`primitive-plan.ts`).
  */
 
-import type { IRMetadata, TypeInfo } from '../types.ts'
+import type { IRMetadata, SourceLocation, TypeInfo } from '../types.ts'
 import type { ParsedExpr } from '../expression-parser.ts'
 import {
   BindingScope,
@@ -217,9 +217,11 @@ function factsOfLiteral(parsed: ParsedExpr | undefined): OperandFacts | null {
 }
 
 /**
- * A local constant's facts: a declared type that proves something, else a
- * body destructure's ({@link bodyDestructureFacts}), else its initializer's
- * (`const text = props.label ?? 'x'` is never nil: `??` replaces `null` too).
+ * A local constant's facts: an annotated type, or an inferred one that
+ * {@link provesInferredType proves its value}; else what a body destructure
+ * ({@link bodyDestructureFacts}) or its initializer proves
+ * (`const text = props.label ?? 'x'` is never nil: `??` replaces `null`
+ * too), and the inferred type again when that proves nothing.
  */
 function constantFacts(
   constant: TypingMetadata['localConstants'][number],
@@ -227,9 +229,12 @@ function constantFacts(
   typed: TypedNames,
 ): OperandFacts {
   const declared = factsOfType(constant.type)
-  if (!declared.types.has('unknown')) return declared
-  if (constant.propsDestructure) return bodyDestructureFacts(constant, constant.propsDestructure.sourceKey, params, typed)
-  return initializerFacts(constant.parsed, typed) ?? UNKNOWN_FACTS
+  const trusted = constant.typeAnnotation !== undefined || provesInferredType(constant.parsed)
+  if (trusted && !declared.types.has('unknown')) return declared
+  const own = constant.propsDestructure
+    ? bodyDestructureFacts(constant, constant.propsDestructure.sourceKey, params, typed)
+    : (initializerFacts(constant.parsed, typed) ?? UNKNOWN_FACTS)
+  return own.types.has('unknown') ? declared : own
 }
 
 /** A declared type that proves something, else the literal seed's facts. */
@@ -240,6 +245,34 @@ function declaredOrSeeded(type: TypeInfo | null | undefined, seed: ParsedExpr | 
   }
   if (!declared.types.has('unknown')) return declared
   return factsOfLiteral(seed) ?? UNKNOWN_FACTS
+}
+
+/**
+ * Whether the type the analyzer infers for an initializer without a declared
+ * one proves its value. The analyzer reads that type off the end of the
+ * initializer's text, so for an expression that yields one of several
+ * operands (`l ?? r`, `l && r`, `l || r`, `c ? a : b`) it names the last
+ * operand alone: `props.no ?? 'x'` reads as `string` while its value may be
+ * the boolean `props.no`. What such an initializer proves is what
+ * {@link initializerFacts} reads from its operands.
+ */
+function provesInferredType(initializer: ParsedExpr | undefined): boolean {
+  return initializer?.kind !== 'logical' && initializer?.kind !== 'conditional'
+}
+
+/**
+ * What a read of a stored value (a signal's seed, a memo's body) proves:
+ * `declared`, the facts of its declared or inferred type, when they
+ * {@link provesInferredType prove its value}; else what its initializer
+ * proves from the names typed so far (`createMemo(() => props.n > 1)` is a
+ * boolean, `createMemo(() => props.no ?? 'x')` whatever `props.no` is, or a
+ * string). An initializer that proves nothing leaves `declared`, which is
+ * the author's type argument or the analyzer's reading of the last operand.
+ */
+function storedValueFacts(declared: OperandFacts, initializer: ParsedExpr | undefined, typed: TypedNames): OperandFacts {
+  if (provesInferredType(initializer) && !declared.types.has('unknown')) return declared
+  const own = initializerFacts(initializer, typed) ?? UNKNOWN_FACTS
+  return own.types.has('unknown') ? declared : own
 }
 
 /** The component-level operand typing, built once per component. */
@@ -289,8 +322,8 @@ interface TypedNames {
 /**
  * What an initializer or default expression proves, read at component
  * level: a literal, a template literal, an array or object literal, a read
- * of a name or prop typed so far, `l ?? r` (the left side without its nil,
- * or the right side) and `c ? a : b`. Null when the expression proves
+ * of a name, getter or prop typed so far, `l ?? r` (the left side without
+ * its nil, or the right side), `l && r`, `l || r` and `c ? a : b`. Null when the expression proves
  * nothing, so a default whose value is not provable never proves non-nil.
  */
 function initializerFacts(expr: ParsedExpr | undefined, typed: TypedNames): OperandFacts | null {
@@ -308,8 +341,12 @@ function initializerFacts(expr: ParsedExpr | undefined, typed: TypedNames): Oper
       return typed.names.get(expr.name) ?? null
     case 'member':
       return propsMemberFacts(expr, typed)
+    case 'call':
+      // A getter read (`count()`, `total()`): the signal's or memo's facts.
+      return expr.callee.kind === 'identifier' && expr.args.length === 0 ? (typed.names.get(expr.callee.name) ?? null) : null
     case 'logical':
-      return expr.op === '??' ? nullishFacts(expr.left, expr.right, typed) : null
+      // `l && r` and `l || r` yield either operand.
+      return expr.op === '??' ? nullishFacts(expr.left, expr.right, typed) : bothFacts(expr.left, expr.right, typed)
     case 'conditional':
       return bothFacts(expr.consequent, expr.alternate, typed)
     default:
@@ -422,19 +459,55 @@ function collectPropFacts(metadata: TypingMetadata, names: Map<string, OperandFa
  * is (`createSignal<number>()` and `createSignal<number | null>(null)` start
  * nil). The SSR read is the seed.
  */
-function signalFacts(signal: TypingMetadata['signals'][number]): OperandFacts {
-  const facts = declaredOrSeeded(signal.type, signal.parsed)
+function signalFacts(signal: TypingMetadata['signals'][number], typed: TypedNames): OperandFacts {
+  const facts = storedValueFacts(declaredOrSeeded(signal.type, signal.parsed), signal.parsed, typed)
   if (signal.initialValue.trim() === '') return withNil(facts, 'undefined')
   const seed = factsOfLiteral(signal.parsed)
   return seed?.nil === undefined ? facts : withNil(facts, seed.nil === 'null' ? 'null' : 'undefined')
+}
+
+/** A signal, memo or local constant, with the facts its read proves given the names typed before it. */
+interface StoredValue {
+  readonly name: string
+  readonly at: SourceLocation | undefined
+  facts(typed: TypedNames): OperandFacts
+}
+
+/**
+ * The component's signals, memos and local constants in declaration order,
+ * so that each initializer reads the facts of the names declared before it
+ * (a memo over a local constant, a constant over a memo). Values without a
+ * location keep the order signals, memos, constants.
+ */
+function storedValuesInSourceOrder(metadata: TypingMetadata): StoredValue[] {
+  const stored: StoredValue[] = [
+    ...metadata.signals.map((signal): StoredValue => ({
+      name: signal.getter,
+      at: signal.loc,
+      facts: typed => signalFacts(signal, typed),
+    })),
+    ...(metadata.memos ?? []).map((memo): StoredValue => ({
+      name: memo.name,
+      at: memo.loc,
+      facts: typed => storedValueFacts(factsOfType(memo.type), memo.parsed, typed),
+    })),
+    ...(metadata.localConstants ?? []).map((constant): StoredValue => ({
+      name: constant.name,
+      at: constant.loc,
+      facts: typed => constantFacts(constant, metadata.propsParams, typed),
+    })),
+  ]
+  const line = (value: StoredValue) => value.at?.start.line ?? 0
+  const column = (value: StoredValue) => value.at?.start.column ?? 0
+  return stored.sort((a, b) => line(a) - line(b) || column(a) - column(b))
 }
 
 /**
  * Build the component's {@link OperandTyping} from its metadata. Bare names
  * hold signal getters, memos, local constants and (only when the props are
  * destructured) the props; `props.<key>` reads hold the props by their
- * caller-facing key. A later source shadows an earlier one of the same name,
- * so a local constant shadows a destructured prop.
+ * caller-facing key. A stored value shadows a destructured prop of the same
+ * name, and a later declaration an earlier one.
  *
  * Unlike `collectNumberValueNames` and the adapters' `collectStringValueNames`,
  * an optional prop without a default is not proven its declared type: an
@@ -444,17 +517,59 @@ export function collectOperandTyping(metadata: TypingMetadata, options: OperandT
   const names = new Map<string, OperandFacts>()
   const props = new Map<string, OperandFacts>()
   collectPropFacts(metadata, names, props)
-  for (const signal of metadata.signals) names.set(signal.getter, signalFacts(signal))
-  for (const memo of metadata.memos ?? []) names.set(memo.name, factsOfType(memo.type))
   const typed: TypedNames = { names, props, propsObject: metadata.propsObjectName ?? null }
-  for (const constant of metadata.localConstants ?? []) {
-    names.set(constant.name, constantFacts(constant, metadata.propsParams, typed))
-  }
+  for (const stored of storedValuesInSourceOrder(metadata)) names.set(stored.name, stored.facts(typed))
   const namedFields: NamedTypeFields =
     options.namedFields ?? (typeName => metadata.typeDefinitions?.find(td => td.name === typeName)?.properties)
   return {
     at: scope => scopedTyping(scope, names, props, namedFields),
   }
+}
+
+const PRIMITIVE_TYPE_NAMES = ['string', 'number', 'boolean'] as const
+
+/** The `TypeInfo` of `facts` when every type they hold is a primitive or nil; null otherwise. */
+function typeInfoOfPrimitiveFacts(facts: OperandFacts): TypeInfo | null {
+  if (facts.types.has('object') || facts.types.has('unknown')) return null
+  const nils = facts.nil === 'either' ? (['null', 'undefined'] as const) : facts.nil ? [facts.nil] : []
+  const members = [...PRIMITIVE_TYPE_NAMES.filter(name => facts.types.has(name)), ...nils].map(
+    (name): TypeInfo => ({ kind: 'primitive', raw: name, primitive: name }),
+  )
+  return members.length === 1 ? members[0] : { kind: 'union', raw: members.map(m => m.raw).join(' | '), unionTypes: members }
+}
+
+/**
+ * `type`, the analyzer's type of a stored value, unless it is a primitive
+ * that `facts`, what a read of the value proves, contradict: the type the
+ * analyzer read off the last operand of `props.no ?? 'x'` is `string`, while
+ * the value is `props.no` (a `boolean | string`) or the string. Then the
+ * type the facts spell, or `unknown` when they hold a non-primitive.
+ */
+function typeProvenByFacts(type: TypeInfo, facts: OperandFacts): TypeInfo {
+  if (type.kind !== 'primitive' || facts.types.has('unknown')) return type
+  const declared = factsOfPrimitive(type.primitive)
+  if ([...facts.types].every(t => t === 'nil' || declared.types.has(t))) return type
+  return typeInfoOfPrimitiveFacts(facts) ?? { kind: 'unknown', raw: 'unknown' }
+}
+
+/**
+ * `metadata` with the `type` of each signal and memo as a read of it proves
+ * it ({@link typeProvenByFacts}), for a target that derives a typed field
+ * from that type: a field typed by the last operand alone would coerce the
+ * other operand's value into it. `metadata` itself when every type holds.
+ */
+export function withProvenStoredTypes<M extends TypingMetadata>(metadata: M): M {
+  const typing = collectOperandTyping(metadata).at(BindingScope.EMPTY)
+  const signals = metadata.signals.map(signal => {
+    const type = typeProvenByFacts(signal.type, typing.name(signal.getter))
+    return type === signal.type ? signal : { ...signal, type }
+  })
+  const memos = (metadata.memos ?? []).map(memo => {
+    const type = typeProvenByFacts(memo.type, typing.name(memo.name))
+    return type === memo.type ? memo : { ...memo, type }
+  })
+  const changed = signals.some((s, i) => s !== metadata.signals[i]) || memos.some((m, i) => m !== metadata.memos[i])
+  return changed ? { ...metadata, signals, memos } : metadata
 }
 
 /** An {@link OperandTyping} proving nothing about any outer name; loop bindings still type. */

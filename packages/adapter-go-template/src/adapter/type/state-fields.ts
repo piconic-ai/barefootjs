@@ -436,9 +436,8 @@ export function collectPropFallbackVars(ctx: GoEmitContext, ir: ComponentIR): Ma
     // generators use, so this can't drift from the emitted field type. The
     // concrete pre-flip type is what the hoisted local materializes as.
     const concreteType = propTypeOverrides.get(param.name) ?? typeInfoToGo(ctx, param.type, param.defaultValue, param.parsed)
-    const nullishLowered =
-      NULLISH_SCALAR_GO_TYPES.has(concreteType) &&
-      resolvePropGoType(ctx, param, propTypeOverrides) === 'interface{}'
+    const boxedField = resolvePropGoType(ctx, param, propTypeOverrides) === 'interface{}'
+    const nullishLowered = NULLISH_SCALAR_GO_TYPES.has(concreteType) && boxedField
     const zeroLiteral = fallbackZeroLiteral(match.goFallback)
     if (zeroLiteral === null) continue
     // Zero-equivalent fallback is a no-op against the Go zero value
@@ -446,12 +445,13 @@ export function collectPropFallbackVars(ctx: GoEmitContext, ir: ComponentIR): Ma
     // zeroLiteral so spelling variants like `0.0` collapse to the same skip
     // as `0`.
     //
-    // NOT a no-op for a nillable-lowered prop (#2248): its `interface{}`
-    // field can be nil, and the typed hoisted local is what downstream
-    // consumers (`Count: size`, memo env maps) assign from — a nil
-    // interface into a concrete field is a compile error, so the local
-    // must exist even when the fallback equals the zero value.
-    if (!nullishLowered) {
+    // NOT a no-op for a prop held in an `interface{}` field, where an absent
+    // prop is nil, not the zero value. A nillable-lowered prop (#2248): the
+    // typed hoisted local is what downstream consumers (`Count: size`, memo
+    // env maps) assign from — a nil interface into a concrete field is a
+    // compile error. A boxed mixed-union prop (#3789): the signal would
+    // hold the nil where JS holds the fallback (`props.x ?? false`).
+    if (!boxedField) {
       if (match.goFallback === zeroLiteral) continue
       if (zeroLiteral === '0' && Number(match.goFallback) === 0) continue
     }
@@ -467,11 +467,26 @@ export function collectPropFallbackVars(ctx: GoEmitContext, ir: ComponentIR): Ma
       fieldName,
       goFallback: match.goFallback,
       zeroLiteral,
-      ...(nullishLowered ? { assertType: concreteType } : {}),
+      ...fallbackLocalRepresentation(nullishLowered, boxedField, concreteType),
       ...(collisionWrap ? { collisionWrap } : {}),
     })
   }
   return result
+}
+
+/**
+ * How a hoisted fallback local holds the value of an `interface{}` prop
+ * field: as the concrete scalar a nillable-lowered prop asserts to
+ * (`assertType`, #2248), or `boxed` as the JS value itself (#3789). Neither
+ * for a concrete field, whose zero value stands for an absent prop.
+ */
+function fallbackLocalRepresentation(
+  nullishLowered: boolean,
+  boxedField: boolean,
+  concreteType: string,
+): Pick<PropFallbackVar, 'assertType' | 'boxed'> {
+  if (nullishLowered) return { assertType: concreteType }
+  return boxedField ? { boxed: true } : {}
 }
 
 /**

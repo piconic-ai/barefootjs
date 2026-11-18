@@ -9610,6 +9610,22 @@
       }
     }
   ],
+  "loop-row-union-member-attr": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
+  "loop-row-union-member-attr-destructured": [
+    {
+      "name": "gen:rows:empty",
+      "props": {
+        "rows": []
+      }
+    }
+  ],
   "loop-set-bound-param-shadow": [
     {
       "name": "gen:rows:empty",
@@ -13586,6 +13602,38 @@
       "props": {
         "n": 3,
         "name": "日本語"
+      }
+    }
+  ],
+  "object-prop-member-boolean-text-child": [
+    {
+      "name": "gen:cfg:object:minimal",
+      "props": {
+        "cfg": {}
+      }
+    },
+    {
+      "name": "gen:cfg:object:+on",
+      "props": {
+        "cfg": {
+          "on": false
+        }
+      }
+    },
+    {
+      "name": "gen:cfg:object:+off",
+      "props": {
+        "cfg": {
+          "off": false
+        }
+      }
+    },
+    {
+      "name": "gen:cfg:object:+missing",
+      "props": {
+        "cfg": {
+          "missing": false
+        }
       }
     }
   ],
@@ -18427,6 +18475,326 @@
       }
     }
   ],
+  "stored-boolean-value-outputs": [
+    {
+      "name": "gen:no:absent",
+      "props": {
+        "on": true,
+        "off": false,
+        "label": "str",
+        "n": 0,
+        "f": 0.5,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:on:absent",
+      "props": {
+        "no": false,
+        "off": false,
+        "label": "str",
+        "n": 0,
+        "f": 0.5,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:off:absent",
+      "props": {
+        "no": false,
+        "on": true,
+        "label": "str",
+        "n": 0,
+        "f": 0.5,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:off:true",
+      "props": {
+        "no": false,
+        "on": true,
+        "off": true,
+        "label": "str",
+        "n": 0,
+        "f": 0.5,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "no": false,
+        "on": true,
+        "off": false,
+        "n": 0,
+        "f": 0.5,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "no": false,
+        "on": true,
+        "off": false,
+        "label": "str",
+        "n": -7,
+        "f": 0.5,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "no": false,
+        "on": true,
+        "off": false,
+        "label": "str",
+        "n": 1234567890,
+        "f": 0.5,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:f:zero",
+      "props": {
+        "no": false,
+        "on": true,
+        "off": false,
+        "label": "str",
+        "n": 0,
+        "f": 0,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:f:negative",
+      "props": {
+        "no": false,
+        "on": true,
+        "off": false,
+        "label": "str",
+        "n": 0,
+        "f": -7,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:f:large",
+      "props": {
+        "no": false,
+        "on": true,
+        "off": false,
+        "label": "str",
+        "n": 0,
+        "f": 1234567890,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "no": false,
+        "on": true,
+        "off": false,
+        "label": "str",
+        "n": 0,
+        "f": 0.5,
+        "items": []
+      }
+    }
+  ],
+  "stored-boolean-value-outputs-destructured": [
+    {
+      "name": "gen:no:absent",
+      "props": {
+        "on": true,
+        "off": false,
+        "label": "str",
+        "n": 0,
+        "f": 0.5,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:on:absent",
+      "props": {
+        "no": false,
+        "off": false,
+        "label": "str",
+        "n": 0,
+        "f": 0.5,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:off:absent",
+      "props": {
+        "no": false,
+        "on": true,
+        "label": "str",
+        "n": 0,
+        "f": 0.5,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:off:true",
+      "props": {
+        "no": false,
+        "on": true,
+        "off": true,
+        "label": "str",
+        "n": 0,
+        "f": 0.5,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "no": false,
+        "on": true,
+        "off": false,
+        "n": 0,
+        "f": 0.5,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "no": false,
+        "on": true,
+        "off": false,
+        "label": "str",
+        "n": -7,
+        "f": 0.5,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "no": false,
+        "on": true,
+        "off": false,
+        "label": "str",
+        "n": 1234567890,
+        "f": 0.5,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:f:zero",
+      "props": {
+        "no": false,
+        "on": true,
+        "off": false,
+        "label": "str",
+        "n": 0,
+        "f": 0,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:f:negative",
+      "props": {
+        "no": false,
+        "on": true,
+        "off": false,
+        "label": "str",
+        "n": 0,
+        "f": -7,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:f:large",
+      "props": {
+        "no": false,
+        "on": true,
+        "off": false,
+        "label": "str",
+        "n": 0,
+        "f": 1234567890,
+        "items": [
+          "a",
+          "b"
+        ]
+      }
+    },
+    {
+      "name": "gen:items:empty",
+      "props": {
+        "no": false,
+        "on": true,
+        "off": false,
+        "label": "str",
+        "n": 0,
+        "f": 0.5,
+        "items": []
+      }
+    }
+  ],
   "strict-equality-destructure-default-client": [
     {
       "name": "gen:obj:object:minimal",
@@ -20720,6 +21088,251 @@
       "name": "gen:placement:union:bottom",
       "props": {
         "placement": "bottom"
+      }
+    }
+  ],
+  "union-prop-zero-fallback-signal-seed": [
+    {
+      "name": "gen:a:union:3",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": "",
+        "a": null
+      }
+    },
+    {
+      "name": "gen:b:absent",
+      "props": {
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:c:absent",
+      "props": {
+        "b": null,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:c:union:3",
+      "props": {
+        "b": null,
+        "c": null,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:d:union:3",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": "",
+        "d": null
+      }
+    },
+    {
+      "name": "gen:e:absent",
+      "props": {
+        "b": null,
+        "c": 0,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:f:absent",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "h": null,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:f:union:3",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": null,
+        "h": null,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:g:union:3",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": "",
+        "g": null
+      }
+    },
+    {
+      "name": "gen:h:absent",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:i:absent",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:i:union:3",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": null,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:j:absent",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false
+      }
+    },
+    {
+      "name": "gen:j:union:3",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": null
+      }
+    }
+  ],
+  "union-prop-zero-fallback-signal-seed-destructured": [
+    {
+      "name": "gen:b:absent",
+      "props": {
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:c:absent",
+      "props": {
+        "b": null,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:e:absent",
+      "props": {
+        "b": null,
+        "c": 0,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:f:absent",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "h": null,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:h:absent",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:i:absent",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:j:absent",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false
       }
     }
   ],

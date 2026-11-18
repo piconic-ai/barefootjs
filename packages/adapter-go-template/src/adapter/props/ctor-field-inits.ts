@@ -58,7 +58,8 @@ export function emitPropFallbackLocals(
       lines.push(`\t}`)
     } else {
       lines.push(`\t${info.varName} := in.${info.fieldName}`)
-      lines.push(`\tif ${info.varName} == ${info.zeroLiteral} {`)
+      // A boxed local holds the prop's JS value: `??` replaces a nullish one.
+      lines.push(info.boxed ? `\tif bf.IsNullish(${info.varName}) {` : `\tif ${info.varName} == ${info.zeroLiteral} {`)
       lines.push(`\t\t${info.varName} = ${info.goFallback}`)
       lines.push(`\t}`)
     }
