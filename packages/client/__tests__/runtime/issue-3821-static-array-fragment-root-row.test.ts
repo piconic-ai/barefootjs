@@ -231,6 +231,8 @@ describe('childScopesBySlot', () => {
       '<!--bf-scope:Host_1_s4_s2|h=Host_1_s4|m=s2--><i>e</i><!--bf-/scope:Host_1_s4_s2-->',
       // A deeper child that only shares the slot number.
       '<!--bf-scope:Row_a_s2|h=Row_a|m=s2--><i>g</i><!--bf-/scope:Row_a_s2-->',
+      // The same deeper child as an element: it names its own host.
+      '<u bf-s="Row_a_s2" bf-h="Row_a" bf-m="s2">k</u>',
       // Suffix fallback for a scope with no host/slot markers.
       '<b bf-s="Host_1_s2">f</b>',
       '<!--bf-scope:Host_1_s2--><i>h</i><!--bf-/scope:Host_1_s2-->',

@@ -1256,6 +1256,7 @@ import { fixture as loopRowChildChildrenInnerLoopShadow } from './loop-row-child
 import { fixture as loopRowChildChildrenHandler } from './loop-row-child-children-handler'
 import { fixture as loopRowChildChildrenRef } from './loop-row-child-children-ref'
 import { fixture as loopRowNestedChildChildrenHandler } from './loop-row-nested-child-children-handler'
+import { fixture as staticLoopRowChildOwnSlot } from './static-loop-row-child-own-slot'
 import { fixture as loopRowFragmentRootStaticHandler } from './loop-row-fragment-root-static-handler'
 import { fixture as loopRowChildChildrenInnerLoopHandler } from './loop-row-child-children-inner-loop-handler'
 import { fixture as signalLoopRowChildChildren } from './signal-loop-row-child-children'
@@ -2439,6 +2440,7 @@ export const jsxFixtures: JSXFixture[] = [
   loopRowChildChildrenHandler,
   loopRowChildChildrenRef,
   loopRowNestedChildChildrenHandler,
+  staticLoopRowChildOwnSlot,
   loopRowFragmentRootStaticHandler,
   loopRowChildChildrenInnerLoopHandler,
   signalLoopRowChildChildren,

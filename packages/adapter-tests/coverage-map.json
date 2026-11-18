@@ -18210,6 +18210,26 @@
         "text"
       ]
     },
+    "static-loop-row-child-own-slot": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "static-loop-row-conditional-branch-signal": {
       "kinds": [
         "array-literal",
