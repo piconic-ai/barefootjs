@@ -136,6 +136,40 @@ function scopeSensitiveClosure(
       if (!closure.has(read) && (moduleConstants.has(read) || moduleFunctions.has(read))) pending.push(read)
     }
   }
+  return dropUndeclarableMembers(closure, moduleConstants, freeOf)
+}
+
+/**
+ * Remove from `closure` every member that reads, directly or through another
+ * member, a module const the replica cannot declare (one the component
+ * writes, `replicaCanDeclare`). Such a const's storage is shared with the
+ * component's writes, so it must stay a module-level declaration of the
+ * client script; a replica member reading it would find no binding. The
+ * removed member stays in the component's view, where it is emitted next to
+ * the const it reads.
+ */
+function dropUndeclarableMembers(
+  closure: Set<string>,
+  moduleConstants: ReadonlyMap<string, ConstantInfo>,
+  freeOf: (name: string) => ReadonlySet<string>,
+): Set<string> {
+  const blocked = (name: string): boolean => {
+    const c = moduleConstants.get(name)
+    return c !== undefined && !replicaCanDeclare(c)
+  }
+  const dropped = new Set<string>()
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const name of [...closure]) {
+      if (blocked(name)) continue
+      if ([...freeOf(name)].some(r => blocked(r) || dropped.has(r))) {
+        closure.delete(name)
+        dropped.add(name)
+        changed = true
+      }
+    }
+  }
   return closure
 }
 

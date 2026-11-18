@@ -10,3 +10,4 @@ Module consts keep module scope, and a component binding of the same name hides 
 - A module function that reads a module const the component hides returns the module value on the client, and a component function named like a module function hides it there.
 - A module const declared after the component that reads it is declared in the Hono template and the client script (it was `late is not defined`).
 - A bare read of a name resolves to the component's declaration on every template adapter: `{z}` beside a module `const z = 'mz'` and a component `const z = 'lz'` (or a prop `z`) rendered the module literal.
+- A module function that reads a module const the component writes (a mutated object) is no longer moved into the module-scope replica, even when another module helper that reads a hidden name pulls it in. It stays in the component's script next to the const it reads, so reads and writes share one storage.

@@ -283,3 +283,61 @@ export function C({ p, k }: { p: string; k: number }) {
     expect(strings.get('tag')).toBe('mp!')
   })
 })
+
+/**
+ * Run a compiled client script's init against a stand-in scope and fire the
+ * first element's click handler. Returns what the handler logged.
+ */
+function clickAndCollectLogs(clientJs: string): unknown[] {
+  const body = clientJs
+    .split('\n')
+    .filter(line => !line.startsWith('import '))
+    .join('\n')
+    .replace(/^export /gm, '')
+  const run = new Function(
+    '__logs',
+    `
+    let __init
+    const hydrate = (_name, def) => { __init = def.init }
+    const createComponent = () => null
+    const createEffect = () => {}
+    const lazySlots = () => () => {}
+    const escapeTextOrMarkup = (v) => String(v)
+    const escapeTextOrNode = (v) => String(v)
+    const __handlers = []
+    const $ = () => [{ addEventListener: (_t, h) => __handlers.push(h), setAttribute() {}, textContent: '' }]
+    const console = { log: (...a) => __logs.push(...a) }
+    ${body}
+    __init({ getAttribute: () => 'C_x', querySelector: () => null }, { base: 'prop' })
+    for (const h of __handlers) h({})
+    `,
+  )
+  const logs: unknown[] = []
+  run(logs)
+  return logs
+}
+
+describe('a module declaration the replica cannot declare (#3739)', () => {
+  const component = (extra: string) => `
+'use client'
+const base = 'm'
+const box = { n: 1 }
+function g() { return box.n }
+${extra}
+export function C({ base }: { base: string }) {
+  box.n = 2
+  return <button onClick={() => console.log(g())}>{base}</button>
+}
+`
+
+  test('a handler reads the mutated module object the component wrote', () => {
+    const { clientJs } = compile(component(''))
+    expect(clickAndCollectLogs(clientJs)).toEqual([2])
+  })
+
+  test('an unused module helper that reads a hidden name does not detach the handler from the object', () => {
+    const { clientJs } = compile(component('function unused() { return base + g() }'))
+    expect(clientJs).not.toContain('__bf_module_C.g')
+    expect(clickAndCollectLogs(clientJs)).toEqual([2])
+  })
+})
