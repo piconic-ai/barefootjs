@@ -1037,6 +1037,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     for (const d of this.state.pendingChildrenDefines) {
       template += `{{define "${d.name}"}}${d.content}{{end}}\n`
     }
+    this.state.derivedConstReadsByComponent.set(this.state.componentName, this.state.referencedDerivedConsts)
     const types = this.generateTypes(ir, true)
 
     if (this.state.errors.length > 0) {
@@ -1713,7 +1714,9 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
    * it and gets the set reset fresh — otherwise a stale log left over from
    * whichever OTHER component `generate()` rendered last would silently
    * narrow #2700's BF101 refusal to a false negative (pullfrog review, PR
-   * #2818).
+   * #2818). `referencedDerivedConsts` is such a log too, but the struct's
+   * fields come from it, so those callers get the one this component's own
+   * `generate()` recorded (`derivedConstReadsByComponent`, #3737).
    */
   generateTypes(ir: ComponentIR, preserveTemplateReadRootFields = false): string | null {
     this.ensureCrossFileChildShapes(ir.metadata.imports)
@@ -1722,6 +1725,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     if (!preserveTemplateReadRootFields) {
       this.state.templateReadRootFields = new Set()
       this.state.refusedLoopArrayConsts = new Set()
+      // The derived consts THIS component's template read, not the ones the
+      // last rendered component left behind (#3737).
+      this.state.referencedDerivedConsts = new Set(
+        this.state.derivedConstReadsByComponent.get(ir.metadata.componentName),
+      )
     }
     // Prime identically to `generate()` so the standalone `generateTypes` entry
     // can't drift the structs (e.g. a `{...props}` bag field in one entry only).
