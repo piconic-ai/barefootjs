@@ -4629,6 +4629,154 @@
       }
     }
   ],
+  "derived-string-const-child-files": [
+    {
+      "name": "gen:kind:empty",
+      "props": {
+        "kind": "",
+        "step": "a",
+        "tone": "error"
+      }
+    },
+    {
+      "name": "gen:kind:markup",
+      "props": {
+        "kind": "<b>&\"'</b>",
+        "step": "a",
+        "tone": "error"
+      }
+    },
+    {
+      "name": "gen:kind:multibyte",
+      "props": {
+        "kind": "日本語",
+        "step": "a",
+        "tone": "error"
+      }
+    },
+    {
+      "name": "gen:step:empty",
+      "props": {
+        "kind": "web",
+        "step": "",
+        "tone": "error"
+      }
+    },
+    {
+      "name": "gen:step:markup",
+      "props": {
+        "kind": "web",
+        "step": "<b>&\"'</b>",
+        "tone": "error"
+      }
+    },
+    {
+      "name": "gen:step:multibyte",
+      "props": {
+        "kind": "web",
+        "step": "日本語",
+        "tone": "error"
+      }
+    },
+    {
+      "name": "gen:tone:empty",
+      "props": {
+        "kind": "web",
+        "step": "a",
+        "tone": ""
+      }
+    },
+    {
+      "name": "gen:tone:markup",
+      "props": {
+        "kind": "web",
+        "step": "a",
+        "tone": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:tone:multibyte",
+      "props": {
+        "kind": "web",
+        "step": "a",
+        "tone": "日本語"
+      }
+    }
+  ],
+  "derived-string-const-sibling-component": [
+    {
+      "name": "gen:kind:empty",
+      "props": {
+        "kind": "",
+        "step": "z",
+        "tone": "warn"
+      }
+    },
+    {
+      "name": "gen:kind:markup",
+      "props": {
+        "kind": "<b>&\"'</b>",
+        "step": "z",
+        "tone": "warn"
+      }
+    },
+    {
+      "name": "gen:kind:multibyte",
+      "props": {
+        "kind": "日本語",
+        "step": "z",
+        "tone": "warn"
+      }
+    },
+    {
+      "name": "gen:step:empty",
+      "props": {
+        "kind": "api",
+        "step": "",
+        "tone": "warn"
+      }
+    },
+    {
+      "name": "gen:step:markup",
+      "props": {
+        "kind": "api",
+        "step": "<b>&\"'</b>",
+        "tone": "warn"
+      }
+    },
+    {
+      "name": "gen:step:multibyte",
+      "props": {
+        "kind": "api",
+        "step": "日本語",
+        "tone": "warn"
+      }
+    },
+    {
+      "name": "gen:tone:empty",
+      "props": {
+        "kind": "api",
+        "step": "z",
+        "tone": ""
+      }
+    },
+    {
+      "name": "gen:tone:markup",
+      "props": {
+        "kind": "api",
+        "step": "z",
+        "tone": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:tone:multibyte",
+      "props": {
+        "kind": "api",
+        "step": "z",
+        "tone": "日本語"
+      }
+    }
+  ],
   "destructure-default-array-child": [
     {
       "name": "gen:a:empty",

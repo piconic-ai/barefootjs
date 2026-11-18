@@ -41,6 +41,14 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // The loop's own first run corrects the rows on a real mount, which the
   // real-browser fixture-hydrate and oracle suites check.
   'static-loop-conditional-function-helper',
+  // #3737: each component reads a const computed with `[…].includes(prop)`.
+  // That initializer has no CSR-template form (`populateCsrInlinable`'s
+  // post-substitution check refuses it), so the template reads the const as
+  // `undefined` and the init body's effects set the attribute and the text
+  // on a real mount. Per-adapter render conformance pins the SSR contract,
+  // which is what these fixtures exist for.
+  'derived-string-const-sibling-component',
+  'derived-string-const-child-files',
   // A value an init-time mutation computes (`const n = a.push('x') &&
   // b.length` over `let { a = [], b = a } = props`): the CSR template has no
   // init to run, and the template adapters refuse the call. The real-browser
