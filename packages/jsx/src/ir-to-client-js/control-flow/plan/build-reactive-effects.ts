@@ -125,6 +125,7 @@ export function buildReactiveEffectsPlan(
         whenTrueArm: buildOuterArm(cond.whenTrue, wrap, loopParam, loopParamBindings, loopIndex, cond.slotId, profileComponentName),
         whenFalseArm: buildOuterArm(cond.whenFalse, wrap, loopParam, loopParamBindings, loopIndex, cond.slotId, profileComponentName),
         ...(cond.readsPreamble && { readsPreamble: true }),
+        ...(cond.branchesReadPreamble && { branchesReadPreamble: true }),
       })
     }
   }

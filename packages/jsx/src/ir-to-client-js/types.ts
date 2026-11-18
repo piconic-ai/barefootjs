@@ -666,6 +666,15 @@ export interface LoopChildConditional {
    */
   readsPreamble?: boolean
   /**
+   * A branch of this conditional reads a `.map()` callback preamble local
+   * (#3913). The branch's `template()` closure is built when the row is
+   * first rendered, so a swap into it would show the local's first-render
+   * value; the emitter re-runs the preamble inside `template()` so the
+   * swapped-in branch is built from the row's current item and index.
+   * Independent of `readsPreamble`, which is about the condition.
+   */
+  branchesReadPreamble?: boolean
+  /**
    * `condition` can change value after first render — it reads a signal,
    * memo, prop, or preamble-derived reactive local, as opposed to reading
    * ONLY the (for a static array, fixed-forever) loop item/index (#2897
