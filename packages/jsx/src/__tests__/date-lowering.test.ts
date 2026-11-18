@@ -244,3 +244,114 @@ describe('client-JS lowering (#2292)', () => {
     expect(js).toContain('createdAt.toISOString() = ')
   })
 })
+
+describe('Date members inherited through extends / intersection (#3914)', () => {
+  function matches(src: string, call: string): boolean {
+    const matcher = datePlugin.prepare(metadata(src))
+    if (!matcher) return false
+    const { callee, args } = callParts(call)
+    return matcher(callee, args) !== null
+  }
+
+  test('interface extends: a Date declared on the base is lowered', () => {
+    expect(
+      matches(
+        `interface Base { at: Date }
+         interface Props extends Base { label: string }
+         export function Foo(props: Props) { return <p>{props.at.getUTCFullYear()}</p> }`,
+        'props.at.getUTCFullYear()',
+      ),
+    ).toBe(true)
+  })
+
+  test('multi-level extends and a destructured prop resolve', () => {
+    expect(
+      matches(
+        `interface A { at: Date }
+         interface B extends A { n: number }
+         interface Props extends B { label: string }
+         export function Foo({ at }: Props) { return <p>{at.getTime()}</p> }`,
+        'at.getTime()',
+      ),
+    ).toBe(true)
+  })
+
+  test('intersection alias: a Date declared on a constituent is lowered', () => {
+    expect(
+      matches(
+        `interface Base { at: Date }
+         type Props = Base & { label: string }
+         export function Foo(props: Props) { return <p>{props.at.getTime()}</p> }`,
+        'props.at.getTime()',
+      ),
+    ).toBe(true)
+  })
+
+  test('an own member overrides an inherited one of the same name', () => {
+    expect(
+      matches(
+        `interface Base { at: Date }
+         interface Props extends Base { at: string }
+         export function Foo(props: Props) { return <p>{props.at.getTime()}</p> }`,
+        'props.at.getTime()',
+      ),
+    ).toBe(false)
+  })
+
+  test('a cyclic extends chain does not hang', () => {
+    expect(
+      matches(
+        `interface A extends B { x: string }
+         interface B extends A { y: string }
+         export function Foo(props: A) { return <p>{props.x}</p> }`,
+        'props.at.getTime()',
+      ),
+    ).toBe(false)
+  })
+
+  function refusals(src: string): string[] {
+    const result = compileJSX(src.trimStart(), 'T.tsx', { adapter: new TestAdapter() })
+    return result.errors.filter((e) => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN).map((e) => e.message)
+  }
+
+  test('a base declared elsewhere is refused loudly instead of rendering empty', () => {
+    const messages = refusals(`
+      import type { Base } from './base'
+      interface Props extends Base { label: string }
+      export function Foo(props: Props) { return <p>{props.at.getUTCFullYear()}</p> }
+    `)
+    expect(messages).toHaveLength(1)
+    expect(messages[0]).toContain("'props.at'")
+    expect(messages[0]).toContain('not declared here')
+  })
+
+  test('the same refusal applies to a destructured prop and an intersection with an imported type', () => {
+    expect(
+      refusals(`
+        import type { Base } from './base'
+        type Props = Base & { label: string }
+        export function Foo({ at }: Props) { return <p>{at.getTime()}</p> }
+      `),
+    ).toHaveLength(1)
+  })
+
+  test('a prop that is visible on the props type is not refused, whatever its type', () => {
+    expect(
+      refusals(`
+        import type { Base } from './base'
+        interface Props extends Base { label: string }
+        export function Foo(props: Props) { return <p>{props.label.toISOString()}</p> }
+      `),
+    ).toHaveLength(0)
+  })
+
+  test('a props type with no unresolved base is not refused', () => {
+    expect(
+      refusals(`
+        interface Base { at: Date }
+        interface Props extends Base { label: string }
+        export function Foo(props: Props) { return <p>{props.at.getUTCFullYear()}</p> }
+      `),
+    ).toHaveLength(0)
+  })
+})

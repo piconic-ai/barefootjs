@@ -11,7 +11,7 @@
  * only misses a refusal; a false positive would incorrectly block valid code.
  */
 
-import type { IRMetadata, PropertyInfo, TypeInfo } from './types.ts'
+import type { IRMetadata, PropertyInfo, TypeDefinition, TypeInfo } from './types.ts'
 import type { ParsedExpr } from './expression-parser.ts'
 
 /**
@@ -163,8 +163,89 @@ export function derefNamedType(type: TypeInfo, meta: EvidenceMetadata): TypeInfo
   if (type.properties && type.properties.length > 0) return type
   const name = baseTypeName(type.raw)
   const def = meta.typeDefinitions.find((d) => d.name === name)
-  if (!def?.properties) return type
-  return { ...type, properties: def.properties }
+  if (!def?.properties && !def?.inherits) return type
+  const properties = collectDefinitionMembers(def, meta, new Set([name]))
+  return properties.length > 0 || def.properties ? { ...type, properties } : type
+}
+
+/**
+ * A definition's own members followed by every member it inherits through
+ * `extends` / an intersection (#3914), so a `Date` declared on a base
+ * interface is as visible as one declared on the props type itself. An own
+ * member wins over an inherited one of the same name (TypeScript's override
+ * rule); among bases the first declared wins. `visiting` breaks a cyclic
+ * heritage chain (invalid TypeScript, but never an infinite walk here).
+ */
+function collectDefinitionMembers(def: TypeDefinition, meta: EvidenceMetadata, visiting: Set<string>): PropertyInfo[] {
+  const members = [...(def.properties ?? [])]
+  const known = new Set(members.map((p) => p.name))
+  for (const base of def.inherits ?? []) {
+    for (const p of inheritedMembers(base, meta, visiting)) {
+      if (known.has(p.name)) continue
+      known.add(p.name)
+      members.push(p)
+    }
+  }
+  return members
+}
+
+function inheritedMembers(base: TypeInfo, meta: EvidenceMetadata, visiting: Set<string>): PropertyInfo[] {
+  if (base.kind === 'object') return base.properties ?? []
+  const name = baseTypeName(base.raw)
+  if (visiting.has(name)) return []
+  const def = meta.typeDefinitions.find((d) => d.name === name)
+  if (!def) return []
+  return collectDefinitionMembers(def, meta, new Set(visiting).add(name))
+}
+
+/**
+ * Whether `type` is a named type whose inheritance chain reaches a base that
+ * is not declared in this file (an imported interface, a library type), so
+ * its members are NOT all visible here. Evidence lookups on such a type can
+ * miss a member the base declares, which callers must treat as "unknown",
+ * never as "absent" (#3914).
+ */
+export function hasUnresolvedBase(type: TypeInfo | null, meta: EvidenceMetadata): boolean {
+  const stripped = stripUnion(type)
+  if (!stripped || stripped.kind !== 'interface') return false
+  const def = meta.typeDefinitions.find((d) => d.name === baseTypeName(stripped.raw))
+  return def ? definitionHasUnresolvedBase(def, meta, new Set([def.name])) : false
+}
+
+function definitionHasUnresolvedBase(def: TypeDefinition, meta: EvidenceMetadata, visiting: Set<string>): boolean {
+  return (def.inherits ?? []).some((base) => {
+    if (base.kind !== 'interface') return false
+    const name = baseTypeName(base.raw)
+    if (visiting.has(name)) return false
+    const baseDef = meta.typeDefinitions.find((d) => d.name === name)
+    return !baseDef || definitionHasUnresolvedBase(baseDef, meta, new Set(visiting).add(name))
+  })
+}
+
+/**
+ * The prop a receiver expression reads FIRST (`at` for `props.at`,
+ * `props.at.x` and a bare destructured `at`), by its SOURCE name, or `null`
+ * when the receiver is not rooted at a declared prop. Shares
+ * `resolveReceiverType`'s prop-membership rules (object-props mode reaches
+ * props only through the props object; destructured mode only through a
+ * declared, non-rest param) without needing the prop's type to resolve.
+ */
+export function receiverRootPropName(
+  expr: ParsedExpr,
+  meta: EvidenceMetadata,
+  bindings: ReadonlyMap<string, TypeInfo | null>,
+): string | null {
+  if (expr.kind === 'identifier') {
+    if (bindings.has(expr.name) || meta.propsObjectName !== null) return null
+    const param = meta.propsParams.find((p) => p.name === expr.name && !p.isRest)
+    return param ? (param.sourceName ?? param.name) : null
+  }
+  if (expr.kind !== 'member' || expr.computed) return null
+  if (expr.object.kind === 'identifier') {
+    const isPropsObject = meta.propsObjectName !== null && expr.object.name === meta.propsObjectName
+    return isPropsObject && !bindings.has(expr.object.name) ? expr.property : null
+  }
+  return receiverRootPropName(expr.object, meta, bindings)
 }
 
 /**

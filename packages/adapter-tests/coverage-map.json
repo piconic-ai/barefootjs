@@ -4302,6 +4302,32 @@
         "text"
       ]
     },
+    "date-inherited-prop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "date-inherited-prop-intersection": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "date-method-uncatalogued": {
       "kinds": [
         "call",

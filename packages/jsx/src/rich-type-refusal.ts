@@ -73,7 +73,10 @@ import {
   JSON_REVIVABLE_RICH_TYPE_NAMES,
   resolvePropDeclaredType,
   jsonUnsafeTypeName,
+  hasUnresolvedBase,
+  receiverRootPropName,
 } from './rich-type-evidence.ts'
+import { DATE_METHODS } from './date-lowering.ts'
 
 type Bindings = ReadonlyMap<string, TypeInfo | null>
 const EMPTY_BINDINGS: Bindings = new Map()
@@ -293,6 +296,7 @@ function checkExpr(
     case 'call': {
       if (expr.callee.kind === 'member') {
         const receiverType = resolveReceiverType(expr.callee.object, meta, bindings)
+        checkUnresolvedInheritedReceiver(expr.callee, expr.args, receiverType, loc, meta, bindings, errors, seen)
         if (receiverType && receiverType.kind === 'interface') {
           const typeName = baseTypeName(receiverType.raw)
           const inFileShadow = meta.typeDefinitions.some((d) => d.name === typeName)
@@ -361,6 +365,45 @@ function checkExpr(
     case 'unsupported':
       break
   }
+}
+
+/**
+ * #3914: a catalogued `Date` method called on a prop whose declaration this
+ * file cannot see. When the props type inherits from a base declared
+ * elsewhere (`interface Props extends ImportedBase`), a prop missing from
+ * the visible members may well be a `Date` declared on that base, and the
+ * date lowering would silently skip the call (an empty render on most
+ * template adapters). Refuse instead of guessing; a prop that IS visible
+ * with some other type is a different receiver and stays untouched.
+ */
+function checkUnresolvedInheritedReceiver(
+  callee: Extract<ParsedExpr, { kind: 'member' }>,
+  args: readonly ParsedExpr[],
+  receiverType: TypeInfo | null,
+  loc: SourceLocation,
+  meta: IRMetadata,
+  bindings: Bindings,
+  errors: CompilerError[],
+  seen: Set<string>,
+): void {
+  if (receiverType || callee.computed || args.length !== 0 || !DATE_METHODS.has(callee.property)) return
+  if (!hasUnresolvedBase(meta.propsType, meta)) return
+  const propName = receiverRootPropName(callee.object, meta, bindings)
+  if (propName === null || resolvePropDeclaredType(propName, meta)) return
+  const receiverPath = describeReceiverPath(callee.object)
+  const key = `${loc.start.line}:${loc.start.column}:${receiverPath}.${callee.property}:unresolved-base`
+  if (seen.has(key)) return
+  seen.add(key)
+  errors.push({
+    code: ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+    severity: 'error',
+    message: `Expression cannot be compiled to marked template: the type of '${receiverPath}' is unknown, so '.${callee.property}()' cannot be lowered. Prop '${propName}' is not declared on the props type in this file, and the props type inherits from a base type that is not declared here, so the prop may be a Date declared on that base.`,
+    loc,
+    suggestion: {
+      message: `Declare '${propName}' (for example '${propName}: Date') on the props type in this file, or declare the base type in this file so its members are visible. Alternatively pre-compute the value server-side and pass it as a prop.`,
+      escape: [{ kind: 'rewrite' }, { kind: 'prop-precompute' }],
+    },
+  })
 }
 
 /** `IRTemplatePart.ternary.condition` / `.lookup.key` carry no attached parse (unlike every other position here), so parse on demand. */

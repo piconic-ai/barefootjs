@@ -2856,8 +2856,43 @@ function collectInterfaceDefinition(
     name: node.name.text,
     definition: node.getText(ctx.sourceFile),
     properties: membersToProperties(node.members, ctx.sourceFile),
+    ...inheritsField(interfaceBaseTypes(node, ctx.sourceFile)),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   })
+}
+
+/** The `extends` list of an interface as named `TypeInfo`s, in source order. */
+function interfaceBaseTypes(node: ts.InterfaceDeclaration, sourceFile: ts.SourceFile): TypeInfo[] {
+  const bases: TypeInfo[] = []
+  for (const clause of node.heritageClauses ?? []) {
+    if (clause.token !== ts.SyntaxKind.ExtendsKeyword) continue
+    for (const base of clause.types) bases.push({ kind: 'interface', raw: base.getText(sourceFile) })
+  }
+  return bases
+}
+
+/**
+ * The constituents of an alias that inherits members: each arm of an
+ * intersection, or the referenced type of a plain alias (`type Props = Base`).
+ * Empty for every other alias (object literal, union, primitive, ...).
+ */
+function aliasInheritedTypes(type: ts.TypeNode, sourceFile: ts.SourceFile): TypeInfo[] {
+  if (ts.isParenthesizedTypeNode(type)) return aliasInheritedTypes(type.type, sourceFile)
+  if (ts.isIntersectionTypeNode(type)) {
+    return type.types.flatMap((arm) => {
+      const info = typeNodeToTypeInfo(arm, sourceFile)
+      return info && (info.kind === 'interface' || info.kind === 'object') ? [info] : []
+    })
+  }
+  if (ts.isTypeReferenceNode(type)) {
+    const info = typeNodeToTypeInfo(type, sourceFile)
+    return info?.kind === 'interface' ? [info] : []
+  }
+  return []
+}
+
+function inheritsField(types: TypeInfo[]): { inherits?: TypeInfo[] } {
+  return types.length > 0 ? { inherits: types } : {}
 }
 
 function collectTypeAliasDefinition(
@@ -2875,6 +2910,7 @@ function collectTypeAliasDefinition(
     name: node.name.text,
     definition: node.getText(ctx.sourceFile),
     properties,
+    ...inheritsField(aliasInheritedTypes(node.type, ctx.sourceFile)),
     ...(stringLiteralUnion ? { stringLiteralUnion } : {}),
     loc: getSourceLocation(node, ctx.sourceFile, ctx.filePath),
   })

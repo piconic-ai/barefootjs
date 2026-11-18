@@ -1035,6 +1035,8 @@ import { fixture as dateClientCatalogued } from './date-client-catalogued'
 import { fixture as dateClientAttrCatalogued } from './date-client-attr-catalogued'
 import { fixture as dateCataloguedAttr } from './date-catalogued-attr'
 import { fixture as dateCatalogued } from './date-catalogued'
+import { fixture as dateInheritedProp } from './date-inherited-prop'
+import { fixture as dateInheritedPropIntersection } from './date-inherited-prop-intersection'
 import { fixture as richPropClientRead } from './rich-prop-client-read'
 import { fixture as richPropPrecompute } from './rich-prop-precompute'
 import { fixture as formatDate } from './format-date'
@@ -2347,6 +2349,8 @@ export const jsxFixtures: JSXFixture[] = [
   dateClientAttrCatalogued,
   dateCataloguedAttr,
   dateCatalogued,
+  dateInheritedProp,
+  dateInheritedPropIntersection,
   richPropClientRead,
   richPropPrecompute,
   formatDate,

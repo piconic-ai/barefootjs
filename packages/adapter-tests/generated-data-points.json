@@ -4442,6 +4442,35 @@
       }
     }
   ],
+  "date-inherited-prop": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "at": {
+          "$date": "2024-05-06T00:00:00.000Z"
+        }
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "at": {
+          "$date": "2024-05-06T00:00:00.000Z"
+        }
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "at": {
+          "$date": "2024-05-06T00:00:00.000Z"
+        }
+      }
+    }
+  ],
   "date-tolocale-datestyle": [
     {
       "name": "gen:createdAt:epoch",

@@ -2492,6 +2492,18 @@ export interface TypeDefinition {
    */
   properties?: PropertyInfo[]
   /**
+   * The types this definition inherits members from: the `extends` list of
+   * an interface (`interface Props extends Base`), or the constituents of an
+   * intersection alias (`type Props = Base & { label: string }`), in source
+   * order. A named constituent is `{ kind: 'interface', raw }` (resolve it
+   * through `typeDefinitions`); an inline literal is `{ kind: 'object' }`
+   * carrying its own `properties`. `properties` stays the type's OWN members
+   * only, so consumers that emit one field per declared member are
+   * unaffected; type-evidence consumers walk `inherits` through
+   * `derefNamedType`. Absent when the definition inherits nothing.
+   */
+  inherits?: TypeInfo[]
+  /**
    * The members of a type alias whose type is a string literal or a union of
    * string literals only (`type Mode = 'light' | 'dark'`, in any quoting or
    * layout). Absent for every other definition, a union mixing in a
