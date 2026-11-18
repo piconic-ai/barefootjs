@@ -445,12 +445,13 @@ export function collectPropFallbackVars(ctx: GoEmitContext, ir: ComponentIR): Ma
     // zeroLiteral so spelling variants like `0.0` collapse to the same skip
     // as `0`.
     //
-    // NOT a no-op for a nillable-lowered prop (#2248): its `interface{}`
-    // field can be nil, and the typed hoisted local is what downstream
-    // consumers (`Count: size`, memo env maps) assign from — a nil
-    // interface into a concrete field is a compile error, so the local
-    // must exist even when the fallback equals the zero value.
-    if (!nullishLowered) {
+    // NOT a no-op for a prop held in an `interface{}` field, where an absent
+    // prop is nil, not the zero value. A nillable-lowered prop (#2248): the
+    // typed hoisted local is what downstream consumers (`Count: size`, memo
+    // env maps) assign from — a nil interface into a concrete field is a
+    // compile error. A boxed mixed-union prop (#3789): the signal would
+    // hold the nil where JS holds the fallback (`props.x ?? false`).
+    if (!boxedField) {
       if (match.goFallback === zeroLiteral) continue
       if (zeroLiteral === '0' && Number(match.goFallback) === 0) continue
     }

@@ -28,6 +28,7 @@ import type {
 } from '@barefootjs/jsx'
 import {
   collectBooleanValueNames,
+  withProvenStoredTypes,
   DslTemplateAdapter,
   type IRNodeEmitter,
   type EmitIRNode,
@@ -235,7 +236,9 @@ export class MojoAdapter extends DslTemplateAdapter implements IRNodeEmitter<Moj
 
   protected override resetAdapterState(ir: ComponentIR): void {
     this.providerDataNames = collectProviderDataNames(ir)
-    this.booleanValueNames = collectBooleanValueNames(ir.metadata)
+    // A signal or memo is a boolean name by the type a read of it proves, not
+    // by its initializer's last operand (`createSignal(props.x ?? false)`, #3789).
+    this.booleanValueNames = collectBooleanValueNames(withProvenStoredTypes(ir.metadata))
     this.numberValueNames = collectNumberValueNames(ir)
     this.booleanCarrierNames = collectBooleanCarrierNames(ir.metadata)
     this.numberSeedNames = numberValuedSeedNames(

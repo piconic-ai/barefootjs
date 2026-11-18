@@ -20117,6 +20117,43 @@
         "text"
       ]
     },
+    "union-prop-zero-fallback-signal-seed": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "union-prop-zero-fallback-signal-seed-destructured": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "literal:boolean",
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "unlowered-global-call": {
       "kinds": [
         "call",

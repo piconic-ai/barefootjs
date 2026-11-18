@@ -20943,6 +20943,251 @@
       }
     }
   ],
+  "union-prop-zero-fallback-signal-seed": [
+    {
+      "name": "gen:a:union:3",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": "",
+        "a": null
+      }
+    },
+    {
+      "name": "gen:b:absent",
+      "props": {
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:c:absent",
+      "props": {
+        "b": null,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:c:union:3",
+      "props": {
+        "b": null,
+        "c": null,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:d:union:3",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": "",
+        "d": null
+      }
+    },
+    {
+      "name": "gen:e:absent",
+      "props": {
+        "b": null,
+        "c": 0,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:f:absent",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "h": null,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:f:union:3",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": null,
+        "h": null,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:g:union:3",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": "",
+        "g": null
+      }
+    },
+    {
+      "name": "gen:h:absent",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:i:absent",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:i:union:3",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": null,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:j:absent",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false
+      }
+    },
+    {
+      "name": "gen:j:union:3",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": null
+      }
+    }
+  ],
+  "union-prop-zero-fallback-signal-seed-destructured": [
+    {
+      "name": "gen:b:absent",
+      "props": {
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:c:absent",
+      "props": {
+        "b": null,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:e:absent",
+      "props": {
+        "b": null,
+        "c": 0,
+        "f": false,
+        "h": null,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:f:absent",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "h": null,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:h:absent",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "i": false,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:i:absent",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "j": ""
+      }
+    },
+    {
+      "name": "gen:j:absent",
+      "props": {
+        "b": null,
+        "c": 0,
+        "e": null,
+        "f": false,
+        "h": null,
+        "i": false
+      }
+    }
+  ],
   "unlowered-global-call": [
     {
       "name": "gen:method:union:parse",
