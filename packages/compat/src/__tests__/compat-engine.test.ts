@@ -68,6 +68,7 @@ describe('compileForCompat', () => {
           'derived-object-literal-signal',
           'destructure-default-computed-array',
           'destructure-default-reads-component-state',
+          'dynamic-text-in-style-script-element',
           'loop-row-child-children-attrs-frozen',
           'loop-row-child-scalar-row-nested-component',
           'loop-row-key-outer-state',
