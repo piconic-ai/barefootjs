@@ -151,7 +151,9 @@ export function componentScopeNames(
   else for (const p of metadata.propsParams) names.add(p.name)
   if (metadata.restPropsName) names.add(metadata.restPropsName)
   for (const c of metadata.localConstants) if (!c.isModule) names.add(c.name)
-  for (const f of metadata.localFunctions) if (!f.isModule) names.add(f.name)
+  // A `function` declared in the component body carries `isModule` too
+  // (`FunctionInfo.inComponentBody`); it is a component binding all the same.
+  for (const f of metadata.localFunctions) if (!f.isModule || f.inComponentBody) names.add(f.name)
   for (const s of metadata.signals) {
     if (s.isModule) continue
     names.add(s.getter)

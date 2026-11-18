@@ -441,6 +441,8 @@ export function evalTemplateOfStringConsts(
  *   - `[<string literals>].join(sep)`,
  *   - a template literal COMPOSED of other qualifying module consts
  *     (resolved to a fixed point, so composition order doesn't matter).
+ * and no component binding of the same name hides it
+ * (`shadowedInComponent`).
  */
 export function collectModuleStringConsts(
   constants: IRMetadata['localConstants'] | undefined,
@@ -463,6 +465,10 @@ export function collectModuleStringConsts(
       }
     }
   }
+  // The map answers a read IN THE COMPONENT. A module const a component
+  // binding hides is not what such a read reaches (#3739); it stays in the
+  // map above only while the other module consts compose from it.
+  for (const c of candidates) if (c.shadowedInComponent) map.delete(c.name)
   return map
 }
 
@@ -576,6 +582,21 @@ export type LiteralConst =
   | { kind: 'string' | 'boolean' | 'null'; text: string }
 
 /**
+ * The declaration a read of `name` in the component reaches, for
+ * `lookupLiteralConst`: the component's own, else the module const unless a
+ * component binding hides it (`shadowedInComponent`: a prop, a signal, a
+ * function). Taking the first const of the name read a module literal where
+ * the component declares its own (#3739).
+ */
+function literalConstBinding(
+  name: string,
+  constants: IRMetadata['localConstants'] | undefined,
+): IRMetadata['localConstants'][number] | undefined {
+  const named = (constants ?? []).filter(c => c.name === name)
+  return named.find(c => !c.isModule) ?? named.find(c => !c.shadowedInComponent)
+}
+
+/**
  * Resolve a bare identifier bound to a literal-initialized `const` — module
  * or component-function scope — to that literal, or `null` for any other
  * shape so callers fall back to their generic lowering. The one decision
@@ -597,7 +618,7 @@ export function lookupLiteralConst(
   isShadowed: (name: string) => boolean,
 ): LiteralConst | null {
   if (isShadowed(name)) return null
-  const c = (constants ?? []).find(lc => lc.name === name)
+  const c = literalConstBinding(name, constants)
   if (c?.value === undefined) return null
   const p = c.parsed
   if (p?.kind === 'literal') {

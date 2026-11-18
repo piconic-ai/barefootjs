@@ -10735,6 +10735,20 @@
       }
     }
   ],
+  "module-const-destructure-default-component-const": [
+    {
+      "name": "gen:b:markup",
+      "props": {
+        "b": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:b:multibyte",
+      "props": {
+        "b": "日本語"
+      }
+    }
+  ],
   "module-const-hop-loop-shadow": [
     {
       "name": "gen:rows:empty",
@@ -10884,6 +10898,70 @@
       "props": {
         "label": "caller",
         "rows": []
+      }
+    }
+  ],
+  "module-const-reads-global-named-like-prop": [
+    {
+      "name": "gen:Math:empty",
+      "props": {
+        "Math": ""
+      }
+    },
+    {
+      "name": "gen:Math:markup",
+      "props": {
+        "Math": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:Math:multibyte",
+      "props": {
+        "Math": "日本語"
+      }
+    }
+  ],
+  "module-const-shadowed-by-component-const": [
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890
+      }
+    }
+  ],
+  "module-const-shadowed-by-prop": [
+    {
+      "name": "gen:z:empty",
+      "props": {
+        "z": "",
+        "on": false
+      }
+    },
+    {
+      "name": "gen:z:markup",
+      "props": {
+        "z": "<b>&\"'</b>",
+        "on": false
+      }
+    },
+    {
+      "name": "gen:z:multibyte",
+      "props": {
+        "z": "日本語",
+        "on": false
+      }
+    },
+    {
+      "name": "gen:on:true",
+      "props": {
+        "z": "pz",
+        "on": true
       }
     }
   ],

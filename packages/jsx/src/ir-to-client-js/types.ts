@@ -26,6 +26,7 @@ import type {
   PreambleRegionSource,
   JsSourceText,
 } from '../types.ts'
+import type { ModuleScopeReplica } from '../module-scope.ts'
 import type { CsrInlinabilityMap } from './csr-substitute.ts'
 import type { SkeletonSlotPaths } from './html-template.ts'
 
@@ -58,8 +59,17 @@ export interface ClientJsContext {
   onMounts: OnMountInfo[]
   /** Top-level imperative statements preserved from the component body (#930). */
   initStatements: InitStatementInfo[]
+  /** The functions the component's scope sees (`moduleScopeView`, #3739). */
   localFunctions: FunctionInfo[]
+  /**
+   * The constants the component's scope sees (`moduleScopeView`, #3739): not
+   * `ir.metadata.localConstants`. A module const the component hides is
+   * absent, and one whose value depends on a name the component binds reads
+   * `moduleScopeReplica`'s member.
+   */
   localConstants: ConstantInfo[]
+  /** The module-scope replica `localConstants` reads, or `null`. */
+  moduleScopeReplica: ModuleScopeReplica | null
   /**
    * Component-file import list, threaded through so `buildEnvFromCtx`'s
    * reconstructed `IRMetadata`-shaped object carries REAL imports (#2069)

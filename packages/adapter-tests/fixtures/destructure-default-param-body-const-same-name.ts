@@ -5,12 +5,11 @@ import { createFixture } from '../src/types'
  * the same name (`const DEF = 'local'`) is not in scope in the parameter
  * list, so `{ b = DEF.toUpperCase() }` takes the module `DEF` (#3725).
  *
- * The client script resolves the name without its scope (limitation
- * `client-binding-named-like-module-binding`): the template inlines the body
- * const into the default, and the mount reads a `DEF` it does not declare.
- * The CSR render and the client-JS scope gate are pinned to it. A body
- * const the component also reads would be declared beside the module one
- * and fail to load, so this one is unread.
+ * The client script resolves the default's name in the body's scope
+ * (limitation `client-binding-named-like-module-binding`): the template
+ * inlines the body const into the default, and the mount reads a `DEF` it
+ * does not declare. The CSR render and the client-JS scope gate are pinned
+ * to it. The body const is unread, so the fixture shows the default alone.
  */
 export const fixture = createFixture({
   id: 'destructure-default-param-body-const-same-name',

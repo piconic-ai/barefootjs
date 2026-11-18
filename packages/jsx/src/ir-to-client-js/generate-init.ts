@@ -11,7 +11,7 @@
 import type { ComponentIR } from '../types.ts'
 import type { ClientJsContext } from './types.ts'
 import { PROPS_PARAM, isCommentScopedRoot, initFunctionName } from './utils.ts'
-import { buildReferencesGraph } from './build-references.ts'
+import { buildReferencesGraph, graphUsedIdentifiers } from './build-references.ts'
 import { computePropUsage } from './compute-prop-usage.ts'
 import { IMPORT_PLACEHOLDER, MODULE_CONSTANTS_PLACEHOLDER, runtimeNameCollisions } from './imports.ts'
 import { signalSecondBinding } from '../signal-initializer.ts'
@@ -19,7 +19,7 @@ import { emitRegistrationAndHydration, csrInlinableConstantsFromCtx } from './em
 import { computeDeferredChildSlots } from './html-template.ts'
 import { emitChildComponentImports } from './child-components.ts'
 import { classifyLocalDeclarations } from './init-declarations.ts'
-import { emitModuleLevelDeclarations, resolveFinalImports } from './emit-module-level.ts'
+import { emitModuleLevelDeclarations, emitModuleScopeReplica, resolveFinalImports } from './emit-module-level.ts'
 import { pruneUnusedPropExtractions } from './prune-unused-prop-extractions.ts'
 import { buildPhaseCtx, PHASES, runPhases } from './phases.ts'
 import { rewritePropsObjectRef } from './rewrite-props-object.ts'
@@ -131,7 +131,7 @@ export function generateInitFunction(
     classification.moduleLevelFunctions,
     classification.moduleLevelSignals,
     classification.moduleLevelMemos,
-  )
+  ) + emitModuleScopeReplica(ctx.moduleScopeReplica, graphUsedIdentifiers(graph))
   // Replacer-function form: a plain replacement string would let literal
   // `$&`/`$1`/`$$` sequences in user helper bodies or import paths be
   // reinterpreted by `String.replace`'s special-pattern handling.

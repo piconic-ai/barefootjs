@@ -51,6 +51,8 @@ interface DialogProps {
   children?: Child
 }
 
+export const DialogRoot = Dialog
+
 function warnIfMisusedTrigger(el: HTMLElement, componentName: string): void {
   const interactiveSelector = 'button, [role="button"], a[href]'
   const hasNestedInteractive = el.querySelector(interactiveSelector) != null
@@ -124,8 +126,6 @@ interface DialogCloseProps extends ButtonHTMLAttributes {
   /** Button content */
   children?: Child
 }
-
-export const DialogRoot = Dialog
 
 type DialogHeaderPropsWithHydration = DialogHeaderProps & {
   __instanceId?: string
