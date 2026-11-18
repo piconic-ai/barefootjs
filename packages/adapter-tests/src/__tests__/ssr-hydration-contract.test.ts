@@ -176,6 +176,11 @@ const statelessFixtures = new Set([
   // rows, while its inner conditional's insert() materializes s4 on init.
   // The full-SSR prop-precompute twin remains checked by this contract.
   'conditional-nested-loop-client-reactivity',
+  // Same client-only row elision: the escape renders no inner rows at SSR,
+  // while the row component's own client JS wires its nested child's slot
+  // (`s0`) for the rows the client creates. The full-SSR base fixture
+  // (`nested-loop-child-component-rest-own-child`) stays checked here.
+  'nested-loop-child-component-rest-own-child-client',
 ])
 
 describe('SSR-Hydration Contract', () => {

@@ -37,6 +37,7 @@ import {
 } from '@barefootjs/jsx'
 
 import type { GoEmitContext } from '../emit-context.ts'
+import { getterCallName } from '../memo/memo-seed-shape.ts'
 import { findModuleScopeConst, findValuedLocalConst } from '../lib/compile-state.ts'
 import { SCALAR_ROW_GO_TYPES } from '../lib/constants.ts'
 import { goLiteral } from '../lib/go-emit.ts'
@@ -460,6 +461,46 @@ function resolveTernaryOperandAsGo(
 }
 
 /**
+ * A signal read whole (`items={items()}`, the bare getter, or an identity
+ * memo over either) into a `string[]` / `number[]` / `boolean[]` param,
+ * when the signal is seeded with an array literal: the seed as that typed
+ * slice, the same value {@link literalChildPropValue} bakes for the literal
+ * written inline. An untyped signal's own field is `[]interface{}`, which
+ * Go refuses to assign to the child's typed Input field. Null for any other
+ * value or destination.
+ */
+function scalarArraySignalSeed(site: ChildCallSite, jsxName: string, parsedValue: ParsedExpr): string | null {
+  const { host, ir, childShape } = site
+  if (childShape?.nillableParamNames.has(jsxName)) return null
+  const arrayType = childShape?.scalarArrayParamTypes.get(jsxName)
+  if (!arrayType) return null
+  const read = parsedValue.kind === 'identifier' ? parsedValue.name : getterCallName(parsedValue)
+  const seed = read === null ? undefined : wholeSignalSeed(host.ctx, read, ir.metadata, new Set())
+  return seed?.kind === 'array-literal' ? parsedLiteralToGo(host.ctx, seed, arrayType) : null
+}
+
+/**
+ * The seed of the signal `getter` reads whole: the signal's own, through a
+ * local alias of its getter (`getterAliases`) or an identity memo chain
+ * (`() => items()`). Undefined for any other getter.
+ */
+function wholeSignalSeed(
+  ctx: GoEmitContext,
+  getter: string,
+  metadata: ComponentIR['metadata'],
+  resolving: Set<string>,
+): ParsedExpr | undefined {
+  const name = ctx.state.getterAliases.get(getter) ?? getter
+  const signal = metadata.signals.find(s => s.getter === name)
+  if (signal) return signal.parsed
+  const memo = metadata.memos.find(m => m.name === name)
+  const dep = memo?.parsed ? getterCallName(memo.parsed) : null
+  if (dep === null || resolving.has(name)) return undefined
+  resolving.add(name)
+  return wholeSignalSeed(ctx, dep, metadata, resolving)
+}
+
+/**
  * The last resolution steps of an expression prop: the bare-value
  * resolution (`resolveDynamicPropValue`), then the runtime evaluator, then a
  * loud refusal of a negated value neither lowers. False when nothing applies.
@@ -471,6 +512,11 @@ function lowerResolvedChildProp(
   parsedValue: ParsedExpr | undefined,
 ): boolean {
   const { host, ir, childShape, child } = site
+  const typedSeed = parsedValue ? scalarArraySignalSeed(site, prop.name, parsedValue) : null
+  if (typedSeed !== null) {
+    site.emit(prop.name, typedSeed)
+    return true
+  }
   const resolvedValue = host.resolveDynamicPropValue(
     exprText,
     ir.metadata.signals,

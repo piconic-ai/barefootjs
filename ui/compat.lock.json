@@ -8996,6 +8996,21 @@
           ]
         }
       },
+      "nested-loop-child-component-rest-own-child": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "nested-loop-row-child-own-child-no-rebuild"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "nested-loop-child-component-rest-own-child-client"
+          }
+        }
+      },
       "object-entries-typed-object-signal": {
         "go-template": {
           "kind": "render",
@@ -13069,6 +13084,10 @@
         "description": "A reactive primitive called through a namespace import refuses with BF013",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/namespace-import-primitive.ts"
       },
+      "nested-loop-child-component-rest-own-child": {
+        "description": "A child-component loop inside another loop's row renders a row component that spreads a rest object…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-loop-child-component-rest-own-child.ts"
+      },
       "object-entries-typed-object-signal": {
         "description": "Object.entries over a signal typed with a named object type lists its members",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/object-entries-typed-object-signal.ts"
@@ -13408,6 +13427,10 @@
       "module-const-loop-source-computed-precomputed": {
         "description": "prop-precompute twin of module-const-loop-source-computed — computation moved to the caller, full…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-loop-source-computed-precomputed.ts"
+      },
+      "nested-loop-child-component-rest-own-child-client": {
+        "description": "/* @client */ twin of nested-loop-child-component-rest-own-child — the inner loop renders in the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/nested-loop-child-component-rest-own-child-client.ts"
       },
       "opaque-local-accessor-call-client": {
         "description": "Local accessor bound to an opaque helper call, read deferred to the client via /* @client */",
@@ -14464,6 +14487,22 @@
         "pebble",
         "twig",
         "xslate"
+      ]
+    },
+    "nested-loop-row-child-own-child-no-rebuild": {
+      "title": "A nested loop's row component with a child of its own and a rest object can't be built per row",
+      "kind": "refusal",
+      "given": "a child-component `.map()` inside another loop's row whose row component renders a child component of its own and collects a rest object (e.g. `groups.map(g => <section>{g.tags.map(t => <Badge key={t} label={t} />)}</section>)` with `function Badge({ label, ...rest }) { return <em {...rest}><Dot tone={label} />{label}</em> }`)",
+      "expected": "every inner row renders with a scope of its own, and its nested child's scope under it",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "nested-loop-child-component-rest-own-child"
+      ],
+      "adapters": [
+        "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
       ]
     },
     "non-literal-const-child-prop-unbound": {

@@ -814,7 +814,8 @@ export function qsaChildScopes(scope: Element, selector: string): Element[] {
  *
  * A row scope is found from either form it can take:
  *   - an element-rooted child: an element with `bf-h="<host>"` and
- *     `bf-m="<slot>"`, or whose `bf-s` ends in `_<slot>`;
+ *     `bf-m="<slot>"` (or, with neither attribute, one whose `bf-s` ends in
+ *     `_<slot>`);
  *   - a fragment-rooted child: a `<!--bf-scope:<id>|h=<host>|m=<slot>…-->`
  *     comment (or, with no `h=`/`m=`, one whose `<id>` ends in `_<slot>`).
  *     It resolves to its proxy element (the first element after the
@@ -847,10 +848,15 @@ export function childScopeBySlot(scope: Element, hostScopeId: string | null, slo
 function isSlotElementScope(el: Element, hostScopeId: string | null, slotId: string): boolean {
   const bfs = el.getAttribute(BF_SCOPE) || ''
   if (NESTED_SLOT_SUFFIX.test(bfs)) return false
-  const mounted = hostScopeId !== null
-    && el.getAttribute(BF_HOST) === hostScopeId
-    && el.getAttribute(BF_AT) === slotId
-  return mounted || bfs.endsWith(`_${slotId}`)
+  // An element that names its host or slot is matched on them alone, as a
+  // named comment scope is below: the `_<slot>` suffix fallback is for one
+  // that names neither. Applied to a named one it would also take a row's
+  // own child that merely shares the slot number (`Row_x_s0` hosted by
+  // `Row_x`), and the row init would zip it with the next row's item.
+  const host = el.getAttribute(BF_HOST)
+  const mount = el.getAttribute(BF_AT)
+  if (host !== null || mount !== null) return hostScopeId !== null && host === hostScopeId && mount === slotId
+  return bfs.endsWith(`_${slotId}`)
 }
 
 function* slotChildScopes(container: Element, hostScopeId: string | null, slotId: string): Generator<Element> {

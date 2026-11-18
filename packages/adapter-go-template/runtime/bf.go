@@ -244,6 +244,10 @@ func FuncMap() template.FuncMap {
 		// bf_with_children.
 		"bf_with_props": WithProps,
 
+		// A fresh ScopeID on a copy of a once-built child instance, for a
+		// loop row whose row component is rendered from its slot instance.
+		"bf_row_scope": RowScope,
+
 		// Per-row/per-slot override of ONE entry in a child's rest-bag field
 		// (#2805) — the dynamic-delivery route for a jsx-children prop that
 		// only reaches the child through its `{ ...rest }` binding, which
@@ -3779,6 +3783,37 @@ func WithProps(props interface{}, kv ...interface{}) (interface{}, error) {
 		}
 	}
 	return copyPtr.Elem().Interface(), nil
+}
+
+// RowScope returns a shallow copy of a component Props struct whose ScopeID
+// is a fresh "<name>_<random>" id, the shape New<name>Props mints for a loop
+// row it builds. A child-component loop inside another loop's row has no
+// constructor-built rows: its row component is the one slot instance, built
+// once outside {{range}}, and every row needs a scope of its own, as each
+// constructor-built row has. `name` is the component's declared name.
+//
+// Only the copy's own ScopeID changes. An instance the child's constructor
+// derives from its scope (a nested child's ScopeID and BfParent) keeps the
+// slot instance's, so the compiler passes the result through bf_reprops for
+// a child that has any, which re-runs the constructor under the new scope.
+// A props value that is no struct, or has no ScopeID field, is returned
+// unchanged.
+func RowScope(props interface{}, name string) interface{} {
+	v := reflect.ValueOf(props)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return props
+	}
+	copyPtr := reflect.New(v.Type())
+	copyPtr.Elem().Set(v)
+	target := copyPtr.Elem().FieldByName("ScopeID")
+	if !target.IsValid() || !target.CanSet() || target.Kind() != reflect.String {
+		return props
+	}
+	target.SetString(name + "_" + randomScopeSuffix(6))
+	return copyPtr.Elem().Interface()
 }
 
 // WithBagEntry returns a shallow copy of props with ONE entry set in its

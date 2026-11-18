@@ -33,3 +33,10 @@ export const SCALAR_ROW_GO_TYPES: ReadonlySet<string> = new Set(['string', 'int'
 
 /** The wrapper field that carries a scalar wrapper row's bare value (`wrapperRowScalarItemGoType`). */
 export const SCALAR_ROW_ITEM_FIELD = 'BfLoopItem'
+
+/**
+ * The variable a wrapper row's forwarded-children define reads the
+ * component's own data through, and its key in the wrapper's `BfRowVars`
+ * (`rootRefPrefix`). Not `__bfRoot`, a portal element's define variable.
+ */
+export const WRAPPER_ROW_ROOT_VAR = '__bfRowRoot'

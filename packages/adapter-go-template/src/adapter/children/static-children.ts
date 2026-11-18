@@ -28,6 +28,7 @@ import { resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import type { GoEmitContext } from '../emit-context.ts'
 import { slotIdToFieldSuffix } from '../lib/go-naming.ts'
+import { isRowsFieldLoop } from '../lib/nested-rows-field.ts'
 import type { StaticChildInstance } from '../lib/types.ts'
 
 /**
@@ -217,14 +218,18 @@ function collectLoopInstances(
   // (`<li><Badge/></li>`, #2130) gets NO wrapper slice: keep collecting,
   // so it registers a normal once-per-slot instance (shared across rows,
   // like the wrapper's `bodyChildInstances`); per-item content reaches it
-  // through the loop-body children define (see `renderComponent`).
+  // through the loop-body children define (see `renderComponent`). So does
+  // the row component of a child-component loop inside another loop's row,
+  // which has no rows field (`isRowsFieldLoop`), unless that loop is
+  // client-only: it renders no row on the server.
+  const rowComponentOnly = loop.childComponent !== undefined && (loop.clientOnly === true || isRowsFieldLoop(loop, scope))
   const rowScope = scope.enterLoopRow(loop)
   for (const child of loop.children) {
     collectStaticChildInstancesRecursive(
       host,
       child,
       result,
-      inLoop || !!loop.childComponent,
+      inLoop || rowComponentOnly,
       providerCtx,
       propsParams,
       rowScope,
