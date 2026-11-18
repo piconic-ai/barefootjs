@@ -281,6 +281,15 @@ export const conformancePins: ConformancePins = {
   'loop-row-child-scalar-row-wrapper-nested-component': [
     { code: 'BF101', severity: 'error', limitation: 'loop-row-child-scalar-row-nested-component', unescapable: true },
   ],
+  // The row component of a child-component loop inside another loop's row
+  // renders from its one slot instance under a scope minted per row. A
+  // child that renders components of its own has to re-run its constructor
+  // under that scope, and a rest object keeps it from getting a props
+  // rebuilder (`rangedRowInstance`, `recordRepropsSpec`). Escape twin:
+  // `nested-loop-child-component-rest-own-child-client`.
+  'nested-loop-child-component-rest-own-child': [
+    { code: 'BF101', severity: 'error', limitation: 'nested-loop-row-child-own-child-no-rebuild' },
+  ],
   // #3063: a client-interactive component with a multi-return chain
   // where one branch is a bare JSX fragment refuses ahead of
   // `adapter.generate()` in the shared jsx-to-ir.ts phase (the client

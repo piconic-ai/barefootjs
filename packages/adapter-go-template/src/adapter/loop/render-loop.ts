@@ -43,7 +43,7 @@ import { SCALAR_ROW_ITEM_FIELD } from '../lib/constants.ts'
 import { emitBfSort, emitSortEval, wrapIfMultiToken } from '../lib/go-emit.ts'
 import { capitalizeFieldName, goFieldNameForKey } from '../lib/go-naming.ts'
 import { isFieldlessRowType } from '../lib/loop-row-path.ts'
-import type { RowsFieldSite } from '../lib/nested-rows-field.ts'
+import { isRowsFieldLoop, type RowsFieldSite } from '../lib/nested-rows-field.ts'
 import { hasNoInputSlot, restBagOverrideFields, routesToRestBag, type ChildComponentShape } from '../lib/types.ts'
 import { loopRowType } from '../type/number-read.ts'
 import { isNillableSeedSignal } from '../type/state-fields.ts'
@@ -103,8 +103,13 @@ export interface LoopRenderHost {
   loopRestExcludeStack(): Array<Map<string, { parent: string; excludeKeys: string[] }>>
   /** Whether each enclosing loop's row is a scalar, innermost last. */
   loopScalarItemStack(): boolean[]
-  /** Whether each enclosing loop's body is a child component, innermost last. */
+  /** Whether each enclosing loop ranges over its rows field (`isRowsFieldLoop`), innermost last. */
   loopWrapperStack(): boolean[]
+  /** The prefix a field of the component's own data is read through inside a `{{range}}`. */
+  rootRefPrefix(): string
+  /** The row component of the innermost loop when that loop has no rows field, or null. */
+  rangedRowRoot(): IRNode | null
+  setRangedRowRoot(node: IRNode | null): void
   /** The items of the enclosing unrolled static loops, innermost last. */
   staticLoopItemStack(): Array<{ param: string; item: unknown }>
   /** The row variables a wrapper-slice row's forwarded-children define rebinds. */
@@ -210,8 +215,12 @@ export function renderLoop(host: LoopRenderHost, loop: IRLoop): string {
   // the constructor's later baking agree. A plain-ELEMENT body (no
   // `childComponent`) is NOT handled by baking and keeps refusing below —
   // see the go-only follow-up issue for that narrower gap.
-  const bakedChildLoop = loop.childComponent
-    ? host.getBakedStaticChildLoop(loop.markerId, loop.childComponent, loop.arrayParsed, loop.param, loop.key ?? undefined)
+  // The loop's rows field, when it has one (`isRowsFieldLoop`). A
+  // child-component loop inside another loop's row has none: it ranges over
+  // its own array like an element-row loop.
+  const rowsChild = isRowsFieldLoop(loop, host.scope()) ? loop.childComponent : undefined
+  const bakedChildLoop = rowsChild
+    ? host.getBakedStaticChildLoop(loop.markerId, rowsChild, loop.arrayParsed, loop.param, loop.key ?? undefined)
     : null
 
   // #2224 shape 1: a static-array loop whose body is a plain ELEMENT tree
@@ -259,7 +268,7 @@ export function renderLoop(host: LoopRenderHost, loop: IRLoop): string {
   // baked or not, dynamic `.map()` over a real prop/signal array included
   // — so no spurious diagnostic is ever recorded for a value nothing ends
   // up consuming.
-  let goArray = loop.childComponent ? '' : host.ctx.convertExpressionToGo(loop.array)
+  let goArray = rowsChild ? '' : host.ctx.convertExpressionToGo(loop.array)
   const param = loop.param
   let index = loop.index || '_'
 
@@ -289,8 +298,8 @@ export function renderLoop(host: LoopRenderHost, loop: IRLoop): string {
   // Such loops keep iterating the real collection; the nested child renders
   // through the parent's once-per-slot instance (see `renderComponent`'s
   // non-wrapper in-loop branch).
-  if (loop.childComponent) {
-    goArray = `.${host.nestedRowsField({ name: loop.childComponent.name, loopMarkerId: loop.markerId })}`
+  if (rowsChild) {
+    goArray = `.${host.nestedRowsField({ name: rowsChild.name, loopMarkerId: loop.markerId })}`
   } else if (readsJsValuedProp(host, loop.arrayParsed) || (loop.arrayParsed !== undefined && host.readsOptField(loop.arrayParsed))) {
     // A prop field holding the JS value (`resolvePropGoType`), or a row's
     // `bf.Opt[T]` field, is `bf.Undefined` when omitted, which `{{range}}`
@@ -395,7 +404,13 @@ function renderLoopRow(
   // around the body render only; mirrors the wrapper/constructor
   // `wrapperRowScalarItemGoType` gate.
   host.loopScalarItemStack().push(isScalarItemLoop(host, loop))
-  host.loopWrapperStack().push(!!loop.childComponent)
+  // A child-component loop with no rows field (`isRowsFieldLoop`) ranges over
+  // its own array, so its row component is the row root of an element-row
+  // loop: it renders through its slot instance and takes the row's key there.
+  const rowsLoop = isRowsFieldLoop(loop, prevScope)
+  host.loopWrapperStack().push(rowsLoop)
+  const outerRangedRowRoot = host.rangedRowRoot()
+  host.setRangedRowRoot(loop.childComponent && !rowsLoop ? loop.children[0] : null)
   const wasScalarWrapperRowCallSite = host.scalarWrapperRowCallSite()
   host.setScalarWrapperRowCallSite(host.ctx.state.scalarWrapperRowLoops.has(loop.markerId))
   // Rendered inside the pushed loop scope so each initializer resolves
@@ -406,6 +421,7 @@ function renderLoopRow(
     .join('')
   const children = host.renderChildren(loop.children)
   host.setScalarWrapperRowCallSite(wasScalarWrapperRowCallSite)
+  host.setRangedRowRoot(outerRangedRowRoot)
   host.loopWrapperStack().pop()
   host.loopScalarItemStack().pop()
   // Build the per-item anchor marker while the row scope is still active,
@@ -771,7 +787,7 @@ function wrapperDatumField(host: LoopRenderHost, loop: {
   param: string
   markerId: string
 }): string | null {
-  if (!loop.childComponent) return null
+  if (!loop.childComponent || !isRowsFieldLoop(loop, host.scope())) return null
   // A scalar wrapper row carries the bare value itself (`scalarWrapperRowLoops`).
   if (host.ctx.state.scalarWrapperRowLoops.has(loop.markerId)) return SCALAR_ROW_ITEM_FIELD
   for (const prop of loop.childComponent.props) {
@@ -957,6 +973,20 @@ export function loopRowChildPropOverrides(
 }
 
 /**
+ * The `"BfDataKey" value` argument pair that gives the row component of a
+ * loop ranging over its own array (`rangedRowRoot`) its row's key: the
+ * `data-key` a constructor-built row carries as `bf.String` of its key. Null
+ * when the row has no key, or its key doesn't lower (refused loudly).
+ */
+export function rangedRowKeyArgs(host: LoopRenderHost, comp: IRComponent): string | null {
+  const key = comp.props.find(p => p.name === 'key')
+  if (key?.value.kind === 'literal') return `"BfDataKey" ${JSON.stringify(key.value.value)}`
+  if (key?.value.kind !== 'expression') return null
+  const go = lowerOverrideValue(host, comp, key, key.value, false)
+  return go === null ? null : `"BfDataKey" (bf_string ${wrapIfMultiToken(go)})`
+}
+
+/**
  * One prop of {@link loopRowChildPropOverrides}: its `"Field" value` argument
  * and whether it needs the rebuilder, or null when the prop is not overridden
  * per row (skipped, refused, or routed into `bagEntries`).
@@ -1027,7 +1057,7 @@ function lowerLoopRowChildProp(
   const carried = spreadCarriedCallerKey(host.ctx, comp.props, prop.name)
   const go = carried === null
     ? lowered
-    : `(bf_ternary (bf_has $.BfCallerProps ${JSON.stringify(carried)}) (bf_get $.BfCallerProps ${JSON.stringify(carried)}) ${wrapIfMultiToken(lowered)})`
+    : `(bf_ternary (bf_has ${host.rootRefPrefix()}BfCallerProps ${JSON.stringify(carried)}) (bf_get ${host.rootRefPrefix()}BfCallerProps ${JSON.stringify(carried)}) ${wrapIfMultiToken(lowered)})`
   // #3062: a rest-bag prop has no declared field — deliver its per-row
   // value through `bf_with_bag` (keyed by the RAW JSX attribute name,
   // same as `queueDynamicPropDefine`'s static sibling route) instead of

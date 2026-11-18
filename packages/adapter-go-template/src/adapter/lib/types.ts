@@ -75,20 +75,14 @@ export interface NestedComponentInfo extends IRLoopChildComponent {
    *  resolved to Go struct fields for the wrapper struct's datum fields. */
   loopItemType?: TypeInfo | null
   /**
-   * The row scope of the loop whose body IS this component — every loop from
-   * the component root down to it, entered via `BindingScope.enterLoopRow`
-   * (`findNestedComponents`). A prop reading one of these names is row-
+   * The row scope of the loop whose body IS this component, entered via
+   * `BindingScope.enterLoopRow` (`findNestedComponents`). No other loop's
+   * row encloses it (`isRowsFieldLoop`), so its array expression reads the
+   * component's own bindings. A prop reading one of the row's names is row-
    * dependent: the constructor runs once, outside the row, so the wrapper-
    * construction sites skip it.
    */
   rowScope: BindingScope
-  /**
-   * The scope the loop's ARRAY expression is evaluated in: the loops
-   * enclosing this one, without its own row. A name the array reads
-   * (`rows()`) is the component's own binding only when this scope leaves
-   * it unbound.
-   */
-  arrayScope: BindingScope
   /**
    * The loop-body component's own full `IRProp`s — unlike the trimmed `props`
    * copy on `IRLoopChildComponent`, these carry `freeIdentifiers`, `loc` and

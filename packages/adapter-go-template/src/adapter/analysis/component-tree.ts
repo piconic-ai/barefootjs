@@ -19,6 +19,7 @@ import type {
   IRComponent,
 } from '@barefootjs/jsx'
 
+import { isRowsFieldLoop } from '../lib/nested-rows-field.ts'
 import type { NestedComponentInfo } from '../lib/types.ts'
 
 /**
@@ -66,6 +67,15 @@ function hasEventsInTree(node: IRNode): boolean {
   return false
 }
 
+/**
+ * Whether the tree renders any child component: the component's constructor
+ * then builds instances under its own scope id (a nested child's `ScopeID`
+ * and `BfParent`).
+ */
+export function hasChildComponents(root: IRNode): boolean {
+  return findChildComponentNames(root).size > 0
+}
+
 /** Find all child component names used in the IR tree. */
 function findChildComponentNames(node: IRNode): Set<string> {
   const names = new Set<string>()
@@ -108,7 +118,8 @@ function collectChildComponentNames(node: IRNode, names: Set<string>): void {
 }
 
 /**
- * Find all nested components (loops with `childComponent`). Returns extended
+ * Find all nested components (loops with `childComponent` that get a rows
+ * field, `isRowsFieldLoop`). Returns extended
  * info that includes whether the component comes from a dynamic (signal) array
  * loop vs a static one.
  */
@@ -124,9 +135,10 @@ type ComponentSignal = ComponentIR['metadata']['signals'][number]
  * The component signal a nested-component loop ranges over directly
  * (`rows().map(o => <Chip …>…</Chip>)`), or null: the array is a bare call
  * of one of the component's signal getters, or of a local alias of one
- * (`getterAliases`: `const r = rows`), that no enclosing loop binding
- * shadows. An env reader or an elided async-factory value has no seeded
- * Props field, so it is no row source either.
+ * (`getterAliases`: `const r = rows`). No enclosing loop binding can shadow
+ * the name: a loop inside another loop's row is no nested-component site
+ * (`isRowsFieldLoop`). An env reader or an elided async-factory value has
+ * no seeded Props field, so it is no row source either.
  */
 export function loopArraySignal(
   nested: NestedComponentInfo,
@@ -135,9 +147,35 @@ export function loopArraySignal(
 ): ComponentSignal | null {
   const array = nested.loopArrayParsed
   if (array?.kind !== 'call' || array.args.length > 0 || array.callee.kind !== 'identifier') return null
-  if (nested.arrayScope.isBound(array.callee.name)) return null
   const getter = getterAliases.get(array.callee.name) ?? array.callee.name
   return signals.find(s => s.getter === getter && !s.envReader && !isElidedFactoryGetter(s)) ?? null
+}
+
+/** The rows-field site of `loop`, whose body is the single component `child` (`isRowsFieldLoop`). */
+function nestedComponentSite(
+  loop: IRLoop,
+  child: NonNullable<IRLoop['childComponent']>,
+  rowScope: BindingScope,
+): NestedComponentInfo {
+  return {
+    ...child,
+    isDynamic: !loop.isStaticArray,
+    isPropDerived: !!loop.isPropDerivedArray,
+    clientOnly: loop.clientOnly,
+    loopKey: loop.key ?? undefined,
+    loopParam: loop.param ?? undefined,
+    loopParamBindings: loop.paramBindings,
+    loopIndex: loop.index,
+    bodyChildren: child.children.length > 0 ? child.children : undefined,
+    loopArray: loop.array,
+    loopArrayParsed: loop.arrayParsed,
+    loopMarkerId: loop.markerId,
+    loopItemType: loop.itemType,
+    rowScope,
+    // `childComponent` is set only when the body is exactly this one
+    // component, so `loop.children[0]` is its full IR node.
+    rowProps: (loop.children[0] as IRComponent).props,
+  }
 }
 
 /**
@@ -152,28 +190,8 @@ function collectNestedComponents(node: IRNode, result: NestedComponentInfo[], sc
     // One entry per loop SITE, not per component: two loops over the same
     // row component range over different data and forward different
     // children, so each gets its own rows field (`allocateRowsFields`, #3599).
-    if (loop.childComponent) {
-      const hasBodyChildren = loop.childComponent.children.length > 0
-      result.push({
-        ...loop.childComponent,
-        isDynamic: !loop.isStaticArray,
-        isPropDerived: !!loop.isPropDerivedArray,
-        clientOnly: loop.clientOnly,
-        loopKey: loop.key ?? undefined,
-        loopParam: loop.param ?? undefined,
-        loopParamBindings: loop.paramBindings,
-        loopIndex: loop.index,
-        bodyChildren: hasBodyChildren ? loop.childComponent.children : undefined,
-        loopArray: loop.array,
-        loopArrayParsed: loop.arrayParsed,
-        loopMarkerId: loop.markerId,
-        loopItemType: loop.itemType,
-        rowScope,
-        arrayScope: scope,
-        // `childComponent` is set only when the body is exactly this one
-        // component, so `loop.children[0]` is its full IR node.
-        rowProps: (loop.children[0] as IRComponent).props,
-      })
+    if (loop.childComponent && isRowsFieldLoop(loop, scope)) {
+      result.push(nestedComponentSite(loop, loop.childComponent, rowScope))
     }
     for (const child of loop.children) {
       collectNestedComponents(child, result, rowScope)

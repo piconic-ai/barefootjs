@@ -21,7 +21,7 @@
     },
     "packages/adapter-go-template/src/adapter/analysis/component-tree.ts": {
       "collectNestedComponents": [
-        33
+        29
       ],
       "hasEventsInTree": [
         39
@@ -44,9 +44,6 @@
       ],
       "isStringExpr": [
         29
-      ],
-      "renderComponent": [
-        36
       ],
       "renderConditional": [
         28

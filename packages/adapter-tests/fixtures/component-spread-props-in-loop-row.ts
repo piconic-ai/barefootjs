@@ -9,9 +9,8 @@ import { createFixture } from '../src/types'
  * a conditional inside a row. The child reads the keys in an attribute,
  * text, a ternary, `&&` and a template literal. A static-array row is
  * `component-spread-props-in-static-loop-row`; a nested loop's row is
- * covered by the client tests only (go-template can't render a component
- * row of an inner loop over an object prop, spread or not). The
- * destructured-props twin is `component-rest-spread-in-loop-row`.
+ * `component-spread-props-in-nested-loop-row`. The destructured-props twin
+ * is `component-rest-spread-in-loop-row`.
  */
 export const fixture = createFixture({
   id: 'component-spread-props-in-loop-row',
