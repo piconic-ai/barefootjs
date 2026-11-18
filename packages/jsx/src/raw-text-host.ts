@@ -83,12 +83,12 @@ const HTML_INTEGRATION_POINTS: ReadonlySet<string> = new Set([
  * where the opposite guess would leave comment markers in raw text.
  */
 function isAnnotationXmlHtml(el: IRElement): boolean {
+  // An attribute spread may supply or override `encoding` at runtime (a later
+  // spread wins over an earlier literal), so an element that spreads anything
+  // cannot be classified; treat it as HTML like any other non-literal value.
+  if (el.attrs.some(a => a.name === '...')) return true
   const encoding = el.attrs.find(a => a.name === 'encoding')
-  // An attribute spread may supply (or override) `encoding` at runtime, so an
-  // element that spreads one cannot be classified; treat it as HTML like any
-  // other non-literal value.
-  const hasSpread = el.attrs.some(a => a.name === '...')
-  if (!encoding) return hasSpread
+  if (!encoding) return false
   if (encoding.value.kind !== 'literal') return true
   const value = encoding.value.value.toLowerCase()
   return value === 'text/html' || value === 'application/xhtml+xml'
