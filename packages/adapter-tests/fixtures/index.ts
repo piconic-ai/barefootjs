@@ -926,6 +926,9 @@ import { fixture as atSignBesideBrace } from './at-sign-beside-brace'
 import { fixture as templateDelimiterStaticText } from './template-delimiter-static-text'
 import { fixture as templateDelimiterContextualEscape } from './template-delimiter-contextual-escape'
 import { fixture as styleScriptTextDynamic } from './style-script-text-dynamic'
+import { fixture as rawTextHostDynamic } from './raw-text-host-dynamic'
+import { fixture as rawTextHostStyleScript } from './raw-text-host-style-script'
+import { fixture as rawTextHostReactive } from './raw-text-host-reactive'
 import { fixture as templateDelimiterStaticTextPropsObject } from './template-delimiter-static-text-props-object'
 import { fixture as percentDelimiterStringLiteral } from './percent-delimiter-string-literal'
 import { fixture as percentDelimiterStringLiteralPropsObject } from './percent-delimiter-string-literal-props-object'
@@ -2269,6 +2272,9 @@ export const jsxFixtures: JSXFixture[] = [
   templateDelimiterStaticText,
   templateDelimiterContextualEscape,
   styleScriptTextDynamic,
+  rawTextHostDynamic,
+  rawTextHostStyleScript,
+  rawTextHostReactive,
   templateDelimiterStaticTextPropsObject,
   percentDelimiterStringLiteral,
   percentDelimiterStringLiteralPropsObject,

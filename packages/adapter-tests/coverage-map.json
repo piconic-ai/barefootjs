@@ -15276,6 +15276,49 @@
         "text"
       ]
     },
+    "raw-text-host-dynamic": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "raw-text-host-reactive": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "raw-text-host-style-script": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "reactive-factory-object-return": {
       "kinds": [
         "call",

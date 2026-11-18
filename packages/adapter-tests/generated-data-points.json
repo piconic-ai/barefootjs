@@ -15922,6 +15922,94 @@
       }
     }
   ],
+  "raw-text-host-dynamic": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "n": 3
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "n": 3
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "n": 3
+      }
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "label": "a<b & \"c\"",
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "label": "a<b & \"c\"",
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "label": "a<b & \"c\"",
+        "n": 1234567890
+      }
+    }
+  ],
+  "raw-text-host-style-script": [
+    {
+      "name": "gen:color:empty",
+      "props": {
+        "color": "",
+        "label": "a<b & \"c\""
+      }
+    },
+    {
+      "name": "gen:color:markup",
+      "props": {
+        "color": "<b>&\"'</b>",
+        "label": "a<b & \"c\""
+      }
+    },
+    {
+      "name": "gen:color:multibyte",
+      "props": {
+        "color": "日本語",
+        "label": "a<b & \"c\""
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "color": "red",
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "color": "red",
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "color": "red",
+        "label": "日本語"
+      }
+    }
+  ],
   "reassigned-prop-counter": [
     {
       "name": "gen:start:absent",
