@@ -1983,6 +1983,7 @@
               "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
+              "component-scope-helper-call",
               "computed-const-loop-source",
               "const-literal-inherited-key",
               "destructure-default-reads-component-state",
@@ -2014,6 +2015,7 @@
               "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
+              "component-scope-helper-call",
               "computed-const-loop-source",
               "const-literal-inherited-key",
               "destructure-default-reads-component-state",
@@ -2048,6 +2050,7 @@
               "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
+              "component-scope-helper-call",
               "computed-const-loop-source",
               "const-literal-inherited-key",
               "destructure-default-reads-component-state",
@@ -2079,6 +2082,7 @@
               "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
+              "component-scope-helper-call",
               "computed-const-loop-source",
               "const-literal-inherited-key",
               "destructure-default-reads-component-state",
@@ -2111,6 +2115,7 @@
               "boolean-in-static-loop-item",
               "callback-index-param",
               "callback-outside-evaluator",
+              "component-scope-helper-call",
               "computed-const-loop-source",
               "const-literal-inherited-key",
               "destructure-default-reads-component-state",
@@ -2142,6 +2147,7 @@
               "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
+              "component-scope-helper-call",
               "computed-const-loop-source",
               "const-literal-inherited-key",
               "destructure-default-reads-component-state",
@@ -2173,6 +2179,7 @@
               "body-rest-taken-key-read",
               "callback-index-param",
               "callback-outside-evaluator",
+              "component-scope-helper-call",
               "computed-const-loop-source",
               "const-literal-inherited-key",
               "destructure-default-reads-component-state",
@@ -2205,6 +2212,7 @@
               "boolean-in-static-loop-item",
               "callback-index-param",
               "callback-outside-evaluator",
+              "component-scope-helper-call",
               "computed-const-loop-source",
               "const-literal-inherited-key",
               "destructure-default-reads-component-state",
@@ -11352,6 +11360,125 @@
           }
         }
       },
+      "static-loop-conditional-function-helper": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "component-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side branch switch of static-array rows that hydration adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted and the twin would pin a client-only mount instead."
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "component-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side branch switch of static-array rows that hydration adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted and the twin would pin a client-only mount instead."
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF102"
+          ],
+          "limitations": [
+            "component-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side branch switch of static-array rows that hydration adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted and the twin would pin a client-only mount instead."
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "component-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side branch switch of static-array rows that hydration adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted and the twin would pin a client-only mount instead."
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "component-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side branch switch of static-array rows that hydration adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted and the twin would pin a client-only mount instead."
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "component-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side branch switch of static-array rows that hydration adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted and the twin would pin a client-only mount instead."
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "component-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side branch switch of static-array rows that hydration adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted and the twin would pin a client-only mount instead."
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "component-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side branch switch of static-array rows that hydration adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted and the twin would pin a client-only mount instead."
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "component-scope-helper-call"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the client-side branch switch of static-array rows that hydration adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted and the twin would pin a client-only mount instead."
+          }
+        }
+      },
       "static-loop-item-boolean-attr": {
         "mojolicious": {
           "kind": "refusal",
@@ -13075,6 +13202,10 @@
         "description": "A /* @client */ nested .map() inside a static outer loop row renders the outer rows with an empty…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-client-only-nested.ts"
       },
+      "static-loop-conditional-function-helper": {
+        "description": "a static array row conditional that reads a signal through an arrow, block-arrow or…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-conditional-function-helper.ts"
+      },
       "static-loop-item-boolean-attr": {
         "description": "static array's .map() row boolean attribute keyed off the item itself renders per item (#2898)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-item-boolean-attr.ts"
@@ -13740,6 +13871,31 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "component-scope-helper-call": {
+      "title": "Component-scope helper called with arguments from a template position",
+      "kind": "refusal",
+      "given": "a template expression calling a component-body helper (an arrow-valued `const` or a `function` declaration) with arguments, in boolean-test position",
+      "expected": "the helper runs at render time and its result renders in the server HTML",
+      "actual": "the compiler refuses with BF101 / BF102",
+      "fixtures": [
+        "static-loop-conditional-function-helper"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101",
+        "BF102"
       ]
     },
     "computed-const-loop-source": {

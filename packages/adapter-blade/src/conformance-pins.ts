@@ -193,6 +193,13 @@ export const conformancePins: ConformancePins = {
   'keyed-row-branch-call': [
     { code: 'BF101', severity: 'error', limitation: 'module-scope-helper-call' },
   ],
+  // #3912: a static array row whose conditional calls a component-scope
+  // helper (arrow, block arrow and `function` declaration) with the row's
+  // id. The fixture pins the client's branch switch over rows hydration
+  // adopted from the reference adapter's HTML and declares `escapeNotOwed`.
+  'static-loop-conditional-function-helper': [
+    { code: 'BF101', severity: 'error', limitation: 'component-scope-helper-call' },
+  ],
   // #3063: a client-interactive component with a multi-return chain
   // where one branch is a bare JSX fragment refuses ahead of
   // `adapter.generate()` in the shared jsx-to-ir.ts phase (the client

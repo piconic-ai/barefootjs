@@ -34,6 +34,13 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // loop; SSR refuses it on the template adapters and the CSR template has
   // no value for it either.
   'computed-const-read-unlowerable',
+  // #3912: a row condition calling a component-scope helper
+  // (`isSel(item.id)`). The helper is an init local, which the CSR template
+  // has no init to declare, so the template reads the call as `undefined`
+  // and renders the false branch; the template adapters refuse the call.
+  // The loop's own first run corrects the rows on a real mount, which the
+  // real-browser fixture-hydrate and oracle suites check.
+  'static-loop-conditional-function-helper',
   // A value an init-time mutation computes (`const n = a.push('x') &&
   // b.length` over `let { a = [], b = a } = props`): the CSR template has no
   // init to run, and the template adapters refuse the call. The real-browser

@@ -17576,6 +17576,27 @@
         "text"
       ]
     },
+    "static-loop-conditional-function-helper": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop"
+      ]
+    },
     "static-loop-conditional-precomputed": {
       "kinds": [
         "call",
@@ -17683,6 +17704,33 @@
       ],
       "axes": [
         "literal:null"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "static-loop-row-conditional-branch-signal": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:*",
+        "binary:+",
+        "binary:===",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:??"
       ],
       "contexts": [
         "attribute",

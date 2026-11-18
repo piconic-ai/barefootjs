@@ -254,6 +254,14 @@ export const conformancePins: ConformancePins = {
   'keyed-row-branch-call': [
     { code: 'BF101', severity: 'error', limitation: 'module-scope-helper-call' },
   ],
+  // #3912: a static array row whose conditional calls a component-scope
+  // helper (arrow, block arrow and `function` declaration) with the row's
+  // id, which Go refuses as a user-defined predicate (BF102). The fixture
+  // pins the client's branch switch over rows hydration adopted from the
+  // reference adapter's HTML and declares `escapeNotOwed`.
+  'static-loop-conditional-function-helper': [
+    { code: 'BF102', severity: 'error', limitation: 'component-scope-helper-call' },
+  ],
   // #3170: a static loop row that calls a child component, forwarding a
   // JSX element as `children`, where that element reads an OUTER
   // signal/memo (not just the row's own item). Used to compile clean and
