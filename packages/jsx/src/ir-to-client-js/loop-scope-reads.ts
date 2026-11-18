@@ -131,6 +131,31 @@ export function readsBeyondLoopScope(
   return false
 }
 
+/**
+ * Whether an expression with the free identifiers `free` reaches a signal,
+ * memo or prop THROUGH a component-local helper it names: `isOn()` with
+ * `function isOn() { return n() > 0 }`.
+ *
+ * Narrower than `readsBeyondLoopScope` on purpose. A name that is itself a
+ * signal, memo or prop is Phase 1's to classify (`IRConditional.reactive`),
+ * and an unknown set proves nothing, so neither answers `true` here. This
+ * is the one reach no other classifier sees, which lets a row condition
+ * that names only a helper be collected at all.
+ */
+export function reachesReactiveThroughLocalHelper(
+  free: ReadonlySet<string> | null | undefined,
+  scope: BindingScope | undefined,
+  ctx: ClientJsContext,
+): boolean {
+  if (!free) return false
+  const names = componentNamesOf(ctx)
+  for (const name of free) {
+    if (scope?.isBound(name) || names.reactive.has(name)) continue
+    if (nameReachesReactive(name, names, new Set())) return true
+  }
+  return false
+}
+
 /** Free identifiers of a node's source expression, or `null` when Phase 1 resolved none. */
 function originFreeIds(node: IRExpression | IRConditional): ReadonlySet<string> | null {
   const refs = node.origin?.freeRefs

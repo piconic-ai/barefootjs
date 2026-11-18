@@ -17614,6 +17614,28 @@
         "text"
       ]
     },
+    "static-loop-conditional-row-independent-helper": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop"
+      ]
+    },
     "static-loop-item-boolean-attr": {
       "kinds": [
         "array-literal",

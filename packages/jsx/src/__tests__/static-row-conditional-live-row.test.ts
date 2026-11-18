@@ -155,6 +155,39 @@ describe('#3912 — a condition that reaches a signal through a local helper', (
     expect(isLive(compile(component(`{odd(r.id.length) ? <b>on</b> : <i>off</i>}`, helper)))).toBe(false)
   })
 
+  // A helper call that takes no row argument names neither a row binding
+  // nor a signal, so the condition used to be dropped by the collector's
+  // eligibility gates before the helper was followed.
+  const rowIndependent: Array<[string, string]> = [
+    ['a function declaration', `function isOn() { return n() > 0 }`],
+    ['a block-bodied function declaration', `function isOn() { const v = n(); return v > 0 }`],
+    ['a zero-argument arrow', `const isOn = () => n() > 0`],
+    ['a block-bodied zero-argument arrow', `const isOn = () => { return n() > 0 }`],
+    [
+      'a helper calling another helper',
+      `const current = () => n()
+       function isOn() { return current() > 0 }`,
+    ],
+  ]
+  for (const [name, helper] of rowIndependent) {
+    test(`row-independent call of ${name} takes the row off the static path`, () => {
+      const js = compile(component(`{isOn() ? <b>on</b> : <i>off</i>}`, helper))
+      expect(isLive(js)).toBe(true)
+      // Wired, not only routed: the init body evaluates the call itself.
+      expect(js.slice(0, js.indexOf("hydrate('C'"))).toContain('isOn()')
+    })
+  }
+
+  test('a row-independent call of a helper that reads no state keeps the static path', () => {
+    const js = compile(component(`{isOn() ? <b>on</b> : <i>off</i>}`, `function isOn() { return ROWS.length > 1 }`))
+    expect(isLive(js)).toBe(false)
+  })
+
+  test('a row-independent call of an imported helper keeps the static path', () => {
+    const source = component(`{isOn() ? <b>on</b> : <i>off</i>}`, '', `import { isOn } from './helpers'`)
+    expect(isLive(compile(source))).toBe(false)
+  })
+
   const pure: Array<[string, string, string]> = [
     ['a local function that reads no state', `function isA(id: string) { return id === 'a' }`, ''],
     ['a local arrow that reads no state', `const isA = (id: string) => id === 'a'`, ''],
@@ -203,6 +236,11 @@ describe('a depth-1 inner static loop row gets the same answer', () => {
   test('#3912: a function-declaration helper in the inner row condition', () => {
     const helper = `function isSel(id: string) { return String(n()) === id }`
     expect(isLive(compile(nested(`{isSel(q.id) ? <b>on</b> : <i>off</i>}`, helper)))).toBe(true)
+  })
+
+  test('#3912: a row-independent helper call in the inner row condition', () => {
+    const helper = `function isOn() { return n() > 0 }`
+    expect(isLive(compile(nested(`{isOn() ? <b>on</b> : <i>off</i>}`, helper)))).toBe(true)
   })
 
   test('a branch reading the OUTER row keeps the static path', () => {
