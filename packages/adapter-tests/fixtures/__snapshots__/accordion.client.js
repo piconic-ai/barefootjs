@@ -3093,7 +3093,6 @@ export function initAccordionContent(__scope, _p = {}) {
   const accordionContentBaseClasses = 'grid transition-[grid-template-rows,visibility] duration-normal ease-out'
   const accordionContentOpenClasses = 'grid-rows-[1fr] visible'
   const accordionContentClosedClasses = 'grid-rows-[0fr] invisible'
-  const className = createMemo(() => _p.className ?? '')
   const handleMount = (el) => {
     const ctx = useContext(AccordionItemContext)
 
@@ -3105,6 +3104,7 @@ export function initAccordionContent(__scope, _p = {}) {
       }
     })
   }
+  const className = createMemo(() => _p.className ?? '')
 
   const [_s1, _s0] = $(__scope, 's1', 's0')
 

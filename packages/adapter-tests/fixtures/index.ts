@@ -297,9 +297,11 @@ import { fixture as numberPropNamedLength } from './number-prop-named-length'
 import { fixture as remainderNegativeZeroQuotient } from './remainder-negative-zero-quotient'
 import { fixture as computedIndexOwnKey } from './computed-index-own-key'
 import { fixture as literalIndexOwnKey } from './literal-index-own-key'
+import { fixture as untypedRowsLiteralKeyNestedObject } from './untyped-rows-literal-key-nested-object'
 import { fixture as indexKeyCanonicalForm } from './index-key-canonical-form'
 import { fixture as indexKeyCanonicalFormCallback } from './index-key-canonical-form-callback'
 import { fixture as indexReadPositions } from './index-read-positions'
+import { fixture as indexReadMemberChain } from './index-read-member-chain'
 import { fixture as relationalPositions } from './relational-positions'
 import { fixture as relationalOmittedNumberMemo } from './relational-omitted-number-memo'
 // `+` and ToString at every position (#3740, #3824 step 4).
@@ -1173,6 +1175,7 @@ import { fixture as moduleConstArrowHelper } from './module-const-arrow-helper'
 import { fixture as moduleFunctionHelperChain } from './module-function-helper-chain'
 import { fixture as moduleConstDestructureDefault } from './module-const-destructure-default'
 import { fixture as moduleConstDefaultHydrate } from './module-const-default-hydrate'
+import { fixture as moduleConstMemberKeyHydrate } from './module-const-member-key-hydrate'
 // #3012: the boolean-test-position companion of moduleConstArrowHelper /
 // moduleFunctionHelperChain above — a module-scope helper called from
 // inside a ternary's `test` (not `isValidElement`), pinning that the
@@ -1715,9 +1718,11 @@ export const jsxFixtures: JSXFixture[] = [
   remainderNegativeZeroQuotient,
   computedIndexOwnKey,
   literalIndexOwnKey,
+  untypedRowsLiteralKeyNestedObject,
   indexKeyCanonicalForm,
   indexKeyCanonicalFormCallback,
   indexReadPositions,
+  indexReadMemberChain,
   relationalPositions,
   relationalOmittedNumberMemo,
   plusTostringPositions,
@@ -2387,6 +2392,7 @@ export const jsxFixtures: JSXFixture[] = [
   moduleFunctionHelperChain,
   moduleConstDestructureDefault,
   moduleConstDefaultHydrate,
+  moduleConstMemberKeyHydrate,
   moduleHelperBoolcontextCall,
   opaqueLocalAccessorCall,
   opaqueLocalAccessorCallClient,

@@ -1,8 +1,8 @@
 import { createFixture } from '../src/types'
 
 /**
- * Rewrite escape for `loop-row-child-untyped-array-nested-field`: the same
- * rows, with the const annotated by an explicit element type.
+ * The rows of `loop-row-child-untyped-array-nested-field`, with the const
+ * annotated by an explicit element type.
  */
 export const fixture = createFixture({
   id: 'loop-row-child-untyped-array-nested-field-typed',

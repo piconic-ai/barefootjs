@@ -516,12 +516,6 @@
               ]
             },
             {
-              "fixture": "literal-index-own-key",
-              "limitations": [
-                "non-identifier-literal-key"
-              ]
-            },
-            {
               "fixture": "loop-row-absent-optional-member-attr-module-const",
               "limitations": [
                 "static-literal-loop-absent-row-field"
@@ -535,12 +529,6 @@
             },
             {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
-              "limitations": [
-                "untyped-loop-array-no-row-struct"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
               ]
@@ -4608,12 +4596,6 @@
               ]
             },
             {
-              "fixture": "literal-index-own-key",
-              "limitations": [
-                "non-identifier-literal-key"
-              ]
-            },
-            {
               "fixture": "loop-row-child-caller-rows-outer-state-key",
               "limitations": [
                 "loop-row-key-outer-state"
@@ -6796,12 +6778,6 @@
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "literal-index-own-key",
-              "limitations": [
-                "non-identifier-literal-key"
               ]
             },
             {
@@ -12051,12 +12027,6 @@
               ]
             },
             {
-              "fixture": "literal-index-own-key",
-              "limitations": [
-                "non-identifier-literal-key"
-              ]
-            },
-            {
               "fixture": "loop-key-to-string-number-component-row",
               "limitations": [
                 "caller-rows-computed-key"
@@ -12100,12 +12070,6 @@
             },
             {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
-              "limitations": [
-                "untyped-loop-array-no-row-struct"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
               ]
@@ -17186,12 +17150,6 @@
               ]
             },
             {
-              "fixture": "literal-index-own-key",
-              "limitations": [
-                "non-identifier-literal-key"
-              ]
-            },
-            {
               "fixture": "loop-row-absent-optional-member-attr-module-const",
               "limitations": [
                 "static-literal-loop-absent-row-field"
@@ -17205,12 +17163,6 @@
             },
             {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
-              "limitations": [
-                "untyped-loop-array-no-row-struct"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
               ]
@@ -21837,12 +21789,6 @@
               ]
             },
             {
-              "fixture": "literal-index-own-key",
-              "limitations": [
-                "non-identifier-literal-key"
-              ]
-            },
-            {
               "fixture": "loop-key-to-string-number-component-row",
               "limitations": [
                 "caller-rows-computed-key"
@@ -21880,12 +21826,6 @@
             },
             {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
-              "limitations": [
-                "untyped-loop-array-no-row-struct"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
               ]
@@ -25006,12 +24946,6 @@
               ]
             },
             {
-              "fixture": "literal-index-own-key",
-              "limitations": [
-                "non-identifier-literal-key"
-              ]
-            },
-            {
               "fixture": "loop-row-absent-optional-member-attr-module-const",
               "limitations": [
                 "static-literal-loop-absent-row-field"
@@ -25019,12 +24953,6 @@
             },
             {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
-              "limitations": [
-                "untyped-loop-array-no-row-struct"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
               ]
@@ -26394,12 +26322,6 @@
               "fixture": "keyed-row-branch-call",
               "limitations": [
                 "module-scope-helper-call"
-              ]
-            },
-            {
-              "fixture": "literal-index-own-key",
-              "limitations": [
-                "non-identifier-literal-key"
               ]
             },
             {
@@ -30631,12 +30553,6 @@
               ]
             },
             {
-              "fixture": "literal-index-own-key",
-              "limitations": [
-                "non-identifier-literal-key"
-              ]
-            },
-            {
               "fixture": "loop-row-child-children-attrs",
               "limitations": [
                 "loop-row-child-children-attrs-frozen"
@@ -32090,12 +32006,6 @@
               ]
             },
             {
-              "fixture": "literal-index-own-key",
-              "limitations": [
-                "non-identifier-literal-key"
-              ]
-            },
-            {
               "fixture": "loop-row-absent-optional-member-attr-module-const",
               "limitations": [
                 "static-literal-loop-absent-row-field"
@@ -32810,21 +32720,9 @@
               ]
             },
             {
-              "fixture": "literal-index-own-key",
-              "limitations": [
-                "non-identifier-literal-key"
-              ]
-            },
-            {
               "fixture": "loop-row-absent-optional-member-attr-module-const",
               "limitations": [
                 "static-literal-loop-absent-row-field"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-untyped-array-nested-field",
-              "limitations": [
-                "untyped-loop-array-no-row-struct"
               ]
             },
             {
@@ -34767,12 +34665,6 @@
               ]
             },
             {
-              "fixture": "literal-index-own-key",
-              "limitations": [
-                "non-identifier-literal-key"
-              ]
-            },
-            {
               "fixture": "loop-row-absent-optional-member-attr-module-const",
               "limitations": [
                 "static-literal-loop-absent-row-field"
@@ -34786,12 +34678,6 @@
             },
             {
               "fixture": "loop-row-child-untyped-array-mismatched-keys",
-              "limitations": [
-                "untyped-loop-array-no-row-struct"
-              ]
-            },
-            {
-              "fixture": "loop-row-child-untyped-array-nested-field",
               "limitations": [
                 "untyped-loop-array-no-row-struct"
               ]
@@ -38007,12 +37893,6 @@
               "fixture": "index-read-capitalised-key-only",
               "limitations": [
                 "index-read-capitalised-key-only"
-              ]
-            },
-            {
-              "fixture": "literal-index-own-key",
-              "limitations": [
-                "non-identifier-literal-key"
               ]
             },
             {

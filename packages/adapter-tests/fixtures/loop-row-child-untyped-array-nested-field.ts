@@ -3,16 +3,14 @@ import { createFixture } from '../src/types'
 /**
  * A `.map()` row calling a child component, over an unannotated module-scope
  * object-literal array whose rows share their keys but carry a nested-object
- * field (`meta: { x }`). Hono renders both rows; go-template has no single
- * Go field type to synthesize for `meta` and refuses with BF101 (see
- * `untyped-loop-array-no-row-struct`). The escape is an explicit element
- * type (`...-typed`).
+ * field (`meta: { x }`). Every row renders: a backend that types the rows
+ * gives `meta` a row type of its own. The same rows under an explicit
+ * element type are `...-typed`.
  */
 export const fixture = createFixture({
   id: 'loop-row-child-untyped-array-nested-field',
   description:
     'A loop row calling a child component over an untyped object-literal array const whose rows carry a nested-object field',
-  escapes: [{ kind: 'rewrite', fixture: 'loop-row-child-untyped-array-nested-field-typed' }],
   source: `
 'use client'
 function Chip({ label }: { label?: string }) {

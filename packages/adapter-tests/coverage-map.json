@@ -6921,6 +6921,37 @@
         "text"
       ]
     },
+    "index-read-member-chain": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "logical",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "binary:>",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:computed",
+        "member:optional"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "index-read-positions": {
       "kinds": [
         "arrow",
@@ -11458,6 +11489,29 @@
       "contexts": [
         "attribute",
         "loop",
+        "text"
+      ]
+    },
+    "module-const-member-key-hydrate": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal",
+        "unsupported"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
         "text"
       ]
     },
@@ -20048,6 +20102,35 @@
         "literal:null",
         "literal:number",
         "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "untyped-rows-literal-key-nested-object": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal",
+        "template-literal"
+      ],
+      "axes": [
+        "binary:===",
+        "binary:>",
+        "literal:boolean",
+        "literal:null",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:computed"
       ],
       "contexts": [
         "attribute",

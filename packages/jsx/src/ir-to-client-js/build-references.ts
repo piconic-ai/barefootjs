@@ -35,11 +35,11 @@ import type {
   ReferenceSource,
   ReferencesGraph,
 } from '../types.ts'
-import { preambleAnalysisText } from '../types.ts'
+import { preambleAnalysisText, type ConstantInfo } from '../types.ts'
 import type { IRVisitor as WalkerVisitor } from './walker.ts'
 import { attrValueToString } from './utils.ts'
 import type { ClientJsContext } from './types.ts'
-import { extractIdentifiers, extractTemplateIdentifiers } from './identifiers.ts'
+import { extractIdentifiers, extractTemplateIdentifiers, isKeywordOrGlobal } from './identifiers.ts'
 import { walkIR } from './walker.ts'
 import { signalSecondBinding } from '../signal-initializer.ts'
 
@@ -242,11 +242,7 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
   }
 
   // identifiers.ts L179-181
-  for (const constant of ctx.localConstants) {
-    if (constant.value) {
-      addExprEdges({ kind: 'constant', name: constant.name }, constant.value, 'init-body')
-    }
-  }
+  addConstantEdges(ctx.localConstants, ctx.propsObjectName, edges)
 
   // identifiers.ts L183-185
   for (const child of ctx.childInits) {
@@ -459,6 +455,38 @@ function addPropDefaultEdges(
     for (const ref of param.defaultFreeIdentifiers) {
       if (propNames.has(ref)) pending.push(ref)
       else if (!bodyBound.has(ref)) edges.push({ from: ROOT_SOURCE, to: ref, context: 'init-body' })
+    }
+  }
+}
+
+/**
+ * Edges from each local constant to the names its initializer reads. The
+ * initializer's own AST names them (`ConstantInfo.freeIdentifiers`): an object
+ * key, a member name or a callback parameter in the value is no read, and an
+ * edge to it would keep an unrelated declaration of that name alive. A
+ * constant without the AST-derived set falls back to a token scan of its value.
+ *
+ * A body destructure of the props object (`const { b = (a = 2) } = props`) is
+ * synthesized as `props.b ?? <default>`, whose AST set covers only the default.
+ * It also reads the props object and its own key, which keeps the declaration
+ * when its default has an effect (`prune-unused-prop-extractions`).
+ */
+function addConstantEdges(
+  constants: readonly ConstantInfo[],
+  propsObjectName: string | null,
+  edges: ReferenceEdge[],
+): void {
+  for (const constant of constants) {
+    const names = new Set<string>()
+    if (constant.freeIdentifiers) {
+      for (const id of constant.freeIdentifiers) names.add(id)
+      if (constant.propsDestructure && propsObjectName) {
+        names.add(propsObjectName)
+        names.add(constant.propsDestructure.sourceKey)
+      }
+    } else if (constant.value) extractIdentifiers(constant.value, names)
+    for (const name of names) {
+      if (!isKeywordOrGlobal(name)) edges.push({ from: { kind: 'constant', name: constant.name }, to: name, context: 'init-body' })
     }
   }
 }
