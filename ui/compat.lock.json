@@ -11118,6 +11118,56 @@
           }
         }
       },
+      "spread-overrides-literal-attr": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "later-spread-overrides-literal-attr"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "later-spread-overrides-literal-attr"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "later-spread-overrides-literal-attr"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "later-spread-overrides-literal-attr"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "later-spread-overrides-literal-attr"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "later-spread-overrides-literal-attr"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "later-spread-overrides-literal-attr"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "later-spread-overrides-literal-attr"
+          ]
+        }
+      },
       "static-array-from-props": {
         "blade": {
           "kind": "refusal",
@@ -13204,6 +13254,10 @@
         "description": "A `.toSorted()` comparator outside the evaluator and the descriptor — DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/sort-opaque-comparator.ts"
       },
+      "spread-overrides-literal-attr": {
+        "description": "A later attribute spread overrides an earlier literal attribute of the same key",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/spread-overrides-literal-attr.ts"
+      },
       "static-array-from-props": {
         "description": "Static-array loop with prop-derived array materialises children on CSR (#1247)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-array-from-props.ts"
@@ -14247,6 +14301,28 @@
         "BF021"
       ],
       "reason": "The shape is refused in the shared JSX-to-IR phase, identically on every adapter including the reference: the classifier has no structured node for it, and the only alternative was splicing raw JSX source text into the emitted client JS untyped. Passing the elements as `children`, or lifting the ternary into a single JSX element, is the supported form."
+    },
+    "later-spread-overrides-literal-attr": {
+      "title": "A later open attribute spread does not override an earlier literal attribute of the same key",
+      "kind": "silent",
+      "given": "an intrinsic element with a literal attribute followed by a spread whose keys are unknown at compile time (`<annotation-xml encoding=\"application/x-tex\" {...rest}>`, `rest` typed with an index signature)",
+      "expected": "the later spread wins and the key renders once (`encoding=\"text/html\"`)",
+      "actual": "renders the key twice, the literal first and the spread second, so a browser keeps the literal; the client template keeps only the literal",
+      "fixtures": [
+        "spread-overrides-literal-attr"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
     },
     "local-function-read-named-like-prop": {
       "title": "An uncalled read of a local function named like a typed prop",

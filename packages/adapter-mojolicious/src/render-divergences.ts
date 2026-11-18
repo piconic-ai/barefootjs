@@ -27,6 +27,10 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // refuses loudly with BF101 at compile time instead of silently crashing
 // Perl `strict`-mode template execution — see `conformance-pins.ts`.
 export const renderDivergences: RenderDivergences = {
+  // A literal attribute followed by a spread whose keys are unknown at compile
+  // time (`{...rest}`, open type) that supplies the same key: the key renders
+  // twice, the literal first.
+  'spread-overrides-literal-attr': { limitation: 'later-spread-overrides-literal-attr' },
   // A body statement mutating a destructure binding (`local.push('z')`),
   // read through a memo: the server render runs no body statement, so it
   // renders the value before the push.
