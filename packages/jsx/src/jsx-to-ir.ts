@@ -62,6 +62,7 @@ import {
 import { boundPropLocalNames, buildPropAliasMap, templatePropReadParams, resolveAliasOrigin, resolveRestSpreadOriginCore, restBagOmittedKeys, livePropReadExpr } from './props-binding.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
 import { walkIR } from './ir-to-client-js/walker.ts'
+import { lowerRawTextHosts } from './raw-text-host.ts'
 import { resolveFreeRefs, rebindHelperParamRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { createTemplateAwareStringProtector } from './ir-to-client-js/html-template.ts'
@@ -1440,6 +1441,9 @@ export function jsxToIR(analyzer: AnalyzerContext): IRNode | null {
   const root = buildIRRoot(analyzer, ctx)
   if (root) {
     reportRefAttrsAbsentAtSsr(root, ctx)
+    // #3910: a dynamic child of <style>/<script>/<textarea>/<title> wears no
+    // slot marker (raw text / RCDATA reads no comment).
+    lowerRawTextHosts(root, analyzer.errors)
     attachParsedExpressions(root, analyzer)
     // #3166: seed a query/mutation action's `isPending()` / `error()` read
     // where the seed renders like the reference — `action-accessor.ts`'s gate
