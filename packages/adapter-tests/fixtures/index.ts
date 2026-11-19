@@ -868,6 +868,7 @@ import { fixture as compositeRowChildComponent } from './composite-row-child-com
 import { fixture as compositeRowChildDerivedProp } from './composite-row-child-derived-prop'
 import { fixture as compositeRowChildAliasedProp } from './composite-row-child-aliased-prop'
 import { fixture as loopPreambleAttrValue } from './loop-preamble-attr-value'
+import { fixture as loopPreambleTemplateLiteral } from './loop-preamble-template-literal'
 import { fixture as loopPreambleChainedFilter } from './loop-preamble-chained-filter'
 import { fixture as loopPreambleConditionalReactive } from './loop-preamble-conditional-reactive'
 import { fixture as loopRowStaticConditional } from './loop-row-static-conditional'
@@ -1060,6 +1061,12 @@ import { fixture as dateCataloguedAttr } from './date-catalogued-attr'
 import { fixture as dateCatalogued } from './date-catalogued'
 import { fixture as dateInheritedProp } from './date-inherited-prop'
 import { fixture as dateInheritedPropIntersection } from './date-inherited-prop-intersection'
+import { fixture as dateInheritedPropInlineIntersection } from './date-inherited-prop-inline-intersection'
+import { fixture as dateInheritedPropInlineIntersectionBaseLast } from './date-inherited-prop-inline-intersection-base-last'
+import { fixture as dateInheritedPropInlineIntersectionLiteral } from './date-inherited-prop-inline-intersection-literal'
+import { fixture as dateInheritedPropInlineIntersectionDestructured } from './date-inherited-prop-inline-intersection-destructured'
+import { fixture as dateInheritedPropInlineIntersectionNested } from './date-inherited-prop-inline-intersection-nested'
+import { fixture as dateInheritedPropInlineIntersectionExtends } from './date-inherited-prop-inline-intersection-extends'
 import { fixture as richPropClientRead } from './rich-prop-client-read'
 import { fixture as richPropPrecompute } from './rich-prop-precompute'
 import { fixture as formatDate } from './format-date'
@@ -2296,6 +2303,7 @@ export const jsxFixtures: JSXFixture[] = [
   compositeRowChildDerivedProp,
   compositeRowChildAliasedProp,
   loopPreambleAttrValue,
+  loopPreambleTemplateLiteral,
   loopPreambleChainedFilter,
   loopRowStaticConditional,
   childPrimitiveProps,
@@ -2407,6 +2415,12 @@ export const jsxFixtures: JSXFixture[] = [
   dateCatalogued,
   dateInheritedProp,
   dateInheritedPropIntersection,
+  dateInheritedPropInlineIntersection,
+  dateInheritedPropInlineIntersectionBaseLast,
+  dateInheritedPropInlineIntersectionLiteral,
+  dateInheritedPropInlineIntersectionDestructured,
+  dateInheritedPropInlineIntersectionNested,
+  dateInheritedPropInlineIntersectionExtends,
   dateInheritedPropParenthesized,
   dateIntersectionRefineBaseFirst,
   dateIntersectionRefineBaseLast,
