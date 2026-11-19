@@ -183,6 +183,12 @@ export async function runStep(page: Page, step: InteractionStep, options?: { tim
       await page.mouse.up()
       return
     }
+    case 'expectTextContent':
+      await expect(page.locator(step.selector).first()).toHaveJSProperty('textContent', step.text, { timeout })
+      return
+    case 'expectCss':
+      await expect(page.locator(step.selector).first()).toHaveCSS(step.property, step.value, { timeout })
+      return
     case 'expectFetchCount':
       await expect
         .poll(

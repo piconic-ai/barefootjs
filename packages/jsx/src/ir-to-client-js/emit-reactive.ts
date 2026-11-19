@@ -8,7 +8,7 @@ import ts from 'typescript'
 import { type AttrMeta, type IRMetadata, isChildrenPropParam } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
 import type { ClientJsContext } from './types.ts'
-import { toHtmlAttrName, varSlotId, PROPS_PARAM } from './utils.ts'
+import { toHtmlAttrName, varSlotId, PROPS_PARAM, RAW_TEXT_CONTENT_ATTR } from './utils.ts'
 import { claimPlanLiteral, claimWriterVarName, type ClaimSlotSpec } from './control-flow/stringify/claim-plan.ts'
 import { createTemplateAwareStringProtector } from './html-template.ts'
 import { DYNAMIC_ELEMENT_WRITER_KIND } from './markup-slots.ts'
@@ -143,6 +143,15 @@ export function emitAttrUpdate(
   meta: AttrMeta,
   mirrorSeed: MirrorSeed | null = null,
 ): string[] {
+  if (attrName === RAW_TEXT_CONTENT_ATTR) {
+    // A `<style>` / `<script>` / `<textarea>` / `<title>` whose text has no
+    // comment marker to find (#3910). The value is the children rendered the
+    // way SSR rendered them (text and `escapeText(…)` parts, already
+    // HTML-escaped), so assigning it through `innerHTML` re-parses it in the
+    // element's own raw-text / RCDATA mode and leaves the same DOM text SSR
+    // produced; an escaped `<` can never end the element early.
+    return [`${target}.innerHTML = String(${expression})`]
+  }
   const htmlName = toHtmlAttrName(attrName)
   if (attrName === 'dangerouslySetInnerHTML' || htmlName === 'dangerouslySetInnerHTML') {
     // `{ __html }` is not an attribute — it replaces the element's content.

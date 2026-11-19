@@ -279,6 +279,9 @@ export const renderDivergences: RenderDivergences = {
   'destructure-default-local-const-signal-seed': { limitation: 'body-destructure-computed-default-signal-seed' },
   // A default assigning an earlier binding (`b = (a = 2)`) never runs.
   'destructure-default-earlier-assignment': { limitation: 'destructure-default-assigns-earlier-binding' },
+  // A `<title>` under foreign content keeps comment-node slot markers in the
+  // reference, but html/template escapes them as RCDATA text.
+  'raw-text-host-annotation-xml-encodings': { limitation: 'foreign-title-slot-markers-escaped' },
   // A `null` / `undefined` `style` object property renders `color:` with
   // an empty value instead of being dropped.
   'style-object-nil-property': { limitation: 'style-object-nil-property' },

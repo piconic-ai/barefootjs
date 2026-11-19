@@ -6,6 +6,7 @@ import { type AttrValue, type IRNode, type IRElement, type IRComponent, type IRC
 import type { ClientJsContext, ConditionalBranchChildComponent, ConditionalBranchReactiveAttr, BranchLoop, ConditionalBranchTextEffect, ConditionalElement, LoopChildBindings, LoopChildBranchSummary, LoopChildConditional, LoopOffset, NestedLoop } from './types.ts'
 import { attrValueToString, freeIdsFromRefs, PROPS_PARAM, toHtmlAttrName, rowBoundNames, withRowAccessor, type LoopParamSpec } from './utils.ts'
 import { classifyReactivity, needsEffectWrapper, decideWrapForAttr, decideWrapForChildProp, decideWrapFromAstFlags, collectEventHandlersFromIR, collectConditionalBranchEvents, collectConditionalBranchRefs, collectConditionalBranchChildComponents, collectConditionalBranchComponentNodes, collectLoopChildEventsWithNesting, collectLoopChildReactiveAttrs, collectLoopChildReactiveTexts, collectLoopChildRefs, emptyLoopChildBindings, buildLoopRowScope, anyNameIn } from './reactivity.ts'
+import { collectRawTextHost } from './raw-text-host.ts'
 import { irToHtmlTemplate, irToPlaceholderTemplate, irChildrenToJsExpr, jsxChildrenPropGetterExpr, buildLoopSkeletonTemplate, computeSkeletonSlotPaths, renderFlatMapClientBody, renderFlatMapProjectionClientBody, flatMapCallbackHasKeyedLeaf, type SkeletonSlotPaths } from './html-template.ts'
 import { detectRootNamespaceWrapTag } from './control-flow/stringify/template-parse.ts'
 import { branchNeedsLiveRow, branchReadsPreambleLocal, reachesReactiveThroughLocalHelper, readsBeyondLoopScope } from './loop-scope-reads.ts'
@@ -712,6 +713,9 @@ export function collectElements(
   walkIR<boolean>(node, insideConditional, {
     element: ({ node: el, scope: inCond, descend }) => {
       collectFromElement(el, ctx, inCond)
+      // Raw-text host content (#3910). Inside a conditional branch the branch
+      // template is re-evaluated on every change, which rewrites the content.
+      if (!inCond) collectRawTextHost(el, ctx)
       descend()
     },
     expression: ({ node: ex, scope: inCond }) => {

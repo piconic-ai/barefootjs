@@ -62,6 +62,9 @@ export interface ExpectedDiagnostic {
  *   resulting *scroll distance* is layout-dependent, so assert on the
  *   deterministic fallout (aria/data attributes, button `disabled`)
  *   rather than pixel offsets — see the determinism caveat in #1971.
+ * - `expectTextContent` — the element's raw `textContent` (`expectText` reads
+ *   rendered text, which is empty for `<style>` / `<script>`).
+ * - `expectCss` — a computed style property of the element.
  * - `expectFetchCount` — the number of `fetch()` calls the page has made
  *   so far whose URL contains `urlIncludes` equals `count`. Calls are
  *   recorded when they are made (not when they settle), so `count: 0` right
@@ -87,6 +90,8 @@ export type InteractionStep =
   | { type: 'hover'; selector: string; position?: { x: number; y: number } }
   | { type: 'press'; selector: string; key: string }
   | { type: 'drag'; selector: string; deltaX?: number; deltaY?: number }
+  | { type: 'expectTextContent'; selector: string; text: string }
+  | { type: 'expectCss'; selector: string; property: string; value: string }
   | { type: 'expectFetchCount'; urlIncludes: string; count: number }
 
 /**

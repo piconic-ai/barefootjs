@@ -21,8 +21,8 @@ export function StyleScriptTextDynamic({ color }: { color: string }) {
   props: { color: 'red' },
   expectedHtml: `
     <div bf-s="test">
-      <style bf="s1"><!--bf:s0-->red<!--/--></style>
-      <script bf="s3"><!--bf:s2-->red<!--/--></script>
+      <style bf="s1">red</style>
+      <script bf="s3">red</script>
     </div>
   `,
 })
