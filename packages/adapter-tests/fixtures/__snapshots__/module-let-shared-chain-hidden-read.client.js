@@ -8,7 +8,7 @@ var __bf_module_ModuleLetSharedChainHiddenRead = __bf_module_ModuleLetSharedChai
 }
   const base = 'm'
   first = first ?? 1
-  counter = counter ?? first + 1
+  counter = counter ?? (first + 1)
   return { g }
 })()
 

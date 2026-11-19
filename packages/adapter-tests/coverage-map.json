@@ -12822,6 +12822,22 @@
         "text"
       ]
     },
+    "module-let-arrow-initializer-hidden-read": {
+      "kinds": [
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-let-bare-hidden-read": {
       "kinds": [
         "binary",
@@ -12914,6 +12930,23 @@
       "axes": [
         "binary:+",
         "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-let-logical-initializer-hidden-read": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string",
+        "logical:||"
       ],
       "contexts": [
         "text"

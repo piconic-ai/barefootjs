@@ -54,11 +54,12 @@ export function emitModuleLevelDeclarations(
     // grammar (BitwiseORExpression) is higher-precedence than an arrow
     // function (AssignmentExpression); only an already-parenthesised
     // value (an object literal, `(a, b) => …`) survives unwrapped, and
-    // wrapping those again is a harmless no-op (#2988). Gated on
+    // wrapping those again is a harmless no-op (#2988). A binary, conditional
+    // or arrow initializer groups too (`needsOperandGrouping`, #3932): `??`
+    // takes no bare `||` / `&&`, and the others swallow it. Gated on
     // `containsArrow` specifically so existing fixtures with
     // parenthesised object-literal module consts don't churn.
-    const value = constant.containsArrow ? `(${constant.value})` : constant.value
-    lines.push(`var ${constant.name} = ${constant.name} ?? ${value}`)
+    lines.push(`var ${constant.name} = ${constant.name} ?? ${nullishOperand(constant)}`)
   }
   for (const fn of moduleLevelFunctions) {
     lines.push(`var ${fn.name} = ${fn.name} ?? ${functionExpressionText(fn)}`)
@@ -85,6 +86,12 @@ export function emitModuleLevelDeclarations(
     }
   }
   return lines.length > 0 ? lines.join('\n') + '\n' : ''
+}
+
+/** The initializer of `c` as the right operand of `??`; a bare `let` is `undefined`. */
+function nullishOperand(c: ConstantInfo): string {
+  if (!c.value) return 'undefined'
+  return c.containsArrow || c.needsOperandGrouping ? `(${c.value})` : c.value
 }
 
 /** `fn` as an anonymous function expression: `async function*(a, ...b) { … }`. */
@@ -131,7 +138,7 @@ export function emitModuleScopeReplica(
     const c = constants.get(name)
     if (c) lines.push(`  ${c.declarationKind} ${c.name} = ${c.value}`)
     const s = shared.get(name)
-    if (s) lines.push(`  ${s.name} = ${s.name} ?? ${s.value || 'undefined'}`)
+    if (s) lines.push(`  ${s.name} = ${s.name} ?? ${nullishOperand(s)}`)
   }
   lines.push(`  return { ${used.exported.join(', ')} }`)
   lines.push('})()')

@@ -11433,6 +11433,29 @@
       }
     }
   ],
+  "module-let-arrow-initializer-hidden-read": [
+    {
+      "name": "gen:base:empty",
+      "props": {
+        "base": "",
+        "__instanceId": "ModuleLetArrowInitializerHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:base:markup",
+      "props": {
+        "base": "<b>&\"'</b>",
+        "__instanceId": "ModuleLetArrowInitializerHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:base:multibyte",
+      "props": {
+        "base": "日本語",
+        "__instanceId": "ModuleLetArrowInitializerHiddenRead_test"
+      }
+    }
+  ],
   "module-let-bare-hidden-read": [
     {
       "name": "gen:label:absent",
@@ -11551,6 +11574,29 @@
       "props": {
         "base": "日本語",
         "__instanceId": "ModuleLetInitializerHiddenRead_test"
+      }
+    }
+  ],
+  "module-let-logical-initializer-hidden-read": [
+    {
+      "name": "gen:base:empty",
+      "props": {
+        "base": "",
+        "__instanceId": "ModuleLetLogicalInitializerHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:base:markup",
+      "props": {
+        "base": "<b>&\"'</b>",
+        "__instanceId": "ModuleLetLogicalInitializerHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:base:multibyte",
+      "props": {
+        "base": "日本語",
+        "__instanceId": "ModuleLetLogicalInitializerHiddenRead_test"
       }
     }
   ],

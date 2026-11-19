@@ -7,7 +7,7 @@ var counter
 var __bf_module_ModuleLetInitializerHiddenRead = __bf_module_ModuleLetInitializerHiddenRead ?? (() => {
   const base = 'm'
   const alias = base
-  counter = counter ?? base + alias.length
+  counter = counter ?? (base + alias.length)
   return { alias }
 })()
 

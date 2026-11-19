@@ -356,7 +356,7 @@ export function C({ base }: { base: string }) {
 }
 `)
     const order = clientJs.split('\n').map(l => l.trim()).filter(l => /^(first|counter) = |^const seed = /.test(l))
-    expect(order.slice(0, 3)).toEqual(['first = first ?? 1', 'counter = counter ?? first + 1', 'const seed = counter'])
+    expect(order.slice(0, 3)).toEqual(['first = first ?? 1', 'counter = counter ?? (first + 1)', 'const seed = counter'])
   })
 
   test('a let only a module function writes is the same variable for the replica and the component', () => {
@@ -373,5 +373,53 @@ export function C({ base }: { base: string }) {
     expect(lines(clientJs, 'var counter')).toEqual(['var counter'])
     expect(lines(clientJs, 'const counter')).toEqual([])
     expect(lines(clientJs, 'let counter')).toEqual([])
+  })
+
+  // `??` takes no bare `||` / `&&`, and an arrow, a conditional or an
+  // assignment would swallow it: the whole module must still load.
+  describe.each([
+    ['a logical expression', "base || 'fallback'", true],
+    ['a conjunction', "base && 'x'", true],
+    ['a nullish chain', "base ?? 'x'", true],
+    ['a conditional', 'base ? 1 : 2', true],
+    ['an arrow', '() => base', true],
+    ['an async arrow', 'async () => base', true],
+    ['an object literal', '{ n: base }', false],
+    ['an assignment', 'other = base', true],
+    ['a function expression', 'function () { return base }', true],
+    ['a sequence', '(0, base)', true],
+  ])('a shared initializer that is %s', (_label, init, grouped) => {
+    test('the client script loads and the initializer is one grouped operand', () => {
+      const { clientJs } = compile(`
+'use client'
+const base = 'm'
+let other = ''
+let counter = ${init}
+function g() { return base + counter }
+export function C({ base }: { base: string }) {
+  counter = 2
+  return <button onClick={() => console.log(g())}>{base}</button>
+}
+`)
+      // In the replica (`counter = …`) or, when the initializer reads a bare
+      // `let` the replica cannot evaluate, at module level (`var counter = …`).
+      const assigned = clientJs.split('\n').map(l => l.trim()).filter(l => l.includes('counter = counter ?? '))
+      expect(assigned.map(l => l.replace(/^var /, ''))).toEqual([`counter = counter ?? ${grouped ? `(${init})` : init}`])
+      // Loading the module runs the replica; a SyntaxError would throw here.
+      expect(() => renderClientTemplate(clientJs, { base: 'p' })).not.toThrow()
+    })
+  })
+
+  test('a module-level let with a logical initializer and no hidden name loads too', () => {
+    const { clientJs } = compile(`
+'use client'
+let counter = '' || 'fallback'
+export function C() {
+  counter = counter + '!'
+  return <button onClick={() => console.log(counter)}>{counter}</button>
+}
+`)
+    expect(lines(clientJs, 'var counter')).toEqual(["var counter = counter ?? ('' || 'fallback')"])
+    expect(() => renderClientTemplate(clientJs)).not.toThrow()
   })
 })

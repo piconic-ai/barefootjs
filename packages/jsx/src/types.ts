@@ -2452,6 +2452,12 @@ export interface ConstantInfo {
   /** When true, the initializer contains an arrow function or function expression (computed from AST). */
   containsArrow?: boolean
   /**
+   * When true, the initializer's own expression (parentheses and type wrappers
+   * removed) is a binary, conditional, arrow or `yield` expression, so it must
+   * be parenthesised as the operand of `??` (`var X = X ?? <value>`).
+   */
+  needsOperandGrouping?: boolean
+  /**
    * Set when this const is a binding of a body destructure of the props
    * object (`const { label = 'Default' } = props`), recorded by the analyzer
    * from the binding pattern itself. `sourceKey` is the prop it reads (the

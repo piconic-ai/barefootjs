@@ -3690,6 +3690,19 @@ function containsJsxDeep(node: ts.Node): boolean {
 /**
  * Check if an AST node contains an arrow function or function expression.
  */
+/**
+ * Whether `init` (parentheses and type wrappers already removed) must be
+ * parenthesised as the right operand of `??`: a binary expression
+ * (`a || b`, `a = b`, a comma sequence), a conditional, an arrow or a
+ * `yield`. Any of them would otherwise be a SyntaxError or swallow the `??`.
+ */
+function initializerNeedsGrouping(init: ts.Expression | undefined): true | undefined {
+  if (init === undefined) return undefined
+  const needs = ts.isBinaryExpression(init) || ts.isConditionalExpression(init)
+    || ts.isArrowFunction(init) || ts.isYieldExpression(init)
+  return needs || undefined
+}
+
 function nodeContainsArrow(node: ts.Node): boolean {
   let found = false
   function visit(n: ts.Node) {
@@ -4682,6 +4695,7 @@ function collectConstant(
     isJsx,
     isJsxFunction: isJsxFunction || undefined,
     containsArrow: containsArrow || undefined,
+    needsOperandGrouping: initializerNeedsGrouping(unwrappedInitializer),
     isFunctionValue: isFunctionValue || undefined,
     systemConstructKind,
     templateValue,
