@@ -28,6 +28,7 @@
  */
 
 import type {
+  FunctionInfo,
   IRLoopChildComponent,
   IRNode,
   ReferenceContext,
@@ -40,7 +41,7 @@ import type { IRVisitor as WalkerVisitor } from './walker.ts'
 import { attrValueToString } from './utils.ts'
 import type { ClientJsContext } from './types.ts'
 import { usedReplicaDeclarations, type ModuleScopeReplica } from '../module-scope.ts'
-import { extractIdentifiers, extractTemplateIdentifiers, isKeywordOrGlobal } from './identifiers.ts'
+import { extractIdentifiers, extractReceiverMembers, extractTemplateIdentifiers, isKeywordOrGlobal } from './identifiers.ts'
 import { walkIR } from './walker.ts'
 import { signalSecondBinding } from '../signal-initializer.ts'
 
@@ -74,13 +75,15 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
     propNames.add(ctx.propsObjectName)
   }
 
+  const receivers = propsReceivers(ctx.propsObjectName, ctx.restPropsName)
+
   const addExprEdges = (
     from: ReferenceSource | null,
     expr: string,
     context: ReferenceContext,
   ): void => {
     const names = new Set<string>()
-    extractIdentifiers(expr, names)
+    extractIdentifiers(expr, names, receivers)
     for (const name of names) edges.push({ from, to: name, context })
   }
 
@@ -90,7 +93,7 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
     context: ReferenceContext,
   ): void => {
     const names = new Set<string>()
-    extractTemplateIdentifiers(template, names)
+    extractTemplateIdentifiers(template, names, receivers)
     for (const name of names) edges.push({ from, to: name, context })
   }
 
@@ -239,7 +242,7 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
 
   // identifiers.ts L175-177
   for (const fn of ctx.localFunctions) {
-    addExprEdges({ kind: 'function', name: fn.name }, fn.body, 'init-body')
+    addFunctionEdges({ kind: 'function', name: fn.name }, fn, receivers, edges)
   }
 
   // identifiers.ts L179-181
@@ -496,6 +499,35 @@ function addConstantEdges(
   }
 }
 
+/** The names whose members are uses of a prop: the props object and the rest bag. */
+function propsReceivers(propsObjectName: string | null, restPropsName: string | null): ReadonlySet<string> {
+  const names = new Set<string>()
+  if (propsObjectName) names.add(propsObjectName)
+  if (restPropsName) names.add(restPropsName)
+  return names
+}
+
+/**
+ * Edges from a function to the names its body reads: the function's own AST
+ * names them (`FunctionInfo.freeIdentifiers`, parameters excluded), so a member
+ * name, a property key or a callback parameter in the body keeps no declaration
+ * of that name alive. A function without the AST-derived set falls back to its
+ * body text.
+ */
+function addFunctionEdges(
+  from: ReferenceSource | null,
+  fn: FunctionInfo,
+  receivers: ReadonlySet<string>,
+  edges: ReferenceEdge[],
+): void {
+  const names = new Set<string>()
+  if (fn.freeIdentifiers) {
+    for (const id of fn.freeIdentifiers) if (!isKeywordOrGlobal(id)) names.add(id)
+    extractReceiverMembers(fn.body, receivers, names)
+  } else extractIdentifiers(fn.body, names, receivers)
+  for (const name of names) edges.push({ from, to: name, context: 'init-body' })
+}
+
 /**
  * The references of the module-scope replica's declarations. They are not in
  * `ctx.localConstants` / `ctx.localFunctions` (those hold the reads of its
@@ -516,11 +548,7 @@ function addModuleScopeReplicaEdges(replica: ModuleScopeReplica | null, edges: R
   const declared = new Set([...replica.constants, ...replica.functions].map(d => d.name))
   const replicaEdges: ReferenceEdge[] = []
   addConstantEdges(emitted.constants, null, replicaEdges)
-  for (const fn of emitted.functions) {
-    const names = new Set<string>()
-    extractIdentifiers(fn.body, names)
-    for (const name of names) replicaEdges.push({ from: ROOT_SOURCE, to: name, context: 'init-body' })
-  }
+  for (const fn of emitted.functions) addFunctionEdges(ROOT_SOURCE, fn, new Set(), replicaEdges)
   for (const edge of replicaEdges) {
     if (!declared.has(edge.to)) edges.push({ ...edge, from: ROOT_SOURCE })
   }

@@ -60,20 +60,30 @@ describe('extractIdentifiers', () => {
     return [...set].sort()
   }
 
-  test('skips string contents, comments and template static text; keeps member names', () => {
-    // A member name stays in: the graph reads `props.value` as a use of the
-    // `value` prop in props-object mode.
+  test('skips string contents, comments, template static text and member names', () => {
     expect(ids("obj.member + other?.deep + 'word in a string' /* note */ + `tpl ${inner}`")).toEqual([
-      'deep',
       'inner',
-      'member',
       'obj',
       'other',
     ])
   })
 
+  test('skips a property key and a callback parameter', () => {
+    expect(ids("({ label: 1 }).label + [1].map(name => name + 1).length + f(function (text) { return text })")).toEqual(['f'])
+  })
+
+  test('reports the members of a receiver (the props object) as uses of a prop', () => {
+    const set = new Set<string>()
+    extractIdentifiers('props.value + other.value2 + props?.default', set, new Set(['props']))
+    expect([...set].sort()).toEqual(['default', 'other', 'props', 'value'])
+  })
+
   test('reports $ names and contextual keywords, never reserved words', () => {
-    expect(ids('(x) => x + step$ + $ + type + of')).toEqual(['$', 'of', 'step$', 'type', 'x'])
+    expect(ids('(x) => x + step$ + $ + type + of')).toEqual(['$', 'of', 'step$', 'type'])
+  })
+
+  test('falls back to a token scan, member names included, for a text that does not parse', () => {
+    expect(ids('<Foo bar={a.b} />')).toContain('b')
   })
 })
 
@@ -138,10 +148,10 @@ describe('regex literals and keyword-named members (#3536 review)', () => {
     ])
   })
 
-  test('a reserved word read as a member name is reported; as a keyword it is not', () => {
+  test('a reserved word read as a member name of the props object is reported; as a keyword it is not', () => {
     const set = new Set<string>()
-    extractIdentifiers('props.default + obj?.enum + (x instanceof Y)', set)
-    expect([...set].sort()).toEqual(['Y', 'default', 'enum', 'obj', 'props', 'x'])
+    extractIdentifiers('props.default + obj?.enum + (x instanceof Y)', set, new Set(['props']))
+    expect([...set].sort()).toEqual(['Y', 'default', 'obj', 'props', 'x'])
   })
 
   test('a keyword-named prop read only by a handler is still hydrated', () => {

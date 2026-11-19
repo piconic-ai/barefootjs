@@ -12108,6 +12108,22 @@
         "text"
       ]
     },
+    "module-const-member-read-hydrate": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-const-missing-key": {
       "kinds": [
         "array-literal",

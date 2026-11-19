@@ -3587,6 +3587,7 @@ function isDeclaredOrKeyName(id: ts.Identifier): boolean {
   if (ts.isPropertyAccessExpression(parent) || ts.isPropertyAssignment(parent)
     || ts.isParameter(parent) || ts.isVariableDeclaration(parent)) return parent.name === id
   if (ts.isBindingElement(parent)) return parent.propertyName === id
+  if (ts.isFunctionDeclaration(parent)) return parent.name === id
   return isPropertyNameOfMember(parent, id)
 }
 

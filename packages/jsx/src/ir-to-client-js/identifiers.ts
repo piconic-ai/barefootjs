@@ -13,6 +13,7 @@
 
 import ts from 'typescript'
 import { isIdentifierLikeToken, isTriviaKind, iterateJsTokens } from '../scanner/js-scanner.ts'
+import { extractFreeIdentifiersFromNode } from '../analyzer.ts'
 
 /** JavaScript keywords and common globals to skip during identifier extraction. */
 const KEYWORDS_AND_GLOBALS = new Set([
@@ -117,13 +118,67 @@ function asTemplateLiteral(text: string): string {
 }
 
 /**
- * Extract identifiers from an expression string.
+ * The AST of `text`, an expression or, when it is not one (a function body, a
+ * preamble), statements. `null` when it parses as neither (JSX, a stray
+ * fragment), so a caller can fall back to a token scan.
  */
-export function extractIdentifiers(expr: string, set: Set<string>): void {
+function parseSource(text: string): ts.SourceFile | null {
+  for (const source of [`(\n${text}\n);`, text]) {
+    const sf = ts.createSourceFile('__refs__.ts', source, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS)
+    const diagnostics = (sf as unknown as { parseDiagnostics?: readonly unknown[] }).parseDiagnostics
+    if (!diagnostics || diagnostics.length === 0) return sf
+  }
+  return null
+}
+
+/**
+ * Add the member names `<receiver>.name` reads, for each receiver name: a
+ * props-object (or rest-bag) member is a use of that prop, which the identifier
+ * alone does not say. Any other member name is no read of a binding.
+ */
+function addReceiverMembers(root: ts.Node, receivers: ReadonlySet<string>, set: Set<string>): void {
+  if (receivers.size === 0) return
+  const visit = (n: ts.Node): void => {
+    if (ts.isPropertyAccessExpression(n) && ts.isIdentifier(n.expression) && receivers.has(n.expression.text)) {
+      set.add(n.name.text)
+    }
+    ts.forEachChild(n, visit)
+  }
+  visit(root)
+}
+
+/**
+ * Add the member names the props object / rest bag (`receivers`) reads in
+ * `text`. An unparsable text falls back to a token scan, which reports every
+ * member name and so only keeps more alive.
+ */
+export function extractReceiverMembers(text: string, receivers: ReadonlySet<string>, set: Set<string>): void {
+  if (receivers.size === 0) return
+  const sf = parseSource(text)
+  if (sf) addReceiverMembers(sf, receivers, set)
+  else scanNames(text, name => { if (!isKeywordOrGlobal(name)) set.add(name) })
+}
+
+/**
+ * Extract the identifiers an expression string (or a function body) reads:
+ * its free identifiers from the AST (a member name, a property key and a
+ * callback parameter are no reads), plus the members of `receivers` (the props
+ * object and rest bag) as uses of those props. An unparsable text falls back to
+ * a token scan that also reports member names, which only ever keeps more alive.
+ */
+export function extractIdentifiers(expr: string, set: Set<string>, receivers: ReadonlySet<string> = NO_RECEIVERS): void {
+  const sf = parseSource(expr)
+  if (sf) {
+    for (const name of extractFreeIdentifiersFromNode(sf)) if (!isKeywordOrGlobal(name)) set.add(name)
+    addReceiverMembers(sf, receivers, set)
+    return
+  }
   scanNames(expr, name => {
     if (!isKeywordOrGlobal(name)) set.add(name)
   })
 }
+
+const NO_RECEIVERS: ReadonlySet<string> = new Set()
 
 /**
  * Yield each `${...}` substitution body inside a template-style string
@@ -143,10 +198,8 @@ export function extractTemplateExpressions(template: string): string[] {
  * Extract identifiers from template literal expressions.
  * Only `${...}` substitutions are scanned; static text is not code.
  */
-export function extractTemplateIdentifiers(template: string, set: Set<string>): void {
-  scanNames(asTemplateLiteral(template), name => {
-    if (!isKeywordOrGlobal(name)) set.add(name)
-  })
+export function extractTemplateIdentifiers(template: string, set: Set<string>, receivers: ReadonlySet<string> = NO_RECEIVERS): void {
+  extractIdentifiers(asTemplateLiteral(template), set, receivers)
 }
 
 /**
