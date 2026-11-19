@@ -52,6 +52,9 @@ export const conformancePins: ConformancePins = {
   // Refused for the COMPUTED loop array (`const entries = Object.entries(...)
   // .filter(...)`), not the destructure param (that lowers, #2087) — loud
   // BF101 instead of silently iterating an unbound name zero times.
+  // A const holding an array with a spread element (`[...b, 'z']`) is read where
+  // a template has no binding for it: refused, not an unbound name.
+  'destructure-default-spread-const-length': [{ code: 'BF101', severity: 'error', limitation: 'array-literal-element-spread' }],
   'static-array-from-props': [
     {
       code: 'BF101',

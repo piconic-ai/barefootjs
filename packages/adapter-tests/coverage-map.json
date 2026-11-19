@@ -3070,6 +3070,31 @@
         "text"
       ]
     },
+    "computed-array-const-read": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "binary",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:??",
+        "member:computed"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "computed-const-loop-source-parenthesized": {
       "kinds": [
         "call",
@@ -5532,6 +5557,40 @@
       "axes": [
         "literal:string",
         "logical:&&",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-spread-const-length": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "destructure-default-spread-const-length-client": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string",
         "logical:??"
       ],
       "contexts": [
@@ -11200,6 +11259,62 @@
         "literal:string"
       ],
       "contexts": [
+        "text"
+      ]
+    },
+    "memo-over-array-const-index": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-over-array-const-length": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "memo-over-array-const-shapes": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "array-method:join",
+        "binary:*",
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
         "text"
       ]
     },

@@ -6082,6 +6082,22 @@
       }
     }
   ],
+  "destructure-default-spread-const-length": [
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
+      }
+    }
+  ],
+  "destructure-default-spread-const-length-client": [
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
+      }
+    }
+  ],
   "destructured-object-prop-nested": [
     {
       "name": "gen:user:object:minimal",

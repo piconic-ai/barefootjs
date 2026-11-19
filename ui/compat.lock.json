@@ -1977,6 +1977,7 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "array-literal-element-spread",
               "array-self-equality",
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
@@ -2010,6 +2011,7 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "array-literal-element-spread",
               "array-self-equality",
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
@@ -2046,6 +2048,7 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "array-literal-element-spread",
               "array-self-equality",
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
@@ -2079,6 +2082,7 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "array-literal-element-spread",
               "array-self-equality",
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
@@ -2112,6 +2116,7 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "array-literal-element-spread",
               "array-self-equality",
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
@@ -2146,6 +2151,7 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "array-literal-element-spread",
               "array-self-equality",
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
@@ -2179,6 +2185,7 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "array-literal-element-spread",
               "array-self-equality",
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
@@ -2212,6 +2219,7 @@
             "severity": "error",
             "limitations": [
               "array-fill",
+              "array-literal-element-spread",
               "array-self-equality",
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
@@ -3938,6 +3946,125 @@
           "escape": {
             "state": "escapable",
             "twin": "destructure-default-shared-array-renamed-client"
+          }
+        }
+      },
+      "destructure-default-spread-const-length": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-length-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-length-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-length-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-length-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-length-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-length-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-length-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-length-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "array-literal-element-spread"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "destructure-default-spread-const-length-client"
           }
         }
       },
@@ -6563,6 +6690,14 @@
             "state": "escapable",
             "twin": "markup-uninlinable-local-function-named-like-prop-client"
           }
+        }
+      },
+      "memo-over-array-const-index": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "memo-array-literal-element-read"
+          ]
         }
       },
       "memo-uninlinable-local-function-named-like-prop": {
@@ -14187,6 +14322,10 @@
         "description": "A destructure default reading an earlier binding kept as a local reads that local…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-shared-array-renamed.ts"
       },
+      "destructure-default-spread-const-length": {
+        "description": "A const spreading a defaulted destructured array prop renders its length (#3954)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-spread-const-length.ts"
+      },
       "destructure-length-in-map": {
         "description": "Destructured { length } of string and array rows in .map()",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-length-in-map.ts"
@@ -14338,6 +14477,10 @@
       "markup-uninlinable-local-function-named-like-prop": {
         "description": "Markup calling a local function named like a typed prop that a template cannot inline refuses…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/markup-uninlinable-local-function-named-like-prop.ts"
+      },
+      "memo-over-array-const-index": {
+        "description": "A memo over an element of an array const, and over the length of a nested one (#3953)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/memo-over-array-const-index.ts"
       },
       "memo-uninlinable-local-function-named-like-prop": {
         "description": "A memo calling a local function named like a typed prop that a template cannot inline refuses",
@@ -14727,6 +14870,10 @@
         "description": "A destructure default reading an earlier binding kept as a local, deferred to the client via /*…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-shared-array-renamed-client.ts"
       },
+      "destructure-default-spread-const-length-client": {
+        "description": "The client-directive escape of a read of an array const spreading a defaulted prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-default-spread-const-length-client.ts"
+      },
       "every-typeof-predicate-client": {
         "description": "Off-subset `.every()` predicate deferred to the client via /* @client */",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/every-typeof-predicate-client.ts"
@@ -14980,6 +15127,30 @@
       "actual": "the compiler refuses with BF101",
       "fixtures": [
         "fill-unsupported"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
+    "array-literal-element-spread": {
+      "title": "An array literal with a spread element read in a template",
+      "kind": "refusal",
+      "given": "a component-scope const holding an array literal with a spread element (`const local = [...b, 'z']`), read in a server-rendered position (`local.length`)",
+      "expected": "the read computes over the spread array (`2` for `b` of one element)",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "destructure-default-spread-const-length"
       ],
       "adapters": [
         "blade",
@@ -15839,6 +16010,19 @@
         "pebble",
         "twig",
         "xslate"
+      ]
+    },
+    "memo-array-literal-element-read": {
+      "title": "A memo reading an element of an array literal by a literal index",
+      "kind": "silent",
+      "given": "a `createMemo` whose body reads an element of an array literal, written in place or held by a component-scope const (`local[1]`, `grid[0].length`)",
+      "expected": "the memo holds the element (or its length) in the server HTML",
+      "actual": "renders the memo empty, or `0` where the field is numeric",
+      "fixtures": [
+        "memo-over-array-const-index"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "module-const-array-method-call": {
