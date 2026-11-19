@@ -16,7 +16,8 @@ import { describe, test, expect } from 'bun:test'
 import { extractSsrDefaults, deriveStashFromDefaults, encodeUndefinedMembers, decodeUndefinedMembers } from '../ssr-defaults'
 import type { SsrDefault } from '../ssr-defaults'
 import { analyzeComponent } from '../analyzer'
-import { buildMetadata } from '../compiler'
+import { buildMetadata, compileJSX } from '../compiler'
+import { TestAdapter } from '../adapters/test-adapter'
 
 function metadataFor(source: string, componentName?: string) {
   const ctx = analyzeComponent(source, 'test.tsx', componentName)
@@ -1012,6 +1013,54 @@ describe('extractSsrDefaults: an object const holding a function member', () => 
       })
     }
   }
+
+  describe('coercion of a value that holds a function stays unresolved without throwing', () => {
+    const members = [
+      "{ safe: 'ok', toString: () => 'custom' }",
+      "{ safe: 'ok', valueOf: () => 1 }",
+      "{ safe: 'ok', toString() { return 'custom' } }",
+      "{ safe: 'ok', get: () => 'x' }",
+      "{ safe: 'ok', toString: 'plain' }",
+    ]
+    const reads = [
+      '`value:${H}`',
+      "H + '!'",
+      "'!' + H",
+      'H - 1',
+      'H == 1',
+      'H != 1',
+      '[H].join(",")',
+      '[1, 2].join(H)',
+      "({ a: 'x' })[H]",
+    ]
+    for (const scope of ['component', 'module'] as const) {
+      for (const m of members) {
+        for (const read of reads) {
+          test(`${scope}: ${m.slice(15, 35)}… in ${read}`, () => {
+            expect(values(component(m, read, scope))).toEqual({ m: null })
+          })
+        }
+      }
+    }
+
+    test('compileJSX does not throw on a template literal over such an object', () => {
+      const source = `
+        'use client'
+        import { createMemo } from '@barefootjs/client'
+        export function C() {
+          const H = { safe: 'ok', toString: () => 'custom' }
+          const m = createMemo(() => \`value:\${H}\`)
+          const n = createMemo(() => H + '!')
+          return <p>{m()}{n()}</p>
+        }
+      `
+      expect(() => compileJSX(source, 'C.tsx', { adapter: new TestAdapter() })).not.toThrow()
+    })
+
+    test('a plain object with no function still coerces as JS does', () => {
+      expect(values(component("{ safe: 'ok' }", '`v:${H}`', 'component'))).toEqual({ m: 'v:[object Object]' })
+    })
+  })
 
   test('a function anywhere but an object member keeps the const out of the evaluation', () => {
     expect(values(`
