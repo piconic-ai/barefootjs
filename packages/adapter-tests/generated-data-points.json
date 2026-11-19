@@ -15489,6 +15489,29 @@
       }
     }
   ],
+  "props-alias-handler-hydrate": [
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "n": 0,
+        "__instanceId": "PropsAliasHandlerHydrate_test"
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "n": -7,
+        "__instanceId": "PropsAliasHandlerHydrate_test"
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "n": 1234567890,
+        "__instanceId": "PropsAliasHandlerHydrate_test"
+      }
+    }
+  ],
   "props-object-body-rest-spread": [
     {
       "name": "gen:label:empty",

@@ -2296,6 +2296,17 @@ export interface ImportSpecifier {
   isTypeOnly?: boolean
 }
 
+/**
+ * What one IR source text reads, recorded in Phase 1 from the AST it was
+ * printed from (`source-facts.ts`).
+ */
+export interface SourceFacts {
+  /** Identifiers the text reads from an enclosing scope (parameters, member names and keys excluded). */
+  free: string[]
+  /** Every `object.name` read whose object is an identifier, as `[object, name]`. */
+  members: Array<[string, string]>
+}
+
 export interface FunctionInfo {
   name: string
   params: ParamInfo[]
@@ -2617,6 +2628,12 @@ export interface IRMetadata {
    * guards — stay adapter-side).
    */
   ssrSeedPlan?: SsrSeedPlan
+  /**
+   * What each IR source text reads (free identifiers and member reads), keyed
+   * by the text, recorded in Phase 1 for the client reference graph. A text
+   * Phase 2 builds itself (a template, a rewritten handler) has no entry.
+   */
+  sourceFacts?: Record<string, SourceFacts>
 }
 
 // =============================================================================

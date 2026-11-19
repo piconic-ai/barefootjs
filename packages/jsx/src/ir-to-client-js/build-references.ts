@@ -28,6 +28,7 @@
  */
 
 import type {
+  FunctionInfo,
   IRLoopChildComponent,
   IRNode,
   ReferenceContext,
@@ -40,7 +41,14 @@ import type { IRVisitor as WalkerVisitor } from './walker.ts'
 import { attrValueToString } from './utils.ts'
 import type { ClientJsContext } from './types.ts'
 import { usedReplicaDeclarations, type ModuleScopeReplica } from '../module-scope.ts'
-import { extractIdentifiers, extractTemplateIdentifiers, isKeywordOrGlobal } from './identifiers.ts'
+import {
+  addReferencedNames,
+  addReferencedTemplateNames,
+  extractIdentifiers,
+  isKeywordOrGlobal,
+  scanReceiverMembers,
+  type ReferenceFacts,
+} from './identifiers.ts'
 import { walkIR } from './walker.ts'
 import { signalSecondBinding } from '../signal-initializer.ts'
 
@@ -74,13 +82,15 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
     propNames.add(ctx.propsObjectName)
   }
 
+  const reader = referenceFacts(ctx)
+
   const addExprEdges = (
     from: ReferenceSource | null,
     expr: string,
     context: ReferenceContext,
   ): void => {
     const names = new Set<string>()
-    extractIdentifiers(expr, names)
+    addReferencedNames(expr, reader, names)
     for (const name of names) edges.push({ from, to: name, context })
   }
 
@@ -90,7 +100,7 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
     context: ReferenceContext,
   ): void => {
     const names = new Set<string>()
-    extractTemplateIdentifiers(template, names)
+    addReferencedTemplateNames(template, reader, names)
     for (const name of names) edges.push({ from, to: name, context })
   }
 
@@ -239,7 +249,7 @@ export function buildReferencesGraph(ctx: ClientJsContext, irRoot: IRNode): Refe
 
   // identifiers.ts L175-177
   for (const fn of ctx.localFunctions) {
-    addExprEdges({ kind: 'function', name: fn.name }, fn.body, 'init-body')
+    addFunctionEdges({ kind: 'function', name: fn.name }, fn, reader, edges)
   }
 
   // identifiers.ts L179-181
@@ -496,6 +506,57 @@ function addConstantEdges(
   }
 }
 
+/** What the graph reads IR text with: the recorded facts and the props receivers. */
+function referenceFacts(ctx: ClientJsContext): ReferenceFacts {
+  return { facts: ctx.sourceFacts ?? {}, receivers: propsReceivers(ctx) }
+}
+
+/**
+ * The names whose members are uses of a prop: the props object, the rest bag,
+ * and the component constants that alias one (`const p = props`, through any
+ * number of hops).
+ */
+function propsReceivers(ctx: ClientJsContext): ReadonlySet<string> {
+  const names = new Set<string>()
+  if (ctx.propsObjectName) names.add(ctx.propsObjectName)
+  if (ctx.restPropsName) names.add(ctx.restPropsName)
+  let grew = names.size > 0
+  while (grew) {
+    grew = false
+    for (const c of ctx.localConstants) {
+      if (c.isModule || names.has(c.name) || c.parsed?.kind !== 'identifier' || !names.has(c.parsed.name)) continue
+      names.add(c.name)
+      grew = true
+    }
+  }
+  return names
+}
+
+/**
+ * Edges from a function to the names its body reads: the function's own AST
+ * names them (`FunctionInfo.freeIdentifiers`, parameters excluded), so a member
+ * name, a property key or a callback parameter in the body keeps no declaration
+ * of that name alive. A function without the AST-derived set falls back to its
+ * body text.
+ */
+function addFunctionEdges(
+  from: ReferenceSource | null,
+  fn: FunctionInfo,
+  reader: ReferenceFacts,
+  edges: ReferenceEdge[],
+): void {
+  const names = new Set<string>()
+  const facts = Object.hasOwn(reader.facts, fn.body) ? reader.facts[fn.body] : undefined
+  if (fn.freeIdentifiers && facts) {
+    for (const id of fn.freeIdentifiers) if (!isKeywordOrGlobal(id)) names.add(id)
+    for (const [object, name] of facts.members) if (reader.receivers.has(object)) names.add(name)
+  } else if (fn.freeIdentifiers) {
+    for (const id of fn.freeIdentifiers) if (!isKeywordOrGlobal(id)) names.add(id)
+    scanReceiverMembers(fn.body, reader.receivers, names)
+  } else addReferencedNames(fn.body, reader, names)
+  for (const name of names) edges.push({ from, to: name, context: 'init-body' })
+}
+
 /**
  * The references of the module-scope replica's declarations. They are not in
  * `ctx.localConstants` / `ctx.localFunctions` (those hold the reads of its
@@ -516,11 +577,7 @@ function addModuleScopeReplicaEdges(replica: ModuleScopeReplica | null, edges: R
   const declared = new Set([...replica.constants, ...replica.functions].map(d => d.name))
   const replicaEdges: ReferenceEdge[] = []
   addConstantEdges(emitted.constants, null, replicaEdges)
-  for (const fn of emitted.functions) {
-    const names = new Set<string>()
-    extractIdentifiers(fn.body, names)
-    for (const name of names) replicaEdges.push({ from: ROOT_SOURCE, to: name, context: 'init-body' })
-  }
+  for (const fn of emitted.functions) addFunctionEdges(ROOT_SOURCE, fn, { facts: {}, receivers: new Set() }, replicaEdges)
   for (const edge of replicaEdges) {
     if (!declared.has(edge.to)) edges.push({ ...edge, from: ROOT_SOURCE })
   }

@@ -700,6 +700,7 @@ export function buildMetadata(
     namedExports: ctx.namedExports,
     localFunctions: ctx.localFunctions,
     localConstants: ctx.localConstants,
+    sourceFacts: ctx.sourceFacts,
   }
   metadata.localConstants = markShadowedModuleConsts(metadata)
   // Computed from the assembled metadata (not `ctx`): the plan reads the

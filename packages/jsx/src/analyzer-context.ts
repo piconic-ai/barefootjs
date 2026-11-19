@@ -23,10 +23,12 @@ import type {
   PropertyInfo,
   ReactiveFactoryInfo,
   DeclinedReactiveFactory,
+  SourceFacts,
 } from './types.ts'
 import { type ExcludeRange, collectAllTypeRanges, reconstructWithoutTypes } from './strip-types.ts'
 import type { CallbackBodyAcceptor } from './adapters/interface.ts'
 import { nodeContainsJsx } from './reactivity-checker.ts'
+import { sourceFactsOf } from './source-facts.ts'
 
 /**
  * Whether the getJS trust-boundary assertion is armed (BF_ASSERT_NO_JSX_IN_GETJS=1).
@@ -263,6 +265,9 @@ export interface AnalyzerContext {
    */
   componentBodyBlock: ts.Block | null
 
+  /** What each printed text reads, keyed by the text (`IRMetadata.sourceFacts`). */
+  sourceFacts: Record<string, SourceFacts>
+
   /** Return node text with TypeScript type syntax removed. */
   getJS(node: ts.Node): string
 }
@@ -324,6 +329,7 @@ export function createAnalyzerContext(
     typeExcludeRanges: collectAllTypeRanges(sourceFile),
     checker: null,
     componentBodyBlock: null,
+    sourceFacts: Object.create(null) as Record<string, SourceFacts>,
     getJS(node: ts.Node): string {
       // A node whose owning source file differs from this component's
       // `sourceFile` comes from a synthetic re-parse — e.g. #2090's
@@ -365,10 +371,11 @@ export function createAnalyzerContext(
           '(MapCallbackPreamble / FlatMapCallback) instead.'
         )
       }
-      if (ownSourceFile && ownSourceFile !== sourceFile) {
-        return node.getText(ownSourceFile)
-      }
-      return reconstructWithoutTypes(node, sourceFile, this.typeExcludeRanges)
+      const text = ownSourceFile && ownSourceFile !== sourceFile
+        ? node.getText(ownSourceFile)
+        : reconstructWithoutTypes(node, sourceFile, this.typeExcludeRanges)
+      if (!Object.hasOwn(this.sourceFacts, text)) this.sourceFacts[text] = sourceFactsOf(node)
+      return text
     },
   }
 }

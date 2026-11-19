@@ -12,6 +12,7 @@
  */
 
 import ts from 'typescript'
+import type { SourceFacts } from '../types.ts'
 import { isIdentifierLikeToken, isTriviaKind, iterateJsTokens } from '../scanner/js-scanner.ts'
 
 /** JavaScript keywords and common globals to skip during identifier extraction. */
@@ -123,6 +124,64 @@ export function extractIdentifiers(expr: string, set: Set<string>): void {
   scanNames(expr, name => {
     if (!isKeywordOrGlobal(name)) set.add(name)
   })
+}
+
+/**
+ * What the reference graph reads IR text with: the Phase 1 facts of each text
+ * (`IRMetadata.sourceFacts`) and the names whose members are uses of a prop
+ * (the props object, the rest bag and aliases of them).
+ */
+export interface ReferenceFacts {
+  readonly facts: Readonly<Record<string, SourceFacts>>
+  readonly receivers: ReadonlySet<string>
+}
+
+function addFactNames(facts: SourceFacts, reader: ReferenceFacts, set: Set<string>): void {
+  for (const name of facts.free) if (!isKeywordOrGlobal(name)) set.add(name)
+  for (const [object, name] of facts.members) if (reader.receivers.has(object)) set.add(name)
+}
+
+/**
+ * Add the names an IR text reads. Phase 1 recorded its free identifiers and
+ * member reads, so a member name, a key or a callback parameter names nothing;
+ * a read through a receiver (`props.value`) names the prop. A text with no
+ * recorded facts (one Phase 2 built or rewrote) is token-scanned, which also
+ * reports member names and so only ever keeps more alive.
+ */
+export function addReferencedNames(text: string, reader: ReferenceFacts, set: Set<string>): void {
+  const facts = Object.hasOwn(reader.facts, text) ? reader.facts[text] : undefined
+  if (facts) addFactNames(facts, reader, set)
+  else extractIdentifiers(text, set)
+}
+
+/**
+ * Add the members read through a receiver (`props.value`) from token order
+ * alone: a receiver name, a dot, a name. No syntax is parsed.
+ */
+export function scanReceiverMembers(text: string, receivers: ReadonlySet<string>, set: Set<string>): void {
+  // 0: no receiver just seen, 1: a receiver, 2: a receiver and its dot.
+  let state = 0
+  for (const token of iterateJsTokens(text)) {
+    if (isTriviaKind(token.kind)) continue
+    const isName = isIdentifierLikeToken(token.kind)
+    const name = isName ? text.slice(token.pos, token.end) : ''
+    if (state === 2 && isName) {
+      set.add(name)
+      state = 0
+    } else if (state === 1 && (token.kind === ts.SyntaxKind.DotToken || token.kind === ts.SyntaxKind.QuestionDotToken)) {
+      state = 2
+    } else {
+      state = isName && receivers.has(name) ? 1 : 0
+    }
+  }
+}
+
+/**
+ * `addReferencedNames` for a template: the facts of each `${...}` body, a
+ * body with none token-scanned. Static text names nothing.
+ */
+export function addReferencedTemplateNames(template: string, reader: ReferenceFacts, set: Set<string>): void {
+  for (const body of extractTemplateExpressions(template)) addReferencedNames(body, reader, set)
 }
 
 /**
