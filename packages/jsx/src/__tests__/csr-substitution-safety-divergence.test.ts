@@ -1,7 +1,7 @@
 /**
  * Regression tests for #2106: the templatePrimitives V2 widening (#2069)
  * let a call whose RAW callee is an identifier path
- * (`someModuleArray.includes(prop)`) pass `computeInlinability`'s Stage-2
+ * (`someModuleArray.with(0, prop)`) pass `computeInlinability`'s Stage-2
  * classification (`classifyConstantInitial`, compute-inlinability.ts) —
  * e.g. via an adapter with a broad `acceptsTemplateCall` (Hono's SSR
  * runtime is a full JS engine, so it accepts any identifier-path callee).
@@ -11,7 +11,7 @@
  * `populateCsrInlinable` (compute-inlinability.ts) re-runs the same
  * `isInlinableInTemplate` check on the CSR-*substituted* form, where the
  * module-scope array has already been literal-inlined
- * (`['plus','minus'].includes(name)`). The callee is no longer an
+ * (`['plus','minus'].with(0, name)`). The callee is no longer an
  * identifier path at all, so the adapter can't vouch for it, and the
  * bridged-arg rejection correctly fires — recorded as
  * `ctx.csrInlinable.get(name) === null`.
@@ -23,8 +23,11 @@
  * which skips null entries) NOR an unsafe flag — the bare,
  * module-scope-invisible identifier leaked straight into the emitted
  * template text, throwing `ReferenceError` when the template function
- * actually ran. This is the same bug class (and same shape) as the real
- * repro in `ui/components/ui/icon`'s `linecap` constant.
+ * actually ran. This is the same bug class as the real repro in
+ * `ui/components/ui/icon`'s `linecap` constant, which used `.includes(name)`:
+ * since #3926 a catalogued method on a literal receiver is accepted after
+ * substitution, so that shape inlines and this test pins a method that is
+ * not (`.with`).
  *
  * Fix: `generateCsrTemplate` (html-template.ts) folds `ctx.csrInlinable`'s
  * null verdicts into the unsafe-name set it uses internally
@@ -81,7 +84,7 @@ describe('CSR template: Stage-2 / post-substitution inline-safety divergence (#2
 
       export function CsrNullDivergence({ name }: { name: string }) {
         const [count] = createSignal(0)
-        const linecap = (buttLinecapIcons).includes(name) ? 'butt' : 'round'
+        const linecap = (buttLinecapIcons).with(0, name).join() ? 'butt' : 'round'
         return <div data-linecap={linecap}>{count()}</div>
       }
     `
