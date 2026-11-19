@@ -3983,6 +3983,22 @@
           ]
         }
       },
+      "element-spread-props-in-signal-loop-row": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "props-spread-element-in-signal-loop-row"
+          ]
+        }
+      },
+      "element-spread-props-loop-row-live": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "props-spread-element-in-signal-loop-row"
+          ]
+        }
+      },
       "embedded-prop-member-signal-seed": {
         "go-template": {
           "kind": "refusal",
@@ -12928,6 +12944,14 @@
         "description": "Destructured { length } of string and array rows in .map()",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/destructure-length-in-map.ts"
       },
+      "element-spread-props-in-signal-loop-row": {
+        "description": "Props-object element spread inside a signal-array loop row",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/element-spread-props-in-signal-loop-row.ts"
+      },
+      "element-spread-props-loop-row-live": {
+        "description": "the props object spread onto an element of a signal loop row reaches rows built on the client…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/element-spread-props-loop-row-live.ts"
+      },
       "embedded-prop-member-signal-seed": {
         "description": "a signal seeded from an expression over an object prop member renders the computed seed at SSR",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/embedded-prop-member-signal-seed.ts"
@@ -14880,6 +14904,20 @@
       "adapters": [
         "mojolicious",
         "xslate"
+      ]
+    },
+    "props-spread-element-in-signal-loop-row": {
+      "title": "The props object spread onto an element of a signal-array loop row",
+      "kind": "silent",
+      "given": "a `.map()` over a signal array whose row element spreads the component's props (`rows().map((r) => <span key={r.k} {...props}>{r.k}</span>)`)",
+      "expected": "every row element carries the keys the caller passed, merged with the row's own attributes",
+      "actual": "renders the row elements without the keys the props object carries",
+      "fixtures": [
+        "element-spread-props-in-signal-loop-row",
+        "element-spread-props-loop-row-live"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "record-const-index-unknown-keys": {

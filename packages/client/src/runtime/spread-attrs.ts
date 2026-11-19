@@ -8,6 +8,10 @@
 
 import { classifyDOMProp } from '@barefootjs/shared'
 import { styleToCss } from './style.ts'
+import { escapeAttr } from './component.ts'
+
+/** An attribute name the HTML parser reads as one name (no space, quote, `<`, `>`, `/` or `=`). */
+const SAFE_ATTR_NAME = /^[^\s"'<>/=]+$/
 
 /**
  * Convert an object to an HTML attribute string.
@@ -29,15 +33,19 @@ export function spreadAttrs(obj: Record<string, unknown>): string {
     // `dangerouslySetInnerHTML="[object Object]"`. (Content is set by the
     // template for an explicit attr, or by `applyRestAttrs` for a rest object.)
     if (c.kind === 'innerHTML') continue
+    // The caller's keys and values are data: a key that is not one plain
+    // attribute name is dropped, and each value is attribute-escaped on its
+    // own, so neither can close the attribute or open a new element (#3917).
+    if (!SAFE_ATTR_NAME.test(c.attrName)) continue
     if (c.kind === 'style') {
       const css = styleToCss(value)
-      if (css != null) parts.push(`style="${css}"`)
+      if (css != null) parts.push(`style="${escapeAttr(css)}"`)
       continue
     }
     if (c.kind === 'boolean' && value === true) {
       parts.push(c.attrName)
     } else {
-      parts.push(`${c.attrName}="${value}"`)
+      parts.push(`${c.attrName}="${escapeAttr(value)}"`)
     }
   }
   return parts.join(' ')
