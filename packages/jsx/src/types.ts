@@ -81,6 +81,20 @@ export interface TypeInfo {
   // For objects/interfaces
   properties?: PropertyInfo[]
 
+  /**
+   * Set only on the props type of a component whose props parameter is
+   * annotated with an INLINE intersection (`props: Base & { label: string }`):
+   * the intersection's constituents, with the same meaning as
+   * {@link TypeDefinition.inherits}. `kind` is `'object'` and `properties`
+   * stays empty (every constituent is in `inherits`), so a consumer that
+   * reads only `properties` sees what it saw before; type-evidence consumers
+   * resolve the members through `derefNamedType`. Absent everywhere else:
+   * `typeNodeToTypeInfo` still lowers a nested intersection to `unknown`.
+   */
+  inherits?: TypeInfo[]
+  /** How `inherits` combines; present exactly when `inherits` is. */
+  inheritance?: 'extends' | 'intersection'
+
   // For arrays
   elementType?: TypeInfo
 
