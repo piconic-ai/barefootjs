@@ -195,6 +195,11 @@ function buildCsrEvalModule(clientJs: string, props: Record<string, unknown>, co
       ? props.__instanceId
       : 'test'
 
+  // `__instanceId` only pins the root scope above. Production's `_p` never
+  // carries it, and an element spread of the caller's props (`{...props}`)
+  // would print it as an attribute, so the template and init see the rest.
+  const { __instanceId: _instanceId, ...componentProps } = props
+
   return `
 // --- Mock runtime ---
 const __rootScope = ${JSON.stringify(rootScope)}
@@ -593,11 +598,11 @@ const __mainComponent = ${componentName ? JSON.stringify(componentName) : '__las
 if (!__templates.has(__mainComponent)) throw new Error('CSR harness: no template registered for ' + __mainComponent)
 
 // --- Run main component init (so Provider state is set, child inits cascade) ---
-__runInit(__mainComponent, ${JSON.stringify(props)})
+__runInit(__mainComponent, ${JSON.stringify(componentProps)})
 
 // --- Evaluate main component template ---
 const __templateFn = __templates.get(__mainComponent)
-let __html = __templateFn ? __templateFn(${JSON.stringify(props)}) : ''
+let __html = __templateFn ? __templateFn(${JSON.stringify(componentProps)}) : ''
 // #1320: resolve any hoisted-children placeholder that didn't pass
 // through a nested renderChild. The outer bf-s="test" injection
 // below runs second, so this substitution must precede it.

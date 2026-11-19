@@ -610,6 +610,7 @@ import { fixture as openRestSpreadChildOmitsKeys } from './open-rest-spread-chil
 import { fixture as openBodyRestSpreadChildOmitsKeys } from './open-body-rest-spread-child-omits-keys'
 import { fixture as openRestSpreadChild } from './open-rest-spread-child'
 import { fixture as openBodyRestSpreadElement } from './open-body-rest-spread-element'
+import { fixture as elementSpreadPropsLoopRowLive } from './element-spread-props-loop-row-live'
 import { fixture as openRestSpreadChildChildren } from './open-rest-spread-child-children'
 import { fixture as arrayTextChild } from './array-text-child'
 import { fixture as childrenElementReadIntoState } from './children-element-read-into-state'
@@ -1594,6 +1595,8 @@ import { fixture as loopParamNamedPropsMemberPropsObject } from './loop-param-na
 import { fixture as loopParamNamedPropsSpreadCustomName } from './loop-param-named-props-spread-custom-name'
 import { fixture as loopParamNamedPropsSpreadChild } from './loop-param-named-props-spread-child'
 import { fixture as loopParamNamedPropsSpreadElement } from './loop-param-named-props-spread-element'
+import { fixture as elementSpreadPropsInSignalLoopRow } from './element-spread-props-in-signal-loop-row'
+import { fixture as elementSpreadRestInLoopRowShapes } from './element-spread-rest-in-loop-row-shapes'
 import { fixture as loopKeyToString } from './loop-key-to-string'
 import { fixture as loopKeyToStringNumberComponentRow } from './loop-key-to-string-number-component-row'
 import { fixture as loopKeyToStringNumberComponentRowClient } from './loop-key-to-string-number-component-row-client'
@@ -2060,6 +2063,7 @@ export const jsxFixtures: JSXFixture[] = [
   openBodyRestSpreadChildOmitsKeys,
   openRestSpreadChild,
   openBodyRestSpreadElement,
+  elementSpreadPropsLoopRowLive,
   openRestSpreadChildChildren,
   arrayTextChild,
   childrenElementReadIntoState,
@@ -2795,6 +2799,8 @@ export const jsxFixtures: JSXFixture[] = [
   loopParamNamedPropsSpreadCustomName,
   loopParamNamedPropsSpreadChild,
   loopParamNamedPropsSpreadElement,
+  elementSpreadPropsInSignalLoopRow,
+  elementSpreadRestInLoopRowShapes,
   loopKeyToString,
   loopKeyToStringNumberComponentRow,
   loopKeyToStringNumberComponentRowClient,
