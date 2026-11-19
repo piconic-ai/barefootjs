@@ -11293,6 +11293,94 @@
       }
     }
   ],
+  "module-const-object-spread-unresolved-computed-client": [
+    {
+      "name": "gen:field:empty",
+      "props": {
+        "field": ""
+      }
+    },
+    {
+      "name": "gen:field:markup",
+      "props": {
+        "field": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:field:multibyte",
+      "props": {
+        "field": "日本語"
+      }
+    }
+  ],
+  "module-const-object-spread-unresolved-computed-local": [
+    {
+      "name": "gen:field:empty",
+      "props": {
+        "field": ""
+      }
+    },
+    {
+      "name": "gen:field:markup",
+      "props": {
+        "field": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:field:multibyte",
+      "props": {
+        "field": "日本語"
+      }
+    }
+  ],
+  "module-const-object-spread-unresolved-computed-loop": [
+    {
+      "name": "gen:keys:empty",
+      "props": {
+        "keys": []
+      }
+    }
+  ],
+  "module-const-object-spread-unresolved-computed-optional": [
+    {
+      "name": "gen:field:empty",
+      "props": {
+        "field": ""
+      }
+    },
+    {
+      "name": "gen:field:markup",
+      "props": {
+        "field": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:field:multibyte",
+      "props": {
+        "field": "日本語"
+      }
+    }
+  ],
+  "module-const-object-spread-unresolved-computed-props": [
+    {
+      "name": "gen:field:empty",
+      "props": {
+        "field": ""
+      }
+    },
+    {
+      "name": "gen:field:markup",
+      "props": {
+        "field": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:field:multibyte",
+      "props": {
+        "field": "日本語"
+      }
+    }
+  ],
   "module-const-reads-global-named-like-prop": [
     {
       "name": "gen:Math:empty",

@@ -66,6 +66,7 @@ describe('compileForCompat', () => {
           'client-only-loop-in-static-loop',
           'computed-const-loop-source',
           'const-literal-inherited-key',
+          'const-object-spread-unresolved',
           'derived-object-literal-signal',
           'destructure-default-computed-array',
           'destructure-default-reads-component-state',
