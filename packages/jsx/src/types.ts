@@ -449,6 +449,17 @@ export interface IRElement {
    */
   rawTextHost?: true
   /**
+   * True for a `<style>`, `<script>`, `<textarea>` or `<title>` that sits in
+   * foreign content (SVG, MathML), where its children parse as ordinary
+   * content and DO read comments, so the slot markers stay (#3937). An adapter
+   * whose template engine tracks the element's HTML content model by tag name
+   * alone (Go `html/template`: `title` / `textarea` are RCDATA, whatever the
+   * namespace) reads this to tell that case from a real HTML host, which Phase 1
+   * lowers to slotless text (`rawTextHost`). Exclusive with `rawTextHost`.
+   * Decided once in Phase 1 (`raw-text-host.ts`).
+   */
+  foreignRawTextTag?: true
+  /**
    * The row-key attribute this element carries, resolved ONCE here instead
    * of independently by 16 emit sites (#2753 root-cause: the client
    * runtime's `mapArray` stamping an index key onto unkeyed rows SSR never
