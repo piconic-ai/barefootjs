@@ -30,7 +30,10 @@ type StaticConstants = IRMetadata['localConstants'] | undefined
  *   - `value`: the read's value as a typed `ParsedExpr` — a string or number
  *     `literal`, a unary `-` over a number literal, or the identifier
  *     `undefined` for a key the literal provably lacks;
- *   - `inherited`: a key only the prototype has (a function in JS).
+ *   - `inherited`: a key only the prototype has (a function in JS);
+ *   - `unresolvable`: a key an object literal's spread of a source this
+ *     cannot expand (a call, a `let`, an array, a member of a non-literal)
+ *     may bring, and no later entry of the literal overrides (#3944).
  *
  * `null` when the read is not a member of a literal const, or the literal
  * cannot answer it (a hole or spread before the element, a non-literal
@@ -39,6 +42,7 @@ type StaticConstants = IRMetadata['localConstants'] | undefined
 export type StaticConstMemberRead =
   | { kind: 'value'; expr: ParsedExpr }
   | { kind: 'inherited'; key: string }
+  | { kind: 'unresolvable' }
 
 const UNDEFINED_EXPR: ParsedExpr = { kind: 'identifier', name: 'undefined' }
 
@@ -71,7 +75,7 @@ export function readStaticConstMember(
   const receiver = staticLiteralValue(object, constants, isShadowed)
   if (receiver === null) return null
   const read = readLiteralMember(receiver, key)
-  if (read === null || read.kind === 'inherited') return read
+  if (read === null || read.kind !== 'value') return read
   return isRenderableScalar(read.expr) ? read : null
 }
 
@@ -105,7 +109,9 @@ export interface StaticConstMemberSink {
 /**
  * The value a template adapter spells for a literal const member read it is
  * emitting, as `lookupStaticConstMember`; and, for a key only the literal's
- * prototype has (`REC['toString']`, `QS['map']`), BF101 recorded in `sink`.
+ * prototype has (`REC['toString']`, `QS['map']`), or a key of an object
+ * literal whose spread of a source Phase 1 cannot expand may bring
+ * (`{ ...mk() }`), BF101 recorded in `sink`.
  * Every template adapter's member and index emitters (value, condition and
  * child-prop position, and a constant or function body the adapter inlines)
  * read through this, so the refusal fires exactly where a template would
@@ -125,16 +131,60 @@ export function spellStaticConstMember(
 ): ParsedExpr | null {
   const read = readStaticConstMember(object, key, constants, isShadowed)
   if (read?.kind === 'inherited') {
-    recordInheritedRead(exprToString({ kind: 'member', object, property: key, computed: false, optional: false }), sink, where)
+    const text = exprToString({ kind: 'member', object, property: key, computed: false, optional: false })
+    recordRefusedRead(
+      `\`${text}\` reads a key the const's literal value does not have but its prototype does, so JS reads an inherited ` +
+        'function there. A template holds the literal value without a prototype, so the server render cannot give the JS answer.',
+      'Read a key the literal lists',
+      sink,
+      where,
+    )
+    return null
+  }
+  if (read?.kind === 'unresolvable') {
+    const text = exprToString({ kind: 'member', object, property: key, computed: false, optional: false })
+    recordRefusedRead(
+      `\`${text}\` reads a const whose object literal spreads a value a template cannot compute (a call, a \`let\`, an array, ` +
+        'a member of a non-literal), and no later entry sets the key, so the key may come from the spread. The template receives ' +
+        'the props, not the module\'s consts, so the server render has no value for it.',
+      'Spread only literal consts, or list the key after the spread',
+      sink,
+      where,
+    )
     return null
   }
   return read?.kind === 'value' ? read.expr : null
 }
 
-function recordInheritedRead(read: string, sink: StaticConstMemberSink, where: InheritedReadPlace | undefined): void {
-  const message =
-    `\`${read}\` reads a key the const's literal value does not have but its prototype does, so JS reads an inherited ` +
-    'function there. A template holds the literal value without a prototype, so the server render cannot give the JS answer.'
+/**
+ * BF101 for `object[index]` read with an index that is not a literal key
+ * (`B[props.key]`, `B[i]`, `B?.[sig()]`), when `object` is an object const
+ * whose spread `flattenObjectSpreads` could not expand. Any key may come from
+ * that spread, so the read has no compile-time answer and no template binds
+ * the const (#3944). A literal const whose entries are all known is not
+ * refused here: it is read through the adapters' own lookups.
+ */
+export function refuseComputedConstRead(
+  object: ParsedExpr,
+  constants: StaticConstants,
+  isShadowed: (name: string) => boolean,
+  sink: StaticConstMemberSink,
+  where?: InheritedReadPlace,
+): void {
+  const receiver = staticLiteralValue(object, constants, isShadowed)
+  if (receiver?.kind !== 'object-literal' || !receiver.properties.some(p => p.kind === 'spread')) return
+  const text = exprToString(object)
+  recordRefusedRead(
+    `\`${text}[…]\` reads a const whose object literal spreads a value a template cannot compute (a call, a \`let\`, an array, ` +
+      'a member of a non-literal) with a key only known at run time, so the key may come from the spread. The template receives ' +
+      'the props, not the module\'s consts, so the server render has no value for it.',
+    'Spread only literal consts, or defer the read to the client',
+    sink,
+    where,
+  )
+}
+
+function recordRefusedRead(message: string, advice: string, sink: StaticConstMemberSink, where: InheritedReadPlace | undefined): void {
   if (sink.errors.some(e => e.code === 'BF101' && e.message === message)) return
   sink.errors.push({
     code: 'BF101',
@@ -142,9 +192,9 @@ function recordInheritedRead(read: string, sink: StaticConstMemberSink, where: I
     message,
     loc: where?.loc ?? { file: `${sink.componentName}.tsx`, start: { line: 1, column: 0 }, end: { line: 1, column: 0 } },
     suggestion: where?.deferrable === false
-      ? { message: 'Read a key the literal lists.' }
+      ? { message: `${advice}.` }
       : {
-          message: 'Read a key the literal lists, or defer the read to the client with /* @client */.',
+          message: `${advice}, or defer the read to the client with /* @client */.`,
           escape: [{ kind: 'client-directive' }],
         },
   })
@@ -194,11 +244,13 @@ const MAX_SPREAD_DEPTH = 8
  * every adapter (#3916).
  *
  * A spread this cannot expand stays in the literal, and `readObjectMember`
- * then refuses to answer for the object: a source that is not a plain
- * identifier, a const that is not a literal object, a `let` or one the
- * component changes, or a name that is not provably the module's. Names in a
- * module const's initializer are the module's, so they resolve only against
- * module consts, never against a component binding of the same name.
+ * then answers a key listed after it only: a source that is not a literal
+ * const or a literal object member of one (`...R.sub`), a const that is not
+ * a literal object, a `let` or one the component changes, a call, an array,
+ * or a name that is not provably the module's. A read of any other key is
+ * refused (`spellStaticConstMember`, #3944). Names in a module const's
+ * initializer are the module's, so they resolve only against module consts,
+ * never against a component binding of the same name.
  */
 function flattenObjectSpreads(
   literal: Extract<ParsedExpr, { kind: 'object-literal' }>,
@@ -223,15 +275,44 @@ function spreadSourceEntries(
   inModule: boolean,
   depth: number,
 ): readonly ObjectLiteralProperty[] | null {
-  if (expr.kind !== 'identifier' || depth >= MAX_SPREAD_DEPTH) return null
-  const name = expr.name
-  const source = inModule
-    ? (constants ?? []).find(c => c.isModule && c.name === name)
-    : resolveStaticConstBinding(name, constants, () => false)
-  if (!source || source.declarationKind !== 'const' || source.mutatedAfterDeclaration) return null
-  if (source.parsed?.kind !== 'object-literal') return null
-  const flat = flattenObjectSpreads(source.parsed, constants, source.isModule === true, depth + 1)
-  return flat.kind === 'object-literal' ? flat.properties : null
+  return spreadSourceLiteral(expr, constants, inModule, depth)?.literal.properties ?? null
+}
+
+/** A spread source's object literal with its own spreads expanded, and whether the const that declares it is the module's. */
+interface SpreadSource {
+  literal: Extract<ParsedExpr, { kind: 'object-literal' }>
+  inModule: boolean
+}
+
+/**
+ * The object literal a spread of `expr` copies: a literal const (`...R`), or
+ * a literal object a literal const holds under literal keys (`...R.sub`,
+ * `...R['sub']`). Anything else (a call, an array, a `let`) is `null`.
+ */
+function spreadSourceLiteral(
+  expr: ParsedExpr,
+  constants: StaticConstants,
+  inModule: boolean,
+  depth: number,
+): SpreadSource | null {
+  if (depth >= MAX_SPREAD_DEPTH) return null
+  if (expr.kind === 'identifier') {
+    const name = expr.name
+    const source = inModule
+      ? (constants ?? []).find(c => c.isModule && c.name === name)
+      : resolveStaticConstBinding(name, constants, () => false)
+    if (!source || source.declarationKind !== 'const' || source.mutatedAfterDeclaration) return null
+    if (source.parsed?.kind !== 'object-literal') return null
+    const flat = flattenObjectSpreads(source.parsed, constants, source.isModule === true, depth + 1)
+    return flat.kind === 'object-literal' ? { literal: flat, inModule: source.isModule === true } : null
+  }
+  const key = expr.kind === 'member' ? expr.property : expr.kind === 'index-access' ? staticIndexKey(expr.index) : null
+  if (key === null || (expr.kind !== 'member' && expr.kind !== 'index-access')) return null
+  const base = spreadSourceLiteral(expr.object, constants, inModule, depth + 1)
+  const read = base ? readObjectMember(base.literal.properties, key) : null
+  if (!base || read?.kind !== 'value' || read.expr.kind !== 'object-literal') return null
+  const flat = flattenObjectSpreads(read.expr, constants, base.inModule, depth + 1)
+  return flat.kind === 'object-literal' ? { literal: flat, inModule: base.inModule } : null
 }
 
 /**
@@ -268,15 +349,20 @@ function readArrayMember(elements: readonly ParsedExpr[], key: string): StaticCo
 }
 
 /**
- * An object literal's own key, or a key it provably lacks. A spread may
- * bring any key, and an `__proto__` entry sets the prototype instead of a
- * key, so either makes a missing key unknown. A later entry of the same key
- * overrides an earlier one.
+ * An object literal's own key, or a key it provably lacks. The last entry
+ * for a key wins, so the entries are read from the end: a key listed after
+ * every spread is that entry's value whatever the spread brings. A spread
+ * the literal still holds (one `flattenObjectSpreads` could not expand) is
+ * `unresolvable` for any key listed before it, or not listed at all, since
+ * the spread may bring that key. An `__proto__` entry sets the prototype
+ * instead of a key, so it makes the literal unknown (`null`).
  */
 function readObjectMember(properties: readonly ObjectLiteralProperty[], key: string): StaticConstMemberRead | null {
-  if (properties.some(p => p.kind === 'spread' || p.key === '__proto__')) return null
-  const own = properties.filter(p => p.kind === 'prop' && p.key === key).at(-1)
-  if (own?.kind === 'prop') return { kind: 'value', expr: own.value }
+  if (properties.some(p => p.kind === 'prop' && p.key === '__proto__')) return null
+  for (const p of [...properties].reverse()) {
+    if (p.kind === 'spread') return { kind: 'unresolvable' }
+    if (p.key === key) return { kind: 'value', expr: p.value }
+  }
   if (key in Object.prototype) return { kind: 'inherited', key }
   return { kind: 'value', expr: UNDEFINED_EXPR }
 }
