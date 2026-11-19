@@ -5861,6 +5861,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -6333,6 +6339,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -6792,6 +6804,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -7385,6 +7403,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -7856,6 +7880,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -8329,6 +8359,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -8789,6 +8825,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -9248,6 +9290,12 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -9720,6 +9768,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -11263,6 +11317,12 @@
               ]
             },
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -11903,6 +11963,12 @@
               ]
             },
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -12510,6 +12576,12 @@
               "fixture": "array-text-child",
               "limitations": [
                 "array-text-child"
+              ]
+            },
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
               ]
             },
             {
@@ -13369,6 +13441,12 @@
               ]
             },
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -14000,6 +14078,12 @@
               "fixture": "array-text-child",
               "limitations": [
                 "array-text-child"
+              ]
+            },
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
               ]
             },
             {
@@ -14637,6 +14721,12 @@
               ]
             },
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -15265,6 +15355,12 @@
               ]
             },
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-identifier-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -15878,6 +15974,12 @@
               "fixture": "array-text-child",
               "limitations": [
                 "array-text-child"
+              ]
+            },
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
               ]
             },
             {
@@ -16518,6 +16620,12 @@
               "fixture": "array-text-child",
               "limitations": [
                 "array-text-child"
+              ]
+            },
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
               ]
             },
             {
@@ -17634,6 +17742,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -18130,6 +18244,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -18619,6 +18739,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
@@ -19272,6 +19398,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -19768,6 +19900,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -20263,6 +20401,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
@@ -20778,6 +20922,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -21255,6 +21405,12 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
@@ -21751,6 +21907,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
@@ -27398,6 +27560,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -27630,6 +27798,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -27861,6 +28035,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
@@ -28136,6 +28316,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -28368,6 +28554,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -28599,6 +28791,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
@@ -28850,6 +29048,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -29075,6 +29279,12 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
@@ -29307,6 +29517,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "body-destructure-non-literal-default",
               "limitations": [
@@ -29587,6 +29803,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -29633,6 +29855,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -29678,6 +29906,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -29731,6 +29965,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -29776,6 +30016,12 @@
         },
         "minijinja": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -29823,6 +30069,12 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -29869,6 +30121,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -29908,6 +30166,12 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -29954,6 +30218,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -37273,6 +37543,12 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -37673,6 +37949,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -38066,6 +38348,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
@@ -38599,6 +38887,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -38999,6 +39293,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -39398,6 +39698,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
@@ -39817,6 +40123,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
+            {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
@@ -40204,6 +40516,12 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
@@ -40604,6 +40922,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "attr-spread-key-overlap",
+              "limitations": [
+                "attr-spread-key-overlap"
+              ]
+            },
             {
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [

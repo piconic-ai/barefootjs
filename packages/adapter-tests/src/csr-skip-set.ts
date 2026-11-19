@@ -137,6 +137,15 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // body rest onto its root. The real-browser fixture-hydrate and oracle
   // suites check the client.
   'open-body-rest-spread-element',
+  // Same `applyRestAttrs`-not-modeled harness class: every bag reaches its
+  // element only through a spread, which the harness stubs as a noop, so the
+  // template shows the literal each spread overrides. The per-adapter render
+  // conformance pins the SSR contract.
+  'literal-attr-before-spread',
+  'literal-boolean-attr-before-spread',
+  // Same class: the spread bags reach their elements only through
+  // `applyRestAttrs`; `attr-spread-key-overlap` pins the SSR contract.
+  'attr-spread-key-overlap',
   // The harness now mounts the fixture's `componentName` (the #1467
   // multi-export class — `__lastComponent` rendering the last demo export
   // instead of the pinned basic demo — is gone; radio-group, tabs, dialog,
