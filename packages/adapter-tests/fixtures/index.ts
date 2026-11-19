@@ -624,6 +624,9 @@ import { fixture as memberExpressionTag } from './member-expression-tag'
 import { fixture as arrowComponent } from './arrow-component'
 import { fixture as derivedStringConstSiblingComponent } from './derived-string-const-sibling-component'
 import { fixture as derivedStringConstChildFiles } from './derived-string-const-child-files'
+import { fixture as csrConstLiteralMethodCall } from './csr-const-literal-method-call'
+import { fixture as csrConstLiteralMethodCallShadow } from './csr-const-literal-method-call-shadow'
+import { fixture as searchParamsDerivedConst } from './search-params-derived-const'
 import { fixture as childrenJsxExpression } from './children-jsx-expression'
 import { fixture as fragmentWrappedChildrenJsxExpression } from './fragment-wrapped-children-jsx-expression'
 import { fixture as restDestructureObjectInMap } from './rest-destructure-object-in-map'
@@ -2962,4 +2965,7 @@ export const jsxFixtures: JSXFixture[] = [
   componentSpreadPropsInNestedLoopRow,
   derivedStringConstSiblingComponent,
   derivedStringConstChildFiles,
+  csrConstLiteralMethodCall,
+  csrConstLiteralMethodCallShadow,
+  searchParamsDerivedConst,
 ]
