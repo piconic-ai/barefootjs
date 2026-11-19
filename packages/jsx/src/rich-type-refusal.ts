@@ -75,7 +75,7 @@ import {
   jsonUnsafeTypeName,
   hasUnresolvedBase,
   inheritedMemberConflicts,
-  receiverRootPropName,
+  receiverEvidenceLoss,
 } from './rich-type-evidence.ts'
 import { DATE_METHODS } from './date-lowering.ts'
 
@@ -297,7 +297,7 @@ function checkExpr(
     case 'call': {
       if (expr.callee.kind === 'member') {
         const receiverType = resolveReceiverType(expr.callee.object, meta, bindings)
-        checkUnresolvedInheritedReceiver(expr.callee, expr.args, receiverType, loc, meta, bindings, matchers, errors, seen)
+        checkUnresolvedInheritedReceiver(expr.callee, expr.args, loc, meta, bindings, matchers, errors, seen)
         if (receiverType && receiverType.kind === 'interface') {
           const typeName = baseTypeName(receiverType.raw)
           const inFileShadow = meta.typeDefinitions.some((d) => d.name === typeName)
@@ -369,11 +369,12 @@ function checkExpr(
 }
 
 /**
- * #3914: a catalogued `Date` method called on a prop whose type this file
- * cannot determine from the props type's inheritance. Two shapes:
- *   - the props type inherits from a base declared elsewhere and the prop is
- *     not visible on it, so it may be a `Date` declared on that base;
- *   - the prop is declared by several intersection arms whose types cannot
+ * #3914: a catalogued `Date` method called on a receiver whose type this
+ * file cannot determine from a containing type's inheritance, at ANY step of
+ * the member chain (`props.at`, `props.data.at`, ...). Two shapes:
+ *   - the containing type inherits from a base declared elsewhere and the
+ *     member is not visible on it, so it may be a `Date` declared on that base;
+ *   - the member is declared by several intersection arms whose types cannot
  *     be reconciled (`Base & { at: Date }` with `Base.at: string`).
  * The date lowering skips both (an empty render on most template adapters),
  * so refuse instead of guessing. A call a registered lowering plugin claims
@@ -383,7 +384,6 @@ function checkExpr(
 function checkUnresolvedInheritedReceiver(
   callee: Extract<ParsedExpr, { kind: 'member' }>,
   args: readonly ParsedExpr[],
-  receiverType: TypeInfo | null,
   loc: SourceLocation,
   meta: IRMetadata,
   bindings: Bindings,
@@ -392,26 +392,25 @@ function checkUnresolvedInheritedReceiver(
   seen: Set<string>,
 ): void {
   if (callee.computed || args.length !== 0 || !DATE_METHODS.has(callee.property)) return
-  const propName = receiverRootPropName(callee.object, meta, bindings)
-  if (propName === null) return
-  const conflicting = inheritedMemberConflicts(meta.propsType, meta).has(propName)
-  const hidden = !receiverType && hasUnresolvedBase(meta.propsType, meta) && !resolvePropDeclaredType(propName, meta)
-  if (!conflicting && !hidden) return
+  const loss = receiverEvidenceLoss(callee.object, meta, bindings)
+  if (!loss) return
+  const propName = loss.prop
+  const conflicting = loss.reason === 'conflict'
   if (isLoweringClaimed(matchers, callee, args)) return
   const receiverPath = describeReceiverPath(callee.object)
   const key = `${loc.start.line}:${loc.start.column}:${receiverPath}.${callee.property}:inherited`
   if (seen.has(key)) return
   seen.add(key)
   const why = conflicting
-    ? `prop '${propName}' is declared with types that cannot be reconciled across the intersection arms of the props type`
-    : `prop '${propName}' is not declared on the props type in this file, and the props type inherits from a base type that is not declared here, so the prop may be a Date declared on that base`
+    ? `prop '${propName}' is declared with types that cannot be reconciled across the intersection arms of its containing type`
+    : `prop '${propName}' is not declared on its containing type in this file, and that type inherits from a base type that is not declared here, so the prop may be a Date declared on that base`
   errors.push({
     code: ErrorCodes.UNSUPPORTED_JSX_PATTERN,
     severity: 'error',
     message: `Expression cannot be compiled to marked template: the type of '${receiverPath}' is unknown, so '.${callee.property}()' cannot be lowered. ${why[0].toUpperCase()}${why.slice(1)}.`,
     loc,
     suggestion: {
-      message: `Declare '${propName}' (for example '${propName}: Date') with one type on the props type in this file, or declare the base type in this file so its members are visible. Alternatively pre-compute the value server-side and pass it as a prop.`,
+      message: `Declare '${propName}' (for example '${propName}: Date') with one type on its containing type in this file, or declare the base type in this file so its members are visible. Alternatively pre-compute the value server-side and pass it as a prop.`,
       escape: [{ kind: 'rewrite' }, { kind: 'prop-precompute' }],
     },
   })

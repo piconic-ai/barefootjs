@@ -334,6 +334,17 @@ describe('Date members inherited through extends / intersection (#3914)', () => 
     ).toBe(true)
   })
 
+  test('Date & Date | null across intersection arms narrows to Date, at depth 2 too', () => {
+    expect(
+      matches(
+        `type Data = { at: Date } & { at: Date | null }
+         interface Props { data: Data }
+         export function Foo(props: Props) { return <p>{props.data.at.getTime()}</p> }`,
+        'props.data.at.getTime()',
+      ),
+    ).toBe(true)
+  })
+
   function refusals(src: string): string[] {
     const result = compileJSX(src.trimStart(), 'T.tsx', { adapter: new TestAdapter() })
     return result.errors.filter((e) => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN).map((e) => e.message)
@@ -423,5 +434,29 @@ describe('Date members inherited through extends / intersection (#3914)', () => 
     } finally {
       __resetLoweringPluginsForTest(saved)
     }
+  })
+
+  test('a conflict on a NESTED receiver is refused, not silently left raw', () => {
+    for (const data of ['{ at: Date } & { at: string }', '{ at: string } & { at: Date }']) {
+      const messages = refusals(`
+        type Data = ${data}
+        interface Props { data: Data }
+        export function Foo(props: Props) { return <p>{props.data.at.getUTCFullYear()}</p> }
+      `)
+      expect(messages).toHaveLength(1)
+      expect(messages[0]).toContain("'props.data.at'")
+      expect(messages[0]).toContain('cannot be reconciled')
+    }
+  })
+
+  test('an unresolved base on a NESTED containing type is refused', () => {
+    const messages = refusals(`
+      import type { Base } from './base'
+      interface Data extends Base { n: number }
+      interface Props { data: Data }
+      export function Foo(props: Props) { return <p>{props.data.at.getUTCFullYear()}</p> }
+    `)
+    expect(messages).toHaveLength(1)
+    expect(messages[0]).toContain('not declared here')
   })
 })

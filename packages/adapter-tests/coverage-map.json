@@ -4341,6 +4341,19 @@
         "text"
       ]
     },
+    "date-intersection-nested-narrowing": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "date-intersection-refine-base-first": {
       "kinds": [
         "call",

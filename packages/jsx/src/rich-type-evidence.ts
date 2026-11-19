@@ -181,16 +181,30 @@ function isUninformative(t: TypeInfo): boolean {
 
 const CONFLICTING_TYPE: TypeInfo = { kind: 'unknown', raw: 'unknown' }
 
+function unionArms(t: TypeInfo): readonly TypeInfo[] {
+  return t.kind === 'union' && t.unionTypes ? t.unionTypes : [t]
+}
+
+/** Whether every arm of `sub` is one of the arms of `sup` (same kind and spelling), so `sub` <: `sup`. */
+function isSubtypeByArms(sub: TypeInfo, sup: TypeInfo): boolean {
+  const supArms = unionArms(sup)
+  return unionArms(sub).every((a) => supArms.some((b) => a.kind === b.kind && a.raw === b.raw))
+}
+
 /**
  * Intersect two declarations of the same member: the type is the
- * intersection of both, independent of order. An uninformative side defers
- * to the other, identical types agree, and anything else is irreconcilable
+ * intersection of both, independent of order. An uninformative side
+ * (`unknown` / `any`) defers to the other. When one side's union arms are
+ * all arms of the other (`Date` vs `Date | null`, or two identical types),
+ * the intersection is the narrower side. Anything else is irreconcilable
  * here (`null` — the caller records a conflict and drops the type).
  */
 function intersectMemberTypes(a: TypeInfo, b: TypeInfo): TypeInfo | null {
   if (isUninformative(a)) return b
   if (isUninformative(b)) return a
-  return a.raw === b.raw && a.kind === b.kind ? a : null
+  if (isSubtypeByArms(a, b)) return a
+  if (isSubtypeByArms(b, a)) return b
+  return null
 }
 
 /** Merge member sets as an intersection (`A & B`): order-independent per member. */
@@ -299,29 +313,43 @@ function definitionHasUnresolvedBase(def: TypeDefinition, meta: EvidenceMetadata
 }
 
 /**
- * The prop a receiver expression reads FIRST (`at` for `props.at`,
- * `props.at.x` and a bare destructured `at`), by its SOURCE name, or `null`
- * when the receiver is not rooted at a declared prop. Shares
- * `resolveReceiverType`'s prop-membership rules (object-props mode reaches
- * props only through the props object; destructured mode only through a
- * declared, non-rest param) without needing the prop's type to resolve.
+ * Why a receiver expression's type evidence cannot be trusted at some step of
+ * its member chain (#3914), or `null` when every step resolves:
+ *   - `'conflict'`: the step's member is declared by several intersection arms
+ *     with irreconcilable types, so its type was reported as `unknown`;
+ *   - `'hidden'`: the member is not visible on the containing type, which
+ *     inherits from a base declared outside this file (it may live there).
+ * Checked at EVERY depth (`props.data.at` inspects `Data` for `at`, and the
+ * props type for `data`), so evidence lost to an unsupported intersection or
+ * an unseen base is never mistaken for "not a rich type". Shares
+ * `resolveReceiverType`'s prop-membership rules.
  */
-export function receiverRootPropName(
+export function receiverEvidenceLoss(
   expr: ParsedExpr,
   meta: EvidenceMetadata,
   bindings: ReadonlyMap<string, TypeInfo | null>,
-): string | null {
+): { prop: string; reason: 'conflict' | 'hidden' } | null {
+  let containing: TypeInfo | null
+  let prop: string
   if (expr.kind === 'identifier') {
     if (bindings.has(expr.name) || meta.propsObjectName !== null) return null
     const param = meta.propsParams.find((p) => p.name === expr.name && !p.isRest)
-    return param ? (param.sourceName ?? param.name) : null
+    if (!param) return null
+    containing = meta.propsType
+    prop = param.sourceName ?? param.name
+  } else if (expr.kind === 'member' && !expr.computed) {
+    const inner = receiverEvidenceLoss(expr.object, meta, bindings)
+    if (inner) return inner
+    containing = resolveReceiverType(expr.object, meta, bindings)
+    prop = expr.property
+  } else {
+    return null
   }
-  if (expr.kind !== 'member' || expr.computed) return null
-  if (expr.object.kind === 'identifier') {
-    const isPropsObject = meta.propsObjectName !== null && expr.object.name === meta.propsObjectName
-    return isPropsObject && !bindings.has(expr.object.name) ? expr.property : null
-  }
-  return receiverRootPropName(expr.object, meta, bindings)
+  const stripped = stripUnion(containing)
+  if (!stripped || stripped.kind !== 'interface') return null
+  if (inheritedMemberConflicts(stripped, meta).has(prop)) return { prop, reason: 'conflict' }
+  const visible = derefNamedType(stripped, meta).properties?.some((p) => p.name === prop)
+  return !visible && hasUnresolvedBase(stripped, meta) ? { prop, reason: 'hidden' } : null
 }
 
 /**
