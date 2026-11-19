@@ -936,6 +936,7 @@ import { fixture as rawTextHostStyleScript } from './raw-text-host-style-script'
 import { fixture as rawTextHostSvgStyle } from './raw-text-host-svg-style'
 import { fixture as rawTextHostReactive } from './raw-text-host-reactive'
 import { fixture as rawTextHostAnnotationXml } from './raw-text-host-annotation-xml'
+import { fixture as rawTextHostAnnotationXmlSvg } from './raw-text-host-annotation-xml-svg'
 import { fixture as rawTextHostAnnotationXmlEncodings } from './raw-text-host-annotation-xml-encodings'
 import { fixture as rawTextHostTextareaLeadingNewline } from './raw-text-host-textarea-leading-newline'
 import { fixture as templateDelimiterStaticTextPropsObject } from './template-delimiter-static-text-props-object'
@@ -2299,6 +2300,7 @@ export const jsxFixtures: JSXFixture[] = [
   rawTextHostSvgStyle,
   rawTextHostReactive,
   rawTextHostAnnotationXml,
+  rawTextHostAnnotationXmlSvg,
   rawTextHostAnnotationXmlEncodings,
   rawTextHostTextareaLeadingNewline,
   templateDelimiterStaticTextPropsObject,

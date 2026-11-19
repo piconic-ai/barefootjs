@@ -66,6 +66,12 @@ interface HostScope {
   place: HostPlace
   /** The namespace the element's children are created in (HTML integration points reset it to `html`). */
   namespace: Namespace
+  /**
+   * True for the children of a MathML `annotation-xml` that is NOT an HTML
+   * integration point: the HTML parser still routes an `<svg>` start tag
+   * directly under it to the SVG namespace, whatever the `encoding`.
+   */
+  annotationXmlChild?: boolean
 }
 
 /**
@@ -109,9 +115,14 @@ function childScope(el: IRElement, scope: HostScope): HostScope {
     case 'svg':
       return SVG_INTEGRATION_POINTS.has(tag) ? { ...scope, namespace: 'html' } : scope
     case 'math':
-      if (MATHML_TEXT_INTEGRATION_POINTS.has(tag)) return { ...scope, namespace: 'html' }
-      if (tag === 'annotation-xml') return { ...scope, namespace: isAnnotationXmlHtml(el) ? 'html' : 'math' }
-      return scope
+      if (tag === 'svg' && scope.annotationXmlChild) return { place: scope.place, namespace: 'svg' }
+      if (MATHML_TEXT_INTEGRATION_POINTS.has(tag)) return { place: scope.place, namespace: 'html' }
+      if (tag === 'annotation-xml') {
+        return isAnnotationXmlHtml(el)
+          ? { place: scope.place, namespace: 'html' }
+          : { place: scope.place, namespace: 'math', annotationXmlChild: true }
+      }
+      return { place: scope.place, namespace: 'math' }
   }
 }
 

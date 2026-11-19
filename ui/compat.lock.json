@@ -9547,6 +9547,20 @@
           ]
         }
       },
+      "raw-text-host-annotation-xml-svg": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "dynamic-text-in-style-script-element"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "raw-text-host-reactive": {
         "go-template": {
           "kind": "refusal",
@@ -13194,6 +13208,10 @@
         "description": "A title under a MathML annotation-xml keeps its slot markers without an HTML encoding and renders…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-host-annotation-xml-encodings.ts"
       },
+      "raw-text-host-annotation-xml-svg": {
+        "description": "A style under an SVG title under a MathML annotation-xml renders without slot markers and updates…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-host-annotation-xml-svg.ts"
+      },
       "raw-text-host-reactive": {
         "description": "Signal-driven text in <style>, <script>, <textarea> and <title> renders without slot markers and…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-host-reactive.ts"
@@ -14218,6 +14236,7 @@
       "expected": "the value as written inside the element",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
+        "raw-text-host-annotation-xml-svg",
         "raw-text-host-reactive",
         "raw-text-host-style-script",
         "raw-text-host-svg-style",

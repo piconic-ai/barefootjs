@@ -4614,6 +4614,12 @@
               ]
             },
             {
+              "fixture": "raw-text-host-annotation-xml-svg",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "raw-text-host-reactive",
               "limitations": [
                 "dynamic-text-in-style-script-element"
@@ -6994,6 +7000,12 @@
               "fixture": "raw-text-host-annotation-xml-encodings",
               "limitations": [
                 "foreign-title-slot-markers-escaped"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-annotation-xml-svg",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
               ]
             },
             {
@@ -12393,6 +12405,12 @@
               ]
             },
             {
+              "fixture": "raw-text-host-annotation-xml-svg",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "raw-text-host-reactive",
               "limitations": [
                 "dynamic-text-in-style-script-element"
@@ -17507,6 +17525,12 @@
               "fixture": "raw-text-host-annotation-xml-encodings",
               "limitations": [
                 "foreign-title-slot-markers-escaped"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-annotation-xml-svg",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
               ]
             },
             {
@@ -30079,6 +30103,12 @@
               ]
             },
             {
+              "fixture": "raw-text-host-annotation-xml-svg",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "raw-text-host-reactive",
               "limitations": [
                 "dynamic-text-in-style-script-element"
@@ -33056,6 +33086,12 @@
               ]
             },
             {
+              "fixture": "raw-text-host-annotation-xml-svg",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "raw-text-host-reactive",
               "limitations": [
                 "dynamic-text-in-style-script-element"
@@ -35160,6 +35196,12 @@
               "fixture": "raw-text-host-annotation-xml-encodings",
               "limitations": [
                 "foreign-title-slot-markers-escaped"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-annotation-xml-svg",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
               ]
             },
             {

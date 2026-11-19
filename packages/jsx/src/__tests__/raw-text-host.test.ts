@@ -140,6 +140,26 @@ describe('integration points are namespace-specific (SVG vs MathML)', () => {
   })
 })
 
+describe('an svg directly under a MathML annotation-xml enters the SVG namespace whatever the encoding', () => {
+  const nested = (attrs: string) =>
+    compile(`<math><annotation-xml${attrs}><svg><title><style>{'x' + n()}</style></title></svg></annotation-xml></math>`)
+
+  for (const attrs of ['', ' encoding="application/x-tex"', ' encoding="text/html"']) {
+    test(`annotation-xml${attrs}: the SVG title is an HTML integration point, so the style is a host`, () => {
+      const r = nested(attrs)
+      expect(r.errors).toEqual([])
+      expect(clientJs(r)).toContain('.innerHTML = String(')
+      expect(clientJs(r)).not.toContain('lazySlots')
+    })
+  }
+
+  test('the transition applies only to a DIRECT svg child of annotation-xml', () => {
+    const r = compile(`<math><annotation-xml><mrow><svg><title><style>{'x' + n()}</style></title></svg></mrow></annotation-xml></math>`)
+    expect(r.errors).toEqual([])
+    expect(clientJs(r)).toContain('lazySlots')
+  })
+})
+
 describe('<annotation-xml> is an HTML integration point only for HTML encodings', () => {
   const inMath = (attrs: string) =>
     compile(`<math><annotation-xml${attrs}><title>{'x' + n()}</title></annotation-xml></math>`)
