@@ -4757,8 +4757,22 @@ function extractProps(param: ts.ParameterDeclaration, ctx: AnalyzerContext): voi
 
   // Get props type annotation
   if (param.type) {
-    ctx.propsType = typeNodeToTypeInfo(param.type, ctx.sourceFile)
+    ctx.propsType = propsTypeInfo(param.type, ctx.sourceFile)
   }
+}
+
+/**
+ * The props parameter's `TypeInfo`. An inline intersection
+ * (`Base & { label: string }`) would lower to `unknown` in
+ * `typeNodeToTypeInfo`, losing the evidence its constituents carry, so it is
+ * recorded the way an intersection alias is: an `object` whose constituents
+ * ride in `inherits` (the leaf arms, parentheses and nesting flattened). Every
+ * other annotation lowers as before.
+ */
+function propsTypeInfo(typeNode: ts.TypeNode, sourceFile: ts.SourceFile): TypeInfo | null {
+  const info = typeNodeToTypeInfo(typeNode, sourceFile)
+  if (!info || !ts.isIntersectionTypeNode(unwrapParenthesizedType(typeNode))) return info
+  return { kind: 'object', raw: info.raw, ...inheritsField(aliasInheritedTypes(typeNode, sourceFile), 'intersection') }
 }
 
 /**
