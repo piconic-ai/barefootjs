@@ -12241,6 +12241,38 @@
         "text"
       ]
     },
+    "module-const-object-spread-chain-override": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-object-spread-literal": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-const-reads-global-named-like-prop": {
       "kinds": [
         "call",

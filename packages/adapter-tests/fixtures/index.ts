@@ -1536,6 +1536,8 @@ import { fixture as moduleConstInheritedKeySignalSeed } from './module-const-inh
 import { fixture as moduleConstInheritedKeyObjectSafe } from './module-const-inherited-key-object-safe'
 import { fixture as memoObjectConstArrowSiblingKey } from './memo-object-const-arrow-sibling-key'
 import { fixture as memoModuleObjectConstArrowSiblingKey } from './memo-module-object-const-arrow-sibling-key'
+import { fixture as moduleConstObjectSpreadLiteral } from './module-const-object-spread-literal'
+import { fixture as moduleConstObjectSpreadChainOverride } from './module-const-object-spread-chain-override'
 import { fixture as undefinedLiteralElementPositions } from './undefined-literal-element-positions'
 import { fixture as moduleConstArrayMethodCall } from './module-const-array-method-call'
 import { fixture as localConstLiteralIndex } from './local-const-literal-index'
@@ -2711,6 +2713,8 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstInheritedKeyObjectSafe,
   memoObjectConstArrowSiblingKey,
   memoModuleObjectConstArrowSiblingKey,
+  moduleConstObjectSpreadLiteral,
+  moduleConstObjectSpreadChainOverride,
   undefinedLiteralElementPositions,
   moduleConstArrayMethodCall,
   localConstLiteralIndex,

@@ -81,6 +81,7 @@ import {
   type ContextConsumer,
   collectModuleStringConsts as collectModuleStringConstsShared,
   lookupLiteralConst,
+  lookupStaticConstMember,
   spellStaticConstMember,
   staticIndexKey,
   resolveStaticConstBinding,
@@ -6651,29 +6652,25 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     const constInfo = resolveStaticConstBinding(objectName, this.state.localConstants, n => this.isLoopShadowedName(n))
     if (constInfo?.value === undefined) return null
 
-    // Read the IR-carried structured value: the analyzer parses a module
-    // record's `{ key: 'lit' }` once into an `object-literal`, so the key lookup
-    // reads the structured tree here.
+    // The shared literal-const member decision (`lookupStaticConstMember`)
+    // answers the key: a later entry overrides an earlier one, and a spread
+    // of a literal const contributes its keys (#3916). Only a string or number
+    // literal is spelled here; anything else falls through to the generic
+    // lowering.
     //   - string values map to `JSON.stringify(text)`;
     //   - number values emit `literal.raw`, TypeScript's normalised
     //     `NumericLiteral.text` token (`1e3`/`1_000`/`0x10` → `1000`/`1000`/`16`,
     //     not the source spelling) — exactly what the adapter's own numeric
     //     lowering emits, and avoiding the lossy `parseFloat`-derived `value`.
-    // Any non-record / non-string-or-number value resolves to null. The corpus's
-    // record consts are all plain string-keyed string/number object literals
-    // (icon registries, variant/size class maps), so this fully covers them.
-    const carried = constInfo.parsed
-    if (carried?.kind === 'object-literal') {
-      // A spread entry (`{ ...t }`, #2696 Step 2) has no static key to match
-      // against — skip it, same as before this kind existed (a record const
-      // containing spread already couldn't reach here as a whole).
-      const hit = carried.properties.find(
-        (prop): prop is Extract<ObjectLiteralProperty, { kind: 'prop' }> => prop.kind === 'prop' && prop.key === key,
-      )
-      if (hit && hit.value.kind === 'literal') {
-        if (hit.value.literalType === 'string') return JSON.stringify(hit.value.value)
-        if (hit.value.literalType === 'number' && typeof hit.value.value === 'number') return this.literal(hit.value.value, 'number', null)
-      }
+    const hit = lookupStaticConstMember(
+      { kind: 'identifier', name: objectName },
+      key,
+      this.state.localConstants,
+      n => this.isLoopShadowedName(n),
+    )
+    if (hit?.kind === 'literal') {
+      if (hit.literalType === 'string') return JSON.stringify(hit.value)
+      if (hit.literalType === 'number' && typeof hit.value === 'number') return this.literal(hit.value, 'number', null)
     }
     return null
   }
