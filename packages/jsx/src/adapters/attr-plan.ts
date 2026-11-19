@@ -64,6 +64,12 @@ export interface AttrPlanContext {
 
 /** Plan an `{expr}` attribute value. */
 export function planAttrExpression(value: ExpressionAttr, name: string, ctx: AttrPlanContext): AttrExpressionPlan {
+  // A guarded literal (`ExpressionAttr.literalText`) prints as written: the
+  // ternary decides presence, the text is not a boolean value.
+  if (value.literalText) {
+    const ternary = parseUndefinedAlternateTernary(value.expr)
+    if (ternary) return { kind: 'undefined-alternate', ternary }
+  }
   const booleanAttr = isBooleanAttr(name)
   if (!booleanAttr && !value.presenceOrUndefined) {
     const nullable = nullableBareRead(value, ctx)

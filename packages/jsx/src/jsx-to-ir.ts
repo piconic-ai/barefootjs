@@ -8035,6 +8035,7 @@ function markAttrsOverridableBySpread(
     attr.spreadOverridable = {
       ...AttrValueOf.expression(expr, templateExpr === expr ? undefined : { templateExpr }),
       parsed: parseExpression(expr),
+      ...(value.kind === 'literal' && { literalText: true as const }),
     }
   })
 }

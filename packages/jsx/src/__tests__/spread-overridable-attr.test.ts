@@ -10,6 +10,7 @@
 import { describe, test, expect } from 'bun:test'
 import { compileJSX } from '../compiler'
 import { TestAdapter } from '../adapters/test-adapter'
+import { planAttrExpression, type AttrPlanContext } from '../adapters/attr-plan'
 import { renderElementAttributes } from '../adapters/element-shell'
 import type { AttrValueEmitter } from '../adapters/attr-value-emitter'
 import type { ComponentIR, IRAttribute, IRElement, IRNode } from '../types'
@@ -42,6 +43,16 @@ function attrOf(element: IRElement, name: string): IRAttribute {
   return attr
 }
 
+const planCtx: AttrPlanContext = {
+  propsObjectName: null,
+  restPropsName: 'rest',
+  nullableOptionalProps: new Set(),
+  nullableSignalGetters: new Set(),
+  nullishAttrCtx: {} as AttrPlanContext['nullishAttrCtx'],
+  isLoopBound: () => false,
+  boolStr: () => false,
+}
+
 const open = `type P = { title?: string; [key: string]: unknown }`
 
 describe('spreadOverridable on a literal before an open spread', () => {
@@ -52,6 +63,18 @@ export function C({ ...rest }: P) { return <p title="a" {...rest}>x</p> }`)
     expect(title.value).toEqual({ kind: 'literal', value: 'a' })
     expect(title.spreadOverridable?.expr).toBe('rest.title == null ? "a" : undefined')
     expect(title.spreadOverridable?.parsed?.kind).toBe('conditional')
+  })
+
+  test('a guarded literal prints as written, whatever the attribute name', () => {
+    const ir = irOf(`${open}
+export function C({ ...rest }: P) { return <input disabled="" hidden {...rest} /> }`)
+    const el = elementOf(ir, 'input')
+    const disabled = attrOf(el, 'disabled').spreadOverridable!
+    expect(disabled.literalText).toBe(true)
+    expect(planAttrExpression(disabled, 'disabled', planCtx).kind).toBe('undefined-alternate')
+    const hidden = attrOf(el, 'hidden').spreadOverridable!
+    expect(hidden.literalText).toBeUndefined()
+    expect(planAttrExpression(hidden, 'hidden', planCtx).kind).toBe('boolean-attr')
   })
 
   test('a bare boolean attribute and a non-identifier key', () => {

@@ -1518,6 +1518,13 @@ export interface ExpressionAttr {
    *  pattern; adapters fold this back into `(expr) || undefined` at emit. */
   presenceOrUndefined?: boolean
   /**
+   * Set on the guard Phase 1 builds from a literal attribute
+   * (`IRAttribute.spreadOverridable`): the text prints as written whatever the
+   * attribute's name, so a boolean attribute (`disabled=""`, `hidden="false"`)
+   * is not read for the truthiness of its text.
+   */
+  literalText?: true
+  /**
    * Carries the parsed parts when the producer collapses a structured
    * template literal back into a JS expression (component-prop path —
    * `jsx-to-ir.ts` collapses `template` → `expression` because component

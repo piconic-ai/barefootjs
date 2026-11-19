@@ -142,6 +142,7 @@ export const CSR_SKIP_FIXTURES: ReadonlySet<string> = new Set([
   // template shows the literal each spread overrides. The per-adapter render
   // conformance pins the SSR contract.
   'literal-attr-before-spread',
+  'literal-boolean-attr-before-spread',
   // Same class: the spread bags reach their elements only through
   // `applyRestAttrs`; `attr-spread-key-overlap` pins the SSR contract.
   'attr-spread-key-overlap',

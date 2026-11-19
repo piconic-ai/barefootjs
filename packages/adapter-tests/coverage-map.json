@@ -8094,6 +8094,18 @@
         "text"
       ]
     },
+    "literal-boolean-attr-before-spread": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:boolean"
+      ],
+      "contexts": [
+        "attribute"
+      ]
+    },
     "literal-const-conditional-shapes": {
       "kinds": [
         "array-literal",

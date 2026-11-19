@@ -257,6 +257,7 @@ import { fixture as constObjectSpread } from './const-object-spread'
 import { fixture as constObjectSpreadLastWins } from './const-object-spread-last-wins'
 import { fixture as literalAttrBeforeSpread } from './literal-attr-before-spread'
 import { fixture as attrSpreadKeyOverlap } from './attr-spread-key-overlap'
+import { fixture as literalBooleanAttrBeforeSpread } from './literal-boolean-attr-before-spread'
 import { fixture as propsObjectBodyRestSpread } from './props-object-body-rest-spread'
 import { fixture as componentSpreadPropsThenExplicit } from './component-spread-props-then-explicit'
 import { fixture as componentSpreadExplicitThenProps } from './component-spread-explicit-then-props'
@@ -1784,6 +1785,7 @@ export const jsxFixtures: JSXFixture[] = [
   constObjectSpreadLastWins,
   literalAttrBeforeSpread,
   attrSpreadKeyOverlap,
+  literalBooleanAttrBeforeSpread,
   propsObjectBodyRestSpread,
   componentSpreadPropsThenExplicit,
   componentSpreadExplicitThenProps,
