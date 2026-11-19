@@ -4608,6 +4608,30 @@
               ]
             },
             {
+              "fixture": "raw-text-host-annotation-xml-encodings",
+              "limitations": [
+                "foreign-title-slot-markers-escaped"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-annotation-xml-svg",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-style-script",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -6970,6 +6994,24 @@
               "fixture": "prop-member-length-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-annotation-xml-encodings",
+              "limitations": [
+                "foreign-title-slot-markers-escaped"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-annotation-xml-svg",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
               ]
             },
             {
@@ -12357,6 +12399,36 @@
               ]
             },
             {
+              "fixture": "raw-text-host-annotation-xml-encodings",
+              "limitations": [
+                "foreign-title-slot-markers-escaped"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-annotation-xml-svg",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-style-script",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-svg-style",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
@@ -17450,6 +17522,30 @@
               ]
             },
             {
+              "fixture": "raw-text-host-annotation-xml-encodings",
+              "limitations": [
+                "foreign-title-slot-markers-escaped"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-annotation-xml-svg",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-style-script",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
@@ -22182,6 +22278,12 @@
               "fixture": "prop-member-length-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-style-script",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
               ]
             },
             {
@@ -29995,6 +30097,30 @@
               ]
             },
             {
+              "fixture": "raw-text-host-annotation-xml-encodings",
+              "limitations": [
+                "foreign-title-slot-markers-escaped"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-annotation-xml-svg",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-style-script",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -32954,6 +33080,24 @@
               ]
             },
             {
+              "fixture": "raw-text-host-annotation-xml-encodings",
+              "limitations": [
+                "foreign-title-slot-markers-escaped"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-annotation-xml-svg",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -35046,6 +35190,30 @@
               "fixture": "preamble-cells",
               "limitations": [
                 "statement-body-callback"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-annotation-xml-encodings",
+              "limitations": [
+                "foreign-title-slot-markers-escaped"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-annotation-xml-svg",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-host-style-script",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
               ]
             },
             {
