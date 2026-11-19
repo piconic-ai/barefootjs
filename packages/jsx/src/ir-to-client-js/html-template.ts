@@ -1723,8 +1723,11 @@ function irNodeToJsExprs(node: IRNode, brandMarkup = false): string[] {
  * Add bf-c attribute to the first element in an HTML template string.
  * This ensures cond() can find the element for subsequent swaps.
  */
-export function addCondAttrToTemplate(html: string, condId: string): string {
-  if (/^<\w+/.test(html) && isSingleRootElement(html)) {
+export function addCondAttrToTemplate(html: string, condId: string, clientOnly = false): string {
+  // A `/* @client */` conditional has no server element to adopt: the server
+  // emitted its marker pair only, so every arm mounts between the markers,
+  // whatever its shape (#3921).
+  if (!clientOnly && /^<\w+/.test(html) && isSingleRootElement(html)) {
     return html.replace(/^(<\w+)(\s|>)/, `$1 bf-c="${condId}"$2`)
   }
   // Text, fragments (multiple sibling elements), or comments use comment markers

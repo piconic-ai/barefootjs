@@ -2392,6 +2392,30 @@
       "axes": [],
       "contexts": []
     },
+    "client-conditional-element-arms": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "binary:>",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
     "client-handler-keyword-prop": {
       "kinds": [
         "call",
@@ -18915,6 +18939,81 @@
       ],
       "contexts": [
         "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "static-loop-row-child-signal-prop": {
+      "kinds": [
+        "array-literal",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
+        "loop",
+        "text"
+      ]
+    },
+    "static-loop-row-child-signal-prop-client": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "static-loop-row-child-signal-prop-precomputed": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "static-loop-row-client-conditional": {
+      "kinds": [
+        "array-literal",
+        "arrow",
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "binary:+",
+        "binary:===",
+        "binary:>",
+        "literal:number",
+        "literal:string",
+        "logical:&&"
+      ],
+      "contexts": [
+        "attribute",
+        "condition",
         "loop",
         "text"
       ]
