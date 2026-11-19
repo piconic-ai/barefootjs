@@ -633,29 +633,32 @@ module BarefootJS
       html_escape(string(value))
     end
 
-    RAW_TEXT_STYLE_END = %r{</([sS][tT][yY][lL][eE])}
-    RAW_TEXT_SCRIPT_TAG = %r{<(/?[sS][cC][rR][iI][pP][tT])}
-    private_constant :RAW_TEXT_STYLE_END, :RAW_TEXT_SCRIPT_TAG
+    # A `<` the HTML tokenizer could take as the start of markup (one
+    # followed by an ASCII letter, `/`, `!` or `?`), or an `&` it could take
+    # as the start of a character reference (one followed by an ASCII letter
+    # or `#`).
+    RAW_TEXT_MARKUP_OPEN = %r{<(?=[A-Za-z/!?])|&(?=[A-Za-z#])}
+    RAW_TEXT_STYLE_ESCAPE = { '<' => '\\3c ', '&' => '\\26 ' }.freeze
+    RAW_TEXT_SCRIPT_ESCAPE = { '<' => '\\u003c', '&' => '\\u0026' }.freeze
+    private_constant :RAW_TEXT_MARKUP_OPEN, :RAW_TEXT_STYLE_ESCAPE, :RAW_TEXT_SCRIPT_ESCAPE
 
     # The text of a `<style>` / `<script>` element (`tag`). The HTML parser
     # decodes no character reference there, so the value is NOT HTML-escaped
-    # (`a[href="x"]` must reach the CSS parser as written). Only the
-    # sequences that would end the element are rewritten, in a form CSS / JS
-    # reads back as the same text: `</style` -> `<\/style`, and `<script` /
-    # `</script` -> `\u003cscript` / `\u003c/script` (ASCII
-    # case-insensitive). Mirrors `escapeRawText` in `@barefootjs/shared`.
+    # (`a[href="x"]` must reach the CSS parser as written). Each `<` that
+    # could begin markup and each `&` that could begin a character reference
+    # is rewritten instead, in a form CSS / JS reads back as the same
+    # character: `\3c ` / `\26 ` in a `<style>`, `\u003c` / `\u0026` in a
+    # `<script>`. That leaves no end tag, no `<!--` / `<script`, no tag and
+    # no reference at all, so the text is the same both as raw text and
+    # where the element lands in foreign content (inside an `<svg>`).
+    # Mirrors `escapeRawText` in `@barefootjs/shared`.
     #
     # `parts` is the element's WHOLE text as the list of its pieces (static
     # text and each expression's value): they are joined first and encoded
-    # once, because an end tag can be spelled across pieces
-    # (`['<', '/style>']`).
+    # once, because markup can be spelled across pieces (`['<', '/style>']`).
     def raw_text(tag, parts)
       text = parts.is_a?(Array) ? parts.map { |part| string(part) }.join : string(parts)
-      if tag == 'style'
-        text.gsub(RAW_TEXT_STYLE_END) { "<\\/#{Regexp.last_match(1)}" }
-      else
-        text.gsub(RAW_TEXT_SCRIPT_TAG) { "\\u003c#{Regexp.last_match(1)}" }
-      end
+      text.gsub(RAW_TEXT_MARKUP_OPEN, tag == 'style' ? RAW_TEXT_STYLE_ESCAPE : RAW_TEXT_SCRIPT_ESCAPE)
     end
 
     # JS `/`: always a Number quotient. Ruby's `/` on two Integers is

@@ -822,26 +822,26 @@ sub string ($self, $value) {
 # The text of a `<style>` / `<script>` element (`$tag`). The HTML parser
 # decodes no character reference there, so the value is NOT HTML-escaped
 # (`a[href="x"]` must reach the CSS parser as written); the template prints
-# the result raw. Only the sequences that would end the element are
-# rewritten, in a form CSS / JS reads back as the same text: `</style` ->
-# `<\/style`, and `<script` / `</script` -> `\u003cscript` /
-# `\u003c/script` (ASCII case-insensitive; the tag name is spelled per
-# letter because `/i` also folds U+017F to `s`). Mirrors `escapeRawText` in
-# `@barefootjs/shared`.
+# the result raw. Each `<` that could begin markup (one followed by an ASCII
+# letter, `/`, `!` or `?`) and each `&` that could begin a character
+# reference (one followed by an ASCII letter or `#`) is rewritten instead, in
+# a form CSS / JS reads back as the same character: `\3c ` / `\26 ` in a
+# `<style>`, `\u003c` / `\u0026` in a `<script>`. That leaves no end tag, no
+# `<!--` / `<script`, no tag and no reference at all, so the text is the same
+# both as raw text and where the element lands in foreign content (inside an
+# `<svg>`). Mirrors `escapeRawText` in `@barefootjs/shared`.
 #
 # `$parts` is the element's WHOLE text as the list of its pieces (static text
 # and each expression's value): they are joined first and encoded once,
-# because an end tag can be spelled across pieces (`['<', '/style>']`).
+# because markup can be spelled across pieces (`['<', '/style>']`).
 sub raw_text ($self, $tag, $parts) {
     my $text = ref($parts) eq 'ARRAY'
         ? CORE::join('', map { $self->string($_) } @$parts)
         : $self->string($parts);
-    if ($tag eq 'style') {
-        $text =~ s{</([sS][tT][yY][lL][eE])}{<\\/$1}g;
-    }
-    else {
-        $text =~ s{<(/?[sS][cC][rR][iI][pP][tT])}{\\u003c$1}g;
-    }
+    my %escape = $tag eq 'style'
+        ? ('<' => '\\3c ', '&' => '\\26 ')
+        : ('<' => '\\u003c', '&' => '\\u0026');
+    $text =~ s{(<(?=[A-Za-z/!?])|&(?=[A-Za-z\#]))}{$escape{$1}}g;
     return $text;
 }
 

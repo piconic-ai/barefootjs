@@ -453,8 +453,8 @@ export interface IRElement {
    * The complete text of an HTML-namespace `<style>` / `<script>`: its text
    * and expression children in source order, fragments flattened (#3934).
    * The HTML parser decodes no character reference in such an element, so
-   * the text is not HTML-escaped; instead the sequences that would end the
-   * element are rewritten (`escapeRawText`, `@barefootjs/shared`). That
+   * the text is not HTML-escaped; instead each `<` that could begin markup and
+   * each `&` that could begin a character reference is rewritten (`escapeRawText`, `@barefootjs/shared`). That
    * rewrite is only sound over the WHOLE text: `{'<'}{v}` with `v` =
    * `/style>` spells an end tag no single child holds. Every emitter
    * therefore prints this list through ONE encoder call and never renders

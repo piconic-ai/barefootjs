@@ -398,9 +398,9 @@ export class ErbAdapter extends DslTemplateAdapter implements IRNodeEmitter<ErbR
    * The whole text of a `<style>` / `<script>` (`IRElement.rawTextContent`,
    * #3934), printed through the runtime's `raw_text` in one call over every
    * part. The HTML parser decodes no character reference there, so the text
-   * is not HTML-escaped; `raw_text` joins the parts and rewrites the
-   * sequences that would end the element, which is only sound over the whole
-   * text (an end tag can be spelled across parts).
+   * is not HTML-escaped; `raw_text` joins the parts and rewrites each `<`
+   * that could begin markup, which is only sound over the whole text (an
+   * end tag can be spelled across parts).
    */
   private renderRawTextContent(tag: NonNullable<IRText['rawText']>, parts: readonly (IRText | IRExpression)[]): string {
     const value = rawTextPartList(parts, rubyStringLiteral, expr => this.renderExpression(expr, true) || rubyStringLiteral(''))

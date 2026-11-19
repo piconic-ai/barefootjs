@@ -1000,10 +1000,16 @@ export function escapeText(value: unknown): string {
 /**
  * The text of a `<style>` / `<script>` element in a client-rendered template
  * string. The HTML parser decodes no character reference in these elements,
- * so the value is NOT HTML-escaped; only the sequences that would end the
- * element are rewritten (`escapeRawText`, `@barefootjs/shared`), exactly as
- * every SSR adapter writes it. Nullish, boolean and array values render as
- * they do for `escapeText`.
+ * so the value is NOT HTML-escaped; each `<` that could begin markup and
+ * each `&` that could begin a character reference is rewritten to its CSS /
+ * JS escape instead (`escapeRawText`,
+ * `@barefootjs/shared`), exactly as every SSR adapter writes it.
+ *
+ * `value` is the element's WHOLE text: the compiler passes the array of its
+ * parts (static text and each expression's value). They are joined first
+ * and encoded once, because markup can be spelled across parts
+ * (`['<', '/style>']`). Nullish and boolean parts render no text and a
+ * nested array renders its items in order, as for `escapeText`.
  */
 export function escapeRawTextContent(tag: RawTextTag, value: unknown): string {
   return escapeRawText(tag, childText(value))

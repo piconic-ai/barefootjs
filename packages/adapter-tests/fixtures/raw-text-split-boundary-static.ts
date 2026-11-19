@@ -3,7 +3,7 @@ import { createFixture } from '../src/types'
 /**
  * A static end tag spelled across text nodes of a `<style>` / `<script>`
  * (JSX text next to a fragment's text) must not end the element (#3934): the
- * element-ending sequences are rewritten over the whole text, not per node.
+ * rewrite of each markup-opening `<` runs over the whole text, not per node.
  * The dynamic twin is `raw-text-split-boundary`.
  */
 export const fixture = createFixture({
@@ -21,8 +21,8 @@ export function RawTextSplitBoundaryStatic() {
 `,
   expectedHtml: `
     <div bf-s="test">
-      <style><\\/style><i class="pwn"></style>
-      <script>\\u003c/SCRipt><i class="pwn"></script>
+      <style>\\3c /style>\\3c i class="pwn"></style>
+      <script>\\u003c/SCRipt>\\u003ci class="pwn"></script>
     </div>
   `,
 })

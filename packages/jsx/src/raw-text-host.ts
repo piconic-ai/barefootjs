@@ -23,46 +23,50 @@
  * `style` and `script` are raw text in the stricter sense: the parser decodes
  * no character reference there either, so an HTML-escaped value reaches the
  * CSS / JS parser with its entities (`a[href=&quot;x&quot;]`). Their text is
- * printed as written, with only the sequences that would end the element
- * rewritten (`escapeRawText`, `@barefootjs/shared`, #3934). `textarea` and
- * `title` decode references and keep the HTML escape.
+ * printed as written, and each `<` that could begin markup (one followed by
+ * an ASCII letter, `/`, `!` or `?`) and each `&` that could begin a
+ * character reference (one followed by an ASCII letter or `#`) is rewritten
+ * to the CSS / JS escape of that character (`escapeRawText`,
+ * `@barefootjs/shared`, #3934). `textarea` and `title`
+ * decode references and keep the HTML escape.
  *
- * That rewrite is the only thing between a value and the markup after the
- * element, so it is applied to the element's WHOLE text, never to a child:
- *   - An end tag can be spelled across children. `{'<'}{v}` with `v` =
- *     `/style><img onerror=…>` holds `</style` in no single child, and the
- *     same goes for a static `</sty` before a dynamic `le>`, for three or
- *     more pieces, and for a fragment's children. So this pass lists the
- *     text and expression children in source order (fragments flattened) as
+ * That rewrite is the only thing between a value and the markup around the
+ * element, so this is the argument for it, seam by seam:
+ *   - Split across children. `{'<'}{v}` with `v` = `/style><img onerror=…>`
+ *     holds `</style` in no single child, and the same goes for a static
+ *     `</sty` before a dynamic `le>`, for three or more pieces, and for a
+ *     fragment's children. So this pass lists the text and expression
+ *     children in source order (fragments flattened) as
  *     `IRElement.rawTextContent`, and every emitter (each adapter's element
  *     door, the client template, the reactive update) joins the list's
- *     values and encodes the result in ONE call. Each listed child is marked
- *     `rawText`; a child emitter that is handed a marked node throws rather
+ *     values and encodes the WHOLE text in ONE call. Each listed child is
+ *     marked `rawText`; a child emitter handed a marked node throws rather
  *     than print it alone.
- *   - Nothing else can stand in the element: an element, conditional, loop,
- *     component or slot child is refused below, so no part of the text is
- *     rendered outside that one call.
- *   - A value that is not a string (number, null, array, an object's
- *     `toString`) is turned into its text first and encoded afterwards, so
- *     the encoder always sees the characters that are printed.
+ *   - Other child kinds. An element, conditional, loop, component or slot
+ *     child is refused below, and a read of `children` (rendered markup)
+ *     after it, so no part of the text is produced outside that one call.
+ *   - Parsed as raw text. Only `</style` / `</script` ends the element, and
+ *     in a `<script>` a `<!--` followed by `<script` reaches the
+ *     double-escaped state, where the real end tag no longer closes it. Each
+ *     starts with `</`, `<!` or `<s`, so none is left, in any letter case.
+ *   - Parsed as foreign content. A component cannot see where its markup
+ *     lands: `<svg>{children}</svg>` puts a `<style>` written in HTML inside
+ *     SVG, and so does a caller that places a `<style>`-rooted component
+ *     there. In SVG the text is ordinary data: `<img onerror=…>` in it is a
+ *     tag, and `&quot;` is decoded to `"`, which ends the JS / JSON string a
+ *     value was serialized into. That is why the rule covers EVERY `<` that
+ *     can begin a tag, an end tag, a comment, a declaration or a bogus
+ *     comment, and every `&` that can begin a reference, not only the
+ *     element's own end tag: the tokenizer finds neither under either
+ *     parse, and the element's text is the same bytes in both.
+ *   - The end of the text. It is followed by the element's own end tag: a
+ *     trailing `<` gives `<</style>`, where the first `<` is text.
+ *   - Values that are not strings (number, null, array, an object's
+ *     `toString`) are turned into their text first and encoded afterwards,
+ *     so the encoder always sees the characters that are printed.
  *   - The client computes the text from the same values and encodes it
  *     again on every update; nothing is read back from the DOM, and the
  *     encoding leaves its own output unchanged.
- *   - After the encoded text comes the element's own end tag. Text ending in
- *     `<`, `</` or a partial name (`</styl`, `<scrip`) gives `</styl</style>`:
- *     the tokenizer finds no end tag in the first `</styl<` (the name must
- *     be followed by whitespace, `/` or `>`) and re-reads the `<` as the
- *     start of the real one. A complete `</style` / `</script` at the end is
- *     an ordinary match and is rewritten. `</` followed by anything but an
- *     ASCII letter (a space, a NUL) starts no end tag.
- *   - In a `<script>`, `<!--` enters the escaped state, where `</script>`
- *     still ends the element; only a following `<script` reaches the
- *     double-escaped state, where it does not. Every `<script` in the whole
- *     text is rewritten, wherever the `<!--` came from, so that state is
- *     unreachable and `<!--` is left as written.
- *   - The tag name is matched ASCII case-insensitively, letter by letter,
- *     as the tokenizer does (`</STYLE`, `</ScRiPt`), and a non-ASCII case
- *     fold (U+017F) is not a match on either side.
  *
  * Shapes the element-level update cannot express are refused rather than
  * left to diverge silently:

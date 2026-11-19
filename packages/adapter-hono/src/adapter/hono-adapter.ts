@@ -885,8 +885,8 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
    * The whole text of a `<style>` / `<script>` (`IRElement.rawTextContent`,
    * #3934) as ONE `bfRawText` call over every part. Hono's own text escape
    * would put `&quot;` / `&lt;` into the CSS / JS, which the parser does not
-   * decode there; `bfRawText` joins the parts and rewrites the sequences
-   * that would end the element, which is only sound over the whole text (an
+   * decode there; `bfRawText` joins the parts and rewrites each `<`
+   * that could begin markup, which is only sound over the whole text (an
    * end tag can be spelled across parts: `{'<'}{v}`).
    */
   private renderRawTextContent(tag: RawTextTag, parts: readonly (IRText | IRExpression)[]): string {

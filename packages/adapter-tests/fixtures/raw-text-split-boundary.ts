@@ -3,7 +3,7 @@ import { createFixture } from '../src/types'
 /**
  * An end tag spelled across the children of a `<style>` / `<script>` must not
  * end the element (#3934). The text of these elements is not HTML-escaped;
- * the sequences that would end the element are rewritten instead, and that
+ * each `<` that could begin markup is rewritten instead, and that
  * rewrite has to see the WHOLE text: `{'<'}{tail}` with `tail` =
  * `/style><i class="pwn">` holds `</style` in neither child. Every shape
  * below would otherwise put an `<i class="pwn">` after the element:
@@ -45,17 +45,17 @@ export function RawTextSplitBoundary({ tail, head, rest, sTail, sHead, sRest }: 
   },
   expectedHtml: `
     <div bf-s="test">
-      <style bf="s1"><\\/style><i class="pwn"></style>
-      <style bf="s4"><\\/style><i class="pwn"></style>
-      <style bf="s6"><\\/style><i class="pwn"></style>
-      <style bf="s8"><\\/style><i class="pwn"></style>
-      <style bf="s10"><\\/STYLEle><i class="pwn"></style>
-      <script bf="s12">\\u003c/script><i class="pwn"></script>
-      <script bf="s15">\\u003c/script><i class="pwn"></script>
-      <script bf="s17">\\u003c/script><i class="pwn"></script>
-      <script bf="s19">\\u003c/script><i class="pwn"></script>
-      <script bf="s21">\\u003c/SCRipt><i class="pwn"></script>
-      <script bf="s23"><!--\\u003cscript><i class="pwn"></script>
+      <style bf="s1">\\3c /style>\\3c i class="pwn"></style>
+      <style bf="s4">\\3c /style>\\3c i class="pwn"></style>
+      <style bf="s6">\\3c /style>\\3c i class="pwn"></style>
+      <style bf="s8">\\3c /style>\\3c i class="pwn"></style>
+      <style bf="s10">\\3c /STYLEle>\\3c i class="pwn"></style>
+      <script bf="s12">\\u003c/script>\\u003ci class="pwn"></script>
+      <script bf="s15">\\u003c/script>\\u003ci class="pwn"></script>
+      <script bf="s17">\\u003c/script>\\u003ci class="pwn"></script>
+      <script bf="s19">\\u003c/script>\\u003ci class="pwn"></script>
+      <script bf="s21">\\u003c/SCRipt>\\u003ci class="pwn"></script>
+      <script bf="s23">\\u003c!--\\u003cscript>\\u003ci class="pwn"></script>
     </div>
   `,
 })

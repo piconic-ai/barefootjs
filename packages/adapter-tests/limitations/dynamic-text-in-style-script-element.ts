@@ -6,5 +6,5 @@ export default defineLimitation({
   given: 'a string expression as the text of a `<style>` or `<script>` element (`<style>{css}</style>`)',
   expected: 'the value as written inside the element',
   diagnostic: ['BF101'],
-  fixtures: ['style-script-text-dynamic', 'raw-text-host-style-script', 'raw-text-host-reactive', 'raw-text-host-svg-style', 'raw-text-host-annotation-xml-svg', 'raw-text-style-script-escape', 'raw-text-split-boundary', 'raw-text-split-boundary-reactive', 'raw-text-style-escape-reactive'],
+  fixtures: ['style-script-text-dynamic', 'raw-text-host-style-script', 'raw-text-host-reactive', 'raw-text-host-svg-style', 'raw-text-host-annotation-xml-svg', 'raw-text-style-script-escape', 'raw-text-foreign-content', 'raw-text-foreign-content-reactive', 'raw-text-split-boundary', 'raw-text-split-boundary-reactive', 'raw-text-style-escape-reactive'],
 })

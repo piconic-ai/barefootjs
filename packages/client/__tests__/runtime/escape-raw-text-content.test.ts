@@ -3,8 +3,10 @@
  *
  * The text of a `<style>` / `<script>` in a client template is parsed as raw
  * text: the HTML parser decodes no character reference there, so the value is
- * written as it is and only the sequences that would end the element are
- * rewritten, byte-identical to the SSR adapters' output.
+ * written as it is and each `<` that could begin markup is rewritten to its
+ * CSS / JS escape, byte-identical to the SSR adapters' output. The helper
+ * receives the element's WHOLE text as an array of parts and joins them
+ * before encoding.
  */
 import { describe, test, expect, beforeAll } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
@@ -16,54 +18,80 @@ beforeAll(() => {
   }
 })
 
+const PWN = '<i class="pwn">'
+
 describe('escapeRawTextContent', () => {
   test('does not HTML-escape', () => {
     expect(escapeRawTextContent('style', `a[href="x"] > b & 'c'`)).toBe(`a[href="x"] > b & 'c'`)
     expect(escapeRawTextContent('script', `if (a < b && "c") {}`)).toBe(`if (a < b && "c") {}`)
   })
 
-  test('rewrites the sequences that would end the element', () => {
-    expect(escapeRawTextContent('style', 'x</style></STYLE><p>')).toBe('x<\\/style><\\/STYLE><p>')
-    expect(escapeRawTextContent('script', '"</script><Script>"')).toBe('"\\u003c/script>\\u003cScript>"')
-  })
-
-  test('the rewritten text parses back to one element holding the value', () => {
-    const host = document.createElement('div')
-    const css = '.a::after { content: "</style><i id=x>" }'
-    const json = JSON.stringify({ k: '</script><i id=y><!--<script>' })
-    host.innerHTML = `<style>${escapeRawTextContent('style', css)}</style><script type="application/json">${escapeRawTextContent('script', json)}</script><b></b>`
-    expect(host.querySelector('#x')).toBeNull()
-    expect(host.querySelector('#y')).toBeNull()
-    expect(host.children.length).toBe(3)
-    expect(JSON.parse(host.querySelector('script')!.textContent!)).toEqual({ k: '</script><i id=y><!--<script>' })
+  test('rewrites each `<` that could begin markup', () => {
+    expect(escapeRawTextContent('style', 'x</style></STYLE><p>')).toBe('x\\3c /style>\\3c /STYLE>\\3c p>')
+    expect(escapeRawTextContent('script', '"</script><Script><!--"')).toBe('"\\u003c/script>\\u003cScript>\\u003c!--"')
   })
 
   test('the parts of the element text are joined before they are encoded', () => {
     // An end tag spelled across parts: neither part holds it.
-    expect(escapeRawTextContent('style', ['<', '/style><i class="pwn">'])).toBe('<\\/style><i class="pwn">')
-    expect(escapeRawTextContent('script', ['</scr', 'IPT><i class="pwn">'])).toBe('\\u003c/scrIPT><i class="pwn">')
-    expect(escapeRawTextContent('script', ['<!--', '<scr', 'ipt>'])).toBe('<!--\\u003cscript>')
+    expect(escapeRawTextContent('style', ['<', `/style>${PWN}`])).toBe('\\3c /style>\\3c i class="pwn">')
+    expect(escapeRawTextContent('script', ['</scr', `IPT>${PWN}`])).toBe('\\u003c/scrIPT>\\u003ci class="pwn">')
+    expect(escapeRawTextContent('script', ['<', '!--', '<', 'script>'])).toBe('\\u003c!--\\u003cscript>')
     // Non-string parts are turned into text first.
-    expect(escapeRawTextContent('style', ['<', null, '/sty', ['le', '>'], 1, false])).toBe('<\\/style>1')
-    expect(escapeRawTextContent('style', ['<', { toString: () => '/style>' }])).toBe('<\\/style>')
+    expect(escapeRawTextContent('style', ['<', null, '/sty', ['le', '>'], 1, false])).toBe('\\3c /style>1')
+    expect(escapeRawTextContent('style', ['<', { toString: () => '/style>' }])).toBe('\\3c /style>')
+    expect(escapeRawTextContent('style', ['<', undefined, true, 'a>'])).toBe('\\3c a>')
   })
 
-  test('split parts inject no element and leave the next sibling in place', () => {
+  test('parsed as HTML raw text: no injected element, the whole text stays inside', () => {
     const host = document.createElement('div')
     host.innerHTML =
-      `<style>${escapeRawTextContent('style', ['<', '/style><i class="pwn">'])}</style>` +
-      `<script type="text/plain">${escapeRawTextContent('script', ['</scr', 'ipt><i class="pwn">'])}</script>` +
-      `<script type="text/plain">${escapeRawTextContent('script', ['<!--<scr', 'ipt><i class="pwn">'])}</script><b></b>`
+      `<style>${escapeRawTextContent('style', ['<', `/style>${PWN}`])}</style>` +
+      `<script type="text/plain">${escapeRawTextContent('script', ['</scr', `ipt>${PWN}`])}</script>` +
+      `<script type="text/plain">${escapeRawTextContent('script', ['<!--<scr', `ipt>${PWN}`])}</script><b></b>`
     expect(host.querySelector('.pwn')).toBeNull()
     expect(Array.from(host.children).map(el => el.tagName)).toEqual(['STYLE', 'SCRIPT', 'SCRIPT', 'B'])
-    expect(host.children[0].textContent).toBe('<\\/style><i class="pwn">')
-    expect(host.children[1].textContent).toBe('\\u003c/script><i class="pwn">')
-    expect(host.children[2].textContent).toBe('<!--\\u003cscript><i class="pwn">')
+    expect(host.children[0].textContent).toBe('\\3c /style>\\3c i class="pwn">')
+    expect(host.children[1].textContent).toBe('\\u003c/script>\\u003ci class="pwn">')
+    expect(host.children[2].textContent).toBe('\\u003c!--\\u003cscript>\\u003ci class="pwn">')
+  })
+
+  test('parsed as foreign content (inside an <svg>): no element is created from the text', () => {
+    const host = document.createElement('div')
+    host.innerHTML =
+      `<svg><style>${escapeRawTextContent('style', ['<', `img class="pwn">${PWN}</style>${PWN}`])}</style>` +
+      `<script>${escapeRawTextContent('script', [`${PWN}<!--<a class="pwn"><?x <![CDATA[`, PWN])}</script></svg><b></b>`
+    expect(host.querySelector('.pwn')).toBeNull()
+    expect(host.querySelectorAll('i, img, a').length).toBe(0)
+    // happy-dom is not a faithful foreign-content parser, so the structure
+    // is not asserted here; the real-browser check is the
+    // `raw-text-foreign-content-reactive` fixture (Chromium).
+  })
+
+  test('a character reference spelled across parts is not left for a foreign-content parse', () => {
+    expect(escapeRawTextContent('script', ['"a&', 'quot;+alert(1)+&', '#34;"'])).toBe(
+      '"a\\u0026quot;+alert(1)+\\u0026#34;"',
+    )
+    expect(escapeRawTextContent('style', ['&', 'lt;img>'])).toBe('\\26 lt;img>')
+    // No `&` is left before a letter or `#`, so a parser that decodes
+    // references (the element inside an <svg>) finds none: the text is the
+    // same string either way. Chromium checks the SVG parse itself in the
+    // `raw-text-foreign-content-reactive` fixture.
+    const value = 'a&quot;+alert(1)+&quot;&lt;img class="pwn"&gt;'
+    const text = escapeRawTextContent('script', ['var s = ', JSON.stringify(value)])
+    expect(text).not.toMatch(/&[A-Za-z#]/)
+    expect(new Function(`${text}; return s`)()).toBe(value)
+  })
+
+  test('the JSON a script data block carries is recovered unchanged', () => {
+    const value = { k: `</script>${PWN}<!--<script>&quot;&amp;` }
+    const host = document.createElement('div')
+    host.innerHTML = `<script type="application/json">${escapeRawTextContent('script', [JSON.stringify(value)])}</script>`
+    expect(JSON.parse(host.querySelector('script')!.textContent!)).toEqual(value)
   })
 
   test('encoding an already encoded text changes nothing', () => {
     for (const tag of ['style', 'script'] as const) {
-      const once = escapeRawTextContent(tag, ['<', '/style></script><script>'])
+      const once = escapeRawTextContent(tag, ['<', '/style></script><script><!--'])
       expect(escapeRawTextContent(tag, [once])).toBe(once)
     }
   })
@@ -73,6 +101,6 @@ describe('escapeRawTextContent', () => {
     expect(escapeRawTextContent('style', undefined)).toBe('')
     expect(escapeRawTextContent('script', false)).toBe('')
     expect(escapeRawTextContent('script', 0)).toBe('0')
-    expect(escapeRawTextContent('style', ['a', null, 1, ['</style>']])).toBe('a1<\\/style>')
+    expect(escapeRawTextContent('style', ['a', null, 1, ['</style>']])).toBe('a1\\3c /style>')
   })
 })

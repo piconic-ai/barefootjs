@@ -332,7 +332,7 @@ describe('<style> / <script> text is marked raw text (#3934)', () => {
     expect(r.errors).toEqual([])
     const js = clientJs(r)
     // The end tag is spelled across two text nodes: the whole text is encoded.
-    expect(js).toContain('<style>a<\\\\/style><i></style>')
+    expect(js).toContain('<style>a\\\\3c /style>\\\\3c i></style>')
     expect(js).toContain('<script>\\\\u003c/SCRIPT>\\\\u003cscript></script>')
   })
 

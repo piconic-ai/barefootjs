@@ -395,11 +395,13 @@ _SVG_CAMEL_CASE_ATTRS = frozenset(
 
 _CAMEL_TO_KEBAB_RE = re.compile(r"([A-Z])")
 
-# The sequences that end a `<style>` / `<script>` element (`raw_text`). The
-# tag name is spelled per letter rather than with `re.IGNORECASE`, whose
-# Unicode case folding also matches `\u017f` (long s) for `s`.
-_RAW_TEXT_STYLE_END_RE = re.compile(r"</([sS][tT][yY][lL][eE])")
-_RAW_TEXT_SCRIPT_TAG_RE = re.compile(r"<(/?[sS][cC][rR][iI][pP][tT])")
+# A `<` the HTML tokenizer could take as the start of markup (one followed
+# by an ASCII letter, `/`, `!` or `?`), or an `&` it could take as the start
+# of a character reference (one followed by an ASCII letter or `#`), and what
+# `raw_text` writes in its place.
+_RAW_TEXT_MARKUP_OPEN_RE = re.compile(r"<(?=[A-Za-z/!?])|&(?=[A-Za-z#])")
+_RAW_TEXT_STYLE_ESCAPE = {"<": "\\3c ", "&": "\\26 "}
+_RAW_TEXT_SCRIPT_ESCAPE = {"<": "\\u003c", "&": "\\u0026"}
 
 
 def _to_attr_name(key: str) -> str:
@@ -1126,24 +1128,26 @@ class BarefootJS:
 
         The HTML parser decodes no character reference there, so the value
         is NOT HTML-escaped (`a[href="x"]` must reach the CSS parser as
-        written); the template prints the result with `| safe`. Only the
-        sequences that would end the element are rewritten, in a form CSS /
-        JS reads back as the same text: `</style` -> `<\\/style`, and
-        `<script` / `</script` -> `\\u003cscript` / `\\u003c/script` (ASCII
-        case-insensitive). Mirrors `escapeRawText` in `@barefootjs/shared`.
+        written); the template prints the result with `| safe`. Each `<`
+        that could begin markup and each `&` that could begin a character
+        reference is rewritten instead, in a form CSS / JS reads back as the
+        same character: `\\3c ` / `\\26 ` in a `<style>`, `\\u003c` /
+        `\\u0026` in a `<script>`. That leaves no end tag, no `<!--` /
+        `<script`, no tag and no reference at all, so the text is the same
+        both as raw text and where the element lands in foreign content
+        (inside an `<svg>`). Mirrors `escapeRawText` in `@barefootjs/shared`.
 
         `parts` is the element's WHOLE text as the list of its pieces (static
         text and each expression's value): they are joined first and encoded
-        once, because an end tag can be spelled across pieces
+        once, because markup can be spelled across pieces
         (`['<', '/style>']`).
         """
         if isinstance(parts, (list, tuple)):
             text = "".join(str(js_string(part)) for part in parts)
         else:
             text = str(js_string(parts))
-        if tag == "style":
-            return _RAW_TEXT_STYLE_END_RE.sub(r"<\\/\1", text)
-        return _RAW_TEXT_SCRIPT_TAG_RE.sub(r"\\u003c\1", text)
+        escapes = _RAW_TEXT_STYLE_ESCAPE if tag == "style" else _RAW_TEXT_SCRIPT_ESCAPE
+        return _RAW_TEXT_MARKUP_OPEN_RE.sub(lambda match: escapes[match.group(0)], text)
 
     def number(self, value: Any) -> float:
         return js_number(value)

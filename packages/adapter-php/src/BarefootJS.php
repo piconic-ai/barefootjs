@@ -914,27 +914,34 @@ final class BarefootJS
      * The text of a `<style>` / `<script>` element (`$tag`). The HTML parser
      * decodes no character reference there, so the value is NOT HTML-escaped
      * (`a[href="x"]` must reach the CSS parser as written); the template
-     * prints the result raw (`| raw`, `{!! !!}`). Only the sequences that
-     * would end the element are rewritten, in a form CSS / JS reads back as
-     * the same text: `</style` -> `<\/style`, and `<script` / `</script` ->
-     * `\u003cscript` / `\u003c/script` (ASCII case-insensitive; the tag name
-     * is spelled per letter so no Unicode case fold can match it). Mirrors
-     * `escapeRawText` in `@barefootjs/shared`.
+     * prints the result raw (`| raw`, `{!! !!}`). Each `<` that could begin
+     * markup (one followed by an ASCII letter, `/`, `!` or `?`) and each `&`
+     * that could begin a character reference (one followed by an ASCII
+     * letter or `#`) is rewritten instead, in a form CSS / JS reads back as
+     * the same character: `\3c ` / `\26 ` in a `<style>`, `\u003c` /
+     * `\u0026` in a `<script>`. That leaves no end tag, no `<!--` /
+     * `<script`, no tag and no reference at all, so the text is the same
+     * both as raw text and where the element lands in foreign content
+     * (inside an `<svg>`). Mirrors `escapeRawText` in `@barefootjs/shared`.
+     *
+     * `$parts` is the element's WHOLE text as the list of its pieces (static
+     * text and each expression's value): joined first and encoded once,
+     * because markup can be spelled across pieces (`['<', '/style>']`).
      */
     public function raw_text(string $tag, $parts): string
     {
-        // The element's WHOLE text as the list of its pieces (static text and
-        // each expression's value): joined first and encoded once, because an
-        // end tag can be spelled across pieces (`['<', '/style>']`).
         $text = '';
         foreach (is_array($parts) && array_is_list($parts) ? $parts : [$parts] as $part) {
             $text .= (string) $this->string($part);
         }
-        if ($tag === 'style') {
-            $out = preg_replace('~</([sS][tT][yY][lL][eE])~', '<\\\\/$1', $text);
-        } else {
-            $out = preg_replace('~<(/?[sS][cC][rR][iI][pP][tT])~', '\\\\u003c$1', $text);
-        }
+        $escape = $tag === 'style'
+            ? ['<' => '\\3c ', '&' => '\\26 ']
+            : ['<' => '\\u003c', '&' => '\\u0026'];
+        $out = preg_replace_callback(
+            '~<(?=[A-Za-z/!?])|&(?=[A-Za-z#])~',
+            static fn (array $match): string => $escape[$match[0]],
+            $text,
+        );
         // Never fall back to the unencoded text: it could end the element.
         if ($out === null) {
             throw new \RuntimeException('raw_text: ' . preg_last_error_msg());

@@ -946,6 +946,8 @@ import { fixture as foreignTitleSlot } from './foreign-title-slot'
 import { fixture as foreignTitleBareText } from './foreign-title-bare-text'
 import { fixture as foreignTitleMarkupChild } from './foreign-title-markup-child'
 import { fixture as rawTextHostReactive } from './raw-text-host-reactive'
+import { fixture as rawTextForeignContent } from './raw-text-foreign-content'
+import { fixture as rawTextForeignContentReactive } from './raw-text-foreign-content-reactive'
 import { fixture as rawTextSplitBoundary } from './raw-text-split-boundary'
 import { fixture as rawTextSplitBoundaryReactive } from './raw-text-split-boundary-reactive'
 import { fixture as rawTextSplitBoundaryStatic } from './raw-text-split-boundary-static'
@@ -2371,6 +2373,8 @@ export const jsxFixtures: JSXFixture[] = [
   foreignTitleBareText,
   foreignTitleMarkupChild,
   rawTextHostReactive,
+  rawTextForeignContent,
+  rawTextForeignContentReactive,
   rawTextSplitBoundary,
   rawTextSplitBoundaryReactive,
   rawTextSplitBoundaryStatic,

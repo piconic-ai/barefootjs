@@ -3,13 +3,13 @@ import { createFixture } from '../src/types'
 /**
  * Static text in `<style>` / `<script>` is not HTML-escaped either (#3934):
  * JSX text (character references decoded) and a string literal child print
- * as written, with the element-ending sequences rewritten as they are for a
+ * as written, with each markup-opening `<` rewritten as it is for a
  * dynamic value (`raw-text-style-script-escape`). The `<p>` is the control:
  * ordinary text keeps the HTML escape.
  */
 export const fixture = createFixture({
   id: 'raw-text-style-script-static',
-  description: 'Static <style> / <script> text prints unescaped, with the element-ending sequences rewritten',
+  description: 'Static <style> / <script> text prints unescaped, with each markup-opening < rewritten',
   source: `
 export function RawTextStyleScriptStatic() {
   return (
@@ -23,7 +23,7 @@ export function RawTextStyleScriptStatic() {
 `,
   expectedHtml: `
     <div bf-s="test">
-      <style>.c> .d[title="x"]::after { content: "<\\/style> &" }</style>
+      <style>.c> .d[title="x"]::after { content: "\\3c /style> &" }</style>
       <script>var s = "\\u003c/script>\\u003cSCRIPT>"; if (1 < 2 && s) window.__rawTextStatic = s</script>
       <p>.c &gt; .d &amp; &quot;x&quot;</p>
     </div>

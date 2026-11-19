@@ -76,8 +76,8 @@ export function escapedText(expr: string): SafeHtml {
  * `escapeRawTextContent(tag, [part, …])` — the WHOLE text of a `<style>` /
  * `<script>` element (`IRElement.rawTextContent`, #3934). The HTML parser
  * decodes no character reference there, so the text is not HTML-escaped; the
- * runtime helper joins the parts and rewrites the sequences that would end
- * the element, which is what makes the result safe to splice. `values` are
+ * runtime helper joins the parts and rewrites each `<` that could begin
+ * markup, which is what makes the result safe to splice. `values` are
  * the JS expressions of every part in source order (a string literal for
  * static text): encoding the parts one by one would miss an end tag spelled
  * across two of them (`['<', v]`), so there is no per-part producer.

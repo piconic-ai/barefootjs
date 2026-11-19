@@ -1550,35 +1550,35 @@ fn safe(s: impl Into<String>) -> MjValue {
 
 /// The text of a `<style>` / `<script>` element (`tag`). The HTML parser
 /// decodes no character reference there, so the value is NOT HTML-escaped
-/// (`a[href="x"]` must reach the CSS parser as written). Only the sequences
-/// that would end the element are rewritten, in a form CSS / JS reads back
-/// as the same text: `</style` -> `<\/style`, and `<script` / `</script` ->
-/// `\u003cscript` / `\u003c/script` (ASCII case-insensitive). Mirrors
-/// `escapeRawText` in `@barefootjs/shared`.
+/// (`a[href="x"]` must reach the CSS parser as written). Each `<` that could
+/// begin markup (one followed by an ASCII letter, `/`, `!` or `?`) and each
+/// `&` that could begin a character reference (one followed by an ASCII
+/// letter or `#`) is rewritten instead, in a form CSS / JS reads back as the
+/// same character: `\3c ` / `\26 ` in a `<style>`, `\u003c` / `\u0026` in
+/// a `<script>`. That leaves no end tag, no `<!--` / `<script`, no tag and no
+/// reference at all, so the text is the same both as raw text and where the
+/// element lands in foreign content (inside an `<svg>`). Mirrors
+/// `escapeRawText` in `@barefootjs/shared`. `text` is the element's whole
+/// text, joined by the caller.
 pub(crate) fn raw_text(tag: &str, text: &str) -> String {
     let style = tag == "style";
-    let name: &[u8] = if style { b"style" } else { b"script" };
-    let bytes = text.as_bytes();
+    let less_than = if style { "\\3c " } else { "\\u003c" };
+    let ampersand = if style { "\\26 " } else { "\\u0026" };
     let mut out = String::with_capacity(text.len());
-    // `<` is ASCII, so every index it is found at is a char boundary.
-    let mut copied = 0;
-    for (i, &byte) in bytes.iter().enumerate() {
-        if byte != b'<' {
-            continue;
+    let mut chars = text.chars().peekable();
+    while let Some(ch) = chars.next() {
+        let next = chars.peek().copied();
+        let opens_markup =
+            ch == '<' && next.is_some_and(|c| c.is_ascii_alphabetic() || matches!(c, '/' | '!' | '?'));
+        let opens_reference = ch == '&' && next.is_some_and(|c| c.is_ascii_alphabetic() || c == '#');
+        if opens_markup {
+            out.push_str(less_than);
+        } else if opens_reference {
+            out.push_str(ampersand);
+        } else {
+            out.push(ch);
         }
-        let slash = bytes.get(i + 1) == Some(&b'/');
-        let name_at = i + 1 + usize::from(slash);
-        let names_tag = bytes
-            .get(name_at..name_at + name.len())
-            .is_some_and(|found| found.eq_ignore_ascii_case(name));
-        if !names_tag || (style && !slash) {
-            continue;
-        }
-        out.push_str(&text[copied..i]);
-        out.push_str(if style { "<\\" } else { "\\u003c" });
-        copied = i + 1;
     }
-    out.push_str(&text[copied..]);
     out
 }
 

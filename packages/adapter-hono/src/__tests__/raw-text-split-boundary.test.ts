@@ -45,20 +45,19 @@ describe('split end tags in <style> / <script>', () => {
 
   test('the rendered HTML holds no injected element', async () => {
     const html = await renderHonoComponent({ source, adapter: new HonoAdapter(), props })
-    expect(html).not.toContain('</style><img')
-    expect(html).not.toContain('</script><img')
+    expect(html).not.toContain('<img')
     const host = document.createElement('div')
     host.innerHTML = html
     expect(host.querySelector('img')).toBeNull()
     const root = host.firstElementChild!
     expect(Array.from(root.children).map(el => el.tagName)).toEqual(['STYLE', 'SCRIPT', 'SCRIPT', 'B'])
-    expect(root.children[0].textContent).toBe('<\\/style><img src=x onerror="alert(1)">')
-    expect(root.children[1].textContent).toBe('\\u003c/script><img src=x onerror="alert(1)">')
-    expect(root.children[2].textContent).toBe('\\u003c/script><img src=x onerror="alert(1)">')
+    expect(root.children[0].textContent).toBe('\\3c /style>\\3c img src=x onerror="alert(1)">')
+    expect(root.children[1].textContent).toBe('\\u003c/script>\\u003cimg src=x onerror="alert(1)">')
+    expect(root.children[2].textContent).toBe('\\u003c/script>\\u003cimg src=x onerror="alert(1)">')
   })
 
   test('bfRawText joins its parts before encoding', () => {
-    expect(String(bfRawText('style', ['<', '/style>']))).toBe('<\\/style>')
-    expect(String(bfRawText('script', ['<!--<scr', null, ['ipt', '>'], 1]))).toBe('<!--\\u003cscript>1')
+    expect(String(bfRawText('style', ['<', '/style>']))).toBe('\\3c /style>')
+    expect(String(bfRawText('script', ['<!--<scr', null, ['ipt', '>'], 1]))).toBe('\\u003c!--\\u003cscript>1')
   })
 })

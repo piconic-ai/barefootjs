@@ -48,7 +48,7 @@ export function T() {
 `)
     expect(errors).toEqual([])
     const template = files.find(f => f.type === 'markedTemplate')?.content ?? ''
-    expect(template).toContain('<style>.a > .b[x="y"] & <\\/style></style>')
+    expect(template).toContain('<style>.a > .b[x="y"] & \\3c /style></style>')
     expect(template).toContain('<script>if (1 < 2) s = "\\u003c/Script>"</script>')
     // Ordinary text keeps the HTML escape.
     expect(template).toContain('<p>a &gt; b</p>')
@@ -62,8 +62,8 @@ export function T() {
 `)
     expect(errors).toEqual([])
     const template = files.find(f => f.type === 'markedTemplate')?.content ?? ''
-    expect(template).toContain('<style><\\/style><i></style>')
-    expect(template).toContain('<script>\\u003c/SCRipt><i></script>')
+    expect(template).toContain('<style>\\3c /style>\\3c i></style>')
+    expect(template).toContain('<script>\\u003c/SCRipt>\\u003ci></script>')
   })
 
   test('a /* @client */ expression in <style> is refused too', () => {

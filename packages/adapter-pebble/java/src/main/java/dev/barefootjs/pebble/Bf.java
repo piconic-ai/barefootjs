@@ -1973,25 +1973,30 @@ public final class Bf {
     return "<div bf-async=\"" + htmlEscape(JsValue.jsString(id)) + "\">" + JsValue.jsString(fallbackHtml) + "</div>";
   }
 
-  private static final Pattern RAW_TEXT_STYLE_END = Pattern.compile("</([sS][tT][yY][lL][eE])");
-  private static final Pattern RAW_TEXT_SCRIPT_TAG = Pattern.compile("<(/?[sS][cC][rR][iI][pP][tT])");
+  /**
+   * A less-than sign the HTML tokenizer could take as the start of markup,
+   * or an ampersand it could take as the start of a character reference.
+   */
+  private static final Pattern RAW_TEXT_MARKUP_OPEN = Pattern.compile("<(?=[A-Za-z/!?])|&(?=[A-Za-z#])");
 
   /**
    * The text of a `<style>` / `<script>` element (`tag`). The HTML parser
    * decodes no character reference there, so the value is NOT HTML-escaped
    * (`a[href="x"]` must reach the CSS parser as written); the template prints
-   * the result with `| raw`. Only the sequences that would end the element
-   * are rewritten, in a form CSS / JS reads back as the same text: `</style`
-   * gets a backslash before its `/` (a CSS escape), and `<script` /
-   * `</script` get their `<` written as the JavaScript / JSON escape of
-   * U+003C (ASCII case-insensitive; the tag name is spelled per letter so no
-   * Unicode case fold can match it). Mirrors `escapeRawText` in
+   * the result with `| raw`. Each less-than sign that could begin markup (one
+   * followed by an ASCII letter, `/`, `!` or `?`) and each ampersand that
+   * could begin a character reference (one followed by an ASCII letter or
+   * `#`) is rewritten instead, as the CSS escape of that character in a
+   * `<style>` and its JavaScript / JSON escape in a `<script>`. That leaves
+   * no end tag, no comment or nested script start, no tag and no reference at
+   * all, so the text is the same both as raw text and where the element lands
+   * in foreign content (inside an `<svg>`). Mirrors `escapeRawText` in
    * `@barefootjs/shared`.
    */
   public String raw_text(Object tag, Object parts) {
     // The element's WHOLE text as the list of its pieces (static text and
-    // each expression's value): joined first and encoded once, because an
-    // end tag can be spelled across pieces (a lone "<", then "/style>").
+    // each expression's value): joined first and encoded once, because
+    // markup can be spelled across pieces (a lone "<", then "/style>").
     StringBuilder joined = new StringBuilder();
     if (parts instanceof List<?> list) {
       for (Object part : list) {
@@ -2000,11 +2005,13 @@ public final class Bf {
     } else {
       joined.append(String.valueOf(string(parts)));
     }
-    String text = joined.toString();
-    if ("style".equals(tag)) {
-      return RAW_TEXT_STYLE_END.matcher(text).replaceAll("<\\\\/$1");
-    }
-    return RAW_TEXT_SCRIPT_TAG.matcher(text).replaceAll("\\\\u003c$1");
+    boolean style = "style".equals(tag);
+    String backslash = "\\";
+    String lessThan = style ? backslash + "3c " : backslash + "u003c";
+    String ampersand = style ? backslash + "26 " : backslash + "u0026";
+    return RAW_TEXT_MARKUP_OPEN
+        .matcher(joined)
+        .replaceAll(match -> Matcher.quoteReplacement("<".equals(match.group()) ? lessThan : ampersand));
   }
 
   /** Text-slot hydration anchor. Mirrors the Jinja/Rust ports' `text_start` byte-for-byte (`<!--bf:<slot>-->`, NOT this class's own `comment()` wire shape — the client's text-patch walker matches this exact prefix, see `packages/client/src/runtime`). */
