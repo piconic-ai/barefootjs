@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { lookupStaticRecordLiteral } from '../augment-inherited-props.ts'
-import { lookupStaticConstMember, readStaticConstMember, spellStaticConstMember, staticIndexKey } from '../static-const-member.ts'
+import { lookupStaticConstMember, readStaticConstMember, refuseComputedConstRead, spellStaticConstMember, staticIndexKey } from '../static-const-member.ts'
 import { parseExpression } from '../expression-parser.ts'
 import { analyzeComponent } from '../analyzer.ts'
 import { buildMetadata } from '../compiler.ts'
@@ -331,5 +331,27 @@ describe('readStaticConstMember: a spread the literal cannot expand (#3944)', ()
     const loc = { file: 'C.tsx', start: { line: 2, column: 0 }, end: { line: 2, column: 5 } }
     spell({ loc, deferrable: false })
     expect(errors[0].suggestion?.escape).toBeUndefined()
+  })
+})
+
+describe('refuseComputedConstRead: a run-time key over an unresolved spread (#3944)', () => {
+  const refuse = (value: string, extra: ConstantInfo[] = [], isShadowed: (n: string) => boolean = notShadowed) => {
+    const errors: CompilerError[] = []
+    refuseComputedConstRead(ident('B'), [...extra, moduleConst('B', value)], isShadowed, { errors, componentName: 'C' })
+    return errors
+  }
+
+  test('an object with a spread it cannot expand is refused, with the client escape', () => {
+    const errors = refuse(`{ ...mk() }`)
+    expect(errors).toHaveLength(1)
+    expect(errors[0].code).toBe('BF101')
+    expect(errors[0].suggestion?.escape).toEqual([{ kind: 'client-directive' }])
+    expect(refuse(`{ a: 1, ...mk(), b: 2 }`)).toHaveLength(1)
+  })
+
+  test('a fully literal object, or a name a binding shadows, is not refused', () => {
+    expect(refuse(`{ a: 1, b: 2 }`)).toEqual([])
+    expect(refuse(`{ ...mk() }`, [], n => n === 'B')).toEqual([])
+    expect(refuse(`{ ...R }`, [moduleConst('R', `{ k: 'v' }`)])).toEqual([])
   })
 })

@@ -6131,6 +6131,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-local",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -6556,6 +6586,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -7040,6 +7100,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -7565,6 +7655,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-local",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -8007,6 +8127,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-local",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -8432,6 +8582,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -8873,6 +9053,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-local",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -9309,6 +9519,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-local",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -9740,6 +9980,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -11359,6 +11629,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -11952,6 +12252,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -12640,6 +12970,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -13363,6 +13723,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -13967,6 +14357,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -14554,6 +14974,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -15163,6 +15613,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -15750,6 +16230,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -16359,6 +16869,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -16613,6 +17153,36 @@
         "blade": {
           "gaps": [
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
@@ -16628,6 +17198,36 @@
         },
         "erb": {
           "gaps": [
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
             {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
@@ -16651,6 +17251,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
@@ -16666,6 +17296,36 @@
         },
         "jinja": {
           "gaps": [
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
             {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
@@ -16683,6 +17343,36 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
@@ -16698,6 +17388,36 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
             {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
@@ -16715,6 +17435,36 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
@@ -16731,6 +17481,36 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
@@ -16746,6 +17526,36 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
             {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
@@ -17100,6 +17910,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -17555,6 +18395,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -18075,6 +18945,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -18642,6 +19542,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -19108,6 +20038,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -19569,6 +20529,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -20052,6 +21042,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -20501,6 +21521,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -20961,6 +22011,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -22183,6 +23263,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -22614,6 +23724,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -23139,6 +24279,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -23653,6 +24823,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -24095,6 +25295,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -24520,6 +25750,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -24973,6 +26233,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -25404,6 +26694,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -25851,6 +27171,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -26156,6 +27506,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -26353,6 +27733,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -26573,6 +27983,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -26804,6 +28244,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -27001,6 +28471,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -27209,6 +28709,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -27428,6 +28958,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -27619,6 +29179,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -27821,6 +29411,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -35881,6 +37501,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -36240,6 +37890,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -36646,6 +38326,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -37111,6 +38821,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -37481,6 +39221,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -37846,6 +39616,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]
@@ -38233,6 +40033,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -38597,6 +40427,36 @@
               ]
             },
             {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
               "fixture": "module-const-object-spread-unresolved-let",
               "limitations": [
                 "const-object-spread-unresolved"
@@ -38956,6 +40816,36 @@
             },
             {
               "fixture": "module-const-object-spread-unresolved-call",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-local",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-loop",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-optional",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-props",
+              "limitations": [
+                "const-object-spread-unresolved"
+              ]
+            },
+            {
+              "fixture": "module-const-object-spread-unresolved-computed-signal",
               "limitations": [
                 "const-object-spread-unresolved"
               ]

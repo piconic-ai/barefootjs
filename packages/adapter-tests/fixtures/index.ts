@@ -1560,6 +1560,12 @@ import { fixture as moduleConstObjectSpreadUnresolvedLocal } from './module-cons
 import { fixture as moduleConstObjectSpreadUnresolvedClient } from './module-const-object-spread-unresolved-client'
 import { fixture as moduleConstObjectSpreadMember } from './module-const-object-spread-member'
 import { fixture as moduleConstObjectSpreadOverrideAfter } from './module-const-object-spread-override-after'
+import { fixture as moduleConstObjectSpreadUnresolvedComputedProps } from './module-const-object-spread-unresolved-computed-props'
+import { fixture as moduleConstObjectSpreadUnresolvedComputedLocal } from './module-const-object-spread-unresolved-computed-local'
+import { fixture as moduleConstObjectSpreadUnresolvedComputedOptional } from './module-const-object-spread-unresolved-computed-optional'
+import { fixture as moduleConstObjectSpreadUnresolvedComputedLoop } from './module-const-object-spread-unresolved-computed-loop'
+import { fixture as moduleConstObjectSpreadUnresolvedComputedSignal } from './module-const-object-spread-unresolved-computed-signal'
+import { fixture as moduleConstObjectSpreadUnresolvedComputedClient } from './module-const-object-spread-unresolved-computed-client'
 import { fixture as undefinedLiteralElementPositions } from './undefined-literal-element-positions'
 import { fixture as moduleConstArrayMethodCall } from './module-const-array-method-call'
 import { fixture as localConstLiteralIndex } from './local-const-literal-index'
@@ -2759,6 +2765,12 @@ export const jsxFixtures: JSXFixture[] = [
   moduleConstObjectSpreadUnresolvedClient,
   moduleConstObjectSpreadMember,
   moduleConstObjectSpreadOverrideAfter,
+  moduleConstObjectSpreadUnresolvedComputedProps,
+  moduleConstObjectSpreadUnresolvedComputedLocal,
+  moduleConstObjectSpreadUnresolvedComputedOptional,
+  moduleConstObjectSpreadUnresolvedComputedLoop,
+  moduleConstObjectSpreadUnresolvedComputedSignal,
+  moduleConstObjectSpreadUnresolvedComputedClient,
   undefinedLiteralElementPositions,
   moduleConstArrayMethodCall,
   localConstLiteralIndex,

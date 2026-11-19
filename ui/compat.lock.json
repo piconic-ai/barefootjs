@@ -8946,6 +8946,601 @@
           }
         }
       },
+      "module-const-object-spread-unresolved-computed-local": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        }
+      },
+      "module-const-object-spread-unresolved-computed-loop": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        }
+      },
+      "module-const-object-spread-unresolved-computed-optional": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        }
+      },
+      "module-const-object-spread-unresolved-computed-props": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        }
+      },
+      "module-const-object-spread-unresolved-computed-signal": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "const-object-spread-unresolved"
+          ],
+          "escape": {
+            "state": "escapable",
+            "twin": "module-const-object-spread-unresolved-computed-client"
+          }
+        }
+      },
       "module-const-object-spread-unresolved-let": {
         "blade": {
           "kind": "refusal",
@@ -13786,6 +14381,26 @@
         "description": "a module const spreading a call (`{ ...JSON.parse(…) }`) refuses a read of its key (BF101)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-object-spread-unresolved-call.ts"
       },
+      "module-const-object-spread-unresolved-computed-local": {
+        "description": "a component-scope const with an unresolved spread read with a prop as the key refuses (BF101)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-object-spread-unresolved-computed-local.ts"
+      },
+      "module-const-object-spread-unresolved-computed-loop": {
+        "description": "a computed read of a const with an unresolved spread by a loop row refuses (BF101)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-object-spread-unresolved-computed-loop.ts"
+      },
+      "module-const-object-spread-unresolved-computed-optional": {
+        "description": "an optional-chained computed read of a const with an unresolved spread refuses (BF101)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-object-spread-unresolved-computed-optional.ts"
+      },
+      "module-const-object-spread-unresolved-computed-props": {
+        "description": "a module const with an unresolved spread read with a prop as the key refuses (BF101)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-object-spread-unresolved-computed-props.ts"
+      },
+      "module-const-object-spread-unresolved-computed-signal": {
+        "description": "a computed read of a const with an unresolved spread by a signal refuses (BF101)",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-object-spread-unresolved-computed-signal.ts"
+      },
       "module-const-object-spread-unresolved-let": {
         "description": "a module const spreading a `let` (`{ ...S }`) refuses a read of its key (BF101)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-object-spread-unresolved-let.ts"
@@ -14181,6 +14796,10 @@
       "module-const-object-spread-unresolved-client": {
         "description": "a /* @client */ read of a module const that spreads a call defers to the browser",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-object-spread-unresolved-client.ts"
+      },
+      "module-const-object-spread-unresolved-computed-client": {
+        "description": "a /* @client */ computed read of a const with an unresolved spread defers to the browser",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/module-const-object-spread-unresolved-computed-client.ts"
       },
       "nested-loop-child-component-rest-own-child-client": {
         "description": "/* @client */ twin of nested-loop-child-component-rest-own-child — the inner loop renders in the…",
@@ -14775,12 +15394,17 @@
     "const-object-spread-unresolved": {
       "title": "Const object built with a spread of a source a template cannot expand",
       "kind": "refusal",
-      "given": "a module- or component-scope const object literal that spreads a source the compiler cannot expand into its own entries (a call `{ ...mk() }`, a member of a non-literal `{ ...R.sub }`, a `let`, an array literal), read with a key no entry lists after the last such spread (`B.k`), in a server-rendered position",
+      "given": "a module- or component-scope const object literal that spreads a source the compiler cannot expand into its own entries (a call `{ ...mk() }`, a member of a non-literal `{ ...R.sub }`, a `let`, an array literal), read with a key no entry lists after the last such spread (`B.k`), or with a key only known at run time (`B[props.key]`, `B?.[k]`, `B[i]`, `B[sig()]`), in a server-rendered position",
       "expected": "the value the spread brings for that key",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
         "module-const-object-spread-unresolved-array",
         "module-const-object-spread-unresolved-call",
+        "module-const-object-spread-unresolved-computed-local",
+        "module-const-object-spread-unresolved-computed-loop",
+        "module-const-object-spread-unresolved-computed-optional",
+        "module-const-object-spread-unresolved-computed-props",
+        "module-const-object-spread-unresolved-computed-signal",
         "module-const-object-spread-unresolved-let",
         "module-const-object-spread-unresolved-local",
         "module-const-object-spread-unresolved-member"

@@ -156,6 +156,34 @@ export function spellStaticConstMember(
   return read?.kind === 'value' ? read.expr : null
 }
 
+/**
+ * BF101 for `object[index]` read with an index that is not a literal key
+ * (`B[props.key]`, `B[i]`, `B?.[sig()]`), when `object` is an object const
+ * whose spread `flattenObjectSpreads` could not expand. Any key may come from
+ * that spread, so the read has no compile-time answer and no template binds
+ * the const (#3944). A literal const whose entries are all known is not
+ * refused here: it is read through the adapters' own lookups.
+ */
+export function refuseComputedConstRead(
+  object: ParsedExpr,
+  constants: StaticConstants,
+  isShadowed: (name: string) => boolean,
+  sink: StaticConstMemberSink,
+  where?: InheritedReadPlace,
+): void {
+  const receiver = staticLiteralValue(object, constants, isShadowed)
+  if (receiver?.kind !== 'object-literal' || !receiver.properties.some(p => p.kind === 'spread')) return
+  const text = exprToString(object)
+  recordRefusedRead(
+    `\`${text}[…]\` reads a const whose object literal spreads a value a template cannot compute (a call, a \`let\`, an array, ` +
+      'a member of a non-literal) with a key only known at run time, so the key may come from the spread. The template receives ' +
+      'the props, not the module\'s consts, so the server render has no value for it.',
+    'Spread only literal consts, or defer the read to the client',
+    sink,
+    where,
+  )
+}
+
 function recordRefusedRead(message: string, advice: string, sink: StaticConstMemberSink, where: InheritedReadPlace | undefined): void {
   if (sink.errors.some(e => e.code === 'BF101' && e.message === message)) return
   sink.errors.push({
