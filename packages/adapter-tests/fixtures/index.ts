@@ -612,6 +612,7 @@ import { fixture as openRestSpreadChild } from './open-rest-spread-child'
 import { fixture as openBodyRestSpreadElement } from './open-body-rest-spread-element'
 import { fixture as elementSpreadPropsLoopRowLive } from './element-spread-props-loop-row-live'
 import { fixture as openRestSpreadChildChildren } from './open-rest-spread-child-children'
+import { fixture as propsObjectSpreadChildChildren } from './props-object-spread-child-children'
 import { fixture as arrayTextChild } from './array-text-child'
 import { fixture as childrenElementReadIntoState } from './children-element-read-into-state'
 import { fixture as filterPredicateOnPrefixedProp } from './filter-predicate-on-prefixed-prop'
@@ -2121,6 +2122,7 @@ export const jsxFixtures: JSXFixture[] = [
   openBodyRestSpreadElement,
   elementSpreadPropsLoopRowLive,
   openRestSpreadChildChildren,
+  propsObjectSpreadChildChildren,
   arrayTextChild,
   childrenElementReadIntoState,
   filterPredicateOnPrefixedProp,

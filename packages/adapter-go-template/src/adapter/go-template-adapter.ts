@@ -2809,7 +2809,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           }
         }
       }
-      const inputProps = { name: child.name, props: child.props.filter(p => p.name !== 'key') }
+      const inputProps = { name: child.name, props: child.props.filter(p => p.name !== 'key'), children: child.children }
       for (const { goField, goValue, coerce } of lowerChildInputFields(this.childInputHost, inputProps, ir, propFallbackVars).fields) {
         lines.push(`\t\t\t${this.childInputField(child.name, goField, goValue, coerce)},`)
       }
@@ -2876,7 +2876,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push(`\t\t\t${declaredName}Props: New${declaredName}Props(${declaredName}Input{`)
     lines.push(`\t\t\t\tBfParent: scopeID,`)
     lines.push(`\t\t\t\tBfMount: "${nested.slotId}",`)
-    const own = { name: nested.name, props: nested.rowProps }
+    const own = { name: nested.name, props: nested.rowProps, children: nested.children }
     for (const f of lowerLoopRowChildInputFields(this.childInputHost, own, ir, propFallbackVars, nested.rowScope)) {
       lines.push(`\t\t\t\t${this.childInputField(nested.name, f.goField, f.goValue, f.coerce)},`)
     }
@@ -6958,7 +6958,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (value === undefined) continue
       props.push({ ...prop, value: bakedScalarAttr(value) })
     }
-    return lowerChildInputFields(this.childInputHost, { name: nested.name, props }, ir, new Map()).fields
+    return lowerChildInputFields(this.childInputHost, { name: nested.name, props, children: nested.children }, ir, new Map()).fields
   }
 
   /**
