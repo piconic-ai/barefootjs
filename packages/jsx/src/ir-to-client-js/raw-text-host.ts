@@ -10,9 +10,10 @@
  */
 
 import { escapeHtml } from '@barefootjs/shared'
-import type { IRElement, IRExpression, IRNode } from '../types.ts'
+import type { IRElement, IRNode } from '../types.ts'
 import { decideWrapFromAstFlags } from './reactivity.ts'
 import type { ClientJsContext } from './types.ts'
+import { rawTextContent, rawTextStatic } from './safe-html.ts'
 import { codeSafeStringLiteral, RAW_TEXT_CONTENT_ATTR } from './utils.ts'
 
 /** Text and expression children in source order, fragments flattened. */
@@ -24,18 +25,28 @@ function flattenHostChildren(children: readonly IRNode[], out: (IRNode & { type:
 }
 
 /**
+ * One child as SSR renders it: HTML-escaped in a `<textarea>` / `<title>`,
+ * and the raw text encoding in a `<style>` / `<script>` (`rawText`, #3934),
+ * where the parser decodes no character reference.
+ */
+function hostContentPiece(part: IRNode & { type: 'text' | 'expression' }): string {
+  if (part.type === 'text') {
+    return codeSafeStringLiteral(part.rawText ? rawTextStatic(part.rawText, part.value) : escapeHtml(part.value))
+  }
+  return part.rawText ? rawTextContent(part.rawText, part.expr) : `escapeText(${part.expr})`
+}
+
+/**
  * The JS expression that builds the host's content, the way SSR renders it:
- * static text and `escapeText(…)` parts joined. Null when no child needs a
+ * static text and escaped expression parts joined. Null when no child needs a
  * client update (its SSR text is already in the DOM).
  */
 function hostContentExpression(element: IRElement): string | null {
   const parts: (IRNode & { type: 'text' | 'expression' })[] = []
   flattenHostChildren(element.children, parts)
-  const needsUpdate = parts.some(p => p.type === 'expression' && decideWrapFromAstFlags(p as IRExpression).wrap)
+  const needsUpdate = parts.some(p => p.type === 'expression' && decideWrapFromAstFlags(p).wrap)
   if (!needsUpdate) return null
-  const pieces = parts.map(p =>
-    p.type === 'text' ? codeSafeStringLiteral(escapeHtml(p.value)) : `escapeText(${(p as IRExpression).expr})`,
-  )
+  const pieces = parts.map(hostContentPiece)
   const joined = `[${pieces.join(', ')}].join('')`
   // The HTML parser drops ONE leading line feed of a `<textarea>`'s content
   // (start-tag handling), so SSR and the CSR template — both parsed with the

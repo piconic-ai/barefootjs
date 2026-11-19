@@ -268,3 +268,104 @@ describe('raw-text tags in foreign content are flagged, not lowered (#3937)', ()
     expect(flaggedTags(`<math><annotation-xml><svg><title><textarea>{n()}</textarea></title></svg></annotation-xml></math>`)).toEqual(['title'])
   })
 })
+
+describe('<style> / <script> text is marked raw text (#3934)', () => {
+  /** Every text / expression node under the first `tag` element, fragments flattened. */
+  function rawTextOf(jsx: string, tag: string): (string | undefined)[] {
+    const r = compileJSX(
+      `export function Comp(props: { v: string }) { return ${jsx} }`,
+      'Comp.tsx',
+      { adapter, outputIR: true },
+    )
+    expect(r.errors).toEqual([])
+    const ir = JSON.parse(r.files.find(f => f.type === 'ir')?.content ?? '{}')
+    const found: (string | undefined)[] = []
+    const leaves = (node: any): void => {
+      if (node.type === 'text' || node.type === 'expression') found.push(node.rawText)
+      for (const child of node.children ?? []) leaves(child)
+    }
+    const visit = (node: any): void => {
+      if (!node || typeof node !== 'object') return
+      if (node.type === 'element' && node.tag === tag) return leaves(node)
+      for (const child of node.children ?? []) visit(child)
+    }
+    visit(ir.root)
+    return found
+  }
+
+  for (const tag of ['style', 'script']) {
+    test(`<${tag}>: static text, a literal, a dynamic value and a fragment's children`, () => {
+      expect(rawTextOf(`<div><${tag}>a &gt; b{'c'}{props.v}<>d{props.v}</></${tag}></div>`, tag)).toEqual([
+        tag, tag, tag, tag, tag,
+      ])
+    })
+  }
+
+  test('<textarea> / <title> decode references and are not marked', () => {
+    expect(rawTextOf(`<div><textarea>a{props.v}</textarea></div>`, 'textarea')).toEqual([undefined, undefined])
+    expect(rawTextOf(`<div><title>a{props.v}</title></div>`, 'title')).toEqual([undefined, undefined])
+  })
+
+  test('an SVG <style> holds foreign content and is not marked', () => {
+    expect(rawTextOf(`<svg><style>a{props.v}</style></svg>`, 'style')).toEqual([undefined, undefined])
+  })
+
+  test('a <style> under an SVG integration point is HTML again and is marked', () => {
+    expect(rawTextOf(`<svg><foreignObject><style>{props.v}</style></foreignObject></svg>`, 'style')).toEqual(['style'])
+  })
+
+  test('the client template and the update write the raw text encoding, not the HTML escape', () => {
+    const r = compile(`<div><style>a &gt; b {'x' + n()}</style><textarea>{'x' + n()}</textarea></div>`)
+    expect(r.errors).toEqual([])
+    const js = clientJs(r)
+    // Static text is not entity-escaped in the template or in the update.
+    expect(js).toContain('<style bf="s1">a > b ${escapeRawTextContent(\'style\', ')
+    expect(js).not.toContain('a &gt; b')
+    expect(js).toContain(`escapeRawTextContent('style', 'x' + n())].join('')`)
+    // RCDATA keeps the HTML escape.
+    expect(js).toContain(`[escapeText('x' + n())].join('')`)
+  })
+
+  test('static <style> text that could end the element is rewritten at compile time', () => {
+    const r = compile(`<div><style>{'a'}&lt;/style&gt;&lt;i&gt;</style><script>&lt;/SCRIPT&gt;&lt;script&gt;</script></div>`)
+    expect(r.errors).toEqual([])
+    const js = clientJs(r)
+    expect(js).toContain('<\\\\/style><i></style>')
+    expect(js).toContain('<script>\\\\u003c/SCRIPT>\\\\u003cscript></script>')
+  })
+
+  test('a static value inside a conditional branch template is not HTML-escaped either', () => {
+    const r = compile(`<div>{n() > 0 ? <p><style>{label(1)}</style></p> : null}</div>`, `const label = (i: number) => 'a > ' + i`)
+    expect(r.errors).toEqual([])
+    const js = clientJs(r)
+    expect(js).toContain(`<style>\${escapeRawTextContent('style', label(1))}</style>`)
+    expect(js).not.toContain('__bfSlot(label(1)')
+  })
+
+  for (const tag of ['style', 'script']) {
+    test(`the component's children in <${tag}> are refused: they arrive as rendered markup`, () => {
+      const source = (child: string) => `
+        export function Comp({ children }: { children?: unknown }) {
+          return <div><${tag}>${child}</${tag}></div>
+        }
+      `
+      for (const child of ['{children}', "{children ?? 'x'}", "{children || 'x'}"]) {
+        const r = compileJSX(source(child), 'Comp.tsx', { adapter })
+        const errors = r.errors.filter(e => e.code === ErrorCodes.UNSUPPORTED_JSX_PATTERN)
+        expect(errors.length).toBe(1)
+        expect(errors[0].message).toContain('children')
+      }
+    })
+  }
+
+  test("the component's children in <title> / <textarea> stay allowed", () => {
+    for (const tag of ['title', 'textarea']) {
+      const r = compileJSX(
+        `export function Comp({ children }: { children?: unknown }) { return <div><${tag}>{children}</${tag}></div> }`,
+        'Comp.tsx',
+        { adapter },
+      )
+      expect(r.errors).toEqual([])
+    }
+  })
+})

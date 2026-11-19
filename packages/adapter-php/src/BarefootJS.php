@@ -910,6 +910,32 @@ final class BarefootJS
         return '[object Object]'; // stdClass or a non-list (assoc) array
     }
 
+    /**
+     * The text of a `<style>` / `<script>` element (`$tag`). The HTML parser
+     * decodes no character reference there, so the value is NOT HTML-escaped
+     * (`a[href="x"]` must reach the CSS parser as written); the template
+     * prints the result raw (`| raw`, `{!! !!}`). Only the sequences that
+     * would end the element are rewritten, in a form CSS / JS reads back as
+     * the same text: `</style` -> `<\/style`, and `<script` / `</script` ->
+     * `\u003cscript` / `\u003c/script` (ASCII case-insensitive; the tag name
+     * is spelled per letter so no Unicode case fold can match it). Mirrors
+     * `escapeRawText` in `@barefootjs/shared`.
+     */
+    public function raw_text(string $tag, $value): string
+    {
+        $text = (string) $this->string($value);
+        if ($tag === 'style') {
+            $out = preg_replace('~</([sS][tT][yY][lL][eE])~', '<\\\\/$1', $text);
+        } else {
+            $out = preg_replace('~<(/?[sS][cC][rR][iI][pP][tT])~', '\\\\u003c$1', $text);
+        }
+        // Never fall back to the unencoded text: it could end the element.
+        if ($out === null) {
+            throw new \RuntimeException('raw_text: ' . preg_last_error_msg());
+        }
+        return $out;
+    }
+
     /** JS `Number(v)` mirror for a display sink. Deliberate divergence
      * (matches the Perl/Python ports): `null`, `undefined` and
      * non-numeric/empty strings yield real NaN (not 0), so an unset prop /

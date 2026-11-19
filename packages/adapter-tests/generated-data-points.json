@@ -16471,6 +16471,80 @@
       }
     }
   ],
+  "raw-text-style-script-escape": [
+    {
+      "name": "gen:sel:empty",
+      "props": {
+        "sel": "",
+        "name": "</STYLE></ScRiPt><script>'é&amp;",
+        "json": "{\"k\":\"</script><script>alert(1)</script><!-- </SCRIPT> 日本語 & 'q'\"}"
+      }
+    },
+    {
+      "name": "gen:sel:markup",
+      "props": {
+        "sel": "<b>&\"'</b>",
+        "name": "</STYLE></ScRiPt><script>'é&amp;",
+        "json": "{\"k\":\"</script><script>alert(1)</script><!-- </SCRIPT> 日本語 & 'q'\"}"
+      }
+    },
+    {
+      "name": "gen:sel:multibyte",
+      "props": {
+        "sel": "日本語",
+        "name": "</STYLE></ScRiPt><script>'é&amp;",
+        "json": "{\"k\":\"</script><script>alert(1)</script><!-- </SCRIPT> 日本語 & 'q'\"}"
+      }
+    },
+    {
+      "name": "gen:name:empty",
+      "props": {
+        "sel": "a[href=\"x\"] > b</style><i>",
+        "name": "",
+        "json": "{\"k\":\"</script><script>alert(1)</script><!-- </SCRIPT> 日本語 & 'q'\"}"
+      }
+    },
+    {
+      "name": "gen:name:markup",
+      "props": {
+        "sel": "a[href=\"x\"] > b</style><i>",
+        "name": "<b>&\"'</b>",
+        "json": "{\"k\":\"</script><script>alert(1)</script><!-- </SCRIPT> 日本語 & 'q'\"}"
+      }
+    },
+    {
+      "name": "gen:name:multibyte",
+      "props": {
+        "sel": "a[href=\"x\"] > b</style><i>",
+        "name": "日本語",
+        "json": "{\"k\":\"</script><script>alert(1)</script><!-- </SCRIPT> 日本語 & 'q'\"}"
+      }
+    },
+    {
+      "name": "gen:json:empty",
+      "props": {
+        "sel": "a[href=\"x\"] > b</style><i>",
+        "name": "</STYLE></ScRiPt><script>'é&amp;",
+        "json": ""
+      }
+    },
+    {
+      "name": "gen:json:markup",
+      "props": {
+        "sel": "a[href=\"x\"] > b</style><i>",
+        "name": "</STYLE></ScRiPt><script>'é&amp;",
+        "json": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:json:multibyte",
+      "props": {
+        "sel": "a[href=\"x\"] > b</style><i>",
+        "name": "</STYLE></ScRiPt><script>'é&amp;",
+        "json": "日本語"
+      }
+    }
+  ],
   "reassigned-prop-counter": [
     {
       "name": "gen:start:absent",

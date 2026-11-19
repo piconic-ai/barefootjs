@@ -2,7 +2,7 @@
  * IR → HTML template string generation and validation.
  */
 
-import type { AttrValue, FlatMapCallback, IRAttribute, IRElement, IRExpression, IRNode, IRProp, MapCallbackPreamble, JsSourceText, SpreadAttr } from '../types.ts'
+import type { AttrValue, FlatMapCallback, IRAttribute, IRElement, IRExpression, IRNode, IRProp, IRText, MapCallbackPreamble, JsSourceText, SpreadAttr } from '../types.ts'
 import { isBooleanAttr } from '../html-constants.ts'
 import { toHtmlAttrName, attrValueToString, quotePropName, PROPS_PARAM, DATA_BF_PH, keyAttrName, loopStartMarker, loopEndMarker, loopItemMarker, freeIdsFromRefs, setIntersects, wrapExprWithLoopParams, specsInsideRow } from './utils.ts'
 import type { LoopParamSpec } from './utils.ts'
@@ -15,7 +15,7 @@ import { BF_KEY, BF_PARENT_SCOPE_PLACEHOLDER, BF_SCOPE, classifyDOMProp, escapeH
 import { buildLoopChainExpr } from '../loop-chain.ts'
 import { renderChildScopeArgs } from '../adapters/child-scope.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
-import { interp, spliceChildValue, conditionalMarkup, renderChildCall, mappedRowsMarkup, withOuterBindings, dangerousInnerHtml, EMPTY_MARKUP } from './safe-html.ts'
+import { interp, rawTextStatic, spliceChildValue, conditionalMarkup, renderChildCall, mappedRowsMarkup, withOuterBindings, dangerousInnerHtml, EMPTY_MARKUP } from './safe-html.ts'
 import { markupSlotIdsOf } from './markup-slots.ts'
 import { isEventHandlerName } from '../event-handler-name.ts'
 import { writesAnyBinding } from '../props-binding.ts'
@@ -23,10 +23,26 @@ import { callerBagSpreadOmit, isObjectSpreadProp, restBagExpr } from './child-pr
 
 /** Static HTML is embedded in a JS template literal; dynamic expressions use interp(). */
 function escapeStaticTemplateHtml(text: string): string {
-  return escapeHtml(text)
+  return escapeForTemplateLiteral(escapeHtml(text))
+}
+
+/** `html` as a literal segment of the JS template literal the template is built in. */
+function escapeForTemplateLiteral(html: string): string {
+  return html
     .replace(/\\/g, '\\\\')
     .replace(/`/g, '\\`')
     .replace(/\$\{/g, '\\${')
+}
+
+/**
+ * A static text child. IRText carries the entity-DECODED value; the template
+ * string is parsed as HTML (`template.innerHTML`), so it is re-escaped for
+ * the HTML parser — except in a `<style>` / `<script>` (`IRText.rawText`),
+ * whose text the parser reads undecoded (`rawTextStatic`, #3934).
+ */
+function staticTextTemplateHtml(node: IRText): string {
+  if (node.rawText) return escapeForTemplateLiteral(rawTextStatic(node.rawText, node.value))
+  return escapeStaticTemplateHtml(node.value)
 }
 
 /**
@@ -883,9 +899,7 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
     }
 
     case 'text':
-      // IRText carries the entity-DECODED value; this string is parsed
-      // as HTML (template.innerHTML), so re-escape for the HTML parser.
-      return escapeStaticTemplateHtml(node.value)
+      return staticTextTemplateHtml(node)
 
     case 'expression': {
       if (node.expr === 'null' || node.expr === 'undefined') return ''
@@ -1222,9 +1236,7 @@ export function buildLoopSkeletonTemplate(node: IRNode, safe: LoopSkeletonSafeSl
     }
 
     case 'text':
-      // IRText carries the entity-DECODED value; this string is parsed
-      // as HTML (template.innerHTML), so re-escape for the HTML parser.
-      return escapeStaticTemplateHtml(node.value)
+      return staticTextTemplateHtml(node)
 
     case 'expression':
       if (node.expr === 'null' || node.expr === 'undefined') return ''
@@ -1496,9 +1508,7 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Readonly
     }
 
     case 'text':
-      // IRText carries the entity-DECODED value; this string is parsed
-      // as HTML (template.innerHTML), so re-escape for the HTML parser.
-      return escapeStaticTemplateHtml(node.value)
+      return staticTextTemplateHtml(node)
 
     case 'expression': {
       if (node.expr === 'null' || node.expr === 'undefined') return ''
@@ -2080,9 +2090,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
     }
 
     case 'text':
-      // IRText carries the entity-DECODED value; this string is parsed
-      // as HTML (template.innerHTML), so re-escape for the HTML parser.
-      return escapeStaticTemplateHtml(node.value)
+      return staticTextTemplateHtml(node)
 
     case 'expression': {
       if (node.expr === 'null' || node.expr === 'undefined') return ''
@@ -2733,9 +2741,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
     }
 
     case 'text':
-      // IRText carries the entity-DECODED value; this string is parsed
-      // as HTML (template.innerHTML), so re-escape for the HTML parser.
-      return escapeStaticTemplateHtml(node.value)
+      return staticTextTemplateHtml(node)
 
     case 'expression':
       if (node.expr === 'null' || node.expr === 'undefined') return ''

@@ -350,7 +350,18 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     // IRText carries the entity-DECODED value (Phase 1 decodes JSX
     // character references); re-escape for direct HTML emission. A
     // line-leading `:` would be read as a line statement (#3311).
+    if (node.rawText) return this.rawTextOutput(node.rawText, kolonStringLiteral(node.value))
     return escapeLineStatementSigil(escapeHtml(node.value), ':', "<: ':' :>")
+  }
+
+  /**
+   * The text of a `<style>` / `<script>` element (`rawText`, #3934): the HTML
+   * parser decodes no character reference there, so the value is printed
+   * through the runtime's `raw_text`, which rewrites only the sequences that
+   * would end the element, instead of the HTML escape.
+   */
+  private rawTextOutput(tag: NonNullable<IRText['rawText']>, value: string): string {
+    return `<: $bf.raw_text("${tag}", ${value}) | mark_raw :>`
   }
 
   emitExpression(node: IRExpression): string {
@@ -524,6 +535,7 @@ export class XslateAdapter extends DslTemplateAdapter implements IRNodeEmitter<X
     const converted = this.convertExpressionToKolon(expr.expr, expr.parsed, 'rendered', undefined, display === 'display')
     if (display === 'empty') return expr.slotId ? `<: $bf.text_start("${expr.slotId}") | mark_raw :><: $bf.text_end() | mark_raw :>` : ''
     const perlExpr = this.jsStringOutput(parsed, display === 'display' ? `$bf.display(${converted})` : converted)
+    if (expr.rawText) return this.rawTextOutput(expr.rawText, perlExpr)
 
     if (expr.slotId) {
       return `<: $bf.text_start("${expr.slotId}") | mark_raw :><: ${perlExpr} :><: $bf.text_end() | mark_raw :>`

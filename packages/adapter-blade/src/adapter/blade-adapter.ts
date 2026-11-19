@@ -494,7 +494,18 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     // IRText carries the entity-DECODED value (Phase 1 decodes JSX
     // character references); re-escape for direct HTML emission, then
     // keep any `@` away from Blade's directive / escaped-echo syntax.
+    if (node.rawText) return this.rawTextOutput(node.rawText, bladeStringLiteral(node.value))
     return escapeBladeStaticText(escapeHtml(node.value))
+  }
+
+  /**
+   * The text of a `<style>` / `<script>` element (`rawText`, #3934): the HTML
+   * parser decodes no character reference there, so the value is printed
+   * through the runtime's `raw_text`, which rewrites only the sequences that
+   * would end the element, instead of the HTML escape.
+   */
+  private rawTextOutput(tag: NonNullable<IRText['rawText']>, value: string): string {
+    return `{!! $bf->raw_text("${tag}", ${value}) !!}`
   }
 
   emitExpression(node: IRExpression): string {
@@ -664,6 +675,7 @@ export class BladeAdapter extends DslTemplateAdapter implements IRNodeEmitter<Bl
     const converted = this.convertExpressionToBlade(expr.expr, expr.parsed)
     if (display === 'empty') return expr.slotId ? `{!! $bf->text_start("${expr.slotId}") !!}{!! $bf->text_end() !!}` : ''
     const bladeExpr = `$bf->string(${display === 'display' ? `$bf->display(${converted})` : converted})`
+    if (expr.rawText) return this.rawTextOutput(expr.rawText, bladeExpr)
 
     if (expr.slotId) {
       return `{!! $bf->text_start("${expr.slotId}") !!}{!! e(${bladeExpr}) !!}{!! $bf->text_end() !!}`

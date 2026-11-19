@@ -395,6 +395,12 @@ _SVG_CAMEL_CASE_ATTRS = frozenset(
 
 _CAMEL_TO_KEBAB_RE = re.compile(r"([A-Z])")
 
+# The sequences that end a `<style>` / `<script>` element (`raw_text`). The
+# tag name is spelled per letter rather than with `re.IGNORECASE`, whose
+# Unicode case folding also matches `\u017f` (long s) for `s`.
+_RAW_TEXT_STYLE_END_RE = re.compile(r"</([sS][tT][yY][lL][eE])")
+_RAW_TEXT_SCRIPT_TAG_RE = re.compile(r"<(/?[sS][cC][rR][iI][pP][tT])")
+
 
 def _to_attr_name(key: str) -> str:
     if key == "className":
@@ -1114,6 +1120,22 @@ class BarefootJS:
 
     def string(self, value: Any) -> str:
         return js_string(value)
+
+    def raw_text(self, tag: str, value: Any) -> str:
+        """The text of a `<style>` / `<script>` element (`tag`).
+
+        The HTML parser decodes no character reference there, so the value
+        is NOT HTML-escaped (`a[href="x"]` must reach the CSS parser as
+        written); the template prints the result with `| safe`. Only the
+        sequences that would end the element are rewritten, in a form CSS /
+        JS reads back as the same text: `</style` -> `<\\/style`, and
+        `<script` / `</script` -> `\\u003cscript` / `\\u003c/script` (ASCII
+        case-insensitive). Mirrors `escapeRawText` in `@barefootjs/shared`.
+        """
+        text = str(js_string(value))
+        if tag == "style":
+            return _RAW_TEXT_STYLE_END_RE.sub(r"<\\/\1", text)
+        return _RAW_TEXT_SCRIPT_TAG_RE.sub(r"\\u003c\1", text)
 
     def number(self, value: Any) -> float:
         return js_number(value)

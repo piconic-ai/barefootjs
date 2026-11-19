@@ -6,6 +6,7 @@
 
 import type { ParsedExpr, ParsedStatement } from './expression-parser.ts'
 import type { SsrSeedPlan } from './ssr-seed-plan.ts'
+import type { RawTextTag } from '@barefootjs/shared'
 
 /**
  * JS/TS source text the IR carries verbatim (an expression, a handler, a
@@ -520,6 +521,8 @@ export interface IRText {
   type: 'text'
   value: string
   loc: SourceLocation
+  /** See `IRExpression.rawText`. */
+  rawText?: RawTextTag
 }
 
 export interface IRExpression {
@@ -550,6 +553,17 @@ export interface IRExpression {
   reactive: boolean
   slotId: string | null
   loc: SourceLocation
+  /**
+   * Set on a text or expression child of an HTML-namespace `<style>` /
+   * `<script>` (fragments flattened), naming that element (#3934). The HTML
+   * parser decodes no character reference in such an element, so the value is
+   * printed as written instead of HTML-escaped, with only the sequences that
+   * would end the element rewritten (`escapeRawText`, `@barefootjs/shared`).
+   * Decided once in Phase 1 (`raw-text-host.ts`): every adapter's text and
+   * expression emitters and the client template read this flag and never
+   * look at the parent element themselves.
+   */
+  rawText?: RawTextTag
   /** When true, expression should be evaluated on client side only */
   clientOnly?: boolean
   /**

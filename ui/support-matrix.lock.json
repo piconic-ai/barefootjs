@@ -4650,6 +4650,18 @@
               ]
             },
             {
+              "fixture": "raw-text-style-escape-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-style-script-escape",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -7052,6 +7064,12 @@
             },
             {
               "fixture": "raw-text-host-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-style-escape-reactive",
               "limitations": [
                 "dynamic-text-in-style-script-element"
               ]
@@ -12507,6 +12525,18 @@
               ]
             },
             {
+              "fixture": "raw-text-style-escape-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-style-script-escape",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "record-const-index-inherited-key",
               "limitations": [
                 "record-const-index-unknown-keys"
@@ -17643,6 +17673,18 @@
             },
             {
               "fixture": "raw-text-host-style-script",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-style-escape-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-style-script-escape",
               "limitations": [
                 "dynamic-text-in-style-script-element"
               ]
@@ -30271,6 +30313,18 @@
               ]
             },
             {
+              "fixture": "raw-text-style-escape-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-style-script-escape",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "reduce-nonliteral-seed",
               "limitations": [
                 "callback-outside-evaluator"
@@ -35398,6 +35452,18 @@
             },
             {
               "fixture": "raw-text-host-style-script",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-style-escape-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-style-script-escape",
               "limitations": [
                 "dynamic-text-in-style-script-element"
               ]

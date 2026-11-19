@@ -23,6 +23,17 @@ describe('indentHTML', () => {
     expect(lines[3].trim()).toBe('</div>')
   })
 
+  test('the raw text of <style> / <script> is kept whole', () => {
+    const html = '<div><style>a > b<\\/style><i> { }</style><script>if (1 < 2 && "\\u003c/script><b>") {}</script></div>'
+    const lines = indentHTML(html).trim().split('\n').map(l => l.trim())
+    expect(lines).toEqual([
+      '<div>',
+      '<style>a > b<\\/style><i> { }</style>',
+      '<script>if (1 < 2 && "\\u003c/script><b>") {}</script>',
+      '</div>',
+    ])
+  })
+
   test('void elements cause parent expansion', () => {
     const html = '<div bf-s="test"><br><hr><img src="test.png" alt="test"><input type="text"></div>'
     const result = indentHTML(html)

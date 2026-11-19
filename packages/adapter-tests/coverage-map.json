@@ -16014,6 +16014,40 @@
         "text"
       ]
     },
+    "raw-text-style-escape-reactive": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "raw-text-style-script-escape": {
+      "kinds": [
+        "binary",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "raw-text-style-script-static": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
     "reactive-factory-object-return": {
       "kinds": [
         "call",

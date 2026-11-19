@@ -1548,6 +1548,40 @@ fn safe(s: impl Into<String>) -> MjValue {
     MjValue::from_safe_string(s.into())
 }
 
+/// The text of a `<style>` / `<script>` element (`tag`). The HTML parser
+/// decodes no character reference there, so the value is NOT HTML-escaped
+/// (`a[href="x"]` must reach the CSS parser as written). Only the sequences
+/// that would end the element are rewritten, in a form CSS / JS reads back
+/// as the same text: `</style` -> `<\/style`, and `<script` / `</script` ->
+/// `\u003cscript` / `\u003c/script` (ASCII case-insensitive). Mirrors
+/// `escapeRawText` in `@barefootjs/shared`.
+pub(crate) fn raw_text(tag: &str, text: &str) -> String {
+    let style = tag == "style";
+    let name: &[u8] = if style { b"style" } else { b"script" };
+    let bytes = text.as_bytes();
+    let mut out = String::with_capacity(text.len());
+    // `<` is ASCII, so every index it is found at is a char boundary.
+    let mut copied = 0;
+    for (i, &byte) in bytes.iter().enumerate() {
+        if byte != b'<' {
+            continue;
+        }
+        let slash = bytes.get(i + 1) == Some(&b'/');
+        let name_at = i + 1 + usize::from(slash);
+        let names_tag = bytes
+            .get(name_at..name_at + name.len())
+            .is_some_and(|found| found.eq_ignore_ascii_case(name));
+        if !names_tag || (style && !slash) {
+            continue;
+        }
+        out.push_str(&text[copied..i]);
+        out.push_str(if style { "<\\" } else { "\\u003c" });
+        copied = i + 1;
+    }
+    out.push_str(&text[copied..]);
+    out
+}
+
 impl Object for BfInstance {
     fn call_method(self: &Arc<Self>, state: &State<'_, '_>, method: &str, args: &[MjValue]) -> Result<MjValue, Error> {
         // render_child needs special argument handling (dict-literal
@@ -1673,6 +1707,9 @@ impl Object for BfInstance {
             // needs no decoding.
             "escape_comment_key" => Ok(MjValue::from(js_string(a(0)).replace('-', "‐"))),
             "bool_str" => Ok(MjValue::from(js_bool_str(js_truthy(a(0))))),
+            // The text of a `<style>` / `<script>` element: printed without
+            // the HTML escape (see `raw_text`).
+            "raw_text" => Ok(safe(raw_text(js_string(a(0)).as_str(), js_string(a(1)).as_str()))),
             "text_start" => Ok(safe(format!("<!--bf:{}-->", js_string(a(0))))),
             "text_end" => Ok(safe("<!--/-->".to_string())),
             "scope_comment" => Ok(safe(self.scope_comment())),

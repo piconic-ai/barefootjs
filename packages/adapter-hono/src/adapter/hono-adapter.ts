@@ -391,7 +391,7 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // Only import bfComment/bfText/bfTextEnd/serializeHydrationProps utilities
     // that are actually used
     const utilImports: string[] = []
-    for (const util of ['bfComment', 'escapeCommentKey', 'bfText', 'bfTextEnd', 'serializeHydrationProps']) {
+    for (const util of ['bfComment', 'escapeCommentKey', 'bfText', 'bfTextEnd', 'bfRawText', 'serializeHydrationProps']) {
       if (new RegExp(`\\b${util}\\b`).test(componentCode)) {
         utilImports.push(util)
       }
@@ -962,6 +962,8 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     // back; raw `'` is legal JSX text), and `{`/`}` — JSX expression delimiters with no named
     // entity — go numeric. Rendering then re-escapes with Hono's own
     // set, so output bytes match the pre-decode pipeline.
+    // The text of a `<style>` / `<script>` is not HTML-escaped at all (#3934).
+    if (text.rawText) return `{bfRawText("${text.rawText}", ${JSON.stringify(text.value)})}`
     return escapeHtml(text.value).replace(/\{/g, '&#123;').replace(/\}/g, '&#125;')
   }
 
@@ -970,6 +972,9 @@ export class HonoAdapter extends JsxAdapter implements IRNodeEmitter<HonoRenderC
     if (expr.expr === 'null' || expr.expr === 'undefined') {
       return 'null'
     }
+    // The text of a `<style>` / `<script>` (`rawText`, #3934): no slot marker
+    // (Phase 1 gave it none) and no HTML escape.
+    if (expr.rawText) return `{bfRawText("${expr.rawText}", ${expr.expr})}`
     // Handle @client directive - render an ordinary claimed 'text' slot pair
     // (slot unification A3, spec/slot-unification.md §5-A3). The expression
     // can't be evaluated server-side, so the range is EMPTY at SSR — the

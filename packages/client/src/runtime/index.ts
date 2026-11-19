@@ -122,6 +122,7 @@ export {
   parseHTML,
   escapeAttr,
   escapeText,
+  escapeRawTextContent,
   escapeCommentText,
   escapeTextOrNode,
   // JSX-element-as-prop markup brand (#2651) — compiler-emitted code only.

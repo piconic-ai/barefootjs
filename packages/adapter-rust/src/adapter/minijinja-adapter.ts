@@ -386,7 +386,18 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
     // IRText carries the entity-DECODED value (Phase 1 decodes JSX
     // character references); re-escape for direct HTML emission, then
     // keep any tag opener (`{{`, `{%`, `{#`) away from the MiniJinja lexer.
+    if (node.rawText) return this.rawTextOutput(node.rawText, `'${escapeMinijinjaSingleQuoted(node.value)}'`)
     return escapeMinijinjaStaticText(escapeHtml(node.value))
+  }
+
+  /**
+   * The text of a `<style>` / `<script>` element (`rawText`, #3934): the HTML
+   * parser decodes no character reference there, so the value is printed
+   * through the runtime's `raw_text`, which rewrites only the sequences that
+   * would end the element, instead of the HTML escape.
+   */
+  private rawTextOutput(tag: NonNullable<IRText['rawText']>, value: string): string {
+    return `{{ bf.raw_text("${tag}", ${value}) | safe }}`
   }
 
   emitExpression(node: IRExpression): string {
@@ -553,6 +564,7 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
     const converted = this.convertExpressionToJinja(expr.expr, expr.parsed)
     if (display === 'empty') return expr.slotId ? `{{ bf.text_start("${expr.slotId}") | safe }}{{ bf.text_end() | safe }}` : ''
     const jinjaExpr = `bf.string(${display === 'display' ? `bf.display(${converted})` : converted})`
+    if (expr.rawText) return this.rawTextOutput(expr.rawText, jinjaExpr)
 
     if (expr.slotId) {
       return `{{ bf.text_start("${expr.slotId}") | safe }}{{ ${jinjaExpr} }}{{ bf.text_end() | safe }}`

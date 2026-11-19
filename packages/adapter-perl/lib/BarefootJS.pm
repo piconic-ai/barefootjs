@@ -819,6 +819,26 @@ sub string ($self, $value) {
     return "$value";
 }
 
+# The text of a `<style>` / `<script>` element (`$tag`). The HTML parser
+# decodes no character reference there, so the value is NOT HTML-escaped
+# (`a[href="x"]` must reach the CSS parser as written); the template prints
+# the result raw. Only the sequences that would end the element are
+# rewritten, in a form CSS / JS reads back as the same text: `</style` ->
+# `<\/style`, and `<script` / `</script` -> `\u003cscript` /
+# `\u003c/script` (ASCII case-insensitive; the tag name is spelled per
+# letter because `/i` also folds U+017F to `s`). Mirrors `escapeRawText` in
+# `@barefootjs/shared`.
+sub raw_text ($self, $tag, $value) {
+    my $text = $self->string($value);
+    if ($tag eq 'style') {
+        $text =~ s{</([sS][tT][yY][lL][eE])}{<\\/$1}g;
+    }
+    else {
+        $text =~ s{<(/?[sS][cC][rR][iI][pP][tT])}{\\u003c$1}g;
+    }
+    return $text;
+}
+
 # A JS boolean as a value the JSON encoder writes as `true` / `false`
 # (`JSON.stringify([n, true])`): Perl holds a boolean as `1` / `''` / `0`,
 # which encodes as a number or a string.

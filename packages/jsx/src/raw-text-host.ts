@@ -20,6 +20,14 @@
  * text or RCDATA by name (Go `html/template`) can refuse the shapes it cannot
  * render (#3937).
  *
+ * `style` and `script` are raw text in the stricter sense: the parser decodes
+ * no character reference there either, so an HTML-escaped value reaches the
+ * CSS / JS parser with its entities (`a[href=&quot;x&quot;]`). Every text and
+ * expression child of such an element, static or dynamic, is marked
+ * `rawText` so each emitter prints the value as written, with only the
+ * sequences that would end the element rewritten (`escapeRawText`, #3934).
+ * `textarea` and `title` decode references and keep the HTML escape.
+ *
  * Shapes the element-level update cannot express are refused rather than
  * left to diverge silently:
  *   - a child that is not text or an expression (an element, a conditional,
@@ -30,12 +38,16 @@
  *     row) in a loop row: the element-level update is wired only for hosts in
  *     the component body, and a branch template runs untracked (`insert()`
  *     owns its effects through the branch's own wiring), so a content change
- *     would be dropped silently.
+ *     would be dropped silently;
+ *   - a read of the component's `children` in a `<style>` / `<script>`: the
+ *     children arrive as rendered, HTML-escaped markup, which cannot be turned
+ *     back into the text they were written as.
  */
 
+import { isRawTextTag } from '@barefootjs/shared'
 import { createError, ErrorCodes } from './errors.ts'
 import { walkIR } from './ir-to-client-js/walker.ts'
-import type { CompilerError, IRElement, IRExpression, IRNode } from './types.ts'
+import type { CompilerError, IRElement, IRExpression, IRNode, IRText } from './types.ts'
 
 const RAW_TEXT_HOST_TAGS: ReadonlySet<string> = new Set(['style', 'script', 'textarea', 'title'])
 
@@ -156,14 +168,29 @@ function splitHostChildren(
   return null
 }
 
+/**
+ * Marks every text and expression child of a `<style>` / `<script>`
+ * (fragments flattened) with the element it is the raw text of.
+ */
+function markRawText(children: readonly IRNode[], tag: NonNullable<IRText['rawText']>): void {
+  for (const child of children) {
+    if (child.type === 'text' || child.type === 'expression') child.rawText = tag
+    else if (child.type === 'fragment') markRawText(child.children, tag)
+  }
+}
+
 function refusal(el: IRElement, node: IRNode, why: string): CompilerError {
-  return createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN, node.type === 'element' || node.type === 'expression' ? node.loc : el.loc, {
+  return tagRefusal(el.tag, node.type === 'element' || node.type === 'expression' ? node.loc : el.loc, why)
+}
+
+function tagRefusal(tag: string, loc: IRElement['loc'], why: string): CompilerError {
+  return createError(ErrorCodes.UNSUPPORTED_JSX_PATTERN, loc, {
     message:
-      `<${el.tag}> holds ${el.tag === 'textarea' || el.tag === 'title' ? 'RCDATA' : 'raw text'}, where the HTML parser ` +
+      `<${tag}> holds ${tag === 'textarea' || tag === 'title' ? 'RCDATA' : 'raw text'}, where the HTML parser ` +
       `reads no comment, so ${why}`,
     suggestion: {
       message:
-        `Give <${el.tag}> a single string expression (or text) as its child, and keep reactive text out of loop rows, ` +
+        `Give <${tag}> a single string expression (or text) as its child, and keep reactive text out of loop rows, ` +
         "conditional branches and a component's children (render it in the component body, or use another element).",
       escape: [{ kind: 'rewrite' }],
     },
@@ -208,8 +235,12 @@ export function lowerRawTextHosts(root: IRNode, errors: CompilerError[]): void {
   walkIR<HostScope>(root, { place: 'body', namespace: 'html' }, {
     element: ({ node, scope, descend }) => {
       if (isRawTextHostTag(node.tag)) {
-        if (scope.namespace === 'html') lowerHost(node, scope.place, errors)
-        else node.foreignRawTextTag = true
+        if (scope.namespace === 'html') {
+          if (isRawTextTag(node.tag)) markRawText(node.children, node.tag)
+          lowerHost(node, scope.place, errors)
+        } else {
+          node.foreignRawTextTag = true
+        }
       }
       descend(childScope(node, scope))
     },
@@ -220,6 +251,28 @@ export function lowerRawTextHosts(root: IRNode, errors: CompilerError[]): void {
       const inner: HostScope = { ...scope, place: nest(scope.place, 'children') }
       descend(inner)
       descendJsxChildren(inner)
+    },
+  })
+}
+
+/**
+ * Refuses a read of the component's `children` in the text of a `<style>` /
+ * `<script>` (#3934). The children arrive as rendered, HTML-escaped markup,
+ * which cannot be turned back into the text they were written as, and the
+ * element decodes no character reference. Runs after the expressions are
+ * parsed, which is when `childrenRead` is known.
+ */
+export function refuseChildrenInRawText(root: IRNode, errors: CompilerError[]): void {
+  walkIR<null>(root, null, {
+    expression: ({ node }) => {
+      if (!node.rawText || !node.childrenRead) return
+      errors.push(
+        tagRefusal(node.rawText, node.loc, "the component's children, which arrive as rendered markup, cannot be its text."),
+      )
+    },
+    component: ({ descend, descendJsxChildren }) => {
+      descend()
+      descendJsxChildren()
     },
   })
 }

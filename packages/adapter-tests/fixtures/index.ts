@@ -945,6 +945,9 @@ import { fixture as foreignTitleSlot } from './foreign-title-slot'
 import { fixture as foreignTitleBareText } from './foreign-title-bare-text'
 import { fixture as foreignTitleMarkupChild } from './foreign-title-markup-child'
 import { fixture as rawTextHostReactive } from './raw-text-host-reactive'
+import { fixture as rawTextStyleEscapeReactive } from './raw-text-style-escape-reactive'
+import { fixture as rawTextStyleScriptEscape } from './raw-text-style-script-escape'
+import { fixture as rawTextStyleScriptStatic } from './raw-text-style-script-static'
 import { fixture as rawTextHostAnnotationXml } from './raw-text-host-annotation-xml'
 import { fixture as rawTextHostAnnotationXmlSvg } from './raw-text-host-annotation-xml-svg'
 import { fixture as rawTextHostAnnotationXmlEncodings } from './raw-text-host-annotation-xml-encodings'
@@ -2339,6 +2342,9 @@ export const jsxFixtures: JSXFixture[] = [
   foreignTitleBareText,
   foreignTitleMarkupChild,
   rawTextHostReactive,
+  rawTextStyleEscapeReactive,
+  rawTextStyleScriptEscape,
+  rawTextStyleScriptStatic,
   rawTextHostAnnotationXml,
   rawTextHostAnnotationXmlSvg,
   rawTextHostAnnotationXmlEncodings,

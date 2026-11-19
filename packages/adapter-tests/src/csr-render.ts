@@ -434,6 +434,12 @@ const escapeAttr = (value) =>
 // An array child renders its items one after another (\`childText\`).
 const childText = (value) => value == null || typeof value === 'boolean' ? '' : Array.isArray(value) ? value.map(childText).join('') : String(value)
 const escapeText = (value) => value == null || typeof value === 'boolean' ? '' : escapeAttr(Array.isArray(value) ? childText(value) : value)
+// Mirror @barefootjs/client/runtime escapeRawTextContent (#3934): the text of
+// a \`<style>\` / \`<script>\` is not HTML-escaped; only the sequences that
+// would end the element are rewritten (\`escapeRawText\`, @barefootjs/shared).
+const escapeRawTextContent = (tag, value) => tag === 'style'
+  ? childText(value).replace(/<\\/([sS][tT][yY][lL][eE])/g, '<\\\\/$1')
+  : childText(value).replace(/<(\\/?[sS][cC][rR][iI][pP][tT])/g, '\\\\u003c$1')
 // Mirror @barefootjs/client/runtime escapeCommentText (#2795 follow-up): the
 // whole-item-conditional loop's \`bf-loop-i:<key>\` anchor comment neutralizes
 // \`-\` (the only character that matters inside an HTML comment — the literal

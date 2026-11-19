@@ -9661,6 +9661,34 @@
           }
         }
       },
+      "raw-text-style-escape-reactive": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "dynamic-text-in-style-script-element"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "raw-text-style-script-escape": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "dynamic-text-in-style-script-element"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "record-const-index-inherited-key": {
         "blade": {
           "kind": "refusal",
@@ -13317,6 +13345,14 @@
         "description": "A dynamic child of an SVG <style> keeps its slot markers",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-host-svg-style.ts"
       },
+      "raw-text-style-escape-reactive": {
+        "description": "Signal-driven <style> / <script> text with >, \" and </script> is written unescaped and keeps the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-style-escape-reactive.ts"
+      },
+      "raw-text-style-script-escape": {
+        "description": "Dynamic <style> / <script> text prints unescaped, with the element-ending sequences rewritten",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-style-script-escape.ts"
+      },
       "record-const-index-inherited-key": {
         "description": "a const record indexed by a prop of unknown keys reads inherited keys too",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/record-const-index-inherited-key.ts"
@@ -14343,6 +14379,8 @@
         "raw-text-host-reactive",
         "raw-text-host-style-script",
         "raw-text-host-svg-style",
+        "raw-text-style-escape-reactive",
+        "raw-text-style-script-escape",
         "style-script-text-dynamic"
       ],
       "adapters": [

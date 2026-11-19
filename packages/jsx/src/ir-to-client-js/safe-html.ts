@@ -36,6 +36,7 @@
  * module; `client-template-escape-soundness.test.ts` pins their count.
  */
 
+import { escapeRawText, type RawTextTag } from '@barefootjs/shared'
 import type { IRExpression } from '../types.ts'
 import { PROPS_PARAM } from './utils.ts'
 
@@ -69,6 +70,26 @@ export function interp(span: SafeHtml): string {
 /** `escapeText(expr)` — the default for any child-position value. */
 export function escapedText(expr: string): SafeHtml {
   return safeHtml(`escapeText(${expr})`)
+}
+
+/**
+ * `escapeRawTextContent(tag, expr)` — the text of a `<style>` / `<script>`
+ * element (`IRExpression.rawText`, #3934). The HTML parser decodes no
+ * character reference there, so the value is not HTML-escaped; the runtime
+ * helper rewrites the sequences that would end the element, which is what
+ * makes the result safe to splice.
+ */
+export function rawTextContent(tag: RawTextTag, expr: string): SafeHtml {
+  return safeHtml(`escapeRawTextContent('${tag}', ${expr})`)
+}
+
+/**
+ * The static text of a `<style>` / `<script>` element, encoded at compile
+ * time with the same rule (`IRText.rawText`). Plain HTML text for the
+ * template string, not yet escaped for the enclosing JS template literal.
+ */
+export function rawTextStatic(tag: RawTextTag, text: string): string {
+  return escapeRawText(tag, text)
 }
 
 /**
@@ -229,6 +250,7 @@ export interface ChildSpliceContext {
  * escapes: there is no arm that returns `valueExpr` unwrapped.
  *
  * Arms, first match wins:
+ *   0. `rawText`                → `rawTextContent`    (`<style>` / `<script>` text, #3934)
  *   1. `joinArrayChild`         → `joinedMarkup`      (array of compiled leaves)
  *   2. `branchSlotsVar`         → `branchSlotValue`   (runtime coercion, may be a Node)
  *   3. `slotId` ∈ markupSlotIds,→ `escapedTextOrMarkup`
@@ -248,10 +270,11 @@ export interface ChildSpliceContext {
  * either alone misses one of the two shapes (#2786).
  */
 export function spliceChildValue(
-  node: Pick<IRExpression, 'expr' | 'slotId' | 'joinArrayChild' | 'childrenRead' | 'loopRowPropRead'>,
+  node: Pick<IRExpression, 'expr' | 'slotId' | 'joinArrayChild' | 'childrenRead' | 'loopRowPropRead' | 'rawText'>,
   valueExpr: string,
   cx: ChildSpliceContext,
 ): SafeHtml {
+  if (node.rawText) return rawTextContent(node.rawText, valueExpr)
   if (node.joinArrayChild) return joinedMarkup(valueExpr)
   if (cx.branchSlotsVar) return branchSlotValue(valueExpr, cx.branchSlotsVar)
   if (node.slotId) {

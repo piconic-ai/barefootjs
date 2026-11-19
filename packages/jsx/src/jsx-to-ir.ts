@@ -62,7 +62,7 @@ import {
 import { boundPropLocalNames, buildPropAliasMap, templatePropReadParams, resolveAliasOrigin, resolveRestSpreadOriginCore, restBagOmittedKeys, livePropReadExpr } from './props-binding.ts'
 import { PROPS_PARAM } from './ir-to-client-js/utils.ts'
 import { walkIR } from './ir-to-client-js/walker.ts'
-import { lowerRawTextHosts } from './raw-text-host.ts'
+import { lowerRawTextHosts, refuseChildrenInRawText } from './raw-text-host.ts'
 import { resolveFreeRefs, rebindHelperParamRefs, isNameBound as isNameBoundInEnv, type BindingEnvironment } from './free-refs.ts'
 import { computeFileScope } from './ir-to-client-js/component-scope.ts'
 import { createTemplateAwareStringProtector } from './ir-to-client-js/html-template.ts'
@@ -1445,6 +1445,8 @@ export function jsxToIR(analyzer: AnalyzerContext): IRNode | null {
     // slot marker (raw text / RCDATA reads no comment).
     lowerRawTextHosts(root, analyzer.errors)
     attachParsedExpressions(root, analyzer)
+    // #3934: `childrenRead` is known only once the expressions are parsed.
+    refuseChildrenInRawText(root, analyzer.errors)
     // #3166: seed a query/mutation action's `isPending()` / `error()` read
     // where the seed renders like the reference — `action-accessor.ts`'s gate
     // decides which positions, the same gate BF117's refusal-lift reads.

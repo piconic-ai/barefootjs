@@ -40,6 +40,20 @@ export function T() {
     })
   }
 
+  test('literal <style> / <script> text is not HTML-escaped (#3934)', () => {
+    const { errors, files } = compile(`
+export function T() {
+  return <div><style>.a &gt; .b[x=&quot;y&quot;] &amp; &lt;/style&gt;</style><script>if (1 &lt; 2) s = &quot;&lt;/Script&gt;&quot;</script><p>a &gt; b</p></div>
+}
+`)
+    expect(errors).toEqual([])
+    const template = files.find(f => f.type === 'markedTemplate')?.content ?? ''
+    expect(template).toContain('<style>.a > .b[x="y"] & <\\/style></style>')
+    expect(template).toContain('<script>if (1 < 2) s = "\\u003c/Script>"</script>')
+    // Ordinary text keeps the HTML escape.
+    expect(template).toContain('<p>a &gt; b</p>')
+  })
+
   test('a /* @client */ expression in <style> is refused too', () => {
     const { errors } = compile(`
 export function T({ v }: { v: string }) {

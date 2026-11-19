@@ -121,7 +121,7 @@ import {
   operandFacts,
   planTextDisplay,
 } from '@barefootjs/jsx'
-import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, resolveJsxChildrenProp } from '@barefootjs/shared'
+import { BF_REGION, BF_PORTAL_OWNER, escapeHtml, escapeRawText, resolveJsxChildrenProp } from '@barefootjs/shared'
 
 import {
   capitalize,
@@ -4456,7 +4456,11 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
   emitText(node: IRText): string {
     // IRText carries the entity-DECODED value (Phase 1 decodes JSX
     // character references); re-escape for direct HTML emission, then
-    // keep any `{{` away from Go's action lexer.
+    // keep any `{{` away from Go's action lexer. The text of a `<style>` /
+    // `<script>` is not HTML-escaped (`rawText`, #3934): html/template
+    // prints literal text there as written, and only the sequences that
+    // would end the element are rewritten.
+    if (node.rawText) return escapeGoStaticText(escapeRawText(node.rawText, node.value))
     return escapeGoStaticText(escapeHtml(node.value))
   }
 

@@ -633,6 +633,26 @@ module BarefootJS
       html_escape(string(value))
     end
 
+    RAW_TEXT_STYLE_END = %r{</([sS][tT][yY][lL][eE])}
+    RAW_TEXT_SCRIPT_TAG = %r{<(/?[sS][cC][rR][iI][pP][tT])}
+    private_constant :RAW_TEXT_STYLE_END, :RAW_TEXT_SCRIPT_TAG
+
+    # The text of a `<style>` / `<script>` element (`tag`). The HTML parser
+    # decodes no character reference there, so the value is NOT HTML-escaped
+    # (`a[href="x"]` must reach the CSS parser as written). Only the
+    # sequences that would end the element are rewritten, in a form CSS / JS
+    # reads back as the same text: `</style` -> `<\/style`, and `<script` /
+    # `</script` -> `\u003cscript` / `\u003c/script` (ASCII
+    # case-insensitive). Mirrors `escapeRawText` in `@barefootjs/shared`.
+    def raw_text(tag, value)
+      text = string(value)
+      if tag == 'style'
+        text.gsub(RAW_TEXT_STYLE_END) { "<\\/#{Regexp.last_match(1)}" }
+      else
+        text.gsub(RAW_TEXT_SCRIPT_TAG) { "\\u003c#{Regexp.last_match(1)}" }
+      end
+    end
+
     # JS `/`: always a Number quotient. Ruby's `/` on two Integers is
     # integer division (`1234567890 / 4` -> `308641972`, `-7 / 4` -> `-2`),
     # so template-emitted division goes through the shared evaluator's JS

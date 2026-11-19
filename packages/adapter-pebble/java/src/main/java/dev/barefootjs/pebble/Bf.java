@@ -1973,6 +1973,29 @@ public final class Bf {
     return "<div bf-async=\"" + htmlEscape(JsValue.jsString(id)) + "\">" + JsValue.jsString(fallbackHtml) + "</div>";
   }
 
+  private static final Pattern RAW_TEXT_STYLE_END = Pattern.compile("</([sS][tT][yY][lL][eE])");
+  private static final Pattern RAW_TEXT_SCRIPT_TAG = Pattern.compile("<(/?[sS][cC][rR][iI][pP][tT])");
+
+  /**
+   * The text of a `<style>` / `<script>` element (`tag`). The HTML parser
+   * decodes no character reference there, so the value is NOT HTML-escaped
+   * (`a[href="x"]` must reach the CSS parser as written); the template prints
+   * the result with `| raw`. Only the sequences that would end the element
+   * are rewritten, in a form CSS / JS reads back as the same text: `</style`
+   * gets a backslash before its `/` (a CSS escape), and `<script` /
+   * `</script` get their `<` written as the JavaScript / JSON escape of
+   * U+003C (ASCII case-insensitive; the tag name is spelled per letter so no
+   * Unicode case fold can match it). Mirrors `escapeRawText` in
+   * `@barefootjs/shared`.
+   */
+  public String raw_text(Object tag, Object value) {
+    String text = String.valueOf(string(value));
+    if ("style".equals(tag)) {
+      return RAW_TEXT_STYLE_END.matcher(text).replaceAll("<\\\\/$1");
+    }
+    return RAW_TEXT_SCRIPT_TAG.matcher(text).replaceAll("\\\\u003c$1");
+  }
+
   /** Text-slot hydration anchor. Mirrors the Jinja/Rust ports' `text_start` byte-for-byte (`<!--bf:<slot>-->`, NOT this class's own `comment()` wire shape — the client's text-patch walker matches this exact prefix, see `packages/client/src/runtime`). */
   public String text_start(Object slotId) {
     return "<!--bf:" + JsValue.jsString(slotId) + "-->";
