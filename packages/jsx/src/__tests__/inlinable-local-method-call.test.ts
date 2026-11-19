@@ -9,7 +9,7 @@
  * Both template paths are covered: the static template (no signal) and the
  * CSR template a component with a signal registers, which reads
  * `ctx.csrInlinable`. A receiver that is classified inlinable but gets no
- * CSR form (`(choices).includes(name)`) withdraws the acceptance, so the call
+ * CSR form (`(choices).with(0, name)`) withdraws the acceptance, so the call
  * reports BF061 again instead of rendering `undefined.toUpperCase()`.
  */
 
@@ -71,7 +71,7 @@ describe('a method call on an inlinable local inlines (#3513)', () => {
     ['const upper = text.toUpperCase()\nconst lower = upper.toLowerCase()', 'lower'],
   ])('a receiver refused after classification withdraws the call: %s', (decls, read) => {
     const { errors, template } = compile(
-      `const text = (choices).includes(props.label) ? 'yes' : 'no'\n${decls}\nreturn <p title={${read}}>{count()}</p>`,
+      `const text = (choices).with(0, props.label).join() ? 'yes' : 'no'\n${decls}\nreturn <p title={${read}}>{count()}</p>`,
       { prelude: "const choices = ['a']\n", signal: true },
     )
     expect(errors).toContain('BF061')

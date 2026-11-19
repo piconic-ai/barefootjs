@@ -4110,6 +4110,45 @@
         "text"
       ]
     },
+    "csr-const-literal-method-call": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "conditional",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:includes",
+        "array-method:indexOf",
+        "array-method:join",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "csr-const-literal-method-call-shadow": {
+      "kinds": [
+        "array-literal",
+        "array-method",
+        "conditional",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "array-method:includes",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "custom-element-child-loop-row": {
       "kinds": [
         "call",
@@ -17610,6 +17649,23 @@
         "logical:??"
       ],
       "contexts": [
+        "text"
+      ]
+    },
+    "search-params-derived-const": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
         "text"
       ]
     },
