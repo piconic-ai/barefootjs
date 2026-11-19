@@ -22,8 +22,14 @@ export const spec: SharedFixtureSpec = {
   componentName: 'StaticLoopRowClientConditional',
   sourceRoot: 'fixture',
   description:
-    "a '/* @client */' conditional in a static array row mounts its arm after hydration and follows a signal (#3921)",
+    "a '/* @client */' conditional in a static array row, also an inner row with literal arms, mounts its arm after hydration and follows a signal (#3921)",
   interactions: [
+    // Literal arms, no signal anywhere in the row: mounted at hydration.
+    { type: 'expectText', selector: 'ul.literal li:nth-child(1) b', text: 'on' },
+    { type: 'expectText', selector: 'ul.literal li:nth-child(2) i', text: 'off' },
+    { type: 'expectText', selector: 'div.nested p:nth-child(1) span:nth-child(1) i', text: 'small' },
+    { type: 'expectText', selector: 'div.nested p:nth-child(1) span:nth-child(2) b', text: 'big' },
+    { type: 'expectText', selector: 'div.nested p:nth-child(2) span:nth-child(1) b', text: 'big' },
     { type: 'expectText', selector: 'ul.inline li:nth-child(1) b', text: 'n=0' },
     { type: 'expectText', selector: 'ul.inline li:nth-child(2) i', text: 'off' },
     { type: 'expectText', selector: 'ul.helper li:nth-child(1) b', text: 'n=0' },

@@ -1684,7 +1684,9 @@ export function collectLoopChildBindings(
  * something only the conditional's own live binding wires.
  */
 function rowConditionalIsLive(c: LoopChildConditional): boolean {
-  return c.reactiveBeyondLoopScope || c.branchesNeedLiveRow
+  // A `/* @client */` conditional has nothing on the server to adopt: only its
+  // own live binding mounts an arm, so the row cannot be baked (#3921).
+  return c.clientOnly === true || c.reactiveBeyondLoopScope || c.branchesNeedLiveRow
 }
 
 export function collectLoopChildConditionals(
@@ -1765,7 +1767,7 @@ export function collectLoopChildConditionals(
       // reach keeps it past this gate and the classifier gate below, which
       // would both drop it before the helper is ever followed.
       const reachesThroughHelper = reachesReactiveThroughLocalHelper(sourceFreeIds, scope, ctx)
-      if (!n.reactive && !refsLoopParamInSource && !reachesThroughHelper) return
+      if (!n.clientOnly && !n.reactive && !refsLoopParamInSource && !reachesThroughHelper) return
       const expanded = expandConstantForReactivity(n.condition, ctx, sourceFreeIds, scope)
       // A `.map()` callback preamble local (#2596, twin of
       // `collectLoopChildReactiveAttrs`'s `readsPreamble` #2447). Phase 1
@@ -1783,7 +1785,7 @@ export function collectLoopChildConditionals(
       // Loop-param/loop-index conditionals are reactive via per-item signal
       // accessors; classifyReactivity sees all three paths (signal/memo/prop
       // + loop-param + loop-index, #2861).
-      if (!readsPreamble && !reachesThroughHelper && classifyReactivity(expanded.expr, ctx, scope, expanded.freeIds).kind === 'none') return
+      if (!n.clientOnly && !readsPreamble && !reachesThroughHelper && classifyReactivity(expanded.expr, ctx, scope, expanded.freeIds).kind === 'none') return
       // #2897 follow-up: does the condition read anything beyond the loop
       // item/index? `classifyReactivity`'s `kind` can't answer this — it
       // reports `'loop-param'` first whenever a loop-bound name appears,

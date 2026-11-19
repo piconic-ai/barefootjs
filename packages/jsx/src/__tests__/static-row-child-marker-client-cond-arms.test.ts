@@ -68,3 +68,23 @@ describe('/* @client */ conditional arms (#3921)', () => {
     expect(js).toContain('<b bf-c="s0">on</b>')
   })
 })
+
+describe('/* @client */ conditional in a static array row (#3921)', () => {
+  const rowSource = (row: string) => `
+    'use client'
+    const rows = [{ id: 'a', kind: 'on' }, { id: 'b', kind: 'off' }]
+    export function C() {
+      return <ul>{rows.map(r => <li key={r.id}>${row}</li>)}</ul>
+    }
+  `
+
+  test('literal arms and a row-only condition still reach an insert()', () => {
+    const js = clientJs(rowSource("{/* @client */ r.kind === 'on' ? <b>on</b> : <i>off</i>}"))
+    expect(js).toContain('insert(')
+  })
+
+  test('the same conditional without the directive stays baked', () => {
+    const js = clientJs(rowSource("{r.kind === 'on' ? <b>on</b> : <i>off</i>}"))
+    expect(js).not.toContain('insert(')
+  })
+})
