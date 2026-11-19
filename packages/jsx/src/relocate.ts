@@ -535,6 +535,36 @@ const ENV_READER_METHODS: ReadonlySet<string> = new Set(['get', 'getAll', 'has',
 
 const PURE_LITERAL_METHODS: ReadonlySet<string> = new Set(ARRAY_METHOD_NAMES)
 
+/**
+ * Methods whose RESULT may be a value the caller already holds: `at` returns
+ * an element of its receiver, so `[props.items].at(0)` is `props.items`
+ * itself, not a fresh value. Such a call is fine to read, but its result must
+ * not be treated as fresh (`.reverse()` on it would mutate the caller's array
+ * while the template runs, once per use of the const).
+ */
+const ELEMENT_RETURNING_METHODS: ReadonlySet<string> = new Set(['at'])
+
+/**
+ * Methods that may call a function they are given (`replace(re, fn)`). A
+ * catalogued method is pure only when no argument can be such a function, and
+ * only a literal is known not to be one: a prop or any other reference could
+ * hold a callback, which a template would run once per use of the const.
+ */
+const CALLBACK_CAPABLE_METHODS: ReadonlySet<string> = new Set(['replace', 'replaceAll'])
+
+function isLiteralArgument(node: ts.Expression): boolean {
+  const inner = unwrapParens(node)
+  return ts.isStringLiteralLike(inner)
+    || ts.isNumericLiteral(inner)
+    || ts.isRegularExpressionLiteral(inner)
+    || (ts.isPrefixUnaryExpression(inner) && ts.isNumericLiteral(inner.operand))
+}
+
+/** `method(...args)` cannot run caller-supplied code. */
+function callCannotInvokeArguments(call: ts.CallExpression, method: string): boolean {
+  return !CALLBACK_CAPABLE_METHODS.has(method) || call.arguments.every(isLiteralArgument)
+}
+
 function unwrapParens(node: ts.Expression): ts.Expression {
   return ts.isParenthesizedExpression(node) ? unwrapParens(node.expression) : node
 }
@@ -558,7 +588,11 @@ function isFreshLiteralValue(node: ts.Expression): boolean {
   if (ts.isArrayLiteralExpression(inner) || ts.isStringLiteralLike(inner) || ts.isTemplateExpression(inner)) return true
   if (!ts.isCallExpression(inner)) return false
   const parts = methodCallParts(inner)
-  return parts !== null && PURE_LITERAL_METHODS.has(parts[1]) && isFreshLiteralValue(parts[0])
+  return parts !== null
+    && PURE_LITERAL_METHODS.has(parts[1])
+    && !ELEMENT_RETURNING_METHODS.has(parts[1])
+    && callCannotInvokeArguments(inner, parts[1])
+    && isFreshLiteralValue(parts[0])
 }
 
 /** `sp()` for the getter `sp` of an env signal, whose template lambda declares it. */
@@ -583,7 +617,7 @@ function isPureBuiltinCall(call: ts.CallExpression, env: RelocateEnv): boolean {
   const parts = methodCallParts(call)
   if (parts === null) return false
   const [receiver, method] = parts
-  if (PURE_LITERAL_METHODS.has(method) && isFreshLiteralValue(receiver)) return true
+  if (PURE_LITERAL_METHODS.has(method) && callCannotInvokeArguments(call, method) && isFreshLiteralValue(receiver)) return true
   return ENV_READER_METHODS.has(method) && isEnvGetterCall(receiver, env)
 }
 

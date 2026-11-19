@@ -117,4 +117,49 @@ describe('a pure builtin call in a const initializer reaches the CSR template (#
     `)
     expect(template).not.toContain('.append(')
   })
+
+  test('replace / replaceAll with a prop argument stay out of the template (the prop may be a callback)', () => {
+    for (const method of ['replace', 'replaceAll']) {
+      const template = templateOf(`
+        export function Probe(props: { fn: (m: string) => string }) {
+          const value = 'a'.${method}('a', props.fn)
+          return <p title={value}>{value}</p>
+        }
+      `)
+      expect(template).not.toContain(`.${method}(`)
+    }
+  })
+
+  test('replace / replaceAll with literal arguments still reach the template', () => {
+    const template = templateOf(`
+      export function Probe(props: { kind: string }) {
+        const value = 'a-b'.replaceAll('-', '_') + props.kind
+        return <p title={value}>{value}</p>
+      }
+    `)
+    expect(template).toContain(`'a-b'.replaceAll('-', '_')`)
+  })
+
+  test('a mutating method on an element another value holds stays out of the template', () => {
+    const template = templateOf(`
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Probe(props: { items: string[] }) {
+        const [n] = createSignal(0)
+        const value = [props.items].at(0).reverse().join()
+        return <div title={value}>{value}{n()}</div>
+      }
+    `)
+    expect(template).not.toContain('.reverse(')
+  })
+
+  test('a reading call on a fresh array chain still reaches the template', () => {
+    const template = templateOf(`
+      export function Probe(props: { a: string; b: string }) {
+        const value = [props.a, props.b].slice().reverse().join(',')
+        return <p title={value}>{value}</p>
+      }
+    `)
+    expect(template).toContain(`[_p.a, _p.b].slice().reverse().join(',')`)
+  })
 })
