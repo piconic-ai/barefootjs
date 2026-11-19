@@ -383,9 +383,6 @@
       "detectReactiveFactory": [
         48
       ],
-      "extractAssignedIdentifiersFromNode/addFromTarget": [
-        28
-      ],
       "extractMultiReturnJsxBranches": [
         119
       ],

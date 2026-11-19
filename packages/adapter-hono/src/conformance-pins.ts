@@ -64,4 +64,5 @@ export const conformancePins: ConformancePins = {
   // compile, ahead of any adapter (#3719).
   'destructure-default-body-mutated-memo': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
   'body-statement-write-direct-read': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
+  'body-statement-write-block-shadowed-callback': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
 }

@@ -281,6 +281,7 @@ export const conformancePins: ConformancePins = {
   // compile, ahead of any adapter (#3719).
   'destructure-default-body-mutated-memo': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
   'body-statement-write-direct-read': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
+  'body-statement-write-block-shadowed-callback': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
   // An array of object literals passed as a child prop (in place, or a
   // const the IR passes as the literal) has no spelling as the child's
   // prop value here; the server cannot render the child's rows.

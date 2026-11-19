@@ -88,6 +88,30 @@ describe('#3719: a server read of a binding a body statement writes', () => {
   local.push('z')
   return <p>{n()}{local.length}</p>
 }`,
+    'a shallow copy made before the statement that shares the object written': `export function C() {
+  const rows = [{ done: false }]
+  const copy = [...rows]
+  rows[0].done = true
+  return <p>{copy.length}</p>
+}`,
+    'a write after a block in an in-place callback that declares the same name': `${CLIENT}export function C() {
+  const local = ['y']
+  ;[1].forEach(x => { if (x) { const local: string[] = []; local.length }; local.push('z') })
+  return <p>{local.length}</p>
+}`,
+    'an assignment after a block in an in-place callback that declares the same name': `${CLIENT}export function C() {
+  let total = 0
+  ;[1].forEach(x => { if (x) { let total = 5; total += x }; total = Math.max(total, x) })
+  return <p>{total}</p>
+}`,
+    'a write after a block of the statement that declares the same name': `${CLIENT}export function C(props: { on: boolean }) {
+  const local = ['y']
+  if (props.on) {
+    { const local: string[] = []; local.push('q') }
+    local.push('z')
+  }
+  return <p>{local.length}</p>
+}`,
     'a write in a callback the statement runs in place': `${CLIENT}export function C() {
   const out: string[] = []
   ;['a'].forEach(x => out.push(x))
@@ -189,6 +213,19 @@ describe('#3719: an init-time read declared after the statement', () => {
   const t = createMemo(() => len())
   return <button onClick={() => console.log(t())}>x</button>
 }`],
+    'a constant that calls a function reading it': ["'n'", `${CLIENT}export function C() {
+  const local = ['y']
+  local.push('z')
+  const read = () => local.length
+  const n = read()
+  return <button onClick={() => console.log(n)}>x</button>
+}`],
+    'a constant that copies it': ["'copy'", `${CLIENT}export function C() {
+  const local = ['y']
+  local.push('z')
+  const copy = [...local]
+  return <button onClick={() => console.log(copy)}>x</button>
+}`],
     'a memo over a renamed body destructure default': ["Memo 'n'", `${CLIENT}export function C(props: { b?: string[] }) {
   const { b: local = ['y', ''].filter((x) => x !== '') } = props
   local.push('z')
@@ -279,6 +316,44 @@ export function C() {
   const t = createMemo(() => props.title)
   return <p>{t()}</p>
 }`,
+    'a spread copy made before the statement': `${CLIENT}export function C() {
+  const local = ['y']
+  const copy = [...local]
+  local.push('z')
+  return <p>{copy.join(',')}</p>
+}`,
+    'a map copy made before the statement': `export function C() {
+  const local = ['y']
+  const copy = local.map(x => x)
+  local.push('z')
+  return <p>{copy.join(',')}</p>
+}`,
+    'handlers created after the statement that read it when called': `${CLIENT}export function C() {
+  const local = ['y']
+  local.push('z')
+  const handlers = { read: () => local.length }
+  return <button onClick={() => console.log(handlers.read())}>x</button>
+}`,
+    'a function stored after the statement without being called': `${CLIENT}export function C() {
+  const local = ['y']
+  local.push('z')
+  const read = () => local.length
+  const handlers = { read }
+  const list = [read]
+  return <button onClick={() => console.log(handlers.read(), list[0]())}>x</button>
+}`,
+    'an alias taken after an in-place write, read by a handler': `${CLIENT}export function C() {
+  const local = ['y']
+  local.push('z')
+  const alias = local
+  const box = { items: local }
+  return <button onClick={() => console.log(alias.length, box.items.length)}>x</button>
+}`,
+    'a write in a block of an in-place callback to a name the block declares': `${CLIENT}export function C() {
+  const local = ['y']
+  ;[1].forEach(x => { if (x) { const local: string[] = []; local.push('z') } })
+  return <p>{local.length}</p>
+}`,
     'a callback run in place that writes only its own parameter': `${CLIENT}export function C() {
   const rows: string[][] = [[]]
   ;[['a']].forEach(rows => rows.push('x'))
@@ -313,6 +388,34 @@ export function C() {
   for (const [name, source] of Object.entries(accepted)) {
     test(name, () => {
       expect(errorsOf(source)).toEqual([])
+    })
+  }
+})
+
+describe('#3719: other copies made before the statement are not statement-write refusals', () => {
+  // The client JS's own stage check (BF061) still refuses a constant derived
+  // from an init-scope local the template reads through these forms; what is
+  // pinned here is that `checkStatementWrites` does not.
+  const copies: Record<string, string> = {
+    'slice, filter, concat and Array.from copies made before the statement': `export function C() {
+  const local = ['y']
+  const a = local.slice()
+  const b = local.filter(x => x !== '')
+  const c = local.concat(['q'])
+  const d = Array.from(local)
+  local.push('z')
+  return <p>{a.length}{b.length}{c.length}{d.length}</p>
+}`,
+    'an object spread copy made before a write to one of its own slots': `export function C() {
+  const state = { open: false, n: 1 }
+  const before = { ...state }
+  state.open = true
+  return <p data-open={before.open}>{before.n}</p>
+}`,
+  }
+  for (const [name, source] of Object.entries(copies)) {
+    test(name, () => {
+      expect(refusals(source)).toEqual([])
     })
   }
 })

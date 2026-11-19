@@ -18,16 +18,29 @@
  *     calls, observes the write. So does a signal seed, memo or constant the
  *     server render reads when it is declared after the statement. One
  *     declared BEFORE the statement was computed from the binding as
- *     declared in JavaScript too, and compiles, unless the write is in place
- *     and the declaration may hold the written object itself
- *     (`const alias = local`): then the markup reads the written object
- *     through it. Deferring a position to the client with `/* @client *\/`
- *     skips it: the client evaluates the position after the statements ran.
+ *     declared in JavaScript too, and compiles when what it took from the
+ *     binding cannot change afterwards: a primitive (`local.length`), or a
+ *     copy of an array or object whose own slots are what the statement
+ *     changes (`[...local]` before `local.push('z')`). It is refused when
+ *     the write is in place and it may hold the written object itself
+ *     (`const alias = local`), or a copy that shares the object written
+ *     (`[...rows]` before `rows[0].done = true`): the markup then reads the
+ *     written object through it. Deferring a position to the client with
+ *     `/* @client *\/` skips it: the client evaluates the position after the
+ *     statements ran.
  *   - **An init-time read after the write.** In a client component, a signal
- *     seed, a memo or a constant declared after the statement reads the
- *     binding, directly or through a function it calls. Init computes it
- *     before the statement runs, whoever reads it later, so `/* @client *\/`
- *     is no way out.
+ *     seed, a memo or a constant declared after the statement computes
+ *     something from the binding when it is created, directly or through a
+ *     function it calls. Init creates it before the statement runs, whoever
+ *     reads it later, so `/* @client *\/` is no way out. A declaration that
+ *     only captures the binding in a function it creates
+ *     (`{ read: () => local.length }`), or stores a function without calling
+ *     it, reads nothing yet and compiles; so does one that only holds an
+ *     object a statement changes in place (`const alias = local`), which is
+ *     the same object once the statement ran.
+ *
+ * Which of these a declaration does with each name is a Phase 1 fact
+ * (`valueUses`, `value-uses.ts`).
  *
  * A write to one member of the props object (`props.items.push('z')`) is
  * observed only by a read of that member: `props.title` beside it compiles.
@@ -52,6 +65,7 @@ import { mapParsedExpr, type ParsedExpr } from './expression-parser.ts'
 import { localBindings, type LocalBindingResolver } from './local-call-body.ts'
 import { walkServerReads } from './server-read-walk.ts'
 import type { CompilerError, ComponentIR, InitStatementInfo, IRMetadata, SourceLocation, TypeInfo } from './types.ts'
+import type { ValueUse } from './value-uses.ts'
 
 /** What the body's statements write to one binding. */
 interface Writer {
@@ -59,8 +73,12 @@ interface Writer {
   statement: InitStatementInfo
   /** The members written, when every write names one; `null` for a write to the whole binding. */
   members: Set<string> | null
-  /** Whether a statement changes the value in place (as opposed to rebinding the name). */
+  /** Whether a statement changes the value in place. */
   inPlace: boolean
+  /** Whether a statement rebinds the name. */
+  reassigned: boolean
+  /** Whether an in-place write changes an object the value holds, not the value's own slots. */
+  deep: boolean
 }
 
 /** A declaration init evaluates where it stands, with the names its expression reads. */
@@ -69,6 +87,8 @@ interface EagerDeclaration {
   subject: string
   loc: SourceLocation
   reads: ReadonlySet<string> | undefined
+  /** How evaluating it uses each name; unset when Phase 1 recorded none. */
+  uses: ReadonlyMap<string, ReadonlySet<ValueUse>> | undefined
   expr: ParsedExpr | undefined
   type: TypeInfo | null | undefined
 }
@@ -91,7 +111,10 @@ interface Check {
 interface WrittenRead {
   name: string
   writer: Writer
+  /** Whether the declaration is declared after the first statement that writes the binding. */
   after: boolean
+  /** How evaluating the declaration uses the binding. */
+  uses: ReadonlySet<ValueUse>
 }
 
 /** Record BF101 for each binding a body statement writes that a read evaluated after the write reaches. */
@@ -124,8 +147,8 @@ const startsAt = (position: { role: string }): boolean => position.role !== 'pro
 /** In a client component: a signal seed, memo or constant declared after the write, which init computes before it. */
 function refuseInitReadsAfterWrite({ eager, writtenReads, refuse }: Check): void {
   for (const declaration of eager) {
-    for (const { name, writer, after } of writtenReads(declaration)) {
-      if (after) refuse(name, initReadError(name, declaration, writer.statement))
+    for (const { name, writer, after, uses } of writtenReads(declaration)) {
+      if (after && computedTooEarly(writer, uses)) refuse(name, initReadError(name, declaration, writer.statement))
     }
   }
 }
@@ -159,12 +182,45 @@ function refuseServerReadDeclarations({ ir, eager, writtenReads, refuse }: Check
   }, { startsAt })
   for (const declaration of eager) {
     if (!serverRead.has(declaration.name)) continue
-    for (const { name, writer, after } of writtenReads(declaration)) {
-      // Declared before the write, it holds the binding as declared, as in
-      // JS, unless it may hold the object a statement then changes in place.
-      if (after || (writer.inPlace && !holdsPrimitive(declaration))) refuse(name, serverReadError(name, writer.statement))
+    for (const { name, writer, after, uses } of writtenReads(declaration)) {
+      // Declared before the write, it holds what it took from the binding as
+      // declared, as in JS, unless that may be the object a statement then
+      // changes in place.
+      if (after || mayHoldWrittenObject(declaration, writer, uses)) refuse(name, serverReadError(name, writer.statement))
     }
   }
+}
+
+/** Every eager use: the declaration computes something from the name where it stands. */
+const EAGER_USES: readonly ValueUse[] = ['alias', 'copy', 'read', 'call', 'opaque']
+/** The uses whose result does not follow a later in-place write: a value computed, or copied, from the object. */
+const SNAPSHOT_USES: readonly ValueUse[] = ['copy', 'read', 'call', 'opaque']
+/** The uses that may leave the declaration holding the object itself, or one it holds. */
+const HOLDING_USES: readonly ValueUse[] = ['alias', 'opaque', 'deferred']
+
+function hasAny(uses: ReadonlySet<ValueUse>, kinds: readonly ValueUse[]): boolean {
+  return kinds.some(kind => uses.has(kind))
+}
+
+/**
+ * In a client component, whether a declaration created before the statement
+ * runs (init's order) differs from one created after it (JS's): it computed
+ * something from a name the statement rebinds, or a snapshot of an object
+ * the statement changes in place.
+ */
+function computedTooEarly(writer: Writer, uses: ReadonlySet<ValueUse>): boolean {
+  if (writer.reassigned && hasAny(uses, EAGER_USES)) return true
+  return writer.inPlace && hasAny(uses, SNAPSHOT_USES)
+}
+
+/**
+ * Whether a declaration made before an in-place write may show that write
+ * to a later reader: it holds the written object, a function that reads it,
+ * or a shallow copy that shares the object written.
+ */
+function mayHoldWrittenObject(declaration: EagerDeclaration, writer: Writer, uses: ReadonlySet<ValueUse>): boolean {
+  if (!writer.inPlace || declaration.type?.kind === 'primitive') return false
+  return hasAny(uses, HOLDING_USES) || (writer.deep && uses.has('copy'))
 }
 
 function writtenReadsOf(
@@ -174,17 +230,49 @@ function writtenReadsOf(
   propsObject: string | null,
 ): WrittenRead[] {
   const found: WrittenRead[] = []
-  const reached = reachedNames(declaration.reads, lazy)
-  for (const name of reached) {
-    const writer = writers.get(name)
-    if (!writer) continue
+  const throughFunctions = namesReadThroughCalls(declaration, lazy)
+  for (const [name, writer] of writers) {
+    const uses = new Set(usesOf(declaration, name))
+    // What a called function does with the name is not told apart, beyond
+    // whether the declaration keeps anything but a primitive of its result.
+    const through = throughFunctions.get(name)
+    if (through) uses.add(through)
+    if (uses.size === 0) continue
     // A member read is told apart only on the props object, and only when
     // the declaration's own expression is all that reads it.
-    const throughFunction = [...reached].some(other => lazy.get(other)?.has(name))
-    const members = name === propsObject && !throughFunction ? membersRead(declaration.expr, name) : null
-    if (overlaps(writer, members)) found.push({ name, writer, after: isAfter(declaration.loc, writer.statement.loc) })
+    const members = name === propsObject && !throughFunctions.has(name) ? membersRead(declaration.expr, name) : null
+    if (overlaps(writer, members)) found.push({ name, writer, after: isAfter(declaration.loc, writer.statement.loc), uses })
   }
   return found
+}
+
+/** How evaluating `declaration` uses `name`: Phase 1's answer, or an opaque use of every name it mentions. */
+function usesOf(declaration: EagerDeclaration, name: string): Iterable<ValueUse> {
+  if (declaration.uses instanceof Map) return declaration.uses.get(name) ?? []
+  return declaration.reads instanceof Set && declaration.reads.has(name) ? ['opaque'] : []
+}
+
+/**
+ * The names read by the functions `declaration` runs when it is evaluated:
+ * those it calls, or hands to a call that may run them. A function it only
+ * stores (`{ read }`) or creates is not run. Each name is a `read` when the
+ * declaration computes only primitives from what those functions return
+ * (`count() + 1`), `opaque` otherwise.
+ */
+function namesReadThroughCalls(
+  declaration: EagerDeclaration,
+  lazy: ReadonlyMap<string, ReadonlySet<string> | undefined>,
+): Map<string, 'read' | 'opaque'> {
+  const reached = new Map<string, 'read' | 'opaque'>()
+  for (const fn of lazy.keys()) {
+    const uses = new Set(usesOf(declaration, fn))
+    if (!uses.has('call') && !uses.has('opaque')) continue
+    const use = uses.has('opaque') ? 'opaque' : 'read'
+    for (const name of reachedNames(lazy.get(fn), lazy)) {
+      if (reached.get(name) !== 'opaque') reached.set(name, use)
+    }
+  }
+  return reached
 }
 
 /**
@@ -195,26 +283,32 @@ function writtenReadsOf(
  */
 function statementWriters(statements: readonly InitStatementInfo[], resolve: LocalBindingResolver): Map<string, Writer> {
   const writers = new Map<string, Writer>()
-  const record = (name: string, statement: InitStatementInfo, members: ReadonlySet<string> | null, inPlace: boolean): void => {
+  const record = (name: string, statement: InitStatementInfo, write: Omit<Writer, 'statement'>): void => {
     const kind = resolve(name, 'component')?.kind
     if (kind !== 'const' && kind !== 'opaque') return
     const known = writers.get(name)
     if (!known) {
-      writers.set(name, { statement, members: members && new Set(members), inPlace })
+      writers.set(name, { statement, ...write, members: write.members && new Set(write.members) })
       return
     }
-    known.inPlace ||= inPlace
-    if (members === null || known.members === null) known.members = null
-    else for (const member of members) known.members.add(member)
+    known.inPlace ||= write.inPlace
+    known.reassigned ||= write.reassigned
+    known.deep ||= write.deep
+    if (write.members === null || known.members === null) known.members = null
+    else for (const member of write.members) known.members.add(member)
   }
   for (const statement of statements) {
     // An IR that went through JSON holds no `Set` / `Map`: nothing to read there.
     if (statement.assignedIdentifiers instanceof Set) {
-      for (const name of statement.assignedIdentifiers) record(name, statement, null, false)
+      for (const name of statement.assignedIdentifiers) record(name, statement, { members: null, inPlace: false, reassigned: true, deep: false })
     }
     if (statement.mutatedIdentifiers instanceof Set) {
       const members = statement.mutatedMembers instanceof Map ? statement.mutatedMembers : undefined
-      for (const name of statement.mutatedIdentifiers) record(name, statement, members?.get(name) ?? null, true)
+      // Without the fact, an in-place write may be to an object the binding holds.
+      const deep = statement.deeplyMutatedIdentifiers instanceof Set ? statement.deeplyMutatedIdentifiers : undefined
+      for (const name of statement.mutatedIdentifiers) {
+        record(name, statement, { members: members?.get(name) ?? null, inPlace: true, reassigned: false, deep: deep?.has(name) ?? true })
+      }
     }
   }
   return writers
@@ -254,15 +348,15 @@ function eagerDeclarations(metadata: IRMetadata): EagerDeclaration[] {
   const declarations: EagerDeclaration[] = []
   for (const c of metadata.localConstants ?? []) {
     if (c.isModule || isLazyConstant(c)) continue
-    declarations.push({ name: c.name, subject: `'${c.name}'`, loc: c.loc, reads: c.freeIdentifiers, expr: c.parsed, type: c.type })
+    declarations.push({ name: c.name, subject: `'${c.name}'`, loc: c.loc, reads: c.freeIdentifiers, uses: c.valueUses, expr: c.parsed, type: c.type })
   }
   for (const s of metadata.signals) {
     if (s.isModule || s.envReader) continue
-    declarations.push({ name: s.getter, subject: `Signal '${s.getter}'`, loc: s.loc, reads: s.initialFreeIdentifiers, expr: s.parsed, type: s.type })
+    declarations.push({ name: s.getter, subject: `Signal '${s.getter}'`, loc: s.loc, reads: s.initialFreeIdentifiers, uses: s.valueUses, expr: s.parsed, type: s.type })
   }
   for (const m of metadata.memos) {
     if (m.isModule) continue
-    declarations.push({ name: m.name, subject: `Memo '${m.name}'`, loc: m.loc, reads: m.computationFreeIdentifiers, expr: m.parsed, type: m.type })
+    declarations.push({ name: m.name, subject: `Memo '${m.name}'`, loc: m.loc, reads: m.computationFreeIdentifiers, uses: m.valueUses, expr: m.parsed, type: m.type })
   }
   return declarations
 }
@@ -296,43 +390,6 @@ function reachedNames(reads: ReadonlySet<string> | undefined, lazy: ReadonlyMap<
     }
   }
   return reached
-}
-
-/**
- * Whether `declaration`'s value is a primitive, which cannot be an object a
- * later statement changes in place: by its type, or by the shape of its
- * expression. `false` when neither says so.
- */
-function holdsPrimitive(declaration: EagerDeclaration): boolean {
-  if (declaration.type?.kind === 'primitive') return true
-  return declaration.expr !== undefined && yieldsPrimitive(declaration.expr)
-}
-
-/** Array and string methods that return a primitive whatever they are called on. */
-const PRIMITIVE_METHODS: ReadonlySet<string> = new Set(['join', 'includes', 'indexOf', 'lastIndexOf', 'some', 'every', 'toString'])
-/** Global conversions that return a primitive. */
-const PRIMITIVE_CONVERSIONS: ReadonlySet<string> = new Set(['String', 'Number', 'Boolean'])
-
-/** Whether `expr` evaluates to a primitive whatever its operands hold. */
-function yieldsPrimitive(expr: ParsedExpr): boolean {
-  switch (expr.kind) {
-    case 'literal':
-    case 'template-literal':
-    case 'unary':
-    case 'binary':
-      return true
-    case 'member':
-      return !expr.computed && expr.property === 'length'
-    case 'conditional':
-      return yieldsPrimitive(expr.consequent) && yieldsPrimitive(expr.alternate)
-    case 'logical':
-      return yieldsPrimitive(expr.left) && yieldsPrimitive(expr.right)
-    case 'call':
-      if (expr.callee.kind === 'identifier') return PRIMITIVE_CONVERSIONS.has(expr.callee.name)
-      return expr.callee.kind === 'member' && !expr.callee.computed && PRIMITIVE_METHODS.has(expr.callee.property)
-    default:
-      return false
-  }
 }
 
 function isAfter(a: SourceLocation, b: SourceLocation): boolean {

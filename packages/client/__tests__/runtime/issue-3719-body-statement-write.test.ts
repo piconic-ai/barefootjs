@@ -15,6 +15,7 @@
 
 import { describe, test, expect, beforeAll, beforeEach } from 'bun:test'
 import { GlobalRegistrator } from '@happy-dom/global-registrator'
+import ts from 'typescript'
 import { compileJSX } from '../../../jsx/src/compiler'
 import { TestAdapter } from '../../../jsx/src/adapters/test-adapter'
 import { writeFileSync, unlinkSync, mkdtempSync } from 'fs'
@@ -27,6 +28,30 @@ beforeAll(() => {
   }
 })
 
+const runtimePath = join(__dirname, '../../src/runtime/index.ts')
+
+/**
+ * Point the compiled module's runtime import at the runtime source and drop
+ * its side-effect child-marker imports (`import '/* @bf-child:X *\/'`): a
+ * walk of the module's top-level `ImportDeclaration`s, edited by span.
+ */
+function relinkRuntime(clientJs: string): string {
+  const sf = ts.createSourceFile('client.mjs', clientJs, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS)
+  const edits: Array<{ start: number; end: number; text: string }> = []
+  for (const stmt of sf.statements) {
+    if (!ts.isImportDeclaration(stmt) || !ts.isStringLiteral(stmt.moduleSpecifier)) continue
+    if (!stmt.importClause) {
+      edits.push({ start: stmt.getFullStart(), end: stmt.getEnd(), text: '' })
+    } else if (stmt.moduleSpecifier.text === '@barefootjs/client/runtime') {
+      const spec = stmt.moduleSpecifier
+      edits.push({ start: spec.getStart(sf), end: spec.getEnd(), text: JSON.stringify(runtimePath) })
+    }
+  }
+  let out = clientJs
+  for (const edit of edits.sort((a, b) => b.start - a.start)) out = out.slice(0, edit.start) + edit.text + out.slice(edit.end)
+  return out
+}
+
 async function mount(source: string, name: string, props: Record<string, unknown> = {}): Promise<Element> {
   const result = compileJSX(source, `${name}.tsx`, { adapter: new TestAdapter() })
   const errors = result.errors.filter(e => e.severity === 'error')
@@ -36,10 +61,7 @@ async function mount(source: string, name: string, props: Record<string, unknown
   const clientJs = result.files.find(f => f.type === 'clientJs')?.content
   if (!clientJs) throw new Error('No client JS emitted')
 
-  const runtimePath = join(__dirname, '../../src/runtime/index.ts')
-  const rewritten = clientJs
-    .replace(/from\s+['"]@barefootjs\/client\/runtime['"]/g, `from '${runtimePath}'`)
-    .replace(/^import '\/\* @bf-child:\w+ \*\/'\n/gm, '')
+  const rewritten = relinkRuntime(clientJs)
   const dir = mkdtempSync(join(tmpdir(), 'bf-3719-'))
   const file = join(dir, `${name}.mjs`)
   writeFileSync(file, rewritten)

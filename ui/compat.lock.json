@@ -2767,6 +2767,98 @@
           ]
         }
       },
+      "body-statement-write-block-shadowed-callback": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        }
+      },
       "body-statement-write-child-prop": {
         "blade": {
           "kind": "render",
@@ -14307,6 +14399,10 @@
         "description": "A read of a taken key through a props-object body rest is refused",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-rest-taken-key-read.ts"
       },
+      "body-statement-write-block-shadowed-callback": {
+        "description": "A write in an in-place callback, after a block that declares the same name, is a write to the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-statement-write-block-shadowed-callback.ts"
+      },
       "body-statement-write-child-prop": {
         "description": "A binding a body statement writes, handed to a child as a prop, renders the written value",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-statement-write-child-prop.ts"
@@ -15366,6 +15462,7 @@
       "expected": "the read sees what the statement wrote (`2`), as JS does",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
+        "body-statement-write-block-shadowed-callback",
         "body-statement-write-direct-read",
         "destructure-default-body-mutated-memo"
       ],

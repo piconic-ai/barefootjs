@@ -18,6 +18,12 @@
         "hono": {
           "gaps": [
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -39,6 +45,12 @@
         },
         "blade": {
           "gaps": [
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
             {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
@@ -254,6 +266,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -455,6 +473,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
             {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
@@ -718,6 +742,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -932,6 +962,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -1145,6 +1181,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
             {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
@@ -1366,6 +1408,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -1573,6 +1621,12 @@
         },
         "twig": {
           "gaps": [
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
             {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
@@ -1787,6 +1841,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
             {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
@@ -11331,6 +11391,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -11422,6 +11488,12 @@
               "fixture": "body-rest-taken-key-read",
               "limitations": [
                 "body-rest-taken-key-read"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -12077,6 +12149,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -12696,6 +12774,12 @@
               "fixture": "body-rest-taken-key-read",
               "limitations": [
                 "body-rest-taken-key-read"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -13567,6 +13651,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -14210,6 +14300,12 @@
               "fixture": "body-rest-taken-key-read",
               "limitations": [
                 "body-rest-taken-key-read"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -14859,6 +14955,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -15499,6 +15601,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -16124,6 +16232,12 @@
               "fixture": "body-rest-taken-key-read",
               "limitations": [
                 "body-rest-taken-key-read"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -16776,6 +16890,12 @@
               "fixture": "body-rest-taken-key-read",
               "limitations": [
                 "body-rest-taken-key-read"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -17846,6 +17966,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -17889,6 +18015,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -18400,6 +18532,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -18899,6 +19037,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -19566,6 +19710,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -20074,6 +20224,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -20579,6 +20735,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -21108,6 +21270,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -21595,6 +21763,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -22103,6 +22277,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -23307,6 +23487,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -23368,6 +23554,12 @@
               "fixture": "body-rest-taken-key-read",
               "limitations": [
                 "body-rest-taken-key-read"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -23861,6 +24053,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -24318,6 +24516,12 @@
               "fixture": "body-rest-taken-key-read",
               "limitations": [
                 "body-rest-taken-key-read"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -24967,6 +25171,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -25448,6 +25658,12 @@
               "fixture": "body-rest-taken-key-read",
               "limitations": [
                 "body-rest-taken-key-read"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -25935,6 +26151,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -26413,6 +26635,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -26888,6 +27116,12 @@
               "fixture": "body-rest-taken-key-read",
               "limitations": [
                 "body-rest-taken-key-read"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -27378,6 +27612,12 @@
               "fixture": "body-rest-taken-key-read",
               "limitations": [
                 "body-rest-taken-key-read"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -37737,6 +37977,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -37768,6 +38014,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -38183,6 +38435,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -38586,6 +38844,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -39133,6 +39397,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -39545,6 +39815,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -39954,6 +40230,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -40387,6 +40669,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
@@ -40784,6 +41072,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -41196,6 +41490,12 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-block-shadowed-callback",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {

@@ -213,7 +213,7 @@ BF101 is also raised on every adapter, Hono included, when a statement in the co
 
 Give the binding its final value where it is declared, in one expression (a literal, a ternary, a template string). A read by the markup can instead be deferred with `/* @client */`.
 
-Not refused: a memo or signal seed declared before the statement (it keeps the earlier value in JavaScript too), unless it may hold the very object the statement changes; a read of another member of `props` than the one written (`props.items.push('z')` beside `{props.title}`); a value passed to a child component as a prop; a read in an event handler or effect; and a write inside a callback that runs later.
+Not refused: a memo, signal seed or constant declared before the statement (it keeps the earlier value in JavaScript too, as does a copy such as `[...items]` or `items.map(f)`), unless it may hold the very object the statement changes; a constant declared after the statement that only stores functions which read the binding when called (`{ read: () => items.length }`); a read of another member of `props` than the one written (`props.items.push('z')` beside `{props.title}`); a value passed to a child component as a prop; a read in an event handler or effect; and a write inside a callback that runs later.
 
 <a id="bf102"></a>
 

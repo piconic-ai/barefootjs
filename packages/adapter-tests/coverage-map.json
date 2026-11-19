@@ -1236,6 +1236,20 @@
         "text"
       ]
     },
+    "body-statement-write-block-shadowed-callback": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "body-statement-write-child-prop": {
       "kinds": [
         "array-literal",
