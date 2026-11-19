@@ -1063,7 +1063,7 @@ function lowerLoopRowChildProp(
   if (lowered === null) return null
   // A later `{...props}` spread carries the key when the caller passed it,
   // `null` / `undefined` included: the row's value applies only otherwise.
-  const carried = spreadCarriedCallerKey(host.ctx, comp.props, prop.name)
+  const carried = spreadCarriedCallerKey(host.ctx, comp.props, prop.name, comp.children)
   const go = carried === null
     ? lowered
     : `(bf_ternary (bf_has ${host.rootRefPrefix()}BfCallerProps ${JSON.stringify(carried)}) (bf_get ${host.rootRefPrefix()}BfCallerProps ${JSON.stringify(carried)}) ${wrapIfMultiToken(lowered)})`

@@ -38,7 +38,7 @@ import type { ParsedExpr, ParsedStatement } from '../expression-parser.ts'
 import { localBindings, localCall, type LocalBindingResolver, type LocalScope } from '../local-call-body.ts'
 import { BindingScope } from '../scope/binding-scope.ts'
 import { walkServerReads } from '../server-read-walk.ts'
-import { spellStaticConstMember, staticConstValue, staticIndexKey, type InheritedReadPlace, type StaticConstMemberSink } from '../static-const-member.ts'
+import { refuseComputedConstRead, spellStaticConstMember, staticConstValue, staticIndexKey, type InheritedReadPlace, type StaticConstMemberSink } from '../static-const-member.ts'
 import { walkTemplatePositions } from '../template-position-walk.ts'
 import type { ComponentIR } from '../types.ts'
 
@@ -124,6 +124,7 @@ function refuseReads(expr: ParsedExpr, at: At, check: Check, use: Use): void {
     const isShadowed = (name: string): boolean => at.scope.isBound(name)
     const object = throughAliases(expr.object, check.constants[at.from], isShadowed)
     if (key !== null) spellStaticConstMember(object, key, check.constants[at.from], isShadowed, check.sink, check.place)
+    else if (expr.kind === 'index-access') refuseComputedConstRead(object, check.constants[at.from], isShadowed, check.sink, check.place)
   }
   for (const child of parsedExprChildren(expr)) refuseReads(child.expr, at, check, childUse(expr, child.expr))
 }

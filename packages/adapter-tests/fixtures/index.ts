@@ -612,6 +612,7 @@ import { fixture as openRestSpreadChild } from './open-rest-spread-child'
 import { fixture as openBodyRestSpreadElement } from './open-body-rest-spread-element'
 import { fixture as elementSpreadPropsLoopRowLive } from './element-spread-props-loop-row-live'
 import { fixture as openRestSpreadChildChildren } from './open-rest-spread-child-children'
+import { fixture as propsObjectSpreadChildChildren } from './props-object-spread-child-children'
 import { fixture as arrayTextChild } from './array-text-child'
 import { fixture as childrenElementReadIntoState } from './children-element-read-into-state'
 import { fixture as filterPredicateOnPrefixedProp } from './filter-predicate-on-prefixed-prop'
@@ -1558,6 +1559,20 @@ import { fixture as memoObjectConstArrowSiblingKey } from './memo-object-const-a
 import { fixture as memoModuleObjectConstArrowSiblingKey } from './memo-module-object-const-arrow-sibling-key'
 import { fixture as moduleConstObjectSpreadLiteral } from './module-const-object-spread-literal'
 import { fixture as moduleConstObjectSpreadChainOverride } from './module-const-object-spread-chain-override'
+import { fixture as moduleConstObjectSpreadUnresolvedCall } from './module-const-object-spread-unresolved-call'
+import { fixture as moduleConstObjectSpreadUnresolvedMember } from './module-const-object-spread-unresolved-member'
+import { fixture as moduleConstObjectSpreadUnresolvedLet } from './module-const-object-spread-unresolved-let'
+import { fixture as moduleConstObjectSpreadUnresolvedArray } from './module-const-object-spread-unresolved-array'
+import { fixture as moduleConstObjectSpreadUnresolvedLocal } from './module-const-object-spread-unresolved-local'
+import { fixture as moduleConstObjectSpreadUnresolvedClient } from './module-const-object-spread-unresolved-client'
+import { fixture as moduleConstObjectSpreadMember } from './module-const-object-spread-member'
+import { fixture as moduleConstObjectSpreadOverrideAfter } from './module-const-object-spread-override-after'
+import { fixture as moduleConstObjectSpreadUnresolvedComputedProps } from './module-const-object-spread-unresolved-computed-props'
+import { fixture as moduleConstObjectSpreadUnresolvedComputedLocal } from './module-const-object-spread-unresolved-computed-local'
+import { fixture as moduleConstObjectSpreadUnresolvedComputedOptional } from './module-const-object-spread-unresolved-computed-optional'
+import { fixture as moduleConstObjectSpreadUnresolvedComputedLoop } from './module-const-object-spread-unresolved-computed-loop'
+import { fixture as moduleConstObjectSpreadUnresolvedComputedSignal } from './module-const-object-spread-unresolved-computed-signal'
+import { fixture as moduleConstObjectSpreadUnresolvedComputedClient } from './module-const-object-spread-unresolved-computed-client'
 import { fixture as undefinedLiteralElementPositions } from './undefined-literal-element-positions'
 import { fixture as moduleConstArrayMethodCall } from './module-const-array-method-call'
 import { fixture as localConstLiteralIndex } from './local-const-literal-index'
@@ -2103,6 +2118,7 @@ export const jsxFixtures: JSXFixture[] = [
   openBodyRestSpreadElement,
   elementSpreadPropsLoopRowLive,
   openRestSpreadChildChildren,
+  propsObjectSpreadChildChildren,
   arrayTextChild,
   childrenElementReadIntoState,
   filterPredicateOnPrefixedProp,
@@ -2755,6 +2771,20 @@ export const jsxFixtures: JSXFixture[] = [
   memoModuleObjectConstArrowSiblingKey,
   moduleConstObjectSpreadLiteral,
   moduleConstObjectSpreadChainOverride,
+  moduleConstObjectSpreadUnresolvedCall,
+  moduleConstObjectSpreadUnresolvedMember,
+  moduleConstObjectSpreadUnresolvedLet,
+  moduleConstObjectSpreadUnresolvedArray,
+  moduleConstObjectSpreadUnresolvedLocal,
+  moduleConstObjectSpreadUnresolvedClient,
+  moduleConstObjectSpreadMember,
+  moduleConstObjectSpreadOverrideAfter,
+  moduleConstObjectSpreadUnresolvedComputedProps,
+  moduleConstObjectSpreadUnresolvedComputedLocal,
+  moduleConstObjectSpreadUnresolvedComputedOptional,
+  moduleConstObjectSpreadUnresolvedComputedLoop,
+  moduleConstObjectSpreadUnresolvedComputedSignal,
+  moduleConstObjectSpreadUnresolvedComputedClient,
   undefinedLiteralElementPositions,
   moduleConstArrayMethodCall,
   localConstLiteralIndex,
