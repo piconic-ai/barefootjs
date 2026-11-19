@@ -211,3 +211,60 @@ describe('<annotation-xml> is an HTML integration point only for HTML encodings'
     expect(foreign.errors).toEqual([])
   })
 })
+
+describe('raw-text tags in foreign content are flagged, not lowered (#3937)', () => {
+  /** The `tag` of every IR element carrying `foreignRawTextTag`, in document order. */
+  function flaggedTags(jsx: string): string[] {
+    const r = compileJSX(
+      `
+      'use client'
+      import { createSignal } from '@barefootjs/client'
+      export function Comp(props: { v: string }) {
+        const [n] = createSignal(0)
+        return ${jsx}
+      }
+    `,
+      'Comp.tsx',
+      { adapter, outputIR: true },
+    )
+    expect(r.errors).toEqual([])
+    const out: string[] = []
+    const visit = (value: unknown): void => {
+      if (Array.isArray(value)) return value.forEach(visit)
+      if (value === null || typeof value !== 'object') return
+      const node = value as Record<string, unknown>
+      if (node.type === 'element' && node.foreignRawTextTag === true) out.push(String(node.tag))
+      for (const child of Object.values(node)) visit(child)
+    }
+    visit(JSON.parse(r.files.find(f => f.type === 'ir')!.content))
+    return out
+  }
+
+  test('an SVG title / textarea / style / script is flagged and keeps its slot', () => {
+    expect(flaggedTags(`<svg><title>{n()}</title><textarea>{n()}</textarea><style>x</style><script>y</script></svg>`)).toEqual([
+      'title',
+      'textarea',
+      'style',
+      'script',
+    ])
+  })
+
+  test('a MathML title is flagged, also under annotation-xml without an HTML encoding', () => {
+    expect(flaggedTags(`<math><annotation-xml><title>{n()}</title></annotation-xml></math>`)).toEqual(['title'])
+    expect(flaggedTags(`<math><annotation-xml encoding="application/x-tex"><title>{n()}</title></annotation-xml></math>`)).toEqual(['title'])
+    expect(flaggedTags(`<math><title>{n()}</title></math>`)).toEqual(['title'])
+  })
+
+  test('an HTML title is a host, not flagged: under HTML, an SVG integration point, a text/html annotation-xml', () => {
+    expect(flaggedTags(`<div><title>{n()}</title></div>`)).toEqual([])
+    expect(flaggedTags(`<svg><foreignObject><title>{n()}</title></foreignObject></svg>`)).toEqual([])
+    expect(flaggedTags(`<svg><desc><textarea>{n()}</textarea></desc></svg>`)).toEqual([])
+    expect(flaggedTags(`<math><annotation-xml encoding="text/html"><title>{n()}</title></annotation-xml></math>`)).toEqual([])
+    expect(flaggedTags(`<math><mi><title>{n()}</title></mi></math>`)).toEqual([])
+  })
+
+  test('a nested svg re-enters foreign content: its title is flagged', () => {
+    expect(flaggedTags(`<svg><foreignObject><svg><title>{n()}</title></svg></foreignObject></svg>`)).toEqual(['title'])
+    expect(flaggedTags(`<math><annotation-xml><svg><title><textarea>{n()}</textarea></title></svg></annotation-xml></math>`)).toEqual(['title'])
+  })
+})

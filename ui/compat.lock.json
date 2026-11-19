@@ -5477,6 +5477,34 @@
           }
         }
       },
+      "foreign-title-markup-child": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "foreign-rcdata-dynamic-child"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "foreign-title-slot": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "foreign-rcdata-dynamic-child"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "format-date": {
         "blade": {
           "kind": "refusal",
@@ -10763,10 +10791,16 @@
       },
       "raw-text-host-annotation-xml-encodings": {
         "go-template": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "foreign-title-slot-markers-escaped"
-          ]
+            "foreign-rcdata-dynamic-child"
+          ],
+          "escape": {
+            "state": "debt"
+          }
         }
       },
       "raw-text-host-annotation-xml-svg": {
@@ -14221,6 +14255,14 @@
         "description": "Off-subset `.flatMap()` projection (typeof) — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/flatmap-typeof-projection.ts"
       },
+      "foreign-title-markup-child": {
+        "description": "An element child of an SVG <title> with a dynamic attribute",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/foreign-title-markup-child.ts"
+      },
+      "foreign-title-slot": {
+        "description": "A dynamic child of an SVG <title> / <textarea> keeps its slot markers",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/foreign-title-slot.ts"
+      },
       "format-date": {
         "description": "An authored formatDate(...) call refuses with BF056 on every adapter",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/format-date.ts"
@@ -15589,17 +15631,22 @@
         "BF101"
       ]
     },
-    "foreign-title-slot-markers-escaped": {
-      "title": "A dynamic child of a title that is not an HTML element, on the Go template adapter",
-      "kind": "silent",
-      "given": "a `<title>` with a dynamic child inside foreign content (an SVG, or a MathML `annotation-xml` without an HTML `encoding`), where the slot markers are comment nodes around the value",
-      "expected": "the slot markers stay comment nodes around the value, as in the Hono reference",
-      "actual": "emits the slot markers as HTML-escaped text inside the title, because html/template treats every `title` as RCDATA",
+    "foreign-rcdata-dynamic-child": {
+      "title": "A reactive or non-text child of a `<title>` or `<textarea>` in SVG or MathML content, on the Go template adapter",
+      "kind": "refusal",
+      "given": "a `<title>` / `<textarea>` inside foreign content whose child is a reactive expression (`<svg><title>{props.tip}</title></svg>`) or an element, conditional, loop or component",
+      "expected": "the child renders as in the reference: a reactive expression keeps its comment-node slot markers around the value",
+      "actual": "the compiler refuses with BF101",
       "fixtures": [
+        "foreign-title-markup-child",
+        "foreign-title-slot",
         "raw-text-host-annotation-xml-encodings"
       ],
       "adapters": [
         "go-template"
+      ],
+      "diagnostics": [
+        "BF101"
       ]
     },
     "fragment-wrapped-conditional-return-branch-scope": {

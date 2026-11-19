@@ -14,6 +14,12 @@
  * `rawTextHost`. The client then rewrites the element's own content from its
  * children instead of looking for comment nodes (`collectFromElement`).
  *
+ * Those tags in foreign content (SVG, MathML) are not hosts: their children
+ * read comments, so the markers stay. Such an element is flagged
+ * `foreignRawTextTag` so an adapter whose engine still treats the tag as raw
+ * text or RCDATA by name (Go `html/template`) can refuse the shapes it cannot
+ * render (#3937).
+ *
  * Shapes the element-level update cannot express are refused rather than
  * left to diverge silently:
  *   - a child that is not text or an expression (an element, a conditional,
@@ -201,7 +207,10 @@ function lowerHost(el: IRElement, scope: HostPlace, errors: CompilerError[]): vo
 export function lowerRawTextHosts(root: IRNode, errors: CompilerError[]): void {
   walkIR<HostScope>(root, { place: 'body', namespace: 'html' }, {
     element: ({ node, scope, descend }) => {
-      if (scope.namespace === 'html' && isRawTextHostTag(node.tag)) lowerHost(node, scope.place, errors)
+      if (isRawTextHostTag(node.tag)) {
+        if (scope.namespace === 'html') lowerHost(node, scope.place, errors)
+        else node.foreignRawTextTag = true
+      }
       descend(childScope(node, scope))
     },
     loop: ({ scope, descend }) => descend({ ...scope, place: nest(scope.place, 'loop') }),
