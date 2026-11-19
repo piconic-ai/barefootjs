@@ -133,6 +133,10 @@ export const conformancePins: ConformancePins = {
   'static-literal-loop-component-in-row': [
     { code: 'BF101', severity: 'error', limitation: 'static-literal-loop-component-row' },
   ],
+  // The same refusal for the hydration fixture of a signal passed to such a child.
+  'static-loop-row-child-signal-prop': [
+    { code: 'BF101', severity: 'error', limitation: 'static-literal-loop-component-row' },
+  ],
   // A static literal loop array whose rows omit a field the row reads: the
   // compile-time unroll cannot read the missing field, so the loop refuses.
   // Escape twins: `loop-row-absent-optional-member-attr-module-const-{precomputed,client}`.

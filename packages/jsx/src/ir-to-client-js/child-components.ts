@@ -25,11 +25,12 @@ export function emitChildComponentImports(
       childComponentNames.add(loop.childComponent.name)
       collectComponentNamesFromIR(loop.childComponent.children, childComponentNames)
     }
-    // Composite element reconciliation: collect component names from nestedComponents
-    if (loop.useElementReconciliation && loop.nestedComponents?.length) {
-      for (const comp of loop.nestedComponents) {
-        childComponentNames.add(comp.name)
-      }
+    // A component nested in the row body (`<li><Badge /></li>`) is
+    // initialised by the row's init whichever way the loop is reconciled —
+    // composite element reconciliation or a static array — so it is named
+    // for every loop that has one (#3921).
+    for (const comp of loop.nestedComponents ?? []) {
+      childComponentNames.add(comp.name)
     }
   }
   for (const child of ctx.childInits) {
