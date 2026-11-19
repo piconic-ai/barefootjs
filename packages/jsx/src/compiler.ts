@@ -31,6 +31,7 @@ import { componentScopeNames } from './adapters/computed-const.ts'
 import { checkRichTypeMethodCalls, checkRichTypePropSerialization } from './rich-type-refusal.ts'
 import { checkAuthoredFormatDateCalls } from './format-date-refusal.ts'
 import { checkAsyncActionReads } from './async-action-refusal.ts'
+import { checkStatementWrites } from './statement-write-refusal.ts'
 import { ErrorCodes, createError } from './errors.ts'
 import { collectComponentNamesFromIR } from './ir-to-client-js/child-components.ts'
 
@@ -223,6 +224,7 @@ function compileMultipleComponents(
     checkRichTypePropSerialization(componentIR.root, componentIR.metadata, errors, ctx.propsDestructuring?.loc)
     checkAuthoredFormatDateCalls(componentIR.root, componentIR.metadata, errors)
     checkAsyncActionReads(componentIR.root, componentIR.metadata, errors)
+    checkStatementWrites(componentIR, errors)
 
     // #3141: decide once whether a component-call render root needs the
     // comment-based scope marker pair, same "right after clientAnalysis"
@@ -833,6 +835,7 @@ export function compileJSX(
   checkRichTypePropSerialization(componentIR.root, componentIR.metadata, errors, ctx.propsDestructuring?.loc)
   checkAuthoredFormatDateCalls(componentIR.root, componentIR.metadata, errors)
   checkAsyncActionReads(componentIR.root, componentIR.metadata, errors)
+  checkStatementWrites(componentIR, errors)
 
   // #3141: decide once whether a component-call render root needs the
   // comment-based scope marker pair, same "right after clientAnalysis"

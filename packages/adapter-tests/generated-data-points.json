@@ -1338,6 +1338,14 @@
       }
     }
   ],
+  "body-statement-write-rewrite": [
+    {
+      "name": "gen:b:empty",
+      "props": {
+        "b": []
+      }
+    }
+  ],
   "boolean-logical-stringify": [
     {
       "name": "gen:on:false",

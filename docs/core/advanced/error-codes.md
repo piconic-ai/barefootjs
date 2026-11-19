@@ -207,6 +207,12 @@ Pass the computed value as a prop (keeps SSR), or defer with `/* @client */` (em
 
 Per-adapter table: [compatibility matrix](/docs/advanced/compatibility-matrix); worked examples in [Adapter limits](../rendering/jsx-compatibility.md#adapter-limits).
 
+#### A binding written by a statement after its declaration
+
+BF101 is also raised on every adapter, Hono included, when a statement in the component body writes a binding after it is declared (`items.push('z')`, a reassignment in a loop or a `try`, `config[key] = value`) and the compiled output would read it as it was declared. A template renders a binding from its declaration and never runs the statements that follow it, and the client's init creates the component's signals, memos and constants before it runs those statements. Two reads are refused: a read by the component's own markup, directly or through a memo, signal seed or constant; and, in a `'use client'` component, a memo, signal seed or constant declared after the statement.
+
+Give the binding its final value where it is declared, in one expression (a literal, a ternary, a template string). A read by the markup can instead be deferred with `/* @client */`. A value passed to a child component as a prop, a read in an event handler or effect, and a write inside a callback that runs later are not refused.
+
 <a id="bf102"></a>
 
 ### BF102 — Adapter-Specific Condition Not Supported

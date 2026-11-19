@@ -2,17 +2,19 @@ import { createFixture } from '../src/types'
 
 /**
  * A body destructure default mutated after its declaration
- * (`local.push('z')`) and read through a memo (`createMemo(() => local.length)`).
- * In JS the memo sees the pushed element (`2`). A top-level body statement
- * runs only on the client at mount (the server render is a snapshot of the
- * declarations), so every server render, Hono included, gives `1` while the
- * hydrated client shows `2`: the limitation
- * `init-statement-mutation-unrun-on-server`. `expectedHtml` is hand-authored
- * to the JS value (`SKIP_AUTO_UPDATE`), and every adapter that renders `1`
- * is pinned in its `renderDivergences`. The CSR template cannot run the
- * statement or inline the memo over a mutated binding, and renders empty
- * (`CSR_RENDER_DIVERGENCES`). Emitting the statement on the server graduates
- * the fixture: delete the pins and the limitation entry.
+ * (`local.push('z')`) and read through a memo declared after the statement
+ * (`createMemo(() => local.length)`). In JS the memo sees the pushed element
+ * (`2`). No compiled output does: a template renders a binding from its
+ * declaration and runs no body statement, and the client's init creates the
+ * memo before it runs the statement. So the shape is refused (BF101,
+ * `checkStatementWrites`) in the shared compile, ahead of any adapter, and
+ * pinned on every adapter including the reference: the limitation
+ * `body-statement-write-read-as-declared`. `expectedHtml` is the JS value, the
+ * contract a lowering that runs the body in source order must meet.
+ *
+ * The way out is the rewrite twin `body-statement-write-rewrite`, which gives
+ * the binding its final value where it is declared. `/* @client *\/` is not
+ * one: the memo itself is computed too early, wherever it is read.
  */
 export const fixture = createFixture({
   id: 'destructure-default-body-mutated-memo',
@@ -31,4 +33,5 @@ export function DestructureDefaultBodyMutatedMemo(props: { b?: string[] }) {
   expectedHtml: `
     <p bf-s="test" bf="s1"><!--bf:s0-->2<!--/--></p>
   `,
+  escapes: [{ kind: 'rewrite', fixture: 'body-statement-write-rewrite' }],
 })

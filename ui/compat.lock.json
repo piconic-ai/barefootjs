@@ -1981,6 +1981,7 @@
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
+              "body-statement-write-read-as-declared",
               "callback-index-param",
               "callback-outside-evaluator",
               "component-scope-helper-call",
@@ -2013,6 +2014,7 @@
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
+              "body-statement-write-read-as-declared",
               "callback-index-param",
               "callback-outside-evaluator",
               "component-scope-helper-call",
@@ -2048,6 +2050,7 @@
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
+              "body-statement-write-read-as-declared",
               "callback-index-param",
               "callback-outside-evaluator",
               "component-scope-helper-call",
@@ -2080,6 +2083,7 @@
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
+              "body-statement-write-read-as-declared",
               "callback-index-param",
               "callback-outside-evaluator",
               "component-scope-helper-call",
@@ -2112,6 +2116,7 @@
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
+              "body-statement-write-read-as-declared",
               "boolean-in-static-loop-item",
               "callback-index-param",
               "callback-outside-evaluator",
@@ -2145,6 +2150,7 @@
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
+              "body-statement-write-read-as-declared",
               "callback-index-param",
               "callback-outside-evaluator",
               "component-scope-helper-call",
@@ -2177,6 +2183,7 @@
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
+              "body-statement-write-read-as-declared",
               "callback-index-param",
               "callback-outside-evaluator",
               "component-scope-helper-call",
@@ -2209,6 +2216,7 @@
               "body-destructure-without-const-form",
               "body-rest-props-name-shadowed",
               "body-rest-taken-key-read",
+              "body-statement-write-read-as-declared",
               "boolean-in-static-loop-item",
               "callback-index-param",
               "callback-outside-evaluator",
@@ -2748,6 +2756,160 @@
           ],
           "limitations": [
             "body-rest-taken-key-read"
+          ]
+        }
+      },
+      "body-statement-write-child-prop": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "init-statement-mutation-unrun-on-server"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "init-statement-mutation-unrun-on-server"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "init-statement-mutation-unrun-on-server"
+          ]
+        },
+        "hono": {
+          "kind": "render",
+          "limitations": [
+            "init-statement-mutation-unrun-on-server"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "init-statement-mutation-unrun-on-server"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "init-statement-mutation-unrun-on-server"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "init-statement-mutation-unrun-on-server"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "init-statement-mutation-unrun-on-server"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "init-statement-mutation-unrun-on-server"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "init-statement-mutation-unrun-on-server"
+          ]
+        }
+      },
+      "body-statement-write-direct-read": {
+        "blade": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "erb": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "hono": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "jinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "minijinja": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "mojolicious": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "pebble": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "twig": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
+          ]
+        },
+        "xslate": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "body-statement-write-read-as-declared"
           ]
         }
       },
@@ -3424,63 +3586,93 @@
       },
       "destructure-default-body-mutated-memo": {
         "blade": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "init-statement-mutation-unrun-on-server"
+            "body-statement-write-read-as-declared"
           ]
         },
         "erb": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "init-statement-mutation-unrun-on-server"
+            "body-statement-write-read-as-declared"
           ]
         },
         "go-template": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "init-statement-mutation-unrun-on-server"
+            "body-statement-write-read-as-declared"
           ]
         },
         "hono": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "init-statement-mutation-unrun-on-server"
+            "body-statement-write-read-as-declared"
           ]
         },
         "jinja": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "init-statement-mutation-unrun-on-server"
+            "body-statement-write-read-as-declared"
           ]
         },
         "minijinja": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "init-statement-mutation-unrun-on-server"
+            "body-statement-write-read-as-declared"
           ]
         },
         "mojolicious": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "init-statement-mutation-unrun-on-server"
+            "body-statement-write-read-as-declared"
           ]
         },
         "pebble": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "init-statement-mutation-unrun-on-server"
+            "body-statement-write-read-as-declared"
           ]
         },
         "twig": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "init-statement-mutation-unrun-on-server"
+            "body-statement-write-read-as-declared"
           ]
         },
         "xslate": {
-          "kind": "render",
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
           "limitations": [
-            "init-statement-mutation-unrun-on-server"
+            "body-statement-write-read-as-declared"
           ]
         }
       },
@@ -12883,6 +13075,14 @@
         "description": "A read of a taken key through a props-object body rest is refused",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-rest-taken-key-read.ts"
       },
+      "body-statement-write-child-prop": {
+        "description": "A binding a body statement writes, handed to a child as a prop, renders the written value",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-statement-write-child-prop.ts"
+      },
+      "body-statement-write-direct-read": {
+        "description": "A binding a body statement writes, read by the markup, is refused",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-statement-write-direct-read.ts"
+      },
       "callback-index-param": {
         "description": "A `.map()` callback reading its index — JS-runtime faithful, DSL diagnostic",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/callback-index-param.ts"
@@ -13871,6 +14071,32 @@
         "BF101"
       ]
     },
+    "body-statement-write-read-as-declared": {
+      "title": "A binding a component-body statement writes, read as it was declared",
+      "kind": "refusal",
+      "given": "a top-level statement in the component body that writes a binding after its declaration (`local.push('z')`, a reassignment, a property write), with the binding read by the markup (`{local.length}`) or by a signal seed, memo or constant declared after the statement (`createMemo(() => local.length)`)",
+      "expected": "the read sees what the statement wrote (`2`), as JS does",
+      "actual": "the compiler refuses with BF101",
+      "fixtures": [
+        "body-statement-write-direct-read",
+        "destructure-default-body-mutated-memo"
+      ],
+      "adapters": [
+        "hono",
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ],
+      "diagnostics": [
+        "BF101"
+      ]
+    },
     "boolean-in-static-loop-item": {
       "title": "Boolean field in a static loop item",
       "kind": "refusal",
@@ -14375,13 +14601,13 @@
       ]
     },
     "init-statement-mutation-unrun-on-server": {
-      "title": "A component-body statement that mutates a binding, read by rendered output",
+      "title": "A binding a component-body statement writes, handed to a child component",
       "kind": "silent",
-      "given": "a top-level statement in the component body that mutates a binding after its declaration (`local.push('z')` over `const { b: local = [...] } = props`), with the binding read in rendered output through a memo (`createMemo(() => local.length)`)",
-      "expected": "the rendered output reads the mutated binding (the memo is `2`), as JS does, and the server HTML and the hydrated DOM agree",
-      "actual": "renders the value before the statement ran (`1`) in the server HTML, since a body statement runs only on the client at mount, and renders the memo empty in the client template",
+      "given": "a top-level statement in the component body that mutates a binding after its declaration (`items.push('z')` over `const items = ['y']`), with the binding passed to a child component as a prop (`<Child items={items} />`) that the child renders",
+      "expected": "the child renders the mutated binding (`2`), as JS does, and the server HTML and the hydrated DOM agree",
+      "actual": "renders the binding as declared (`1`), or as empty (`0`) on the template adapters, in the server HTML, since a body statement runs only on the client at mount, where the child then reads the mutated binding",
       "fixtures": [
-        "destructure-default-body-mutated-memo"
+        "body-statement-write-child-prop"
       ],
       "adapters": [
         "hono",

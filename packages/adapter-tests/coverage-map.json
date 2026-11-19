@@ -1236,6 +1236,68 @@
         "text"
       ]
     },
+    "body-statement-write-child-prop": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "body-statement-write-direct-read": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "body-statement-write-direct-read-client": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
+    "body-statement-write-rewrite": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "text"
+      ]
+    },
     "boolean-attr-literals": {
       "kinds": [
         "literal"

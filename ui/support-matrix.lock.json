@@ -18,15 +18,39 @@
         "hono": {
           "gaps": [
             {
-              "fixture": "destructure-default-body-mutated-memo",
+              "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             }
           ]
         },
         "blade": {
           "gaps": [
+            {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
             {
               "fixture": "callback-index-param",
               "limitations": [
@@ -42,7 +66,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -224,6 +248,18 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -238,7 +274,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -408,6 +444,18 @@
         "go-template": {
           "gaps": [
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -416,7 +464,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -652,6 +700,18 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -666,7 +726,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -848,6 +908,18 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -862,7 +934,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -1044,6 +1116,18 @@
         "mojolicious": {
           "gaps": [
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -1064,7 +1148,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -1246,6 +1330,18 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -1260,7 +1356,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -1436,6 +1532,18 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -1450,7 +1558,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -1632,6 +1740,18 @@
         "xslate": {
           "gaps": [
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -1646,7 +1766,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -2713,7 +2833,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             }
           ]
@@ -2729,7 +2849,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -2889,7 +3009,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -3031,7 +3151,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -3197,7 +3317,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -3357,7 +3477,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -3523,7 +3643,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -3665,7 +3785,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -3825,7 +3945,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -3985,7 +4105,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -4148,7 +4268,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             }
           ]
@@ -4158,7 +4278,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -4336,7 +4456,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -4496,7 +4616,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -4728,7 +4848,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -4900,7 +5020,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -5072,7 +5192,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -5238,7 +5358,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -5404,7 +5524,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -5582,7 +5702,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -5787,7 +5907,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -5851,7 +5971,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -6281,7 +6401,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -6687,7 +6807,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -7231,7 +7351,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -7655,7 +7775,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -8085,7 +8205,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -8491,7 +8611,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -8903,7 +9023,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -9327,7 +9447,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -10725,6 +10845,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -10739,7 +10871,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -10807,6 +10939,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -10851,7 +10995,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -11387,6 +11531,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -11437,7 +11593,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -11937,6 +12093,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -11981,7 +12149,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -12721,6 +12889,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -12765,7 +12945,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -13295,6 +13475,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -13339,7 +13531,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -13869,6 +14061,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -13919,7 +14123,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -14437,6 +14641,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -14481,7 +14697,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -14993,6 +15209,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -15037,7 +15265,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -15573,6 +15801,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -15617,7 +15857,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -16298,6 +16538,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -16306,7 +16558,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -16329,6 +16581,18 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -16364,7 +16628,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -16768,6 +17032,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -16800,7 +17076,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -17198,6 +17474,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -17224,7 +17512,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -17784,6 +18072,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -17816,7 +18116,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -18220,6 +18520,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -18252,7 +18564,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -18656,6 +18968,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -18694,7 +19018,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -19110,6 +19434,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -19142,7 +19478,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -19528,6 +19864,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -19560,7 +19908,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -19964,6 +20312,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -19996,7 +20356,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -20423,7 +20783,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             }
           ]
@@ -20433,7 +20793,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -20497,7 +20857,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -20561,7 +20921,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -20667,7 +21027,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -20731,7 +21091,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -20795,7 +21155,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -20865,7 +21225,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -20929,7 +21289,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -20993,7 +21353,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -21093,6 +21453,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
@@ -21107,7 +21479,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -21142,6 +21514,18 @@
               "fixture": "body-rest-taken-key-read",
               "limitations": [
                 "body-rest-taken-key-read"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -21183,7 +21567,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -21563,6 +21947,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -21607,7 +22003,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -21951,6 +22347,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -21989,7 +22397,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -22525,6 +22933,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -22563,7 +22983,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -22937,6 +23357,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -22975,7 +23407,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -23349,6 +23781,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -23393,7 +23837,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -23755,6 +24199,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -23793,7 +24249,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -24161,6 +24617,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -24199,7 +24667,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -24579,6 +25047,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -24617,7 +25097,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -29688,7 +30168,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             }
           ]
@@ -29698,7 +30178,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -29726,7 +30206,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -29754,7 +30234,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -29782,7 +30262,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -29810,7 +30290,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -29838,7 +30318,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -29866,7 +30346,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -29894,7 +30374,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -29922,7 +30402,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -34323,9 +34803,21 @@
               ]
             },
             {
-              "fixture": "destructure-default-body-mutated-memo",
+              "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
+              "fixture": "destructure-default-body-mutated-memo",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -34342,6 +34834,18 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -34365,7 +34869,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -34685,6 +35189,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -34705,7 +35221,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -35019,6 +35535,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -35033,7 +35561,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -35485,6 +36013,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -35505,7 +36045,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -35825,6 +36365,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -35845,7 +36397,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -36165,6 +36717,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -36191,7 +36755,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -36523,6 +37087,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -36543,7 +37119,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -36851,6 +37427,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -36871,7 +37459,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -37191,6 +37779,18 @@
               ]
             },
             {
+              "fixture": "body-statement-write-child-prop",
+              "limitations": [
+                "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-direct-read",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "callback-index-param",
               "limitations": [
                 "callback-index-param"
@@ -37211,7 +37811,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -37768,7 +38368,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             }
           ]
@@ -37778,7 +38378,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -37836,7 +38436,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -37894,7 +38494,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -37994,7 +38594,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -38052,7 +38652,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -38110,7 +38710,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -38168,7 +38768,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -38226,7 +38826,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -38284,7 +38884,7 @@
             {
               "fixture": "destructure-default-body-mutated-memo",
               "limitations": [
-                "init-statement-mutation-unrun-on-server"
+                "body-statement-write-read-as-declared"
               ]
             },
             {
