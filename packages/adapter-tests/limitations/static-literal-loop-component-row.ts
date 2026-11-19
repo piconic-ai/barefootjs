@@ -7,5 +7,5 @@ export default defineLimitation({
     'a `.map()` over a module- or function-scope `const` initialized with a static array literal, whose row renders a child component anywhere other than as the row root (inside an element, a conditional branch or a nested loop)',
   expected: 'every row renders in the server HTML',
   diagnostic: 'BF101',
-  fixtures: ['static-literal-loop-component-in-row'],
+  fixtures: ['static-literal-loop-component-in-row', 'static-loop-row-child-signal-prop'],
 })

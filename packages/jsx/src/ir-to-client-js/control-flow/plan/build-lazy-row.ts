@@ -226,8 +226,8 @@ export function decideLazyRow(args: BuildLazyRowArgs): {
     // word-boundary regex over assembled markup can match a bare tag name
     // colliding with the param/index identifier, e.g. `<i>` -> `<i()>`).
     const verdict = analyzeLazyConditional(cond, {
-      whenTrueHtml: addCondAttrToTemplate(cond.whenTrueHtml, cond.slotId),
-      whenFalseHtml: addCondAttrToTemplate(cond.whenFalseHtml, cond.slotId),
+      whenTrueHtml: addCondAttrToTemplate(cond.whenTrueHtml, cond.slotId, cond.clientOnly),
+      whenFalseHtml: addCondAttrToTemplate(cond.whenFalseHtml, cond.slotId, cond.clientOnly),
     })
     if (!verdict.lazySafe) { conditionalRefusal = verdict.reason; break }
     condFacts.push(verdict.facts)

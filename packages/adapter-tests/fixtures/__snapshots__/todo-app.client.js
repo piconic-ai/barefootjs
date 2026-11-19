@@ -263,7 +263,7 @@ export function initTodoApp(__scope, _p = {}) {
 
   // @client conditional: s13
   insert(__scope, 's13', () => todos().filter(t => t.done).length > 0, {
-    template: () => { const __slots = []; return { html: `<button bf-c="s13" class="clear-completed" bf="s14">Clear completed</button>`, slots: __slots } },
+    template: () => { const __slots = []; return { html: `<!--bf-cond-start:s13--><button class="clear-completed" bf="s14">Clear completed</button><!--bf-cond-end:s13-->`, slots: __slots } },
     bindEvents: (__branchScope, { isFirstRun: __bfFirstRun = false } = {}) => {
       const [_s14] = $(__branchScope, 's14')
       if (_s14) _s14.addEventListener('click', handleClearCompleted)

@@ -436,8 +436,8 @@ export function buildLoopChildConditionalsPlan(
       // HTML string here (#2868: a word-boundary regex over assembled
       // markup can match a bare tag name colliding with the param/index
       // identifier, e.g. `<i>` -> `<i()>`).
-      whenTrueTemplateHtml: addCondAttrToTemplate(cond.whenTrueHtml, cond.slotId),
-      whenFalseTemplateHtml: addCondAttrToTemplate(cond.whenFalseHtml, cond.slotId),
+      whenTrueTemplateHtml: addCondAttrToTemplate(cond.whenTrueHtml, cond.slotId, cond.clientOnly),
+      whenFalseTemplateHtml: addCondAttrToTemplate(cond.whenFalseHtml, cond.slotId, cond.clientOnly),
       whenTrueArm: buildLoopChildArmPlan({
         branch: cond.whenTrue,
         wrap,

@@ -120,8 +120,8 @@ export function buildReactiveEffectsPlan(
         // collides with the param/index identifier (`<i>` -> `<i()>`) just
         // as readily as a real reference, since `<`/`>` are non-word
         // characters (#2868).
-        whenTrueTemplateHtml: addCondAttrToTemplate(cond.whenTrueHtml, cond.slotId),
-        whenFalseTemplateHtml: addCondAttrToTemplate(cond.whenFalseHtml, cond.slotId),
+        whenTrueTemplateHtml: addCondAttrToTemplate(cond.whenTrueHtml, cond.slotId, cond.clientOnly),
+        whenFalseTemplateHtml: addCondAttrToTemplate(cond.whenFalseHtml, cond.slotId, cond.clientOnly),
         whenTrueArm: buildOuterArm(cond.whenTrue, wrap, loopParam, loopParamBindings, loopIndex, cond.slotId, profileComponentName),
         whenFalseArm: buildOuterArm(cond.whenFalse, wrap, loopParam, loopParamBindings, loopIndex, cond.slotId, profileComponentName),
         ...(cond.readsPreamble && { readsPreamble: true }),
