@@ -18937,6 +18937,31 @@
         "text"
       ]
     },
+    "static-loop-row-child-signal-prop-client": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "static-loop-row-child-signal-prop-precomputed": {
+      "kinds": [
+        "identifier",
+        "member"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "static-loop-row-client-conditional": {
       "kinds": [
         "array-literal",

@@ -11659,8 +11659,8 @@
             "static-literal-loop-component-row"
           ],
           "escape": {
-            "state": "not-owed",
-            "reason": "By design: this fixture pins the hydration of static-array rows adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted."
+            "state": "escapable",
+            "twin": "static-loop-row-child-signal-prop-precomputed"
           }
         }
       },
@@ -13638,6 +13638,10 @@
       "static-loop-item-conditional-precomputed": {
         "description": "prop-precompute twin of static-loop-item-conditional — items moved to a prop, full SSR (#2898,…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-item-conditional-precomputed.ts"
+      },
+      "static-loop-row-child-signal-prop-precomputed": {
+        "description": "prop-precompute twin of `static-loop-row-child-signal-prop` — the rows render at SSR from a prop",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-row-child-signal-prop-precomputed.ts"
       },
       "strict-equality-reference-rewrite": {
         "description": "=== / !== over a primitive field of two objects or arrays instead of the objects themselves",

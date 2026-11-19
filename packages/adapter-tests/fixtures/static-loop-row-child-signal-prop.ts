@@ -24,13 +24,10 @@ export const spec: SharedFixtureSpec = {
   additionalComponents: ['SignalPropBadge'],
   description:
     'a child component in a static array row, with or without a row-only conditional, is imported by the parent and follows a signal prop (#3921)',
-  // The fixture pins the client-side update of rows adopted from the server
-  // HTML; a '/* @client */' twin renders the loop on the client only, so no
-  // row is adopted and the twin would pin a client-only mount instead.
-  escapeNotOwed: {
-    reason:
-      "By design: this fixture pins the hydration of static-array rows adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted.",
-  },
+  escapes: [
+    { kind: 'prop-precompute', fixture: 'static-loop-row-child-signal-prop-precomputed' },
+    { kind: 'client-directive', fixture: 'static-loop-row-child-signal-prop-client' },
+  ],
   interactions: [
     { type: 'expectText', selector: 'ul.plain li:nth-child(1) .badge', text: 'n=0' },
     { type: 'expectText', selector: 'ul.plain li:nth-child(2) .badge', text: 'n=0' },

@@ -819,6 +819,8 @@ import { fixture as staticLoopConditionalFunctionHelper } from './static-loop-co
 import { fixture as staticLoopConditionalRowIndependentHelper } from './static-loop-conditional-row-independent-helper'
 import { fixture as staticLoopRowConditionalBranchSignal } from './static-loop-row-conditional-branch-signal'
 import { fixture as staticLoopRowChildSignalProp } from './static-loop-row-child-signal-prop'
+import { fixture as staticLoopRowChildSignalPropClient } from './static-loop-row-child-signal-prop-client'
+import { fixture as staticLoopRowChildSignalPropPrecomputed } from './static-loop-row-child-signal-prop-precomputed'
 import { fixture as staticLoopRowClientConditional } from './static-loop-row-client-conditional'
 import { fixture as clientConditionalElementArms } from './client-conditional-element-arms'
 import { fixture as staticLoopItemConditional } from './static-loop-item-conditional'
@@ -2244,6 +2246,8 @@ export const jsxFixtures: JSXFixture[] = [
   staticLoopConditionalRowIndependentHelper,
   staticLoopRowConditionalBranchSignal,
   staticLoopRowChildSignalProp,
+  staticLoopRowChildSignalPropClient,
+  staticLoopRowChildSignalPropPrecomputed,
   staticLoopRowClientConditional,
   clientConditionalElementArms,
   staticLoopItemConditional,
