@@ -576,7 +576,7 @@ function addModuleScopeReplicaEdges(replica: ModuleScopeReplica | null, edges: R
   if (!emitted) return
   const declared = new Set([...replica.constants, ...replica.functions].map(d => d.name))
   const replicaEdges: ReferenceEdge[] = []
-  addConstantEdges(emitted.constants, null, replicaEdges)
+  addConstantEdges([...emitted.constants, ...emitted.shared], null, replicaEdges)
   for (const fn of emitted.functions) addFunctionEdges(ROOT_SOURCE, fn, { facts: {}, receivers: new Set() }, replicaEdges)
   for (const edge of replicaEdges) {
     if (!declared.has(edge.to)) edges.push({ ...edge, from: ROOT_SOURCE })
