@@ -6649,6 +6649,12 @@
               ]
             },
             {
+              "fixture": "date-intersection-nested-narrowing",
+              "limitations": [
+                "go-nested-inherited-date-member"
+              ]
+            },
+            {
               "fixture": "date-method-uncatalogued",
               "limitations": [
                 "ambient-locale-date-formatting"
@@ -11916,6 +11922,12 @@
               "fixture": "const-getter-read-loop-shadowed",
               "limitations": [
                 "loop-shadowed-const-alias-hop"
+              ]
+            },
+            {
+              "fixture": "date-intersection-nested-narrowing",
+              "limitations": [
+                "go-nested-inherited-date-member"
               ]
             },
             {
@@ -21882,6 +21894,12 @@
               "fixture": "conditional-return-fragment-branch",
               "limitations": [
                 "fragment-wrapped-conditional-return-branch-scope"
+              ]
+            },
+            {
+              "fixture": "date-intersection-nested-narrowing",
+              "limitations": [
+                "go-nested-inherited-date-member"
               ]
             },
             {
@@ -38229,7 +38247,16 @@
         "hono": {},
         "blade": {},
         "erb": {},
-        "go-template": {},
+        "go-template": {
+          "gaps": [
+            {
+              "fixture": "date-intersection-nested-narrowing",
+              "limitations": [
+                "go-nested-inherited-date-member"
+              ]
+            }
+          ]
+        },
         "jinja": {},
         "minijinja": {},
         "mojolicious": {},
