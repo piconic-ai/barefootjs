@@ -37,7 +37,7 @@ import { analyzeBakeableStaticElementLoop } from '../analysis/static-element-loo
 import type { BakedStaticChildLoop } from '../analysis/static-child-loop-bake.ts'
 import type { GoEmitContext } from '../emit-context.ts'
 import { renderFilterExpr, type ConditionExprHost } from '../expr/condition-expr.ts'
-import { lowerValueOperand } from '../expr/url-builder.ts'
+import { lowerTemplateLiteralValue, lowerValueOperand } from '../expr/url-builder.ts'
 import { propsObjectKeyRead } from '../lib/compile-state.ts'
 import { SCALAR_ROW_ITEM_FIELD } from '../lib/constants.ts'
 import { emitBfSort, emitSortEval, wrapIfMultiToken } from '../lib/go-emit.ts'
@@ -416,8 +416,17 @@ function renderLoopRow(
   // Rendered inside the pushed loop scope so each initializer resolves
   // against the range item (`.Done`), in source order so a later
   // initializer sees an earlier `$` variable — same as the source block.
+  // A template literal initializer folds to ONE pipeline value
+  // (`bf_concat_str …`, #3936): `renderParsedExpr` would spell it as the
+  // text-position mix of literal text and `{{…}}` actions, which is not a
+  // legal right-hand side of `{{$x := …}}` (a parse panic at render time).
   const preambleAssignments = (loop.preamble?.declarations ?? [])
-    .map(d => `{{$${d.name} := ${host.renderParsedExpr(d.valueParsed)}}}`)
+    .map(d => {
+      const value = d.valueParsed.kind === 'template-literal'
+        ? lowerTemplateLiteralValue(host.ctx, d.valueParsed.parts)
+        : host.renderParsedExpr(d.valueParsed)
+      return `{{$${d.name} := ${value}}}`
+    })
     .join('')
   const children = host.renderChildren(loop.children)
   host.setScalarWrapperRowCallSite(wasScalarWrapperRowCallSite)

@@ -4429,6 +4429,84 @@
         "text"
       ]
     },
+    "date-inherited-prop-inline-intersection": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "date-inherited-prop-inline-intersection-base-last": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "date-inherited-prop-inline-intersection-destructured": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "date-inherited-prop-inline-intersection-extends": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "date-inherited-prop-inline-intersection-literal": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "date-inherited-prop-inline-intersection-nested": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "date-inherited-prop-intersection": {
       "kinds": [
         "call",
@@ -6856,6 +6934,39 @@
         "text"
       ]
     },
+    "foreign-title-bare-text": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "foreign-title-markup-child": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "foreign-title-slot": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "form": {
       "kinds": [
         "call",
@@ -9071,6 +9182,26 @@
       "axes": [
         "binary:+",
         "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-preamble-template-literal": {
+      "kinds": [
+        "array-method",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "literal:string"
       ],
       "contexts": [
         "attribute",

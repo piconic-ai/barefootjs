@@ -4748,7 +4748,7 @@
             {
               "fixture": "raw-text-host-annotation-xml-encodings",
               "limitations": [
-                "foreign-title-slot-markers-escaped"
+                "foreign-rcdata-dynamic-child"
               ]
             },
             {
@@ -7161,7 +7161,7 @@
             {
               "fixture": "raw-text-host-annotation-xml-encodings",
               "limitations": [
-                "foreign-title-slot-markers-escaped"
+                "foreign-rcdata-dynamic-child"
               ]
             },
             {
@@ -12297,6 +12297,18 @@
               ]
             },
             {
+              "fixture": "foreign-title-markup-child",
+              "limitations": [
+                "foreign-rcdata-dynamic-child"
+              ]
+            },
+            {
+              "fixture": "foreign-title-slot",
+              "limitations": [
+                "foreign-rcdata-dynamic-child"
+              ]
+            },
+            {
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
@@ -12635,7 +12647,7 @@
             {
               "fixture": "raw-text-host-annotation-xml-encodings",
               "limitations": [
-                "foreign-title-slot-markers-escaped"
+                "foreign-rcdata-dynamic-child"
               ]
             },
             {
@@ -17642,6 +17654,12 @@
               ]
             },
             {
+              "fixture": "foreign-title-slot",
+              "limitations": [
+                "foreign-rcdata-dynamic-child"
+              ]
+            },
+            {
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
@@ -17896,7 +17914,7 @@
             {
               "fixture": "raw-text-host-annotation-xml-encodings",
               "limitations": [
-                "foreign-title-slot-markers-escaped"
+                "foreign-rcdata-dynamic-child"
               ]
             },
             {
@@ -30711,7 +30729,7 @@
             {
               "fixture": "raw-text-host-annotation-xml-encodings",
               "limitations": [
-                "foreign-title-slot-markers-escaped"
+                "foreign-rcdata-dynamic-child"
               ]
             },
             {
@@ -33706,7 +33724,7 @@
             {
               "fixture": "raw-text-host-annotation-xml-encodings",
               "limitations": [
-                "foreign-title-slot-markers-escaped"
+                "foreign-rcdata-dynamic-child"
               ]
             },
             {
@@ -35667,6 +35685,12 @@
               ]
             },
             {
+              "fixture": "foreign-title-slot",
+              "limitations": [
+                "foreign-rcdata-dynamic-child"
+              ]
+            },
+            {
               "fixture": "format-date",
               "limitations": [
                 "authored-format-date-call"
@@ -35885,7 +35909,7 @@
             {
               "fixture": "raw-text-host-annotation-xml-encodings",
               "limitations": [
-                "foreign-title-slot-markers-escaped"
+                "foreign-rcdata-dynamic-child"
               ]
             },
             {
