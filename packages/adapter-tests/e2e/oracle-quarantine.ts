@@ -214,6 +214,23 @@ export const ORACLE_QUARANTINE: Readonly<Record<string, QuarantineEntry>> = {
   // the same as the absent-attribute default. If `initialTodos` ever became
   // all-done, `every()` would flip `true` and this region would start
   // diverging too.
+  // `/* @client */` conditionals deferred on purpose (#3921): SSR emits the
+  // conditional's marker pair empty and hydration mounts the matching arm, so
+  // the SSR state and the hydrated state differ by design. Same record as
+  // `todo-app` above: this oracle cannot tell an explicit @client placeholder
+  // fill apart from a hydration defect.
+  'client-conditional-element-arms': {
+    oracles: ['snap', 'three-point'],
+    reason:
+      'SSR emits the /* @client */ conditional (top-level and in each signal-array row) as an empty marker pair; hydration mounts the arm. By-design client-only rendering, not a hydration defect.',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/3921',
+  },
+  'static-loop-row-client-conditional': {
+    oracles: ['snap', 'three-point'],
+    reason:
+      'SSR emits the /* @client */ conditional in each static-array row as an empty marker pair; hydration mounts the arm. By-design client-only rendering, not a hydration defect.',
+    issue: 'https://github.com/piconic-ai/barefootjs/issues/3921',
+  },
   'todo-app': {
     oracles: ['snap', 'three-point'],
     reason:

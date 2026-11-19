@@ -47,20 +47,20 @@ export function buildInsertPlan(
     eventNameMode: options.eventNameMode,
     profileComponentName: options.profileComponentName,
     arms: [
-      buildArm(elem.whenTrueHtml, elem.slotId, elem.whenTrue, options),
-      buildArm(elem.whenFalseHtml, elem.slotId, elem.whenFalse, options),
+      buildArm(elem.whenTrueHtml, elem, elem.whenTrue, options),
+      buildArm(elem.whenFalseHtml, elem, elem.whenFalse, options),
     ],
   }
 }
 
 function buildArm(
   html: string,
-  slotId: string,
+  cond: Pick<ConditionalElement, 'slotId' | 'clientOnly'>,
   branch: BranchSummary,
   options: BuildInsertOptions,
 ): InsertArm {
   return {
-    templateHtml: addCondAttrToTemplate(html, slotId),
+    templateHtml: addCondAttrToTemplate(html, cond.slotId, cond.clientOnly),
     body: buildArmBody(branch, options),
   }
 }

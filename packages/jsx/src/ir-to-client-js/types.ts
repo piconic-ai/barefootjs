@@ -491,6 +491,12 @@ export interface BranchSummary {
 
 export interface ConditionalElement {
   slotId: string
+  /**
+   * `/* @client *\/` conditional: the server renders only its marker pair, so
+   * no arm has a server element to adopt and each arm's template is wrapped in
+   * the same marker pair (#3921).
+   */
+  clientOnly?: boolean
   condition: string
   whenTrueHtml: string
   whenFalseHtml: string
@@ -647,6 +653,8 @@ export interface LoopChildBranchSummary {
 
 export interface LoopChildConditional {
   slotId: string       // bf-c slot ID for insert() targeting
+  /** `/* @client *\/` conditional — see `ConditionalElement.clientOnly` (#3921). */
+  clientOnly?: boolean
   condition: string    // Reactive condition expression
   whenTrueHtml: string // HTML template for true branch
   whenFalseHtml: string // HTML template for false branch (usually comment markers)

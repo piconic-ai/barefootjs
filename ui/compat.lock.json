@@ -11649,6 +11649,21 @@
           }
         }
       },
+      "static-loop-row-child-signal-prop": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "static-literal-loop-component-row"
+          ],
+          "escape": {
+            "state": "not-owed",
+            "reason": "By design: this fixture pins the hydration of static-array rows adopted from the server HTML. A '/* @client */' twin renders the loop on the client only, so no row is adopted."
+          }
+        }
+      },
       "strict-equality-destructure-default-distinct": {
         "blade": {
           "kind": "refusal",
@@ -13351,6 +13366,10 @@
       "static-loop-item-conditional": {
         "description": "static array's .map() row conditional keyed off the item itself bakes to a per-item Go literal…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-item-conditional.ts"
+      },
+      "static-loop-row-child-signal-prop": {
+        "description": "a child component in a static array row, with or without a row-only conditional, is imported by the…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/static-loop-row-child-signal-prop.ts"
       },
       "strict-equality-destructure-default-distinct": {
         "description": "=== between a prop object and an equal-content object const in a destructure default is false",
@@ -15088,7 +15107,8 @@
       "expected": "every row renders in the server HTML",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
-        "static-literal-loop-component-in-row"
+        "static-literal-loop-component-in-row",
+        "static-loop-row-child-signal-prop"
       ],
       "adapters": [
         "go-template"

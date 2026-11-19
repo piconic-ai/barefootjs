@@ -630,6 +630,12 @@
               ]
             },
             {
+              "fixture": "static-loop-row-child-signal-prop",
+              "limitations": [
+                "static-literal-loop-component-row"
+              ]
+            },
+            {
               "fixture": "strict-equality-distinct-reference",
               "limitations": [
                 "object-equality-by-contents"
@@ -4668,6 +4674,12 @@
               ]
             },
             {
+              "fixture": "static-loop-row-child-signal-prop",
+              "limitations": [
+                "static-literal-loop-component-row"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -7126,6 +7138,12 @@
               "fixture": "static-loop-conditional-function-helper",
               "limitations": [
                 "component-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "static-loop-row-child-signal-prop",
+              "limitations": [
+                "static-literal-loop-component-row"
               ]
             },
             {
@@ -12579,6 +12597,12 @@
               ]
             },
             {
+              "fixture": "static-loop-row-child-signal-prop",
+              "limitations": [
+                "static-literal-loop-component-row"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -17684,6 +17708,12 @@
               ]
             },
             {
+              "fixture": "static-loop-row-child-signal-prop",
+              "limitations": [
+                "static-literal-loop-component-row"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -22437,6 +22467,12 @@
               ]
             },
             {
+              "fixture": "static-loop-row-child-signal-prop",
+              "limitations": [
+                "static-literal-loop-component-row"
+              ]
+            },
+            {
               "fixture": "strict-equality-optional-array-element",
               "limitations": [
                 "array-self-equality"
@@ -25489,6 +25525,12 @@
               "fixture": "static-loop-conditional-function-helper",
               "limitations": [
                 "component-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "static-loop-row-child-signal-prop",
+              "limitations": [
+                "static-literal-loop-component-row"
               ]
             },
             {
@@ -30221,6 +30263,12 @@
               "limitations": [
                 "computed-const-loop-source"
               ]
+            },
+            {
+              "fixture": "static-loop-row-child-signal-prop",
+              "limitations": [
+                "static-literal-loop-component-row"
+              ]
             }
           ]
         },
@@ -30976,6 +31024,12 @@
               "fixture": "static-loop-conditional-function-helper",
               "limitations": [
                 "component-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "static-loop-row-child-signal-prop",
+              "limitations": [
+                "static-literal-loop-component-row"
               ]
             },
             {
@@ -33224,6 +33278,12 @@
               ]
             },
             {
+              "fixture": "static-loop-row-child-signal-prop",
+              "limitations": [
+                "static-literal-loop-component-row"
+              ]
+            },
+            {
               "fixture": "strict-equality-destructure-default-distinct",
               "limitations": [
                 "object-equality-by-contents"
@@ -35358,6 +35418,12 @@
               "fixture": "static-loop-conditional-function-helper",
               "limitations": [
                 "component-scope-helper-call"
+              ]
+            },
+            {
+              "fixture": "static-loop-row-child-signal-prop",
+              "limitations": [
+                "static-literal-loop-component-row"
               ]
             },
             {

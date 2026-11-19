@@ -1529,6 +1529,7 @@ function buildConditionalMetadata(
   // stringified by the surrounding template literal.
   return {
     slotId: node.slotId!,
+    ...(node.clientOnly && { clientOnly: true }),
     condition: node.condition,
     whenTrueHtml: irToHtmlTemplate(node.whenTrue, restNames, -1, undefined, '__slots'),
     whenFalseHtml: irToHtmlTemplate(node.whenFalse, restNames, -1, undefined, '__slots'),
@@ -1817,6 +1818,7 @@ export function collectLoopChildConditionals(
       const whenFalseHtml = irToHtmlTemplate(n.whenFalse, undefined, 0, loopParamsForCond, '__slots')
       conditionals.push({
         slotId: n.slotId,
+        ...(n.clientOnly && { clientOnly: true }),
         condition: expanded.expr,
         whenTrueHtml,
         whenFalseHtml,
