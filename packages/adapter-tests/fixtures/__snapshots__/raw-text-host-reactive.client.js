@@ -19,7 +19,7 @@ export function initRawTextHostReactive(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s1) {
-      { const __x = [escapeRawTextContent('style', '.t{color:' + color() + '}')].join('')
+      { const __x = escapeRawTextContent('style', [('.t{color:' + color() + '}')])
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         _s1.innerHTML = String(__x)
       }
@@ -30,7 +30,7 @@ export function initRawTextHostReactive(__scope, _p = {}) {
   { const __l = []
   createEffect(() => {
     if (_s3) {
-      { const __x = [escapeRawTextContent('script', 'window.__n=' + n())].join('')
+      { const __x = escapeRawTextContent('script', [('window.__n=' + n())])
       if (!(0 in __l) || !Object.is(__l[0], __x)) {
         _s3.innerHTML = String(__x)
       }
@@ -63,5 +63,5 @@ export function initRawTextHostReactive(__scope, _p = {}) {
   if (_s10) _s10.addEventListener('click', () => { setColor('blue'); setN(n() + 1) })
 }
 
-hydrate('RawTextHostReactive', { init: initRawTextHostReactive, template: (_p) => `<div><style class="rule" bf="s1">${escapeRawTextContent('style', '.t{color:' + ('red') + '}')}</style><script class="code" bf="s3">${escapeRawTextContent('script', 'window.__n=' + (1))}</script><textarea class="area" bf="s5">${escapeText('v' + (1))}</textarea><title class="ttl" bf="s7">${escapeText('t' + (1))}</title><span class="ctl" bf="s9"><!--bf:s8-->${escapeTextOrMarkup('c' + (1))}<!--/--></span><i class="t">x</i><button class="go" bf="s10">go</button></div>` })
+hydrate('RawTextHostReactive', { init: initRawTextHostReactive, template: (_p) => `<div><style class="rule" bf="s1">${escapeRawTextContent('style', [('.t{color:' + ('red') + '}')])}</style><script class="code" bf="s3">${escapeRawTextContent('script', [('window.__n=' + (1))])}</script><textarea class="area" bf="s5">${escapeText('v' + (1))}</textarea><title class="ttl" bf="s7">${escapeText('t' + (1))}</title><span class="ctl" bf="s9"><!--bf:s8-->${escapeTextOrMarkup('c' + (1))}<!--/--></span><i class="t">x</i><button class="go" bf="s10">go</button></div>` })
 export function RawTextHostReactive(_p, __bfKey) { return createComponent('RawTextHostReactive', _p, __bfKey) }

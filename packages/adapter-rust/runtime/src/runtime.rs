@@ -1709,7 +1709,16 @@ impl Object for BfInstance {
             "bool_str" => Ok(MjValue::from(js_bool_str(js_truthy(a(0))))),
             // The text of a `<style>` / `<script>` element: printed without
             // the HTML escape (see `raw_text`).
-            "raw_text" => Ok(safe(raw_text(js_string(a(0)).as_str(), js_string(a(1)).as_str()))),
+            // The second argument is the element's WHOLE text as the list
+            // of its pieces: joined first and encoded once, because an end
+            // tag can be spelled across pieces.
+            "raw_text" => {
+                let text = match a(1) {
+                    JsValue::Array(parts) => parts.iter().map(js_string).collect::<String>(),
+                    other => js_string(other),
+                };
+                Ok(safe(raw_text(js_string(a(0)).as_str(), text.as_str())))
+            }
             "text_start" => Ok(safe(format!("<!--bf:{}-->", js_string(a(0))))),
             "text_end" => Ok(safe("<!--/-->".to_string())),
             "scope_comment" => Ok(safe(self.scope_comment())),

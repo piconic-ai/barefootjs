@@ -73,23 +73,33 @@ export function escapedText(expr: string): SafeHtml {
 }
 
 /**
- * `escapeRawTextContent(tag, expr)` — the text of a `<style>` / `<script>`
- * element (`IRExpression.rawText`, #3934). The HTML parser decodes no
- * character reference there, so the value is not HTML-escaped; the runtime
- * helper rewrites the sequences that would end the element, which is what
- * makes the result safe to splice.
+ * `escapeRawTextContent(tag, [part, …])` — the WHOLE text of a `<style>` /
+ * `<script>` element (`IRElement.rawTextContent`, #3934). The HTML parser
+ * decodes no character reference there, so the text is not HTML-escaped; the
+ * runtime helper joins the parts and rewrites the sequences that would end
+ * the element, which is what makes the result safe to splice. `values` are
+ * the JS expressions of every part in source order (a string literal for
+ * static text): encoding the parts one by one would miss an end tag spelled
+ * across two of them (`['<', v]`), so there is no per-part producer.
  */
-export function rawTextContent(tag: RawTextTag, expr: string): SafeHtml {
-  return safeHtml(`escapeRawTextContent('${tag}', ${expr})`)
+export function rawTextContent(tag: RawTextTag, values: readonly string[]): SafeHtml {
+  return safeHtml(`escapeRawTextContent('${tag}', [${values.map(v => `(${v})`).join(', ')}])`)
 }
 
 /**
- * The static text of a `<style>` / `<script>` element, encoded at compile
- * time with the same rule (`IRText.rawText`). Plain HTML text for the
- * template string, not yet escaped for the enclosing JS template literal.
+ * The whole text of a `<style>` / `<script>` element whose parts are all
+ * static, encoded at compile time with the same rule. Plain HTML text for
+ * the template string, not yet escaped for the enclosing JS template literal.
  */
 export function rawTextStatic(tag: RawTextTag, text: string): string {
   return escapeRawText(tag, text)
+}
+
+/** Thrown when a part of a `rawTextContent` reaches a per-child splice. */
+export function rawTextChildError(): Error {
+  return new Error(
+    'A text child of <style> / <script> must be spliced with the rest of the element text (IRElement.rawTextContent), not on its own.',
+  )
 }
 
 /**
@@ -250,7 +260,8 @@ export interface ChildSpliceContext {
  * escapes: there is no arm that returns `valueExpr` unwrapped.
  *
  * Arms, first match wins:
- *   0. `rawText`                → `rawTextContent`    (`<style>` / `<script>` text, #3934)
+ *   0. `rawText`                → throws: a `<style>` / `<script>` text part is
+ *      spliced only with the whole element text (`rawTextContent`, #3934)
  *   1. `joinArrayChild`         → `joinedMarkup`      (array of compiled leaves)
  *   2. `branchSlotsVar`         → `branchSlotValue`   (runtime coercion, may be a Node)
  *   3. `slotId` ∈ markupSlotIds,→ `escapedTextOrMarkup`
@@ -274,7 +285,7 @@ export function spliceChildValue(
   valueExpr: string,
   cx: ChildSpliceContext,
 ): SafeHtml {
-  if (node.rawText) return rawTextContent(node.rawText, valueExpr)
+  if (node.rawText) throw rawTextChildError()
   if (node.joinArrayChild) return joinedMarkup(valueExpr)
   if (cx.branchSlotsVar) return branchSlotValue(valueExpr, cx.branchSlotsVar)
   if (node.slotId) {

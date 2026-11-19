@@ -1121,7 +1121,7 @@ class BarefootJS:
     def string(self, value: Any) -> str:
         return js_string(value)
 
-    def raw_text(self, tag: str, value: Any) -> str:
+    def raw_text(self, tag: str, parts: Any) -> str:
         """The text of a `<style>` / `<script>` element (`tag`).
 
         The HTML parser decodes no character reference there, so the value
@@ -1131,8 +1131,16 @@ class BarefootJS:
         JS reads back as the same text: `</style` -> `<\\/style`, and
         `<script` / `</script` -> `\\u003cscript` / `\\u003c/script` (ASCII
         case-insensitive). Mirrors `escapeRawText` in `@barefootjs/shared`.
+
+        `parts` is the element's WHOLE text as the list of its pieces (static
+        text and each expression's value): they are joined first and encoded
+        once, because an end tag can be spelled across pieces
+        (`['<', '/style>']`).
         """
-        text = str(js_string(value))
+        if isinstance(parts, (list, tuple)):
+            text = "".join(str(js_string(part)) for part in parts)
+        else:
+            text = str(js_string(parts))
         if tag == "style":
             return _RAW_TEXT_STYLE_END_RE.sub(r"<\\/\1", text)
         return _RAW_TEXT_SCRIPT_TAG_RE.sub(r"\\u003c\1", text)

@@ -5,8 +5,8 @@
  * language; the order and the conditions live here once.
  */
 
-import { BF_PORTAL_OWNER, BF_REGION } from '@barefootjs/shared'
-import type { IRElement, IRFragment, IRNode } from '../types.ts'
+import { BF_PORTAL_OWNER, BF_REGION, isRawTextTag, type RawTextTag } from '@barefootjs/shared'
+import type { IRElement, IRExpression, IRFragment, IRNode, IRText } from '../types.ts'
 import { emitAttrValue, type AttrValueEmitter } from './attr-value-emitter.ts'
 import { isDangerousInnerHtmlAttr } from './dangerous-inner-html.ts'
 
@@ -59,6 +59,12 @@ export interface ElementShellSpelling {
   /** The element's `dangerouslySetInnerHTML` content, or `null` when it has none. */
   renderDangerousInnerHtml(element: IRElement): string | null
   renderChildren(children: IRNode[]): string
+  /**
+   * The whole text of a `<style>` / `<script>` (`IRElement.rawTextContent`),
+   * printed through the runtime's `raw_text` in ONE call over every part, so
+   * an end tag spelled across parts is still rewritten (#3934).
+   */
+  renderRawTextContent(tag: RawTextTag, parts: readonly (IRText | IRExpression)[]): string
   renderScopeMarker(instanceIdExpr: string): string
   renderSlotMarker(slotId: string): string
   /**
@@ -73,12 +79,43 @@ export interface ElementShellSpelling {
   wrapSsrPortalElement(rendered: string): string
 }
 
+/**
+ * The element's content: the single encoded print of a `<style>` /
+ * `<script>`'s whole text, or the children one after another.
+ */
+function renderElementContent(element: IRElement, spelling: ElementShellSpelling): string {
+  if (element.rawTextContent && isRawTextTag(element.tag)) {
+    return spelling.renderRawTextContent(element.tag, element.rawTextContent)
+  }
+  return spelling.renderChildren(element.children)
+}
+
+/**
+ * The list of parts `raw_text` receives: static text as a string literal of
+ * the template language, an expression as the value it prints. Every DSL
+ * adapter's list literal is `[a, b]`.
+ */
+export function rawTextPartList(
+  parts: readonly (IRText | IRExpression)[],
+  literal: (text: string) => string,
+  value: (expr: IRExpression) => string,
+): string {
+  return `[${parts.map(part => (part.type === 'text' ? literal(part.value) : value(part))).join(', ')}]`
+}
+
+/** Thrown by a child emitter handed a node that belongs to a `rawTextContent`. */
+export function rawTextChildError(): Error {
+  return new Error(
+    'A text child of <style> / <script> must be printed with the rest of the element text (IRElement.rawTextContent), not on its own.',
+  )
+}
+
 /** The element, from its open tag to its close tag. */
 export function renderElementShell(element: IRElement, spelling: ElementShellSpelling): string {
   const tag = element.tag
   const attrs = renderElementAttributes(element, spelling.attrEmitter)
   const dangerousHtml = spelling.renderDangerousInnerHtml(element)
-  const children = dangerousHtml !== null ? dangerousHtml : spelling.renderChildren(element.children)
+  const children = dangerousHtml !== null ? dangerousHtml : renderElementContent(element, spelling)
 
   let hydrationAttrs = ''
   if (element.needsScope) {

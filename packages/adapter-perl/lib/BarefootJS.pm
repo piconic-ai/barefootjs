@@ -828,8 +828,14 @@ sub string ($self, $value) {
 # `\u003c/script` (ASCII case-insensitive; the tag name is spelled per
 # letter because `/i` also folds U+017F to `s`). Mirrors `escapeRawText` in
 # `@barefootjs/shared`.
-sub raw_text ($self, $tag, $value) {
-    my $text = $self->string($value);
+#
+# `$parts` is the element's WHOLE text as the list of its pieces (static text
+# and each expression's value): they are joined first and encoded once,
+# because an end tag can be spelled across pieces (`['<', '/style>']`).
+sub raw_text ($self, $tag, $parts) {
+    my $text = ref($parts) eq 'ARRAY'
+        ? CORE::join('', map { $self->string($_) } @$parts)
+        : $self->string($parts);
     if ($tag eq 'style') {
         $text =~ s{</([sS][tT][yY][lL][eE])}{<\\/$1}g;
     }

@@ -58,6 +58,11 @@ function childText(value: unknown): string {
  * escape would put `&quot;` / `&lt;` into the CSS / JS. The value is written
  * as it is, with only the sequences that would end the element rewritten
  * (`escapeRawText`), and handed to Hono as already-safe markup.
+ *
+ * `value` is the element's WHOLE text: the compiler passes the list of its
+ * pieces (static text and each expression's value), which is joined first
+ * and encoded once, because an end tag can be spelled across pieces
+ * (`['<', '/style>']`).
  */
 export function bfRawText(tag: RawTextTag, value: unknown) {
   return raw(escapeRawText(tag, childText(value)))

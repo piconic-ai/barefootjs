@@ -319,18 +319,20 @@ describe('<style> / <script> text is marked raw text (#3934)', () => {
     expect(r.errors).toEqual([])
     const js = clientJs(r)
     // Static text is not entity-escaped in the template or in the update.
-    expect(js).toContain('<style bf="s1">a > b ${escapeRawTextContent(\'style\', ')
+    // One call over the whole text, in the template and in the update.
+    expect(js).toContain(`<style bf="s1">\${escapeRawTextContent('style', [("a \\u003e b "), ('x' + (0))])}</style>`)
     expect(js).not.toContain('a &gt; b')
-    expect(js).toContain(`escapeRawTextContent('style', 'x' + n())].join('')`)
+    expect(js).toContain(`const __x = escapeRawTextContent('style', [("a \\u003e b "), ('x' + n())])`)
     // RCDATA keeps the HTML escape.
     expect(js).toContain(`[escapeText('x' + n())].join('')`)
   })
 
   test('static <style> text that could end the element is rewritten at compile time', () => {
-    const r = compile(`<div><style>{'a'}&lt;/style&gt;&lt;i&gt;</style><script>&lt;/SCRIPT&gt;&lt;script&gt;</script></div>`)
+    const r = compile(`<div><style>a&lt;/sty<>le&gt;&lt;i&gt;</></style><script>&lt;/SCRIPT&gt;&lt;script&gt;</script></div>`)
     expect(r.errors).toEqual([])
     const js = clientJs(r)
-    expect(js).toContain('<\\\\/style><i></style>')
+    // The end tag is spelled across two text nodes: the whole text is encoded.
+    expect(js).toContain('<style>a<\\\\/style><i></style>')
     expect(js).toContain('<script>\\\\u003c/SCRIPT>\\\\u003cscript></script>')
   })
 
@@ -338,7 +340,7 @@ describe('<style> / <script> text is marked raw text (#3934)', () => {
     const r = compile(`<div>{n() > 0 ? <p><style>{label(1)}</style></p> : null}</div>`, `const label = (i: number) => 'a > ' + i`)
     expect(r.errors).toEqual([])
     const js = clientJs(r)
-    expect(js).toContain(`<style>\${escapeRawTextContent('style', label(1))}</style>`)
+    expect(js).toContain(`<style>\${escapeRawTextContent('style', [(label(1))])}</style>`)
     expect(js).not.toContain('__bfSlot(label(1)')
   })
 
@@ -368,4 +370,62 @@ describe('<style> / <script> text is marked raw text (#3934)', () => {
       expect(r.errors).toEqual([])
     }
   })
+})
+
+describe('the whole <style> / <script> text is encoded in one call (#3934)', () => {
+  function compileWith(a: TestAdapter | HonoLike, jsx: string) {
+    return compileJSX(
+      `export function Comp(props: { v: string; w: string }) { return ${jsx} }`,
+      'Comp.tsx',
+      { adapter: a as TestAdapter, outputIR: true },
+    )
+  }
+  type HonoLike = { name: string }
+
+  test('rawTextContent lists every part in source order, fragments flattened', () => {
+    const r = compileWith(adapter, `<div><style>{'<'}{props.v}<>x{props.w}</>y</style></div>`)
+    expect(r.errors).toEqual([])
+    const ir = JSON.parse(r.files.find(f => f.type === 'ir')?.content ?? '{}')
+    const find = (node: any): any => {
+      if (node?.type === 'element' && node.tag === 'style') return node
+      for (const child of node?.children ?? []) {
+        const hit = find(child)
+        if (hit) return hit
+      }
+      return null
+    }
+    const parts = find(ir.root).rawTextContent
+    expect(parts.map((p: any) => (p.type === 'text' ? p.value : p.expr))).toEqual(["'<'", 'props.v', 'x', 'props.w', 'y'])
+  })
+
+  test('an SVG <style> and a <textarea> have no rawTextContent', () => {
+    for (const jsx of [`<svg><style>a{props.v}</style></svg>`, `<div><textarea>a{props.v}</textarea></div>`]) {
+      const r = compileWith(adapter, jsx)
+      expect(r.files.find(f => f.type === 'ir')?.content ?? '').not.toContain('rawTextContent')
+    }
+  })
+
+  for (const [name, jsx] of [
+    ['static + dynamic', `<div><style>{'<'}{props.v}</style></div>`],
+    ['dynamic + dynamic', `<div><script>{props.v}{props.w}</script></div>`],
+    ['a fragment', `<div><style>&lt;/sty<>{props.v}</></style></div>`],
+    ['dynamic + static', `<div><script>{props.v}ipt&gt;</script></div>`],
+  ] as const) {
+    test(`${name}: the client template splices exactly one encoder call`, () => {
+      const source = `
+        'use client'
+        import { createSignal } from '@barefootjs/client'
+        export function Comp(props: { v: string; w: string }) {
+          const [n] = createSignal(0)
+          return ${jsx}
+        }
+      `
+      const r = compileJSX(source, 'Comp.tsx', { adapter })
+      expect(r.errors).toEqual([])
+      const js = r.files.find(f => f.type === 'clientJs')?.content ?? ''
+      const template = js.slice(js.indexOf('hydrate('))
+      expect(template.split('escapeRawTextContent(').length - 1).toBe(1)
+      expect(template).not.toContain('escapeText(')
+    })
+  }
 })

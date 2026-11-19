@@ -38,6 +38,36 @@ describe('escapeRawTextContent', () => {
     expect(JSON.parse(host.querySelector('script')!.textContent!)).toEqual({ k: '</script><i id=y><!--<script>' })
   })
 
+  test('the parts of the element text are joined before they are encoded', () => {
+    // An end tag spelled across parts: neither part holds it.
+    expect(escapeRawTextContent('style', ['<', '/style><i class="pwn">'])).toBe('<\\/style><i class="pwn">')
+    expect(escapeRawTextContent('script', ['</scr', 'IPT><i class="pwn">'])).toBe('\\u003c/scrIPT><i class="pwn">')
+    expect(escapeRawTextContent('script', ['<!--', '<scr', 'ipt>'])).toBe('<!--\\u003cscript>')
+    // Non-string parts are turned into text first.
+    expect(escapeRawTextContent('style', ['<', null, '/sty', ['le', '>'], 1, false])).toBe('<\\/style>1')
+    expect(escapeRawTextContent('style', ['<', { toString: () => '/style>' }])).toBe('<\\/style>')
+  })
+
+  test('split parts inject no element and leave the next sibling in place', () => {
+    const host = document.createElement('div')
+    host.innerHTML =
+      `<style>${escapeRawTextContent('style', ['<', '/style><i class="pwn">'])}</style>` +
+      `<script type="text/plain">${escapeRawTextContent('script', ['</scr', 'ipt><i class="pwn">'])}</script>` +
+      `<script type="text/plain">${escapeRawTextContent('script', ['<!--<scr', 'ipt><i class="pwn">'])}</script><b></b>`
+    expect(host.querySelector('.pwn')).toBeNull()
+    expect(Array.from(host.children).map(el => el.tagName)).toEqual(['STYLE', 'SCRIPT', 'SCRIPT', 'B'])
+    expect(host.children[0].textContent).toBe('<\\/style><i class="pwn">')
+    expect(host.children[1].textContent).toBe('\\u003c/script><i class="pwn">')
+    expect(host.children[2].textContent).toBe('<!--\\u003cscript><i class="pwn">')
+  })
+
+  test('encoding an already encoded text changes nothing', () => {
+    for (const tag of ['style', 'script'] as const) {
+      const once = escapeRawTextContent(tag, ['<', '/style></script><script>'])
+      expect(escapeRawTextContent(tag, [once])).toBe(once)
+    }
+  })
+
   test('nullish and boolean values render no text; an array renders its items in order', () => {
     expect(escapeRawTextContent('style', null)).toBe('')
     expect(escapeRawTextContent('style', undefined)).toBe('')

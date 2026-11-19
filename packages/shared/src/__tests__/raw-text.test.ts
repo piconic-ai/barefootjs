@@ -43,6 +43,51 @@ describe('escapeRawText', () => {
   })
 })
 
+describe('escapeRawText over the whole text', () => {
+  // The encoder is sound only over the complete element text: an end tag
+  // can be spelled across the pieces the text is built from. Every caller
+  // joins first; these vectors are the pieces an attacker would choose.
+  const splits: [tag: 'style' | 'script', pieces: string[]][] = [
+    ['style', ['<', '/style><img src=x onerror=alert(1)>']],
+    ['style', ['</', 'style>']],
+    ['style', ['</sty', 'le>']],
+    ['style', ['<', '/', 'S', 'T', 'Y', 'L', 'E', '>']],
+    ['style', ['</styl', 'e >']],
+    ['style', ['', '<', '', '/style', '']],
+    ['script', ['<', '/script><img src=x onerror=alert(1)>']],
+    ['script', ['</scr', 'ipt>']],
+    ['script', ['<', '/', 'ScR', 'iPt', '>']],
+    ['script', ['<!--', '<scr', 'ipt>']],
+    ['script', ['<!--<', 'script', '>']],
+    ['script', ['<s', 'cript>', '</s', 'cript>']],
+  ]
+
+  for (const [tag, pieces] of splits) {
+    test(`${tag}: ${JSON.stringify(pieces)}`, () => {
+      const encoded = escapeRawText(tag, pieces.join(''))
+      expect(encoded.toLowerCase()).not.toContain(`</${tag}`)
+      if (tag === 'script') expect(encoded.toLowerCase()).not.toContain('<script')
+      // Encoding piece by piece is what must never be done: it leaves the tag.
+      const perPiece = pieces.map(piece => escapeRawText(tag, piece)).join('').toLowerCase()
+      expect(perPiece.includes(`</${tag}`) || perPiece.includes('<script')).toBe(true)
+    })
+  }
+
+  test('text that ends in a partial end tag stays as written (the real end tag follows it)', () => {
+    for (const tail of ['<', '</', '</s', '</styl', '</ style', '</\0style']) {
+      expect(escapeRawText('style', `a${tail}`)).toBe(`a${tail}`)
+    }
+    for (const tail of ['<', '</', '<scrip', '</scrip', '<!--', '<!--<scrip', '</ script']) {
+      expect(escapeRawText('script', `a${tail}`)).toBe(`a${tail}`)
+    }
+  })
+
+  test('a complete end tag at the very end is rewritten', () => {
+    expect(escapeRawText('style', 'a</style')).toBe('a<\\/style')
+    expect(escapeRawText('script', 'a</script')).toBe('a\\u003c/script')
+  })
+})
+
 describe('isRawTextTag', () => {
   test('names only style and script', () => {
     expect(isRawTextTag('style')).toBe(true)

@@ -644,8 +644,13 @@ module BarefootJS
     # reads back as the same text: `</style` -> `<\/style`, and `<script` /
     # `</script` -> `\u003cscript` / `\u003c/script` (ASCII
     # case-insensitive). Mirrors `escapeRawText` in `@barefootjs/shared`.
-    def raw_text(tag, value)
-      text = string(value)
+    #
+    # `parts` is the element's WHOLE text as the list of its pieces (static
+    # text and each expression's value): they are joined first and encoded
+    # once, because an end tag can be spelled across pieces
+    # (`['<', '/style>']`).
+    def raw_text(tag, parts)
+      text = parts.is_a?(Array) ? parts.map { |part| string(part) }.join : string(parts)
       if tag == 'style'
         text.gsub(RAW_TEXT_STYLE_END) { "<\\/#{Regexp.last_match(1)}" }
       else

@@ -921,9 +921,15 @@ final class BarefootJS
      * is spelled per letter so no Unicode case fold can match it). Mirrors
      * `escapeRawText` in `@barefootjs/shared`.
      */
-    public function raw_text(string $tag, $value): string
+    public function raw_text(string $tag, $parts): string
     {
-        $text = (string) $this->string($value);
+        // The element's WHOLE text as the list of its pieces (static text and
+        // each expression's value): joined first and encoded once, because an
+        // end tag can be spelled across pieces (`['<', '/style>']`).
+        $text = '';
+        foreach (is_array($parts) && array_is_list($parts) ? $parts : [$parts] as $part) {
+            $text .= (string) $this->string($part);
+        }
         if ($tag === 'style') {
             $out = preg_replace('~</([sS][tT][yY][lL][eE])~', '<\\\\/$1', $text);
         } else {

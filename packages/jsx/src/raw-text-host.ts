@@ -22,11 +22,47 @@
  *
  * `style` and `script` are raw text in the stricter sense: the parser decodes
  * no character reference there either, so an HTML-escaped value reaches the
- * CSS / JS parser with its entities (`a[href=&quot;x&quot;]`). Every text and
- * expression child of such an element, static or dynamic, is marked
- * `rawText` so each emitter prints the value as written, with only the
- * sequences that would end the element rewritten (`escapeRawText`, #3934).
- * `textarea` and `title` decode references and keep the HTML escape.
+ * CSS / JS parser with its entities (`a[href=&quot;x&quot;]`). Their text is
+ * printed as written, with only the sequences that would end the element
+ * rewritten (`escapeRawText`, `@barefootjs/shared`, #3934). `textarea` and
+ * `title` decode references and keep the HTML escape.
+ *
+ * That rewrite is the only thing between a value and the markup after the
+ * element, so it is applied to the element's WHOLE text, never to a child:
+ *   - An end tag can be spelled across children. `{'<'}{v}` with `v` =
+ *     `/style><img onerror=…>` holds `</style` in no single child, and the
+ *     same goes for a static `</sty` before a dynamic `le>`, for three or
+ *     more pieces, and for a fragment's children. So this pass lists the
+ *     text and expression children in source order (fragments flattened) as
+ *     `IRElement.rawTextContent`, and every emitter (each adapter's element
+ *     door, the client template, the reactive update) joins the list's
+ *     values and encodes the result in ONE call. Each listed child is marked
+ *     `rawText`; a child emitter that is handed a marked node throws rather
+ *     than print it alone.
+ *   - Nothing else can stand in the element: an element, conditional, loop,
+ *     component or slot child is refused below, so no part of the text is
+ *     rendered outside that one call.
+ *   - A value that is not a string (number, null, array, an object's
+ *     `toString`) is turned into its text first and encoded afterwards, so
+ *     the encoder always sees the characters that are printed.
+ *   - The client computes the text from the same values and encodes it
+ *     again on every update; nothing is read back from the DOM, and the
+ *     encoding leaves its own output unchanged.
+ *   - After the encoded text comes the element's own end tag. Text ending in
+ *     `<`, `</` or a partial name (`</styl`, `<scrip`) gives `</styl</style>`:
+ *     the tokenizer finds no end tag in the first `</styl<` (the name must
+ *     be followed by whitespace, `/` or `>`) and re-reads the `<` as the
+ *     start of the real one. A complete `</style` / `</script` at the end is
+ *     an ordinary match and is rewritten. `</` followed by anything but an
+ *     ASCII letter (a space, a NUL) starts no end tag.
+ *   - In a `<script>`, `<!--` enters the escaped state, where `</script>`
+ *     still ends the element; only a following `<script` reaches the
+ *     double-escaped state, where it does not. Every `<script` in the whole
+ *     text is rewritten, wherever the `<!--` came from, so that state is
+ *     unreachable and `<!--` is left as written.
+ *   - The tag name is matched ASCII case-insensitively, letter by letter,
+ *     as the tokenizer does (`</STYLE`, `</ScRiPt`), and a non-ASCII case
+ *     fold (U+017F) is not a match on either side.
  *
  * Shapes the element-level update cannot express are refused rather than
  * left to diverge silently:
@@ -169,14 +205,31 @@ function splitHostChildren(
 }
 
 /**
- * Marks every text and expression child of a `<style>` / `<script>`
- * (fragments flattened) with the element it is the raw text of.
+ * Collects the text and expression children of a `<style>` / `<script>`
+ * (fragments flattened) into `parts`, in source order, marking each with the
+ * element it is the raw text of.
  */
-function markRawText(children: readonly IRNode[], tag: NonNullable<IRText['rawText']>): void {
+function collectRawText(
+  children: readonly IRNode[],
+  tag: NonNullable<IRText['rawText']>,
+  parts: (IRText | IRExpression)[],
+): void {
   for (const child of children) {
-    if (child.type === 'text' || child.type === 'expression') child.rawText = tag
-    else if (child.type === 'fragment') markRawText(child.children, tag)
+    if (child.type === 'text' || child.type === 'expression') {
+      child.rawText = tag
+      parts.push(child)
+    } else if (child.type === 'fragment') {
+      collectRawText(child.children, tag, parts)
+    }
   }
+}
+
+/** Sets `rawTextContent` on a `<style>` / `<script>` that has text to print. */
+function lowerRawTextContent(el: IRElement): void {
+  if (!isRawTextTag(el.tag)) return
+  const parts: (IRText | IRExpression)[] = []
+  collectRawText(el.children, el.tag, parts)
+  if (parts.length > 0) el.rawTextContent = parts
 }
 
 function refusal(el: IRElement, node: IRNode, why: string): CompilerError {
@@ -236,7 +289,7 @@ export function lowerRawTextHosts(root: IRNode, errors: CompilerError[]): void {
     element: ({ node, scope, descend }) => {
       if (isRawTextHostTag(node.tag)) {
         if (scope.namespace === 'html') {
-          if (isRawTextTag(node.tag)) markRawText(node.children, node.tag)
+          lowerRawTextContent(node)
           lowerHost(node, scope.place, errors)
         } else {
           node.foreignRawTextTag = true

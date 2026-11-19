@@ -1988,8 +1988,19 @@ public final class Bf {
    * Unicode case fold can match it). Mirrors `escapeRawText` in
    * `@barefootjs/shared`.
    */
-  public String raw_text(Object tag, Object value) {
-    String text = String.valueOf(string(value));
+  public String raw_text(Object tag, Object parts) {
+    // The element's WHOLE text as the list of its pieces (static text and
+    // each expression's value): joined first and encoded once, because an
+    // end tag can be spelled across pieces (a lone "<", then "/style>").
+    StringBuilder joined = new StringBuilder();
+    if (parts instanceof List<?> list) {
+      for (Object part : list) {
+        joined.append(String.valueOf(string(part)));
+      }
+    } else {
+      joined.append(String.valueOf(string(parts)));
+    }
+    String text = joined.toString();
     if ("style".equals(tag)) {
       return RAW_TEXT_STYLE_END.matcher(text).replaceAll("<\\\\/$1");
     }

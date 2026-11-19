@@ -450,6 +450,20 @@ export interface IRElement {
    */
   rawTextHost?: true
   /**
+   * The complete text of an HTML-namespace `<style>` / `<script>`: its text
+   * and expression children in source order, fragments flattened (#3934).
+   * The HTML parser decodes no character reference in such an element, so
+   * the text is not HTML-escaped; instead the sequences that would end the
+   * element are rewritten (`escapeRawText`, `@barefootjs/shared`). That
+   * rewrite is only sound over the WHOLE text: `{'<'}{v}` with `v` =
+   * `/style>` spells an end tag no single child holds. Every emitter
+   * therefore prints this list through ONE encoder call and never renders
+   * the children one by one (each child is marked `rawText`, and a child
+   * emitter that meets the mark refuses to print it). Decided once in
+   * Phase 1 (`raw-text-host.ts`).
+   */
+  rawTextContent?: (IRText | IRExpression)[]
+  /**
    * True for a `<style>`, `<script>`, `<textarea>` or `<title>` that sits in
    * foreign content (SVG, MathML), where its children parse as ordinary
    * content and DO read comments, so the slot markers stay (#3937). An adapter
@@ -555,13 +569,11 @@ export interface IRExpression {
   loc: SourceLocation
   /**
    * Set on a text or expression child of an HTML-namespace `<style>` /
-   * `<script>` (fragments flattened), naming that element (#3934). The HTML
-   * parser decodes no character reference in such an element, so the value is
-   * printed as written instead of HTML-escaped, with only the sequences that
-   * would end the element rewritten (`escapeRawText`, `@barefootjs/shared`).
-   * Decided once in Phase 1 (`raw-text-host.ts`): every adapter's text and
-   * expression emitters and the client template read this flag and never
-   * look at the parent element themselves.
+   * `<script>` (fragments flattened), naming that element (#3934). The child
+   * is part of the element's `rawTextContent`, which is encoded as a whole:
+   * a child emitter must never print a marked node on its own (neither
+   * HTML-escaped nor encoded alone, since an end tag can be split across
+   * children) and throws if it is asked to.
    */
   rawText?: RawTextTag
   /** When true, expression should be evaluated on client side only */

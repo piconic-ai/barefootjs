@@ -178,7 +178,7 @@ import {
   planTestOfSource,
   isExplicitStringCall,
   hasClientInteractivity,
-  renderElementShell,
+  renderElementShell, rawTextPartList, rawTextChildError,
   renderFragmentScope,
   renderDangerousInnerHtml,
   type ElementShellSpelling,
@@ -386,17 +386,20 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
     // IRText carries the entity-DECODED value (Phase 1 decodes JSX
     // character references); re-escape for direct HTML emission, then
     // keep any tag opener (`{{`, `{%`, `{#`) away from the MiniJinja lexer.
-    if (node.rawText) return this.rawTextOutput(node.rawText, `'${escapeMinijinjaSingleQuoted(node.value)}'`)
+    if (node.rawText) throw rawTextChildError()
     return escapeMinijinjaStaticText(escapeHtml(node.value))
   }
 
   /**
-   * The text of a `<style>` / `<script>` element (`rawText`, #3934): the HTML
-   * parser decodes no character reference there, so the value is printed
-   * through the runtime's `raw_text`, which rewrites only the sequences that
-   * would end the element, instead of the HTML escape.
+   * The whole text of a `<style>` / `<script>` (`IRElement.rawTextContent`,
+   * #3934), printed through the runtime's `raw_text` in one call over every
+   * part. The HTML parser decodes no character reference there, so the text
+   * is not HTML-escaped; `raw_text` joins the parts and rewrites the
+   * sequences that would end the element, which is only sound over the whole
+   * text (an end tag can be spelled across parts).
    */
-  private rawTextOutput(tag: NonNullable<IRText['rawText']>, value: string): string {
+  private renderRawTextContent(tag: NonNullable<IRText['rawText']>, parts: readonly (IRText | IRExpression)[]): string {
+    const value = rawTextPartList(parts, text => `'${escapeMinijinjaSingleQuoted(text)}'`, expr => this.renderExpression(expr, true) || "''")
     return `{{ bf.raw_text("${tag}", ${value}) | safe }}`
   }
 
@@ -537,7 +540,10 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
   // Expression Rendering
   // ===========================================================================
 
-  renderExpression(expr: IRExpression): string {
+  renderExpression(expr: IRExpression, rawTextPart = false): string {
+    // A `<style>` / `<script>` text child prints only as part of the whole
+    // text (`renderRawTextContent`), where it is the bare value.
+    if (expr.rawText && !rawTextPart) throw rawTextChildError()
     // @client: an ordinary claimed 'text' slot pair (slot unification A3,
     // spec/slot-unification.md §5-A3), empty at SSR since the expression
     // can't be evaluated server-side — the client's claim creates the
@@ -564,7 +570,7 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
     const converted = this.convertExpressionToJinja(expr.expr, expr.parsed)
     if (display === 'empty') return expr.slotId ? `{{ bf.text_start("${expr.slotId}") | safe }}{{ bf.text_end() | safe }}` : ''
     const jinjaExpr = `bf.string(${display === 'display' ? `bf.display(${converted})` : converted})`
-    if (expr.rawText) return this.rawTextOutput(expr.rawText, jinjaExpr)
+    if (rawTextPart) return jinjaExpr
 
     if (expr.slotId) {
       return `{{ bf.text_start("${expr.slotId}") | safe }}{{ ${jinjaExpr} }}{{ bf.text_end() | safe }}`
@@ -1117,6 +1123,7 @@ export class MinijinjaAdapter extends DslTemplateAdapter implements IRNodeEmitte
         `{{ ${this.convertExpressionToJinja(expr, parsed)} | safe }}`,
       ),
     renderChildren: children => this.renderChildren(children),
+    renderRawTextContent: (tag, parts) => this.renderRawTextContent(tag, parts),
     renderScopeMarker: instanceIdExpr => this.renderScopeMarker(instanceIdExpr),
     renderSlotMarker: slotId => this.renderSlotMarker(slotId),
     dataKeyRelay: `{{ bf.data_key_attr() | safe }}`,

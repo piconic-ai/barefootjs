@@ -54,6 +54,18 @@ export function T() {
     expect(template).toContain('<p>a &gt; b</p>')
   })
 
+  test('a literal end tag split across text nodes is still rewritten (#3934)', () => {
+    const { errors, files } = compile(`
+export function T() {
+  return <div><style>&lt;/sty<>le&gt;&lt;i&gt;</></style><script>&lt;/SCR<>ipt&gt;&lt;i&gt;</></script></div>
+}
+`)
+    expect(errors).toEqual([])
+    const template = files.find(f => f.type === 'markedTemplate')?.content ?? ''
+    expect(template).toContain('<style><\\/style><i></style>')
+    expect(template).toContain('<script>\\u003c/SCRipt><i></script>')
+  })
+
   test('a /* @client */ expression in <style> is refused too', () => {
     const { errors } = compile(`
 export function T({ v }: { v: string }) {
