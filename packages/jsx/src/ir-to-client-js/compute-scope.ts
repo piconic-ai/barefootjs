@@ -22,6 +22,7 @@ import {
   graphUsedIdentifiers,
 } from './build-references.ts'
 import { signalSecondBinding } from '../signal-initializer.ts'
+import { sharedStorageNames } from '../module-scope.ts'
 
 export interface DeclarationScopes {
   constantScope: Map<string, DeclarationScope>
@@ -67,12 +68,13 @@ export function computeDeclarationScopes(
   // every module constant shape is a larger, separately-scoped change.
   // ============================================================================
 
+  const sharedNames = sharedStorageNames(ctx.moduleScopeReplica, usedIdentifiers)
   const providerContextNames = new Set<string>()
   for (const p of ctx.providerSetups) providerContextNames.add(p.contextName)
 
   const pendingConstants: ConstantInfo[] = []
   for (const c of ctx.localConstants) {
-    const immediate = classifyConstantImmediate(c, usedIdentifiers, initStmtAssigned, providerContextNames)
+    const immediate = classifyConstantImmediate(c, usedIdentifiers, initStmtAssigned, providerContextNames, sharedNames)
     if (immediate === 'pending-fixpoint') {
       pendingConstants.push(c)
     } else {
@@ -177,6 +179,7 @@ function classifyConstantImmediate(
   usedIdentifiers: Set<string>,
   initStmtAssigned: Set<string>,
   providerContextNames: Set<string>,
+  sharedNames: ReadonlySet<string>,
 ): DeclarationScope | 'pending-fixpoint' {
   if (c.isJsx) return 'skip'           // Inlined at IR level (#547)
   if (c.isJsxFunction) return 'skip'   // Inlined at call sites (#569)
@@ -192,6 +195,10 @@ function classifyConstantImmediate(
     && providerContextNames.has(c.name)
   if (!usedIdentifiers.has(c.name) && !isProviderContext) return 'skip'
 
+  // A reassigned module `let` the module-scope replica reads: its storage is
+  // the client-module variable, so the replica's members and the component
+  // read and write one binding (#3932).
+  if (c.isModule && sharedNames.has(c.name)) return 'module'
   if (!c.value) return 'init'   // `let x` placeholder
   if (c.systemConstructKind) return 'module'
   if (c.isModule && initStmtAssigned.has(c.name)) return 'module'

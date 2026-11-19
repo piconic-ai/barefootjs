@@ -54,11 +54,12 @@ export function emitModuleLevelDeclarations(
     // grammar (BitwiseORExpression) is higher-precedence than an arrow
     // function (AssignmentExpression); only an already-parenthesised
     // value (an object literal, `(a, b) => …`) survives unwrapped, and
-    // wrapping those again is a harmless no-op (#2988). Gated on
+    // wrapping those again is a harmless no-op (#2988). A binary, conditional
+    // or arrow initializer groups too (`needsOperandGrouping`, #3932): `??`
+    // takes no bare `||` / `&&`, and the others swallow it. Gated on
     // `containsArrow` specifically so existing fixtures with
     // parenthesised object-literal module consts don't churn.
-    const value = constant.containsArrow ? `(${constant.value})` : constant.value
-    lines.push(`var ${constant.name} = ${constant.name} ?? ${value}`)
+    lines.push(`var ${constant.name} = ${constant.name} ?? ${nullishOperand(constant)}`)
   }
   for (const fn of moduleLevelFunctions) {
     lines.push(`var ${fn.name} = ${fn.name} ?? ${functionExpressionText(fn)}`)
@@ -85,6 +86,12 @@ export function emitModuleLevelDeclarations(
     }
   }
   return lines.length > 0 ? lines.join('\n') + '\n' : ''
+}
+
+/** The initializer of `c` as the right operand of `??`; a bare `let` is `undefined`. */
+function nullishOperand(c: ConstantInfo): string {
+  if (!c.value) return 'undefined'
+  return c.containsArrow || c.needsOperandGrouping ? `(${c.value})` : c.value
 }
 
 /** `fn` as an anonymous function expression: `async function*(a, ...b) { … }`. */
@@ -118,9 +125,21 @@ export function emitModuleScopeReplica(
   if (!replica) return ''
   const used = usedReplicaDeclarations(replica, usedNames)
   if (!used) return ''
-  const lines: string[] = [`var ${replica.name} = ${replica.name} ?? (() => {`]
+  // A shared const's storage is the module-level variable the component
+  // writes (#3932). It is declared before the replica and assigned inside it,
+  // at its source-order position, so a const evaluated later in the replica
+  // reads the value the module would have given it.
+  const lines: string[] = used.shared.map(c => `var ${c.name}`)
+  lines.push(`var ${replica.name} = ${replica.name} ?? (() => {`)
   for (const fn of used.functions) lines.push(`  const ${fn.name} = ${functionExpressionText(fn)}`)
-  for (const c of used.constants) lines.push(`  ${c.declarationKind} ${c.name} = ${c.value}`)
+  const constants = new Map(used.constants.map(c => [c.name, c]))
+  const shared = new Map(used.shared.map(c => [c.name, c]))
+  for (const name of used.sourceOrder) {
+    const c = constants.get(name)
+    if (c) lines.push(`  ${c.declarationKind} ${c.name} = ${c.value}`)
+    const s = shared.get(name)
+    if (s) lines.push(`  ${s.name} = ${s.name} ?? ${nullishOperand(s)}`)
+  }
   lines.push(`  return { ${used.exported.join(', ')} }`)
   lines.push('})()')
   return lines.join('\n') + '\n'
