@@ -65,4 +65,5 @@ export const conformancePins: ConformancePins = {
   'destructure-default-body-mutated-memo': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
   'body-statement-write-direct-read': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
   'body-statement-write-block-shadowed-callback': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
+  'body-statement-write-computed-method-name': [{ code: 'BF101', severity: 'error', limitation: 'body-statement-write-read-as-declared' }],
 }

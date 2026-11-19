@@ -1412,6 +1412,7 @@ import { fixture as bodyStatementWriteDirectRead } from './body-statement-write-
 import { fixture as bodyStatementWriteDirectReadClient } from './body-statement-write-direct-read-client'
 import { fixture as bodyStatementWriteRewrite } from './body-statement-write-rewrite'
 import { fixture as bodyStatementWriteChildProp } from './body-statement-write-child-prop'
+import { fixture as bodyStatementWriteComputedMethodName } from './body-statement-write-computed-method-name'
 import { fixture as bodyStatementWriteBlockShadowedCallback } from './body-statement-write-block-shadowed-callback'
 import { fixture as bodyStatementWriteEarlierMemo } from './body-statement-write-earlier-memo'
 import { fixture as bodyStatementWriteOtherPropsMember } from './body-statement-write-other-props-member'
@@ -2644,6 +2645,7 @@ export const jsxFixtures: JSXFixture[] = [
   bodyStatementWriteDirectReadClient,
   bodyStatementWriteRewrite,
   bodyStatementWriteChildProp,
+  bodyStatementWriteComputedMethodName,
   bodyStatementWriteBlockShadowedCallback,
   bodyStatementWriteEarlierMemo,
   bodyStatementWriteOtherPropsMember,

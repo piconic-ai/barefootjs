@@ -26,8 +26,12 @@ import { walkWithScope } from './scope/lexical-scope-walk.ts'
 /**
  * What evaluating an initializer does with one mention of a name:
  *
- * - `deferred` — inside a function the initializer only creates: nothing is
- *   read until that function is called.
+ * - `deferred` — inside a function the initializer only creates and keeps
+ *   (as its value, or in an object, array or class that is): nothing is read
+ *   until that function is called. A function the initializer hands to a
+ *   call, or whose holder it reads a member of, may run there and is not
+ *   deferred; neither is a computed member name, a `static` initializer or
+ *   an `extends` expression, which are evaluated where they stand.
  * - `alias` — the value is, or holds, the named object itself (the
  *   initializer's own value, an array element, a property value, a branch
  *   of a conditional or of `||` / `??`).
@@ -64,7 +68,7 @@ export function classifyValueUses(root: ts.Node | undefined): Map<string, Set<Va
     if (shadowed || !isValueReference(ident)) return
     const known = uses.get(ident.text) ?? new Set<ValueUse>()
     uses.set(ident.text, known)
-    if (!runsInPlace(ident, root)) {
+    if (!runsInPlace(ident, root, scope => defersUntilCalled(scope, root))) {
       known.add('deferred')
       return
     }
@@ -86,6 +90,23 @@ function isValueReference(id: ts.Identifier): boolean {
   if (ts.isBindingElement(p) || ts.isParameter(p) || ts.isVariableDeclaration(p)) return p.initializer === id
   if (ts.isJsxAttribute(p) || ts.isMethodDeclaration(p) || ts.isPropertySignature(p)) return false
   return !ts.isTypeNode(p) && !ts.isQualifiedName(p)
+}
+
+/**
+ * Whether a deferred scope inside an initializer (a function literal's
+ * parameters and body, an instance field's initializer) is certain not to
+ * run while the initializer is evaluated: the function, or the object
+ * literal or class expression whose member it is, only becomes (part of)
+ * the initializer's value. Anything else may run it there and counts as
+ * evaluated: an argument of a call or of `new`, a callee, an object whose
+ * member is read or called, a spread operand (a getter runs), a tagged
+ * template, a class or function DECLARATION (a later statement of the same
+ * body may call it).
+ */
+function defersUntilCalled(scope: ts.Node, root: ts.Node): boolean {
+  const holder = ts.isArrowFunction(scope) || ts.isFunctionExpression(scope) ? scope : scope.parent
+  if (!ts.isObjectLiteralExpression(holder) && !ts.isClassExpression(holder) && holder !== scope) return false
+  return useOfValue(holder, root) === 'alias'
 }
 
 /** The use of the value the call of `callee` returns. */

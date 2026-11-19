@@ -30,6 +30,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-direct-read",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -55,6 +61,12 @@
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -278,6 +290,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-direct-read",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -483,6 +501,12 @@
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -754,6 +778,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-direct-read",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -974,6 +1004,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-direct-read",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -1191,6 +1227,12 @@
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -1420,6 +1462,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-direct-read",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -1631,6 +1679,12 @@
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -1851,6 +1905,12 @@
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -17978,6 +18038,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-direct-read",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -18027,6 +18093,12 @@
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -18544,6 +18616,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-direct-read",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -19049,6 +19127,12 @@
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -19722,6 +19806,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-direct-read",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -20236,6 +20326,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-direct-read",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -20747,6 +20843,12 @@
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -21282,6 +21384,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-direct-read",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -21775,6 +21883,12 @@
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -22289,6 +22403,12 @@
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -30884,6 +31004,12 @@
         "hono": {
           "gaps": [
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "ref-mount-attr",
               "limitations": [
                 "ref-effect-attr-state-ssr"
@@ -30893,6 +31019,12 @@
         },
         "blade": {
           "gaps": [
+            {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -30964,6 +31096,12 @@
         "erb": {
           "gaps": [
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -31033,6 +31171,12 @@
         },
         "go-template": {
           "gaps": [
+            {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -31104,6 +31248,12 @@
         "jinja": {
           "gaps": [
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -31174,6 +31324,12 @@
         "minijinja": {
           "gaps": [
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -31243,6 +31399,12 @@
         },
         "mojolicious": {
           "gaps": [
+            {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
             {
               "fixture": "const-object-prop-identity-hydrate",
               "limitations": [
@@ -31320,6 +31482,12 @@
         "pebble": {
           "gaps": [
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -31390,6 +31558,12 @@
         "twig": {
           "gaps": [
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -31459,6 +31633,12 @@
         },
         "xslate": {
           "gaps": [
+            {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
             {
               "fixture": "every-typeof-predicate",
               "limitations": [
@@ -37989,6 +38169,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-direct-read",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -38026,6 +38212,12 @@
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -38447,6 +38639,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-direct-read",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -38856,6 +39054,12 @@
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -39409,6 +39613,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-direct-read",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -39827,6 +40037,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-direct-read",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -40242,6 +40458,12 @@
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -40681,6 +40903,12 @@
               ]
             },
             {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
+              ]
+            },
+            {
               "fixture": "body-statement-write-direct-read",
               "limitations": [
                 "body-statement-write-read-as-declared"
@@ -41084,6 +41312,12 @@
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {
@@ -41502,6 +41736,12 @@
               "fixture": "body-statement-write-child-prop",
               "limitations": [
                 "init-statement-mutation-unrun-on-server"
+              ]
+            },
+            {
+              "fixture": "body-statement-write-computed-method-name",
+              "limitations": [
+                "body-statement-write-read-as-declared"
               ]
             },
             {

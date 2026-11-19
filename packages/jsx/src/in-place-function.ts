@@ -61,15 +61,60 @@ function isArrayIterationCallee(callee: ts.Expression): boolean {
   return CALLBACK_METHODS.has(method) || method === 'forEach'
 }
 
+/** Whether a class expression is constructed where it stands: `new (class { … })()`. */
+function isConstructedInPlace(cls: ts.Node): boolean {
+  let node = cls
+  while (ts.isParenthesizedExpression(node.parent)) node = node.parent
+  return ts.isNewExpression(node.parent) && node.parent.expression === node
+}
+
 /**
- * Whether `node`, inside `root`, is evaluated when `root` is: no function
- * literal between them other than ones that run in place. `root` itself may
- * be a function (a memo's computation), which is then the thing evaluated.
+ * The scope whose DEFERRED part `child` is, given its `parent`: a
+ * function-like's parameters and body, or an instance field's initializer.
+ * `null` for every part that is evaluated where the function or class is
+ * created, in the surrounding scope:
+ *
+ *   - a method's, accessor's or field's computed name (`{ [k]() {} }`,
+ *     `class { [k] = 1 }`), and a decorator;
+ *   - a `static` field's initializer and a `static { … }` block, which run
+ *     when the class is created;
+ *   - a class's `extends` expression (no member of the class holds it).
  */
-export function runsInPlace(node: ts.Node, root: ts.Node): boolean {
+function deferredScopeOf(child: ts.Node, parent: ts.Node): ts.Node | null {
+  if (ts.isPropertyDeclaration(parent)) {
+    const isStatic = parent.modifiers?.some(m => m.kind === ts.SyntaxKind.StaticKeyword) ?? false
+    return parent.initializer === child && !isStatic ? parent : null
+  }
+  if (!ts.isFunctionLike(parent)) return null
+  const name = (parent as { name?: ts.Node }).name
+  return name === child || ts.isDecorator(child) ? null : parent
+}
+
+/**
+ * Whether a deferred scope (`deferredScopeOf`) inside a statement is only
+ * run later: a function literal the statement does not call where it
+ * stands, or the constructor and instance fields of a class it does not
+ * construct where it stands.
+ */
+function defersPastStatement(scope: ts.Node): boolean {
+  if (ts.isPropertyDeclaration(scope) || ts.isConstructorDeclaration(scope)) return !isConstructedInPlace(scope.parent)
+  return !isInvokedInPlace(scope)
+}
+
+/**
+ * Whether `node`, inside `root`, is evaluated when `root` is: it sits in no
+ * deferred scope that `defers` says is only run later. `root` itself may be
+ * a function (a memo's computation), which is then the thing evaluated.
+ *
+ * `defers` defaults to a statement's rule (`defersPastStatement`): a function
+ * literal is deferred unless the statement runs it in place.
+ */
+export function runsInPlace(node: ts.Node, root: ts.Node, defers: (scope: ts.Node) => boolean = defersPastStatement): boolean {
   for (let n: ts.Node = node; n !== root && n.parent; n = n.parent) {
     const parent = n.parent
-    if (parent !== root && isFunctionScope(parent) && !isInvokedInPlace(parent)) return false
+    if (parent === root) continue
+    const scope = deferredScopeOf(n, parent)
+    if (scope && defers(scope)) return false
   }
   return true
 }

@@ -150,7 +150,9 @@ describe('#3719: a server read of a binding a body statement writes', () => {
       expect(found).toHaveLength(1)
       expect(found[0]!.message).toContain('read by the server render')
       expect(escapeKinds(found[0])).toEqual(['rewrite', 'client-directive'])
-    })
+      // The loop-array case is the file's first use of the type checker
+      // (a `.map()` row's key), which takes seconds on a loaded machine.
+    }, 30_000)
   }
 
   test('reports each written binding once, however many positions read it', () => {
@@ -416,6 +418,107 @@ describe('#3719: other copies made before the statement are not statement-write 
   for (const [name, source] of Object.entries(copies)) {
     test(name, () => {
       expect(refusals(source)).toEqual([])
+    })
+  }
+})
+
+describe('#3719: what an initializer declared after the write evaluates where it stands', () => {
+  // `box` is created by init before the statement runs. Whatever its
+  // initializer evaluates at that point is computed from `local` as declared;
+  // what it only keeps inside a function runs later, after the statement.
+  const component = (initializer: string): string => `${CLIENT}
+function tag(strings: TemplateStringsArray, ...values: unknown[]) { return values.length + strings.length }
+function wrap<T>(value: T): T { return value }
+export function C(props: { flag?: boolean }) {
+  const local = ['y']
+  local.push('z')
+  const box = ${initializer}
+  return <button onClick={() => console.log(box, props.flag)}>x</button>
+}`
+
+  const eager: Record<string, string> = {
+    'a computed method name': `{ [local.join(',')]() { return 1 } }`,
+    'a computed getter name': `{ get [local.join(',')]() { return 1 } }`,
+    'a computed setter name': `{ set [local.join(',')](v: number) {} }`,
+    'a computed class method name': `class { [local.join(',')]() {} }`,
+    'a computed static field name': `class { static [local.join(',')] = 1 }`,
+    'a computed instance field name': `class { [local.join(',')] = 1 }`,
+    'a static field initializer': `class { static n = local.length }`,
+    'a static block': `class { static n = 0; static { this.n = local.length } }`,
+    'an extends expression': `class extends (local.length > 1 ? Object : Array) {}`,
+    'an IIFE': `(() => local.length)()`,
+    'an async IIFE': `(async () => local.length)()`,
+    'an in-place array callback': `[1].map(() => local.length)`,
+    'a tagged template span': `tag\`\${local.length}\``,
+    'a function handed to a tag': `tag\`\${() => local.length}\``,
+    'a new expression argument': `new Map([['n', local.length]])`,
+    'a function handed to new': `new Promise<number>(resolve => resolve(local.length))`,
+    'a function handed to a call': `wrap(() => local.length)`,
+    'a getter read on the object that defines it': `({ get n() { return local.length } }).n`,
+    'a method called on the object that defines it': `({ read() { return local.length } }).read()`,
+    'a spread of an object with a getter': `{ ...{ get n() { return local.length } } }`,
+    'a function called out of the array that holds it': `[() => local.length][0]()`,
+    'an instance field of a class constructed in place': `new (class { n = local.length })()`,
+  }
+  for (const [name, initializer] of Object.entries(eager)) {
+    test(`${name} is evaluated with the initializer: refused`, () => {
+      const found = refusals(component(initializer))
+      expect(found).toHaveLength(1)
+      expect(found[0]!.message.startsWith("'box' reads 'local' after a statement")).toBe(true)
+    })
+  }
+
+  const deferred: Record<string, string> = {
+    'a method body': `{ read() { return local.length } }`,
+    'a getter and a setter body': `{ get n() { return local.length }, set n(v: number) { local.length = v } }`,
+    'an arrow kept as a property, an array element or a conditional branch': `props.flag ? { read: () => local.length } : [() => local.length]`,
+    'a default parameter value': `{ f: (n = local.length) => n }`,
+    'an async method and a generator method body': `{ async a() { return local.length }, *g() { yield local.length } }`,
+    'an arrow returned by a kept arrow': `{ f: () => () => local.length }`,
+    'a method, constructor and instance field of a kept class': `class { n = local.length; constructor() { local.length }; m() { return local.length } }`,
+  }
+  for (const [name, initializer] of Object.entries(deferred)) {
+    test(`${name} runs later: compiles`, () => {
+      expect(refusals(component(initializer))).toEqual([])
+    })
+  }
+})
+
+describe('#3719: what a body statement writes when it runs', () => {
+  const component = (statement: string): string => `${CLIENT}export function C() {
+  const local = ['y']
+  ;${statement}
+  return <p>{local.length}</p>
+}`
+
+  const runs: Record<string, string> = {
+    'a computed method name': `({ [String(local.push('z'))]() {} })`,
+    'a computed getter name': `({ get [String(local.push('z'))]() { return 1 } })`,
+    'a static field initializer': `(class { static n = local.push('z') })`,
+    'a static block': `(class { static { local.push('z') } })`,
+    'a computed class member name': `(class { [String(local.push('z'))] = 1 })`,
+    'an extends expression': `(class extends (local.push('z') ? Object : Array) {})`,
+    'an instance field of a class constructed in place': `new (class { n = local.push('z') })()`,
+    'a constructor of a class constructed in place': `new (class { constructor() { local.push('z') } })()`,
+    'an async IIFE': `(async () => { local.push('z') })()`,
+  }
+  for (const [name, statement] of Object.entries(runs)) {
+    test(`a write in ${name} runs with the statement: the markup read is refused`, () => {
+      const found = refusals(component(statement))
+      expect(found).toHaveLength(1)
+      expect(found[0]!.message).toContain("'local' is written by a statement in the component body")
+    })
+  }
+
+  const later: Record<string, string> = {
+    'a method body': `({ add() { local.push('z') } })`,
+    'a default parameter value of a function it only creates': `[(n = local.push('z')) => n]`,
+    'an instance field of a class it does not construct': `(class { n = local.push('z') })`,
+    'a timer callback': `setTimeout(() => local.push('z'), 10)`,
+  }
+  for (const [name, statement] of Object.entries(later)) {
+    test(`a write in ${name} runs later: compiles`, () => {
+      expect(refusals(component(statement))).toEqual([])
     })
   }
 })

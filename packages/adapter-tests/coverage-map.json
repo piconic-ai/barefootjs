@@ -1264,6 +1264,17 @@
         "text"
       ]
     },
+    "body-statement-write-computed-method-name": {
+      "kinds": [
+        "array-literal",
+        "literal",
+        "unsupported"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": []
+    },
     "body-statement-write-direct-read": {
       "kinds": [
         "array-literal",
