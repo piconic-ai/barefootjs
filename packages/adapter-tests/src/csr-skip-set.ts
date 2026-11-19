@@ -270,6 +270,10 @@ export const CSR_RENDER_DIVERGENCES: Readonly<Record<string, { limitation: strin
   // An object const holding an arrow, read for a listed key in markup: the
   // CSR template does not carry the const, so `{H.safe}` renders empty.
   'module-const-inherited-key-object-safe': { limitation: 'csr-template-object-const-function-property' },
+  // The same const read through a memo: the CSR template cannot inline the
+  // memo over a const holding an arrow, so `m()` renders empty.
+  'memo-object-const-arrow-sibling-key': { limitation: 'csr-template-object-const-function-property' },
+  'memo-module-object-const-arrow-sibling-key': { limitation: 'csr-template-object-const-function-property' },
   // A boolean text child: the CSR template prints `true` / `false`; JSX
   // renders nothing.
   // `{ label = 'd' }` read through `const a = label`: the CSR template reads

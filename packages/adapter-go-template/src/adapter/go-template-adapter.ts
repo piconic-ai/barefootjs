@@ -314,11 +314,17 @@ function derivedConstTakenFieldNames(ir: ComponentIR): Set<string> {
  * constructor value all read the same body. A memo body is component scope:
  * no loop binding shadows a const there. A module-scope const stays a name:
  * the constructor lowering already resolves one (`checkbox`'s
- * `stateClasses = [...].join(' ')` inside a template-literal memo). `ir`
+ * `stateClasses = [...].join(' ')` inside a template-literal memo), except an
+ * object literal, which it does not: a read of one key is projected. `ir`
  * itself is returned when no memo body reads one.
  */
 function withInlinedMemoBodies(ir: ComponentIR, isAdapterBound: (name: string) => boolean): ComponentIR {
-  const moduleConsts = new Set((ir.metadata.localConstants ?? []).filter(c => c.isModule).map(c => c.name))
+  // An object-literal module const has no name the constructor lowering
+  // resolves, so a read of one of its keys is projected like a component
+  // const's (`H.safe` reads `'ok'` of `const H = { safe: 'ok', … }`).
+  const moduleConsts = new Set(
+    (ir.metadata.localConstants ?? []).filter(c => c.isModule && c.parsed?.kind !== 'object-literal').map(c => c.name),
+  )
   const memoConsts = computedConstContext(ir.metadata, () => false, name => moduleConsts.has(name) || isAdapterBound(name))
   const memos = (ir.metadata.memos ?? []).map(m =>
     m.parsed ? { ...m, parsed: inlineComputedConsts(m.parsed, memoConsts) } : m,

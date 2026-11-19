@@ -4,8 +4,12 @@ export default defineLimitation({
   kind: 'silent',
   title: 'CSR template reading an object const that holds a function',
   given:
-    "a const object literal with an arrow-valued property (`const H = { safe: 'ok', get: () => … }`) read for another key in markup (`{H.safe}`), rendered client-side",
+    "a const object literal with an arrow-valued property (`const H = { safe: 'ok', get: () => … }`) read for another key in markup (`{H.safe}`) or through a memo (`createMemo(() => H.safe)`), rendered client-side",
   expected: "the listed value (`'ok'`)",
   actual: 'renders empty: the client template does not carry the const, so the read has nothing to resolve',
-  fixtures: ['module-const-inherited-key-object-safe'],
+  fixtures: [
+    'module-const-inherited-key-object-safe',
+    'memo-object-const-arrow-sibling-key',
+    'memo-module-object-const-arrow-sibling-key',
+  ],
 })

@@ -14125,10 +14125,12 @@
     "csr-template-object-const-function-property": {
       "title": "CSR template reading an object const that holds a function",
       "kind": "silent",
-      "given": "a const object literal with an arrow-valued property (`const H = { safe: 'ok', get: () => … }`) read for another key in markup (`{H.safe}`), rendered client-side",
+      "given": "a const object literal with an arrow-valued property (`const H = { safe: 'ok', get: () => … }`) read for another key in markup (`{H.safe}`) or through a memo (`createMemo(() => H.safe)`), rendered client-side",
       "expected": "the listed value (`'ok'`)",
       "actual": "renders empty: the client template does not carry the const, so the read has nothing to resolve",
       "fixtures": [
+        "memo-module-object-const-arrow-sibling-key",
+        "memo-object-const-arrow-sibling-key",
         "module-const-inherited-key-object-safe"
       ],
       "adapters": [
