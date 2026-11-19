@@ -29,6 +29,7 @@ import type {
 } from '../types.ts'
 import { computeDeclarationScopes } from './compute-scope.ts'
 import { graphUsedIdentifiers } from './build-references.ts'
+import { sharedStorageNames } from '../module-scope.ts'
 import { getControlledPropName } from './prop-handling.ts'
 import { type Declaration, providedNames, sortDeclarations } from './declaration-sort.ts'
 import { buildDeclarationEmitLookups, buildDeclarationEmitPlan } from './plan/build-declaration-emit.ts'
@@ -68,6 +69,9 @@ export function classifyLocalDeclarations(
 ): LocalClassification {
   const usedIdentifiers = graphUsedIdentifiers(graph)
   const { constantScope, functionScope } = computeDeclarationScopes(ctx, graph)
+  // The module-scope replica declares these at module level, from the value
+  // its own scope evaluates (#3932).
+  const sharedNames = sharedStorageNames(ctx.moduleScopeReplica, usedIdentifiers)
 
   const neededProps = new Set<string>()
   const neededConstants: ConstantInfo[] = []
@@ -76,7 +80,7 @@ export function classifyLocalDeclarations(
     const scope = constantScope.get(constant.name)
     if (scope === 'skip') continue
     if (scope === 'module') {
-      moduleLevelConstants.push(constant)
+      if (!sharedNames.has(constant.name)) moduleLevelConstants.push(constant)
       continue
     }
     // scope === 'init'
