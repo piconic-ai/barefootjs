@@ -111,6 +111,35 @@ describe('raw-text host update wiring is refused where it is not wired', () => {
   })
 })
 
+describe('integration points are namespace-specific (SVG vs MathML)', () => {
+  const host = (wrapper: string) => compile(wrapper.replace('X', `<style>{'x' + n()}</style>`))
+
+  test('an SVG foreignObject / desc / title is an HTML integration point: the host is lowered', () => {
+    for (const tag of ['foreignObject', 'desc', 'title']) {
+      const r = host(`<svg><${tag}>X</${tag}></svg>`)
+      expect(r.errors).toEqual([])
+      expect(clientJs(r)).toContain('.innerHTML = String(')
+    }
+  })
+
+  test('a MathML mi / mo / mn / ms / mtext is a text integration point: the host is lowered', () => {
+    for (const tag of ['mi', 'mo', 'mn', 'ms', 'mtext']) {
+      const r = host(`<math><${tag}>X</${tag}></math>`)
+      expect(r.errors).toEqual([])
+      expect(clientJs(r)).toContain('.innerHTML = String(')
+    }
+  })
+
+  test('a MathML text integration point is NOT one inside an SVG, nor an SVG one inside MathML', () => {
+    for (const w of ['<svg><mi>X</mi></svg>', '<math><desc>X</desc></math>', '<math><foreignObject>X</foreignObject></math>']) {
+      const r = host(w)
+      expect(r.errors).toEqual([])
+      expect(clientJs(r)).toContain('lazySlots')
+      expect(clientJs(r)).not.toContain('.innerHTML = String(')
+    }
+  })
+})
+
 describe('<annotation-xml> is an HTML integration point only for HTML encodings', () => {
   const inMath = (attrs: string) =>
     compile(`<math><annotation-xml${attrs}><title>{'x' + n()}</title></annotation-xml></math>`)

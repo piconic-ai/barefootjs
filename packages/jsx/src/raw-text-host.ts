@@ -60,19 +60,23 @@ function nest(outer: HostPlace, inner: HostPlace): HostPlace {
  * read) and an SVG `title` is an HTML integration point, so the slot markers
  * stay valid there (#3265 row work relies on it).
  */
+type Namespace = 'html' | 'svg' | 'math'
+
 interface HostScope {
   place: HostPlace
-  foreign: boolean
+  /** The namespace the element's children are created in (HTML integration points reset it to `html`). */
+  namespace: Namespace
 }
 
 /**
- * Foreign-content elements whose children parse as HTML again: the SVG HTML
- * integration points and the MathML text integration points. `annotation-xml`
- * is one only for some `encoding` values (`isAnnotationXmlHtml`).
+ * Elements whose children parse as HTML again, per namespace: the SVG HTML
+ * integration points and the MathML text integration points are different
+ * sets, so an SVG `mi` or a MathML `desc` is NOT one. MathML's
+ * `annotation-xml` is one only for some `encoding` values
+ * (`isAnnotationXmlHtml`).
  */
-const HTML_INTEGRATION_POINTS: ReadonlySet<string> = new Set([
-  'foreignObject', 'desc', 'title', 'mi', 'mo', 'mn', 'ms', 'mtext',
-])
+const SVG_INTEGRATION_POINTS: ReadonlySet<string> = new Set(['foreignObject', 'desc', 'title'])
+const MATHML_TEXT_INTEGRATION_POINTS: ReadonlySet<string> = new Set(['mi', 'mo', 'mn', 'ms', 'mtext'])
 
 /**
  * `<annotation-xml>` is an HTML integration point only when its `encoding`
@@ -97,10 +101,18 @@ function isAnnotationXmlHtml(el: IRElement): boolean {
 /** The scope an element's children are walked in. */
 function childScope(el: IRElement, scope: HostScope): HostScope {
   const tag = el.tag
-  if (tag === 'svg' || tag === 'math') return { ...scope, foreign: true }
-  if (scope.foreign && tag === 'annotation-xml') return { ...scope, foreign: !isAnnotationXmlHtml(el) }
-  if (scope.foreign && HTML_INTEGRATION_POINTS.has(tag)) return { ...scope, foreign: false }
-  return scope
+  switch (scope.namespace) {
+    case 'html':
+      if (tag === 'svg') return { ...scope, namespace: 'svg' }
+      if (tag === 'math') return { ...scope, namespace: 'math' }
+      return scope
+    case 'svg':
+      return SVG_INTEGRATION_POINTS.has(tag) ? { ...scope, namespace: 'html' } : scope
+    case 'math':
+      if (MATHML_TEXT_INTEGRATION_POINTS.has(tag)) return { ...scope, namespace: 'html' }
+      if (tag === 'annotation-xml') return { ...scope, namespace: isAnnotationXmlHtml(el) ? 'html' : 'math' }
+      return scope
+  }
 }
 
 /**
@@ -176,9 +188,9 @@ function lowerHost(el: IRElement, scope: HostPlace, errors: CompilerError[]): vo
 
 /** Lowers every raw-text host in `root` (see the file header). */
 export function lowerRawTextHosts(root: IRNode, errors: CompilerError[]): void {
-  walkIR<HostScope>(root, { place: 'body', foreign: false }, {
+  walkIR<HostScope>(root, { place: 'body', namespace: 'html' }, {
     element: ({ node, scope, descend }) => {
-      if (!scope.foreign && isRawTextHostTag(node.tag)) lowerHost(node, scope.place, errors)
+      if (scope.namespace === 'html' && isRawTextHostTag(node.tag)) lowerHost(node, scope.place, errors)
       descend(childScope(node, scope))
     },
     loop: ({ scope, descend }) => descend({ ...scope, place: nest(scope.place, 'loop') }),
