@@ -90,7 +90,9 @@ export function emitStyleOrPresenceAttr(host: ElementAttrHost, value: Expression
     const css = tryLowerStyleObject(host, value)
     if (css !== null) return `style="${css}"`
   }
-  if (isBooleanAttr(name) || value.presenceOrUndefined) {
+  // A guarded literal prints as written (`ExpressionAttr.literalText`): its
+  // ternary decides presence, so it is not a boolean value.
+  if ((isBooleanAttr(name) && !value.literalText) || value.presenceOrUndefined) {
     // Every boolean-attribute value routes through `convertConditionToGo`
     // even when it's a plain item-bound expression (`disabled={item.x}`),
     // not a `conditional` IR node — so #2898's `staticLoopItemStack` check

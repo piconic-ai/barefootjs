@@ -2307,6 +2307,62 @@
           ]
         }
       },
+      "attr-spread-key-overlap": {
+        "blade": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "erb": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "jinja": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "minijinja": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "mojolicious": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "pebble": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "twig": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        },
+        "xslate": {
+          "kind": "render",
+          "limitations": [
+            "attr-spread-key-overlap"
+          ]
+        }
+      },
       "body-destructure-non-identifier-source": {
         "blade": {
           "kind": "refusal",
@@ -14230,6 +14286,10 @@
         "description": "An array in child position renders its items one after another",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/array-text-child.ts"
       },
+      "attr-spread-key-overlap": {
+        "description": "a key written by an open spread and by an expression, template or later attribute renders once,…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/attr-spread-key-overlap.ts"
+      },
       "body-destructure-non-identifier-source": {
         "description": "A body destructure of a member read or a call is refused",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/body-destructure-non-identifier-source.ts"
@@ -15202,6 +15262,27 @@
       "actual": "renders the array stringified: its items joined with commas (`a,b`), or the template runtime's own notation for an array",
       "fixtures": [
         "array-text-child"
+      ],
+      "adapters": [
+        "blade",
+        "erb",
+        "go-template",
+        "jinja",
+        "minijinja",
+        "mojolicious",
+        "pebble",
+        "twig",
+        "xslate"
+      ]
+    },
+    "attr-spread-key-overlap": {
+      "title": "A key written by an open spread and by another attribute or spread",
+      "kind": "silent",
+      "given": "an open spread (`{...rest}`, `{...bag()}`) and an explicit attribute with an expression or template value before it, an explicit attribute after it, a second open spread that carries the same key, a rest bag spelled like the props object (`{ size, ...props }`), a spread of a local `const` or a conditional object, or a bag key holding an explicit `null` over an earlier literal",
+      "expected": "the key renders once, with the last write; a `null` bag value overrides the earlier literal and renders nothing",
+      "actual": "Renders the key twice, so a browser keeps the first, or renders the earlier literal where the bag holds `null`",
+      "fixtures": [
+        "attr-spread-key-overlap"
       ],
       "adapters": [
         "blade",
