@@ -240,3 +240,43 @@ export function B() {
     expect(read('B')).toEqual(str('b'))
   })
 })
+
+describe('lookupStaticConstMember: an object literal with a spread of a literal const (#3916)', () => {
+  const R = moduleConst('R', `{ k: 'v', z: 1 }`)
+  const Q = moduleConst('Q', `{ ...R, z: 2 }`)
+  const B = moduleConst('B', `{ k: 'a', ...Q, extra: 1 }`)
+  const read = (name: string, key: string, constants: ConstantInfo[]) => lookupStaticConstMember(ident(name), key, constants, notShadowed)
+
+  test('a key of the spread source reads through, and a later entry overrides an earlier one', () => {
+    expect(read('B', 'k', [R, Q, B])).toEqual(str('v'))
+    expect(read('B', 'z', [R, Q, B])).toEqual(num(2))
+    expect(read('B', 'extra', [R, Q, B])).toEqual(num(1))
+    expect(read('B', 'nope', [R, Q, B])).toEqual(UNDEFINED)
+  })
+
+  test('a spread of a source that is not a literal const object stays unanswered', () => {
+    const call = moduleConst('B', `{ ...mk() }`)
+    const member = moduleConst('B', `{ ...R.sub }`)
+    const array = moduleConst('B', `{ ...[1, 2] }`)
+    const absent = moduleConst('B', `{ ...MISSING }`)
+    const letSource = moduleConst('B', `{ ...L }`)
+    const L = moduleConst('L', `{ k: 'v' }`, { declarationKind: 'let' })
+    const mutated = moduleConst('M', `{ k: 'v' }`, { mutatedAfterDeclaration: true })
+    const ofMutated = moduleConst('B', `{ ...M }`)
+    expect(read('B', 'k', [R, call])).toBeNull()
+    expect(read('B', 'k', [R, member])).toBeNull()
+    expect(read('B', 'k', [R, array])).toBeNull()
+    expect(read('B', 'k', [R, absent])).toBeNull()
+    expect(read('B', 'k', [L, letSource])).toBeNull()
+    expect(read('B', 'k', [mutated, ofMutated])).toBeNull()
+  })
+
+  test('a spread inside a module const reads the module const, not a component binding of the same name', () => {
+    const local = moduleConst('R', `{ k: 'local' }`, { isModule: false })
+    const ofModule = moduleConst('B', `{ ...R }`)
+    expect(read('B', 'k', [R, local, ofModule])).toEqual(str('v'))
+    // The component's own const spreading `R` reads the component's `R`.
+    const ownB = moduleConst('B', `{ ...R }`, { isModule: false })
+    expect(read('B', 'k', [R, local, ownB])).toEqual(str('local'))
+  })
+})

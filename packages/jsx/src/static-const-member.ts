@@ -170,8 +170,10 @@ function staticLiteralValue(
   isShadowed: (name: string) => boolean,
 ): ParsedExpr | null {
   if (expr.kind === 'identifier') {
-    const value = resolveStaticConstBinding(expr.name, constants, isShadowed)?.parsed
-    return value?.kind === 'array-literal' || value?.kind === 'object-literal' ? value : null
+    const binding = resolveStaticConstBinding(expr.name, constants, isShadowed)
+    const value = binding?.parsed
+    if (value?.kind === 'array-literal') return value
+    return value?.kind === 'object-literal' ? flattenObjectSpreads(value, constants, binding?.isModule === true) : null
   }
   const key = expr.kind === 'member' ? expr.property : expr.kind === 'index-access' ? staticIndexKey(expr.index) : null
   if (key === null || (expr.kind !== 'member' && expr.kind !== 'index-access')) return null
@@ -179,6 +181,57 @@ function staticLiteralValue(
   if (receiver === null) return null
   const read = readLiteralMember(receiver, key)
   return read?.kind === 'value' ? read.expr : null
+}
+
+/** Nested spreads past this depth are left unresolved (a chain this long is not a realistic const). */
+const MAX_SPREAD_DEPTH = 8
+
+/**
+ * An object literal with each `...NAME` spread of a literal const replaced by
+ * that const's own entries, in place: JS copies the source's own keys into the
+ * object at the spread's position, so a later entry of the same key still
+ * overrides an earlier one (`readObjectMember`). Phase 1 decides this once for
+ * every adapter (#3916).
+ *
+ * A spread this cannot expand stays in the literal, and `readObjectMember`
+ * then refuses to answer for the object: a source that is not a plain
+ * identifier, a const that is not a literal object, a `let` or one the
+ * component changes, or a name that is not provably the module's. Names in a
+ * module const's initializer are the module's, so they resolve only against
+ * module consts, never against a component binding of the same name.
+ */
+function flattenObjectSpreads(
+  literal: Extract<ParsedExpr, { kind: 'object-literal' }>,
+  constants: StaticConstants,
+  inModule: boolean,
+  depth = 0,
+): ParsedExpr {
+  if (!literal.properties.some(p => p.kind === 'spread')) return literal
+  const properties: ObjectLiteralProperty[] = []
+  for (const p of literal.properties) {
+    const source = p.kind === 'spread' ? spreadSourceEntries(p.expr, constants, inModule, depth) : null
+    if (source) properties.push(...source)
+    else properties.push(p)
+  }
+  return { ...literal, properties }
+}
+
+/** The entries a spread of `expr` contributes, or `null` when it is not a literal const object this can expand. */
+function spreadSourceEntries(
+  expr: ParsedExpr,
+  constants: StaticConstants,
+  inModule: boolean,
+  depth: number,
+): readonly ObjectLiteralProperty[] | null {
+  if (expr.kind !== 'identifier' || depth >= MAX_SPREAD_DEPTH) return null
+  const name = expr.name
+  const source = inModule
+    ? (constants ?? []).find(c => c.isModule && c.name === name)
+    : resolveStaticConstBinding(name, constants, () => false)
+  if (!source || source.declarationKind !== 'const' || source.mutatedAfterDeclaration) return null
+  if (source.parsed?.kind !== 'object-literal') return null
+  const flat = flattenObjectSpreads(source.parsed, constants, source.isModule === true, depth + 1)
+  return flat.kind === 'object-literal' ? flat.properties : null
 }
 
 /**
