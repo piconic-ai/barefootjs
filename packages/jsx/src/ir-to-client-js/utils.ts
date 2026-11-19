@@ -1015,3 +1015,11 @@ export function withRowAccessor(
   const accessor = `__bfItem_${markerId}()`
   return bindings.map(b => ({ ...b, accessor }))
 }
+
+/**
+ * The pseudo attribute name a raw-text host's content update travels under
+ * through `ctx.reactiveAttrs` (#3910). Not a valid HTML attribute name, so it
+ * can never collide with a real one; `emitAttrUpdate` turns it into an
+ * `innerHTML` write instead of a `setAttribute`.
+ */
+export const RAW_TEXT_CONTENT_ATTR = '#raw-text-content'

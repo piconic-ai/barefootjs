@@ -9547,6 +9547,70 @@
           ]
         }
       },
+      "raw-text-host-annotation-xml-encodings": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "foreign-title-slot-markers-escaped"
+          ]
+        }
+      },
+      "raw-text-host-annotation-xml-svg": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "dynamic-text-in-style-script-element"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "raw-text-host-reactive": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "dynamic-text-in-style-script-element"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "raw-text-host-style-script": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "dynamic-text-in-style-script-element"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
+      "raw-text-host-svg-style": {
+        "go-template": {
+          "kind": "refusal",
+          "codes": [
+            "BF101"
+          ],
+          "limitations": [
+            "dynamic-text-in-style-script-element"
+          ],
+          "escape": {
+            "state": "debt"
+          }
+        }
+      },
       "record-const-index-inherited-key": {
         "blade": {
           "kind": "refusal",
@@ -13152,6 +13216,26 @@
         "description": "A props object named p types its string, number and boolean props in +, || and attribute positions",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/props-object-non-props-name-operand-typing.ts"
       },
+      "raw-text-host-annotation-xml-encodings": {
+        "description": "A title under a MathML annotation-xml keeps its slot markers without an HTML encoding and renders…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-host-annotation-xml-encodings.ts"
+      },
+      "raw-text-host-annotation-xml-svg": {
+        "description": "A style under an SVG title under a MathML annotation-xml renders without slot markers and updates…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-host-annotation-xml-svg.ts"
+      },
+      "raw-text-host-reactive": {
+        "description": "Signal-driven text in <style>, <script>, <textarea> and <title> renders without slot markers and…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-host-reactive.ts"
+      },
+      "raw-text-host-style-script": {
+        "description": "A dynamic child of <style> and <script> renders without slot markers",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-host-style-script.ts"
+      },
+      "raw-text-host-svg-style": {
+        "description": "A dynamic child of an SVG <style> keeps its slot markers",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/raw-text-host-svg-style.ts"
+      },
       "record-const-index-inherited-key": {
         "description": "a const record indexed by a prop of unknown keys reads inherited keys too",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/record-const-index-inherited-key.ts"
@@ -14164,6 +14248,10 @@
       "expected": "the value as written inside the element",
       "actual": "the compiler refuses with BF101",
       "fixtures": [
+        "raw-text-host-annotation-xml-svg",
+        "raw-text-host-reactive",
+        "raw-text-host-style-script",
+        "raw-text-host-svg-style",
         "style-script-text-dynamic"
       ],
       "adapters": [
@@ -14171,6 +14259,19 @@
       ],
       "diagnostics": [
         "BF101"
+      ]
+    },
+    "foreign-title-slot-markers-escaped": {
+      "title": "A dynamic child of a title that is not an HTML element, on the Go template adapter",
+      "kind": "silent",
+      "given": "a `<title>` with a dynamic child inside foreign content (an SVG, or a MathML `annotation-xml` without an HTML `encoding`), where the slot markers are comment nodes around the value",
+      "expected": "the slot markers stay comment nodes around the value, as in the Hono reference",
+      "actual": "emits the slot markers as HTML-escaped text inside the title, because html/template treats every `title` as RCDATA",
+      "fixtures": [
+        "raw-text-host-annotation-xml-encodings"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "fragment-wrapped-conditional-return-branch-scope": {

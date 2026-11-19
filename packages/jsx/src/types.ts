@@ -426,6 +426,15 @@ export interface IRElement {
   slotId: string | null
   needsScope: boolean
   /**
+   * True for a `<style>`, `<script>`, `<textarea>` or `<title>` whose
+   * expression children were lowered to slotless text (#3910): raw text and
+   * RCDATA read no comment, so those children wear no `<!--bf:sN-->` marker
+   * in any adapter or in the CSR template, and the client rewrites this
+   * element's own content (`slotId`) instead of looking for comment nodes.
+   * Decided once in Phase 1 (`raw-text-host.ts`).
+   */
+  rawTextHost?: true
+  /**
    * The row-key attribute this element carries, resolved ONCE here instead
    * of independently by 16 emit sites (#2753 root-cause: the client
    * runtime's `mapArray` stamping an index key onto unkeyed rows SSR never
