@@ -6063,27 +6063,27 @@
     {
       "name": "gen:id:absent",
       "props": {
-        "title": "T"
+        "title": "T\"&<i>'"
       }
     },
     {
       "name": "gen:id:empty",
       "props": {
-        "title": "T",
+        "title": "T\"&<i>'",
         "id": ""
       }
     },
     {
       "name": "gen:id:markup",
       "props": {
-        "title": "T",
+        "title": "T\"&<i>'",
         "id": "<b>&\"'</b>"
       }
     },
     {
       "name": "gen:id:multibyte",
       "props": {
-        "title": "T",
+        "title": "T\"&<i>'",
         "id": "日本語"
       }
     }
@@ -6123,14 +6123,14 @@
     {
       "name": "gen:id:absent",
       "props": {
-        "title": "T",
+        "title": "T\"><img src=x onerror=1>&amp;'",
         "__instanceId": "ElementSpreadPropsLoopRowLive_test"
       }
     },
     {
       "name": "gen:id:empty",
       "props": {
-        "title": "T",
+        "title": "T\"><img src=x onerror=1>&amp;'",
         "id": "",
         "__instanceId": "ElementSpreadPropsLoopRowLive_test"
       }
@@ -6138,7 +6138,7 @@
     {
       "name": "gen:id:markup",
       "props": {
-        "title": "T",
+        "title": "T\"><img src=x onerror=1>&amp;'",
         "id": "<b>&\"'</b>",
         "__instanceId": "ElementSpreadPropsLoopRowLive_test"
       }
@@ -6146,7 +6146,7 @@
     {
       "name": "gen:id:multibyte",
       "props": {
-        "title": "T",
+        "title": "T\"><img src=x onerror=1>&amp;'",
         "id": "日本語",
         "__instanceId": "ElementSpreadPropsLoopRowLive_test"
       }
@@ -6157,7 +6157,7 @@
       "name": "gen:label:empty",
       "props": {
         "label": "",
-        "title": "T",
+        "title": "T\"&<i>'",
         "id": "I"
       }
     },
@@ -6165,7 +6165,7 @@
       "name": "gen:label:markup",
       "props": {
         "label": "<b>&\"'</b>",
-        "title": "T",
+        "title": "T\"&<i>'",
         "id": "I"
       }
     },
@@ -6173,7 +6173,7 @@
       "name": "gen:label:multibyte",
       "props": {
         "label": "日本語",
-        "title": "T",
+        "title": "T\"&<i>'",
         "id": "I"
       }
     }

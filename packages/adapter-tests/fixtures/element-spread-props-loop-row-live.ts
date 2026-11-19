@@ -17,11 +17,13 @@ export const spec: SharedFixtureSpec = {
   componentName: 'ElementSpreadPropsLoopRowLive',
   sourceRoot: 'fixture',
   description: 'the props object spread onto an element of a signal loop row reaches rows built on the client (#3917)',
-  props: { title: 'T', id: 'I' },
+  // A hostile `title`: the row template must keep it one literal value.
+  props: { title: 'T"><img src=x onerror=1>&amp;\'', id: 'I' },
   interactions: [
-    { type: 'expectAttribute', selector: 'span[data-key="a"]', attribute: 'title', value: 'T' },
+    { type: 'expectAttribute', selector: 'span[data-key="a"]', attribute: 'title', value: 'T"><img src=x onerror=1>&amp;\'' },
+    { type: 'expectHidden', selector: 'img' },
     { type: 'click', selector: '.add' },
-    { type: 'expectAttribute', selector: 'span[data-key="c"]', attribute: 'title', value: 'T' },
+    { type: 'expectAttribute', selector: 'span[data-key="c"]', attribute: 'title', value: 'T"><img src=x onerror=1>&amp;\'' },
     { type: 'expectAttribute', selector: 'span[data-key="c"]', attribute: 'id', value: 'I' },
   ],
 }

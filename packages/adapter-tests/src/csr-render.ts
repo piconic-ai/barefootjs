@@ -493,12 +493,13 @@ function spreadAttrs(obj) {
     if (key === 'children') continue
     if (key === 'style') {
       const css = styleToCss(value)
-      if (css != null) parts.push(\`style="\${css}"\`)
+      if (css != null) parts.push(\`style="\${escapeAttr(css)}"\`)
       continue
     }
     const attr = key === 'className' ? 'class' : key === 'htmlFor' ? 'for'
       : key.replace(/([A-Z])/g, '-$1').toLowerCase()
-    parts.push(value === true ? attr : \`\${attr}="\${value}"\`)
+    if (!/^[^\\s"'<>/=]+$/.test(attr)) continue
+    parts.push(value === true ? attr : \`\${attr}="\${escapeAttr(value)}"\`)
   }
   return parts.join(' ')
 }

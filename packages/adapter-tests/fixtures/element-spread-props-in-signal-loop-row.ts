@@ -16,11 +16,11 @@ export function ElementSpreadPropsInSignalLoopRow(props: { title?: string; id?: 
   return <div>{rows().map(r => <span key={r.k} {...props}>{r.k}</span>)}</div>
 }
 `,
-  props: { title: 'T', id: 'I' },
+  props: { title: 'T"&<i>\'', id: 'I' },
   expectedHtml: `
     <div bf-s="test" bf="s2">
-      <span bf="s1" data-key="a" id="I" title="T"><!--bf:s0-->a<!--/--></span>
-      <span bf="s1" data-key="b" id="I" title="T"><!--bf:s0-->b<!--/--></span>
+      <span bf="s1" data-key="a" id="I" title="T&quot;&amp;&lt;i&gt;&#39;"><!--bf:s0-->a<!--/--></span>
+      <span bf="s1" data-key="b" id="I" title="T&quot;&amp;&lt;i&gt;&#39;"><!--bf:s0-->b<!--/--></span>
     </div>
   `,
 })

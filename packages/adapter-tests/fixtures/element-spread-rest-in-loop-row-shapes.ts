@@ -25,18 +25,18 @@ export function ElementSpreadRestInLoopRowShapes({ label, ...rest }: { label: st
   )
 }
 `,
-  props: { label: 'L', title: 'T', id: 'I' },
+  props: { label: 'L', title: 'T"&<i>\'', id: 'I' },
   expectedHtml: `
     <div bf-s="test" bf="s10" data-label="L">
       <ul bf="s2">
-        <li bf="s1" class="before" data-key="a" id="I" title="T"><!--bf:s0-->a<!--/--></li>
-        <li bf="s1" class="before" data-key="b" id="I" title="T"><!--bf:s0-->b<!--/--></li>
+        <li bf="s1" class="before" data-key="a" id="I" title="T&quot;&amp;&lt;i&gt;&#39;"><!--bf:s0-->a<!--/--></li>
+        <li bf="s1" class="before" data-key="b" id="I" title="T&quot;&amp;&lt;i&gt;&#39;"><!--bf:s0-->b<!--/--></li>
       </ul>
       <ol bf="s5">
-        <li bf="s4" class="after" data-key="a" id="I" title="T"><!--bf:s3-->a<!--/--></li>
-        <li bf="s4" class="after" data-key="b" id="I" title="T"><!--bf:s3-->b<!--/--></li>
+        <li bf="s4" class="after" data-key="a" id="I" title="T&quot;&amp;&lt;i&gt;&#39;"><!--bf:s3-->a<!--/--></li>
+        <li bf="s4" class="after" data-key="b" id="I" title="T&quot;&amp;&lt;i&gt;&#39;"><!--bf:s3-->b<!--/--></li>
       </ol>
-      <section bf="s9"><div bf="s8" data-key="x"><i bf="s7" data-key-1="p" id="I" title="T"><!--bf:s6-->p<!--/--></i><i bf="s7" data-key-1="q" id="I" title="T"><!--bf:s6-->q<!--/--></i></div></section>
+      <section bf="s9"><div bf="s8" data-key="x"><i bf="s7" data-key-1="p" id="I" title="T&quot;&amp;&lt;i&gt;&#39;"><!--bf:s6-->p<!--/--></i><i bf="s7" data-key-1="q" id="I" title="T&quot;&amp;&lt;i&gt;&#39;"><!--bf:s6-->q<!--/--></i></div></section>
     </div>
   `,
 })
