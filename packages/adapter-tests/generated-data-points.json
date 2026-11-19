@@ -6096,6 +6096,152 @@
       }
     }
   ],
+  "element-spread-props-in-signal-loop-row": [
+    {
+      "name": "gen:title:absent",
+      "props": {
+        "id": "I"
+      }
+    },
+    {
+      "name": "gen:title:empty",
+      "props": {
+        "title": "",
+        "id": "I"
+      }
+    },
+    {
+      "name": "gen:title:markup",
+      "props": {
+        "title": "<b>&\"'</b>",
+        "id": "I"
+      }
+    },
+    {
+      "name": "gen:title:multibyte",
+      "props": {
+        "title": "日本語",
+        "id": "I"
+      }
+    },
+    {
+      "name": "gen:id:absent",
+      "props": {
+        "title": "T\"&<i>'"
+      }
+    },
+    {
+      "name": "gen:id:empty",
+      "props": {
+        "title": "T\"&<i>'",
+        "id": ""
+      }
+    },
+    {
+      "name": "gen:id:markup",
+      "props": {
+        "title": "T\"&<i>'",
+        "id": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:id:multibyte",
+      "props": {
+        "title": "T\"&<i>'",
+        "id": "日本語"
+      }
+    }
+  ],
+  "element-spread-props-loop-row-live": [
+    {
+      "name": "gen:title:absent",
+      "props": {
+        "id": "I",
+        "__instanceId": "ElementSpreadPropsLoopRowLive_test"
+      }
+    },
+    {
+      "name": "gen:title:empty",
+      "props": {
+        "title": "",
+        "id": "I",
+        "__instanceId": "ElementSpreadPropsLoopRowLive_test"
+      }
+    },
+    {
+      "name": "gen:title:markup",
+      "props": {
+        "title": "<b>&\"'</b>",
+        "id": "I",
+        "__instanceId": "ElementSpreadPropsLoopRowLive_test"
+      }
+    },
+    {
+      "name": "gen:title:multibyte",
+      "props": {
+        "title": "日本語",
+        "id": "I",
+        "__instanceId": "ElementSpreadPropsLoopRowLive_test"
+      }
+    },
+    {
+      "name": "gen:id:absent",
+      "props": {
+        "title": "T\"><img src=x onerror=1>&amp;'",
+        "__instanceId": "ElementSpreadPropsLoopRowLive_test"
+      }
+    },
+    {
+      "name": "gen:id:empty",
+      "props": {
+        "title": "T\"><img src=x onerror=1>&amp;'",
+        "id": "",
+        "__instanceId": "ElementSpreadPropsLoopRowLive_test"
+      }
+    },
+    {
+      "name": "gen:id:markup",
+      "props": {
+        "title": "T\"><img src=x onerror=1>&amp;'",
+        "id": "<b>&\"'</b>",
+        "__instanceId": "ElementSpreadPropsLoopRowLive_test"
+      }
+    },
+    {
+      "name": "gen:id:multibyte",
+      "props": {
+        "title": "T\"><img src=x onerror=1>&amp;'",
+        "id": "日本語",
+        "__instanceId": "ElementSpreadPropsLoopRowLive_test"
+      }
+    }
+  ],
+  "element-spread-rest-in-loop-row-shapes": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "title": "T\"&<i>'",
+        "id": "I"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "title": "T\"&<i>'",
+        "id": "I"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "title": "T\"&<i>'",
+        "id": "I"
+      }
+    }
+  ],
   "else-if-chain": [
     {
       "name": "gen:level:markup",

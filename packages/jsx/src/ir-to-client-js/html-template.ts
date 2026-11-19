@@ -353,15 +353,39 @@ function transformKeyValue(value: AttrValue, transformExpr: (expr: JsSourceText,
 }
 
 /**
+ * Whether `v` is one of the component's caller bags (the props object or the
+ * `{...rest}` bag, any alias: `SpreadAttr.callerBag`) spread onto an element
+ * of a loop row (`loopDepth >= 0`). The init's `applyRestAttrs` only reaches
+ * elements the init scope holds, and a row is built by its own template, so
+ * the template reads the caller's props (`_p`) itself (#3917).
+ */
+function isRowCallerBagSpread(v: SpreadAttr, loopDepth: number): boolean {
+  return loopDepth >= 0 && v.callerBag !== undefined
+}
+
+/**
  * Whether the spread `v` forwards the component's own caller bag (the rest
  * props or the props object, through any alias), which the init's
  * `applyRestAttrs` applies instead of the template. `name` must be one of
  * `restSpreadNames`, and Phase 1 must have resolved the spread to the bag
  * (`SpreadAttr.callerBag`): a loop row or callback parameter spelled like
  * the rest binding is that binding, spread like any other object (#3851).
+ * A caller bag spread on a loop row's element is not applied there
+ * (`isRowCallerBagSpread`).
  */
-function isCallerBagSpread(v: SpreadAttr, restSpreadNames: ReadonlySet<string> | undefined, name: string = v.expr): boolean {
-  return !!restSpreadNames?.has(name) && v.callerBag !== undefined
+function isCallerBagSpread(v: SpreadAttr, restSpreadNames: ReadonlySet<string> | undefined, loopDepth: number, name: string = v.expr): boolean {
+  return !isRowCallerBagSpread(v, loopDepth) && !!restSpreadNames?.has(name) && v.callerBag !== undefined
+}
+
+/**
+ * The object an element spread reads in a template: the caller bag itself
+ * for a caller-bag spread in a loop row (`_p`, or the `{...rest}` view
+ * `restBagExpr` of it), `fallback` (the spread's own expression, rewritten
+ * for the template) otherwise.
+ */
+function spreadSourceExpr(v: SpreadAttr, loopDepth: number, fallback: () => string): string {
+  if (!isRowCallerBagSpread(v, loopDepth)) return fallback()
+  return v.callerBag === 'rest' ? restBagExpr(v.restOmittedKeys ?? []) : PROPS_PARAM
 }
 
 /**
@@ -380,7 +404,8 @@ function renderTemplateAttrPart(
   attr: IRAttribute,
   attrName: string,
   wrap: (expr: string) => string,
-  restSpreadNames?: ReadonlySet<string>,
+  restSpreadNames: ReadonlySet<string> | undefined,
+  loopDepth: number,
 ): string {
   const v = attr.value
   switch (v.kind) {
@@ -397,13 +422,13 @@ function renderTemplateAttrPart(
       return templateAttrExpr(attrName, wrap(tmplStr))
     }
     case 'spread': {
-      if (isCallerBagSpread(v, restSpreadNames)) return ''
+      if (isCallerBagSpread(v, restSpreadNames, loopDepth)) return ''
       // `wrap` lowers loop-param references — including destructured rest
       // bindings (`...rest` lifted via `paramBindings`) — into their item
       // accessor. Skipping it here meant `{...rest}` inside a `.map()`
       // emitted `spreadAttrs(rest)` with `rest` undefined at the render-item
       // scope (#1244).
-      return `\${spreadAttrs(${wrap(v.expr)})}`
+      return `\${spreadAttrs(${spreadSourceExpr(v, loopDepth, () => wrap(v.expr))})}`
     }
     case 'boolean-shorthand':
     case 'jsx-children':
@@ -802,7 +827,7 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
       // SSR-reused row never has — visible the moment a row-count change
       // makes reused and rebuilt rows coexist in one list (#2756).
       const mergeCtx: MergeContext = {
-        isFilteredSpread: (v) => isCallerBagSpread(v, restSpreadNames),
+        isFilteredSpread: (v) => isCallerBagSpread(v, restSpreadNames, loopDepth),
         honorClientOnly: true,
       }
       const useMerge = shouldUseSpreadAttrsMerge(node.attrs, mergeCtx)
@@ -812,7 +837,7 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
       const mergeCall = useMerge
         ? buildSpreadAttrsMergeCall({
             attrs: node.attrs.filter(a => isMergeableAttr(a, mergeCtx)),
-            spreadExprFor: (v) => wrapExpr(v.expr),
+            spreadExprFor: (v) => spreadSourceExpr(v, loopDepth, () => wrapExpr(v.expr)),
             expressionExprFor: (v) => wrapExpr(v.expr),
             templateExprFor: (v) => wrapExpr(attrValueToString(v) ?? ''),
           })
@@ -833,9 +858,9 @@ export function irToHtmlTemplate(node: IRNode, restSpreadNames?: ReadonlySet<str
           }
           if (a.name === 'key') {
             const attrName = resolvedKeyAttrName(node, loopDepth)
-            return attrName ? renderTemplateAttrPart(a, attrName, wrapExpr, restSpreadNames) : ''
+            return attrName ? renderTemplateAttrPart(a, attrName, wrapExpr, restSpreadNames, loopDepth) : ''
           }
-          return renderTemplateAttrPart(a, toHtmlAttrName(a.name), wrapExpr, restSpreadNames)
+          return renderTemplateAttrPart(a, toHtmlAttrName(a.name), wrapExpr, restSpreadNames, loopDepth)
         })
         .filter(Boolean)
 
@@ -1450,10 +1475,10 @@ export function irToPlaceholderTemplate(node: IRNode, restSpreadNames?: Readonly
           if (a.clientOnly) return ''
           if (a.name === 'key') {
             const attrName = resolvedKeyAttrName(node, loopDepth)
-            return attrName ? renderTemplateAttrPart(a, attrName, wrapExpr, restSpreadNames) : ''
+            return attrName ? renderTemplateAttrPart(a, attrName, wrapExpr, restSpreadNames, loopDepth) : ''
           }
           const attrName = a.name === '...' ? '...' : toHtmlAttrName(a.name)
-          return renderTemplateAttrPart(a, attrName, wrapExpr, restSpreadNames)
+          return renderTemplateAttrPart(a, attrName, wrapExpr, restSpreadNames, loopDepth)
         })
         .filter(Boolean)
 
@@ -1967,7 +1992,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
       // loops emit `data-key-N` unconditionally per the reconciliation
       // contract).
       const mergeCtx: MergeContext = {
-        isFilteredSpread: (v) => isCallerBagSpread(v, restSpreadNames, v.templateExpr ?? v.expr),
+        isFilteredSpread: (v) => isCallerBagSpread(v, restSpreadNames, loopDepth, v.templateExpr ?? v.expr),
         honorClientOnly: true,
       }
       const useMerge = shouldUseSpreadAttrsMerge(node.attrs, mergeCtx)
@@ -1977,7 +2002,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
       const mergeCall = useMerge
         ? buildSpreadAttrsMergeCall({
             attrs: node.attrs.filter(a => isMergeableAttr(a, mergeCtx)),
-            spreadExprFor: (v) => transformExpr(v.expr, v.templateExpr),
+            spreadExprFor: (v) => spreadSourceExpr(v, loopDepth, () => transformExpr(v.expr, v.templateExpr)),
             expressionExprFor: (v) => transformExpr(v.expr, v.templateExpr),
             templateExprFor: (v) => transformExpr(attrValueToString(v, { useTemplate: true }) ?? ''),
           })
@@ -1996,7 +2021,7 @@ function irToComponentTemplateWithOpts(node: IRNode, opts: TemplateOptions): str
           }
           if (v.kind === 'spread') {
             if (mergeCtx.isFilteredSpread(v)) return ''
-            return `\${spreadAttrs(${transformExpr(v.expr, v.templateExpr)})}`
+            return `\${spreadAttrs(${spreadSourceExpr(v, loopDepth, () => transformExpr(v.expr, v.templateExpr))})}`
           }
           // Skip key for outer loop elements (reconcileTemplates sets data-key at runtime).
           // But render data-key-N for inner loop elements (needed for event delegation).
@@ -2616,7 +2641,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       // `buildSpreadAttrsMergeCall`) keep the contract aligned with
       // the other two CSR-side emit paths.
       const mergeCtx: MergeContext = {
-        isFilteredSpread: (v) => isCallerBagSpread(v, restSpreadNames, v.templateExpr ?? v.expr),
+        isFilteredSpread: (v) => isCallerBagSpread(v, restSpreadNames, loopDepth, v.templateExpr ?? v.expr),
         honorClientOnly: true,
       }
       const useMerge = shouldUseSpreadAttrsMerge(node.attrs, mergeCtx)
@@ -2626,7 +2651,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
       const mergeCall = useMerge
         ? buildSpreadAttrsMergeCall({
             attrs: node.attrs.filter(a => isMergeableAttr(a, mergeCtx)),
-            spreadExprFor: (v) => transformExpr(v.expr, v.templateExpr),
+            spreadExprFor: (v) => spreadSourceExpr(v, loopDepth, () => transformExpr(v.expr, v.templateExpr)),
             expressionExprFor: (v) => transformExpr(v.expr, v.templateExpr),
             templateExprFor: (v) => transformExpr(attrValueToString(v, { useTemplate: true }) ?? ''),
           })
@@ -2648,7 +2673,7 @@ function generateCsrTemplateWithOpts(node: IRNode, opts: TemplateOptions): strin
           }
           if (v.kind === 'spread') {
             if (mergeCtx.isFilteredSpread(v)) return ''
-            return `\${spreadAttrs(${transformExpr(v.expr, v.templateExpr)})}`
+            return `\${spreadAttrs(${spreadSourceExpr(v, loopDepth, () => transformExpr(v.expr, v.templateExpr))})}`
           }
           if (a.name === 'key') {
             const keyName = resolvedKeyAttrName(node, loopDepth)

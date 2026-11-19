@@ -311,6 +311,10 @@ export const renderDivergences: RenderDivergences = {
   // Same dropped spread (no `data-tone`). The children-seeded signal also
   // renders `missing` where the caller's `children` reaches the child.
   'open-rest-spread-child-children': { limitation: 'open-rest-spread-onto-child-component' },
+  // The props object spread onto a row element of a signal-array loop: the
+  // row renders without the keys the caller passed.
+  'element-spread-props-in-signal-loop-row': { limitation: 'props-spread-element-in-signal-loop-row' },
+  'element-spread-props-loop-row-live': { limitation: 'props-spread-element-in-signal-loop-row' },
   // An array in child position: the template prints the array stringified
   // where JSX renders its items one after another.
   'array-text-child': { limitation: 'array-text-child' },

@@ -438,6 +438,18 @@
               ]
             },
             {
+              "fixture": "element-spread-props-in-signal-loop-row",
+              "limitations": [
+                "props-spread-element-in-signal-loop-row"
+              ]
+            },
+            {
+              "fixture": "element-spread-props-loop-row-live",
+              "limitations": [
+                "props-spread-element-in-signal-loop-row"
+              ]
+            },
+            {
               "fixture": "every-typeof-predicate",
               "limitations": [
                 "off-subset-callback-body"
@@ -6697,6 +6709,18 @@
               ]
             },
             {
+              "fixture": "element-spread-props-in-signal-loop-row",
+              "limitations": [
+                "props-spread-element-in-signal-loop-row"
+              ]
+            },
+            {
+              "fixture": "element-spread-props-loop-row-live",
+              "limitations": [
+                "props-spread-element-in-signal-loop-row"
+              ]
+            },
+            {
               "fixture": "embedded-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -11991,6 +12015,18 @@
               ]
             },
             {
+              "fixture": "element-spread-props-in-signal-loop-row",
+              "limitations": [
+                "props-spread-element-in-signal-loop-row"
+              ]
+            },
+            {
+              "fixture": "element-spread-props-loop-row-live",
+              "limitations": [
+                "props-spread-element-in-signal-loop-row"
+              ]
+            },
+            {
               "fixture": "embedded-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -17216,6 +17252,18 @@
               ]
             },
             {
+              "fixture": "element-spread-props-in-signal-loop-row",
+              "limitations": [
+                "props-spread-element-in-signal-loop-row"
+              ]
+            },
+            {
+              "fixture": "element-spread-props-loop-row-live",
+              "limitations": [
+                "props-spread-element-in-signal-loop-row"
+              ]
+            },
+            {
               "fixture": "embedded-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -21957,6 +22005,18 @@
               ]
             },
             {
+              "fixture": "element-spread-props-in-signal-loop-row",
+              "limitations": [
+                "props-spread-element-in-signal-loop-row"
+              ]
+            },
+            {
+              "fixture": "element-spread-props-loop-row-live",
+              "limitations": [
+                "props-spread-element-in-signal-loop-row"
+              ]
+            },
+            {
               "fixture": "embedded-prop-member-signal-seed",
               "limitations": [
                 "prop-member-chain-signal-seed"
@@ -25261,6 +25321,18 @@
               "fixture": "body-destructure-rest-non-props-source",
               "limitations": [
                 "body-destructure-without-const-form"
+              ]
+            },
+            {
+              "fixture": "element-spread-props-in-signal-loop-row",
+              "limitations": [
+                "props-spread-element-in-signal-loop-row"
+              ]
+            },
+            {
+              "fixture": "element-spread-props-loop-row-live",
+              "limitations": [
+                "props-spread-element-in-signal-loop-row"
               ]
             },
             {
@@ -34932,6 +35004,18 @@
               "fixture": "destructure-length-in-map",
               "limitations": [
                 "destructured-length-on-string-or-array-row"
+              ]
+            },
+            {
+              "fixture": "element-spread-props-in-signal-loop-row",
+              "limitations": [
+                "props-spread-element-in-signal-loop-row"
+              ]
+            },
+            {
+              "fixture": "element-spread-props-loop-row-live",
+              "limitations": [
+                "props-spread-element-in-signal-loop-row"
               ]
             },
             {
