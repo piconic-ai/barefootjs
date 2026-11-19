@@ -614,6 +614,7 @@ import { fixture as openRestSpreadChild } from './open-rest-spread-child'
 import { fixture as openBodyRestSpreadElement } from './open-body-rest-spread-element'
 import { fixture as elementSpreadPropsLoopRowLive } from './element-spread-props-loop-row-live'
 import { fixture as openRestSpreadChildChildren } from './open-rest-spread-child-children'
+import { fixture as propsObjectSpreadChildChildren } from './props-object-spread-child-children'
 import { fixture as arrayTextChild } from './array-text-child'
 import { fixture as childrenElementReadIntoState } from './children-element-read-into-state'
 import { fixture as filterPredicateOnPrefixedProp } from './filter-predicate-on-prefixed-prop'
@@ -870,6 +871,7 @@ import { fixture as compositeRowChildComponent } from './composite-row-child-com
 import { fixture as compositeRowChildDerivedProp } from './composite-row-child-derived-prop'
 import { fixture as compositeRowChildAliasedProp } from './composite-row-child-aliased-prop'
 import { fixture as loopPreambleAttrValue } from './loop-preamble-attr-value'
+import { fixture as loopPreambleTemplateLiteral } from './loop-preamble-template-literal'
 import { fixture as loopPreambleChainedFilter } from './loop-preamble-chained-filter'
 import { fixture as loopPreambleConditionalReactive } from './loop-preamble-conditional-reactive'
 import { fixture as loopRowStaticConditional } from './loop-row-static-conditional'
@@ -942,6 +944,9 @@ import { fixture as styleScriptTextDynamic } from './style-script-text-dynamic'
 import { fixture as rawTextHostDynamic } from './raw-text-host-dynamic'
 import { fixture as rawTextHostStyleScript } from './raw-text-host-style-script'
 import { fixture as rawTextHostSvgStyle } from './raw-text-host-svg-style'
+import { fixture as foreignTitleSlot } from './foreign-title-slot'
+import { fixture as foreignTitleBareText } from './foreign-title-bare-text'
+import { fixture as foreignTitleMarkupChild } from './foreign-title-markup-child'
 import { fixture as rawTextHostReactive } from './raw-text-host-reactive'
 import { fixture as rawTextHostAnnotationXml } from './raw-text-host-annotation-xml'
 import { fixture as rawTextHostAnnotationXmlSvg } from './raw-text-host-annotation-xml-svg'
@@ -1062,6 +1067,12 @@ import { fixture as dateCataloguedAttr } from './date-catalogued-attr'
 import { fixture as dateCatalogued } from './date-catalogued'
 import { fixture as dateInheritedProp } from './date-inherited-prop'
 import { fixture as dateInheritedPropIntersection } from './date-inherited-prop-intersection'
+import { fixture as dateInheritedPropInlineIntersection } from './date-inherited-prop-inline-intersection'
+import { fixture as dateInheritedPropInlineIntersectionBaseLast } from './date-inherited-prop-inline-intersection-base-last'
+import { fixture as dateInheritedPropInlineIntersectionLiteral } from './date-inherited-prop-inline-intersection-literal'
+import { fixture as dateInheritedPropInlineIntersectionDestructured } from './date-inherited-prop-inline-intersection-destructured'
+import { fixture as dateInheritedPropInlineIntersectionNested } from './date-inherited-prop-inline-intersection-nested'
+import { fixture as dateInheritedPropInlineIntersectionExtends } from './date-inherited-prop-inline-intersection-extends'
 import { fixture as richPropClientRead } from './rich-prop-client-read'
 import { fixture as richPropPrecompute } from './rich-prop-precompute'
 import { fixture as formatDate } from './format-date'
@@ -1547,6 +1558,20 @@ import { fixture as memoObjectConstArrowSiblingKey } from './memo-object-const-a
 import { fixture as memoModuleObjectConstArrowSiblingKey } from './memo-module-object-const-arrow-sibling-key'
 import { fixture as moduleConstObjectSpreadLiteral } from './module-const-object-spread-literal'
 import { fixture as moduleConstObjectSpreadChainOverride } from './module-const-object-spread-chain-override'
+import { fixture as moduleConstObjectSpreadUnresolvedCall } from './module-const-object-spread-unresolved-call'
+import { fixture as moduleConstObjectSpreadUnresolvedMember } from './module-const-object-spread-unresolved-member'
+import { fixture as moduleConstObjectSpreadUnresolvedLet } from './module-const-object-spread-unresolved-let'
+import { fixture as moduleConstObjectSpreadUnresolvedArray } from './module-const-object-spread-unresolved-array'
+import { fixture as moduleConstObjectSpreadUnresolvedLocal } from './module-const-object-spread-unresolved-local'
+import { fixture as moduleConstObjectSpreadUnresolvedClient } from './module-const-object-spread-unresolved-client'
+import { fixture as moduleConstObjectSpreadMember } from './module-const-object-spread-member'
+import { fixture as moduleConstObjectSpreadOverrideAfter } from './module-const-object-spread-override-after'
+import { fixture as moduleConstObjectSpreadUnresolvedComputedProps } from './module-const-object-spread-unresolved-computed-props'
+import { fixture as moduleConstObjectSpreadUnresolvedComputedLocal } from './module-const-object-spread-unresolved-computed-local'
+import { fixture as moduleConstObjectSpreadUnresolvedComputedOptional } from './module-const-object-spread-unresolved-computed-optional'
+import { fixture as moduleConstObjectSpreadUnresolvedComputedLoop } from './module-const-object-spread-unresolved-computed-loop'
+import { fixture as moduleConstObjectSpreadUnresolvedComputedSignal } from './module-const-object-spread-unresolved-computed-signal'
+import { fixture as moduleConstObjectSpreadUnresolvedComputedClient } from './module-const-object-spread-unresolved-computed-client'
 import { fixture as undefinedLiteralElementPositions } from './undefined-literal-element-positions'
 import { fixture as moduleConstArrayMethodCall } from './module-const-array-method-call'
 import { fixture as localConstLiteralIndex } from './local-const-literal-index'
@@ -2094,6 +2119,7 @@ export const jsxFixtures: JSXFixture[] = [
   openBodyRestSpreadElement,
   elementSpreadPropsLoopRowLive,
   openRestSpreadChildChildren,
+  propsObjectSpreadChildChildren,
   arrayTextChild,
   childrenElementReadIntoState,
   filterPredicateOnPrefixedProp,
@@ -2292,6 +2318,7 @@ export const jsxFixtures: JSXFixture[] = [
   compositeRowChildDerivedProp,
   compositeRowChildAliasedProp,
   loopPreambleAttrValue,
+  loopPreambleTemplateLiteral,
   loopPreambleChainedFilter,
   loopRowStaticConditional,
   childPrimitiveProps,
@@ -2328,6 +2355,9 @@ export const jsxFixtures: JSXFixture[] = [
   rawTextHostDynamic,
   rawTextHostStyleScript,
   rawTextHostSvgStyle,
+  foreignTitleSlot,
+  foreignTitleBareText,
+  foreignTitleMarkupChild,
   rawTextHostReactive,
   rawTextHostAnnotationXml,
   rawTextHostAnnotationXmlSvg,
@@ -2403,6 +2433,12 @@ export const jsxFixtures: JSXFixture[] = [
   dateCatalogued,
   dateInheritedProp,
   dateInheritedPropIntersection,
+  dateInheritedPropInlineIntersection,
+  dateInheritedPropInlineIntersectionBaseLast,
+  dateInheritedPropInlineIntersectionLiteral,
+  dateInheritedPropInlineIntersectionDestructured,
+  dateInheritedPropInlineIntersectionNested,
+  dateInheritedPropInlineIntersectionExtends,
   dateInheritedPropParenthesized,
   dateIntersectionRefineBaseFirst,
   dateIntersectionRefineBaseLast,
@@ -2733,6 +2769,20 @@ export const jsxFixtures: JSXFixture[] = [
   memoModuleObjectConstArrowSiblingKey,
   moduleConstObjectSpreadLiteral,
   moduleConstObjectSpreadChainOverride,
+  moduleConstObjectSpreadUnresolvedCall,
+  moduleConstObjectSpreadUnresolvedMember,
+  moduleConstObjectSpreadUnresolvedLet,
+  moduleConstObjectSpreadUnresolvedArray,
+  moduleConstObjectSpreadUnresolvedLocal,
+  moduleConstObjectSpreadUnresolvedClient,
+  moduleConstObjectSpreadMember,
+  moduleConstObjectSpreadOverrideAfter,
+  moduleConstObjectSpreadUnresolvedComputedProps,
+  moduleConstObjectSpreadUnresolvedComputedLocal,
+  moduleConstObjectSpreadUnresolvedComputedOptional,
+  moduleConstObjectSpreadUnresolvedComputedLoop,
+  moduleConstObjectSpreadUnresolvedComputedSignal,
+  moduleConstObjectSpreadUnresolvedComputedClient,
   undefinedLiteralElementPositions,
   moduleConstArrayMethodCall,
   localConstLiteralIndex,

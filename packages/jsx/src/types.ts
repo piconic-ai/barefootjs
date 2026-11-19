@@ -81,6 +81,20 @@ export interface TypeInfo {
   // For objects/interfaces
   properties?: PropertyInfo[]
 
+  /**
+   * Set only on the props type of a component whose props parameter is
+   * annotated with an INLINE intersection (`props: Base & { label: string }`):
+   * the intersection's constituents, with the same meaning as
+   * {@link TypeDefinition.inherits}. `kind` is `'object'` and `properties`
+   * stays empty (every constituent is in `inherits`), so a consumer that
+   * reads only `properties` sees what it saw before; type-evidence consumers
+   * resolve the members through `derefNamedType`. Absent everywhere else:
+   * `typeNodeToTypeInfo` still lowers a nested intersection to `unknown`.
+   */
+  inherits?: TypeInfo[]
+  /** How `inherits` combines; present exactly when `inherits` is. */
+  inheritance?: 'extends' | 'intersection'
+
   // For arrays
   elementType?: TypeInfo
 
@@ -434,6 +448,17 @@ export interface IRElement {
    * Decided once in Phase 1 (`raw-text-host.ts`).
    */
   rawTextHost?: true
+  /**
+   * True for a `<style>`, `<script>`, `<textarea>` or `<title>` that sits in
+   * foreign content (SVG, MathML), where its children parse as ordinary
+   * content and DO read comments, so the slot markers stay (#3937). An adapter
+   * whose template engine tracks the element's HTML content model by tag name
+   * alone (Go `html/template`: `title` / `textarea` are RCDATA, whatever the
+   * namespace) reads this to tell that case from a real HTML host, which Phase 1
+   * lowers to slotless text (`rawTextHost`). Exclusive with `rawTextHost`.
+   * Decided once in Phase 1 (`raw-text-host.ts`).
+   */
+  foreignRawTextTag?: true
   /**
    * The row-key attribute this element carries, resolved ONCE here instead
    * of independently by 16 emit sites (#2753 root-cause: the client

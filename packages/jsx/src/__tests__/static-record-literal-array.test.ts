@@ -1,10 +1,10 @@
 import { describe, expect, test } from 'bun:test'
 import { lookupStaticRecordLiteral } from '../augment-inherited-props.ts'
-import { lookupStaticConstMember, readStaticConstMember, staticIndexKey } from '../static-const-member.ts'
+import { lookupStaticConstMember, readStaticConstMember, refuseComputedConstRead, spellStaticConstMember, staticIndexKey } from '../static-const-member.ts'
 import { parseExpression } from '../expression-parser.ts'
 import { analyzeComponent } from '../analyzer.ts'
 import { buildMetadata } from '../compiler.ts'
-import type { ConstantInfo } from '../types.ts'
+import type { CompilerError, ConstantInfo, SourceLocation } from '../types.ts'
 
 const loc = { file: 'c.tsx', start: { line: 1, column: 0 }, end: { line: 1, column: 0 } }
 
@@ -278,5 +278,80 @@ describe('lookupStaticConstMember: an object literal with a spread of a literal 
     // The component's own const spreading `R` reads the component's `R`.
     const ownB = moduleConst('B', `{ ...R }`, { isModule: false })
     expect(read('B', 'k', [R, local, ownB])).toEqual(str('local'))
+  })
+})
+
+describe('readStaticConstMember: a spread the literal cannot expand (#3944)', () => {
+  const R = moduleConst('R', `{ k: 'v', sub: { a: 'x' } }`)
+  const read = (key: string, constants: ConstantInfo[]) => readStaticConstMember(ident('B'), key, constants, notShadowed)
+
+  test('a key no entry lists after the spread is unresolvable, for each kind of source', () => {
+    const L = moduleConst('L', `{ k: 'v' }`, { declarationKind: 'let' })
+    const sources = [`{ ...mk() }`, `{ ...[1] }`, `{ ...L }`, `{ ...MISSING }`, `{ ...R.nope }`, `{ ...props.x }`]
+    for (const source of sources) {
+      const B = moduleConst('B', source)
+      expect(read('k', [R, L, B])).toEqual({ kind: 'unresolvable' })
+      expect(read('toString', [R, L, B])).toEqual({ kind: 'unresolvable' })
+    }
+  })
+
+  test('a key listed before the spread may be overridden by it, one listed after is that entry', () => {
+    const B = moduleConst('B', `{ k: 'first', ...mk(), z: 'last' }`)
+    expect(read('k', [B])).toEqual({ kind: 'unresolvable' })
+    expect(read('z', [B])).toEqual({ kind: 'value', expr: str('last') })
+    const both = moduleConst('B', `{ ...mk(), k: 'after', ...mk() }`)
+    expect(read('k', [both])).toEqual({ kind: 'unresolvable' })
+  })
+
+  test('a spread of a literal member of a literal const expands, including its own spreads', () => {
+    const member = moduleConst('B', `{ ...R.sub, n: 1 }`)
+    expect(read('a', [R, member])).toEqual({ kind: 'value', expr: str('x') })
+    expect(read('n', [R, member])).toEqual({ kind: 'value', expr: num(1) })
+    expect(read('nope', [R, member])).toEqual({ kind: 'value', expr: UNDEFINED })
+    const indexed = moduleConst('B', `{ ...R['sub'] }`)
+    expect(read('a', [R, indexed])).toEqual({ kind: 'value', expr: str('x') })
+    const Base = moduleConst('Base', `{ z: 'z' }`)
+    const Nested = moduleConst('N', `{ sub: { ...Base, y: 'y' } }`)
+    const viaNested = moduleConst('B', `{ ...N.sub }`)
+    expect(read('z', [Base, Nested, viaNested])).toEqual({ kind: 'value', expr: str('z') })
+  })
+
+  test('spellStaticConstMember records BF101 once, with the client escape unless the position cannot defer', () => {
+    const B = moduleConst('B', `{ ...mk() }`)
+    const errors: CompilerError[] = []
+    const sink = { errors, componentName: 'C' }
+    const spell = (where?: { loc: SourceLocation; deferrable?: boolean }) =>
+      spellStaticConstMember(ident('B'), 'k', [B], notShadowed, sink, where)
+    expect(spell()).toBeNull()
+    expect(spell()).toBeNull()
+    expect(errors).toHaveLength(1)
+    expect(errors[0].code).toBe('BF101')
+    expect(errors[0].suggestion?.escape).toEqual([{ kind: 'client-directive' }])
+    errors.length = 0
+    const loc = { file: 'C.tsx', start: { line: 2, column: 0 }, end: { line: 2, column: 5 } }
+    spell({ loc, deferrable: false })
+    expect(errors[0].suggestion?.escape).toBeUndefined()
+  })
+})
+
+describe('refuseComputedConstRead: a run-time key over an unresolved spread (#3944)', () => {
+  const refuse = (value: string, extra: ConstantInfo[] = [], isShadowed: (n: string) => boolean = notShadowed) => {
+    const errors: CompilerError[] = []
+    refuseComputedConstRead(ident('B'), [...extra, moduleConst('B', value)], isShadowed, { errors, componentName: 'C' })
+    return errors
+  }
+
+  test('an object with a spread it cannot expand is refused, with the client escape', () => {
+    const errors = refuse(`{ ...mk() }`)
+    expect(errors).toHaveLength(1)
+    expect(errors[0].code).toBe('BF101')
+    expect(errors[0].suggestion?.escape).toEqual([{ kind: 'client-directive' }])
+    expect(refuse(`{ a: 1, ...mk(), b: 2 }`)).toHaveLength(1)
+  })
+
+  test('a fully literal object, or a name a binding shadows, is not refused', () => {
+    expect(refuse(`{ a: 1, b: 2 }`)).toEqual([])
+    expect(refuse(`{ ...mk() }`, [], n => n === 'B')).toEqual([])
+    expect(refuse(`{ ...R }`, [moduleConst('R', `{ k: 'v' }`)])).toEqual([])
   })
 })

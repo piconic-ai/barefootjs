@@ -22,6 +22,12 @@ export const conformancePins: ConformancePins = {
   'raw-text-host-reactive': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
   'raw-text-host-svg-style': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
   'raw-text-host-annotation-xml-svg': [{ code: 'BF101', severity: 'error', limitation: 'dynamic-text-in-style-script-element', unescapable: true }],
+  // html/template reads `<title>` / `<textarea>` as RCDATA whatever the
+  // namespace and escapes every `<` there, so the slot markers of a reactive
+  // child (and any element child) in foreign content can't be emitted (#3937).
+  'foreign-title-slot': [{ code: 'BF101', severity: 'error', limitation: 'foreign-rcdata-dynamic-child', unescapable: true }],
+  'foreign-title-markup-child': [{ code: 'BF101', severity: 'error', limitation: 'foreign-rcdata-dynamic-child', unescapable: true }],
+  'raw-text-host-annotation-xml-encodings': [{ code: 'BF101', severity: 'error', limitation: 'foreign-rcdata-dynamic-child', unescapable: true }],
   'fill-unsupported': [{ code: 'BF101', severity: 'error', limitation: 'array-fill' }],
   // `===` / `!==` over an object or array: JS compares by reference, which
   // no template runtime can tell from equal contents (#3824 step 8).
@@ -359,6 +365,16 @@ export const conformancePins: ConformancePins = {
   // lookup does, so the read refuses rather than rendering `undefined`.
   'record-const-index-inherited-key': [{ code: 'BF102', severity: 'error', limitation: 'record-const-index-unknown-keys' }],
   'module-const-inherited-key': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
+  'module-const-object-spread-unresolved-call': [{ code: 'BF101', severity: 'error', limitation: 'const-object-spread-unresolved' }],
+  'module-const-object-spread-unresolved-member': [{ code: 'BF101', severity: 'error', limitation: 'const-object-spread-unresolved' }],
+  'module-const-object-spread-unresolved-let': [{ code: 'BF101', severity: 'error', limitation: 'const-object-spread-unresolved' }],
+  'module-const-object-spread-unresolved-array': [{ code: 'BF101', severity: 'error', limitation: 'const-object-spread-unresolved' }],
+  'module-const-object-spread-unresolved-local': [{ code: 'BF101', severity: 'error', limitation: 'const-object-spread-unresolved' }],
+  'module-const-object-spread-unresolved-computed-props': [{ code: 'BF101', severity: 'error', limitation: 'const-object-spread-unresolved' }],
+  'module-const-object-spread-unresolved-computed-local': [{ code: 'BF101', severity: 'error', limitation: 'const-object-spread-unresolved' }],
+  'module-const-object-spread-unresolved-computed-optional': [{ code: 'BF101', severity: 'error', limitation: 'const-object-spread-unresolved' }],
+  'module-const-object-spread-unresolved-computed-loop': [{ code: 'BF101', severity: 'error', limitation: 'const-object-spread-unresolved' }],
+  'module-const-object-spread-unresolved-computed-signal': [{ code: 'BF101', severity: 'error', limitation: 'const-object-spread-unresolved' }],
   'module-const-inherited-key-memo': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
   'module-const-inherited-key-memo-chain': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
   'module-const-inherited-key-memo-mixed': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],

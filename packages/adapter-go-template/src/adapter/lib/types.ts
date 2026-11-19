@@ -96,6 +96,8 @@ export interface StaticChildInstance {
   name: string
   slotId: string
   props: IRProp[]
+  /** The call's JSX children (`children={<…/>}` included): the last writer of `children`. */
+  children: IRNode[]
   fieldName: string
   /** Concatenated text content from JSX children (e.g. `+1` for
    *  `<Button>+1</Button>`). Null when children include any non-text node;

@@ -7153,6 +7153,90 @@
       }
     }
   ],
+  "foreign-title-bare-text": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
+  "foreign-title-markup-child": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": ""
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語"
+      }
+    }
+  ],
+  "foreign-title-slot": [
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "n": 3
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "n": 3
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "n": 3
+      }
+    },
+    {
+      "name": "gen:n:zero",
+      "props": {
+        "label": "a<b & \"c\"",
+        "n": 0
+      }
+    },
+    {
+      "name": "gen:n:negative",
+      "props": {
+        "label": "a<b & \"c\"",
+        "n": -7
+      }
+    },
+    {
+      "name": "gen:n:large",
+      "props": {
+        "label": "a<b & \"c\"",
+        "n": 1234567890
+      }
+    }
+  ],
   "format-date-client": [
     {
       "name": "gen:ok:false",
@@ -11199,6 +11283,94 @@
       "props": {
         "label": "caller",
         "rows": []
+      }
+    }
+  ],
+  "module-const-object-spread-unresolved-computed-client": [
+    {
+      "name": "gen:field:empty",
+      "props": {
+        "field": ""
+      }
+    },
+    {
+      "name": "gen:field:markup",
+      "props": {
+        "field": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:field:multibyte",
+      "props": {
+        "field": "日本語"
+      }
+    }
+  ],
+  "module-const-object-spread-unresolved-computed-local": [
+    {
+      "name": "gen:field:empty",
+      "props": {
+        "field": ""
+      }
+    },
+    {
+      "name": "gen:field:markup",
+      "props": {
+        "field": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:field:multibyte",
+      "props": {
+        "field": "日本語"
+      }
+    }
+  ],
+  "module-const-object-spread-unresolved-computed-loop": [
+    {
+      "name": "gen:keys:empty",
+      "props": {
+        "keys": []
+      }
+    }
+  ],
+  "module-const-object-spread-unresolved-computed-optional": [
+    {
+      "name": "gen:field:empty",
+      "props": {
+        "field": ""
+      }
+    },
+    {
+      "name": "gen:field:markup",
+      "props": {
+        "field": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:field:multibyte",
+      "props": {
+        "field": "日本語"
+      }
+    }
+  ],
+  "module-const-object-spread-unresolved-computed-props": [
+    {
+      "name": "gen:field:empty",
+      "props": {
+        "field": ""
+      }
+    },
+    {
+      "name": "gen:field:markup",
+      "props": {
+        "field": "<b>&\"'</b>"
+      }
+    },
+    {
+      "name": "gen:field:multibyte",
+      "props": {
+        "field": "日本語"
       }
     }
   ],

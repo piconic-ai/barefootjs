@@ -177,7 +177,7 @@ import { routesToRestBag, restBagOverrideFields, isCertainlyDataType, isScalarAr
 import { GO_TEMPLATE_PRIMITIVES, SCALAR_ROW_GO_TYPES, SCALAR_ROW_ITEM_FIELD, WRAPPER_ROW_ROOT_VAR } from "./lib/constants.ts"
 import { CompileState, findModuleScopeConst, findValuedLocalConst, propsObjectKeyRead, resolveSignalParsedThroughSeedPlan } from "./lib/compile-state.ts"
 import { hasChildComponents, hasClientInteractivity, findNestedComponents, loopArraySignal } from "./analysis/component-tree.ts"
-import { findDynamicRawTextChild, isRawTextTag } from "./analysis/raw-text-element.ts"
+import { findDynamicRawTextChild, findForeignRcdataBlocker, isRawTextTag } from "./analysis/raw-text-element.ts"
 import { analyzeBakeableStaticChildLoop, bakedScalarAttr, scalarToGoLiteral, type BakedStaticChildItem, type BakedStaticChildLoop } from "./analysis/static-child-loop-bake.ts"
 import { analyzeBakeableStaticElementLoop, classifyBakedCondition } from "./analysis/static-element-loop-bake.ts"
 import type { GoEmitContext } from "./emit-context.ts"
@@ -2809,7 +2809,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
           }
         }
       }
-      const inputProps = { name: child.name, props: child.props.filter(p => p.name !== 'key') }
+      const inputProps = { name: child.name, props: child.props.filter(p => p.name !== 'key'), children: child.children }
       for (const { goField, goValue, coerce } of lowerChildInputFields(this.childInputHost, inputProps, ir, propFallbackVars).fields) {
         lines.push(`\t\t\t${this.childInputField(child.name, goField, goValue, coerce)},`)
       }
@@ -2876,7 +2876,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     lines.push(`\t\t\t${declaredName}Props: New${declaredName}Props(${declaredName}Input{`)
     lines.push(`\t\t\t\tBfParent: scopeID,`)
     lines.push(`\t\t\t\tBfMount: "${nested.slotId}",`)
-    const own = { name: nested.name, props: nested.rowProps }
+    const own = { name: nested.name, props: nested.rowProps, children: nested.children }
     for (const f of lowerLoopRowChildInputFields(this.childInputHost, own, ir, propFallbackVars, nested.rowScope)) {
       lines.push(`\t\t\t\t${this.childInputField(nested.name, f.goField, f.goValue, f.coerce)},`)
     }
@@ -4515,9 +4515,34 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
     })
   }
 
+  /**
+   * #3937: a `<title>` / `<textarea>` in foreign content (SVG, MathML) parses
+   * its children as ordinary content in the reference, so a reactive text child
+   * wears `<!--bf:sN-->` markers. `html/template` reads the tag as RCDATA
+   * whatever the namespace, and there it escapes every `<` of the template text
+   * and of an action's output, `template.HTML` included: the markers can't be
+   * emitted, and the client then finds no slot. Refuse instead of rendering
+   * them as visible text (see `findForeignRcdataBlocker`).
+   */
+  private refuseForeignRcdataMarkup(element: IRElement): void {
+    const blocker = findForeignRcdataBlocker(element.children)
+    if (!blocker) return
+    this.state.errors.push({
+      code: 'BF101',
+      severity: 'error',
+      message: `A ${blocker.type === 'expression' ? 'reactive expression' : `${blocker.type} child`} of <${element.tag}> in SVG / MathML content can't render on the Go template adapter: html/template reads <${element.tag}> as RCDATA whatever the namespace, so the slot markers (and any markup) in it are escaped to visible text.`,
+      loc: 'loc' in blocker ? blocker.loc : this.makeLoc(),
+      suggestion: {
+        message: `Write the <${element.tag}> text as a literal, or move the dynamic text to another element.`,
+      },
+    })
+  }
+
   renderElement(element: IRElement): string {
     const tag = element.tag
     if (isRawTextTag(tag)) this.refuseDynamicRawText(element)
+    const foreignRcdata = element.foreignRawTextTag === true && !isRawTextTag(tag)
+    if (foreignRcdata) this.refuseForeignRcdataMarkup(element)
     const attrs = renderElementAttributes(element, this.elementAttrEmitter)
     const dangerousHtml = this.renderDangerousInnerHtml(element)
     const children = dangerousHtml !== null ? dangerousHtml : this.renderChildren(element.children)
@@ -6933,7 +6958,7 @@ export class GoTemplateAdapter extends BaseAdapter implements ParsedExprEmitter,
       if (value === undefined) continue
       props.push({ ...prop, value: bakedScalarAttr(value) })
     }
-    return lowerChildInputFields(this.childInputHost, { name: nested.name, props }, ir, new Map()).fields
+    return lowerChildInputFields(this.childInputHost, { name: nested.name, props, children: nested.children }, ir, new Map()).fields
   }
 
   /**

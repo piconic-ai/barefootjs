@@ -159,6 +159,11 @@ export function stripUnion(type: TypeInfo | null): TypeInfo | null {
  * `{ kind: 'interface', raw }` with no member walk of its own.
  */
 export function derefNamedType(type: TypeInfo, meta: EvidenceMetadata): TypeInfo {
+  if (type.kind === 'object' && type.inherits) {
+    // An inline intersection (the props type of `props: Base & {...}`): its
+    // constituents are carried on the type itself, no declaration to look up.
+    return { ...type, properties: collectDefinitionMembers(type, meta, new Set()).members }
+  }
   if (type.kind !== 'interface') return type
   if (type.properties && type.properties.length > 0) return type
   const name = baseTypeName(type.raw)
@@ -166,6 +171,23 @@ export function derefNamedType(type: TypeInfo, meta: EvidenceMetadata): TypeInfo
   if (!def?.properties && !def?.inherits) return type
   const { members } = collectDefinitionMembers(def, meta, new Set([name]))
   return members.length > 0 || def.properties ? { ...type, properties: members } : type
+}
+
+/** A type that inherits members: a `TypeDefinition`, or an inline intersection `TypeInfo`. */
+type InheritingType = Pick<TypeDefinition, 'properties' | 'inherits' | 'inheritance'>
+
+/**
+ * The inheriting type behind a receiver type, and the names already being
+ * walked: a named type resolves through `typeDefinitions`, an inline
+ * intersection is its own definition. `null` for any other type.
+ */
+function inheritingTypeOf(type: TypeInfo | null, meta: EvidenceMetadata): { def: InheritingType; visiting: Set<string> } | null {
+  if (!type) return null
+  if (type.kind === 'object' && type.inherits) return { def: type, visiting: new Set() }
+  if (type.kind !== 'interface') return null
+  const name = baseTypeName(type.raw)
+  const def = meta.typeDefinitions.find((d) => d.name === name)
+  return def ? { def, visiting: new Set([name]) } : null
 }
 
 /** A definition's resolved members, plus the names whose intersected types cannot be reconciled. */
@@ -242,7 +264,7 @@ function intersectMemberSets(sets: readonly MemberSet[]): MemberSet {
  * agree. `visiting` breaks a cyclic chain (invalid TypeScript, but never an
  * infinite walk here).
  */
-function collectDefinitionMembers(def: TypeDefinition, meta: EvidenceMetadata, visiting: Set<string>): MemberSet {
+function collectDefinitionMembers(def: InheritingType, meta: EvidenceMetadata, visiting: Set<string>): MemberSet {
   const own: MemberSet = { members: [...(def.properties ?? [])], conflicts: new Set() }
   const inherited = (def.inherits ?? []).map((base) => inheritedMembers(base, meta, visiting))
   if (def.inheritance === 'intersection') return intersectMemberSets([own, ...inherited])
@@ -280,11 +302,8 @@ function inheritedMembers(base: TypeInfo, meta: EvidenceMetadata, visiting: Set<
  * must refuse instead (#3914).
  */
 export function inheritedMemberConflicts(type: TypeInfo | null, meta: EvidenceMetadata): ReadonlySet<string> {
-  const stripped = stripUnion(type)
-  if (!stripped || stripped.kind !== 'interface') return new Set()
-  const name = baseTypeName(stripped.raw)
-  const def = meta.typeDefinitions.find((d) => d.name === name)
-  return def ? collectDefinitionMembers(def, meta, new Set([name])).conflicts : new Set()
+  const found = inheritingTypeOf(stripUnion(type), meta)
+  return found ? collectDefinitionMembers(found.def, meta, found.visiting).conflicts : new Set()
 }
 
 /**
@@ -295,13 +314,11 @@ export function inheritedMemberConflicts(type: TypeInfo | null, meta: EvidenceMe
  * declares, which callers must treat as "unknown", never as "absent" (#3914).
  */
 export function hasUnresolvedBase(type: TypeInfo | null, meta: EvidenceMetadata): boolean {
-  const stripped = stripUnion(type)
-  if (!stripped || stripped.kind !== 'interface') return false
-  const def = meta.typeDefinitions.find((d) => d.name === baseTypeName(stripped.raw))
-  return def ? definitionHasUnresolvedBase(def, meta, new Set([def.name])) : false
+  const found = inheritingTypeOf(stripUnion(type), meta)
+  return found ? definitionHasUnresolvedBase(found.def, meta, found.visiting) : false
 }
 
-function definitionHasUnresolvedBase(def: TypeDefinition, meta: EvidenceMetadata, visiting: Set<string>): boolean {
+function definitionHasUnresolvedBase(def: InheritingType, meta: EvidenceMetadata, visiting: Set<string>): boolean {
   return (def.inherits ?? []).some((base) => {
     if (base.kind === 'object') return false
     if (base.kind !== 'interface') return true
@@ -346,7 +363,7 @@ export function receiverEvidenceLoss(
     return null
   }
   const stripped = stripUnion(containing)
-  if (!stripped || stripped.kind !== 'interface') return null
+  if (!stripped || !inheritingTypeOf(stripped, meta)) return null
   if (inheritedMemberConflicts(stripped, meta).has(prop)) return { prop, reason: 'conflict' }
   const visible = derefNamedType(stripped, meta).properties?.some((p) => p.name === prop)
   return !visible && hasUnresolvedBase(stripped, meta) ? { prop, reason: 'hidden' } : null

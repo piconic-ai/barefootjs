@@ -46,11 +46,14 @@ export function resolvePropsSpreadCall(
   ctx: GoEmitContext,
   ir: ComponentIR,
   props: readonly IRProp[],
+  children: readonly IRNode[] = [],
 ): PropsSpreadCall | null {
   if (!props.some((p) => isPropsObjectSpread(p, ctx.state.propsObjectName))) return null
-  // The slot id and the forwarded children are not props on Go's side: the
-  // caller fills `ScopeID` / `Children` itself.
-  const plan = planComponentProps({ props: [...props], children: [], slotId: null }, planOptions(ctx, ir))
+  // The slot id is not a prop on Go's side: the caller fills `ScopeID`
+  // itself. The call's JSX children are the last writer of `children`, so the
+  // plan takes them over the `children` key the spread carries; the caller
+  // fills the `Children` field from them.
+  const plan = planComponentProps({ props: [...props], children: [...children], slotId: null }, planOptions(ctx, ir))
   const resolved = resolveComponentPropKeys(plan)
   if (resolved === null) return { kind: 'unresolved' }
   return { kind: 'resolved', keys: new Map(resolved.map((r) => [r.key, r])) }
@@ -78,9 +81,14 @@ export function isFinalPropWriter(prop: IRProp, keys: ReadonlyMap<string, Resolv
  * it, or null when no spread can carry `name` (spec/js-undefined-value.md
  * §3: the spread carries the key, whatever it holds).
  */
-export function spreadCarriedCallerKey(ctx: GoEmitContext, props: readonly IRProp[], name: string): string | null {
+export function spreadCarriedCallerKey(
+  ctx: GoEmitContext,
+  props: readonly IRProp[],
+  name: string,
+  children: readonly IRNode[] = [],
+): string | null {
   const ir = { metadata: { propsParams: ctx.state.currentPropsParams } } as unknown as ComponentIR
-  const call = resolvePropsSpreadCall(ctx, ir, props)
+  const call = resolvePropsSpreadCall(ctx, ir, props, children)
   if (call?.kind !== 'resolved') return null
   const resolved = call.keys.get(name)
   const param = resolved?.presentParams.length ? ctx.state.currentPropsParams.find(p => p.name === resolved.key) : undefined
@@ -98,8 +106,13 @@ export function spreadCarriedCallerKey(ctx: GoEmitContext, props: readonly IRPro
  * in JSX. A call that also spreads an object whose keys are unknown is
  * returned whole.
  */
-export function finalPropWriters(ctx: GoEmitContext, ir: ComponentIR, props: readonly IRProp[]): readonly IRProp[] {
-  const resolved = resolveComponentPropKeys(planComponentProps({ props: [...props], children: [], slotId: null }, planOptions(ctx, ir)))
+export function finalPropWriters(
+  ctx: GoEmitContext,
+  ir: ComponentIR,
+  props: readonly IRProp[],
+  children: readonly IRNode[] = [],
+): readonly IRProp[] {
+  const resolved = resolveComponentPropKeys(planComponentProps({ props: [...props], children: [...children], slotId: null }, planOptions(ctx, ir)))
   if (resolved === null) return props
   const keys = new Map(resolved.map((r) => [r.key, r]))
   return props.filter((p) => isFinalPropWriter(p, keys))

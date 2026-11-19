@@ -4355,6 +4355,84 @@
         "text"
       ]
     },
+    "date-inherited-prop-inline-intersection": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "date-inherited-prop-inline-intersection-base-last": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "date-inherited-prop-inline-intersection-destructured": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "date-inherited-prop-inline-intersection-extends": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "date-inherited-prop-inline-intersection-literal": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "date-inherited-prop-inline-intersection-nested": {
+      "kinds": [
+        "call",
+        "identifier",
+        "member"
+      ],
+      "axes": [
+        "lowering:date"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "date-inherited-prop-intersection": {
       "kinds": [
         "call",
@@ -6782,6 +6860,39 @@
         "text"
       ]
     },
+    "foreign-title-bare-text": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "foreign-title-markup-child": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "foreign-title-slot": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "form": {
       "kinds": [
         "call",
@@ -9015,6 +9126,26 @@
       "axes": [
         "binary:+",
         "literal:number"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "loop-preamble-template-literal": {
+      "kinds": [
+        "array-method",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "literal:string"
       ],
       "contexts": [
         "attribute",
@@ -12347,6 +12478,226 @@
         "text"
       ]
     },
+    "module-const-object-spread-member": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-object-spread-override-after": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-object-spread-unresolved-array": {
+      "kinds": [
+        "array-literal",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string",
+        "member:computed"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-object-spread-unresolved-call": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-object-spread-unresolved-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-object-spread-unresolved-computed-client": {
+      "kinds": [
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-object-spread-unresolved-computed-local": {
+      "kinds": [
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-object-spread-unresolved-computed-loop": {
+      "kinds": [
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
+    "module-const-object-spread-unresolved-computed-optional": {
+      "kinds": [
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-object-spread-unresolved-computed-props": {
+      "kinds": [
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-object-spread-unresolved-computed-signal": {
+      "kinds": [
+        "call",
+        "identifier",
+        "index-access",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-object-spread-unresolved-let": {
+      "kinds": [
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-object-spread-unresolved-local": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-const-object-spread-unresolved-member": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal",
+        "member",
+        "object-literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "module-const-reads-global-named-like-prop": {
       "kinds": [
         "call",
@@ -15621,6 +15972,25 @@
       "axes": [],
       "contexts": [
         "attribute",
+        "text"
+      ]
+    },
+    "props-object-spread-child-children": {
+      "kinds": [
+        "array-literal",
+        "call",
+        "identifier",
+        "literal",
+        "logical",
+        "member"
+      ],
+      "axes": [
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
         "text"
       ]
     },
