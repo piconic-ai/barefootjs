@@ -641,7 +641,7 @@
     },
     "packages/jsx/src/ir-to-client-js/html-template.ts": {
       "buildLoopSkeletonTemplate": [
-        62
+        58
       ],
       "generateCsrTemplateWithOpts": [
         76

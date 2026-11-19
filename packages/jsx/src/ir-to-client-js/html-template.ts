@@ -1161,6 +1161,26 @@ export interface LoopSkeletonSafeSlots {
 }
 
 /**
+ * The children of an element in a loop skeleton, or `null` when one of them
+ * cannot be part of it. A `<style>` / `<script>` prints its whole text in
+ * one piece (`rawTextTemplateContent`, #3934): static text is baked, and a
+ * dynamic part has no anchor to backfill.
+ */
+function loopSkeletonChildren(node: IRElement, safe: LoopSkeletonSafeSlots): string | null {
+  if (node.rawTextContent) {
+    if (node.rawTextContent.some(part => part.type === 'expression')) return null
+    return rawTextTemplateContent(node, () => null) ?? ''
+  }
+  let children = ''
+  for (const child of node.children) {
+    const rendered = buildLoopSkeletonTemplate(child, safe)
+    if (rendered === null) return null
+    children += rendered
+  }
+  return children
+}
+
+/**
  * Build the STATIC skeleton of a top-level loop body — the shared template
  * cloned once per row instead of re-parsed from a per-row interpolated
  * `innerHTML` string (perf: create-heavy `.map()` loops, see
@@ -1244,15 +1264,8 @@ export function buildLoopSkeletonTemplate(node: IRNode, safe: LoopSkeletonSafeSl
       if (node.slotId) attrParts.push(`bf="${node.slotId}"`)
 
       const attrs = attrParts.join(' ')
-      // A `<style>` / `<script>` prints its whole text in one piece: static
-      // text is baked, a dynamic part has no anchor to backfill (#3934).
-      if (node.rawTextContent?.some(part => part.type === 'expression')) return null
-      let children = rawTextTemplateContent(node, () => null) ?? ''
-      for (const child of node.rawTextContent ? [] : node.children) {
-        const rendered = buildLoopSkeletonTemplate(child, safe)
-        if (rendered === null) return null
-        children += rendered
-      }
+      const children = loopSkeletonChildren(node, safe)
+      if (children === null) return null
 
       if (children || !VOID_ELEMENTS.has(node.tag)) {
         return `<${node.tag}${attrs ? ' ' + attrs : ''}>${children}</${node.tag}>`

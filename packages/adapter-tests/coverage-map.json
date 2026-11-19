@@ -16253,6 +16253,36 @@
         "text"
       ]
     },
+    "raw-text-split-boundary": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "raw-text-split-boundary-reactive": {
+      "kinds": [
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "raw-text-split-boundary-static": {
+      "kinds": [],
+      "axes": [],
+      "contexts": []
+    },
     "raw-text-style-escape-reactive": {
       "kinds": [
         "binary",

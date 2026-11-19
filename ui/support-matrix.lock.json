@@ -7267,6 +7267,12 @@
               ]
             },
             {
+              "fixture": "raw-text-split-boundary-reactive",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
               "fixture": "raw-text-style-escape-reactive",
               "limitations": [
                 "dynamic-text-in-style-script-element"
@@ -13186,6 +13192,18 @@
             },
             {
               "fixture": "raw-text-host-svg-style",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-split-boundary",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-split-boundary-reactive",
               "limitations": [
                 "dynamic-text-in-style-script-element"
               ]
@@ -19149,6 +19167,18 @@
             },
             {
               "fixture": "raw-text-host-style-script",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-split-boundary",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-split-boundary-reactive",
               "limitations": [
                 "dynamic-text-in-style-script-element"
               ]
@@ -38548,6 +38578,18 @@
             },
             {
               "fixture": "raw-text-host-style-script",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-split-boundary",
+              "limitations": [
+                "dynamic-text-in-style-script-element"
+              ]
+            },
+            {
+              "fixture": "raw-text-split-boundary-reactive",
               "limitations": [
                 "dynamic-text-in-style-script-element"
               ]
