@@ -305,3 +305,38 @@ export function C({ base }: { base: string }) {
     expect(declarationsOf(clientJs, 'g')).toContain('const g = __bf_module_C.g')
   })
 })
+
+describe('a module let the component reassigns (#3932)', () => {
+  const component = (decl: string, read: string) => `
+'use client'
+const base = 'm'
+${decl}
+function g() { return base + ${read} }
+export function C({ base }: { base: string }) {
+  counter = 2
+  return <button onClick={() => console.log(g())}>{base}</button>
+}
+`
+  const lines = (code: string, prefix: string) => code.split('\n').map(l => l.trim()).filter(l => l.startsWith(prefix))
+
+  test('the replica evaluates the function against the module const and the let stays one module variable', () => {
+    const { clientJs } = compile(component('let counter = 0', 'counter'))
+    expect(lines(clientJs, 'const g = ')).toContain('const g = __bf_module_C.g')
+    expect(lines(clientJs, 'return { ')).toEqual(['return { g, counter: 0 }'])
+    // One storage: declared once at module level, from the replica's value,
+    // and written by the component's init as the same variable.
+    expect(lines(clientJs, 'var counter')).toEqual(['var counter = counter ?? __bf_module_C.counter'])
+    expect(lines(clientJs, 'let counter')).toEqual([])
+    expect(lines(clientJs, 'counter = 2')).toEqual(['counter = 2'])
+  })
+
+  test('a let without an initializer starts undefined, as in the module', () => {
+    const { clientJs } = compile(component('let counter', 'counter'))
+    expect(lines(clientJs, 'return { ')).toEqual(['return { g, counter: undefined }'])
+  })
+
+  test('a let whose initializer reads the hidden const is evaluated in the replica', () => {
+    const { clientJs } = compile(component('let counter = base.length', 'counter'))
+    expect(lines(clientJs, 'return { ')).toEqual(['return { g, counter: base.length }'])
+  })
+})

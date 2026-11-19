@@ -11261,6 +11261,104 @@
       }
     }
   ],
+  "module-let-bare-hidden-read": [
+    {
+      "name": "gen:label:absent",
+      "props": {
+        "__instanceId": "ModuleLetBareHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:label:empty",
+      "props": {
+        "label": "",
+        "__instanceId": "ModuleLetBareHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:label:markup",
+      "props": {
+        "label": "<b>&\"'</b>",
+        "__instanceId": "ModuleLetBareHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:label:multibyte",
+      "props": {
+        "label": "日本語",
+        "__instanceId": "ModuleLetBareHiddenRead_test"
+      }
+    }
+  ],
+  "module-let-hidden-read": [
+    {
+      "name": "gen:base:empty",
+      "props": {
+        "base": "",
+        "__instanceId": "ModuleLetHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:base:markup",
+      "props": {
+        "base": "<b>&\"'</b>",
+        "__instanceId": "ModuleLetHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:base:multibyte",
+      "props": {
+        "base": "日本語",
+        "__instanceId": "ModuleLetHiddenRead_test"
+      }
+    }
+  ],
+  "module-let-initializer-hidden-read": [
+    {
+      "name": "gen:base:empty",
+      "props": {
+        "base": "",
+        "__instanceId": "ModuleLetInitializerHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:base:markup",
+      "props": {
+        "base": "<b>&\"'</b>",
+        "__instanceId": "ModuleLetInitializerHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:base:multibyte",
+      "props": {
+        "base": "日本語",
+        "__instanceId": "ModuleLetInitializerHiddenRead_test"
+      }
+    }
+  ],
+  "module-let-name-hidden-read": [
+    {
+      "name": "gen:base:empty",
+      "props": {
+        "base": "",
+        "__instanceId": "ModuleLetNameHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:base:markup",
+      "props": {
+        "base": "<b>&\"'</b>",
+        "__instanceId": "ModuleLetNameHiddenRead_test"
+      }
+    },
+    {
+      "name": "gen:base:multibyte",
+      "props": {
+        "base": "日本語",
+        "__instanceId": "ModuleLetNameHiddenRead_test"
+      }
+    }
+  ],
   "negated-empty-array-condition": [
     {
       "name": "gen:tags:absent",

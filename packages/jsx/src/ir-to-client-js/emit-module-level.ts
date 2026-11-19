@@ -121,8 +121,13 @@ export function emitModuleScopeReplica(
   const lines: string[] = [`var ${replica.name} = ${replica.name} ?? (() => {`]
   for (const fn of used.functions) lines.push(`  const ${fn.name} = ${functionExpressionText(fn)}`)
   for (const c of used.constants) lines.push(`  ${c.declarationKind} ${c.name} = ${c.value}`)
-  lines.push(`  return { ${used.exported.join(', ')} }`)
+  // A shared const's initializer is evaluated here, where the module's own
+  // names are visible; its variable is declared below at module level, the
+  // storage the component writes (#3932).
+  const members = [...used.exported, ...used.shared.map(c => `${c.name}: ${c.value || 'undefined'}`)]
+  lines.push(`  return { ${members.join(', ')} }`)
   lines.push('})()')
+  for (const c of used.shared) lines.push(`var ${c.name} = ${c.name} ?? ${replica.name}.${c.name}`)
   return lines.join('\n') + '\n'
 }
 

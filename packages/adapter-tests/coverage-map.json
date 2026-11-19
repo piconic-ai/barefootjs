@@ -12569,6 +12569,87 @@
         "text"
       ]
     },
+    "module-let-bare-hidden-read": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "logical"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string",
+        "logical:??"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-let-handler-write-hidden-read": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-let-hidden-read": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-let-initializer-hidden-read": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal",
+        "member"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "module-let-name-hidden-read": {
+      "kinds": [
+        "binary",
+        "call",
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "binary:+",
+        "literal:number",
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "multi-component-module": {
       "kinds": [
         "call",
