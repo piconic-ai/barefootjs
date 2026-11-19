@@ -117,6 +117,9 @@ import type { RenderDivergences } from '@barefootjs/jsx'
 // in markup outside a `{{…}}` action, so a `"` no longer closes the
 // surrounding attribute.
 export const renderDivergences: RenderDivergences = {
+  // A Date member inherited or intersected on a nested named type: the Go
+  // struct for that type has only its own members.
+  'date-intersection-nested-narrowing': { limitation: 'go-nested-inherited-date-member' },
   // A body statement mutating a destructure binding (`local.push('z')`),
   // read through a memo: the server render runs no body statement, so it
   // renders the value before the push.

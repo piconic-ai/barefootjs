@@ -3322,6 +3322,14 @@
           ]
         }
       },
+      "date-intersection-nested-narrowing": {
+        "go-template": {
+          "kind": "render",
+          "limitations": [
+            "go-nested-inherited-date-member"
+          ]
+        }
+      },
       "date-method-uncatalogued": {
         "blade": {
           "kind": "refusal",
@@ -12892,6 +12900,10 @@
         "description": "A non-reactive allocating const passed as a child prop keeps one identity across reads after…",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/const-object-prop-identity-hydrate.ts"
       },
+      "date-intersection-nested-narrowing": {
+        "description": "Nested Date member declared as Date & Date | null across intersection arms renders via the date…",
+        "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-intersection-nested-narrowing.ts"
+      },
       "date-method-uncatalogued": {
         "description": "Method call on a Date-typed prop refuses with BF021 (no catalogued lowering)",
         "url": "https://github.com/piconic-ai/barefootjs/blob/main/packages/adapter-tests/fixtures/date-method-uncatalogued.ts"
@@ -14309,6 +14321,19 @@
       ],
       "diagnostics": [
         "BF029"
+      ]
+    },
+    "go-nested-inherited-date-member": {
+      "title": "A Date member inherited or intersected on a nested named type",
+      "kind": "silent",
+      "given": "a Date member reached through a named object type that gets it from `extends` or an intersection alias (`type Data = { at: Date } & { at: Date | null }`, `props.data.at.getUTCFullYear()`)",
+      "expected": "the Date accessor result (`2024`)",
+      "actual": "renders `0`, since the generated Go struct for the nested named type is built from the type's own members only and the inherited `at` is not a `time.Time` field",
+      "fixtures": [
+        "date-intersection-nested-narrowing"
+      ],
+      "adapters": [
+        "go-template"
       ]
     },
     "index-read-capitalised-key-only": {

@@ -73,7 +73,11 @@ import {
   JSON_REVIVABLE_RICH_TYPE_NAMES,
   resolvePropDeclaredType,
   jsonUnsafeTypeName,
+  hasUnresolvedBase,
+  inheritedMemberConflicts,
+  receiverEvidenceLoss,
 } from './rich-type-evidence.ts'
+import { DATE_METHODS } from './date-lowering.ts'
 
 type Bindings = ReadonlyMap<string, TypeInfo | null>
 const EMPTY_BINDINGS: Bindings = new Map()
@@ -293,6 +297,7 @@ function checkExpr(
     case 'call': {
       if (expr.callee.kind === 'member') {
         const receiverType = resolveReceiverType(expr.callee.object, meta, bindings)
+        checkUnresolvedInheritedReceiver(expr.callee, expr.args, loc, meta, bindings, matchers, errors, seen)
         if (receiverType && receiverType.kind === 'interface') {
           const typeName = baseTypeName(receiverType.raw)
           const inFileShadow = meta.typeDefinitions.some((d) => d.name === typeName)
@@ -361,6 +366,54 @@ function checkExpr(
     case 'unsupported':
       break
   }
+}
+
+/**
+ * #3914: a catalogued `Date` method called on a receiver whose type this
+ * file cannot determine from a containing type's inheritance, at ANY step of
+ * the member chain (`props.at`, `props.data.at`, ...). Two shapes:
+ *   - the containing type inherits from a base declared elsewhere and the
+ *     member is not visible on it, so it may be a `Date` declared on that base;
+ *   - the member is declared by several intersection arms whose types cannot
+ *     be reconciled (`Base & { at: Date }` with `Base.at: string`).
+ * The date lowering skips both (an empty render on most template adapters),
+ * so refuse instead of guessing. A call a registered lowering plugin claims
+ * is exempt, like the refusal above. A prop that IS visible with a single
+ * resolved type is a different receiver and stays untouched.
+ */
+function checkUnresolvedInheritedReceiver(
+  callee: Extract<ParsedExpr, { kind: 'member' }>,
+  args: readonly ParsedExpr[],
+  loc: SourceLocation,
+  meta: IRMetadata,
+  bindings: Bindings,
+  matchers: readonly LoweringMatcher[],
+  errors: CompilerError[],
+  seen: Set<string>,
+): void {
+  if (callee.computed || args.length !== 0 || !DATE_METHODS.has(callee.property)) return
+  const loss = receiverEvidenceLoss(callee.object, meta, bindings)
+  if (!loss) return
+  const propName = loss.prop
+  const conflicting = loss.reason === 'conflict'
+  if (isLoweringClaimed(matchers, callee, args)) return
+  const receiverPath = describeReceiverPath(callee.object)
+  const key = `${loc.start.line}:${loc.start.column}:${receiverPath}.${callee.property}:inherited`
+  if (seen.has(key)) return
+  seen.add(key)
+  const why = conflicting
+    ? `prop '${propName}' is declared with types that cannot be reconciled across the intersection arms of its containing type`
+    : `prop '${propName}' is not declared on its containing type in this file, and that type inherits from a base type that is not declared here, so the prop may be a Date declared on that base`
+  errors.push({
+    code: ErrorCodes.UNSUPPORTED_JSX_PATTERN,
+    severity: 'error',
+    message: `Expression cannot be compiled to marked template: the type of '${receiverPath}' is unknown, so '.${callee.property}()' cannot be lowered. ${why[0].toUpperCase()}${why.slice(1)}.`,
+    loc,
+    suggestion: {
+      message: `Declare '${propName}' (for example '${propName}: Date') with one type on its containing type in this file, or declare the base type in this file so its members are visible. Alternatively pre-compute the value server-side and pass it as a prop.`,
+      escape: [{ kind: 'rewrite' }, { kind: 'prop-precompute' }],
+    },
+  })
 }
 
 /** `IRTemplatePart.ternary.condition` / `.lookup.key` carry no attached parse (unlike every other position here), so parse on demand. */
