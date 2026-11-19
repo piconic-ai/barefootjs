@@ -868,6 +868,7 @@ import { fixture as compositeRowChildComponent } from './composite-row-child-com
 import { fixture as compositeRowChildDerivedProp } from './composite-row-child-derived-prop'
 import { fixture as compositeRowChildAliasedProp } from './composite-row-child-aliased-prop'
 import { fixture as loopPreambleAttrValue } from './loop-preamble-attr-value'
+import { fixture as loopPreambleTemplateLiteral } from './loop-preamble-template-literal'
 import { fixture as loopPreambleChainedFilter } from './loop-preamble-chained-filter'
 import { fixture as loopPreambleConditionalReactive } from './loop-preamble-conditional-reactive'
 import { fixture as loopRowStaticConditional } from './loop-row-static-conditional'
@@ -2288,6 +2289,7 @@ export const jsxFixtures: JSXFixture[] = [
   compositeRowChildDerivedProp,
   compositeRowChildAliasedProp,
   loopPreambleAttrValue,
+  loopPreambleTemplateLiteral,
   loopPreambleChainedFilter,
   loopRowStaticConditional,
   childPrimitiveProps,

@@ -8988,6 +8988,26 @@
         "text"
       ]
     },
+    "loop-preamble-template-literal": {
+      "kinds": [
+        "array-method",
+        "call",
+        "conditional",
+        "identifier",
+        "literal",
+        "member",
+        "template-literal"
+      ],
+      "axes": [
+        "array-method:toUpperCase",
+        "literal:string"
+      ],
+      "contexts": [
+        "attribute",
+        "loop",
+        "text"
+      ]
+    },
     "loop-row-absent-optional-member-attr": {
       "kinds": [
         "identifier",
