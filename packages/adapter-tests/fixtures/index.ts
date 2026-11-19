@@ -940,6 +940,9 @@ import { fixture as styleScriptTextDynamic } from './style-script-text-dynamic'
 import { fixture as rawTextHostDynamic } from './raw-text-host-dynamic'
 import { fixture as rawTextHostStyleScript } from './raw-text-host-style-script'
 import { fixture as rawTextHostSvgStyle } from './raw-text-host-svg-style'
+import { fixture as foreignTitleSlot } from './foreign-title-slot'
+import { fixture as foreignTitleBareText } from './foreign-title-bare-text'
+import { fixture as foreignTitleMarkupChild } from './foreign-title-markup-child'
 import { fixture as rawTextHostReactive } from './raw-text-host-reactive'
 import { fixture as rawTextHostAnnotationXml } from './raw-text-host-annotation-xml'
 import { fixture as rawTextHostAnnotationXmlSvg } from './raw-text-host-annotation-xml-svg'
@@ -2330,6 +2333,9 @@ export const jsxFixtures: JSXFixture[] = [
   rawTextHostDynamic,
   rawTextHostStyleScript,
   rawTextHostSvgStyle,
+  foreignTitleSlot,
+  foreignTitleBareText,
+  foreignTitleMarkupChild,
   rawTextHostReactive,
   rawTextHostAnnotationXml,
   rawTextHostAnnotationXmlSvg,

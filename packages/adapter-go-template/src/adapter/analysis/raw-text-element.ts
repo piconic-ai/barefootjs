@@ -24,10 +24,31 @@ export function isRawTextTag(tag: string): boolean {
 
 /** The first child that would print through an output action, or null. */
 export function findDynamicRawTextChild(children: readonly IRNode[]): IRNode | null {
+  return findChildOutside(children)
+}
+
+/**
+ * `<title>` / `<textarea>` in foreign content (#3937). The reference parses
+ * their children as ordinary foreign content, where a reactive text child wears
+ * `<!--bf:sN-->` markers; `html/template` reads the tag as RCDATA whatever the
+ * namespace, and escapes every `<` there (the template text's and an action's
+ * output, `template.HTML` included), so no marker can be emitted. What still
+ * renders is text and a slotless expression (a plain value, escaped as RCDATA
+ * text, which is what the reference prints). Anything else is refused: the
+ * first such child, or null.
+ */
+export function findForeignRcdataBlocker(children: readonly IRNode[]): IRNode | null {
+  return findChildOutside(children, node => node.type === 'expression' && node.slotId === null)
+}
+
+function findChildOutside(
+  children: readonly IRNode[],
+  allowed: (node: IRNode) => boolean = () => false,
+): IRNode | null {
   for (const child of children) {
-    if (child.type === 'text') continue
+    if (child.type === 'text' || allowed(child)) continue
     if (child.type === 'fragment') {
-      const nested = findDynamicRawTextChild(child.children)
+      const nested = findChildOutside(child.children, allowed)
       if (nested) return nested
       continue
     }

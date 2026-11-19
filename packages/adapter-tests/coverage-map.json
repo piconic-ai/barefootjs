@@ -6844,6 +6844,39 @@
         "text"
       ]
     },
+    "foreign-title-bare-text": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
+    "foreign-title-markup-child": {
+      "kinds": [
+        "identifier"
+      ],
+      "axes": [],
+      "contexts": [
+        "attribute"
+      ]
+    },
+    "foreign-title-slot": {
+      "kinds": [
+        "identifier",
+        "literal"
+      ],
+      "axes": [
+        "literal:string"
+      ],
+      "contexts": [
+        "text"
+      ]
+    },
     "form": {
       "kinds": [
         "call",
