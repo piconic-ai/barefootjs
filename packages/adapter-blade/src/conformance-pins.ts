@@ -239,6 +239,11 @@ export const conformancePins: ConformancePins = {
   // lookup does, so the read refuses rather than rendering `undefined`.
   'record-const-index-inherited-key': [{ code: 'BF101', severity: 'error', limitation: 'record-const-index-unknown-keys' }],
   'module-const-inherited-key': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
+  'module-const-object-spread-unresolved-call': [{ code: 'BF101', severity: 'error', limitation: 'const-object-spread-unresolved' }],
+  'module-const-object-spread-unresolved-member': [{ code: 'BF101', severity: 'error', limitation: 'const-object-spread-unresolved' }],
+  'module-const-object-spread-unresolved-let': [{ code: 'BF101', severity: 'error', limitation: 'const-object-spread-unresolved' }],
+  'module-const-object-spread-unresolved-array': [{ code: 'BF101', severity: 'error', limitation: 'const-object-spread-unresolved' }],
+  'module-const-object-spread-unresolved-local': [{ code: 'BF101', severity: 'error', limitation: 'const-object-spread-unresolved' }],
   'module-const-inherited-key-memo': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
   'module-const-inherited-key-memo-chain': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
   'module-const-inherited-key-memo-mixed': [{ code: 'BF101', severity: 'error', limitation: 'const-literal-inherited-key' }],
